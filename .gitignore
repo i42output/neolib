@@ -1,0 +1,6 @@
+/build/win32/vs2013/Debug
+/build/win32/vs2013/Release
+/build/win32/vs2013/neolib.sdf
+/build/win32/vs2013/neolib.v12.suo
+/lib/neolib.lib
+/lib/neolibd.lib
