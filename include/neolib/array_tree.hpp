@@ -347,6 +347,7 @@ namespace neolib
 		}
 		void swap(array_tree& aOther)
 		{
+			std::swap(iAllocator, aOther.iAllocator);
 			std::swap(iRoot, aOther.iRoot);
 			std::swap(iFront, aOther.iFront);
 			std::swap(iBack, aOther.iBack);
