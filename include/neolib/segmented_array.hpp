@@ -609,8 +609,16 @@ namespace neolib
 		}
 		node* allocate_node(node* aAfter)
 		{
-			node* newNode = iAllocator.allocate(1);
-			iAllocator.construct(newNode, node());
+			node* newNode = std::allocator_traits<node_allocator_type>::allocate(iAllocator, 1);
+			try
+			{
+				std::allocator_traits<node_allocator_type>::construct(iAllocator, newNode, node());
+			}
+			catch (...)
+			{
+				std::allocator_traits<node_allocator_type>::deallocate(iAllocator, newNode, 1);
+				throw;
+			}
 			if (aAfter == 0)
 			{
 				base::set_front_node(newNode);
@@ -644,8 +652,8 @@ namespace neolib
 					base::set_front_node(aNode->next());
 				base::delete_node(aNode);
 			}
-			iAllocator.destroy(aNode);
-			iAllocator.deallocate(aNode, 1);
+			std::allocator_traits<node_allocator_type>::destroy(iAllocator, aNode);
+			std::allocator_traits<node_allocator_type>::deallocate(iAllocator, aNode, 1);
 		}
 
 	private:

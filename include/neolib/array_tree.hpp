@@ -184,14 +184,22 @@ namespace neolib
 			iBack(0),
 			iNil(0)
 		{
-			iNil = iAllocator.allocate(1);
-			iAllocator.construct(iNil, node(node::NIL));
+			iNil = std::allocator_traits<node_allocator_type>::allocate(iAllocator, 1);
+			try
+			{
+				std::allocator_traits<node_allocator_type>::construct(iAllocator, iNil, node(node::NIL));
+			}
+			catch (...)
+			{
+				std::allocator_traits<node_allocator_type>::deallocate(iAllocator, iNil, 1);
+				throw;
+			}
 			set_root_node(iNil);
 		}
 		~array_tree()
 		{
-			iAllocator.destroy(iNil);
-			iAllocator.deallocate(iNil, 1);
+			std::allocator_traits<node_allocator_type>::destroy(iAllocator, iNil);
+			std::allocator_traits<node_allocator_type>::deallocate(iAllocator, iNil, 1);
 		}
 
 	public:
