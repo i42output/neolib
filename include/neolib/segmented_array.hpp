@@ -327,9 +327,20 @@ namespace neolib
 		{
 			insert(begin(), aFirst, aLast);
 		}
+		segmented_array(const segmented_array& aOther, const Alloc& aAllocator = Alloc()) :
+			iAllocator(aAllocator), iSize(0)
+		{
+			insert(begin(), aOther.begin(), aOther.end());
+		}
 		~segmented_array()
 		{
 			erase(begin(), end());
+		}
+		segmented_array& operator=(const segmented_array& aOther)
+		{
+			segmented_array newContents(aOther);
+			newContents.swap(*this);
+			return *this;
 		}
 
 	public:
@@ -495,6 +506,7 @@ namespace neolib
 		void swap(segmented_array& aOther)
 		{
 			base::swap(aOther);
+			std::swap(iAllocator, aOther.iAllocator);
 			std::swap(iSize, aOther.iSize);
 		}
 
