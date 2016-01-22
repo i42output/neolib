@@ -419,6 +419,10 @@ namespace neolib
 			}
 			return iterator(*this, aPosition.iContainerPosition);
 		}
+		void clear()
+		{
+			erase(begin(), end());
+		}
 		void push_front(const value_type& aValue)
 		{
 			insert(begin(), aValue);
