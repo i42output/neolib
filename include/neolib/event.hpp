@@ -39,7 +39,6 @@
 #include <stdexcept>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
-#include "cstdint.hpp"
 #include "message_queue.hpp"
 #include "waitable.hpp"
 #include "variant.hpp"

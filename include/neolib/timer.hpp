@@ -39,7 +39,6 @@
 #include <stdexcept>
 #include <boost/noncopyable.hpp>
 #include <boost/bind.hpp>
-#include "cstdint.hpp"
 #include "io_thread.hpp"
 #include "destroyable.hpp"
 

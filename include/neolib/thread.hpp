@@ -40,7 +40,6 @@
 #include <memory>
 #include <boost/noncopyable.hpp>
 #include <boost/thread.hpp>
-#include "cstdint.hpp"
 #include "lockable.hpp"
 #include "waitable.hpp"
 #include "event.hpp"

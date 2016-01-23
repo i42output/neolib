@@ -39,8 +39,5 @@
 
 namespace neolib
 {
-	typedef unsigned char uint8_t;
-	typedef unsigned int uint32_t;
-	
 	uint32_t crc32(const uint8_t *aData, uint32_t aDataLength);
 }

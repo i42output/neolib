@@ -113,9 +113,6 @@
     <ClInclude Include="..\..\..\include\neolib\crc.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\cstdint.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\custom_type.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

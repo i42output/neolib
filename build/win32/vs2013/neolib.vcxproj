@@ -117,7 +117,6 @@
     <ClInclude Include="..\..\..\include\neolib\container_helper.hpp" />
     <ClInclude Include="..\..\..\include\neolib\container_iterator.hpp" />
     <ClInclude Include="..\..\..\include\neolib\crc.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\cstdint.hpp" />
     <ClInclude Include="..\..\..\include\neolib\custom_type.hpp" />
     <ClInclude Include="..\..\..\include\neolib\data_packet.hpp" />
     <ClInclude Include="..\..\..\include\neolib\destroyable.hpp" />
