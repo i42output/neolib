@@ -1,6 +1,6 @@
-// vecarray.hpp - v3.0.1
+// vecarray.hpp
 /*
- *  Copyright (c) 2014 Leigh Johnston.
+ *  Copyright (c) 2007-2016 Leigh Johnston.
  *
  *  All rights reserved.
  *

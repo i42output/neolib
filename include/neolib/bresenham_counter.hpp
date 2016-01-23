@@ -1,6 +1,6 @@
-// algorithm.hpp
+// bresenham_counter.hpp
 /*
- *  Copyright (c) 2012 Leigh Johnston.
+ *  Copyright (c) 2016 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -33,64 +33,12 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/* WARNING: The algorithms present here are not a substitute for any equivalent std:: 
- * algorithms available on your platform which you should be using instead.  They exist here
- * either for technical reasons or for when there is no standard library available.
-  */
-
 #pragma once
 
 #include "neolib.hpp"
-#include <algorithm>
-#include <utility>
-#include "detail_algorithm.hpp"
 
 namespace neolib 
 {
-	template <typename InIter, typename Func> inline
-	Func for_each(InIter first, InIter last, Func f)
-	{
-		for(; first != last; first++)
-			f(*first);
-		return f;
-	}
-
-	template <typename InIter1, typename InIter2, typename Func> inline
-	Func for_each(InIter1 first1, InIter1 last1, InIter2 first2, Func f)
-	{
-		for(; first1 != last1; first1++, first2++)
-			f(*first1, *first2);
-		return f;
-	}
-
-	template <typename InIter, typename OutIter> inline
-	OutIter copy(InIter first, InIter last, OutIter result)
-	{
-		return detail::copy(first, last, result, *result);
-	}
-	
-	template <typename BidiIter1, typename BidiIter2> inline
-	BidiIter2 copy_backward(BidiIter1 first, BidiIter1 last, BidiIter2 result)
-	{
-		return detail::copy_backward(first, last, result, *result);
-	}
-
-	template <typename RandIter> inline
-	void sort(RandIter first, RandIter last)
-	{
-		int n = last - first;
-		if (n > 0)
-			detail::quicksort(first, 0, n - 1);
-	}
-
-	template <typename RandIter, typename Compare> inline
-	void sort(RandIter first, RandIter last, Compare comp)
-	{
-		int n = last - first;
-		if (n > 0)
-			detail::quicksort(first, 0, n - 1, comp);
-	}
-
 	template <typename T>
 	class bresenham_counter
 	{
@@ -240,40 +188,4 @@ namespace neolib
 		T incrCounterPlus1;
 		T counter;
 	};
-
-	template <typename T> inline
-	void swap(T& a, T& b)
-	{
-		T x = a;
-		a = b;
-		b = x;
-	}
-
-	#undef min
-	template <typename T> inline
-	const T& min(const T& a, const T& b)
-	{
-		return a < b ? a : b;
-	}
-
-	#undef max
-	template <typename T> inline
-	const T& max(const T& a, const T& b)
-	{
-		return a > b ? a : b;
-	}
-
-	template <typename FwdIter, typename T>
-	FwdIter binary_find(FwdIter first, FwdIter last, const T& value)
-	{
-		FwdIter it = std::lower_bound(first, last, value);
-		return it == last || value < *it ? last : it;
-	}
-
-	template <typename FwdIter, typename T, typename Compare>
-	FwdIter binary_find(FwdIter first, FwdIter last, const T& value, Compare comp)
-	{
-		FwdIter it = std::lower_bound(first, last, value, comp);
-		return it == last || comp(value, *it) ? last : it;
-	}
 }

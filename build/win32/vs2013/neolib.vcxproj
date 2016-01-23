@@ -101,7 +101,7 @@
     <ClCompile Include="..\..\..\src\zip.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\include\neolib\algorithm.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\bresenham_counter.hpp" />
     <ClInclude Include="..\..\..\include\neolib\align.hpp" />
     <ClInclude Include="..\..\..\include\neolib\any.hpp" />
     <ClInclude Include="..\..\..\include\neolib\any_iterator.hpp" />
@@ -120,7 +120,6 @@
     <ClInclude Include="..\..\..\include\neolib\custom_type.hpp" />
     <ClInclude Include="..\..\..\include\neolib\data_packet.hpp" />
     <ClInclude Include="..\..\..\include\neolib\destroyable.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\detail_algorithm.hpp" />
     <ClInclude Include="..\..\..\include\neolib\detail_memory.hpp" />
     <ClInclude Include="..\..\..\include\neolib\event.hpp" />
     <ClInclude Include="..\..\..\include\neolib\file.hpp" />
