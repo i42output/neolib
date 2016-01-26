@@ -166,7 +166,7 @@ namespace neolib
 		typedef const slot_interface* slot_pointer;
 		typedef std::function<Function> function_type;
 		typedef std::map<slot_pointer, function_type> slot_list;
-		typedef std::auto_ptr<slot_list> slot_list_pointer;
+		typedef std::unique_ptr<slot_list> slot_list_pointer;
 		typedef std::vector<typename slot_list::const_iterator> notification_list;
 		typedef std::deque<std::pair<bool*, notification_list> > notification_list_list;
 		// construction
@@ -678,7 +678,7 @@ namespace neolib
 		typedef const slot_interface* slot_pointer;
 		typedef std::function<Function> function_type;
 		typedef std::map<std::pair<Key, slot_pointer>, function_type> slot_list;
-		typedef std::auto_ptr<slot_list> slot_list_pointer;
+		typedef std::unique_ptr<slot_list> slot_list_pointer;
 		typedef std::vector<typename slot_list::const_iterator> notification_list;
 		typedef std::deque<std::pair<bool*, notification_list> > notification_list_list;
 		// construction

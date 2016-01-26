@@ -46,7 +46,7 @@ namespace neolib
 	{
 		// types
 	private:
-		typedef std::auto_ptr<os_module> os_module_ptr;
+		typedef std::unique_ptr<os_module> os_module_ptr;
 		// construction
 	public:
 		module();

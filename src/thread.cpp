@@ -80,8 +80,7 @@ namespace neolib
 			iState = Starting;
 			if (!iUsingExistingThread)
 			{
-				thread_object_pointer newThread(new boost::thread(boost::bind(&thread::entry_point, this)));
-				iThreadObject = newThread;
+				iThreadObject = std::make_unique<boost::thread>(boost::bind(&thread::entry_point, this));
 				unlock();
 			}
 			else

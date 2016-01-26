@@ -92,10 +92,10 @@ namespace neolib
 		iOsModule.reset();
 		if (iPath.empty())
 			return false;
-		os_module_ptr osModule(new os_module(iPath));
+		os_module_ptr osModule = std::make_unique<os_module>(iPath);
 		if (!osModule->loaded())
 			return false;
-		iOsModule = osModule;
+		iOsModule = std::move(osModule);
 		return true;
 	}
 

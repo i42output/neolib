@@ -52,7 +52,7 @@ namespace neolib
 		typedef std::size_t size_type;
 		typedef const_pointer const_iterator;
 		typedef pointer iterator;
-		typedef std::auto_ptr<i_basic_packet> clone_pointer;
+		typedef std::unique_ptr<i_basic_packet> clone_pointer;
 		// exceptions
 	public:
 		struct packet_empty : std::logic_error { packet_empty() : std::logic_error("neolib::i_basic_packet::packet_empty") {} };

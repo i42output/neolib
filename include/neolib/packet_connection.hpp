@@ -93,7 +93,7 @@ namespace neolib
 		typedef std::shared_ptr<secure_stream_type> secure_stream_pointer;
 		typedef neolib::variant<socket_pointer, secure_stream_pointer> socket_holder_type;
 		typedef boost::asio::ssl::context secure_stream_context;
-		typedef std::auto_ptr<secure_stream_context> secure_stream_context_pointer;
+		typedef std::unique_ptr<secure_stream_context> secure_stream_context_pointer;
 		typedef typename protocol_type::endpoint endpoint_type;
 		typedef typename protocol_type::resolver resolver_type;
 		typedef std::array<char, ReceiveBufferSize * sizeof(CharType)> receive_buffer;

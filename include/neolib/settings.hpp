@@ -244,7 +244,7 @@ namespace neolib
 		string iFileName;
 		i_setting::id_type iNextSettingId;
 		auto_ref<i_custom_type_factory> iCustomSettingTypeFactory;
-		mutable std::auto_ptr<xml> iStore;
+		mutable std::unique_ptr<xml> iStore;
 		setting_list iSettings;
 		setting_by_name_list iSettingsByName;
 	};

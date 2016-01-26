@@ -887,7 +887,7 @@ namespace neolib
 	public:
 		using base::insert;
 		template <typename U>
-		iterator insert(const_iterator position, std::auto_ptr<U> value)
+		iterator insert(const_iterator position, std::unique_ptr<U> value)
 		{
 			iterator result = base::insert(position, value.get());
 			value.release();
@@ -895,14 +895,14 @@ namespace neolib
 		}
 		using base::append;
 		template <typename U>
-		iterator append(std::auto_ptr<U> value)
+		iterator append(std::unique_ptr<U> value)
 		{
 			iterator result = base::append(value.get());
 			value.release();
 			return result;
 		}
 		template <typename U>
-		iterator append(const_iterator parent, std::auto_ptr<U> value)
+		iterator append(const_iterator parent, std::unique_ptr<U> value)
 		{
 			iterator result = base::append(parent, value.get());
 			value.release();
@@ -910,26 +910,26 @@ namespace neolib
 		}
 		using base::push_front;
 		template <typename U>
-		void push_front(std::auto_ptr<U> value)
+		void push_front(std::unique_ptr<U> value)
 		{
 			base::push_front(value.get());
 			value.release();
 		}
 		template <typename U>
-		void push_front(const_iterator parent, std::auto_ptr<U> value)
+		void push_front(const_iterator parent, std::unique_ptr<U> value)
 		{
 			base::push_front(parent, value.get());
 			value.release();
 		}
 		using base::push_back;
 		template <typename U>
-		void push_back(std::auto_ptr<U> value)
+		void push_back(std::unique_ptr<U> value)
 		{
 			base::push_back(value.get());
 			value.release();
 		}
 		template <typename U>
-		void push_back(const_iterator parent, std::auto_ptr<U> value)
+		void push_back(const_iterator parent, std::unique_ptr<U> value)
 		{
 			base::push_back(parent, value.get());
 			value.release();

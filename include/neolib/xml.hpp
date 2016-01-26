@@ -174,13 +174,13 @@ namespace neolib
 		// modifiers
 		void push_back(node_ptr aNode)
 		{
-			std::auto_ptr<node> newNode(aNode);
+			std::std::unique_ptr<node> newNode(aNode);
 			iContent.push_back(0);
 			iContent.back() = newNode.release();
 		}
 		iterator insert(iterator aIterator, node_ptr aNode)
 		{
-			std::auto_ptr<node> newNode(aNode);
+			std::std::unique_ptr<node> newNode(aNode);
 			typename node_list::iterator i = iContent.insert(aIterator.base(), 0);
 			*i = newNode.release();
 			return iterator(*this, i);

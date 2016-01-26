@@ -60,7 +60,7 @@ namespace neolib
 		struct no_thread_object : public std::logic_error { no_thread_object() : std::logic_error("neolib::thread::no_thread_object") {} };
 		struct not_in_thread : public std::logic_error { not_in_thread() : std::logic_error("neolib::thread::not_in_thread") {} };
 	private:
-		typedef std::auto_ptr<thread_object_type> thread_object_pointer;
+		typedef std::unique_ptr<thread_object_type> thread_object_pointer;
 		enum state_e { ReadyToStart, Starting, Started, Finished, Aborted, Cancelled, Error };
 		struct cancellation {};
 		// construction

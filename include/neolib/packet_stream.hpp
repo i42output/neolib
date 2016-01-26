@@ -90,7 +90,7 @@ namespace neolib
 	public:
 		typedef PacketType packet_type;
 		typedef Protocol protocol_type;
-		typedef std::auto_ptr<packet_stream> pointer;
+		typedef std::unique_ptr<packet_stream> pointer;
 		typedef i_basic_packet<typename packet_type::character_type> generic_packet_type;
 		typedef typename packet_type::clone_pointer packet_clone_pointer;
 		typedef i_packet_stream_observer<packet_type, protocol_type> observer_type;
