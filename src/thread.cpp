@@ -287,6 +287,11 @@ namespace neolib
 		boost::this_thread::sleep(boost::posix_time::milliseconds(aDelayInMilleseconds));
 	}
 
+	void thread::yield()
+	{
+		boost::this_thread::yield();
+	}
+
 	uint64_t thread::elapsed_ms()
 	{
 		using namespace boost::chrono;

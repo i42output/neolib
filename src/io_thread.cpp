@@ -68,7 +68,7 @@ namespace neolib
 		return didSome;
 	}
 
-	bool io_thread::do_io(bool aYieldIfNoWork)
+	bool io_thread::do_io(yield_type aYieldIfNoWork)
 	{
 		if (iHalted)
 			return false;
@@ -76,11 +76,14 @@ namespace neolib
 		didSome = (iTimerIoService.do_io(false) || didSome);
 		didSome = (iNetworkingIoService.do_io(false) || didSome);
 		didSome = (process_events() || didSome);
-		if (!didSome && aYieldIfNoWork)
+		if (!didSome && aYieldIfNoWork != yield_type::NoYield)
 		{
 			if (have_message_queue())
 				message_queue().idle();
-			sleep(1);
+			if (aYieldIfNoWork == yield_type::Yield)
+				yield();
+			else if (aYieldIfNoWork == yield_type::Sleep)
+				sleep(1);
 		}
 		return didSome;
 	}
@@ -98,7 +101,7 @@ namespace neolib
 	void io_thread::create_message_queue(std::function<bool()> aIdleFunction)
 	{
 		#ifdef _WIN32
-		iMessageQueue = message_queue_pointer(new win32_message_queue(*this, aIdleFunction));
+		iMessageQueue = std::make_unique<win32_message_queue>(*this, aIdleFunction);
 		#endif
 	}
 
@@ -147,7 +150,7 @@ namespace neolib
 	void io_thread::task()
 	{
 		while(!finished())
-			do_io();
+			do_io(yield_type::Sleep);
 	}
 
 } // namespace neolib

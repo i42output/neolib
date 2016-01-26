@@ -92,6 +92,7 @@ namespace neolib
 		bool has_thread_object() const;
 		thread_object_type& thread_object() const;
 		static void sleep(uint32_t aDelayInMilleseconds);
+		static void yield();
 		static uint64_t elapsed_ms();
 		static uint64_t program_elapsed_ms();
 		// implementation

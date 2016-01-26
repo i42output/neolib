@@ -61,19 +61,27 @@ namespace neolib
 		native_io_service_type iNativeIoService;
 	};
 
+	enum class yield_type
+	{
+		NoYield,
+		Yield,
+		Sleep
+	};
+
 	class io_thread : public thread
 	{
 		// types
+	private:
+		typedef std::unique_ptr<neolib::message_queue> message_queue_pointer;
+		// exceptions
 	public:
 		struct no_message_queue : std::logic_error { no_message_queue() : std::logic_error("neolib::io_thread::no_message_queue") {} };
-	private:
-		typedef std::auto_ptr<neolib::message_queue> message_queue_pointer;
 		// construction
 	public:
 		io_thread(const std::string& aName = "", bool aAttachToCurrentThread = false);
 		// operations
 	public:
-		bool do_io(bool aYieldIfNoWork = true);
+		bool do_io(yield_type aYieldIfNoWork = yield_type::NoYield);
 		io_service& timer_io_service() { return iTimerIoService; }
 		io_service& networking_io_service() { return iNetworkingIoService; }
 		bool have_message_queue() const;
