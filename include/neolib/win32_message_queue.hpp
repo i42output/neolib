@@ -57,9 +57,7 @@ namespace neolib
 	private:
 		io_thread& iIoThread;
 		std::function<bool()> iIdleFunction;
-		mutable bool iInGetMessage;
 		static std::map<UINT_PTR, win32_message_queue*> sTimerMap;
 		UINT_PTR iTimer;
-		bool iInTimerProc;
 	};
 }

@@ -5,11 +5,11 @@ namespace neolib
 {
 	namespace
 	{
-		struct scoped_flag
+		struct scoped_counter
 		{
-			bool& iFlag;
-			scoped_flag(bool& aFlag) : iFlag(aFlag) { iFlag = true; }
-			~scoped_flag() { iFlag = false; }
+			uint32_t& iCounter;
+			scoped_counter(uint32_t& aCounter) : iCounter(aCounter) { ++iCounter; }
+			~scoped_counter() { --iCounter; }
 		};
 	}
 
@@ -17,9 +17,7 @@ namespace neolib
 
 	win32_message_queue::win32_message_queue(io_thread& aIoThread, std::function<bool()> aIdleFunction, bool aCreateTimer) :
 		iIoThread(aIoThread),
-		iIdleFunction(aIdleFunction),
-		iInGetMessage(false),
-		iInTimerProc(false)
+		iIdleFunction(aIdleFunction)
 	{
 		if (aCreateTimer)
 		{
@@ -41,7 +39,6 @@ namespace neolib
 
 	int win32_message_queue::get_message() const
 	{
-		scoped_flag sf(iInGetMessage);
 		MSG msg;
 		int result;
 		if ((result = ::GetMessage(&msg, NULL, 0, 0)))
@@ -69,9 +66,6 @@ namespace neolib
 	void CALLBACK win32_message_queue::timer_proc(HWND, UINT, UINT_PTR aId, DWORD)
 	{
 		win32_message_queue& instance = *sTimerMap[aId];
-		if (!instance.iInGetMessage || instance.iInTimerProc)
-			return;
-		scoped_flag sf(instance.iInTimerProc);
 		instance.idle();
 	}
 }

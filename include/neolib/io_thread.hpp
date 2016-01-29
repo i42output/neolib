@@ -89,8 +89,7 @@ namespace neolib
 		void create_message_queue(std::function<bool()> aIdleFunction = std::function<bool()>());
 		const neolib::message_queue& message_queue() const;
 		neolib::message_queue& message_queue();
-		bool process_events();
-		void set_event_processor(std::function<bool()> aEventProcessor);
+		bool pump_messages();
 		bool halted() const;
 		void halt();
 		// implementation
@@ -101,7 +100,6 @@ namespace neolib
 		io_service iTimerIoService;
 		io_service iNetworkingIoService;
 		message_queue_pointer iMessageQueue;
-		std::function<bool()> iEventProcessor;
 		bool iHalted;
 	};
 }

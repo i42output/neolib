@@ -59,7 +59,7 @@ namespace neolib
 		{
 			bool didSomeThisIteration = false;
 			if (aProcessEvents)
-				didSomeThisIteration = (iThread.process_events() || didSomeThisIteration);
+				didSomeThisIteration = (iThread.pump_messages() || didSomeThisIteration);
 			didSomeThisIteration = (iNativeIoService.poll_one() != 0 || didSomeThisIteration);
 			if (!didSomeThisIteration)
 				break;
@@ -75,11 +75,9 @@ namespace neolib
 		bool didSome = false;
 		didSome = (iTimerIoService.do_io(false) || didSome);
 		didSome = (iNetworkingIoService.do_io(false) || didSome);
-		didSome = (process_events() || didSome);
+		didSome = (pump_messages() || didSome);
 		if (!didSome && aYieldIfNoWork != yield_type::NoYield)
 		{
-			if (have_message_queue())
-				message_queue().idle();
 			if (aYieldIfNoWork == yield_type::Yield)
 				yield();
 			else if (aYieldIfNoWork == yield_type::Sleep)
@@ -119,7 +117,7 @@ namespace neolib
 		return *iMessageQueue;
 	}
 
-	bool io_thread::process_events()
+	bool io_thread::pump_messages()
 	{
 		bool didWork = false;
 		while (have_messages())
@@ -127,14 +125,7 @@ namespace neolib
 			message_queue().get_message();
 			didWork = true;
 		}
-		if (iEventProcessor)
-			didWork = iEventProcessor() || didWork;
 		return didWork;
-	}
-
-	void io_thread::set_event_processor(std::function<bool()> aEventProcessor)
-	{
-		iEventProcessor = aEventProcessor;
 	}
 
 	bool io_thread::halted() const
