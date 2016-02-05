@@ -1,6 +1,6 @@
 // win32_module.cpp
 /*
- *  Copyright (c) 2012=2016 Leigh Johnston.
+ *  Copyright (c) 2012-2016 Leigh Johnston.
  *
  *  All rights reserved.
  *
