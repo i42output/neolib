@@ -38,10 +38,12 @@
 #include "neolib.hpp"
 #include <string>
 #include <memory>
+#ifdef _WIN32
+#include "win32_module.hpp"
+#endif 
 
 namespace neolib
 {
-	class os_module;
 	class module
 	{
 		// types
@@ -59,7 +61,12 @@ namespace neolib
 		bool load();
 		void unload();
 		bool loaded() const;
-		void* procedure(const std::string& aProcedureName);
+		void* procedure_address(const std::string& aProcedureName);
+		template <typename FunctionType>
+		FunctionType& procedure(const std::string& aProcedureName)
+		{
+			return *reinterpret_cast<FunctionType*>(procedure_address(aProcedureName));
+		}
 		// attributes
 	private:
 		std::string iPath;

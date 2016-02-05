@@ -35,52 +35,50 @@
 
 #include "neolib.hpp"
 #include "file.hpp"
-#include "module.hpp"
+#include "win32_module.hpp"
 
 namespace neolib
 {
-	module::module()
-	{
+	win32_module::win32_module(const std::string& aPath) : 
+		iHandle(NULL) 
+	{ 
+		load(aPath); 
 	}
 
-	module::module(const module& aOther) : iPath(aOther.iPath), iOsModule(aOther.loaded() ? new os_module(iPath) : 0)
-	{
-	}
-	
-	module::module(const std::string& aPath) : iPath(aPath), iOsModule(new os_module(iPath))
-	{
+	win32_module::~win32_module() 
+	{ 
+		unload(); 
 	}
 
-	module::~module()
-	{
+	bool win32_module::load(const std::string& aPath)
+	{ 
+		try
+		{
+			iHandle = ::LoadLibrary(neolib::convert_path(aPath).c_str());
+		}
+		catch (const std::exception& e)
+		{
+			throw std::runtime_error("neolib::win32_module: Failed to load module '" + aPath + "', reason: " + e.what());
+		}
+		catch (...)
+		{
+			throw std::runtime_error("neolib::win32_module: Failed to load module '" + aPath + "', unknown reason");
+		}
+		return loaded(); 
 	}
 
-	bool module::load()
-	{
-		iOsModule.reset();
-		if (iPath.empty())
-			return false;
-		os_module_ptr osModule = std::make_unique<os_module>(iPath);
-		if (!osModule->loaded())
-			return false;
-		iOsModule = std::move(osModule);
-		return true;
+	void win32_module::unload() 
+	{ 
+		::FreeLibrary(iHandle); iHandle = NULL; 
 	}
 
-	void module::unload()
-	{
-		iOsModule.reset();
+	bool win32_module::loaded() const 
+	{ 
+		return iHandle != NULL; 
 	}
 
-	bool module::loaded() const
-	{
-		return iOsModule.get() != 0;
-	}
-
-	void* module::procedure_address(const std::string& aProcedureName)
-	{
-		if (!loaded())
-			return 0;
-		return iOsModule->procedure_address(aProcedureName);
+	void* win32_module::procedure_address(const std::string& aProcedureName)
+	{ 
+		return ::GetProcAddress(iHandle, aProcedureName.c_str()); 
 	}
 }
