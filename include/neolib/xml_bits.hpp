@@ -1,6 +1,6 @@
 // xml_bits.hpp
 /*
- *  NoFussXML v5.3.2
+ *  NoFussXML v5.3.3
  *
  *  Copyright (c) 2014 Leigh Johnston.
  *
@@ -432,6 +432,16 @@ namespace neolib
 	{
 		for (std::size_t entityIndex = 0; entityIndex < predefined_entities<CharT>::PredefinedEntityCount; ++entityIndex)
 			iEntities.push_back(predefined_entities<CharT>::sPredefinedEntities[entityIndex]);
+	}
+
+	template <typename CharT, typename Alloc>
+	basic_xml<CharT, Alloc>::basic_xml(const std::string& aPath, bool aStripWhitespace) :
+		endl(std::endl), iError(false), iIndentChar(characters<CharT>::sTabChar), iIndentCount(1), iStripWhitespace(aStripWhitespace)
+	{
+		for (std::size_t entityIndex = 0; entityIndex < predefined_entities<CharT>::PredefinedEntityCount; ++entityIndex)
+			iEntities.push_back(predefined_entities<CharT>::sPredefinedEntities[entityIndex]);
+		std::ifstream input(aPath);
+		read(input);
 	}
 
 	template <typename CharT, typename Alloc>
