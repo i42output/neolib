@@ -101,15 +101,15 @@ namespace neolib
 			{
 			case 0:
 				return Empty;
-			case variant_type_id<variant_type, bool>::value:
+			case type_id<bool>::value:
 				return Boolean;
-			case variant_type_id<variant_type, int64_t>::value:
+			case type_id<int64_t>::value:
 				return Integer;
-			case variant_type_id<variant_type, double>::value:
+			case type_id<double>::value:
 				return Real;
-			case variant_type_id<variant_type, string>::value:
+			case type_id<string>::value:
 				return String;
-			case variant_type_id<variant_type, auto_ref<i_custom_type>>::value:
+			case type_id<auto_ref<i_custom_type>>::value:
 				return CustomType;
 			default:
 				throw unknown_type();

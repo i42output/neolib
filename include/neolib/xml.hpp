@@ -414,9 +414,8 @@ namespace neolib
 	template <typename CharT, typename Alloc = std::allocator<CharT> >
 	class basic_xml
 	{
-	public:
 		// types
-		struct error_no_root : std::exception {};
+	public:
 		typedef Alloc allocator_type;
 		typedef xml_node<CharT, allocator_type> node;
 		typedef typename node::string string;
@@ -432,13 +431,18 @@ namespace neolib
 		typedef std::pair<string, string> entity;
 		typedef std::list<entity, typename allocator_type::template rebind<entity>::other> entity_list;
 
+		// exceptions
 	public:
+		struct error_no_root : std::runtime_error { error_no_root() : std::runtime_error("neolib::basic_xml::error_no_root") {} };
+		struct failed_to_open_file : std::runtime_error { failed_to_open_file() : std::runtime_error("neolib::basic_xml::failed_to_open_file") {} };
+
 		// construction
+	public:
 		basic_xml(bool aStripWhitespace = false);
 		basic_xml(const std::string& aPath, bool aStripWhitespace = false);
 
-	public:
 		// operations
+	public:
 		void clear();
 		const node& document() const;
 		node& document();
@@ -457,8 +461,8 @@ namespace neolib
 		void set_indent(CharT aIndentChar, std::size_t aIndentCount = 1);
 		void set_strip_whitespace(bool aStripWhitespace);
 
-	private:
 		// implementation
+	private:
 		struct tag : std::pair<typename string::const_iterator, typename string::const_iterator>
 		{
 			typename node::type_e iType;
@@ -507,8 +511,9 @@ namespace neolib
 		void strip(string& aString) const;
 		void strip_if(string& aString) const;
 		token next_token(const basic_character_map<CharT>& aDelimeters, bool aIgnoreWhitespace, typename string::const_iterator aCurrent, typename string::const_iterator aEnd) const;
-	private:
+
 		// attributes
+	private:
 		std::basic_ostream<CharT>& (&endl)(std::basic_ostream<CharT>&);
 		mutable bool iError;
 		node iDocument;

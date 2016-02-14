@@ -79,6 +79,39 @@ namespace neolib
 		typedef T21 type_21; typedef T22 type_22; typedef T23 type_23; typedef T24 type_24; typedef T25 type_25; 
 		typedef T26 type_26; typedef T27 type_27; typedef T28 type_28; typedef T29 type_29; typedef T30 type_30;
 
+		template <typename T> struct type_id;
+		template <> struct type_id<boost::blank> { static const int value = 0; };
+		template <> struct type_id<type_1> { static const int value = 1; };
+		template <> struct type_id<type_2> { static const int value = 2; };
+		template <> struct type_id<type_3> { static const int value = 3; };
+		template <> struct type_id<type_4> { static const int value = 4; };
+		template <> struct type_id<type_5> { static const int value = 5; };
+		template <> struct type_id<type_6> { static const int value = 6; };
+		template <> struct type_id<type_7> { static const int value = 7; };
+		template <> struct type_id<type_8> { static const int value = 8; };
+		template <> struct type_id<type_9> { static const int value = 9; };
+		template <> struct type_id<type_10> { static const int value = 10; };
+		template <> struct type_id<type_11> { static const int value = 11; };
+		template <> struct type_id<type_12> { static const int value = 12; };
+		template <> struct type_id<type_13> { static const int value = 13; };
+		template <> struct type_id<type_14> { static const int value = 14; };
+		template <> struct type_id<type_15> { static const int value = 15; };
+		template <> struct type_id<type_16> { static const int value = 16; };
+		template <> struct type_id<type_17> { static const int value = 17; };
+		template <> struct type_id<type_18> { static const int value = 18; };
+		template <> struct type_id<type_19> { static const int value = 19; };
+		template <> struct type_id<type_20> { static const int value = 20; };
+		template <> struct type_id<type_21> { static const int value = 21; };
+		template <> struct type_id<type_22> { static const int value = 22; };
+		template <> struct type_id<type_23> { static const int value = 23; };
+		template <> struct type_id<type_24> { static const int value = 24; };
+		template <> struct type_id<type_25> { static const int value = 25; };
+		template <> struct type_id<type_26> { static const int value = 26; };
+		template <> struct type_id<type_27> { static const int value = 27; };
+		template <> struct type_id<type_28> { static const int value = 28; };
+		template <> struct type_id<type_29> { static const int value = 29; };
+		template <> struct type_id<type_30> { static const int value = 30; };
+
 		// construction
 	public:
 		variant()
@@ -109,7 +142,7 @@ namespace neolib
 		template <typename T>
 		bool is() const
 		{
-			return iContents.type() == typeid(T);
+			return iContents.which() == type_id<T>::value;
 		}
 		int which() const
 		{
@@ -281,189 +314,6 @@ namespace neolib
 	{ 
 		return *static_cast<const typename std::remove_reference<T>::type*>(aVariant.address());
 	}
-
-	template <typename Variant, typename T>
-	struct variant_type_id;
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_1>
-	{
-		static const int value = 1;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_2>
-	{
-		static const int value = 2;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_3>
-	{
-		static const int value = 3;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_4>
-	{
-		static const int value = 4;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_5>
-	{
-		static const int value = 5;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_6>
-	{
-		static const int value = 6;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_7>
-	{
-		static const int value = 7;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_8>
-	{
-		static const int value = 8;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_9>
-	{
-		static const int value = 9;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_10>
-	{
-		static const int value = 10;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_11>
-	{
-		static const int value = 11;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_12>
-	{
-		static const int value = 12;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_13>
-	{
-		static const int value = 13;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_14>
-	{
-		static const int value = 14;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_15>
-	{
-		static const int value = 15;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_16>
-	{
-		static const int value = 16;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_17>
-	{
-		static const int value = 17;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_18>
-	{
-		static const int value = 18;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_19>
-	{
-		static const int value = 19;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_20>
-	{
-		static const int value = 20;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_21>
-	{
-		static const int value = 21;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_22>
-	{
-		static const int value = 22;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_23>
-	{
-		static const int value = 23;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_24>
-	{
-		static const int value = 24;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_25>
-	{
-		static const int value = 25;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_26>
-	{
-		static const int value = 26;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_27>
-	{
-		static const int value = 27;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_28>
-	{
-		static const int value = 28;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_29>
-	{
-		static const int value = 29;
-	};
-
-	template <typename Variant>
-	struct variant_type_id<Variant, typename Variant::type_30>
-	{
-		static const int value = 30;
-	};
 }
 
 using neolib::static_variant_cast;

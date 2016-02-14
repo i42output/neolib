@@ -441,6 +441,8 @@ namespace neolib
 		for (std::size_t entityIndex = 0; entityIndex < predefined_entities<CharT>::PredefinedEntityCount; ++entityIndex)
 			iEntities.push_back(predefined_entities<CharT>::sPredefinedEntities[entityIndex]);
 		std::ifstream input(aPath);
+		if (!input)
+			throw failed_to_open_file();
 		read(input);
 	}
 

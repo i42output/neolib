@@ -3,16 +3,6 @@
 
 namespace neolib
 {
-	namespace
-	{
-		struct scoped_counter
-		{
-			uint32_t& iCounter;
-			scoped_counter(uint32_t& aCounter) : iCounter(aCounter) { ++iCounter; }
-			~scoped_counter() { --iCounter; }
-		};
-	}
-
 	std::map<UINT_PTR, win32_message_queue*> win32_message_queue::sTimerMap;
 
 	win32_message_queue::win32_message_queue(io_thread& aIoThread, std::function<bool()> aIdleFunction, bool aCreateTimer) :
