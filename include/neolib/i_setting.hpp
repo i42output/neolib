@@ -37,7 +37,6 @@
 
 #include "neolib.hpp"
 #include "i_reference_counted.hpp"
-#include "i_vector.hpp"
 #include "i_string.hpp"
 #include "i_simple_variant.hpp"
 
