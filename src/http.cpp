@@ -118,7 +118,7 @@ namespace neolib
 		if (bits.size() >= 2)
 		{
 			std::string headerName(bits[0].first, bits[0].second);
-			std::string headerValue(bits[1].first, iResponseLine.end());
+			std::string headerValue(bits[1].first, aHeaderLine.end());
 			if (iResponseHeaders.find(make_ci_string(headerName)) == iResponseHeaders.end())
 				iResponseHeaders[make_ci_string(headerName)] = neolib::remove_leading(headerValue, std::string(" "));
 			else

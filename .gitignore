@@ -6,3 +6,5 @@
 /lib/neolibd.lib
 /build/win32/vs2015/neolib.v12.suo
 /build/win32/vs2015/neolib.sdf
+/build/win32/vs2015/Debug
+/build/win32/vs2015/Release
