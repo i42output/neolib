@@ -55,7 +55,7 @@ namespace neolib
 		struct timer_destroyed : std::logic_error { timer_destroyed() : std::logic_error("neolib::timer::timer_destroyed") {} };
 		// construction
 	public:
-		timer(io_thread& aOwnerThread, uint32_t aDuration_ms = 10, bool aInitialWait = true);
+		timer(io_thread& aOwnerThread, uint32_t aDuration_ms, bool aInitialWait = true);
 		timer(const timer& aOther);
 		timer& operator=(const timer& aOther);
 		virtual ~timer();
@@ -94,7 +94,7 @@ namespace neolib
 	class callback_timer : public timer
 	{
 	public:
-		callback_timer(io_thread& aOwnerThread, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms = 10, bool aInitialWait = true);
+		callback_timer(io_thread& aOwnerThread, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true);
 		~callback_timer();
 	private:
 		virtual void ready();

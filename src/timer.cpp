@@ -38,7 +38,7 @@
 
 namespace neolib
 {
-	timer::timer(io_thread& aOwnerThread, uint32_t aDuration_ms, bool aInitialWait) : 
+	timer::timer(io_thread& aOwnerThread, uint32_t aDuration_ms, bool aInitialWait) :
 		iOwnerThread(aOwnerThread),
 		iTimerObject(aOwnerThread.timer_io_service().native_object()),
 		iDuration_ms(aDuration_ms), 

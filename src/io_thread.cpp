@@ -122,7 +122,11 @@ namespace neolib
 		bool didWork = false;
 		while (have_messages())
 		{
-			message_queue().get_message();
+			if (have_message_queue())
+			{
+				message_queue().get_message();
+				message_queue().idle();
+			}
 			didWork = true;
 		}
 		return didWork;
