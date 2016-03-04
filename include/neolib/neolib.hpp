@@ -51,6 +51,7 @@ using namespace std::placeholders;
 #define BOOST_BIND_NO_PLACEHOLDERS
 #define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
 #define BOOST_MPL_LIMIT_LIST_SIZE 40
+#define BOOST_ASIO_DISABLE_SMALL_BLOCK_RECYCLING
 
 #ifdef _WIN32
 #include "win32.hpp"
