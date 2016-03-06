@@ -95,7 +95,7 @@ namespace neolib
 		typedef typename packet_type::clone_pointer packet_clone_pointer;
 		typedef i_packet_stream_observer<packet_type, protocol_type> observer_type;
 		typedef basic_packet_connection<typename packet_type::character_type, Protocol> connection_type;
-		typedef packet_type* queue_item;
+		typedef std::unique_ptr<packet_type> queue_item;
 		typedef std::unique_ptr<packet_type> orphaned_queue_item;
 		typedef std::vector<queue_item> send_queue;
 		
@@ -133,9 +133,8 @@ namespace neolib
 		}
 		void send_packet(const packet_type& aPacket, bool aHighPriority = false)
 		{
-			orphaned_queue_item newPacket(new packet_type(aPacket));
-			iSendQueue.push_back(newPacket.get());
-			iConnection.send_packet(*newPacket.release(), aHighPriority);
+			iSendQueue.push_back(std::make_unique<packet_type>(aPacket));
+			iConnection.send_packet(*iSendQueue.back(), aHighPriority);
 		}
 		bool connected() const
 		{
@@ -232,9 +231,9 @@ namespace neolib
 		{
 			orphaned_queue_item removedPacket;
 			for (send_queue::iterator i = iSendQueue.begin(); i != iSendQueue.end(); ++i)
-				if (*i == &aPacket)
+				if (&**i == &aPacket)
 				{
-					removedPacket.reset(*i);
+					removedPacket = std::move(*i);
 					iSendQueue.erase(i);
 					return removedPacket;
 				}
@@ -242,11 +241,6 @@ namespace neolib
 		}
 		void remove_all_packets()
 		{
-			for (send_queue::iterator i = iSendQueue.begin(); i != iSendQueue.end(); ++i)
-			{
-				delete *i;
-				*i = 0;
-			}
 			iSendQueue.clear();
 		}
 		// attributes
