@@ -37,6 +37,7 @@
 #include <fstream>
 #include <string>
 #include <zlib/zlib.h>
+#include <boost/filesystem.hpp>
 #include "string_utils.hpp"
 #include "crc.hpp"
 #include "zip.hpp"
@@ -54,8 +55,7 @@ namespace neolib
 		}
 	}
 
-	template <typename CharT>
-	struct basic_zip<CharT>::local_header
+	struct zip::local_header
 	{
 		enum { Signature = 0x04034b50 };
 		dword iSignature;
@@ -71,8 +71,7 @@ namespace neolib
 		word iExtraLength;
 	};
 
-	template <typename CharT>
-	struct basic_zip<CharT>::dir_header
+	struct zip::dir_header
 	{
 		enum { Signature = 0x06054b50 };
 		dword iSignature;
@@ -85,8 +84,7 @@ namespace neolib
 		word iCommentLength;
 	};
 
-	template <typename CharT>
-	struct basic_zip<CharT>::dir_file_header
+	struct zip::dir_file_header
 	{
 		enum { Signature = 0x02014b50 };
 		dword iSignature;
@@ -110,20 +108,44 @@ namespace neolib
 
 	#pragma pack()
 
-	template <typename CharT>
-	basic_zip<CharT>::basic_zip(const buffer_t& aZipFile, const typename path_type& aTargetDirectory)  : iZipFile(aZipFile), iTargetDirectory(aTargetDirectory), iError(false)
+	zip::zip(const std::string& aZipFilePath) : iError(false)
+	{
+		auto fileSize = boost::filesystem::file_size(aZipFilePath);
+		if (fileSize > iZipFile.max_size())
+			throw zip_file_too_big();
+		iZipFile.resize(static_cast<std::size_t>(fileSize));
+		std::ifstream input(aZipFilePath, std::ios::binary | std::ios::in);
+		if (input.read(reinterpret_cast<char*>(&iZipFile[0]), iZipFile.size()))
+			parse();
+		else
+			iError = true;
+	}
+
+	zip::zip(const buffer_type& aZipFile) : iZipFile(aZipFile), iError(false)
 	{
 		parse();
 	}
 
-	template <typename CharT>
-	basic_zip<CharT>::basic_zip(const buffer_ptr_t& aZipFilePtr, const typename path_type& aTargetDirectory) : iZipFile(*aZipFilePtr), iZipFilePtr(aZipFilePtr), iTargetDirectory(aTargetDirectory), iError(false)
+	zip::zip(buffer_type&& aZipFile) : iZipFile(std::move(aZipFile)), iError(false)
 	{
 		parse();
 	}
 
-	template <typename CharT>
-	bool basic_zip<CharT>::extract(size_t aIndex)
+	bool zip::extract(size_t aIndex, const std::string& aTargetDirectory)
+	{
+		buffer_type data;
+		if (extract_to(aIndex, data))
+		{
+			std::ofstream out(aTargetDirectory + "/" + file_path(aIndex), std::ios::out | std::ios::binary);
+			out.write(reinterpret_cast<const char*>(&data[0]), data.size());
+			if (out)
+				return true;
+		}
+		iError = true;
+		return false;
+	}
+
+	bool zip::extract_to(size_t aIndex, buffer_type& aBuffer)
 	{
 		if (iError)
 			return false;
@@ -141,9 +163,9 @@ namespace neolib
 			iError = true;
 			return false;
 		}
-		const uint8_t* compressedData = reinterpret_cast<const uint8_t*>(lh+1) + lh->iFilenameLength + lh->iExtraLength;
+		const uint8_t* compressedData = reinterpret_cast<const uint8_t*>(lh + 1) + lh->iFilenameLength + lh->iExtraLength;
 		if (byte_cast(compressedData) < byte_cast(&iZipFile.front()) ||
-			byte_cast(compressedData) + lh->iCompressedSize -1 > byte_cast(&iZipFile.back()))
+			byte_cast(compressedData) + lh->iCompressedSize - 1 > byte_cast(&iZipFile.back()))
 		{
 			iError = true;
 			return false;
@@ -155,13 +177,8 @@ namespace neolib
 				iError = true;
 				return false;
 			}
-			std::ofstream out(file_path(aIndex).c_str(), std::ios::out|std::ios::binary);
-			if (!out)
-			{
-				iError = true;
-				return false;
-			}
-			out.write(reinterpret_cast<const char*>(compressedData), lh->iCompressedSize);
+			aBuffer.resize(lh->iCompressedSize);
+			std::copy(compressedData, compressedData + aBuffer.size(), &aBuffer[0]);
 			return true;
 		}
 		else if (lh->iCompression != Z_DEFLATED)
@@ -172,10 +189,9 @@ namespace neolib
 		z_stream stream;
 		stream.next_in = static_cast<Bytef*>(const_cast<uint8_t*>(compressedData));
 		stream.avail_in = static_cast<uInt>(lh->iCompressedSize);
-		std::vector<uint8_t> decompressedData;
-		decompressedData.resize(lh->iUncompressedSize);
-		stream.next_out = static_cast<Bytef*>(&decompressedData[0]);
-		stream.avail_out = decompressedData.size();
+		aBuffer.resize(lh->iUncompressedSize);
+		stream.next_out = static_cast<Bytef*>(&aBuffer[0]);
+		stream.avail_out = aBuffer.size();
 		stream.zalloc = static_cast<alloc_func>(0);
 		stream.zfree = static_cast<free_func>(0);
 		int result = inflateInit2(&stream, -MAX_WBITS);
@@ -192,45 +208,20 @@ namespace neolib
 			iError = true;
 			return false;
 		}
-		if (crc32(reinterpret_cast<const uint8_t*>(&decompressedData[0]), decompressedData.size()) != lh->iCrc32)
+		if (crc32(reinterpret_cast<const uint8_t*>(&aBuffer[0]), aBuffer.size()) != lh->iCrc32)
 		{
 			iError = true;
 			return false;
 		}
-		std::ofstream out(file_path(aIndex).c_str(), std::ios::out|std::ios::binary);
-		if (!out)
-		{
-			iError = true; 
-			return false;
-		}
-		out.write(reinterpret_cast<const char*>(&decompressedData[0]), decompressedData.size());
 		return true;
 	}
 
-	namespace
+	const std::string& zip::file_path(size_t aIndex) const
 	{
-		template <typename CharT>
-		struct path_dep
-		{
-			static const CharT* sSeparator;
-			static typename basic_zip<CharT>::path_type narrow_to_wide(const std::string& aNarrow) { return aNarrow; 	}
-		};
-		template <typename CharT>
-		const CharT* path_dep<CharT>::sSeparator = "/";
-		template <>
-		const wchar_t* path_dep<wchar_t>::sSeparator = L"/";
-		template <>
-		typename basic_zip<wchar_t>::path_type path_dep<wchar_t>::narrow_to_wide(const std::string& aNarrow) { return neolib::narrow_to_wide(aNarrow); }
+		return iFiles[aIndex];
 	}
 
-	template <typename CharT>
-	typename basic_zip<CharT>::path_type basic_zip<CharT>::file_path(size_t aIndex) const
-	{
-		return iTargetDirectory + path_dep<CharT>::sSeparator + iFiles[aIndex];
-	}
-
-	template <typename CharT>
-	bool basic_zip<CharT>::parse()
+	bool zip::parse()
 	{
 		if (iZipFile.size() < sizeof(dir_header))
 		{
@@ -267,13 +258,10 @@ namespace neolib
 				}
 				iDirEntries.push_back(fh);
 				std::string filename(reinterpret_cast<const char*>(fh + 1), fh->iFilenameLength);
-				iFiles.push_back(path_dep<CharT>::narrow_to_wide(filename));
+				iFiles.push_back(filename);
 				fh = reinterpret_cast<const dir_file_header*>(reinterpret_cast<const char*>(fh) + sizeof(*fh) + fh->iFilenameLength + fh->iExtraLength + fh->iCommentLength);
 			}
 		}
 		return true;
 	}
-
-	template class basic_zip<char>;
-	template class basic_zip<wchar_t>;
 }

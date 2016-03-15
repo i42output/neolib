@@ -41,27 +41,26 @@
 
 namespace neolib
 {
-	template <typename CharT = char>
-	class basic_zip
+	class zip
 	{
 	public:
-		typedef std::basic_string<CharT> path_type;
-		typedef std::vector<char> buffer_t;
-		typedef std::tr1::shared_ptr<buffer_t> buffer_ptr_t;
+		typedef std::vector<uint8_t> buffer_type;
 	public:
-		basic_zip(const buffer_t& aZipFile, const path_type& aTargetDirectory);
-		basic_zip(const buffer_ptr_t& aZipFilePtr, const path_type& aTargetDirectory);
+		struct zip_file_too_big : std::runtime_error { zip_file_too_big() : std::runtime_error("neolib::zip::zip_file_too_big") {} };
 	public:
-		size_t size() const { return iFiles.size(); }
-		bool extract(size_t aIndex);
-		path_type file_path(size_t aIndex) const;
+		zip(const std::string& aZipFilePath);
+		zip(const buffer_type& aZipFile);
+		zip(buffer_type&& aZipFile);
+	public:
+		size_t file_count() const { return iFiles.size(); }
+		bool extract(size_t aIndex, const std::string& aTargetDirectory);
+		bool extract_to(size_t aIndex, buffer_type& aBuffer);
+		const std::string& file_path(size_t aIndex) const;
 		bool ok() const { return !iError; }
 	private:
 		bool parse();
 	private:
-		const buffer_t& iZipFile;
-		buffer_ptr_t iZipFilePtr;
-		path_type iTargetDirectory;
+		buffer_type iZipFile;
 		bool iError;
 		struct dir_header;
 		struct dir_file_header;
@@ -70,9 +69,6 @@ namespace neolib
 		typedef unsigned short word;
 		typedef unsigned char byte;
 		std::vector<const dir_file_header*> iDirEntries;
-		std::vector<path_type> iFiles;
+		std::vector<std::string> iFiles;
 	};
-
-	typedef basic_zip<char> zip;
-	typedef basic_zip<wchar_t> wzip;
 }
