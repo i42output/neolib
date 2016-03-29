@@ -218,7 +218,10 @@ namespace neolib
 			{
 				iInReady = true;
 				neolib::destroyable::destroyed_flag destroyed(*this);
-				ready();
+				if (!std::uncaught_exception())
+					ready();
+				else
+					again();
 				if (destroyed)
 					return;
 				iInReady = false;

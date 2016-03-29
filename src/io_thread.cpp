@@ -57,6 +57,8 @@ namespace neolib
 		bool didSome = false;
 		while (iterationsLeft-- > 0)
 		{
+			if (iThread.halted())
+				return didSome;
 			bool didSomeThisIteration = false;
 			if (aProcessEvents)
 				didSomeThisIteration = (iThread.pump_messages() || didSomeThisIteration);
@@ -122,6 +124,8 @@ namespace neolib
 		bool didWork = false;
 		while (have_messages())
 		{
+			if (halted())
+				return didWork;
 			if (have_message_queue())
 			{
 				message_queue().get_message();
