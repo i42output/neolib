@@ -408,7 +408,11 @@ namespace neolib
 		typedef detail::vecarray_scalar_trait_impl<T, typename std::is_scalar<T>::type> scalar_trait;
 	public:
 		typedef typename scalar_trait::parameter_type parameter_type;
-	
+		template <std::size_t ArraySize, std::size_t MaxVectorSize>
+		struct is_fixed_size
+		{
+			constexpr bool value() const { return ArraySize == MaxVectorSize; }
+		};
 	private:
 		union
 		{
@@ -635,11 +639,23 @@ namespace neolib
 		}
 
 	private:
-		bool using_array() const
+		template <std::size_t ArraySize2 = ArraySize, std::size_t MaxVectorSize2 = MaxVectorSize>
+		constexpr typename std::enable_if<ArraySize2 == MaxVectorSize2, bool>::type using_array() const
+		{
+			return true;
+		}
+		template <std::size_t ArraySize2 = ArraySize, std::size_t MaxVectorSize2 = MaxVectorSize>
+		typename std::enable_if<ArraySize2 != MaxVectorSize2, bool>::type using_array() const
 		{
 			return iSize != USING_VECTOR;
 		}
-		bool using_vector() const
+		template <std::size_t ArraySize2 = ArraySize, std::size_t MaxVectorSize2 = MaxVectorSize>
+		constexpr typename std::enable_if<ArraySize2 == MaxVectorSize2, bool>::type using_vector() const
+		{
+			return false;
+		}
+		template <std::size_t ArraySize2 = ArraySize, std::size_t MaxVectorSize2 = MaxVectorSize>
+		typename std::enable_if<ArraySize2 != MaxVectorSize2, bool>::type using_vector() const
 		{
 			return iSize == USING_VECTOR;
 		}
