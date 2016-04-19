@@ -177,6 +177,7 @@
     <ClInclude Include="..\..\..\include\neolib\plugin_manager.hpp" />
     <ClInclude Include="..\..\..\include\neolib\queue.hpp" />
     <ClInclude Include="..\..\..\include\neolib\quick_string.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\raii.hpp" />
     <ClInclude Include="..\..\..\include\neolib\random.hpp" />
     <ClInclude Include="..\..\..\include\neolib\refable.hpp" />
     <ClInclude Include="..\..\..\include\neolib\reference_counted.hpp" />

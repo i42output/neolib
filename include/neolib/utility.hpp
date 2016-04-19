@@ -73,13 +73,4 @@ namespace neolib
 		template <typename U, typename V> minmax<T1, T2>& operator=(const minmax<U, V>& m) { first = m.first; second = m.second; return *this; }
 		minmax operator-() const { minmax ret(-second, -first); return ret; }
 	};
-
-	template<typename T>
-	struct exit_value
-	{
-		T& object;
-		T value;
-		exit_value(T& o, T v) : object(o), value(v) {}
-		~exit_value() { object = value; }
-	};
 }
