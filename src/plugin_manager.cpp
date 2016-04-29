@@ -52,7 +52,7 @@ namespace neolib
 		unload_plugins();
 	}
 
-	bool plugin_manager::discover(const uuid& aId, void*& aObject)
+	bool plugin_manager::discover(const uuid&, void*&)
 	{
 		return false;
 	}
@@ -87,10 +87,15 @@ namespace neolib
 
 	void plugin_manager::enable_plugin(i_plugin& aPlugin, bool aEnable)
 	{
+		/* todo */
+		(void)aPlugin;
+		(void)aEnable;
 	}
 
 	bool plugin_manager::plugin_enabled(const i_plugin& aPlugin) const
 	{
+		/* todo */
+		(void)aPlugin;
 		return true;
 	}
 
@@ -142,7 +147,7 @@ namespace neolib
 		remove_observer(aObserver);
 	}
 
-	void plugin_manager::notify_observer(observer_type& aObserver, notify_type aType, const void* aParameter, const void* aParameter2)
+	void plugin_manager::notify_observer(observer_type& aObserver, notify_type aType, const void* aParameter, const void*)
 	{
 		switch (aType)
 		{

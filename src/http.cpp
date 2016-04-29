@@ -182,8 +182,8 @@ namespace neolib
 				typedef std::vector<std::string> trailer_headers;
 				trailer_headers trailerHeaders;
 				neolib::tokens(i, encoded.end(), lineTerminator.begin(), lineTerminator.end(), trailerHeaders, 0, true, true);
-				for (trailer_headers::const_iterator i = trailerHeaders.begin(); i != trailerHeaders.end(); ++i)
-					add_response_header(*i);
+				for (trailer_headers::const_iterator j = trailerHeaders.begin(); j != trailerHeaders.end(); ++j)
+					add_response_header(*j);
 				return true;
 			}
 		}
@@ -256,7 +256,7 @@ namespace neolib
 			return iBody.size() * 100.0 / *iBodyLength;
 	}
 
-	void http::notify_observer(i_http_observer& aObserver, i_http_observer::notify_type aType, const void* aParameter, const void* aParameter2)
+	void http::notify_observer(i_http_observer& aObserver, i_http_observer::notify_type aType, const void*, const void*)
 	{
 		switch(aType)
 		{
@@ -286,7 +286,7 @@ namespace neolib
 		aStream.send_packet(http_packet(theRequest));
 	}
 
-	void http::connection_failure(packet_stream_type& aStream, const boost::system::error_code& aError)
+	void http::connection_failure(packet_stream_type& aStream, const boost::system::error_code&)
 	{
 		iBodyLength.reset();
 		iBody.clear();
@@ -294,11 +294,11 @@ namespace neolib
 		aStream.close();
 	}
 
-	void http::packet_sent(packet_stream_type& aStream, const http_packet& aPacket)
+	void http::packet_sent(packet_stream_type&, const http_packet&)
 	{
 	}
 
-	void http::packet_arrived(packet_stream_type& aStream, const http_packet& aPacket)
+	void http::packet_arrived(packet_stream_type&, const http_packet& aPacket)
 	{
 		for (http_packet::const_iterator i = aPacket.begin(); i != aPacket.end();)
 		{
@@ -355,7 +355,7 @@ namespace neolib
 		}
 	}
 
-	void http::transfer_failure(packet_stream_type& aStream, const boost::system::error_code& aError)
+	void http::transfer_failure(packet_stream_type& aStream, const boost::system::error_code&)
 	{
 		iBodyLength.reset();
 		iBody.clear();

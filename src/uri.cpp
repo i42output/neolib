@@ -46,6 +46,8 @@ namespace neolib
 
 	uri_authority::uri_authority(const std::string& aAuthority)
 	{
+		/* todo */
+		(void)aAuthority;
 	}
 	
 	const uri_authority::optional_user_information& uri_authority::user_information() const

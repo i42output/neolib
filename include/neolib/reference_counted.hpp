@@ -62,7 +62,7 @@ namespace neolib
 				if (*i != 0)
 					(*i)->object_being_destroyed(*this);
 		}
-		reference_counted& operator=(const reference_counted& aOther)
+		reference_counted& operator=(const reference_counted&)
 		{
 			// do nothing
 			return *this;

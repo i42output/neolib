@@ -172,7 +172,7 @@ namespace neolib
 		// implementation
 	private:
 		// from observable<i_packet_stream_observer<PacketType, Protocol> >
-		virtual void notify_observer(observer_type& aObserver, typename observer_type::notify_type aType, const void* aParameter, const void* aParameter2)
+		virtual void notify_observer(observer_type& aObserver, typename observer_type::notify_type aType, const void* aParameter, const void*)
 		{
 			switch(aType)
 			{

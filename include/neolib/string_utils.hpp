@@ -638,11 +638,11 @@ namespace neolib
 					}
 					else if (sequenceCheck && (nch & 0xC0) == 0x80)
 					{
-						int narrowChar = static_cast<int>(narrowString[narrowString.size()-1]);
+						int previousNarrowChar = static_cast<int>(narrowString[narrowString.size()-1]);
 						narrowString.erase(narrowString.size() - 1);
-						aCharacterMapUpdater(from, surrogatePair, narrowString, append_utf8(narrowString, static_cast<unicode_char_t>(btowc(narrowChar))));
+						aCharacterMapUpdater(from, surrogatePair, narrowString, append_utf8(narrowString, static_cast<unicode_char_t>(btowc(previousNarrowChar))));
 					}
-					narrowString.append(1, narrowChar);
+					narrowString.append(1, static_cast<char>(narrowChar));
 					aCharacterMapUpdater(from, surrogatePair, narrowString, 1);
 					continue;
 				}

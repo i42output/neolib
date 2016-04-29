@@ -129,8 +129,8 @@ namespace neolib
 
 		// implementation
 	protected:
-		virtual void notify_observer(const observer_type& aObserver, notify_type aType, const void* aParameter = 0, const void* aParameter2 = 0) const {};
-		virtual void notify_observer(observer_type& aObserver, notify_type aType, const void* aParameter = 0, const void* aParameter2 = 0) {};
+		virtual void notify_observer(const observer_type& aObserver, notify_type aType, const void* aParameter = 0, const void* aParameter2 = 0) const { /* default: do nothing. */ (void)aObserver; (void)aType; (void)aParameter; (void)aParameter2; };
+		virtual void notify_observer(observer_type& aObserver, notify_type aType, const void* aParameter = 0, const void* aParameter2 = 0) { /* default: do nothing. */ (void)aObserver; (void)aType; (void)aParameter; (void)aParameter2; };
 	private:
 		template <typename OurType>
 		static void do_notify_observers(OurType& aThis, notify_type aType, const void* aParameter = 0, const void* aParameter2 = 0)

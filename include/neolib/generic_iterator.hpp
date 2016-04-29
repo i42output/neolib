@@ -216,7 +216,12 @@ namespace neolib
 		template <typename Wrapper>
 		void construct(const Wrapper& aWrapper)
 		{
-			if (sizeof(Wrapper) <= sizeof(iIteratorStorage))
+			construct2(aWrapper, sizeof(Wrapper) <= sizeof(iIteratorStorage));
+		}
+		template <typename Wrapper>
+		void construct2(const Wrapper& aWrapper, bool aInPlace)
+		{
+			if (aInPlace)
 			{
 				iWrappedIterator = new(iIteratorStorage) Wrapper(aWrapper);
 				iInPlace = true;

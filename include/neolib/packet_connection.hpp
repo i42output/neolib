@@ -502,7 +502,7 @@ namespace neolib
 			}
 			++iOperationsOutstanding;
 		}
-		void handle_write(const boost::system::error_code& aError, size_t aBytesTransferred)
+		void handle_write(const boost::system::error_code& aError, size_t)
 		{
 			destroyed_flag destroyed(*this);
 			--iOperationsOutstanding;

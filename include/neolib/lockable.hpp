@@ -61,9 +61,9 @@ namespace neolib
 		// construction
 	public:
 		lockable() {}
-		lockable(const lockable& aOther) {}
+		lockable(const lockable&) {}
 		virtual ~lockable() {}
-		lockable& operator=(const lockable& aOther) { return *this; }
+		lockable& operator=(const lockable&) { return *this; }
 		// operations
 	public:
 		void lock() const { iMutex.lock(); }

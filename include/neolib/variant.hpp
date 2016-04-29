@@ -46,7 +46,7 @@ namespace neolib
 	{ 
 		bool operator==(const unused_variant_type&) const { return true; } 
 		bool operator!=(const unused_variant_type&) const { return false; } 
-		bool operator<(const unused_variant_type& rhs) const { return false; }
+		bool operator<(const unused_variant_type&) const { return false; }
 	};
 
 	template <

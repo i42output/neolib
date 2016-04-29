@@ -30,8 +30,8 @@ namespace neolib
 	int win32_message_queue::get_message() const
 	{
 		MSG msg;
-		int result;
-		if ((result = ::GetMessage(&msg, NULL, 0, 0)))
+		int result = ::GetMessage(&msg, NULL, 0, 0);
+		if (result)
 		{
 			if (result != -1)
 			{

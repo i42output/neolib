@@ -92,7 +92,7 @@ namespace neolib
 		http(const http& aOther);
 		virtual ~http();
 		http& operator=(const http& aOther);
-		bool operator==(const http& aOther) const { return false; }
+		bool operator==(const http&) const { return false; }
 
 		// operations
 	public:

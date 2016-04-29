@@ -56,7 +56,7 @@ namespace neolib
 		// TODO
 	}
 
-	void oauth::notify_observer(oauth_observer& aObserver, oauth_observer::notify_type aType, const void* aParameter, const void* aParameter2)
+	void oauth::notify_observer(oauth_observer& aObserver, oauth_observer::notify_type aType, const void*, const void*)
 	{
 		switch(aType)
 		{
@@ -72,15 +72,15 @@ namespace neolib
 		}
 	}
 
-	void oauth::http_request_started(http& aRequest)
+	void oauth::http_request_started(http&)
 	{
 	}
 
-	void oauth::http_request_completed(http& aRequest)
+	void oauth::http_request_completed(http&)
 	{
 	}
 
-	void oauth::http_request_failure(http& aRequest)
+	void oauth::http_request_failure(http&)
 	{
 	}
 }

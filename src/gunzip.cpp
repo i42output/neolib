@@ -53,8 +53,8 @@ namespace neolib
 		mtime += (static_cast<unsigned char>(*i++) << 8);
 		mtime += (static_cast<unsigned char>(*i++) << 16); 
 		mtime += (static_cast<unsigned char>(*i++) << 24);
-		unsigned char xfl = static_cast<unsigned char>(*i++);
-		unsigned char os = static_cast<unsigned char>(*i++);
+		unsigned char xfl = static_cast<unsigned char>(*i++); (void)xfl;
+		unsigned char os = static_cast<unsigned char>(*i++); (void)os;
 		if (id1 != 0x1F)
 			return;
 		if (id2 != 0x8B)
