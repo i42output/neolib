@@ -37,6 +37,7 @@
 
 #include "neolib.hpp"
 #include <set>
+#include <boost/pool/pool_alloc.hpp>
 
 namespace neolib
 {
@@ -88,6 +89,6 @@ namespace neolib
 			iDestroyedFlags.erase(aFlag);
 		}
 	private:
-		mutable std::set<destroyed_flag*> iDestroyedFlags;
+		mutable std::set<destroyed_flag*, std::less<destroyed_flag*>, boost::fast_pool_allocator<destroyed_flag*>> iDestroyedFlags;
 	};
 }
