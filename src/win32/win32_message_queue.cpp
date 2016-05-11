@@ -7,7 +7,8 @@ namespace neolib
 
 	win32_message_queue::win32_message_queue(io_thread& aIoThread, std::function<bool()> aIdleFunction, bool aCreateTimer) :
 		iIoThread(aIoThread),
-		iIdleFunction(aIdleFunction)
+		iIdleFunction(aIdleFunction),
+		iInIdle(false)
 	{
 		if (aCreateTimer)
 		{
@@ -49,8 +50,12 @@ namespace neolib
 
 	void win32_message_queue::idle()
 	{
-		if (iIdleFunction)
+		if (!iInIdle && iIdleFunction)
+		{
+			iInIdle = true;
 			iIdleFunction();
+			iInIdle = false;
+		}
 	}
 
 	void CALLBACK win32_message_queue::timer_proc(HWND, UINT, UINT_PTR aId, DWORD)

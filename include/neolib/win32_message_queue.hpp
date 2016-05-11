@@ -59,5 +59,6 @@ namespace neolib
 		std::function<bool()> iIdleFunction;
 		static std::map<UINT_PTR, win32_message_queue*> sTimerMap;
 		UINT_PTR iTimer;
+		bool iInIdle;
 	};
 }
