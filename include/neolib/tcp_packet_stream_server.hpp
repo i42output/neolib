@@ -215,7 +215,7 @@ namespace neolib
 		}
 		void accept_connection()
 		{
-			if (iAcceptingStream.get() != 0)
+			if (iAcceptingStream != nullptr)
 				return;
 			iAcceptingStream = packet_stream_pointer(new packet_stream_type(iOwnerThread, iSecure, iLocalEndpoint.protocol() == protocol_type::v4() ? IPv4 : IPv6));
 			iAcceptingStream->add_observer(*this);

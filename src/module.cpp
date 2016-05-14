@@ -74,7 +74,7 @@ namespace neolib
 
 	bool module::loaded() const
 	{
-		return iOsModule.get() != 0;
+		return iOsModule != nullptr;
 	}
 
 	void* module::procedure_address(const std::string& aProcedureName)

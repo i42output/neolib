@@ -183,7 +183,7 @@ namespace neolib
 			}
 			else
 			{
-				if (iSecureStreamContext.get() == 0)
+				if (iSecureStreamContext == nullptr)
 					iSecureStreamContext.reset(new secure_stream_context(boost::asio::ssl::context::sslv23));
 				iSocketHolder = secure_stream_pointer(new secure_stream_type(iOwnerThread.networking_io_service().native_object(), *iSecureStreamContext));
 			}
@@ -226,11 +226,11 @@ namespace neolib
 		{
 			if (!iSecure)
 			{
-				return !iSocketHolder.empty() && static_variant_cast<const socket_pointer&>(iSocketHolder).get() != 0;
+				return !iSocketHolder.empty() && static_variant_cast<const socket_pointer&>(iSocketHolder) != nullptr;
 			}
 			else
 			{
-				return !iSocketHolder.empty() && static_variant_cast<const secure_stream_pointer&>(iSocketHolder).get() != 0;
+				return !iSocketHolder.empty() && static_variant_cast<const secure_stream_pointer&>(iSocketHolder) != nullptr;
 			}
 		}
 		bool closed() const

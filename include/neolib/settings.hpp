@@ -190,7 +190,7 @@ namespace neolib
 			if (iterCheck != iSettingsByName.end())
 				throw setting_already_registered();
 			simple_variant currentValue = aDefaultValue;
-			if (iStore.get() != 0)
+			if (iStore != nullptr)
 			{
 				xml::element::iterator xmlIterCategory = iStore->root().find(aSettingCategory.c_str());
 				if (xmlIterCategory != iStore->root().end())

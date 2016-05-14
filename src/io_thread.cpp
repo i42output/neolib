@@ -90,7 +90,7 @@ namespace neolib
 
 	bool io_thread::have_message_queue() const
 	{
-		return iMessageQueue.get() != 0;
+		return iMessageQueue != nullptr;
 	}
 
 	bool io_thread::have_messages() const
@@ -107,14 +107,14 @@ namespace neolib
 
 	const neolib::message_queue& io_thread::message_queue() const
 	{
-		if (iMessageQueue.get() == 0)
+		if (iMessageQueue == nullptr)
 			throw no_message_queue();
 		return *iMessageQueue;
 	}
 
 	neolib::message_queue& io_thread::message_queue()
 	{
-		if (iMessageQueue.get() == 0)
+		if (iMessageQueue == nullptr)
 			throw no_message_queue();
 		return *iMessageQueue;
 	}

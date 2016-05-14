@@ -226,12 +226,12 @@ namespace neolib
 		bool has_slots() const
 		{
 			typename LockingPolicy::scope_lock sl(*this);
-			return iSlots.get() != 0 && !slots().empty();
+			return iSlots != nullptr && !slots().empty();
 		}
 		slot_list& slots() const
 		{
 			typename LockingPolicy::scope_lock sl(*this);
-			if (iSlots.get() == 0)
+			if (iSlots == nullptr)
 			{
 				slot_list_pointer newSlotList(new slot_list);
 				iSlots = newSlotList;
@@ -754,12 +754,12 @@ namespace neolib
 		bool has_slots() const
 		{
 			typename LockingPolicy::scope_lock sl(*this);
-			return iSlots.get() != 0 && !slots().empty();
+			return iSlots != nullptr && !slots().empty();
 		}
 		slot_list& slots() const
 		{
 			typename LockingPolicy::scope_lock sl(*this);
-			if (iSlots.get() == 0)
+			if (iSlots == nullptr)
 			{
 				slot_list_pointer newSlotList(new slot_list);
 				iSlots = newSlotList;

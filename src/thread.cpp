@@ -271,7 +271,7 @@ namespace neolib
 
 	bool thread::has_thread_object() const
 	{
-		return iThreadObject.get() != 0;
+		return iThreadObject != nullptr;
 	}
 
 	thread::thread_object_type& thread::thread_object() const
