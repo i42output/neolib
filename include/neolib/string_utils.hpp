@@ -824,6 +824,14 @@ namespace neolib
 		return utf8_to_utf32(aString.begin(), aString.end());
 	}
 
+	inline std::string utf32_to_utf8(const std::u32string& aString)
+	{
+		std::string result;
+		for (auto ch : aString)
+			append_utf8(result, ch);
+		return result;
+	}
+
 	inline bool is_utf8_trailing(char aCharacter)
 	{
 		return (aCharacter & 0xC0) == 0x80;
