@@ -439,6 +439,10 @@ namespace neolib
 			}
 			return iterator(*this, aPosition.iContainerPosition);
 		}
+		void clear()
+		{
+			erase(begin(), end());
+		}
 		void push_front(const tag_type& aTag, const value_type& aValue)
 		{
 			insert(aTag, begin(), aValue);
@@ -506,6 +510,14 @@ namespace neolib
 			base::swap(aOther);
 			std::swap(iSize, aOther.iSize);
 		}
+		const tag_type& tag(const_iterator aWhere) const
+		{
+			return aWhere.segment().tag();
+		}
+		tag_type& tag(iterator aWhere)
+		{
+			return aWhere.segment().tag();
+		}
 
 	private:
 		template <class InputIterator>
@@ -527,12 +539,12 @@ namespace neolib
 			}
 			else
 			{
+				lastNode = allocate_space(aTag, aPosition, count);
 				if (aPosition.iNode == 0)
 					aPosition = begin();
 				segment_type& segment = aPosition.iNode->segment();
 				typename segment_type::const_iterator tailEnd = segment.end();
 				typename segment_type::const_iterator tailStart = tailEnd - std::min(segment.size() - aPosition.iSegmentPosition, count);
-				lastNode = allocate_space(aTag, aPosition, count, segment.tag() != aTag && tailStart != tailEnd);
 				if (tailStart != tailEnd)
 				{
 					typename segment_type::const_iterator tailMid = segment.tag() == aTag ? tailStart : tailEnd - std::min(static_cast<size_type>(tailEnd - tailStart), lastNode->segment().available());
@@ -603,7 +615,7 @@ namespace neolib
 			aSegmentPosition = aContainerPosition - nodeIndex;
 			return result;
 		}
-		node* allocate_space(const tag_type& aTag, const_iterator aPosition, size_type aCount, bool aExtraLastNode)
+		node* allocate_space(const tag_type& aTag, const_iterator aPosition, size_type aCount)
 		{
 			if (aCount == 0)
 				return aPosition.iNode;
@@ -619,10 +631,6 @@ namespace neolib
 			node* nextNode = aPosition.iNode;
 			while (aCount > 0)
 				aCount -= std::min(aCount, (nextNode = allocate_node(aTag, nextNode))->segment().available());
-			if (aPosition.iNode && aPosition.iNode->segment().tag() != aTag && aExtraLastNode)
-			{
-				lastNode = allocate_node(aPosition.iNode->segment().tag(), nextNode);
-			}
 			return lastNode ? lastNode : nextNode;
 		}
 		node* allocate_node(const tag_type& aTag, node* aAfter)
