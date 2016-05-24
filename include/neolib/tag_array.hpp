@@ -514,10 +514,6 @@ namespace neolib
 		{
 			return aWhere.segment().tag();
 		}
-		tag_type& tag(iterator aWhere)
-		{
-			return aWhere.segment().tag();
-		}
 
 	private:
 		template <class InputIterator>
