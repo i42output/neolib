@@ -538,16 +538,10 @@ namespace neolib
 				typename segment_type::const_iterator tailStart = tailEnd - std::min(segment.size() - aPosition.iSegmentPosition, count);
 				if (tailStart != tailEnd)
 				{
-					typename segment_type::const_iterator tailMid = tailEnd - std::min(static_cast<size_type>(tailEnd - tailStart), lastNode->segment().available());
-					lastNode->segment().insert(lastNode->segment().begin(), tailMid, tailEnd);
-					lastNode->set_size(lastNode->size() + (tailEnd - tailMid));
-					if (tailMid != tailStart)
-					{
-						static_cast<node*>(lastNode->previous())->segment().insert(static_cast<node*>(lastNode->previous())->segment().end(), tailStart, tailMid);
-						lastNode->previous()->set_size(lastNode->previous()->size() + (tailMid - tailStart));
-					}
-					segment.erase(tailStart, tailEnd);
+					lastNode->segment().insert(lastNode->segment().begin(), tailStart, tailEnd);
+					lastNode->set_size(lastNode->size() + (tailEnd - tailStart));
 					aPosition.iNode->set_size(aPosition.iNode->size() - (tailEnd - tailStart));
+					segment.erase(tailStart, tailEnd);
 				}
 				for (node* nextNode = aPosition.iNode; count > 0 && nextNode != lastNode; nextNode = static_cast<node*>(nextNode->next()))
 				{
@@ -612,8 +606,10 @@ namespace neolib
 				return aPosition.iNode;
 			if (aPosition.iNode)
 				aCount -= std::min(aCount, (aPosition.iNode->segment().available()));
+			if (aCount == 0)
+				return aPosition.iNode;
 			node* lastNode = 0;
-			if (aCount > 0 && aPosition.iNode && aPosition.iNode->next() != 0 && !static_cast<node*>(aPosition.iNode->next())->segment().full())
+			if (aCount > 0 && aPosition.iNode && aPosition.iNode->next() != 0 && aCount <= static_cast<node*>(aPosition.iNode->next())->segment().available())
 			{
 				lastNode = static_cast<node*>(aPosition.iNode->next());
 				aCount -= std::min(aCount, lastNode->segment().available());
@@ -621,6 +617,11 @@ namespace neolib
 			node* nextNode = aPosition.iNode;
 			while (aCount > 0)
 				aCount -= std::min(aCount, (nextNode = allocate_node(nextNode))->segment().available());
+			if (aPosition.iNode == 0)
+				aPosition = begin();
+			segment_type& segment = aPosition.iNode->segment();
+			if (aPosition.iSegmentPosition < segment.size() && nextNode->segment().available() < segment.size() - aPosition.iSegmentPosition)
+				lastNode = allocate_node(nextNode);
 			return lastNode ? lastNode : nextNode;
 		}
 		node* allocate_node(node* aAfter)
