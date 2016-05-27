@@ -292,7 +292,7 @@ namespace neolib
 			const_iterator operator+(difference_type aDifference) const { const_iterator result(*this); result += aDifference; return result; }
 			const_iterator operator-(difference_type aDifference) const { const_iterator result(*this); result -= aDifference; return result; }
 			const_reference operator[](difference_type aDifference) const { return *((*this) + aDifference); }
-			difference_type operator-(const const_iterator& aOther) const { return static_cast<difference_type>(iContainerPosition)-static_cast<difference_type>(aOther.iContainerPosition); }
+			friend difference_type operator-(const const_iterator& aLhs, const const_iterator& aRhs) { return static_cast<difference_type>(aLhs.iContainerPosition)-static_cast<difference_type>(aRhs.iContainerPosition); }
 			const_reference operator*() const { return segment()[iSegmentPosition]; }
 			const_pointer operator->() const { return &operator*(); }
 			bool operator==(const const_iterator& aOther) const { return iContainerPosition == aOther.iContainerPosition; }
