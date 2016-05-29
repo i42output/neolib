@@ -535,7 +535,7 @@ namespace neolib
 					aPosition = begin();
 				segment_type& segment = aPosition.iNode->segment();
 				typename segment_type::const_iterator tailEnd = segment.end();
-				typename segment_type::const_iterator tailStart = tailEnd - std::min(segment.size() - aPosition.iSegmentPosition, count);
+				typename segment_type::const_iterator tailStart = tailEnd - (segment.size() - aPosition.iSegmentPosition);
 				if (tailStart != tailEnd)
 				{
 					lastNode->segment().insert(lastNode->segment().begin(), tailStart, tailEnd);

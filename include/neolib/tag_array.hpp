@@ -523,6 +523,13 @@ namespace neolib
 			size_type count = std::distance(aFirst, aLast);
 			if (count == 0)
 				return iterator(*this, aPosition.iNode, aPosition.iContainerPosition, aPosition.iSegmentPosition);
+			if (aPosition.iNode != 0 && static_cast<node*>(aPosition.iNode)->segment().tag() != aTag &&
+				aPosition.iNode->previous() != 0 && static_cast<node*>(aPosition.iNode->previous())->segment().tag() == aTag &&
+				static_cast<node*>(aPosition.iNode->previous())->segment().available() >= count)
+			{
+				aPosition.iNode = static_cast<node*>(aPosition.iNode->previous());
+				aPosition.iSegmentPosition = aPosition.iNode->segment().size();
+			}
 			node* before = aPosition.iNode;
 			node* after = aPosition.iNode ? static_cast<node*>(aPosition.iNode->next()) : 0;
 			node* lastNode = aPosition.iNode;
@@ -540,7 +547,7 @@ namespace neolib
 					aPosition = begin();
 				segment_type& segment = aPosition.iNode->segment();
 				typename segment_type::const_iterator tailEnd = segment.end();
-				typename segment_type::const_iterator tailStart = tailEnd - std::min(segment.size() - aPosition.iSegmentPosition, count);
+				typename segment_type::const_iterator tailStart = tailEnd - (segment.size() - aPosition.iSegmentPosition);
 				if (tailStart != tailEnd)
 				{
 					lastNode->segment().insert(lastNode->segment().begin(), tailStart, tailEnd);
@@ -575,14 +582,18 @@ namespace neolib
 			for (node* newNode = aPosition.iNode;; newNode = static_cast<node*>(newNode->next()))
 			{
 				if (newNode != before && newNode != after)
-				{
 					base::insert_node(newNode, index);
-				}
 				index += newNode->segment().size();
 				if (newNode == lastNode)
 					break;
 			}
-			if (aPosition.iSegmentPosition != aPosition.iNode->segment().size()) // was not end
+			if (aPosition.iNode->segment().empty())
+			{
+				auto insertionPoint = iterator(*this, static_cast<node*>(aPosition.iNode->next()), aPosition.iContainerPosition, 0);
+				free_node(aPosition.iNode);
+				return insertionPoint;
+			}
+			else if (aPosition.iSegmentPosition != aPosition.iNode->segment().size()) // was not end
 				return iterator(*this, aPosition.iNode, aPosition.iContainerPosition, aPosition.iSegmentPosition);
 			else
 				return iterator(*this, static_cast<node*>(aPosition.iNode->next()), aPosition.iContainerPosition, 0);
