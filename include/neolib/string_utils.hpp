@@ -99,10 +99,10 @@ namespace neolib
 	}
 
 	inline char tolower(char c) { return std::char_traits<char>::to_char_type(::tolower(static_cast<unsigned char>(c))); }
-	inline wchar_t tolower(wchar_t c) { return std::char_traits<wchar_t>::to_char_type(::towlower(c)); }
+	inline char16_t tolower(char16_t c) { return std::char_traits<char16_t>::to_char_type(::towlower(c)); }
 
 	inline char toupper(char c) { return std::char_traits<char>::to_char_type(::toupper(static_cast<unsigned char>(c))); }
-	inline wchar_t toupper(wchar_t c) { return std::char_traits<wchar_t>::to_char_type(::towupper(c)); }
+	inline char16_t toupper(char16_t c) { return std::char_traits<char16_t>::to_char_type(::towupper(c)); }
 
 	template <typename CharT, typename Traits, typename Alloc>
 	std::basic_string<CharT, Traits, Alloc> to_lower(const std::basic_string<CharT, Traits, Alloc>& aString)
@@ -236,12 +236,6 @@ namespace neolib
 		return strchr(aSequence, aCharacter) != NULL;
 	}
 
-	template <>
-	inline bool contains_character(const wchar_t* aSequence, wchar_t aCharacter)
-	{
-		return wcschr(aSequence, aCharacter) != NULL;
-	}
-
 	template <typename CharT, typename Traits, typename Alloc>
 	inline typename std::basic_string<CharT, Traits, Alloc>::size_type reverse_find_last_of(const std::basic_string<CharT, Traits, Alloc>& aString, const std::basic_string<CharT, Traits, Alloc>& aSequence, typename std::basic_string<CharT, Traits, Alloc>::size_type aPosition)
 	{
@@ -287,24 +281,12 @@ namespace neolib
 		return strtol(aString.c_str(), 0, aBase);
 	}
 
-	template <>
-	inline long string_to_integer(const std::basic_string<wchar_t>& aString, int aBase)
-	{
-		return wcstol(aString.c_str(), 0, aBase);
-	}
-
 	#ifdef _MSC_VER
 
 	template <typename CharT>
 	inline long long string_to_integer_64(const std::basic_string<CharT>& aString, int aBase = 10)
 	{
 		return _strtoi64(aString.c_str(), 0, aBase);
-	}
-
-	template <>
-	inline long long string_to_integer_64(const std::basic_string<wchar_t>& aString, int aBase)
-	{
-		return _wcstoi64(aString.c_str(), 0, aBase);
 	}
 
 	#endif // _MSC_VER
@@ -356,24 +338,12 @@ namespace neolib
 		return strtoul(aString.c_str(), 0, aBase);
 	}
 
-	template <>
-	inline unsigned long string_to_unsigned_integer(const std::basic_string<wchar_t>& aString, int aBase)
-	{
-		return wcstoul(aString.c_str(), 0, aBase);
-	}
-
 	#ifdef _MSC_VER
 
 	template <typename CharT>
 	inline unsigned long long string_to_unsigned_integer_64(const std::basic_string<CharT>& aString, int aBase = 10)
 	{
 		return _strtoui64(aString.c_str(), 0, aBase);
-	}
-
-	template <>
-	inline unsigned long long string_to_unsigned_integer_64(const std::basic_string<wchar_t>& aString, int aBase)
-	{
-		return _wcstoui64(aString.c_str(), 0, aBase);
 	}
 
 	#endif // _MSC_VER
@@ -416,12 +386,6 @@ namespace neolib
 	inline double string_to_double(const std::basic_string<CharT>& aString)
 	{
 		return strtod(aString.c_str(), 0);
-	}
-
-	template <>
-	inline double string_to_double(const std::basic_string<wchar_t>& aString)
-	{
-		return wcstod(aString.c_str(), 0);
 	}
 
 	template <typename CharT>
@@ -470,11 +434,11 @@ namespace neolib
 		template<typename CharT>
 		inline CharT wildcard_match_any_string() { return '*'; }
 		template<>
-		inline wchar_t wildcard_match_any_string<wchar_t>() { return L'*'; }
+		inline char16_t wildcard_match_any_string<char16_t>() { return L'*'; }
 		template<typename CharT>
 		inline CharT wildcard_match_any_character() { return '?'; }
 		template<>
-		inline wchar_t wildcard_match_any_character<wchar_t>() { return L'?'; }
+		inline char16_t wildcard_match_any_character<char16_t>() { return L'?'; }
 
 		template <typename Traits>
 		struct wildcard_compare
@@ -577,16 +541,16 @@ namespace neolib
 		}
 	}
 
-	typedef std::map<std::string::size_type, std::wstring::size_type> wide_to_utf8_character_map;
+	typedef std::map<std::string::size_type, std::u16string::size_type> utf16_to_utf8_character_map;
 
 	namespace detail
 	{
 		struct character_map_updater
 		{
 			struct short_narrow_string : std::logic_error {	short_narrow_string() : std::logic_error("neolib::detail::character_map_updater::short_narrow_string") {} };
-			wide_to_utf8_character_map& iCharMap;
-			character_map_updater(wide_to_utf8_character_map& aCharMap) : iCharMap(aCharMap) {}
-			void operator()(std::wstring::size_type aFrom, bool aSurrogatePair, const std::string& aNarrowString, std::string::size_type aNumberAdded)
+			utf16_to_utf8_character_map& iCharMap;
+			character_map_updater(utf16_to_utf8_character_map& aCharMap) : iCharMap(aCharMap) {}
+			void operator()(std::u16string::size_type aFrom, bool aSurrogatePair, const std::string& aNarrowString, std::string::size_type aNumberAdded)
 			{
 				for (std::string::size_type i = 0; i < aNumberAdded; ++i)
 					iCharMap[aNarrowString.size() - aNumberAdded + i] = aFrom;
@@ -601,18 +565,18 @@ namespace neolib
 		struct no_character_map_updater
 		{
 			no_character_map_updater() {}
-			void operator()(std::wstring::size_type, bool, const std::string&, std::string::size_type) {}
+			void operator()(std::u16string::size_type, bool, const std::string&, std::string::size_type) {}
 		};			
 	}
 
 	template <bool AllowUpper128, typename CharacterMapUpdater>
-	inline std::string wide_to_utf8(const std::wstring& aString, CharacterMapUpdater aCharacterMapUpdater)
+	inline std::string utf16_to_utf8(const std::u16string& aString, CharacterMapUpdater aCharacterMapUpdater)
 	{
 		setlocale(LC_CTYPE, "");
 		bool previousWasUtf8Prefix = false;
 		std::string narrowString;
-		std::wstring::size_type from = 0;
-		for (std::wstring::const_iterator i = aString.begin(); i != aString.end(); from = i - aString.begin())
+		std::u16string::size_type from = 0;
+		for (std::u16string::const_iterator i = aString.begin(); i != aString.end(); from = i - aString.begin())
 		{
 			bool sequenceCheck = previousWasUtf8Prefix;
 			previousWasUtf8Prefix = false;
@@ -653,31 +617,31 @@ namespace neolib
 	}
 
 	template <bool AllowUpper128>
-	inline std::string wide_to_utf8(const std::wstring& aString)
+	inline std::string utf16_to_utf8(const std::u16string& aString)
 	{
-		return wide_to_utf8<AllowUpper128>(aString, detail::no_character_map_updater());
+		return utf16_to_utf8<AllowUpper128>(aString, detail::no_character_map_updater());
 	}
 
 	template <bool AllowUpper128>
-	inline std::string wide_to_utf8(const std::wstring& aString, wide_to_utf8_character_map& aCharMap)
+	inline std::string utf16_to_utf8(const std::u16string& aString, utf16_to_utf8_character_map& aCharMap)
 	{
-		return wide_to_utf8<AllowUpper128>(aString, detail::character_map_updater(aCharMap));
+		return utf16_to_utf8<AllowUpper128>(aString, detail::character_map_updater(aCharMap));
 	}
 
-	inline std::string wide_to_utf8(const std::wstring& aString)
+	inline std::string utf16_to_utf8(const std::u16string& aString)
 	{
-		return wide_to_utf8<false>(aString);
+		return utf16_to_utf8<false>(aString);
 	}
 
-	inline std::string wide_to_utf8(const std::wstring& aString, wide_to_utf8_character_map& aCharMap)
+	inline std::string utf16_to_utf8(const std::u16string& aString, utf16_to_utf8_character_map& aCharMap)
 	{
-		return wide_to_utf8<false>(aString, aCharMap);
+		return utf16_to_utf8<false>(aString, aCharMap);
 	}
 
 	namespace detail
 	{
 		template <typename FwdIter>
-		inline unicode_char_t next_wide_bits(unicode_char_t aUnicodeChar, std::size_t aCount, FwdIter& aCurrent, FwdIter aEnd)
+		inline unicode_char_t next_utf16_bits(unicode_char_t aUnicodeChar, std::size_t aCount, FwdIter& aCurrent, FwdIter aEnd)
 		{
 			unicode_char_t unicodeChar = aUnicodeChar;
 			FwdIter start = aCurrent;
@@ -700,18 +664,18 @@ namespace neolib
 			}
 			return unicodeChar;
 		}
-		inline void default_wide_conversion_callback(std::string::size_type /*aFrom*/, std::wstring::size_type /*aTo*/) {}
+		inline void default_utf16_conversion_callback(std::string::size_type /*aFrom*/, std::u16string::size_type /*aTo*/) {}
 		inline void default_utf32_conversion_callback(std::string::size_type /*aFrom*/, std::u32string::size_type /*aTo*/) {}
 	}
 
 	template <typename Callback>
-	inline std::wstring utf8_to_wide(const std::string& aString, Callback aCallback)
+	inline std::u16string utf8_to_utf16(const std::string& aString, Callback aCallback)
 	{
 		setlocale(LC_CTYPE, "");
-		std::wstring wideString;
+		std::u16string utf16String;
 		for (std::string::const_iterator i = aString.begin(); i != aString.end();)
 		{
-			aCallback(i - aString.begin(), wideString.size());
+			aCallback(i - aString.begin(), utf16String.size());
 			unsigned char nch = static_cast<unsigned char>(*i);
 			unicode_char_t uch = 0;
 			if ((nch & 0x80) == 0)
@@ -720,17 +684,17 @@ namespace neolib
 			{
 				std::string::const_iterator old = i;
 				if ((nch & 0xE0) == 0xC0)
-					uch = detail::next_wide_bits(static_cast<unicode_char_t>(nch & ~0xE0), 1, i, aString.end());
+					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xE0), 1, i, aString.end());
 				else if ((nch & 0xF0) == 0xE0)
-					uch = detail::next_wide_bits(static_cast<unicode_char_t>(nch & ~0xF0), 2, i, aString.end());
+					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xF0), 2, i, aString.end());
 				else if ((nch & 0xF8) == 0xF0)
-					uch = detail::next_wide_bits(static_cast<unicode_char_t>(nch & ~0xF8), 3, i, aString.end());
+					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xF8), 3, i, aString.end());
 				else if ((nch & 0xFC) == 0xF8)
-					uch = detail::next_wide_bits(static_cast<unicode_char_t>(nch & ~0xFC), 4, i, aString.end());
+					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xFC), 4, i, aString.end());
 				else if ((nch & 0xFE) == 0xFC)
-					uch = detail::next_wide_bits(static_cast<unicode_char_t>(nch & ~0xFE), 5, i, aString.end());
+					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xFE), 5, i, aString.end());
 				else if ((nch & 0xFF) == 0xFE)
-					uch = detail::next_wide_bits(static_cast<unicode_char_t>(nch & ~0xFF), 6, i, aString.end());
+					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xFF), 6, i, aString.end());
 				if (i == old)
 				{
 					wchar_t wch;
@@ -742,24 +706,24 @@ namespace neolib
 			}
 		
 			if (uch <= 0xFFFF)
-				wideString.append(1, static_cast<wchar_t>(uch));
+				utf16String.append(1, static_cast<char16_t>(uch));
 			else
 			{
 				// UTF-16 bit...
 				uch -= 0x10000;
-				wideString.append(1, static_cast<wchar_t>(0xd800|(uch >> 10)));
-				wideString.append(1, static_cast<wchar_t>(0xdc00|(uch & 0x3FF)));
+				utf16String.append(1, static_cast<char16_t>(0xd800|(uch >> 10)));
+				utf16String.append(1, static_cast<char16_t>(0xdc00|(uch & 0x3FF)));
 			}
 
 			if (i != aString.end())
 				++i;
 		}
-		return wideString;
+		return utf16String;
 	}
 
-	inline std::wstring utf8_to_wide(const std::string& aString)
+	inline std::u16string utf8_to_utf16(const std::string& aString)
 	{
-		return utf8_to_wide(aString, detail::default_wide_conversion_callback);
+		return utf8_to_utf16(aString, detail::default_utf16_conversion_callback);
 	}
 
 	template <typename Callback>
@@ -779,17 +743,17 @@ namespace neolib
 			{
 				std::string::const_iterator old = i;
 				if ((nch & 0xE0) == 0xC0)
-					uch = detail::next_wide_bits(static_cast<unicode_char_t>(nch & ~0xE0), 1, i, aEnd);
+					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xE0), 1, i, aEnd);
 				else if ((nch & 0xF0) == 0xE0)
-					uch = detail::next_wide_bits(static_cast<unicode_char_t>(nch & ~0xF0), 2, i, aEnd);
+					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xF0), 2, i, aEnd);
 				else if ((nch & 0xF8) == 0xF0)
-					uch = detail::next_wide_bits(static_cast<unicode_char_t>(nch & ~0xF8), 3, i, aEnd);
+					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xF8), 3, i, aEnd);
 				else if ((nch & 0xFC) == 0xF8)
-					uch = detail::next_wide_bits(static_cast<unicode_char_t>(nch & ~0xFC), 4, i, aEnd);
+					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xFC), 4, i, aEnd);
 				else if ((nch & 0xFE) == 0xFC)
-					uch = detail::next_wide_bits(static_cast<unicode_char_t>(nch & ~0xFE), 5, i, aEnd);
+					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xFE), 5, i, aEnd);
 				else if ((nch & 0xFF) == 0xFE)
-					uch = detail::next_wide_bits(static_cast<unicode_char_t>(nch & ~0xFF), 6, i, aEnd);
+					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xFF), 6, i, aEnd);
 				if (i == old)
 				{
 					wchar_t wch;
@@ -838,13 +802,13 @@ namespace neolib
 	}
 
 	template <typename StringT>
-	inline StringT wide_to_any(const std::wstring& aString)
+	inline StringT utf16_to_any(const std::u16string& aString)
 	{
-		return wide_to_utf8(aString);
+		return utf16_to_utf8(aString);
 	}
 
 	template <>
-	inline std::wstring wide_to_any<std::wstring>(const std::wstring& aString)
+	inline std::u16string utf16_to_any<std::u16string>(const std::u16string& aString)
 	{
 		return aString;
 	}
@@ -852,7 +816,7 @@ namespace neolib
 	template <typename StringT>
 	inline StringT utf8_to_any(const std::string& aString)
 	{
-		return utf8_to_wide(aString);
+		return utf8_to_utf16(aString);
 	}
 
 	template <>
@@ -861,9 +825,9 @@ namespace neolib
 		return aString;
 	}
 
-	inline std::wstring any_to_wide(const std::string& aString)
+	inline std::u16string any_to_utf16(const std::string& aString)
 	{
-		return utf8_to_wide(aString);
+		return utf8_to_utf16(aString);
 	}
 
 	inline const std::string& any_to_utf8(const std::string& aString)
@@ -871,72 +835,72 @@ namespace neolib
 		return aString;
 	}
 
-	inline std::string any_to_utf8(const std::wstring& aString)
+	inline std::string any_to_utf8(const std::u16string& aString)
 	{
-		return wide_to_utf8(aString);
+		return utf16_to_utf8(aString);
 	}
 
-	inline const std::wstring& any_to_wide(const std::wstring& aString)
+	inline const std::u16string& any_to_utf16(const std::u16string& aString)
 	{
 		return aString;
 	}
 
 	template <typename StringT>
-	class any_to_wide_result
+	class any_to_utf16_result
 	{
 	public:
-		any_to_wide_result(const typename StringT::value_type* aString, typename StringT::size_type aStringLength) :
-			iString(utf8_to_wide(StringT(aString, aStringLength)))
+		any_to_utf16_result(const typename StringT::value_type* aString, typename StringT::size_type aStringLength) :
+			iString(utf8_to_utf16(StringT(aString, aStringLength)))
 		{
 		}
 	public:
-		const wchar_t* data() const
+		const char16_t* data() const
 		{
 			return iString.data();
 		}
-		std::wstring::size_type length() const
+		std::u16string::size_type length() const
 		{
 			return iString.length();
 		}
 	private:
-		const std::wstring iString;
+		const std::u16string iString;
 	};
 
 	template <>
-	class any_to_wide_result<std::wstring>
+	class any_to_utf16_result<std::u16string>
 	{
 	public:
-		any_to_wide_result(const wchar_t* aString, std::wstring::size_type aStringLength) :
+		any_to_utf16_result(const char16_t* aString, std::u16string::size_type aStringLength) :
 			iString(aString),
 			iStringLength(aStringLength)
 		{
 		}
 	public:
-		const wchar_t* data() const
+		const char16_t* data() const
 		{
 			return iString;
 		}
-		std::wstring::size_type length() const
+		std::u16string::size_type length() const
 		{
 			return iStringLength;
 		}
 	private:
-		const wchar_t* iString;
-		std::wstring::size_type iStringLength;
+		const char16_t* iString;
+		std::u16string::size_type iStringLength;
 	};
 
-	inline any_to_wide_result<std::string> any_to_wide(const std::string::value_type* aString, std::string::size_type aStringLength)
+	inline any_to_utf16_result<std::string> any_to_utf16(const std::string::value_type* aString, std::string::size_type aStringLength)
 	{
-		return any_to_wide_result<std::string>(aString, aStringLength);
+		return any_to_utf16_result<std::string>(aString, aStringLength);
 	}
 
-	inline  any_to_wide_result<std::wstring> any_to_wide(const std::wstring::value_type* aString, std::wstring::size_type aStringLength)
+	inline  any_to_utf16_result<std::u16string> any_to_utf16(const std::u16string::value_type* aString, std::u16string::size_type aStringLength)
 	{
-		return any_to_wide_result<std::wstring>(aString, aStringLength);
+		return any_to_utf16_result<std::u16string>(aString, aStringLength);
 	}
 
 	template <typename CharT, typename Traits, typename Alloc>
-	inline std::string wide_to_narrow(const std::basic_string<CharT, Traits, Alloc>& aWideString)
+	inline std::string utf16_to_narrow(const std::basic_string<CharT, Traits, Alloc>& aWideString)
 	{
 		setlocale(LC_CTYPE, "");
 		std::vector<char> narrowString;
@@ -946,13 +910,13 @@ namespace neolib
 	}
 
 	template <typename CharT, typename Traits, typename Alloc>
-	inline std::wstring narrow_to_wide(const std::basic_string<CharT, Traits, Alloc>& aNarrowString)
+	inline std::u16string narrow_to_utf16(const std::basic_string<CharT, Traits, Alloc>& aNarrowString)
 	{
 		setlocale(LC_CTYPE, "");
-		std::vector<wchar_t> wideString;
-		wideString.resize(aNarrowString.size() + 1);
-		mbstowcs(&wideString[0], aNarrowString.c_str(), aNarrowString.size() + 1);
-		return std::wstring(&wideString[0]);
+		std::vector<char16_t> utf16String;
+		utf16String.resize(aNarrowString.size() + 1);
+		mbstowcs(&utf16String[0], aNarrowString.c_str(), aNarrowString.size() + 1);
+		return std::u16string(&utf16String[0]);
 	}
 
 	template <typename Traits>
@@ -1001,24 +965,24 @@ namespace neolib
 	};
 
 	typedef std::basic_string<char, ci_char_traits<std::char_traits<char> > > ci_string;
-	typedef std::basic_string<wchar_t, ci_char_traits<std::char_traits<wchar_t> > > ci_wstring;
+	typedef std::basic_string<char16_t, ci_char_traits<std::char_traits<char16_t> > > ci_u16string;
 
 	inline ci_string make_ci_string(const std::string& s)
 	{
 		return ci_string(s.begin(), s.end());
 	}
-	inline ci_wstring make_ci_string(const std::wstring& s)
+	inline ci_u16string make_ci_string(const std::u16string& s)
 	{
-		return ci_wstring(s.begin(), s.end());
+		return ci_u16string(s.begin(), s.end());
 	}
 
 	inline std::string make_string(const ci_string& s)
 	{
 		return std::string(s.begin(), s.end());
 	}
-	inline std::wstring make_string(const ci_wstring & s)
+	inline std::u16string make_string(const ci_u16string & s)
 	{
-		return std::wstring(s.begin(), s.end());
+		return std::u16string(s.begin(), s.end());
 	}
 
 	inline bool operator==(const ci_string& s1, const std::string& s2)
@@ -1029,13 +993,13 @@ namespace neolib
 	{
 		return ci_string(s1.begin(), s1.end()) == s2;
 	}
-	inline bool operator==(const ci_wstring& s1, const std::wstring& s2)
+	inline bool operator==(const ci_u16string& s1, const std::u16string& s2)
 	{
-		return s1 == ci_wstring(s2.begin(), s2.end());
+		return s1 == ci_u16string(s2.begin(), s2.end());
 	}
-	inline bool operator==(const std::wstring& s1, const ci_wstring& s2)
+	inline bool operator==(const std::u16string& s1, const ci_u16string& s2)
 	{
-		return ci_wstring(s1.begin(), s1.end()) == s2;
+		return ci_u16string(s1.begin(), s1.end()) == s2;
 	}
 	inline bool operator!=(const ci_string& s1, const std::string& s2)
 	{
@@ -1045,13 +1009,13 @@ namespace neolib
 	{
 		return ci_string(s1.begin(), s1.end()) != s2;
 	}
-	inline bool operator!=(const ci_wstring& s1, const std::wstring& s2)
+	inline bool operator!=(const ci_u16string& s1, const std::u16string& s2)
 	{
-		return s1 != ci_wstring(s2.begin(), s2.end());
+		return s1 != ci_u16string(s2.begin(), s2.end());
 	}
-	inline bool operator!=(const std::wstring& s1, const ci_wstring& s2)
+	inline bool operator!=(const std::u16string& s1, const ci_u16string& s2)
 	{
-		return ci_wstring(s1.begin(), s1.end()) != s2;
+		return ci_u16string(s1.begin(), s1.end()) != s2;
 	}
 	inline bool operator<(const ci_string& s1, const std::string& s2)
 	{
@@ -1061,13 +1025,13 @@ namespace neolib
 	{
 		return ci_string(s1.begin(), s1.end()) < s2;
 	}
-	inline bool operator<(const ci_wstring& s1, const std::wstring& s2)
+	inline bool operator<(const ci_u16string& s1, const std::u16string& s2)
 	{
-		return s1 < ci_wstring(s2.begin(), s2.end());
+		return s1 < ci_u16string(s2.begin(), s2.end());
 	}
-	inline bool operator<(const std::wstring& s1, const ci_wstring& s2)
+	inline bool operator<(const std::u16string& s1, const ci_u16string& s2)
 	{
-		return ci_wstring(s1.begin(), s1.end()) < s2;
+		return ci_u16string(s1.begin(), s1.end()) < s2;
 	}
 
 	template <typename CharT, typename Traits, typename Alloc>	

@@ -232,13 +232,13 @@ namespace neolib
 			if (_tcslen(osvi.szCSDVersion) > 0)
 			{
 				result += (" ");
-				result += any_to_utf8(std::wstring(osvi.szCSDVersion));
+				result += any_to_utf8(std::u16string(reinterpret_cast<char16_t*>(osvi.szCSDVersion)));
 			}
 
 			TCHAR buf[80];
 
 			_snwprintf(buf, 80, TEXT(" (build %d)"), osvi.dwBuildNumber);
-			result += any_to_utf8(std::wstring(buf));
+			result += any_to_utf8(std::u16string(reinterpret_cast<char16_t*>(buf)));
 		}
 		else
 		{
@@ -275,7 +275,7 @@ namespace neolib
 			bRetCode = VerQueryValue((LPVOID)lpstrVffInfo, L"\\StringFileInfo\\080904B0\\ProductName",
 				(LPVOID *)&lpVersion, (PUINT)&uVersionLen);
 			if (bRetCode && uVersionLen && lpVersion)
-				appName = any_to_utf8(lpVersion);
+				appName = any_to_utf8(reinterpret_cast<char16_t*>(lpVersion));
 			uVersionLen = 0;
 			lpVersion = NULL;
 			bRetCode = VerQueryValue((LPVOID)lpstrVffInfo, L"\\StringFileInfo\\080904B0\\ProductVersion",
@@ -283,7 +283,7 @@ namespace neolib
 			if (bRetCode && uVersionLen && lpVersion)
 			{
 				vecarray<std::string, 4> ver;
-				tokens(any_to_utf8(lpVersion), std::string("."), ver, 4);
+				tokens(any_to_utf8(reinterpret_cast<char16_t*>(lpVersion)), std::string("."), ver, 4);
 				appVersion = version(
 					string_to_unsigned_integer(ver[0]), 
 					string_to_unsigned_integer(ver[1]), 
@@ -295,15 +295,15 @@ namespace neolib
 			bRetCode = VerQueryValue((LPVOID)lpstrVffInfo, L"\\StringFileInfo\\080904B0\\ProductVersionName",
 				(LPVOID *)&lpVersion, (PUINT)&uVersionLen);
 			if (bRetCode && uVersionLen && lpVersion)
-				appVersion = version(appVersion.major(), appVersion.minor(), appVersion.maintenance(), appVersion.build(), any_to_utf8(lpVersion));
+				appVersion = version(appVersion.major(), appVersion.minor(), appVersion.maintenance(), appVersion.build(), any_to_utf8(reinterpret_cast<char16_t*>(lpVersion)));
 			if (appVersion.build() == 0)
-				appVersion = version(appVersion.major(), appVersion.minor(), appVersion.maintenance(), aAppInfo.version().build(), any_to_utf8(lpVersion));
+				appVersion = version(appVersion.major(), appVersion.minor(), appVersion.maintenance(), aAppInfo.version().build(), any_to_utf8(reinterpret_cast<char16_t*>(lpVersion)));
 			uVersionLen = 0;
 			lpVersion = NULL;
 			bRetCode = VerQueryValue((LPVOID)lpstrVffInfo, L"\\StringFileInfo\\080904B0\\LegalCopyright",
 				(LPVOID *)&lpVersion, (PUINT)&uVersionLen);
 			if (bRetCode && uVersionLen && lpVersion)
-				appCopyright = any_to_utf8(lpVersion);
+				appCopyright = any_to_utf8(reinterpret_cast<char16_t*>(lpVersion));
 			GlobalUnlock(hMem);
 			GlobalFree(hMem);
 			return application_info(aAppInfo.arguments(), appName, aAppInfo.company().to_std_string(), appVersion, appCopyright,
