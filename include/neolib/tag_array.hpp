@@ -525,7 +525,8 @@ namespace neolib
 				return iterator(*this, aPosition.iNode, aPosition.iContainerPosition, aPosition.iSegmentPosition);
 			if (aPosition.iNode != 0 && static_cast<node*>(aPosition.iNode)->segment().tag() != aTag &&
 				aPosition.iNode->previous() != 0 && static_cast<node*>(aPosition.iNode->previous())->segment().tag() == aTag &&
-				static_cast<node*>(aPosition.iNode->previous())->segment().available() >= count)
+				static_cast<node*>(aPosition.iNode->previous())->segment().available() >= count &&
+				aPosition.iSegmentPosition == 0)
 			{
 				aPosition.iNode = static_cast<node*>(aPosition.iNode->previous());
 				aPosition.iSegmentPosition = aPosition.iNode->segment().size();
@@ -627,8 +628,11 @@ namespace neolib
 			node* lastNode = 0;
 			if (aCount > 0 && aPosition.iNode && aPosition.iNode->next() != 0 && aCount <= static_cast<node*>(aPosition.iNode->next())->segment().available() && static_cast<node*>(aPosition.iNode->next())->segment().tag() == aTag)
 			{
-				lastNode = static_cast<node*>(aPosition.iNode->next());
-				aCount -= std::min(aCount, lastNode->segment().available());
+				if (aPosition.iNode->segment().tag() == aTag || aPosition.iSegmentPosition == aPosition.iNode->segment().size())
+				{
+					lastNode = static_cast<node*>(aPosition.iNode->next());
+					aCount -= std::min(aCount, lastNode->segment().available());
+				}
 			}
 			node* nextNode = aPosition.iNode;
 			while (aCount > 0)
