@@ -179,6 +179,9 @@ namespace neolib
 			bool operator==(const iterator& aOther) const { return iContainerPosition == aOther.iContainerPosition; }
 			bool operator!=(const iterator& aOther) const { return iContainerPosition != aOther.iContainerPosition; }
 			bool operator<(const iterator& aOther) const { return iContainerPosition < aOther.iContainerPosition; }
+			bool operator<=(const iterator& aOther) const { return iContainerPosition <= aOther.iContainerPosition; }
+			bool operator>(const iterator& aOther) const { return iContainerPosition > aOther.iContainerPosition; }
+			bool operator>=(const iterator& aOther) const { return iContainerPosition >= aOther.iContainerPosition; }
 
 		private:
 			segment_type& segment() const { return iNode->segment(); }
@@ -298,6 +301,9 @@ namespace neolib
 			bool operator==(const const_iterator& aOther) const { return iContainerPosition == aOther.iContainerPosition; }
 			bool operator!=(const const_iterator& aOther) const { return iContainerPosition != aOther.iContainerPosition; }
 			bool operator<(const const_iterator& aOther) const { return iContainerPosition < aOther.iContainerPosition; }
+			bool operator<=(const const_iterator& aOther) const { return iContainerPosition <= aOther.iContainerPosition; }
+			bool operator>(const const_iterator& aOther) const { return iContainerPosition > aOther.iContainerPosition; }
+			bool operator>=(const const_iterator& aOther) const { return iContainerPosition >= aOther.iContainerPosition; }
 
 		private:
 			segment_type& segment() const { return iNode->segment(); }
