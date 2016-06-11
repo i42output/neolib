@@ -7,20 +7,30 @@ namespace neolib
 
 	win32_message_queue::win32_message_queue(io_thread& aIoThread, std::function<bool()> aIdleFunction, bool aCreateTimer) :
 		iIoThread(aIoThread),
-		iIdleFunction(aIdleFunction),
-		iInIdle(false)
+		iIdleFunction(aIdleFunction)
 	{
 		if (aCreateTimer)
 		{
 			iTimer = ::SetTimer(NULL, 0, 10, &win32_message_queue::timer_proc);
 			sTimerMap[iTimer] = this;
 		}
+		push_context();
 	}
 
 	win32_message_queue::~win32_message_queue()
 	{
 		for (auto& t : sTimerMap)
 			::KillTimer(NULL, t.first);
+	}
+
+	void win32_message_queue::push_context()
+	{
+		iInIdle.push_back(false);
+	}
+
+	void win32_message_queue::pop_context()
+	{
+		iInIdle.pop_back();
 	}
 
 	bool win32_message_queue::have_message() const
@@ -50,11 +60,11 @@ namespace neolib
 
 	void win32_message_queue::idle()
 	{
-		if (!iInIdle && iIdleFunction)
+		if (!iInIdle.back() && iIdleFunction)
 		{
-			iInIdle = true;
+			iInIdle.back() = true;
 			iIdleFunction();
-			iInIdle = false;
+			iInIdle.back() = false;
 		}
 	}
 

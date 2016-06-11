@@ -36,6 +36,7 @@
 #pragma once
 
 #include "neolib.hpp"
+#include <deque>
 #include <boost/optional.hpp>
 #include "io_thread.hpp"
 #include "message_queue.hpp"
@@ -48,6 +49,8 @@ namespace neolib
 		win32_message_queue(io_thread& aIoThread, std::function<bool()> aIdleFunction, bool aCreateTimer = true);
 		~win32_message_queue();
 	public:
+		virtual void push_context();
+		virtual void pop_context();
 		virtual bool have_message() const;
 		virtual int get_message() const;
 		virtual void bump();
@@ -59,6 +62,6 @@ namespace neolib
 		std::function<bool()> iIdleFunction;
 		static std::map<UINT_PTR, win32_message_queue*> sTimerMap;
 		UINT_PTR iTimer;
-		bool iInIdle;
+		std::deque<bool> iInIdle;
 	};
 }
