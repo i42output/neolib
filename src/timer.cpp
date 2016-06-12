@@ -84,7 +84,7 @@ namespace neolib
 	
 	timer::~timer()
 	{
-		iDestroying = true;
+		set_destroying();
 		cancel();
 	}
 
@@ -207,6 +207,11 @@ namespace neolib
 		return iDuration_ms;
 	}
 
+	void timer::set_destroying()
+	{
+		iDestroying = true;
+	}
+
 	void timer::handler(const boost::system::error_code& aError)
 	{
 		if (iInReady)
@@ -242,6 +247,7 @@ namespace neolib
 
 	callback_timer::~callback_timer()
 	{
+		set_destroying();
 		cancel();
 	}
 

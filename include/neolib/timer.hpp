@@ -76,6 +76,8 @@ namespace neolib
 		void set_duration(uint32_t aDuration_ms, bool aEffectiveImmediately = false);
 		uint32_t duration_ms() const;
 		// implementation
+	protected:
+		void set_destroying();
 	private:
 		void handler(const boost::system::error_code& aError);
 		virtual void ready() = 0;
