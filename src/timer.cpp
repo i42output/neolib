@@ -123,6 +123,8 @@ namespace neolib
 
 	void timer::again()
 	{
+		if (iDestroying)
+			return;
 		if (disabled())
 			enable(false);
 		if (waiting())
@@ -147,11 +149,7 @@ namespace neolib
 		if (!waiting())
 			return;
 		iCancelling = true;
-		if (iTimerObject.cancel() == 0)
-		{
-			iCancelling = false;
-			return;
-		}
+		iTimerObject.cancel();
 		if (iDestroying && std::uncaught_exception())
 			return;
 		neolib::destroyable::destroyed_flag destroyed(*this);
@@ -214,10 +212,15 @@ namespace neolib
 
 	void timer::handler(const boost::system::error_code& aError)
 	{
+		if (cancelling())
+		{
+			iWaiting = false;
+			return;
+		}
 		if (iInReady)
 			return;
 		iWaiting = false;
-		if (!aError && enabled() && !cancelling())
+		if (!aError && enabled())
 		{
 			try
 			{
