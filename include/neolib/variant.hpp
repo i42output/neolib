@@ -38,6 +38,7 @@
 #include "neolib.hpp"
 #include <type_traits>
 #include <boost/variant.hpp>
+#include <boost/none_t.hpp>
 
 namespace neolib
 {
@@ -152,10 +153,18 @@ namespace neolib
 		{ 
 			return iContents == rhs.iContents;
 		} 
+		bool operator==(boost::none_t)
+		{
+			return empty();
+		}
 		bool operator!=(const variant& rhs) const
 		{ 
 			return !(iContents == rhs.iContents);
 		} 
+		bool operator!=(boost::none_t) const
+		{
+			return !empty();
+		}
 		bool operator<(const variant& rhs) const
 		{ 
 			return iContents < rhs.iContents;
