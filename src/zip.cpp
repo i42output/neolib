@@ -108,12 +108,14 @@ namespace neolib
 
 	#pragma pack()
 
-	zip::zip(const std::string& aZipFilePath) : iError(false)
+	zip::zip(const std::string& aZipFilePath) : iZipFileData{}, iZipFileDataLength{}, iError{false}
 	{
 		auto fileSize = boost::filesystem::file_size(aZipFilePath);
 		if (fileSize > iZipFile.max_size())
 			throw zip_file_too_big();
 		iZipFile.resize(static_cast<std::size_t>(fileSize));
+		iZipFileData = &iZipFile[0];
+		iZipFileDataLength = iZipFile.size();
 		std::ifstream input(aZipFilePath, std::ios::binary | std::ios::in);
 		if (input.read(reinterpret_cast<char*>(&iZipFile[0]), iZipFile.size()))
 			parse();
@@ -121,12 +123,17 @@ namespace neolib
 			iError = true;
 	}
 
-	zip::zip(const buffer_type& aZipFile) : iZipFile(aZipFile), iError(false)
+	zip::zip(const buffer_type& aZipFile) : iZipFile{aZipFile}, iZipFileData{&iZipFile[0]}, iZipFileDataLength{iZipFile.size()}, iError{false}
 	{
 		parse();
 	}
 
-	zip::zip(buffer_type&& aZipFile) : iZipFile(std::move(aZipFile)), iError(false)
+	zip::zip(buffer_type&& aZipFile) : iZipFile{std::move(aZipFile)}, iZipFileData{&iZipFile[0]}, iZipFileDataLength{iZipFile.size()}, iError{false}
+	{
+		parse();
+	}
+
+	zip::zip(const void* aZipFileData, std::size_t aZipFileDataLength) : iZipFileData{static_cast<const uint8_t*>(aZipFileData)}, iZipFileDataLength{aZipFileDataLength}, iError{ false }
 	{
 		parse();
 	}
@@ -137,7 +144,7 @@ namespace neolib
 		if (extract_to(aIndex, data))
 		{
 			std::ofstream out(aTargetDirectory + "/" + file_path(aIndex), std::ios::out | std::ios::binary);
-			out.write(reinterpret_cast<const char*>(&data[0]), data.size());
+			out.write(reinterpret_cast<const char*>(data[0]), data.size());
 			if (out)
 				return true;
 		}
@@ -151,9 +158,9 @@ namespace neolib
 			return false;
 		if (aIndex > iFiles.size())
 			return false;
-		const local_header* lh = reinterpret_cast<const local_header*>(&iZipFile.front() + iDirEntries[aIndex]->iHeaderOffset);
-		if (byte_cast(lh) < byte_cast(&iZipFile.front()) ||
-			byte_cast(lh) > byte_cast(&iZipFile.back()) - sizeof(local_header) + 1)
+		const local_header* lh = reinterpret_cast<const local_header*>(data_front() + iDirEntries[aIndex]->iHeaderOffset);
+		if (byte_cast(lh) < byte_cast(data_front()) ||
+			byte_cast(lh) > byte_cast(data_back()) - sizeof(local_header) + 1)
 		{
 			iError = true;
 			return false;
@@ -164,8 +171,8 @@ namespace neolib
 			return false;
 		}
 		const uint8_t* compressedData = reinterpret_cast<const uint8_t*>(lh + 1) + lh->iFilenameLength + lh->iExtraLength;
-		if (byte_cast(compressedData) < byte_cast(&iZipFile.front()) ||
-			byte_cast(compressedData) + lh->iCompressedSize - 1 > byte_cast(&iZipFile.back()))
+		if (byte_cast(compressedData) < byte_cast(data_front()) ||
+			byte_cast(compressedData) + lh->iCompressedSize - 1 > byte_cast(data_back()))
 		{
 			iError = true;
 			return false;
@@ -223,21 +230,21 @@ namespace neolib
 
 	bool zip::parse()
 	{
-		if (iZipFile.size() < sizeof(dir_header))
+		if (iZipFileDataLength < sizeof(dir_header))
 		{
 			iError = true;
 			return false;
 		}
-		const dir_header* dh = reinterpret_cast<const dir_header*>(&iZipFile.back() - sizeof(dir_header) + 1);
+		const dir_header* dh = reinterpret_cast<const dir_header*>(data_back() - sizeof(dir_header) + 1);
 		if (dh->iSignature != dir_header::Signature)
 		{
 			iError = true;
 			return false;
 		}
-		const dir_file_header* fh = reinterpret_cast<const dir_file_header*>(&iZipFile.back() - (dh->iDirSize + sizeof(dir_header)) + 1);
+		const dir_file_header* fh = reinterpret_cast<const dir_file_header*>(data_back() - (dh->iDirSize + sizeof(dir_header)) + 1);
 		for (size_t i = 0; i < dh->iDirEntries; ++i)
 		{
-			if (byte_cast(fh) < byte_cast(&iZipFile.front()) ||
+			if (byte_cast(fh) < byte_cast(data_front()) ||
 				byte_cast(fh) + sizeof(fh->iSignature) >= byte_cast(dh))
 			{
 				iError = false;
@@ -263,5 +270,15 @@ namespace neolib
 			}
 		}
 		return true;
+	}
+
+	const uint8_t* zip::data_front()
+	{
+		return iZipFileData;
+	}
+
+	const uint8_t* zip::data_back()
+	{
+		return (iZipFileData + iZipFileDataLength - 1);
 	}
 }

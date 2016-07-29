@@ -51,6 +51,7 @@ namespace neolib
 		zip(const std::string& aZipFilePath);
 		zip(const buffer_type& aZipFile);
 		zip(buffer_type&& aZipFile);
+		zip(const void* aZipFileData, std::size_t aZipFileDataLength);
 	public:
 		size_t file_count() const { return iFiles.size(); }
 		bool extract(size_t aIndex, const std::string& aTargetDirectory);
@@ -59,8 +60,12 @@ namespace neolib
 		bool ok() const { return !iError; }
 	private:
 		bool parse();
+		const uint8_t* data_front();
+		const uint8_t* data_back();
 	private:
 		buffer_type iZipFile;
+		const uint8_t* iZipFileData;
+		std::size_t iZipFileDataLength;
 		bool iError;
 		struct dir_header;
 		struct dir_file_header;
