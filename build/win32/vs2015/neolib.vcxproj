@@ -131,6 +131,8 @@
     <ClInclude Include="..\..\..\include\neolib\gunzip.hpp" />
     <ClInclude Include="..\..\..\include\neolib\hexdump.hpp" />
     <ClInclude Include="..\..\..\include\neolib\http.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\indexitor.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\index_array_tree.hpp" />
     <ClInclude Include="..\..\..\include\neolib\interlockable.hpp" />
     <ClInclude Include="..\..\..\include\neolib\io_thread.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_application.hpp" />
