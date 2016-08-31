@@ -454,6 +454,13 @@ namespace neolib
 			node* n = static_cast<node*>(find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred));
 			return iterator(*this, n, nodeIndex);
 		}
+		foreign_index_type foreign_index(const_iterator aPosition) const
+		{
+			if (aPosition.iNode->parent() != 0)
+				return do_foreign_index(aPosition.iNode);
+			else
+				return aPosition.iNode->left_foreign_index();
+		}
 
 	private:
 		template <class InputIterator>
@@ -467,6 +474,18 @@ namespace neolib
 				++iSize;
 			}
 			return iterator(*this, aPosition.iContainerPosition);
+		}
+		foreign_index_type do_foreign_index(const node* aNode) const
+		{
+			if (aNode != base::root_node())
+			{
+				if (aNode == aNode->parent()->left())
+					return do_foreign_index(static_cast<const node*>(aNode->parent())) - aNode->foreign_index() + aNode->left_foreign_index();
+				else
+					return do_foreign_index(static_cast<const node*>(aNode->parent())) + aNode->foreign_index() - aNode->right_foreign_index();
+			}
+			else
+				return root_node()->left_foreign_index();
 		}
 		node* find_node(size_type aContainerPosition) const
 		{
