@@ -161,6 +161,10 @@ namespace neolib
 			{
 				return right() ? right()->foreign_index() : foreign_index_type{};
 			}
+			foreign_index_type centre_foreign_index() const
+			{
+				return foreign_index() - left_foreign_index() - right_foreign_index();
+			}
 			void set_foreign_index(foreign_index_type aForeignIndex)
 			{
 				if (!is_nil())
