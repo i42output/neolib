@@ -91,44 +91,41 @@ namespace neolib
 
 		public:
 			iterator() :
-				iContainer(), iNode(), iContainerPosition()
+				iContainer(), iNode()
 			{
 			}
 			iterator(const iterator& aOther) :
-				iContainer(aOther.iContainer), iNode(aOther.iNode), iContainerPosition(aOther.iContainerPosition)
+				iContainer(aOther.iContainer), iNode(aOther.iNode)
 			{
 			}
 			iterator& operator=(const iterator& aOther)
 			{
 				iContainer = aOther.iContainer;
 				iNode = aOther.iNode;
-				iContainerPosition = aOther.iContainerPosition;
 				return *this;
 			}
 		private:
 			iterator(indexitor& aContainer, size_type aContainerPosition) :
-				iContainer(&aContainer), iNode(0), iContainerPosition(aContainerPosition)
+				iContainer(&aContainer), iNode(0)
 			{
 				iNode = iContainer->find_node(aContainerPosition);
 				if (iNode->is_nil())
 					*this = iContainer->end();
 			}
-			iterator(indexitor& aContainer, node* aNode, size_type aContainerPosition) :
-				iContainer(&aContainer), iNode(aNode), iContainerPosition(aContainerPosition)
+			iterator(indexitor& aContainer, node* aNode) :
+				iContainer(&aContainer), iNode(aNode)
 			{
 			}
 
 		public:
 			iterator& operator++()
 			{
-				++iContainerPosition;
 				iNode = static_cast<node*>(iNode->next());
 				return *this;
 			}
 			iterator& operator--()
 			{
-				--iContainerPosition;
-				iNode = (iNode != 0 ? static_cast<node*>(iNode->previous()) : iContainer.back_node());
+				iNode = static_cast<node*>(iNode != 0 ? iNode->previous() : iContainer->back_node());
 				return *this;
 			}
 			iterator operator++(int) { iterator ret(*this); operator++(); return ret; }
@@ -137,33 +134,35 @@ namespace neolib
 			{
 				if (aDifference < 0)
 					return operator-=(-aDifference);
-				*this = iterator(*iContainer, iContainerPosition + aDifference);
+				*this = iterator(*iContainer, container_position() + aDifference);
 				return *this;
 			}
 			iterator& operator-=(difference_type aDifference)
 			{
 				if (aDifference < 0)
 					return operator+=(-aDifference);
-				*this = iterator(*iContainer, iContainerPosition - aDifference);
+				*this = iterator(*iContainer, container_position() - aDifference);
 				return *this;
 			}
 			iterator operator+(difference_type aDifference) const { iterator result(*this); result += aDifference; return result; }
 			iterator operator-(difference_type aDifference) const { iterator result(*this); result -= aDifference; return result; }
 			reference operator[](difference_type aDifference) const { return *((*this) + aDifference); }
-			difference_type operator-(const iterator& aOther) const { return static_cast<difference_type>(iContainerPosition)-static_cast<difference_type>(aOther.iContainerPosition); }
+			difference_type operator-(const iterator& aOther) const { return static_cast<difference_type>(container_position())-static_cast<difference_type>(aOther.container_position()); }
 			reference operator*() const { return iNode->value(); }
 			pointer operator->() const { return &operator*(); }
-			bool operator==(const iterator& aOther) const { return iContainerPosition == aOther.iContainerPosition; }
-			bool operator!=(const iterator& aOther) const { return iContainerPosition != aOther.iContainerPosition; }
-			bool operator<(const iterator& aOther) const { return iContainerPosition < aOther.iContainerPosition; }
-			bool operator<=(const iterator& aOther) const { return iContainerPosition <= aOther.iContainerPosition; }
-			bool operator>(const iterator& aOther) const { return iContainerPosition > aOther.iContainerPosition; }
-			bool operator>=(const iterator& aOther) const { return iContainerPosition >= aOther.iContainerPosition; }
+			bool operator==(const iterator& aOther) const { return container_position() == aOther.container_position(); }
+			bool operator!=(const iterator& aOther) const { return container_position() != aOther.container_position(); }
+			bool operator<(const iterator& aOther) const { return container_position() < aOther.container_position(); }
+			bool operator<=(const iterator& aOther) const { return container_position() <= aOther.container_position(); }
+			bool operator>(const iterator& aOther) const { return container_position() > aOther.container_position(); }
+			bool operator>=(const iterator& aOther) const { return container_position() >= aOther.container_position(); }
+
+		private:
+			size_type container_position() const { return iContainer->index(*this); }
 
 		private:
 			indexitor* iContainer;
 			node* iNode;
-			size_type iContainerPosition;
 		};
 		class const_iterator : public std::iterator<std::random_access_iterator_tag, value_type, difference_type, const_pointer, const_reference>
 		{
@@ -173,55 +172,51 @@ namespace neolib
 
 		public:
 			const_iterator() :
-				iContainer(), iNode(), iContainerPosition()
+				iContainer(), iNode()
 			{
 			}
 			const_iterator(const const_iterator& aOther) :
-				iContainer(aOther.iContainer), iNode(aOther.iNode), iContainerPosition(aOther.iContainerPosition)
+				iContainer(aOther.iContainer), iNode(aOther.iNode)
 			{
 			}
 			const_iterator(const typename indexitor::iterator& aOther) :
-				iContainer(aOther.iContainer), iNode(aOther.iNode), iContainerPosition(aOther.iContainerPosition)
+				iContainer(aOther.iContainer), iNode(aOther.iNode)
 			{
 			}
 			const_iterator& operator=(const const_iterator& aOther)
 			{
 				iContainer = aOther.iContainer;
 				iNode = aOther.iNode;
-				iContainerPosition = aOther.iContainerPosition;
 				return *this;
 			}
 			const_iterator& operator=(const typename indexitor::iterator& aOther)
 			{
 				iContainer = aOther.iContainer;
 				iNode = aOther.iNode;
-				iContainerPosition = aOther.iContainerPosition;
 				return *this;
 			}
 		private:
 			const_iterator(const indexitor& aContainer, size_type aContainerPosition) :
-				iContainer(&aContainer), iNode(0), iContainerPosition(aContainerPosition)
+				iContainer(&aContainer), iNode(0)
 			{
 				iNode = iContainer->find_node(aContainerPosition);
 				if (iNode->is_nil())
 					*this = iContainer->end();
 			}
-			const_iterator(const indexitor& aContainer, node* aNode, size_type aContainerPosition) :
-				iContainer(&aContainer), iNode(aNode), iContainerPosition(aContainerPosition)
+			const_iterator(const indexitor& aContainer, node* aNode) :
+				iContainer(&aContainer), iNode(aNode)
 			{
 			}
 
 		public:
 			const_iterator& operator++()
 			{
-				++iContainerPosition;
 				iNode = static_cast<node*>(iNode->next());
 				return *this;
 			}
 			const_iterator& operator--()
 			{
-				--iContainerPosition;
-				iNode = (iNode != 0 ? static_cast<node*>(iNode->previous()) : iContainer.back_node());
+				iNode = static_cast<node*>(iNode != 0 ? iNode->previous() : iContainer->back_node());
 				return *this;
 			}
 			const_iterator operator++(int) { const_iterator ret(*this); operator++(); return ret; }
@@ -230,33 +225,35 @@ namespace neolib
 			{
 				if (aDifference < 0)
 					return operator-=(-aDifference);
-				*this = const_iterator(*iContainer, iContainerPosition + aDifference);
+				*this = const_iterator(*iContainer, container_position() + aDifference);
 				return *this;
 			}
 			const_iterator& operator-=(difference_type aDifference)
 			{
 				if (aDifference < 0)
 					return operator+=(-aDifference);
-				*this = const_iterator(*iContainer, iContainerPosition - aDifference);
+				*this = const_iterator(*iContainer, container_position() - aDifference);
 				return *this;
 			}
 			const_iterator operator+(difference_type aDifference) const { const_iterator result(*this); result += aDifference; return result; }
 			const_iterator operator-(difference_type aDifference) const { const_iterator result(*this); result -= aDifference; return result; }
 			const_reference operator[](difference_type aDifference) const { return *((*this) + aDifference); }
-			friend difference_type operator-(const const_iterator& aLhs, const const_iterator& aRhs) { return static_cast<difference_type>(aLhs.iContainerPosition)-static_cast<difference_type>(aRhs.iContainerPosition); }
+			friend difference_type operator-(const const_iterator& aLhs, const const_iterator& aRhs) { return static_cast<difference_type>(aLhs.container_position())-static_cast<difference_type>(aRhs.container_position()); }
 			const_reference operator*() const { return iNode->value(); }
 			const_pointer operator->() const { return &operator*(); }
-			bool operator==(const const_iterator& aOther) const { return iContainerPosition == aOther.iContainerPosition; }
-			bool operator!=(const const_iterator& aOther) const { return iContainerPosition != aOther.iContainerPosition; }
-			bool operator<(const const_iterator& aOther) const { return iContainerPosition < aOther.iContainerPosition; }
-			bool operator<=(const const_iterator& aOther) const { return iContainerPosition <= aOther.iContainerPosition; }
-			bool operator>(const const_iterator& aOther) const { return iContainerPosition > aOther.iContainerPosition; }
-			bool operator>=(const const_iterator& aOther) const { return iContainerPosition >= aOther.iContainerPosition; }
+			bool operator==(const const_iterator& aOther) const { return container_position() == aOther.container_position(); }
+			bool operator!=(const const_iterator& aOther) const { return container_position() != aOther.container_position(); }
+			bool operator<(const const_iterator& aOther) const { return container_position() < aOther.container_position(); }
+			bool operator<=(const const_iterator& aOther) const { return container_position() <= aOther.container_position(); }
+			bool operator>(const const_iterator& aOther) const { return container_position() > aOther.container_position(); }
+			bool operator>=(const const_iterator& aOther) const { return container_position() >= aOther.container_position(); }
+
+		private:
+			size_type container_position() const { return iContainer->index(*this); }
 
 		private:
 			const indexitor* iContainer;
 			node* iNode;
-			size_type iContainerPosition;
 		};
 		typedef std::reverse_iterator<iterator> reverse_iterator;
 		typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
@@ -304,19 +301,19 @@ namespace neolib
 		}
 		const_iterator begin() const
 		{
-			return const_iterator(*this, static_cast<node*>(base::front_node()), 0);
+			return const_iterator(*this, static_cast<node*>(base::front_node()));
 		}
 		const_iterator end() const
 		{
-			return const_iterator(*this, nullptr, iSize);
+			return const_iterator(*this, nullptr);
 		}
 		iterator begin()
 		{
-			return iterator(*this, static_cast<node*>(base::front_node()), 0);
+			return iterator(*this, static_cast<node*>(base::front_node()));
 		}
 		iterator end()
 		{
-			return iterator(*this, nullptr, iSize);
+			return iterator(*this, nullptr);
 		}
 		const_reverse_iterator rbegin() const
 		{
@@ -350,6 +347,20 @@ namespace neolib
 		{
 			return *--end();
 		}
+		size_type index(const_iterator aPosition) const
+		{
+			if (aPosition.iNode->parent() != 0)
+				return do_index(aPosition.iNode);
+			else
+				return aPosition.iNode->left_size();
+		}
+		size_type index(iterator aPosition) const
+		{
+			if (aPosition.iNode->parent() != 0)
+				return do_index(aPosition.iNode);
+			else
+				return aPosition.iNode->left_size();
+		}
 		iterator insert(const_iterator aPosition, const value_type& aValue)
 		{
 			return insert(aPosition, 1, aValue);
@@ -371,14 +382,14 @@ namespace neolib
 		iterator insert(const_iterator aPosition, size_type aCount, const value_type& aValue)
 		{
 			if (aCount == 0)
-				return iterator(*this, aPosition.iNode, aPosition.iContainerPosition);
+				return iterator{*this, aPosition.iNode};
 			while (aCount > 0)
 			{
 				aPosition = insert(aPosition, &aValue, &aValue+1);
 				++aPosition;
 				--aCount;
 			}
-			return iterator(*this, aPosition.iContainerPosition);
+			return iterator{*this, aPosition.container_position()};
 		}
 		void clear()
 		{
@@ -401,13 +412,15 @@ namespace neolib
 		}
 		iterator erase(const_iterator aPosition)
 		{
+			auto pos = aPosition.container_position();
 			erase(aPosition, aPosition + 1);
-			return iterator(*this, aPosition.iContainerPosition);
+			return iterator{*this, pos};
 		}
 		iterator erase(const_iterator aFirst, const_iterator aLast)
 		{
 			if (aFirst == aLast)
-				return iterator(*this, aFirst.iNode, aFirst.iContainerPosition);
+				return iterator{*this, aFirst.container_position()};
+			auto pos = aFirst.container_position();
 			for (node* n = aFirst.iNode; n != aLast.iNode;)
 			{
 				node* next = static_cast<node*>(n->next());
@@ -415,7 +428,7 @@ namespace neolib
 				--iSize;
 				n = next;
 			}
-			return iterator(*this, aFirst.iContainerPosition);
+			return iterator{*this, pos};
 		}
 		void pop_front()
 		{
@@ -439,20 +452,20 @@ namespace neolib
 			insert(erase(aPosition), value_type{ currentValue.first, aForeignIndex });
 		}
 		template <typename Pred = std::less<foreign_index_type>>
-		const_iterator find_by_foreign_index(foreign_index_type aForeignIndex, Pred aPred = Pred{}) const
+		std::pair<const_iterator, foreign_index_type> find_by_foreign_index(foreign_index_type aForeignIndex, Pred aPred = Pred{}) const
 		{
 			size_type nodeIndex{};
 			foreign_index_type nodeForeignIndex{};
 			node* n = static_cast<node*>(find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred));
-			return const_iterator(*this, n, nodeIndex);
+			return std::make_pair(const_iterator{*this, n}, nodeForeignIndex);
 		}
 		template <typename Pred = std::less<foreign_index_type>>
-		iterator find_by_foreign_index(foreign_index_type aForeignIndex, Pred aPred = Pred{})
+		std::pair<iterator, foreign_index_type> find_by_foreign_index(foreign_index_type aForeignIndex, Pred aPred = Pred{})
 		{
 			size_type nodeIndex{};
 			foreign_index_type nodeForeignIndex{};
 			node* n = static_cast<node*>(find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred));
-			return iterator(*this, n, nodeIndex);
+			return std::make_pair(iterator{*this, n}, nodeForeignIndex);
 		}
 		foreign_index_type foreign_index(const_iterator aPosition) const
 		{
@@ -467,13 +480,25 @@ namespace neolib
 		iterator do_insert(const_iterator aPosition, InputIterator aFirst, InputIterator aLast)
 		{
 			node* before = aPosition.iNode;
-			size_type pos = aPosition.iContainerPosition;
+			size_type pos = aPosition.container_position();
 			while (aFirst != aLast)
 			{
 				insert_node(allocate_node(before, *aFirst++), pos++);
 				++iSize;
 			}
-			return iterator(*this, aPosition.iContainerPosition);
+			return iterator(*this, aPosition.container_position());
+		}
+		size_type do_index(const node* aNode) const
+		{
+			if (aNode != base::root_node())
+			{
+				if (aNode == aNode->parent()->left())
+					return do_index(static_cast<const node*>(aNode->parent())) - aNode->size() + aNode->left_size();
+				else
+					return do_index(static_cast<const node*>(aNode->parent())) + aNode->parent()->centre_size() + aNode->left_size();
+			}
+			else
+				return root_node()->left_size();
 		}
 		foreign_index_type do_foreign_index(const node* aNode) const
 		{

@@ -136,6 +136,10 @@ namespace neolib
 			{
 				return right() ? right()->size() : 0;
 			}
+			size_type centre_size() const
+			{
+				return size() - left_size() - right_size();
+			}
 			void set_size(size_type aSize)
 			{
 				if (!is_nil())
