@@ -128,24 +128,24 @@ namespace neolib
 				iNode = static_cast<node*>(iNode != 0 ? iNode->previous() : iContainer->back_node());
 				return *this;
 			}
-			iterator operator++(int) { iterator ret(*this); operator++(); return ret; }
-			iterator operator--(int) { iterator ret(*this); operator--(); return ret; }
+			iterator operator++(int) { iterator ret{*this}; operator++(); return ret; }
+			iterator operator--(int) { iterator ret{*this}; operator--(); return ret; }
 			iterator& operator+=(difference_type aDifference)
 			{
 				if (aDifference < 0)
 					return operator-=(-aDifference);
-				*this = iterator(*iContainer, container_position() + aDifference);
+				*this = iterator{*iContainer, container_position() + aDifference};
 				return *this;
 			}
 			iterator& operator-=(difference_type aDifference)
 			{
 				if (aDifference < 0)
 					return operator+=(-aDifference);
-				*this = iterator(*iContainer, container_position() - aDifference);
+				*this = iterator{*iContainer, container_position() - aDifference};
 				return *this;
 			}
-			iterator operator+(difference_type aDifference) const { iterator result(*this); result += aDifference; return result; }
-			iterator operator-(difference_type aDifference) const { iterator result(*this); result -= aDifference; return result; }
+			iterator operator+(difference_type aDifference) const { iterator result{*this}; result += aDifference; return result; }
+			iterator operator-(difference_type aDifference) const { iterator result{*this}; result -= aDifference; return result; }
 			reference operator[](difference_type aDifference) const { return *((*this) + aDifference); }
 			difference_type operator-(const iterator& aOther) const { return static_cast<difference_type>(container_position())-static_cast<difference_type>(aOther.container_position()); }
 			reference operator*() const { return iNode->value(); }
@@ -219,24 +219,24 @@ namespace neolib
 				iNode = static_cast<node*>(iNode != 0 ? iNode->previous() : iContainer->back_node());
 				return *this;
 			}
-			const_iterator operator++(int) { const_iterator ret(*this); operator++(); return ret; }
-			const_iterator operator--(int) { const_iterator ret(*this); operator--(); return ret; }
+			const_iterator operator++(int) { const_iterator ret{*this}; operator++(); return ret; }
+			const_iterator operator--(int) { const_iterator ret{*this}; operator--(); return ret; }
 			const_iterator& operator+=(difference_type aDifference)
 			{
 				if (aDifference < 0)
 					return operator-=(-aDifference);
-				*this = const_iterator(*iContainer, container_position() + aDifference);
+				*this = const_iterator{*iContainer, container_position() + aDifference};
 				return *this;
 			}
 			const_iterator& operator-=(difference_type aDifference)
 			{
 				if (aDifference < 0)
 					return operator+=(-aDifference);
-				*this = const_iterator(*iContainer, container_position() - aDifference);
+				*this = const_iterator{*iContainer, container_position() - aDifference};
 				return *this;
 			}
-			const_iterator operator+(difference_type aDifference) const { const_iterator result(*this); result += aDifference; return result; }
-			const_iterator operator-(difference_type aDifference) const { const_iterator result(*this); result -= aDifference; return result; }
+			const_iterator operator+(difference_type aDifference) const { const_iterator result{*this}; result += aDifference; return result; }
+			const_iterator operator-(difference_type aDifference) const { const_iterator result{*this}; result -= aDifference; return result; }
 			const_reference operator[](difference_type aDifference) const { return *((*this) + aDifference); }
 			friend difference_type operator-(const const_iterator& aLhs, const const_iterator& aRhs) { return static_cast<difference_type>(aLhs.container_position())-static_cast<difference_type>(aRhs.container_position()); }
 			const_reference operator*() const { return iNode->value(); }
@@ -285,7 +285,7 @@ namespace neolib
 		}
 		indexitor& operator=(const indexitor& aOther)
 		{
-			indexitor newContents(aOther);
+			indexitor newContents{aOther};
 			newContents.swap(*this);
 			return *this;
 		}
@@ -301,35 +301,35 @@ namespace neolib
 		}
 		const_iterator begin() const
 		{
-			return const_iterator(*this, static_cast<node*>(base::front_node()));
+			return const_iterator{*this, static_cast<node*>(base::front_node())};
 		}
 		const_iterator end() const
 		{
-			return const_iterator(*this, nullptr);
+			return const_iterator{*this, nullptr};
 		}
 		iterator begin()
 		{
-			return iterator(*this, static_cast<node*>(base::front_node()));
+			return iterator{*this, static_cast<node*>(base::front_node())};
 		}
 		iterator end()
 		{
-			return iterator(*this, nullptr);
+			return iterator{*this, nullptr};
 		}
 		const_reverse_iterator rbegin() const
 		{
-			return const_reverse_iterator(end());
+			return const_reverse_iterator{end()};
 		}
 		const_reverse_iterator rend() const
 		{
-			return const_reverse_iterator(begin());
+			return const_reverse_iterator{begin()};
 		}
 		reverse_iterator rbegin()
 		{
-			return reverse_iterator(end());
+			return reverse_iterator{end()};
 		}
 		reverse_iterator rend()
 		{
-			return reverse_iterator(begin());
+			return reverse_iterator{begin()};
 		}
 		const_reference front() const
 		{
@@ -349,17 +349,27 @@ namespace neolib
 		}
 		size_type index(const_iterator aPosition) const
 		{
-			if (aPosition.iNode->parent() != 0)
-				return do_index(aPosition.iNode);
+			if (aPosition.iNode != 0)
+			{
+				if (aPosition.iNode->parent() != 0)
+					return do_index(aPosition.iNode);
+				else
+					return aPosition.iNode->left_size();
+			}
 			else
-				return aPosition.iNode->left_size();
+				return size();
 		}
 		size_type index(iterator aPosition) const
 		{
-			if (aPosition.iNode->parent() != 0)
-				return do_index(aPosition.iNode);
+			if (aPosition.iNode != 0)
+			{
+				if (aPosition.iNode->parent() != 0)
+					return do_index(aPosition.iNode);
+				else
+					return aPosition.iNode->left_size();
+			}
 			else
-				return aPosition.iNode->left_size();
+				return size();
 		}
 		iterator insert(const_iterator aPosition, const value_type& aValue)
 		{
@@ -383,13 +393,14 @@ namespace neolib
 		{
 			if (aCount == 0)
 				return iterator{*this, aPosition.iNode};
+			auto pos = aPosition.container_position();
 			while (aCount > 0)
 			{
 				aPosition = insert(aPosition, &aValue, &aValue+1);
 				++aPosition;
 				--aCount;
 			}
-			return iterator{*this, aPosition.container_position()};
+			return iterator{*this, pos};
 		}
 		void clear()
 		{
@@ -456,23 +467,34 @@ namespace neolib
 		{
 			size_type nodeIndex{};
 			foreign_index_type nodeForeignIndex{};
-			node* n = static_cast<node*>(find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred));
-			return std::make_pair(const_iterator{*this, n}, nodeForeignIndex);
+			auto n = find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred);
+			if (!n->is_nil())
+				return std::make_pair(const_iterator{*this, static_cast<node*>(n)}, nodeForeignIndex);
+			else
+				return std::make_pair(const_iterator{*this, nullptr}, nodeForeignIndex);
 		}
 		template <typename Pred = std::less<foreign_index_type>>
 		std::pair<iterator, foreign_index_type> find_by_foreign_index(foreign_index_type aForeignIndex, Pred aPred = Pred{})
 		{
 			size_type nodeIndex{};
 			foreign_index_type nodeForeignIndex{};
-			node* n = static_cast<node*>(find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred));
-			return std::make_pair(iterator{*this, n}, nodeForeignIndex);
+			auto n = find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred);
+			if (!n->is_nil())
+				return std::make_pair(iterator{*this, static_cast<node*>(n)}, nodeForeignIndex);
+			else
+				return std::make_pair(iterator{*this, nullptr}, nodeForeignIndex);
 		}
 		foreign_index_type foreign_index(const_iterator aPosition) const
 		{
-			if (aPosition.iNode->parent() != 0)
-				return do_foreign_index(aPosition.iNode);
+			if (aPosition.iNode != 0)
+			{
+				if (aPosition.iNode->parent() != 0)
+					return do_foreign_index(aPosition.iNode);
+				else
+					return aPosition.iNode->left_foreign_index();
+			}
 			else
-				return aPosition.iNode->left_foreign_index();
+				return empty() ? foreign_index_type{} : do_foreign_index(static_cast<const node*>(back_node())) + back_node()->foreign_index();
 		}
 
 	private:
@@ -481,12 +503,13 @@ namespace neolib
 		{
 			node* before = aPosition.iNode;
 			size_type pos = aPosition.container_position();
+			auto nextPos = pos;
 			while (aFirst != aLast)
 			{
-				insert_node(allocate_node(before, *aFirst++), pos++);
+				insert_node(allocate_node(before, *aFirst++), nextPos++);
 				++iSize;
 			}
-			return iterator(*this, aPosition.container_position());
+			return iterator{*this, pos};
 		}
 		size_type do_index(const node* aNode) const
 		{

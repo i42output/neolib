@@ -428,13 +428,14 @@ namespace neolib
 		{
 			if (aCount == 0)
 				return iterator(*this, aPosition.iNode, aPosition.iContainerPosition, aPosition.iSegmentPosition);
+			auto pos = aPosition.iContainerPosition;
 			while (aCount > 0)
 			{
 				aPosition = insert(aPosition, &aValue, &aValue+1);
 				++aPosition;
 				--aCount;
 			}
-			return iterator(*this, aPosition.iContainerPosition);
+			return iterator{*this, pos};
 		}
 		void clear()
 		{
@@ -458,12 +459,12 @@ namespace neolib
 		iterator erase(const_iterator aPosition)
 		{
 			erase(aPosition, aPosition + 1);
-			return iterator(*this, aPosition.iContainerPosition);
+			return iterator{*this, aPosition.iContainerPosition};
 		}
 		iterator erase(const_iterator aFirst, const_iterator aLast)
 		{
 			if (aFirst == aLast)
-				return iterator(*this, aFirst.iNode, aFirst.iContainerPosition, aFirst.iSegmentPosition);
+				return iterator{*this, aFirst.iNode, aFirst.iContainerPosition, aFirst.iSegmentPosition};
 			segment_type& segmentFirst = aFirst.iNode->segment();
 			if (aFirst.iNode == aLast.iNode)
 			{
@@ -499,7 +500,7 @@ namespace neolib
 					aLast.iNode->set_size(aLast.iNode->size() - secondRemoved);
 				iSize -= secondRemoved;
 			}
-			return iterator(*this, aFirst.iContainerPosition);
+			return iterator{*this, aFirst.iContainerPosition};
 		}
 		void pop_front()
 		{
@@ -523,7 +524,7 @@ namespace neolib
 		{
 			size_type count = std::distance(aFirst, aLast);
 			if (count == 0)
-				return iterator(*this, aPosition.iNode, aPosition.iContainerPosition, aPosition.iSegmentPosition);
+				return iterator{*this, aPosition.iNode, aPosition.iContainerPosition, aPosition.iSegmentPosition};
 			node* before = aPosition.iNode;
 			node* after = aPosition.iNode ? static_cast<node*>(aPosition.iNode->next()) : 0;
 			node* lastNode = aPosition.iNode;
@@ -584,9 +585,9 @@ namespace neolib
 					break;
 			}
 			if (aPosition.iSegmentPosition != aPosition.iNode->segment().size()) // was not end
-				return iterator(*this, aPosition.iNode, aPosition.iContainerPosition, aPosition.iSegmentPosition);
+				return iterator{*this, aPosition.iNode, aPosition.iContainerPosition, aPosition.iSegmentPosition};
 			else
-				return iterator(*this, static_cast<node*>(aPosition.iNode->next()), aPosition.iContainerPosition, 0);
+				return iterator{*this, static_cast<node*>(aPosition.iNode->next()), aPosition.iContainerPosition, 0};
 		}
 		template <class InputIterator>
 		typename std::enable_if<std::is_same<typename std::iterator_traits<InputIterator>::iterator_category, std::input_iterator_tag>::value, iterator>::type
@@ -597,7 +598,7 @@ namespace neolib
 				aPosition = insert(aPosition, 1, *aFirst++);
 				++aPosition;
 			}
-			return iterator(*this, aPosition.iContainerPosition);
+			return iterator{*this, aPosition.iContainerPosition};
 		}
 		node* find_node(size_type aContainerPosition, size_type& aSegmentPosition) const
 		{
