@@ -323,7 +323,7 @@ namespace neolib
 			node* x = root_node();
 			size_type index = size_left(x);
 			foreign_index_type foreignIndex = foreign_index_left(x);
-			while (x != nil_node() && (aForeignIndex < foreignIndex || aForeignIndex >= foreignIndex + (foreign_index(x) - foreign_index_left(x) - foreign_index_right(x))))
+			while (x != nil_node() && (aPred(aForeignIndex, foreignIndex) || !aPred(aForeignIndex, foreignIndex + (foreign_index(x) - foreign_index_left(x) - foreign_index_right(x)))))
 			{
 				if (aPred(aForeignIndex, foreignIndex))
 				{
