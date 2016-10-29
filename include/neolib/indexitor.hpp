@@ -50,6 +50,7 @@ namespace neolib
 		typedef T data_type;
 		typedef ForeignIndex foreign_index_type;
 		typedef std::pair<data_type, const foreign_index_type> value_type;
+		typedef std::pair<const foreign_index_type, const foreign_index_type> skip_type;
 		typedef Alloc allocator_type;
 		typedef typename allocator_type::reference reference;
 		typedef typename allocator_type::pointer pointer;
@@ -62,8 +63,8 @@ namespace neolib
 		class node : public base::node
 		{
 		public:
-			node(const value_type& aValue) : 
-				iValue(aValue)
+			node(const value_type& aValue, const skip_type& aSkip = skip_type{}) :
+				iValue{aValue}, iSkip{aSkip}
 			{
 			}
 
@@ -76,9 +77,18 @@ namespace neolib
 			{
 				return iValue;
 			}
+			const skip_type& skip() const
+			{
+				return iSkip;
+			}
+			skip_type& skip()
+			{
+				return iSkip;
+			}
 
 		private:
 			value_type iValue;
+			skip_type iSkip;
 		};
 		typedef typename allocator_type:: template rebind<node>::other node_allocator_type;
 	public:
@@ -371,9 +381,9 @@ namespace neolib
 			else
 				return size();
 		}
-		iterator insert(const_iterator aPosition, const value_type& aValue)
+		iterator insert(const_iterator aPosition, const value_type& aValue, const skip_type& aSkip = skip_type{})
 		{
-			return insert(aPosition, 1, aValue);
+			return insert(aPosition, 1, aValue, aSkip);
 		}
 		const_reference operator[](size_type aIndex) const
 		{
@@ -385,18 +395,24 @@ namespace neolib
 		}
 		template <class InputIterator>
 		typename std::enable_if<!std::is_integral<InputIterator>::value, iterator>::type
-		insert(const_iterator aPosition, InputIterator aFirst, InputIterator aLast)
+			insert(const_iterator aPosition, InputIterator aFirst, InputIterator aLast)
 		{
 			return do_insert(aPosition, aFirst, aLast);
 		}
-		iterator insert(const_iterator aPosition, size_type aCount, const value_type& aValue)
+		template <class InputIterator, class SkipIterator>
+		typename std::enable_if<!std::is_integral<InputIterator>::value, iterator>::type
+		insert(const_iterator aPosition, InputIterator aFirst, InputIterator aLast, SkipIterator aSkipFirst, SkipIterator aSkipSecond)
+		{
+			return do_insert(aPosition, aFirst, aLast, aSkipFirst, aSkipSecond);
+		}
+		iterator insert(const_iterator aPosition, size_type aCount, const value_type& aValue, const skip_type& aSkip = skip_type{})
 		{
 			if (aCount == 0)
 				return iterator{*this, aPosition.iNode};
 			auto pos = aPosition.container_position();
 			while (aCount > 0)
 			{
-				aPosition = insert(aPosition, &aValue, &aValue+1);
+				aPosition = insert(aPosition, &aValue, &aValue+1, &aSkip, &aSkip+1);
 				++aPosition;
 				--aCount;
 			}
@@ -406,18 +422,18 @@ namespace neolib
 		{
 			erase(begin(), end());
 		}
-		void push_front(const value_type& aValue)
+		void push_front(const value_type& aValue, const skip_type& aSkip = skip_type{})
 		{
-			insert(begin(), aValue);
+			insert(begin(), aValue, aSkip);
 		}
-		void push_back(const value_type& aValue)
+		void push_back(const value_type& aValue, const skip_type& aSkip = skip_type{})
 		{
-			insert(end(), aValue);
+			insert(end(), aValue, aSkip);
 		}
-		void resize(std::size_t aNewSize, const value_type& aValue = value_type())
+		void resize(std::size_t aNewSize, const value_type& aValue = value_type(), const skip_type& aSkip = skip_type{})
 		{
 			if (size() < aNewSize)
-				insert(end(), aNewSize - size(), aValue);
+				insert(end(), aNewSize - size(), aValue, aSkip);
 			else
 				erase(begin() + aNewSize, end());
 		}
@@ -457,10 +473,10 @@ namespace neolib
 		}
 
 	public:
-		void update_foreign_index(const_iterator aPosition, const foreign_index_type& aForeignIndex)
+		void update_foreign_index(const_iterator aPosition, const foreign_index_type& aForeignIndex, const skip_type& aSkip = skip_type{})
 		{
 			value_type currentValue = *aPosition;
-			insert(erase(aPosition), value_type{ currentValue.first, aForeignIndex });
+			insert(erase(aPosition), value_type{ currentValue.first, aForeignIndex }, aSkip);
 		}
 		template <typename Pred = std::less<foreign_index_type>>
 		std::pair<const_iterator, foreign_index_type> find_by_foreign_index(foreign_index_type aForeignIndex, Pred aPred = Pred{}) const
@@ -469,7 +485,7 @@ namespace neolib
 			foreign_index_type nodeForeignIndex{};
 			auto n = find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred);
 			if (!n->is_nil())
-				return std::make_pair(const_iterator{*this, static_cast<node*>(n)}, nodeForeignIndex);
+				return std::make_pair(const_iterator{*this, static_cast<node*>(n)}, nodeForeignIndex + static_cast<node*>(n)->skip().first);
 			else
 				return std::make_pair(const_iterator{*this, nullptr}, nodeForeignIndex);
 		}
@@ -480,19 +496,14 @@ namespace neolib
 			foreign_index_type nodeForeignIndex{};
 			auto n = find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred);
 			if (!n->is_nil())
-				return std::make_pair(iterator{*this, static_cast<node*>(n)}, nodeForeignIndex);
+				return std::make_pair(iterator{*this, static_cast<node*>(n)}, nodeForeignIndex + static_cast<node*>(n)->skip().first);
 			else
 				return std::make_pair(iterator{*this, nullptr}, nodeForeignIndex);
 		}
 		foreign_index_type foreign_index(const_iterator aPosition) const
 		{
 			if (aPosition.iNode != 0)
-			{
-				if (aPosition.iNode->parent() != 0)
-					return do_foreign_index(aPosition.iNode);
-				else
-					return aPosition.iNode->left_foreign_index();
-			}
+				return do_foreign_index(aPosition.iNode) + aPosition.iNode->skip().first;
 			else
 				return empty() ? foreign_index_type{} : do_foreign_index(static_cast<const node*>(back_node())) + back_node()->foreign_index();
 		}
@@ -510,6 +521,19 @@ namespace neolib
 				++iSize;
 			}
 			return iterator{*this, pos};
+		}
+		template <class InputIterator, class SkipIterator>
+		iterator do_insert(const_iterator aPosition, InputIterator aFirst, InputIterator aLast, SkipIterator aSkipFirst, SkipIterator aSkipLast)
+		{
+			node* before = aPosition.iNode;
+			size_type pos = aPosition.container_position();
+			auto nextPos = pos;
+			while (aFirst != aLast && aSkipFirst != aSkipLast)
+			{
+				insert_node(allocate_node(before, *aFirst++, *aSkipFirst++), nextPos++);
+				++iSize;
+			}
+			return iterator{ *this, pos };
 		}
 		size_type do_index(const node* aNode) const
 		{
@@ -539,12 +563,12 @@ namespace neolib
 		{
 			return static_cast<node*>(base::find_node(aContainerPosition));
 		}
-		node* allocate_node(node* aBefore, const value_type& aValue)
+		node* allocate_node(node* aBefore, const value_type& aValue, const skip_type& aSkip = skip_type{})
 		{
 			node* newNode = std::allocator_traits<node_allocator_type>::allocate(iAllocator, 1);
 			try
 			{
-				std::allocator_traits<node_allocator_type>::construct(iAllocator, newNode, node(aValue));
+				std::allocator_traits<node_allocator_type>::construct(iAllocator, newNode, node(aValue, aSkip));
 			}
 			catch (...)
 			{
@@ -578,7 +602,7 @@ namespace neolib
 				}
 			}
 			newNode->set_size(1);
-			newNode->set_foreign_index(aValue.second);
+			newNode->set_foreign_index(aSkip.first + aValue.second + aSkip.second);
 			return newNode;
 		}
 		void free_node(node* aNode)
