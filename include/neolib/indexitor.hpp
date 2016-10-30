@@ -39,6 +39,7 @@
 #include "neolib.hpp"
 #include <memory>
 #include <iterator>
+#include <type_traits>
 #include "index_array_tree.hpp"
 
 namespace neolib
@@ -505,7 +506,7 @@ namespace neolib
 			if (aPosition.iNode != 0)
 				return do_foreign_index(aPosition.iNode) + aPosition.iNode->skip().first;
 			else
-				return empty() ? foreign_index_type{} : do_foreign_index(static_cast<const node*>(back_node())) + back_node()->foreign_index();
+				return empty() ? foreign_index_type{} : do_foreign_index(static_cast<const node*>(base::back_node())) + base::back_node()->foreign_index();
 		}
 
 	private:
@@ -517,7 +518,7 @@ namespace neolib
 			auto nextPos = pos;
 			while (aFirst != aLast)
 			{
-				insert_node(allocate_node(before, *aFirst++), nextPos++);
+				base::insert_node(allocate_node(before, *aFirst++), nextPos++);
 				++iSize;
 			}
 			return iterator{*this, pos};
@@ -530,7 +531,7 @@ namespace neolib
 			auto nextPos = pos;
 			while (aFirst != aLast && aSkipFirst != aSkipLast)
 			{
-				insert_node(allocate_node(before, *aFirst++, *aSkipFirst++), nextPos++);
+				base::insert_node(allocate_node(before, *aFirst++, *aSkipFirst++), nextPos++);
 				++iSize;
 			}
 			return iterator{ *this, pos };
@@ -545,7 +546,7 @@ namespace neolib
 					return do_index(static_cast<const node*>(aNode->parent())) + aNode->parent()->centre_size() + aNode->left_size();
 			}
 			else
-				return root_node()->left_size();
+				return base::root_node()->left_size();
 		}
 		foreign_index_type do_foreign_index(const node* aNode) const
 		{
@@ -557,7 +558,7 @@ namespace neolib
 					return do_foreign_index(static_cast<const node*>(aNode->parent())) + aNode->parent()->centre_foreign_index() + aNode->left_foreign_index();
 			}
 			else
-				return root_node()->left_foreign_index();
+				return base::root_node()->left_foreign_index();
 		}
 		node* find_node(size_type aContainerPosition) const
 		{
