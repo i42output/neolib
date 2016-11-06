@@ -508,6 +508,20 @@ namespace neolib
 			else
 				return empty() ? foreign_index_type{} : do_foreign_index(static_cast<const node*>(base::back_node())) + base::back_node()->foreign_index();
 		}
+		foreign_index_type skip_before(const_iterator aPosition) const
+		{
+			if (aPosition.iNode != 0)
+				return aPosition.iNode->skip().first;
+			else
+				return foreign_index_type{};
+		}
+		foreign_index_type skip_after(const_iterator aPosition) const
+		{
+			if (aPosition.iNode != 0)
+				return aPosition.iNode->skip().second;
+			else
+				return foreign_index_type{};
+		}
 
 	private:
 		template <class InputIterator>
