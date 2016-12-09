@@ -51,8 +51,31 @@ namespace neolib
 		struct already_waiting : std::logic_error { already_waiting() : std::logic_error("neolib::timer::already_waiting") {} };
 		struct already_enabled : std::logic_error { already_enabled() : std::logic_error("neolib::timer::already_enabled") {} };
 		struct already_disabled : std::logic_error { already_disabled() : std::logic_error("neolib::timer::already_disabled") {} };
-		struct in_cancel : std::logic_error { in_cancel() : std::logic_error("neolib::timer::in_cancel") {} };
 		struct timer_destroyed : std::logic_error { timer_destroyed() : std::logic_error("neolib::timer::timer_destroyed") {} };
+	private:
+		class handler_proxy
+		{
+		public:
+			handler_proxy(timer& aParent) : iParent(aParent), iOrphaned(false)
+			{
+			}
+		public:
+			void operator()(const boost::system::error_code& aError)
+			{
+				if (!iOrphaned)
+					iParent.handler(aError);
+			}
+			void orphan(bool aCreateNewHandlerProxy = true)
+			{
+				iOrphaned = true;
+				iParent.iHandlerProxy.reset();
+				if (aCreateNewHandlerProxy)
+					iParent.iHandlerProxy = std::make_shared<handler_proxy>(iParent);
+			}
+		private:
+			timer& iParent;
+			bool iOrphaned;
+		};
 		// construction
 	public:
 		timer(io_thread& aOwnerThread, uint32_t aDuration_ms, bool aInitialWait = true);
@@ -71,25 +94,21 @@ namespace neolib
 		void cancel();
 		void reset();
 		bool waiting() const;
-		bool cancelling() const;
 		uint32_t duration() const;
 		void set_duration(uint32_t aDuration_ms, bool aEffectiveImmediately = false);
 		uint32_t duration_ms() const;
 		// implementation
-	protected:
-		void set_destroying();
 	private:
 		void handler(const boost::system::error_code& aError);
 		virtual void ready() = 0;
 		// attributes
 	private:
 		io_thread& iOwnerThread;
+		std::shared_ptr<handler_proxy> iHandlerProxy;
 		boost::asio::deadline_timer iTimerObject;
 		uint32_t iDuration_ms;
 		bool iEnabled;
 		bool iWaiting;
-		bool iCancelling;
-		bool iDestroying;
 		bool iInReady;
 	};
 

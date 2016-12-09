@@ -40,12 +40,11 @@ namespace neolib
 {
 	timer::timer(io_thread& aOwnerThread, uint32_t aDuration_ms, bool aInitialWait) :
 		iOwnerThread(aOwnerThread),
+		iHandlerProxy(new handler_proxy(*this)),
 		iTimerObject(aOwnerThread.timer_io_service().native_object()),
 		iDuration_ms(aDuration_ms), 
 		iEnabled(true),
 		iWaiting(false), 
-		iCancelling(false),
-		iDestroying(false),
 		iInReady(false)
 	{
 		if (aInitialWait)
@@ -54,12 +53,11 @@ namespace neolib
 
 	timer::timer(const timer& aOther) :
 		iOwnerThread(aOther.iOwnerThread),
+		iHandlerProxy(new handler_proxy(*this)),
 		iTimerObject(aOther.iOwnerThread.timer_io_service().native_object()),
 		iDuration_ms(aOther.iDuration_ms), 
 		iEnabled(aOther.iEnabled),
 		iWaiting(false), 
-		iCancelling(false),
-		iDestroying(false),
 		iInReady(false)
 	{
 		if (aOther.waiting())
@@ -69,12 +67,7 @@ namespace neolib
 	timer& timer::operator=(const timer& aOther)
 	{
 		if (waiting())
-		{
-			neolib::destroyable::destroyed_flag destroyed(*this);
 			cancel();
-			if (destroyed)
-				throw timer_destroyed();
-		}
 		iDuration_ms = aOther.iDuration_ms;
 		iEnabled = aOther.iEnabled;
 		if (aOther.waiting())
@@ -84,7 +77,6 @@ namespace neolib
 	
 	timer::~timer()
 	{
-		set_destroying();
 		cancel();
 	}
 
@@ -123,16 +115,12 @@ namespace neolib
 
 	void timer::again()
 	{
-		if (iDestroying)
-			return;
 		if (disabled())
 			enable(false);
 		if (waiting())
 			throw already_waiting();
-		if (cancelling())
-			throw in_cancel();
 		iTimerObject.expires_from_now(boost::posix_time::milliseconds(iDuration_ms));
-		iTimerObject.async_wait(boost::bind(&timer::handler, this, boost::asio::placeholders::error));
+		iTimerObject.async_wait(boost::bind(&handler_proxy::operator(), iHandlerProxy, boost::asio::placeholders::error));
 		iWaiting = true;
 	}
 
@@ -144,42 +132,21 @@ namespace neolib
 
 	void timer::cancel()
 	{
-		if (cancelling())
-			return;
 		if (!waiting())
 			return;
-		iCancelling = true;
+		iHandlerProxy->orphan();
 		iTimerObject.cancel();
-		if (iDestroying && std::uncaught_exception())
-			return;
-		neolib::destroyable::destroyed_flag destroyed(*this);
-		while (waiting())
-		{
-			iOwnerThread.timer_io_service().do_io(false);
-			if (destroyed)
-				return;
-		}
-		if (!iDestroying)
-			iCancelling = false;
 	}
 
 	void timer::reset()
 	{
-		neolib::destroyable::destroyed_flag destroyed(*this);
 		cancel();
-		if (destroyed)
-			return;
 		again();
 	}
 
 	bool timer::waiting() const
 	{
 		return iWaiting;
-	}
-
-	bool timer::cancelling() const
-	{
-		return iCancelling;
 	}
 
 	uint32_t timer::duration() const
@@ -205,18 +172,8 @@ namespace neolib
 		return iDuration_ms;
 	}
 
-	void timer::set_destroying()
-	{
-		iDestroying = true;
-	}
-
 	void timer::handler(const boost::system::error_code& aError)
 	{
-		if (cancelling())
-		{
-			iWaiting = false;
-			return;
-		}
 		if (iInReady)
 			return;
 		iWaiting = false;
@@ -250,7 +207,6 @@ namespace neolib
 
 	callback_timer::~callback_timer()
 	{
-		set_destroying();
 		cancel();
 	}
 

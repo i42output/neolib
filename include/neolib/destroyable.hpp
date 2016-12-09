@@ -76,6 +76,11 @@ namespace neolib
 	public:
 		virtual ~destroyable()
 		{
+			set_destroyed();
+		}
+	public:
+		void set_destroyed()
+		{
 			for (auto flag : iDestroyedFlags)
 				flag->set_destroyed();
 		}

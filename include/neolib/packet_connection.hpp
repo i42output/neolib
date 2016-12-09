@@ -83,6 +83,7 @@ namespace neolib
 	public:
 		typedef Protocol protocol_type;
 	private:
+		typedef basic_packet_connection<CharType, Protocol, ReceiveBufferSize> our_type;
 		typedef i_basic_packet_connection_owner<CharType> owner_type;
 		typedef i_basic_packet<CharType> packet_type;
 		typedef const packet_type* const_packet_pointer;
@@ -98,7 +99,50 @@ namespace neolib
 		typedef typename protocol_type::resolver resolver_type;
 		typedef std::array<char, ReceiveBufferSize * sizeof(CharType)> receive_buffer;
 		typedef boost::asio::ssl::context secure_context;
-		
+		class handler_proxy
+		{
+		public:
+			handler_proxy(our_type& aParent) : iParent(aParent), iOrphaned(false)
+			{
+			}
+		public:
+			void handle_resolve(const boost::system::error_code& aError, typename resolver_type::iterator aEndPointIterator)
+			{
+				if (!iOrphaned)
+					iParent.handle_resolve(aError, aEndPointIterator);
+			}
+			void handle_connect(const boost::system::error_code& aError)
+			{
+				if (!iOrphaned)
+					iParent.handle_connect(aError);
+			}
+			void handle_handshake(const boost::system::error_code& aError)
+			{
+				if (!iOrphaned)
+					iParent.handle_handshake(aError);
+			}
+			void handle_write(const boost::system::error_code& aError, size_t aBytesTransferred)
+			{
+				if (!iOrphaned)
+					iParent.handle_write(aError, aBytesTransferred);
+			}
+			void handle_read(const boost::system::error_code& aError, size_t aBytesTransferred)
+			{
+				if (!iOrphaned)
+					iParent.handle_read(aError, aBytesTransferred);
+			}
+			void orphan(bool aCreateNewHandlerProxy = true)
+			{
+				iOrphaned = true;
+				iParent.iHandlerProxy.reset();
+				if (aCreateNewHandlerProxy)
+					iParent.iHandlerProxy = std::make_shared<handler_proxy>(iParent);
+			}
+		private:
+			our_type& iParent;
+			bool iOrphaned;
+		};
+
 		// exceptions
 	public:
 		struct already_open : std::logic_error { already_open() : std::logic_error("neolib::packet_connection::already_open") {} };
@@ -113,6 +157,7 @@ namespace neolib
 			protocol_family aProtocolFamily = IPv4) :
 			iOwnerThread(aOwnerThread), 
 			iOwner(aOwner),
+			iHandlerProxy(new handler_proxy(*this)),
 			iLocalHostName(),
 			iLocalPort(0),
 			iRemoteHostName(),
@@ -122,7 +167,6 @@ namespace neolib
 			iError(false),
 			iResolver(aOwnerThread.networking_io_service().native_object()),
 			iConnected(false),
-			iOperationsOutstanding(0),
 			iPacketBeingSent(0),
 			iReceiveBufferPtr(&iReceiveBuffer[0]),
 			iReceivePacket(aOwner.create_empty_packet())
@@ -137,6 +181,7 @@ namespace neolib
 			protocol_family aProtocolFamily = IPv4) : 
 			iOwnerThread(aOwnerThread), 
 			iOwner(aOwner),
+			iHandlerProxy(new handler_proxy(*this)),
 			iLocalHostName(),
 			iLocalPort(0),
 			iRemoteHostName(aRemoteHostName),
@@ -146,7 +191,6 @@ namespace neolib
 			iError(false),
 			iResolver(aOwnerThread.networking_io_service().native_object()),
 			iConnected(false),
-			iOperationsOutstanding(0),
 			iPacketBeingSent(0),
 			iReceiveBufferPtr(&iReceiveBuffer[0]),
 			iReceivePacket(aOwner.create_empty_packet())
@@ -200,6 +244,7 @@ namespace neolib
 		}
 		void close()
 		{
+			iHandlerProxy->orphan();
 			iResolver.cancel();
 			if (!iSocketHolder.empty())
 				socket().close();
@@ -207,13 +252,6 @@ namespace neolib
 			bool wasConnected = iConnected;
 			iConnected = false;
 			iReceiveBufferPtr = &iReceiveBuffer[0];
-			destroyed_flag destroyed(*this);
-			while (iOperationsOutstanding != 0)
-			{
-				iOwnerThread.networking_io_service().do_io(false);
-				if (destroyed)
-					return;
-			}
 			if (wasConnected)
 				iOwner.connection_closed();
 		}
@@ -348,8 +386,7 @@ namespace neolib
 			if (!iRemoteHostName.empty())
 			{
 				iResolver.async_resolve(typename resolver_type::query(iRemoteHostName, unsigned_integer_to_string<char>(iRemotePort)),
-					boost::bind(&basic_packet_connection::handle_resolve, this, boost::asio::placeholders::error, boost::asio::placeholders::iterator));
-				++iOperationsOutstanding;
+					boost::bind(&handler_proxy::handle_resolve, iHandlerProxy, boost::asio::placeholders::error, boost::asio::placeholders::iterator));
 			}
 		}
 
@@ -357,7 +394,6 @@ namespace neolib
 	private:
 		void handle_resolve(const boost::system::error_code& aError, typename resolver_type::iterator aEndPointIterator)
 		{
-			--iOperationsOutstanding;
 			if (closed())
 				return;
 			if (!aError)
@@ -370,15 +406,13 @@ namespace neolib
 					{
 						foundGoodMatch = true;
 						iRemoteEndPoint = endpoint;
-						socket().async_connect(iRemoteEndPoint, boost::bind(&basic_packet_connection::handle_connect, this, boost::asio::placeholders::error));
-						++iOperationsOutstanding;
+						socket().async_connect(iRemoteEndPoint, boost::bind(&handler_proxy::handle_connect, iHandlerProxy, boost::asio::placeholders::error));
 					}
 				}
 				if (!foundGoodMatch)
 				{
 					iRemoteEndPoint = *aEndPointIterator;
-					socket().async_connect(iRemoteEndPoint, boost::bind(&basic_packet_connection::handle_connect, this, boost::asio::placeholders::error));
-					++iOperationsOutstanding;
+					socket().async_connect(iRemoteEndPoint, boost::bind(&handler_proxy::handle_connect, iHandlerProxy, boost::asio::placeholders::error));
 				}
 			}
 			else
@@ -390,7 +424,6 @@ namespace neolib
 		}
 		void handle_connect(const boost::system::error_code& aError)
 		{
-			--iOperationsOutstanding;
 			if (closed())
 				return;
 			if (!aError)
@@ -409,8 +442,7 @@ namespace neolib
 				{
 				      static_variant_cast<secure_stream_pointer>(iSocketHolder)->async_handshake(
 					      boost::asio::ssl::stream_base::client, 
-					      boost::bind(&basic_packet_connection::handle_handshake, this, boost::asio::placeholders::error));	
-				      ++iOperationsOutstanding;
+					      boost::bind(&handler_proxy::handle_handshake, iHandlerProxy, boost::asio::placeholders::error));
 				}
 			}
 			else
@@ -422,7 +454,6 @@ namespace neolib
 		}
 		void handle_handshake(const boost::system::error_code& aError)
 		{
-			--iOperationsOutstanding;
 			if (closed())
 				return;
 			if (!aError)
@@ -457,8 +488,8 @@ namespace neolib
 					socket(), 
 					boost::asio::buffer(iPacketBeingSent->data(), iPacketBeingSent->length()),
 					boost::bind(
-						&basic_packet_connection::handle_write, 
-						this,
+						&handler_proxy::handle_write, 
+						iHandlerProxy,
 						boost::asio::placeholders::error,
 						boost::asio::placeholders::bytes_transferred));
 			}
@@ -468,12 +499,11 @@ namespace neolib
 					secure_stream(), 
 					boost::asio::buffer(iPacketBeingSent->data(), iPacketBeingSent->length()),
 					boost::bind(
-						&basic_packet_connection::handle_write, 
-						this,
+						&handler_proxy::handle_write, 
+						iHandlerProxy,
 						boost::asio::placeholders::error,
 						boost::asio::placeholders::bytes_transferred));
 			}
-			++iOperationsOutstanding;
 		}
 		void receive_any()
 		{
@@ -485,8 +515,8 @@ namespace neolib
 				socket().async_read_some(
 					boost::asio::buffer(iReceiveBufferPtr, iReceiveBuffer.size() - (iReceiveBufferPtr - &iReceiveBuffer[0])),
 					boost::bind(
-					&basic_packet_connection::handle_read, 
-					this,
+					&handler_proxy::handle_read, 
+					iHandlerProxy,
 					boost::asio::placeholders::error,
 					boost::asio::placeholders::bytes_transferred));
 			}
@@ -495,17 +525,15 @@ namespace neolib
 				secure_stream().async_read_some(
 					boost::asio::buffer(iReceiveBufferPtr, iReceiveBuffer.size() - (iReceiveBufferPtr - &iReceiveBuffer[0])),
 					boost::bind(
-					&basic_packet_connection::handle_read, 
-					this,
+					&handler_proxy::handle_read, 
+					iHandlerProxy,
 					boost::asio::placeholders::error,
 					boost::asio::placeholders::bytes_transferred));
 			}
-			++iOperationsOutstanding;
 		}
 		void handle_write(const boost::system::error_code& aError, size_t)
 		{
 			destroyed_flag destroyed(*this);
-			--iOperationsOutstanding;
 			if (closed())
 				return;
 			const_packet_pointer sentPacket = iPacketBeingSent;
@@ -530,7 +558,6 @@ namespace neolib
 		void handle_read(const boost::system::error_code& aError, size_t aBytesTransferred)
 		{
 			destroyed_flag destroyed(*this);
-			--iOperationsOutstanding;
 			if (closed())
 				return;
 			if (!aError)
@@ -573,6 +600,7 @@ namespace neolib
 	private:
 		io_thread& iOwnerThread;
 		owner_type& iOwner;
+		std::shared_ptr<handler_proxy> iHandlerProxy;
 		std::string iLocalHostName;
 		unsigned short iLocalPort;
 		std::string iRemoteHostName;
@@ -587,7 +615,6 @@ namespace neolib
 		secure_stream_context_pointer iSecureStreamContext;
 		socket_holder_type iSocketHolder;
 		bool iConnected;
-		std::size_t iOperationsOutstanding;
 		send_queue iSendQueue;
 		const_packet_pointer iPacketBeingSent;
 		receive_buffer iReceiveBuffer;

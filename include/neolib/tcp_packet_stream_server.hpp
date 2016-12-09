@@ -80,8 +80,7 @@ namespace neolib
 	{
 		// types
 	public:
-		struct failed_to_resolve_local_host : std::runtime_error { failed_to_resolve_local_host() : std::runtime_error("neolib::tcp_packet_stream_server::failed_to_resolve_local_host") {} };
-		struct stream_not_found : std::logic_error { stream_not_found() : std::logic_error("neolib::tcp_packet_stream_server::stream_not_found") {} };
+		typedef tcp_packet_stream_server<PacketType> our_type;
 		typedef PacketType packet_type;
 		typedef tcp_protocol protocol_type;
 		typedef i_tcp_packet_stream_server_observer<packet_type> observer_type;
@@ -91,30 +90,59 @@ namespace neolib
 		typedef protocol_type::endpoint endpoint_type;
 		typedef protocol_type::resolver resolver_type;
 		typedef protocol_type::acceptor acceptor_type;
-		
+	private:
+		class handler_proxy
+		{
+		public:
+			handler_proxy(our_type& aParent) : iParent(aParent), iOrphaned(false)
+			{
+			}
+		public:
+			void operator()(const boost::system::error_code& aError)
+			{
+				if (!iOrphaned)
+					iParent.handle_accept(aError);
+			}
+			void orphan(bool aCreateNewHandlerProxy = true)
+			{
+				iOrphaned = true;
+				iParent.iHandlerProxy.reset();
+				if (aCreateNewHandlerProxy)
+					iParent.iHandlerProxy = std::make_shared<handler_proxy>(iParent);
+			}
+		private:
+			our_type& iParent;
+			bool iOrphaned;
+		};
+
+		// exceptions
+	public:
+		struct failed_to_resolve_local_host : std::runtime_error { failed_to_resolve_local_host() : std::runtime_error("neolib::tcp_packet_stream_server::failed_to_resolve_local_host") {} };
+		struct stream_not_found : std::logic_error { stream_not_found() : std::logic_error("neolib::tcp_packet_stream_server::stream_not_found") {} };
+
 		// construction
 	public:
 		tcp_packet_stream_server(io_thread& aOwnerThread, unsigned short aLocalPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4) : 
 			iOwnerThread(aOwnerThread),
+			iHandlerProxy(new handler_proxy(*this)),
 			iLocalPort(aLocalPort),
 			iSecure(aSecure),
 			iProtocolFamily(aProtocolFamily & IPv4 ? protocol_type::v4() : protocol_type::v6()),
 			iLocalEndpoint(iProtocolFamily, iLocalPort),
 			iAcceptor(aOwnerThread.networking_io_service().native_object(), iLocalEndpoint), 
-			iOperationsOutstanding(0),
 			iClosing(false)
 		{
 			accept_connection();
 		}
 		tcp_packet_stream_server(io_thread& aOwnerThread, const std::string& aLocalHostName, unsigned short aLocalPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4) : 
 			iOwnerThread(aOwnerThread),
+			iHandlerProxy(new handler_proxy(*this)),
 			iLocalHostName(aLocalHostName),
 			iLocalPort(aLocalPort),
 			iSecure(aSecure),
 			iProtocolFamily(aProtocolFamily & IPv4 ? protocol_type::v4() : protocol_type::v6()),
-			iLocalEndpoint(resolve(iLocalHostName, iLocalPort, iProtocolFamily)),
+			iLocalEndpoint(resolve(aOwnerThread, iLocalHostName, iLocalPort, iProtocolFamily)),
 			iAcceptor(aOwnerThread.networking_io_service().native_object(), iLocalEndpoint),
-			iOperationsOutstanding(0),
 			iClosing(false)
 		{
 			accept_connection();
@@ -125,9 +153,8 @@ namespace neolib
 			for (stream_list::iterator i = iStreamList.begin(); i != iStreamList.end(); ++i)
 				delete *i;
 			iStreamList.clear();
+			iHandlerProxy->orphan();
 			iAcceptor.close();
-			while (iOperationsOutstanding != 0)
-				iOwnerThread.networking_io_service().do_io(false);
 		}
 		
 		// operations
@@ -152,7 +179,7 @@ namespace neolib
 		// implementation
 	private:
 		// from observable<i_tcp_packet_stream_server_observer<PacketType> >
-		virtual void notify_observer(observer_type& aObserver, typename observer_type::notify_type aType, const void* aParameter, const void* aParameter2)
+		virtual void notify_observer(observer_type& aObserver, typename observer_type::notify_type aType, const void* aParameter, const void*)
 		{
 			switch(aType)
 			{
@@ -168,11 +195,11 @@ namespace neolib
 			}
 		}
 		// from i_packet_stream_observer<PacketType, tcp_protocol>
-		virtual void connection_established(packet_stream_type& aStream) {}
-		virtual void connection_failure(packet_stream_type& aStream, const boost::system::error_code& aError) {}
-		virtual void packet_sent(packet_stream_type& aStream, const packet_type& aPacket) {}
-		virtual void packet_arrived(packet_stream_type& aStream, const packet_type& aPacket) {}
-		virtual void transfer_failure(packet_stream_type& aStream, const boost::system::error_code& aError) {}
+		virtual void connection_established(packet_stream_type&) {}
+		virtual void connection_failure(packet_stream_type&, const boost::system::error_code&) {}
+		virtual void packet_sent(packet_stream_type&, const packet_type&) {}
+		virtual void packet_arrived(packet_stream_type&, const packet_type&) {}
+		virtual void transfer_failure(packet_stream_type&, const boost::system::error_code&) {}
 		virtual void connection_closed(packet_stream_type& aStream)
 		{
 			if (!iClosing)
@@ -191,27 +218,22 @@ namespace neolib
 		}
 		// own
 	private:
-		static endpoint_type resolve(const std::string& Hostname, unsigned short aPort, protocol_type aProtocolFamily)
+		static endpoint_type resolve(io_thread& aOwnerThread, const std::string& aHostname, unsigned short aPort, protocol_type aProtocolFamily)
 		{
-			resolver_type resolver;
+			resolver_type resolver(aOwnerThread.networking_io_service().native_object());
 			boost::system::error_code ec;
-			typename resolver_type::iterator result = resolver.resolve(resolver_type::query(Hostname, unsigned_integer_to_string<char>(aPort)), ec);
+			typename resolver_type::iterator result = resolver.resolve(resolver_type::query(aHostname, unsigned_integer_to_string<char>(aPort)), ec);
 			if (!ec)
 			{
-				bool foundGoodMatch = false;
-				for (typename resolver_type::iterator i = result; !foundGoodMatch && i != resolver_type::iterator(); ++i)
+				for (typename resolver_type::iterator i = result; i != resolver_type::iterator(); ++i)
 				{
 					endpoint_type endpoint = *i;
 					if (endpoint.protocol() == aProtocolFamily)
-					{
 						return endpoint;
-					}
 				}
-				if (!foundGoodMatch)
-					return *result;
+				return *result;
 			}
-			if (ec)
-				throw failed_to_resolve_local_host();
+			throw failed_to_resolve_local_host();
 		}
 		void accept_connection()
 		{
@@ -220,12 +242,10 @@ namespace neolib
 			iAcceptingStream = packet_stream_pointer(new packet_stream_type(iOwnerThread, iSecure, iLocalEndpoint.protocol() == protocol_type::v4() ? IPv4 : IPv6));
 			iAcceptingStream->add_observer(*this);
 			iAcceptingStream->connection().open(true);
-			iAcceptor.async_accept(iAcceptingStream->connection().socket(), boost::bind(&tcp_packet_stream_server::handle_accept, this, boost::asio::placeholders::error));
-			++iOperationsOutstanding;
+			iAcceptor.async_accept(iAcceptingStream->connection().socket(), boost::bind(&handler_proxy::operator(), iHandlerProxy, boost::asio::placeholders::error));
 		}
 		void handle_accept(const boost::system::error_code& aError)
 		{
-			--iOperationsOutstanding;
 			if (!aError)
 			{
 				iAcceptingStream->connection().server_accept();
@@ -244,6 +264,7 @@ namespace neolib
 		// attributes
 	private:
 		io_thread& iOwnerThread;
+		std::shared_ptr<handler_proxy> iHandlerProxy;
 		std::string iLocalHostName;
 		unsigned short iLocalPort;
 		bool iSecure;
@@ -252,7 +273,6 @@ namespace neolib
 		acceptor_type iAcceptor;
 		packet_stream_pointer iAcceptingStream;
 		stream_list iStreamList;
-		std::size_t iOperationsOutstanding;
 		bool iClosing;
 	};
 

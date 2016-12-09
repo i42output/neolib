@@ -78,6 +78,7 @@ namespace neolib
 	{
 		// types
 	public:
+		typedef basic_resolver<Protocol> our_type;
 		typedef Protocol protocol_type;
 	private:
 		typedef typename protocol_type::endpoint endpoint_type;
@@ -99,10 +100,14 @@ namespace neolib
 			typedef typename basic_resolver<Protocol>::requester requester_type;
 		public:
 			request(basic_resolver<Protocol>& aParent, requester_type& aRequester, const std::string& aHostName, neolib::protocol_family aProtocolFamily) :
-				iParent(aParent), iRequester(&aRequester), iHostName(aHostName), iProtocolFamily(aProtocolFamily)
+				iParent(aParent), iOrphaned(false), iRequester(&aRequester), iHostName(aHostName), iProtocolFamily(aProtocolFamily)
 			{
 			}
 		public:
+			void orphan()
+			{
+				iOrphaned = true;
+			}
 			const std::string& host_name() const
 			{
 				return iHostName;
@@ -127,17 +132,19 @@ namespace neolib
 			}
 			void handle_resolve(const boost::system::error_code& aError, iterator aEndPointIterator)
 			{
-				iParent.handle_resolve(*this, aError, aEndPointIterator);
+				if (!iOrphaned)
+					iParent.handle_resolve(*this, aError, aEndPointIterator);
 			}
 		private:
 			basic_resolver<Protocol>& iParent;
+			bool iOrphaned;
 			requester_type* iRequester;
 			std::string iHostName;
 			neolib::protocol_family iProtocolFamily;
 		};
 		typedef std::shared_ptr<request> request_pointer;
 		typedef std::vector<request_pointer> request_list;
-		
+
 		// exceptions
 	public:
 	
@@ -145,15 +152,15 @@ namespace neolib
 	public:
 		basic_resolver(io_thread& aOwnerThread) :
 			iOwnerThread(aOwnerThread), 
-			iResolver(aOwnerThread.networking_io_service().native_object()),
-			iOperationsOutstanding(0)
+			iResolver(aOwnerThread.networking_io_service().native_object())
 		{
 		}
 		~basic_resolver()
 		{
+			for (auto& r : iRequests)
+				r->orphan();
+			iRequests.clear();
 			iResolver.cancel();
-			while (iOperationsOutstanding != 0)
-				iOwnerThread.networking_io_service().do_io(false);
 		}
 		
 		// operations
@@ -164,7 +171,6 @@ namespace neolib
 			iRequests.push_back(newRequest);
 			iResolver.async_resolve(typename resolver_type::query(aHostName, unsigned_integer_to_string<char>(0)),
 				boost::bind(&request::handle_resolve, *newRequest, boost::asio::placeholders::error, boost::asio::placeholders::iterator));
-			++iOperationsOutstanding;
 		}
 		void remove_requester(requester& aRequester)
 		{
@@ -177,7 +183,6 @@ namespace neolib
 	private:
 		void handle_resolve(request& aRequest, const boost::system::error_code& aError, iterator aEndPointIterator)
 		{
-			--iOperationsOutstanding;
 			if (aRequest.has_requester())
 			{
 				if (!aError)
@@ -210,7 +215,6 @@ namespace neolib
 	private:
 		io_thread& iOwnerThread;
 		resolver_type iResolver;
-		std::size_t iOperationsOutstanding;
 		request_list iRequests;
 	};
 
