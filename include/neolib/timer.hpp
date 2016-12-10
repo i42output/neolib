@@ -68,9 +68,10 @@ namespace neolib
 			void orphan(bool aCreateNewHandlerProxy = true)
 			{
 				iOrphaned = true;
-				iParent.iHandlerProxy.reset();
 				if (aCreateNewHandlerProxy)
 					iParent.iHandlerProxy = std::make_shared<handler_proxy>(iParent);
+				else
+					iParent.iHandlerProxy.reset();
 			}
 		private:
 			timer& iParent;
