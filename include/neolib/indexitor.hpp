@@ -484,7 +484,7 @@ namespace neolib
 		{
 			size_type nodeIndex{};
 			foreign_index_type nodeForeignIndex{};
-			auto n = find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred);
+			auto n = base::find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred);
 			if (!n->is_nil() &&
 				aForeignIndex - nodeForeignIndex >= static_cast<node*>(n)->skip().first &&
 				aForeignIndex - nodeForeignIndex < static_cast<node*>(n)->foreign_index() - static_cast<node*>(n)->skip().second)
@@ -497,7 +497,7 @@ namespace neolib
 		{
 			size_type nodeIndex{};
 			foreign_index_type nodeForeignIndex{};
-			auto n = find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred);
+			auto n = base::find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred);
 			if (!n->is_nil() && 
 				aForeignIndex - nodeForeignIndex >= static_cast<node*>(n)->skip().first &&
 				aForeignIndex - nodeForeignIndex < static_cast<node*>(n)->foreign_index() - static_cast<node*>(n)->skip().second)
