@@ -486,8 +486,8 @@ namespace neolib
 			foreign_index_type nodeForeignIndex{};
 			auto n = base::find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred);
 			if (!n->is_nil() &&
-				aForeignIndex - nodeForeignIndex >= static_cast<node*>(n)->skip().first &&
-				aForeignIndex - nodeForeignIndex < static_cast<node*>(n)->foreign_index() - static_cast<node*>(n)->skip().second)
+				!aPred(aForeignIndex - nodeForeignIndex, static_cast<node*>(n)->skip().first) &&
+				aPred(aForeignIndex - nodeForeignIndex, static_cast<node*>(n)->foreign_index() - static_cast<node*>(n)->skip().second))
 				return std::make_pair(const_iterator{*this, static_cast<node*>(n)}, nodeForeignIndex + static_cast<node*>(n)->skip().first);
 			else
 				return std::make_pair(end(), foreign_index(end()));
@@ -499,8 +499,8 @@ namespace neolib
 			foreign_index_type nodeForeignIndex{};
 			auto n = base::find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred);
 			if (!n->is_nil() && 
-				aForeignIndex - nodeForeignIndex >= static_cast<node*>(n)->skip().first &&
-				aForeignIndex - nodeForeignIndex < static_cast<node*>(n)->foreign_index() - static_cast<node*>(n)->skip().second)
+				!aPred(aForeignIndex - nodeForeignIndex, static_cast<node*>(n)->skip().first) &&
+				aPred(aForeignIndex - nodeForeignIndex, static_cast<node*>(n)->foreign_index() - static_cast<node*>(n)->skip().second))
 				return std::make_pair(iterator{*this, static_cast<node*>(n)}, nodeForeignIndex + static_cast<node*>(n)->skip().first);
 			else
 				return std::make_pair(end(), foreign_index(end()));
