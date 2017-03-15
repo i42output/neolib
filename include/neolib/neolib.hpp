@@ -43,7 +43,7 @@ namespace std
 	namespace placeholders {}
 }
 
-using namespace std::placeholders;
+//using namespace std::placeholders;
 
 #ifdef NEOLIB_HOSTED_ENVIRONMENT
 

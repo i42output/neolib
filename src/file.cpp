@@ -189,6 +189,23 @@ namespace neolib
 		return !ec;
 	}
 
+	std::string program_file()
+	{
+#ifdef _WIN32
+		char result[MAX_PATH];
+		return std::string(result, GetModuleFileNameA(NULL, result, MAX_PATH));
+#else
+		char result[PATH_MAX];
+		ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+		return std::string(result, (count > 0) ? count : 0);
+#endif
+	}
+
+	std::string program_directory()
+	{
+		return boost::filesystem::path(program_file()).parent_path().string();
+	}
+
 	simple_file::simple_file() : 
 		iError(0)
 	{

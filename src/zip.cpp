@@ -138,6 +138,14 @@ namespace neolib
 		parse();
 	}
 
+	std::size_t zip::index_of(const std::string& aFile) const
+	{
+		for (std::size_t i = 0; i < file_count(); ++i)
+			if (file_path(i) == aFile)
+				return i;
+		throw file_not_found();
+	}
+
 	bool zip::extract(size_t aIndex, const std::string& aTargetDirectory)
 	{
 		buffer_type data;
@@ -221,6 +229,13 @@ namespace neolib
 			return false;
 		}
 		return true;
+	}
+
+	std::string zip::extract_to_string(size_t aIndex)
+	{
+		buffer_type buffer;
+		extract_to(aIndex, buffer);
+		return std::string(buffer.begin(), buffer.end());
 	}
 
 	const std::string& zip::file_path(size_t aIndex) const

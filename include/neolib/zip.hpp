@@ -47,6 +47,7 @@ namespace neolib
 		typedef std::vector<uint8_t> buffer_type;
 	public:
 		struct zip_file_too_big : std::runtime_error { zip_file_too_big() : std::runtime_error("neolib::zip::zip_file_too_big") {} };
+		struct file_not_found : std::runtime_error { file_not_found() : std::runtime_error("neolib::zip::file_not_found") {} };
 	public:
 		zip(const std::string& aZipFilePath);
 		zip(const buffer_type& aZipFile);
@@ -54,8 +55,10 @@ namespace neolib
 		zip(const void* aZipFileData, std::size_t aZipFileDataLength);
 	public:
 		size_t file_count() const { return iFiles.size(); }
+		std::size_t index_of(const std::string& aFile) const;
 		bool extract(size_t aIndex, const std::string& aTargetDirectory);
 		bool extract_to(size_t aIndex, buffer_type& aBuffer);
+		std::string extract_to_string(size_t aIndex);
 		const std::string& file_path(size_t aIndex) const;
 		bool ok() const { return !iError; }
 	private:

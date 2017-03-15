@@ -65,9 +65,8 @@ namespace neolib
 	unsigned long long large_file_size(const std::wstring& aPath);
 	int large_file_seek(FILE* aStream, long long aOffset, int aOrigin);
 	bool move_file(const std::string& aPathFrom, const std::string& aPathTo);
-	void remove_directory(const std::string& aPath);
-	std::wstring program_file();
-	std::wstring program_directory();
+	std::string program_file();
+	std::string program_directory();
 
 	class simple_file
 	{
