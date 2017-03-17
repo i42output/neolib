@@ -36,6 +36,7 @@
 #pragma once
 
 #include "neolib.hpp"
+#include <unordered_set>
 #include <boost/optional.hpp>
 
 namespace neolib
@@ -68,6 +69,7 @@ namespace neolib
 		uri();
 		uri(const std::string& aUri);
 	public:
+		std::string to_string() const;
 		const std::string& scheme() const;
 		const uri_authority& authority() const;
 		const std::string& path() const;
@@ -78,6 +80,9 @@ namespace neolib
 		void set_path(const std::string& aPath);
 		void set_query(const std::string& aQuery);
 		void set_fragment(const std::string& aFragment);
+	public:
+		static std::string escaped(const std::string& aString);
+		static std::string unescaped(const std::string& String);
 	private:
 		void parse_authority(const std::string& aRest);
 		std::string parse_path(const std::string& aRest);
@@ -96,9 +101,9 @@ namespace neolib
 	inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const uri_authority& aUriAuthority)
 	{
 		if (aUriAuthority.user_information() != boost::none)
-			aStream << *aUriAuthority.user_information() << "@";
+			aStream << uri::escaped(*aUriAuthority.user_information()) << "@";
 		if (aUriAuthority.host() != boost::none)
-			aStream << *aUriAuthority.host();
+			aStream << uri::escaped(*aUriAuthority.host());
 		if (aUriAuthority.port() != boost::none)
 			aStream << ":" << *aUriAuthority.port();
 		return aStream;
@@ -107,11 +112,11 @@ namespace neolib
 	template <typename Elem, typename Traits>
 	inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const uri& aUri)
 	{
-		aStream << aUri.scheme() << "://" << aUri.authority() << "/" << aUri.path();
+		aStream << uri::escaped(aUri.scheme()) << "://" << aUri.authority() << "/" << uri::escaped(aUri.path());
 		if (!aUri.query().empty())
-			aStream << "?" << aUri.query();
+			aStream << "?" << uri::escaped(aUri.query());
 		if (!aUri.fragment().empty())
-			aStream << "#" << aUri.fragment();
+			aStream << "#" << uri::escaped(aUri.fragment());
 		return aStream;
 	}
 }

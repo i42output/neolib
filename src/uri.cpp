@@ -71,7 +71,14 @@ namespace neolib
 
 	uri::uri(const std::string& aUri)
 	{
-		parse_authority(parse_path(parse_query(parse_fragment(parse_scheme(aUri)))));
+		parse_authority(parse_path(parse_query(parse_fragment(parse_scheme(escaped(aUri))))));
+	}
+
+	std::string uri::to_string() const
+	{
+		std::ostringstream oss;
+		oss << *this;
+		return oss.str();
 	}
 
 	const std::string& uri::scheme() const
@@ -129,13 +136,45 @@ namespace neolib
 		iAuthority = uri_authority(aRest);
 	}
 
+	std::string uri::escaped(const std::string& aString)
+	{
+		static const std::unordered_set<char> sUrlChars = 
+		{
+			'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+			'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
+			'0','1','2','3','4','5','6','7','8','9',
+			'-','.','_','~',':','/','?','#','[',']','@','!','$','&','\'','(',')','*','+',',',';','=','%'
+		};
+		std::string escaped;
+		for (auto ch : aString)
+			if (sUrlChars.find(ch) != sUrlChars.end())
+				escaped += ch;
+			else
+				escaped += "%" + unsigned_integer_to_string<char>(static_cast<uint8_t>(ch), 16, 2);
+		return escaped;
+	}
+
+	std::string uri::unescaped(const std::string& aString)
+	{
+		std::string escaped;
+		for (auto i = aString.begin(); i != aString.end(); ++i)
+			if (*i != '%')
+				escaped += *i;
+			else if (i < aString.end() - 3)
+			{
+				escaped += static_cast<char>(string_to_unsigned_integer(std::string(i + 1, i + 3), 16));
+				i += 2;
+			}
+		return escaped;
+	}
+
 	std::string uri::parse_path(const std::string& aRest)
 	{
 		neolib::vecarray<std::pair<std::string::const_iterator, std::string::const_iterator>, 2> bits;
 		std::string sep("/");
 		neolib::tokens(aRest.begin(), aRest.end(), sep.begin(), sep.end(), bits, 2, false, false);
 		if (bits.size() == 2)
-			iPath = std::string(bits[1].first, aRest.end());
+			iPath = unescaped(std::string(bits[1].first, aRest.end()));
 		return std::string(bits.front().first, bits.front().second);
 	}
 
@@ -144,7 +183,7 @@ namespace neolib
 		neolib::vecarray<std::string, 2> bits;
 		neolib::tokens(aRest, std::string("?"), bits, 2, false, false);
 		if (bits.size() == 2)
-			iQuery = bits[1];
+			iQuery = unescaped(bits[1]);
 		return bits.front();
 	}
 
@@ -153,7 +192,7 @@ namespace neolib
 		neolib::vecarray<std::string, 2> bits;
 		neolib::tokens(aRest, std::string("#"), bits, 2, false, false);
 		if (bits.size() == 2)
-			iFragment = bits[1];
+			iFragment = unescaped(bits[1]);
 		return bits.front();
 	}
 
@@ -162,7 +201,7 @@ namespace neolib
 		neolib::vecarray<std::string, 2> bits;
 		neolib::tokens(aRest, std::string("://"), bits, 2, false, true);
 		if (bits.size() == 2)
-			iScheme = bits[0];
+			iScheme = unescaped(bits[0]);
 		return bits.back();
 	}
 }
