@@ -46,6 +46,7 @@
 #include <cctype>
 #include <cwctype>
 #include <cassert>
+#include <boost/locale.hpp> 
 
 namespace neolib 
 {
@@ -98,35 +99,35 @@ namespace neolib
 		return std::string(aIterPair.first, aIterPair.second);
 	}
 
-	inline char tolower(char c) { return std::char_traits<char>::to_char_type(::tolower(static_cast<unsigned char>(c))); }
-	inline char16_t tolower(char16_t c) { return std::char_traits<char16_t>::to_char_type(::towlower(c)); }
-
-	inline char toupper(char c) { return std::char_traits<char>::to_char_type(::toupper(static_cast<unsigned char>(c))); }
-	inline char16_t toupper(char16_t c) { return std::char_traits<char16_t>::to_char_type(::towupper(c)); }
-
 	template <typename CharT, typename Traits, typename Alloc>
 	std::basic_string<CharT, Traits, Alloc> to_lower(const std::basic_string<CharT, Traits, Alloc>& aString)
 	{
-		typedef typename std::basic_string<CharT, Traits, Alloc> string;
-		string ret;
-		ret.reserve(aString.size());
-		for (typename string::const_iterator i = aString.begin(); i != aString.end(); ++i)
-			ret += neolib::tolower(*i);
-		return ret;
+		static boost::locale::generator gen;
+		static std::locale loc = gen("en_US.UTF-8");
+		return boost::locale::to_lower(aString, loc);
+	}
+
+	template <typename CharT>
+	CharT to_lower(CharT aCharacter)
+	{
+		return to_lower(std::basic_string<CharT>(1, aCharacter))[0];
 	}
 
 	template <typename CharT, typename Traits, typename Alloc>
 	std::basic_string<CharT, Traits, Alloc> to_upper(const std::basic_string<CharT, Traits, Alloc>& aString)
 	{
-		typedef typename std::basic_string<CharT, Traits, Alloc> string;
-		string ret;
-		ret.reserve(aString.size());
-		for (typename string::const_iterator i = aString.begin(); i != aString.end(); ++i)
-			ret += neolib::toupper(*i);
-		return ret;
+		static boost::locale::generator gen;
+		static std::locale loc = gen("en_US.UTF-8");
+		return boost::locale::to_upper(aString, loc);
 	}
 
-	struct string_span : std::pair<std::size_t, std::size_t> 
+	template <typename CharT>
+	CharT to_upper(CharT aCharacter)
+	{
+		return to_upper(std::basic_string<CharT>(1, aCharacter))[0];
+	}
+
+	struct string_span : std::pair<std::size_t, std::size_t>
 	{
 		typedef std::pair<std::size_t, std::size_t> span;
 		typedef unsigned int type;
@@ -960,7 +961,7 @@ namespace neolib
 		}
 		static int_type lower(char_type c)
 		{
-			return neolib::tolower(c);
+			return neolib::to_lower(c);
 		}
 	};
 
@@ -993,14 +994,6 @@ namespace neolib
 	{
 		return ci_string(s1.begin(), s1.end()) == s2;
 	}
-	inline bool operator==(const ci_u16string& s1, const std::u16string& s2)
-	{
-		return s1 == ci_u16string(s2.begin(), s2.end());
-	}
-	inline bool operator==(const std::u16string& s1, const ci_u16string& s2)
-	{
-		return ci_u16string(s1.begin(), s1.end()) == s2;
-	}
 	inline bool operator!=(const ci_string& s1, const std::string& s2)
 	{
 		return s1 != ci_string(s2.begin(), s2.end());
@@ -1009,14 +1002,6 @@ namespace neolib
 	{
 		return ci_string(s1.begin(), s1.end()) != s2;
 	}
-	inline bool operator!=(const ci_u16string& s1, const std::u16string& s2)
-	{
-		return s1 != ci_u16string(s2.begin(), s2.end());
-	}
-	inline bool operator!=(const std::u16string& s1, const ci_u16string& s2)
-	{
-		return ci_u16string(s1.begin(), s1.end()) != s2;
-	}
 	inline bool operator<(const ci_string& s1, const std::string& s2)
 	{
 		return s1 < ci_string(s2.begin(), s2.end());
@@ -1024,14 +1009,6 @@ namespace neolib
 	inline bool operator<(const std::string& s1, const ci_string& s2)
 	{
 		return ci_string(s1.begin(), s1.end()) < s2;
-	}
-	inline bool operator<(const ci_u16string& s1, const std::u16string& s2)
-	{
-		return s1 < ci_u16string(s2.begin(), s2.end());
-	}
-	inline bool operator<(const std::u16string& s1, const ci_u16string& s2)
-	{
-		return ci_u16string(s1.begin(), s1.end()) < s2;
 	}
 
 	template <typename CharT, typename Traits, typename Alloc>	
