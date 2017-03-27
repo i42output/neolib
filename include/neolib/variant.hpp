@@ -121,9 +121,32 @@ namespace neolib
 		variant(const variant& other) : iContents(other.iContents)
 		{
 		}
-		template <typename T>
-		variant(const T& other) : iContents(other)
+		variant(variant&& other) : iContents(std::move(other.iContents))
 		{
+		}
+		template <typename T>
+		variant(T&& aValue, typename std::enable_if<!std::is_same<typename std::remove_cv<typename std::remove_reference<T>::type>::type, variant>::value, variant>::type* = nullptr) : 
+			iContents(std::forward<T>(aValue))
+		{
+		}
+
+		// assignment
+	public:
+		variant& operator=(const variant& other)
+		{
+			iContents = other.iContents;
+			return *this;
+		}
+		variant& operator=(variant&& other)
+		{
+			iContents = std::move(other.iContents);
+			return *this;
+		}
+		template <typename T>
+		typename std::enable_if<!std::is_same<typename std::remove_cv<typename std::remove_reference<T>::type>::type, variant>::value, variant>::type& operator=(T&& aValue)
+		{
+			iContents = std::forward<T>(aValue);
+			return *this;
 		}
 
 		// operations

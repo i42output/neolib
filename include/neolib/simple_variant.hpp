@@ -48,21 +48,53 @@ namespace neolib
 {
 	class simple_variant : public reference_counted<i_simple_variant>, public variant<bool, int64_t, double, string, auto_ref<i_custom_type>>
 	{
+		// types
 	private:
 		typedef variant<bool, int64_t, double, string, auto_ref<i_custom_type>> variant_type;
+
+		// construction
 	public:
 		simple_variant() {}
-		simple_variant(bool aValue) : variant_type(aValue) {}
-		simple_variant(int32_t aValue) : variant_type(static_cast<int64_t>(aValue)) {}
-		simple_variant(int64_t aValue) : variant_type(aValue) {}
-		simple_variant(double aValue) : variant_type(aValue) {}
-		simple_variant(const char* const aValue) : variant_type(string(aValue)) {}
-		simple_variant(const i_string& aValue) : variant_type(string(aValue)) {}
-		simple_variant(const auto_ref<i_custom_type>& aValue) : variant_type(aValue) {}
-		simple_variant(i_custom_type& aValue) : variant_type(auto_ref<i_custom_type>(aValue)) {}
+		simple_variant(bool aValue) : variant_type{ aValue } {}
+		simple_variant(int32_t aValue) : variant_type{ static_cast<int64_t>(aValue) } {}
+		simple_variant(int64_t aValue) : variant_type{ aValue } {}
+		simple_variant(double aValue) : variant_type{ aValue } {}
+		simple_variant(const char* const aValue) : variant_type{ string(aValue) } {}
+		simple_variant(const i_string& aValue) : variant_type{ string(aValue) } {}
+		simple_variant(const auto_ref<i_custom_type>& aValue) : variant_type{ aValue } {}
+		simple_variant(i_custom_type& aValue) : variant_type{ auto_ref<i_custom_type>(aValue) } {}
+		simple_variant(const simple_variant& aVariant) : variant_type{ static_cast<const variant_type&>(aVariant) }
+		{
+		}
+		simple_variant(simple_variant&& aVariant) : variant_type{ static_cast<variant_type&&>(aVariant) }
+		{
+		}
+		template <typename T>
+		simple_variant(T&& aValue, typename std::enable_if<!std::is_same<typename std::remove_cv<typename std::remove_reference<T>::type>::type, simple_variant>::value, simple_variant>::type* = nullptr) : variant_type{ std::forward<T>(aValue) }
+		{
+		}
 		simple_variant(const i_simple_variant& aVariant)
 		{
 			*this = aVariant;
+		}
+
+		// assignment
+	public:
+		simple_variant& operator=(const simple_variant& aVariant)
+		{
+			variant_type::operator=(static_cast<const variant_type&>(aVariant));
+			return *this;
+		}
+		simple_variant& operator=(simple_variant&& aVariant)
+		{
+			variant_type::operator=(static_cast<variant_type&&>(aVariant));
+			return *this;
+		}
+		template <typename T>
+		typename std::enable_if<!std::is_same<typename std::remove_cv<typename std::remove_reference<T>::type>::type, simple_variant>::value, simple_variant>::type& operator=(T&& aValue)
+		{
+			variant_type::operator=(std::forward<T>(aValue));
+			return *this;
 		}
 		simple_variant& operator=(const i_simple_variant& aVariant)
 		{
@@ -72,20 +104,20 @@ namespace neolib
 				// nothing to copy
 				break;
 			case Boolean:
-				*this = get<bool>(aVariant);
+				static_cast<variant_type&>(*this) = get<bool>(aVariant);
 				break;
 			case Integer:
-				*this = get<int64_t>(aVariant);
+				static_cast<variant_type&>(*this) = get<int64_t>(aVariant);
 				break;
 			case Real:
-				*this = get<double>(aVariant);
+				static_cast<variant_type&>(*this) = get<double>(aVariant);
 				break;
 			case String:
-				*this = string(get<i_string>(aVariant));
+				static_cast<variant_type&>(*this) = string(get<i_string>(aVariant));
 				break;
 			case CustomType:
 				if (type() != CustomType || value_as_custom_type().name() != aVariant.value_as_custom_type().name())
-					*this = auto_ref<i_custom_type>(get<i_custom_type>(aVariant).clone());
+					static_cast<variant_type&>(*this) = auto_ref<i_custom_type>(get<i_custom_type>(aVariant).clone());
 				else
 					value_as_custom_type() = aVariant.value_as_custom_type();
 				break;
@@ -94,6 +126,8 @@ namespace neolib
 			}
 			return *this;
 		}
+
+		// operations
 	public:
 		virtual type_e type() const
 		{
