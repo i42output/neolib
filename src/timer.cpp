@@ -174,10 +174,14 @@ namespace neolib
 
 	void timer::handler(const boost::system::error_code& aError)
 	{
-		if (iInReady)
+		bool ok = !aError && enabled();
+		if (ok && iInReady && !waiting())
+		{
+			again();
 			return;
+		}
 		iWaiting = false;
-		if (!aError && enabled())
+		if (ok)
 		{
 			try
 			{
