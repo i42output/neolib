@@ -40,34 +40,49 @@
 
 namespace neolib 
 {
-	class mersenne_twister
+	template <typename T = uint32_t, typename Gen = std::mt19937>
+	class basic_random
 	{
 		// types
 	public:
-		typedef uint32_t value_type;
-		// construction
+		typedef T value_type;
+		typedef Gen generator_type;
+		typedef typename generator_type::result_type generator_result_type;
+			// construction
 	public:
-		mersenne_twister() : iGen(std::random_device()()), iDis(0.0, 1.0)
+		basic_random() : iGen(std::random_device()()), iDis(0.0, 1.0)
 		{
 		}
-		mersenne_twister(value_type aSeed) : iGen(aSeed), iDis(0.0, 1.0)
+		template <typename T2>
+		basic_random(T2 aSeed) : iGen(static_cast<generator_result_type>(aSeed)), iDis(0.0, 1.0)
 		{
 		}
 		// operations
 	public:
-		void seed(value_type aSeed) 
+		template <typename T2>
+		void seed(T2 aSeed)
 		{
-			iGen.seed(aSeed);
+			iGen.seed(static_cast<generator_result_type>(aSeed));
 		}
-		value_type get(value_type aUpper) 
+		template <typename T2>
+		value_type operator()(T2 aUpper)
 		{
-			return std::uniform_int_distribution<value_type>(0, aUpper)(iGen);
+			return static_cast<value_type>(std::uniform_int_distribution<generator_result_type>(0, static_cast<generator_result_type>(aUpper))(iGen));
 		}
-		value_type get(value_type aLower, value_type aUpper)
+		template <typename T2>
+		value_type operator()(T2 aLower, T2 aUpper)
 		{
-			if (aUpper <= aLower)
-				return aLower;
-			return get(aUpper - aLower) + aLower;
+			return static_cast<value_type>(std::uniform_int_distribution<generator_result_type>(static_cast<generator_result_type>(aLower), static_cast<generator_result_type>(aUpper))(iGen));
+		}
+		template <typename T2>
+		value_type get(T2 aUpper)
+		{
+			return static_cast<value_type>(std::uniform_int_distribution<generator_result_type>(0, static_cast<generator_result_type>(aUpper))(iGen));
+		}
+		template <typename T2>
+		value_type get(T2 aLower, T2 aUpper)
+		{
+			return static_cast<value_type>(std::uniform_int_distribution<generator_result_type>(static_cast<generator_result_type>(aLower), static_cast<generator_result_type>(aUpper))(iGen));
 		}
 		double getf(double aUpper)
 		{
@@ -81,11 +96,11 @@ namespace neolib
 		}
 		// attributes 
 	private:
-		std::mt19937 iGen;
+		generator_type iGen;
 		std::uniform_real_distribution<> iDis;
 	};
 
-	typedef mersenne_twister random;
+	using random = basic_random<uint32_t>;
 
 	template <typename T>
 	struct primes
