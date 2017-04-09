@@ -450,6 +450,10 @@ namespace neolib
 		{
 			insert(begin(), first, last);
 		}
+		vecarray(std::initializer_list<T> init) : iSize(0)
+		{
+			insert(begin(), init.begin(), init.end());
+		}
 		~vecarray()
 		{
 			clear();
