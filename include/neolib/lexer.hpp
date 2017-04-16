@@ -57,7 +57,7 @@ namespace neolib
 		return 0u;
 	}
 
-	enum class lexer_atom_function_operation
+	enum class lexer_atom_function
 	{
 		Push,
 		Pop,
@@ -65,55 +65,6 @@ namespace neolib
 		Keep,
 		Not
 	};
-
-	template <typename Token, typename CharT = char>
-	class lexer_atom_function
-	{
-	public:
-		typedef Token token_type;
-		typedef CharT char_type;
-		typedef std::pair<char_type, char_type> range_type;
-		typedef std::basic_string<char_type> string_type;
-		typedef variant<char_type, range_type, string_type, lexer_atom_match_any, token_type> value_type;
-		typedef std::vector<lexer_atom_function_operation> operation_stack_type;
-	public:
-		lexer_atom_function(const value_type& aValue) :
-			iValue{ aValue } {}
-		lexer_atom_function(lexer_atom_function_operation aOperation) :
-			iValue{}, iOperationStack{ { aOperation } } {}
-		lexer_atom_function(lexer_atom_function_operation aOperation, const value_type& aValue) :
-			iValue{ aValue }, iOperationStack{ { aOperation } } {}
-	public:
-		const value_type& value() const
-		{
-			return iValue;
-		}
-		const operation_stack_type& operation_stack() const
-		{
-			return iOperationStack;
-		}
-		operation_stack_type& operation_stack()
-		{
-			return iOperationStack;
-		}
-	private:
-		value_type iValue;
-		operation_stack_type iOperationStack;
-	};
-
-	template <typename Token, typename CharT = char>
-	inline bool operator==(const lexer_atom_function<Token, CharT>& aLhs, const lexer_atom_function<Token, CharT>& aRhs)
-	{
-		return aLhs.value() == aRhs.value() && aLhs.operation_stack() == aRhs.operation_stack();
-	}
-
-	template <typename Token, typename CharT = char>
-	inline std::size_t hash_value(const lexer_atom_function<Token, CharT>& aAtomFunction)
-	{
-		auto hv = std::tie(aAtomFunction.value(), aAtomFunction.operation_stack());
-		boost::hash<decltype(hv)> hasher;
-		return hasher(hv);
-	}
 		
 	template <typename Token, typename CharT = char>
 	class lexer_atom
@@ -123,9 +74,10 @@ namespace neolib
 		typedef CharT char_type;
 		typedef std::pair<char_type, char_type> range_type;
 		typedef std::basic_string<char_type> string_type;
-		typedef lexer_atom_function<token_type> function_type;
+		typedef std::vector<lexer_atom_function> function_list;
+		typedef std::pair<token_type, function_list> function_type;
 		typedef variant<char_type, range_type, string_type, lexer_atom_match_any, token_type, function_type> value_type;
-		typedef std::string token_value_type;
+		typedef string_type token_value_type;
 	public:
 		struct not_token : std::logic_error { not_token() : std::logic_error("neolib::lexer_atom::not_token") {} };
 	public:
@@ -134,8 +86,13 @@ namespace neolib
 		{
 		}
 		template <typename T>
-		lexer_atom(const T& aValue) :
-			iValue{ aValue }
+		lexer_atom(const T& aValue, const token_value_type& aTokenValue = token_value_type{}) :
+			iValue{ aValue }, iTokenValue{ aTokenValue }
+		{
+		}
+		template <typename T>
+		lexer_atom(lexer_atom_function aFunction, const T& aValue, const token_value_type& aTokenValue = token_value_type{}) :
+			iValue{ function_type{ aValue, { aFunction } } }, iTokenValue{ aTokenValue }
 		{
 		}
 	public:
@@ -150,15 +107,27 @@ namespace neolib
 		}
 		bool is_token() const
 		{
-			return iValue.is<token_type>();
+			return iValue.is<token_type>() || iValue.is<function_type>();
 		}
 		token_type token() const
 		{
-			if (is_token())
-			{
+			if (iValue.is<token_type>())
 				return static_variant_cast<token_type>(iValue);
-			}
+			else if (iValue.is<function_type>())
+				return static_variant_cast<const function_type&>(iValue).first;
 			throw not_token();
+		}
+		bool has_functions() const
+		{
+			return iValue.is<function_type>();
+		}
+		const function_list& functions() const
+		{
+			return static_variant_cast<const function_type&>(iValue).second;
+		}
+		function_list& functions()
+		{
+			return static_variant_cast<function_type&>(iValue).second;
 		}
 		const token_value_type& token_value() const
 		{
@@ -174,47 +143,61 @@ namespace neolib
 	};
 
 	template <typename Token, typename CharT = char>
-	inline lexer_atom_function<Token, CharT> token_push(Token aToken)
+	inline lexer_atom<Token, CharT> token_push(Token aToken)
 	{
-		return lexer_atom_function<Token, CharT>{ lexer_atom_function_operation::Push, aToken };
+		return lexer_atom<Token, CharT>{ lexer_atom_function::Push, aToken };
 	}
 
 	template <typename Token, typename CharT = char>
-	inline lexer_atom_function<Token, CharT> token_pop(Token aToken)
+	inline lexer_atom<Token, CharT> token_pop(Token aToken)
 	{
-		return lexer_atom_function<Token, CharT>{ lexer_atom_function_operation::Pop, aToken };
+		return lexer_atom<Token, CharT>{ lexer_atom_function::Pop, aToken };
 	}
 
 	template <typename Token, typename CharT = char>
-	inline lexer_atom_function<Token, CharT> token_eat(Token aToken)
+	inline lexer_atom<Token, CharT> token_eat(Token aToken)
 	{
-		return lexer_atom_function<Token, CharT>{ lexer_atom_function_operation::Eat, aToken };
+		return lexer_atom<Token, CharT>{ lexer_atom_function::Eat, aToken };
 	}
 
 	template <typename Token, typename CharT = char>
-	inline lexer_atom_function<Token, CharT> token_eat(lexer_atom_function<Token, CharT> aFunction)
+	inline lexer_atom<Token, CharT> token_eat(lexer_atom<Token, CharT> aAtom)
 	{
-		aFunction.operation_stack().push_back(lexer_atom_function_operation::Eat);
-		return aFunction;
+		if (aAtom.has_functions())
+		{
+			aAtom.functions().push_back(lexer_atom_function::Eat);
+			return aAtom;
+		}
+		return typename lexer_atom<Token, CharT>::function_type{ aAtom.token(), { lexer_atom_function::Eat } };
 	}
 
 	template <typename Token, typename CharT = char>
-	inline lexer_atom_function<Token, CharT> token_keep(Token aToken)
+	inline lexer_atom<Token, CharT> token_keep(Token aToken)
 	{
-		return lexer_atom_function<Token, CharT>{ lexer_atom_function_operation::Keep, aToken };
+		return lexer_atom<Token, CharT>{ lexer_atom_function::Keep, aToken };
 	}
 
 	template <typename Token, typename CharT = char>
-	inline lexer_atom_function<Token, CharT> token_keep(lexer_atom_function<Token, CharT> aFunction)
+	inline lexer_atom<Token, CharT> token_keep(lexer_atom<Token, CharT> aAtom)
 	{
-		aFunction.operation_stack().push_back(lexer_atom_function_operation::Keep);
-		return aFunction;
+		if (aAtom.has_functions())
+		{
+			aAtom.functions().push_back(lexer_atom_function::Keep);
+			return aAtom;
+		}
+		return typename lexer_atom<Token, CharT>::function_type{ aAtom.token(),{ lexer_atom_function::Keep } };
 	}
 
 	template <typename Token, typename CharT = char>
-	inline lexer_atom_function<Token, CharT> token_not(Token aToken)
+	inline lexer_atom<Token, CharT> token_make(Token aToken, CharT aChar)
 	{
-		return lexer_atom_function<Token, CharT>{ { lexer_atom_function_operation::Not }, aToken };
+		return lexer_atom<Token, CharT>{aToken, typename lexer_atom<Token, CharT>::token_value_type{ 1, aChar } };
+	}
+
+	template <typename Token, typename CharT = char>
+	inline lexer_atom<Token, CharT> token_not(Token aToken)
+	{
+		return lexer_atom<Token, CharT>{ lexer_atom_function::Not, aToken };
 	}
 
 	template <typename CharT = char>
