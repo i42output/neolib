@@ -40,7 +40,10 @@
 #include <vector>
 #include <deque>
 #include <unordered_map>
+#include <fstream>
+#include <sstream>
 #include <boost/functional/hash.hpp>
+#include <boost/optional.hpp>
 #include "variant.hpp"
 
 namespace neolib
@@ -59,11 +62,38 @@ namespace neolib
 
 	enum class lexer_atom_function
 	{
-		Push,
-		Pop,
 		Eat,
 		Keep,
-		Not
+		Not,
+		End
+	};
+		
+	template <typename Token, typename CharT = char>
+	class lexer_token : public std::pair<Token, std::basic_string<CharT>>
+	{
+	public:
+		typedef Token token_type;
+		typedef std::basic_string<CharT> value_type;
+	private:
+		typedef std::pair<Token, std::basic_string<CharT>> base_type;
+	public:
+		lexer_token() :
+			base_type{}
+		{
+		}
+		lexer_token(token_type aToken, const value_type& aValue) :
+			base_type{aToken, aValue}
+		{
+		}
+	public:
+		token_type token() const
+		{
+			return first;
+		}
+		const value_type& value() const
+		{
+			return second;
+		}
 	};
 		
 	template <typename Token, typename CharT = char>
@@ -94,6 +124,15 @@ namespace neolib
 		lexer_atom(lexer_atom_function aFunction, const T& aValue, const token_value_type& aTokenValue = token_value_type{}) :
 			iValue{ function_type{ aValue, { aFunction } } }, iTokenValue{ aTokenValue }
 		{
+		}
+	public:
+		bool operator==(const lexer_atom& aOther) const
+		{
+			return iValue == aOther.iValue && iTokenValue == aOther.iTokenValue;
+		}
+		bool operator!=(const lexer_atom& aOther) const
+		{
+			return !(*this == aOther);
 		}
 	public:
 		template <typename T>
@@ -143,15 +182,20 @@ namespace neolib
 	};
 
 	template <typename Token, typename CharT = char>
-	inline lexer_atom<Token, CharT> token_push(Token aToken)
+	inline lexer_atom<Token, CharT> token_end(Token aToken)
 	{
-		return lexer_atom<Token, CharT>{ lexer_atom_function::Push, aToken };
+		return lexer_atom<Token, CharT>{ lexer_atom_function::End, aToken };
 	}
 
 	template <typename Token, typename CharT = char>
-	inline lexer_atom<Token, CharT> token_pop(Token aToken)
+	inline lexer_atom<Token, CharT> token_end(lexer_atom<Token, CharT> aAtom)
 	{
-		return lexer_atom<Token, CharT>{ lexer_atom_function::Pop, aToken };
+		if (aAtom.has_functions())
+		{
+			aAtom.functions().push_back(lexer_atom_function::End);
+			return aAtom;
+		}
+		return typename lexer_atom<Token, CharT>::function_type{ aAtom.token(),{ lexer_atom_function::End } };
 	}
 
 	template <typename Token, typename CharT = char>
@@ -229,21 +273,30 @@ namespace neolib
 		typedef Atom atom_type;
 		typedef typename atom_type::token_type token_type;
 		typedef typename atom_type::char_type char_type;
+		typedef lexer_token<token_type, char_type> lexer_token_type;
 		typedef typename atom_type::range_type range_type;
 		typedef typename atom_type::string_type string_type;
 		typedef typename atom_type::function_type function_type;
 		typedef lexer_rule<atom_type> rule_type;
 	private:
 		typedef std::vector<rule_type> rule_list;
+		enum class match_result
+		{
+			None,
+			Partial,
+			Complete
+		};
 		class node
 		{
 		public:
 			typedef neolib::variant<token_type, function_type> value_type;
 			typedef std::pair<node*, value_type> next_type;
+			typedef boost::optional<next_type> optional_next_type;
 		public:
 			struct bad_terminal_atom : std::logic_error { bad_terminal_atom() : std::logic_error("neolib::lexer::node::bad_terminal_atom") {} };
 			struct unsupported_atom_type : std::logic_error { unsupported_atom_type() : std::logic_error("neolib::lexer::node::unsupported_atom_type") {} };
 			struct node_exists : std::logic_error { node_exists() : std::logic_error("neolib::lexer::node::node_exists") {} };
+			struct invalid_atom : std::invalid_argument { invalid_atom() : std::invalid_argument("neolib::lexer::node::invalid_atom") {} };
 		public:
 			node() :
 				iTokenMap{}, iCharMap{}
@@ -348,39 +401,242 @@ namespace neolib
 			{
 				return iFunctionMap[aFunction];
 			}
+			template <typename Iter>
+			std::pair<match_result, value_type> match(Iter aFirst, Iter aLast) const
+			{
+				auto atomMatch = match(*aFirst++);
+				if (atomMatch)
+				{
+					if (aFirst == aLast)
+					{
+						if (!atomMatch->second.empty())
+							return std::make_pair(match_result::Complete, atomMatch->second);
+						else if (atomMatch->first != nullptr)
+							return std::make_pair(match_result::Partial, value_type{});
+						else
+							return std::make_pair(match_result::None, value_type{});
+					}
+					else if (atomMatch->first != nullptr)
+						return atomMatch->first->match(aFirst, aLast);
+					else
+						return std::make_pair(match_result::None, value_type{});
+				}
+				else
+					return std::make_pair(match_result::None, value_type{});
+			}
+			optional_next_type match(const atom_type& aAtom) const
+			{
+				if (aAtom.is<char_type>())
+				{
+					auto existing = iCharMap.find(static_variant_cast<char_type>(aAtom.value()));
+					if (existing != iCharMap.end())
+						return existing->second;
+					else
+						return optional_next_type{};
+				}
+				else if (aAtom.is<token_type>())
+				{
+					auto token = static_variant_cast<token_type>(aAtom.value());
+					auto existingToken = iTokenMap.find(token);
+					if (existingToken != iTokenMap.end())
+						return existingToken->second;
+					for (auto iterFunction = iFunctionMap.begin(); iterFunction != iFunctionMap.end(); ++iterFunction)
+					{
+						auto functionToken = iterFunction->first.first;
+						auto functions = iterFunction->first.second;
+						bool not = (std::find(functions.begin(), functions.end(), lexer_atom_function::Not) != functions.end());
+						if ((functionToken == token && !not) || (functionToken != token && not))
+							return iterFunction->second;
+					}
+					return optional_next_type{};
+				}
+				throw invalid_atom();
+			}
 		private:
 			mutable std::unordered_map<char_type, next_type> iCharMap;
 			mutable std::unordered_map<token_type, next_type> iTokenMap;
 			mutable std::unordered_map<function_type, next_type, boost::hash<function_type>> iFunctionMap;
 		};
 		typedef std::list<node> node_list;
+		typedef std::shared_ptr<std::istream> stream_pointer;
 	public:
-		struct bad_lex_tree : std::logic_error { bad_lex_tree() : std::logic_error("neolib::lexer_atom::bad_lex_tree") {} };
+		struct style_sheet_not_utf8 : std::runtime_error { style_sheet_not_utf8(const std::string& reason = "neolib::lexer_atom::style_sheet_not_utf8") : std::runtime_error(reason) {} };
+		struct bad_lex_tree : std::logic_error { bad_lex_tree(const std::string& reason = "neolib::lexer_atom::bad_lex_tree") : std::logic_error(reason) {} };
+		struct end_of_file_reached : std::runtime_error { end_of_file_reached(const std::string& reason = "neolib::lexer_atom::end_of_file_reached") : std::runtime_error(reason) {} };
+		struct invalid_token : std::runtime_error { invalid_token(const std::string& reason = "neolib::lexer_atom::invalid_token") : std::runtime_error(reason) {} };
 	public:
 		template <typename Iter>
-		lexer(std::istream& aInput, Iter aFirstRule, Iter aLastRule) : 
-			iInput { aInput }
+		lexer(Iter aFirstRule, Iter aLastRule) : iFinished{ false }, iError{ false }, iCharIndex {}, iLineIndex{}, iColumnIndex{}, iPreviousChar{}, iInputBufferIndex{}
 		{
 			for (auto r = aFirstRule; r != aLastRule; ++r)
 				build(*r);
 		}
 	public:
-		lexer& operator>>(atom_type& aAtom)
+		bool is_open() const
 		{
-			if (iQueue.empty())
-				next();
-			if (!iQueue.empty())
-			{
-				aAtom = iQueue.front();
-				iQueue.pop_front();
-			}
+			return iInput.get() != nullptr;
+		}
+		bool open(const std::string& aPath)
+		{
+			if (is_open())
+				close();
+			iInput = std::make_shared<std::ifstream>(aPath, std::ios_base::in | std::ios_base::binary);
+			return static_cast<bool>(*iInput);
+		}
+		bool use(std::istream& aStream)
+		{
+			if (is_open())
+				close();
+			iInput = stream_pointer(stream_pointer{}, &aStream);
+			return static_cast<bool>(*iInput);
+		}
+		bool use(const std::string& aStyleSheet)
+		{
+			if (is_open())
+				close();
+			iInput = std::make_sahred<std::istringstream>(aStyleSheet);
+			return static_cast<bool>(*iInput);
+		}
+		void close()
+		{
+			iInput.reset();
+			iQueue.clear();
+			iCharIndex = 0;
+			iLineIndex = 0;
+			iColumnIndex = 0;
+			iPreviousChar = {};
+			iInputBuffer.clear();
+			iFinished = false;
+			iError = false;
+			iInputBufferIndex = 0;
+		}
+		lexer& operator>>(lexer_token_type& aToken)
+		{
+			atom_type atom;
+			if (*this >> atom)
+				aToken = lexer_token_type{ atom.token(), atom.token_value() };
 			return *this;
 		}
 		explicit operator bool() const
 		{
-			return !iQueue.empty() || !iBuffer.empty() || iInput;
+			return !iQueue.empty() || *iInput || !iError;
 		}
 	private:
+		lexer& operator>>(atom_type& aAtom)
+		{
+			aAtom = atom_type{};
+			if (iFinished)
+			{
+				iError = true;
+				return *this;
+			}
+			try
+			{
+				if (iQueue.empty())
+					if (!next())
+						return *this;
+				bool backup = false;
+				for (auto iter = iQueue.end(); iter != iQueue.begin(); iter = (backup ? iQueue.end() : iter - 1))
+				{
+					backup = false;
+					auto match = iNodes.front().match(iter - 1, iQueue.end());
+					if (match.first == match_result::Partial)
+					{
+						if (!next())
+							throw end_of_file_reached();
+						backup = true;
+						break;
+					}
+					if (match.first == match_result::Complete)
+					{
+						bool endToken = false;
+						if (match.second.is<token_type>())
+							aAtom = atom_type{ static_variant_cast<token_type>(match.second) };
+						else if (match.second.is<function_type>())
+						{
+							auto& functions = static_variant_cast<const function_type&>(match.second);
+							aAtom = atom_type{ functions.first };
+							auto iter2 = iter - 1;
+							for (auto f = functions.second.begin(); f != functions.second.end(); ++f)
+							{
+								switch (*f)
+								{
+								case lexer_atom_function::Eat:
+									if (iter2 != iQueue.end())
+									{
+										std::ptrdiff_t diff = iter - iter2;
+										iter2 = iQueue.erase(iter2);
+										iter = iter2 + diff;
+									}
+									break;
+								case lexer_atom_function::Keep:
+									if (iter2 != iQueue.end())
+										++iter2;
+									break;
+								case lexer_atom_function::End:
+									endToken = true;
+									break;
+								}
+							}
+						}
+						for (auto iter2 = iter - 1; iter2 != iQueue.end(); ++iter2)
+							aAtom.token_value().append(iter2->token_value());
+						if (endToken)
+						{
+							iQueue.clear();
+							return *this;
+						}
+						else
+						{
+							if (iter != iQueue.end() || iQueue.back() != aAtom)
+							{
+								iQueue.erase(iter - 1, iQueue.end());
+								iQueue.insert(iQueue.end(), aAtom);
+								backup = true;
+							}
+							else
+							{
+								if (iter - 1 == iQueue.begin())
+								{
+									if (next())
+										backup = true;
+								}
+							}
+						}
+					}
+					else if (match.first == match_result::None)
+					{
+						aAtom = iQueue[0];
+						iQueue.pop_front();
+						next();
+						return *this;
+					}
+				}
+				aAtom = iQueue[0];
+				iQueue.pop_front();
+				return *this;
+			}
+			catch (std::exception& e)
+			{
+				throw_with_info<std::exception>(e.what());
+				throw; // removes annoying compiler warning (not all control paths return a value) 
+			}
+			catch (...)
+			{
+				throw_with_info<std::exception>("unknown exception");
+				throw; // removes annoying compiler warning (not all control paths return a value) 
+			}
+		}
+		template <typename Exception>
+		void throw_with_info(const std::string& aReason)
+		{
+			static std::ostringstream oss;
+			oss.str("");
+			oss << "Lexer error: " << aReason << std::endl;
+			oss << "Line: " << iLineIndex << std::endl;
+			oss << "Column: " << iColumnIndex << std::endl;
+			throw Exception{ oss.str().c_str() };
+		}
 		void build(const rule_type& aRule)
 		{
 			if (iNodes.empty())
@@ -437,19 +693,63 @@ namespace neolib
 				}
 			}
 		}
-		void next()
+		bool next()
 		{
-			// todo
-			char ch;
-			while (iInput >> ch)
+			const std::size_t BUF_SIZE = 32;
+			if (iInputBuffer.empty())
 			{
-				iBuffer.push_back(ch);
+				iInputBuffer.resize(BUF_SIZE);
+				iInput->read(&iInputBuffer[0], BUF_SIZE);
+				std::streamsize amount = iInput->gcount();
+				iInputBuffer.resize(static_cast<std::size_t>(amount));
+				if (amount == 0)
+				{
+					iFinished = true;
+					if (iCharIndex == 0)
+						iError = true;
+					return false;
+				}
 			}
+			if (iCharIndex == 0)
+			{
+				const string_type BOM_UTF8 = "\xEF\xBB\xBF";
+				const string_type BOM_UTF16LE = "\xFF\xFE";
+				const string_type BOM_UTF16BE = "\xFE\xFF";
+				if (iInputBuffer.find(BOM_UTF8) == 0)
+					iInputBuffer = iInputBuffer.substr(BOM_UTF8.size());
+				else if (iInputBuffer.find(BOM_UTF16LE) == 0)
+					throw style_sheet_not_utf8();
+				else if (iInputBuffer.find(BOM_UTF16BE) == 0)
+					throw style_sheet_not_utf8();
+			}
+			if (iPreviousChar == '\n' || iCharIndex == 0)
+			{
+				++iLineIndex;
+				iColumnIndex = 0;
+			}
+			++iColumnIndex;
+			++iCharIndex;
+			char_type ch = iInputBuffer[iInputBufferIndex];
+			iPreviousChar = ch;
+			iQueue.emplace_back(ch, string_type(1, ch));
+			if (++iInputBufferIndex == iInputBuffer.size())
+			{
+				iInputBuffer.clear();
+				iInputBufferIndex = 0;
+			}
+			return true;
 		}
 	private:
 		node_list iNodes;
-		std::istream& iInput;
-		std::deque<char_type> iBuffer;
+		stream_pointer iInput;
+		bool iFinished;
+		bool iError;
+		string_type iInputBuffer;
+		std::size_t iInputBufferIndex;
+		uint32_t iCharIndex;
+		uint32_t iLineIndex;
+		uint32_t iColumnIndex;
+		char iPreviousChar;
 		std::deque<atom_type> iQueue;
 	};
 }
