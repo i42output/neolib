@@ -109,7 +109,7 @@ namespace neolib
 		typedef variant<char_type, range_type, string_type, lexer_atom_match_any, token_type, function_type> value_type;
 		typedef string_type token_value_type;
 	public:
-		struct not_token : std::logic_error { not_token() : std::logic_error("neolib::lexer_atom::not_token") {} };
+		struct not_token : std::logic_error { not_token(const std::string& aBadToken) : std::logic_error("Invalid token: '" + aBadToken + "'") {} };
 	public:
 		lexer_atom() :
 			iValue{}
@@ -154,7 +154,12 @@ namespace neolib
 				return static_variant_cast<token_type>(iValue);
 			else if (iValue.is<function_type>())
 				return static_variant_cast<const function_type&>(iValue).first;
-			throw not_token();
+			else if (iValue.is<char_type>())
+				throw not_token(std::string(1, static_variant_cast<char_type>(iValue)));
+			else if (iValue.is<string_type>())
+				throw not_token(static_variant_cast<const string_type&>(iValue));
+			else
+				throw not_token("???");
 		}
 		bool has_functions() const
 		{
@@ -404,7 +409,27 @@ namespace neolib
 			template <typename Iter>
 			std::pair<match_result, value_type> match(Iter aFirst, Iter aLast) const
 			{
-				auto atomMatch = match(*aFirst++);
+				auto& str = iWorkingBuffer;
+				str.clear();
+				for (auto i = aFirst; i != aLast; ++i)
+				{
+					if (i->is<char_type>())
+						str.push_back(static_variant_cast<char_type>(i->value()));
+					else
+						for (auto ch : i->token_value())
+							str.push_back(ch);
+				}
+				auto stringResult = do_match(str.begin(), str.end());
+				if (stringResult.first != match_result::None)
+					return stringResult;
+				else
+					return do_match(aFirst, aLast);
+			}
+		private:
+			template <typename Iter>
+			std::pair<match_result, value_type> do_match(Iter aFirst, Iter aLast) const
+			{
+				auto atomMatch = do_match(*aFirst++);
 				if (atomMatch)
 				{
 					if (aFirst == aLast)
@@ -417,14 +442,14 @@ namespace neolib
 							return std::make_pair(match_result::None, value_type{});
 					}
 					else if (atomMatch->first != nullptr)
-						return atomMatch->first->match(aFirst, aLast);
+						return atomMatch->first->do_match(aFirst, aLast);
 					else
 						return std::make_pair(match_result::None, value_type{});
 				}
 				else
 					return std::make_pair(match_result::None, value_type{});
 			}
-			optional_next_type match(const atom_type& aAtom) const
+			optional_next_type do_match(const atom_type& aAtom) const
 			{
 				if (aAtom.is<char_type>())
 				{
@@ -456,6 +481,7 @@ namespace neolib
 			mutable std::unordered_map<char_type, next_type> iCharMap;
 			mutable std::unordered_map<token_type, next_type> iTokenMap;
 			mutable std::unordered_map<function_type, next_type, boost::hash<function_type>> iFunctionMap;
+			mutable std::vector<atom_type> iWorkingBuffer;
 		};
 		typedef std::list<node> node_list;
 		typedef std::shared_ptr<std::istream> stream_pointer;
@@ -512,108 +538,11 @@ namespace neolib
 		}
 		lexer& operator>>(lexer_token_type& aToken)
 		{
-			atom_type atom;
-			if (*this >> atom)
-				aToken = lexer_token_type{ atom.token(), atom.token_value() };
-			return *this;
-		}
-		explicit operator bool() const
-		{
-			return !iQueue.empty() || *iInput || !iError;
-		}
-	private:
-		lexer& operator>>(atom_type& aAtom)
-		{
-			aAtom = atom_type{};
-			if (iFinished)
-			{
-				iError = true;
-				return *this;
-			}
 			try
 			{
-				if (iQueue.empty())
-					if (!next())
-						return *this;
-				bool backup = false;
-				for (auto iter = iQueue.end(); iter != iQueue.begin(); iter = (backup ? iQueue.end() : iter - 1))
-				{
-					backup = false;
-					auto match = iNodes.front().match(iter - 1, iQueue.end());
-					if (match.first == match_result::Partial)
-					{
-						if (!next())
-							throw end_of_file_reached();
-						backup = true;
-						break;
-					}
-					if (match.first == match_result::Complete)
-					{
-						bool endToken = false;
-						if (match.second.is<token_type>())
-							aAtom = atom_type{ static_variant_cast<token_type>(match.second) };
-						else if (match.second.is<function_type>())
-						{
-							auto& functions = static_variant_cast<const function_type&>(match.second);
-							aAtom = atom_type{ functions.first };
-							auto iter2 = iter - 1;
-							for (auto f = functions.second.begin(); f != functions.second.end(); ++f)
-							{
-								switch (*f)
-								{
-								case lexer_atom_function::Eat:
-									if (iter2 != iQueue.end())
-									{
-										std::ptrdiff_t diff = iter - iter2;
-										iter2 = iQueue.erase(iter2);
-										iter = iter2 + diff;
-									}
-									break;
-								case lexer_atom_function::Keep:
-									if (iter2 != iQueue.end())
-										++iter2;
-									break;
-								case lexer_atom_function::End:
-									endToken = true;
-									break;
-								}
-							}
-						}
-						for (auto iter2 = iter - 1; iter2 != iQueue.end(); ++iter2)
-							aAtom.token_value().append(iter2->token_value());
-						if (endToken)
-						{
-							iQueue.clear();
-							return *this;
-						}
-						else
-						{
-							if (iter != iQueue.end() || iQueue.back() != aAtom)
-							{
-								iQueue.erase(iter - 1, iQueue.end());
-								iQueue.insert(iQueue.end(), aAtom);
-								backup = true;
-							}
-							else
-							{
-								if (iter - 1 == iQueue.begin())
-								{
-									if (next())
-										backup = true;
-								}
-							}
-						}
-					}
-					else if (match.first == match_result::None)
-					{
-						aAtom = iQueue[0];
-						iQueue.pop_front();
-						next();
-						return *this;
-					}
-				}
-				aAtom = iQueue[0];
-				iQueue.pop_front();
+				atom_type atom;
+				if (*this >> atom)
+					aToken = lexer_token_type{ atom.token(), atom.token_value() };
 				return *this;
 			}
 			catch (std::exception& e)
@@ -626,6 +555,106 @@ namespace neolib
 				throw_with_info<std::exception>("unknown exception");
 				throw; // removes annoying compiler warning (not all control paths return a value) 
 			}
+		}
+		explicit operator bool() const
+		{
+			return !iError;
+		}
+	private:
+		lexer& operator>>(atom_type& aAtom)
+		{
+			aAtom = atom_type{};
+			if (iFinished && iQueue.empty())
+			{
+				iError = true;
+				return *this;
+			}
+			if (iQueue.empty())
+				if (!next())
+					return *this;
+			bool backup = false;
+			for (auto iter = iQueue.end(); iter != iQueue.begin(); iter = (backup ? iQueue.end() : iter - 1))
+			{
+				backup = false;
+				auto match = iNodes.front().match(iter - 1, iQueue.end());
+				if (match.first == match_result::Partial)
+				{
+					if (!next())
+						throw end_of_file_reached();
+					backup = true;
+					continue;
+				}
+				if (match.first == match_result::Complete)
+				{
+					bool endToken = false;
+					if (match.second.is<token_type>())
+						aAtom = atom_type{ static_variant_cast<token_type>(match.second) };
+					else if (match.second.is<function_type>())
+					{
+						auto& functions = static_variant_cast<const function_type&>(match.second);
+						aAtom = atom_type{ functions.first };
+						auto iter2 = iter - 1;
+						for (auto f = functions.second.begin(); f != functions.second.end(); ++f)
+						{
+							switch (*f)
+							{
+							case lexer_atom_function::Eat:
+								if (iter2 != iQueue.end())
+								{
+									std::ptrdiff_t diff = iter - iter2;
+									iter2 = iQueue.erase(iter2);
+									iter = iter2 + diff;
+								}
+								break;
+							case lexer_atom_function::Keep:
+								if (iter2 != iQueue.end())
+									++iter2;
+								break;
+							case lexer_atom_function::End:
+								endToken = true;
+								break;
+							}
+						}
+					}
+					for (auto iter2 = iter - 1; iter2 != iQueue.end(); ++iter2)
+						aAtom.token_value().append(iter2->token_value());
+					if (endToken)
+					{
+						iQueue.clear();
+						return *this;
+					}
+					else
+					{
+						if (iter != iQueue.end() || iQueue.back() != aAtom)
+						{
+							iQueue.erase(iter - 1, iQueue.end());
+							iQueue.insert(iQueue.end(), aAtom);
+							backup = true;
+						}
+						else
+						{
+							if (iter - 1 == iQueue.begin())
+							{
+								if (next())
+									backup = true;
+							}
+						}
+					}
+				}
+				else if (match.first == match_result::None)
+				{
+					if (iter - 1 == iQueue.begin())
+					{
+						aAtom = iQueue[0];
+						iQueue.pop_front();
+						next();
+						return *this;
+					}
+				}
+			}
+			aAtom = iQueue[0];
+			iQueue.pop_front();
+			return *this;
 		}
 		template <typename Exception>
 		void throw_with_info(const std::string& aReason)
@@ -704,9 +733,9 @@ namespace neolib
 				iInputBuffer.resize(static_cast<std::size_t>(amount));
 				if (amount == 0)
 				{
-					iFinished = true;
 					if (iCharIndex == 0)
 						iError = true;
+					iFinished = true;
 					return false;
 				}
 			}
