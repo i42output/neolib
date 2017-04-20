@@ -161,6 +161,10 @@ namespace neolib
 			else
 				throw not_token("???");
 		}
+		void set_token(token_type aToken)
+		{
+			iValue = aToken;
+		}
 		bool has_functions() const
 		{
 			return iValue.is<function_type>();
@@ -285,6 +289,11 @@ namespace neolib
 		typedef lexer_rule<atom_type> rule_type;
 	private:
 		typedef std::vector<rule_type> rule_list;
+		enum class search_type
+		{
+			Token,
+			String
+		};
 		enum class match_result
 		{
 			None,
@@ -303,8 +312,8 @@ namespace neolib
 			struct node_exists : std::logic_error { node_exists() : std::logic_error("neolib::lexer::node::node_exists") {} };
 			struct invalid_atom : std::invalid_argument { invalid_atom() : std::invalid_argument("neolib::lexer::node::invalid_atom") {} };
 		public:
-			node() :
-				iTokenMap{}, iCharMap{}
+			node(lexer& aParent) :
+				iParent{ aParent }, iTokenMap {}, iCharMap{}
 			{
 			}
 		public:
@@ -407,29 +416,10 @@ namespace neolib
 				return iFunctionMap[aFunction];
 			}
 			template <typename Iter>
-			std::pair<match_result, value_type> match(Iter aFirst, Iter aLast) const
+			std::pair<match_result, value_type> match(Iter aFirst, Iter aLast, search_type aSearchType) const
 			{
-				auto& str = iWorkingBuffer;
-				str.clear();
-				for (auto i = aFirst; i != aLast; ++i)
-				{
-					if (i->is<char_type>())
-						str.push_back(static_variant_cast<char_type>(i->value()));
-					else
-						for (auto ch : i->token_value())
-							str.push_back(ch);
-				}
-				auto stringResult = do_match(str.begin(), str.end());
-				if (stringResult.first != match_result::None)
-					return stringResult;
-				else
-					return do_match(aFirst, aLast);
-			}
-		private:
-			template <typename Iter>
-			std::pair<match_result, value_type> do_match(Iter aFirst, Iter aLast) const
-			{
-				auto atomMatch = do_match(*aFirst++);
+				atom_type atom = *aFirst++;
+				auto atomMatch = match_atom(atom, aSearchType);
 				if (atomMatch)
 				{
 					if (aFirst == aLast)
@@ -441,23 +431,26 @@ namespace neolib
 						else
 							return std::make_pair(match_result::None, value_type{});
 					}
-					else if (atomMatch->first != nullptr)
-						return atomMatch->first->do_match(aFirst, aLast);
+					else if (atomMatch->first != nullptr && (!atom.is<char_type>() || aSearchType == search_type::String))
+						return atomMatch->first->match(aFirst, aLast, aSearchType);
 					else
 						return std::make_pair(match_result::None, value_type{});
 				}
 				else
 					return std::make_pair(match_result::None, value_type{});
 			}
-			optional_next_type do_match(const atom_type& aAtom) const
+		private:
+			optional_next_type match_atom(const atom_type& aAtom, search_type aSearchType) const
 			{
 				if (aAtom.is<char_type>())
 				{
-					auto existing = iCharMap.find(static_variant_cast<char_type>(aAtom.value()));
-					if (existing != iCharMap.end())
-						return existing->second;
-					else
-						return optional_next_type{};
+					if (this == &*iParent.iNodes.begin() || aSearchType == search_type::String)
+					{
+						auto existing = iCharMap.find(static_variant_cast<char_type>(aAtom.value()));
+						if (existing != iCharMap.end())
+							return existing->second;
+					}
+					return optional_next_type{};
 				}
 				else if (aAtom.is<token_type>())
 				{
@@ -478,6 +471,7 @@ namespace neolib
 				throw invalid_atom();
 			}
 		private:
+			lexer& iParent;
 			mutable std::unordered_map<char_type, next_type> iCharMap;
 			mutable std::unordered_map<token_type, next_type> iTokenMap;
 			mutable std::unordered_map<function_type, next_type, boost::hash<function_type>> iFunctionMap;
@@ -563,7 +557,6 @@ namespace neolib
 	private:
 		lexer& operator>>(atom_type& aAtom)
 		{
-			aAtom = atom_type{};
 			if (iFinished && iQueue.empty())
 			{
 				iError = true;
@@ -576,7 +569,7 @@ namespace neolib
 			for (auto iter = iQueue.end(); iter != iQueue.begin(); iter = (backup ? iQueue.end() : iter - 1))
 			{
 				backup = false;
-				auto match = iNodes.front().match(iter - 1, iQueue.end());
+				auto match = iNodes.front().match(iter - 1, iQueue.end(), search_type::Token);
 				if (match.first == match_result::Partial)
 				{
 					if (!next())
@@ -586,13 +579,14 @@ namespace neolib
 				}
 				if (match.first == match_result::Complete)
 				{
+					atom_type atom = atom_type{};
 					bool endToken = false;
 					if (match.second.is<token_type>())
-						aAtom = atom_type{ static_variant_cast<token_type>(match.second) };
+						atom = atom_type{ static_variant_cast<token_type>(match.second) };
 					else if (match.second.is<function_type>())
 					{
 						auto& functions = static_variant_cast<const function_type&>(match.second);
-						aAtom = atom_type{ functions.first };
+						atom = atom_type{ functions.first };
 						auto iter2 = iter - 1;
 						for (auto f = functions.second.begin(); f != functions.second.end(); ++f)
 						{
@@ -617,18 +611,19 @@ namespace neolib
 						}
 					}
 					for (auto iter2 = iter - 1; iter2 != iQueue.end(); ++iter2)
-						aAtom.token_value().append(iter2->token_value());
+						atom.token_value().append(iter2->token_value());
 					if (endToken)
 					{
 						iQueue.clear();
-						return *this;
+						iQueue.push_back(atom);
+						break;
 					}
 					else
 					{
-						if (iter != iQueue.end() || iQueue.back() != aAtom)
+						if (iter != iQueue.end() || iQueue.back() != atom)
 						{
 							iQueue.erase(iter - 1, iQueue.end());
-							iQueue.insert(iQueue.end(), aAtom);
+							iQueue.insert(iQueue.end(), atom);
 							backup = true;
 						}
 						else
@@ -645,12 +640,35 @@ namespace neolib
 				{
 					if (iter - 1 == iQueue.begin())
 					{
-						aAtom = iQueue[0];
-						iQueue.pop_front();
 						next();
-						return *this;
+						break;
 					}
 				}
+			}
+			auto match = iNodes.front().match(iQueue[0].token_value().begin(), iQueue[0].token_value().end(), search_type::String);
+			if (match.first == match_result::Complete)
+			{
+				bool changed = false;
+				if (match.second.is<token_type>())
+				{
+					auto token = static_variant_cast<token_type>(match.second);
+					if (iQueue[0].token() != token)
+					{
+						iQueue[0].set_token(token);
+						changed = true;
+					}
+				}
+				else if (match.second.is<function_type>())
+				{
+					auto token = static_variant_cast<const function_type&>(match.second).first;
+					if (iQueue[0].token() != token)
+					{
+						iQueue[0].set_token(token);
+						changed = true;
+					}
+				}
+				if (changed)
+					return *this >> aAtom; // recurse
 			}
 			aAtom = iQueue[0];
 			iQueue.pop_front();
@@ -669,7 +687,7 @@ namespace neolib
 		void build(const rule_type& aRule)
 		{
 			if (iNodes.empty())
-				iNodes.push_back(node{});
+				iNodes.push_back(node{ *this });
 			build(aRule, 0u, iNodes.front());
 		}
 		node& build(const rule_type& aRule, std::size_t aExpressionIndex, node& aNode)
@@ -712,7 +730,7 @@ namespace neolib
 				}
 				else
 				{
-					iNodes.push_back(node{});
+					iNodes.push_back(node{ *this });
 					auto& newNode = iNodes.back();
 					aNode.map(aAtom, newNode);
 					if (!aHalt)
