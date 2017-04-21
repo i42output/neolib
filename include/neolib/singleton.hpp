@@ -36,7 +36,6 @@
 #pragma once
 
 #include "neolib.hpp"
-#include "lockable.hpp"
 
 namespace neolib
 {
@@ -46,25 +45,8 @@ namespace neolib
 	public:
 		static T& instance()
 		{
-			T* ret = sInstancePtr;
-			memory_barrier_acquire_dependant();
-			if (ret == 0)
-			{
-				lock theLock(sLock);
-				static T sInstance;
-				memory_barrier_release();
-				sInstancePtr = &sInstance;
-				ret = sInstancePtr;
-			}
-			return *ret;
+			static T sInstance;
+			return sInstance;
 		}
-	private:
-		static lockable sLock;
-		static T* sInstancePtr;
 	};
-
-	template <typename T>
-	lockable singleton<T>::sLock;
-	template <typename T>
-	T* singleton<T>::sInstancePtr;
 }
