@@ -67,7 +67,7 @@ namespace neolib
 		Not,
 		End
 	};
-		
+
 	template <typename Token, typename CharT = char>
 	class lexer_token : public std::pair<Token, std::basic_string<CharT>>
 	{
@@ -96,20 +96,25 @@ namespace neolib
 		}
 	};
 		
-	template <typename Token, typename CharT = char>
+	struct no_scopes {};
+
+	template <typename Token, typename Scope = no_scopes, typename CharT = char>
 	class lexer_atom
 	{
 	public:
 		typedef Token token_type;
+		typedef Scope scope_type;
 		typedef CharT char_type;
 		typedef std::pair<char_type, char_type> range_type;
 		typedef std::basic_string<char_type> string_type;
 		typedef std::vector<lexer_atom_function> function_list;
 		typedef std::pair<token_type, function_list> function_type;
-		typedef variant<char_type, range_type, string_type, lexer_atom_match_any, token_type, function_type> value_type;
+		typedef std::pair<scope_type, bool> scope_change_type;
+		typedef variant<char_type, range_type, string_type, lexer_atom_match_any, token_type, function_type, scope_type, scope_change_type> value_type;
 		typedef string_type token_value_type;
 	public:
 		struct not_token : std::logic_error { not_token(const std::string& aBadToken) : std::logic_error("Invalid token: '" + aBadToken + "'") {} };
+		struct not_scope : std::logic_error { not_scope(const std::string& aBadScope) : std::logic_error("Invalid scope: '" + aBadScope + "'") {} };
 	public:
 		lexer_atom() :
 			iValue{}
@@ -165,6 +170,21 @@ namespace neolib
 		{
 			iValue = aToken;
 		}
+		bool is_scope() const
+		{
+			return iValue.is<scope_type>();
+		}
+		scope_type scope() const
+		{
+			if (iValue.is<scope_type>())
+				return static_variant_cast<scope_typ>(iValue);
+			else
+				throw not_scope("???");
+		}
+		void set_scope(scope_type aScope)
+		{
+			iValue = aScope;
+		}
 		bool has_functions() const
 		{
 			return iValue.is<function_type>();
@@ -190,89 +210,82 @@ namespace neolib
 		token_value_type iTokenValue;
 	};
 
-	template <typename Token, typename CharT = char>
-	inline lexer_atom<Token, CharT> token_end(Token aToken)
-	{
-		return lexer_atom<Token, CharT>{ lexer_atom_function::End, aToken };
-	}
-
-	template <typename Token, typename CharT = char>
-	inline lexer_atom<Token, CharT> token_end(lexer_atom<Token, CharT> aAtom)
-	{
-		if (aAtom.has_functions())
-		{
-			aAtom.functions().push_back(lexer_atom_function::End);
-			return aAtom;
-		}
-		return typename lexer_atom<Token, CharT>::function_type{ aAtom.token(),{ lexer_atom_function::End } };
-	}
-
-	template <typename Token, typename CharT = char>
-	inline lexer_atom<Token, CharT> token_eat(Token aToken)
-	{
-		return lexer_atom<Token, CharT>{ lexer_atom_function::Eat, aToken };
-	}
-
-	template <typename Token, typename CharT = char>
-	inline lexer_atom<Token, CharT> token_eat(lexer_atom<Token, CharT> aAtom)
-	{
-		if (aAtom.has_functions())
-		{
-			aAtom.functions().push_back(lexer_atom_function::Eat);
-			return aAtom;
-		}
-		return typename lexer_atom<Token, CharT>::function_type{ aAtom.token(), { lexer_atom_function::Eat } };
-	}
-
-	template <typename Token, typename CharT = char>
-	inline lexer_atom<Token, CharT> token_keep(Token aToken)
-	{
-		return lexer_atom<Token, CharT>{ lexer_atom_function::Keep, aToken };
-	}
-
-	template <typename Token, typename CharT = char>
-	inline lexer_atom<Token, CharT> token_keep(lexer_atom<Token, CharT> aAtom)
-	{
-		if (aAtom.has_functions())
-		{
-			aAtom.functions().push_back(lexer_atom_function::Keep);
-			return aAtom;
-		}
-		return typename lexer_atom<Token, CharT>::function_type{ aAtom.token(),{ lexer_atom_function::Keep } };
-	}
-
-	template <typename Token, typename CharT = char>
-	inline lexer_atom<Token, CharT> token_make(Token aToken, CharT aChar)
-	{
-		return lexer_atom<Token, CharT>{aToken, typename lexer_atom<Token, CharT>::token_value_type{ 1, aChar } };
-	}
-
-	template <typename Token, typename CharT = char>
-	inline lexer_atom<Token, CharT> token_not(Token aToken)
-	{
-		return lexer_atom<Token, CharT>{ lexer_atom_function::Not, aToken };
-	}
-
-	template <typename CharT = char>
-	inline std::pair<CharT, CharT> token_range(CharT aFrom, CharT aTo)
-	{
-		return std::pair<CharT, CharT>{ aFrom, aTo };
-	}
-
-	inline lexer_atom_match_any token_any()
-	{
-		return lexer_atom_match_any{};
-	}
-
 	template <typename Atom>
 	class lexer_rule
 	{
 	public:
 		typedef Atom atom_type;
+		typedef typename atom_type::char_type char_type;
 		typedef typename atom_type::token_type token_type;
+		typedef typename atom_type::scope_type scope_type;
+		typedef typename atom_type::range_type range_type;
 	public:
 		atom_type symbol;
 		std::vector<atom_type> expression;
+	public:
+		static constexpr std::pair<scope_type, bool> enter_scope(scope_type aScope)
+		{
+			return std::make_pair(aScope, true);
+		}
+		static constexpr std::pair<scope_type, bool> leave_scope(scope_type aScope)
+		{
+			return std::make_pair(aScope, false);
+		}
+		static constexpr atom_type token_end(token_type aToken)
+		{
+			return atom_type{ lexer_atom_function::End, aToken };
+		}
+		static atom_type token_end(atom_type aAtom)
+		{
+			if (aAtom.has_functions())
+			{
+				aAtom.functions().push_back(lexer_atom_function::End);
+				return aAtom;
+			}
+			return typename atom_type::function_type{ aAtom.token(),{ lexer_atom_function::End } };
+		}
+		static constexpr atom_type token_eat(token_type aToken)
+		{
+			return atom_type{ lexer_atom_function::Eat, aToken };
+		}
+		static atom_type token_eat(atom_type aAtom)
+		{
+			if (aAtom.has_functions())
+			{
+				aAtom.functions().push_back(lexer_atom_function::Eat);
+				return aAtom;
+			}
+			return typename atom_type::function_type{ aAtom.token(),{ lexer_atom_function::Eat } };
+		}
+		static constexpr atom_type token_keep(token_type aToken)
+		{
+			return atom_type{ lexer_atom_function::Keep, aToken };
+		}
+		static atom_type token_keep(atom_type aAtom)
+		{
+			if (aAtom.has_functions())
+			{
+				aAtom.functions().push_back(lexer_atom_function::Keep);
+				return aAtom;
+			}
+			return typename atom_type::function_type{ aAtom.token(),{ lexer_atom_function::Keep } };
+		}
+		static constexpr atom_type token_make(token_type aToken, char_type aChar)
+		{
+			return atom_type{aToken, typename atom_type::token_value_type{ 1, aChar } };
+		}
+		static constexpr atom_type token_not(token_type aToken)
+		{
+			return atom_type{ lexer_atom_function::Not, aToken };
+		}
+		static constexpr range_type token_range(char_type aFrom, char_type aTo)
+		{
+			return range_type{ aFrom, aTo };
+		}
+		static constexpr lexer_atom_match_any token_any()
+		{
+			return lexer_atom_match_any{};
+		}
 	};
 
 	template <typename Atom>
@@ -281,6 +294,8 @@ namespace neolib
 	public:
 		typedef Atom atom_type;
 		typedef typename atom_type::token_type token_type;
+		typedef typename atom_type::scope_type scope_type;
+		typedef typename atom_type::scope_change_type scope_change_type;
 		typedef typename atom_type::char_type char_type;
 		typedef lexer_token<token_type, char_type> lexer_token_type;
 		typedef typename atom_type::range_type range_type;
@@ -365,7 +380,7 @@ namespace neolib
 		class node
 		{
 		public:
-			typedef neolib::variant<token_type, function_type> value_type;
+			typedef neolib::variant<token_type, function_type, scope_change_type> value_type;
 			typedef std::pair<node*, value_type> next_type;
 			typedef boost::optional<next_type> optional_next_type;
 		public:
@@ -537,6 +552,7 @@ namespace neolib
 			mutable std::unordered_map<char_type, next_type> iCharMap;
 			mutable std::unordered_map<token_type, next_type> iTokenMap;
 			mutable std::unordered_map<function_type, next_type, boost::hash<function_type>> iFunctionMap;
+			mutable std::unordered_map<scope_type, next_type, boost::hash<function_type>> iScopeMap;
 		};
 		typedef std::list<node> node_list;
 		typedef std::shared_ptr<std::istream> stream_pointer;
@@ -547,7 +563,15 @@ namespace neolib
 		struct invalid_token : std::runtime_error { invalid_token(const std::string& reason = "neolib::lexer_atom::invalid_token") : std::runtime_error(reason) {} };
 	public:
 		template <typename Iter>
-		lexer(Iter aFirstRule, Iter aLastRule)
+		lexer(Iter aFirstRule, Iter aLastRule) :
+			iDefaultScope{}
+		{
+			for (auto r = aFirstRule; r != aLastRule; ++r)
+				build(*r);
+		}
+		template <typename Iter>
+		lexer(scope_type aDefaultScope, Iter aFirstRule, Iter aLastRule) : 
+			iDefaultScope{ aDefaultScope }
 		{
 			for (auto r = aFirstRule; r != aLastRule; ++r)
 				build(*r);
@@ -794,6 +818,7 @@ namespace neolib
 			return true;
 		}
 	private:
+		scope_type iDefaultScope;
 		node_list iNodes;
 	};
 }
