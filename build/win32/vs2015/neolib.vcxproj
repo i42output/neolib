@@ -10,9 +10,9 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-    <PropertyGroup>
-  <UseNativeEnvironment>true</UseNativeEnvironment>
-</PropertyGroup>
+  <PropertyGroup>
+    <UseNativeEnvironment>true</UseNativeEnvironment>
+  </PropertyGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{5BE004BF-A083-422F-8287-E7238B633466}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
@@ -56,7 +56,7 @@
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;NEOLIB_HOSTED_ENVIRONMENT;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\include\neolib;$(DevDirBoost);$(DevDirOpenSSL)\include;$(DevDirZlib)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(DevDirNeolib)\include;$(DevDirBoost);$(DevDirOpenSSL)\include;$(DevDirZlib)\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -73,7 +73,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NEOLIB_HOSTED_ENVIRONMENT;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\include\neolib;$(DevDirBoost);$(DevDirOpenSSL)\include;$(DevDirZlib)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(DevDirNeolib)\include;$(DevDirBoost);$(DevDirOpenSSL)\include;$(DevDirZlib)\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
@@ -219,6 +219,13 @@
     <ClInclude Include="..\..\..\include\neolib\vector.hpp" />
     <ClInclude Include="..\..\..\include\neolib\version.hpp" />
     <ClInclude Include="..\..\..\include\neolib\visitor.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\vm\bytecode_cpu.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\vm\i_cpu.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\vm\i_machine.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\vm\i_scheduler.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\vm\i_thread.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\vm\machine.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\vm\scheduler.hpp" />
     <ClInclude Include="..\..\..\include\neolib\waitable.hpp" />
     <ClInclude Include="..\..\..\include\neolib\win32.hpp" />
     <ClInclude Include="..\..\..\include\neolib\win32_message_queue.hpp" />

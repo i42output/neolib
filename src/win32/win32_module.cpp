@@ -33,9 +33,9 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "neolib.hpp"
-#include "file.hpp"
-#include "win32_module.hpp"
+#include <neolib/neolib.hpp>
+#include <neolib/file.hpp>
+#include <neolib/win32_module.hpp>
 
 namespace neolib
 {

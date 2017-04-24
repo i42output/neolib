@@ -33,10 +33,10 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "neolib.hpp"
-#include "io_thread.hpp"
+#include <neolib/neolib.hpp>
+#include <neolib/io_thread.hpp>
 #ifdef _WIN32
-#include "win32_message_queue.hpp"
+#include <neolib/win32_message_queue.hpp>
 #endif
 
 namespace neolib

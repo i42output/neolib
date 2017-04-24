@@ -1,6 +1,6 @@
-// setting.cpp - v1.0
+// i_cpu.hpp
 /*
- *  Copyright (c) 2014 Leigh Johnston.
+ *  Copyright (c) 2017 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -33,50 +33,29 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#pragma once
+
 #include <neolib/neolib.hpp>
-#include <neolib/setting.hpp>
 
 namespace neolib
 {
-	void setting::set(const i_simple_variant& aNewValue)
+	namespace vm
 	{
-		if (iValue != aNewValue)
+		class i_cpu
 		{
-			if (iValue.empty())
-				iValue = aNewValue;
-			else if (iNewValue != aNewValue)
-			{
-				iNewValue = aNewValue;
-				iManager.setting_changed(*this);
-			}
-		}
-		else if (!iNewValue.empty())
-		{
-			iNewValue.clear();
-			iManager.setting_changed(*this);
-		}
-	}
-
-	bool setting::apply_change() 
-	{ 
-		if (!iNewValue.empty())
-		{
-			iValue = iNewValue;
-			iNewValue.clear();
-			iManager.setting_changed(*this);
-			return true;
-		}
-		return false;
-	}
-	
-	bool setting::discard_change() 
-	{ 
-		if (!iNewValue.empty())
-		{
-			iNewValue.clear();
-			iManager.setting_changed(*this);
-			return true;
-		}
-		return false;
-	}
+		public:
+			typedef std::vector<uint8_t> page;
+			typedef std::vector<page> pages;
+		public:
+			struct stack_fault : std::runtime_error { stack_fault() : std::runtime_error("neolib::vm::i_cpu::stack_fault") {} };
+		public:
+			virtual uint32_t cores() const = 0;
+			virtual uint32_t threads() const = 0;
+		public:
+			virtual page* allocate_text_page(uint32_t aSize = 64*1024) = 0;
+			virtual page* allocate_stack_page(uint32_t aSize = 1024*1024) = 0;
+		public:
+			virtual void execute(const uint8_t* aEntryPoint) = 0;
+		};
+	};
 }

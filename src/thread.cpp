@@ -33,13 +33,13 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <iostream>
 #include <boost/bind.hpp>
 #include <boost/chrono/thread_clock.hpp>
 #include <boost/chrono/system_clocks.hpp>
-#include "singleton.hpp"
-#include "thread.hpp"
+#include <neolib/singleton.hpp>
+#include <neolib/thread.hpp>
 
 namespace neolib
 {

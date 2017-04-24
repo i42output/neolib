@@ -33,10 +33,10 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <cstddef>
 #include <zlib/zlib.h>
-#include "crc.hpp"
+#include <neolib/crc.hpp>
 
 namespace neolib
 {

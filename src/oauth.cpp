@@ -33,8 +33,8 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "neolib.hpp"
-#include "oauth.hpp"
+#include <neolib/neolib.hpp>
+#include <neolib/oauth.hpp>
 
 namespace neolib
 {

@@ -1,6 +1,6 @@
-// setting.cpp - v1.0
+// scheduler.hpp
 /*
- *  Copyright (c) 2014 Leigh Johnston.
+ *  Copyright (c) 2017 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -33,50 +33,47 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#pragma once
+
 #include <neolib/neolib.hpp>
-#include <neolib/setting.hpp>
+#include <thread>
+#include "i_scheduler.hpp"
+#include "i_cpu.hpp"
 
 namespace neolib
 {
-	void setting::set(const i_simple_variant& aNewValue)
+	namespace vm
 	{
-		if (iValue != aNewValue)
+		class scheduler : public i_scheduler
 		{
-			if (iValue.empty())
-				iValue = aNewValue;
-			else if (iNewValue != aNewValue)
+		public:
+			scheduler(i_cpu& aCpu) : 
+				iCpu(aCpu)
 			{
-				iNewValue = aNewValue;
-				iManager.setting_changed(*this);
 			}
-		}
-		else if (!iNewValue.empty())
-		{
-			iNewValue.clear();
-			iManager.setting_changed(*this);
-		}
-	}
-
-	bool setting::apply_change() 
-	{ 
-		if (!iNewValue.empty())
-		{
-			iValue = iNewValue;
-			iNewValue.clear();
-			iManager.setting_changed(*this);
-			return true;
-		}
-		return false;
-	}
-	
-	bool setting::discard_change() 
-	{ 
-		if (!iNewValue.empty())
-		{
-			iNewValue.clear();
-			iManager.setting_changed(*this);
-			return true;
-		}
-		return false;
-	}
+		public:
+			virtual const uint8_t* load(std::istream& aProgram)
+			{
+				i_cpu::page* text = iCpu.allocate_text_page();
+				uint8_t byte;
+				while (aProgram >> byte)
+					text->push_back(byte);
+				return &text->front();
+			}
+			virtual i_thread& create_thread(const uint8_t* aEntryPoint)
+			{
+				iThreads.push_back(std::make_unique<std::thread>([this]()
+				{
+					iCpu.execute(aEntryPoint);
+				}));
+			}
+			virtual void destroy_thread(i_thread& aThread)
+			{
+			}
+		private:
+			i_cpu& iCpu;
+			typedef std::unique_ptr<std::thread> thread_pointer;
+			std::vector<thread_pointer> iThreads;
+		};
+	};
 }

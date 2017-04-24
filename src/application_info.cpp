@@ -33,7 +33,7 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #ifdef _WIN32
 #include <Shlobj.h>
 #else
@@ -41,8 +41,8 @@
 #include <sys/types.h>
 #include <pwd.h>
 #endif
-#include "application_info.hpp"
-#include "file.hpp"
+#include <neolib/application_info.hpp>
+#include <neolib/file.hpp>
 
 namespace neolib
 {

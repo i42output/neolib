@@ -33,10 +33,10 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include "event.hpp"
-#include "thread.hpp"
+#include <neolib/event.hpp>
+#include <neolib/thread.hpp>
 
 namespace neolib
 {

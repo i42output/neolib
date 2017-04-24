@@ -33,14 +33,14 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <fstream>
 #include <string>
 #include <zlib/zlib.h>
 #include <boost/filesystem.hpp>
-#include "string_utils.hpp"
-#include "crc.hpp"
-#include "zip.hpp"
+#include <neolib/string_utils.hpp>
+#include <neolib/crc.hpp>
+#include <neolib/zip.hpp>
 
 #pragma pack(1)
 

@@ -33,7 +33,7 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #ifdef _WIN32
@@ -46,8 +46,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <cstdio>
-#include "string_utils.hpp"
-#include "file.hpp"
+#include <neolib/string_utils.hpp>
+#include <neolib/file.hpp>
 
 namespace neolib
 {

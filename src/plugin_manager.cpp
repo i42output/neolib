@@ -35,8 +35,8 @@
 
 #pragma once
 
-#include "neolib.hpp"
-#include "plugin_manager.hpp"
+#include <neolib/neolib.hpp>
+#include <neolib/plugin_manager.hpp>
 
 namespace neolib
 {

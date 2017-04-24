@@ -6,13 +6,13 @@
  * "as is" without express or implied warranty.
  */
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #ifdef _WIN32
 #include <tchar.h> // _tcslen
 #endif // _WIN32
-#include "string_utils.hpp"
-#include "version.hpp"
-#include "application_info.hpp"
+#include <neolib/string_utils.hpp>
+#include <neolib/version.hpp>
+#include <neolib/application_info.hpp>
 
 #ifdef _WIN32
 typedef void (WINAPI *PGNSI)(LPSYSTEM_INFO);

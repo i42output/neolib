@@ -33,9 +33,9 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <zlib/zlib.h>
-#include "gunzip.hpp"
+#include <neolib/gunzip.hpp>
 
 namespace neolib
 {

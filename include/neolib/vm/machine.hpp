@@ -1,6 +1,6 @@
-// setting.cpp - v1.0
+// machine.hpp
 /*
- *  Copyright (c) 2014 Leigh Johnston.
+ *  Copyright (c) 2017 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -33,50 +33,17 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#pragma once
+
 #include <neolib/neolib.hpp>
-#include <neolib/setting.hpp>
+#include "i_machine.hpp"
 
 namespace neolib
 {
-	void setting::set(const i_simple_variant& aNewValue)
+	namespace vm
 	{
-		if (iValue != aNewValue)
+		class machine : public i_machine
 		{
-			if (iValue.empty())
-				iValue = aNewValue;
-			else if (iNewValue != aNewValue)
-			{
-				iNewValue = aNewValue;
-				iManager.setting_changed(*this);
-			}
-		}
-		else if (!iNewValue.empty())
-		{
-			iNewValue.clear();
-			iManager.setting_changed(*this);
-		}
-	}
-
-	bool setting::apply_change() 
-	{ 
-		if (!iNewValue.empty())
-		{
-			iValue = iNewValue;
-			iNewValue.clear();
-			iManager.setting_changed(*this);
-			return true;
-		}
-		return false;
-	}
-	
-	bool setting::discard_change() 
-	{ 
-		if (!iNewValue.empty())
-		{
-			iNewValue.clear();
-			iManager.setting_changed(*this);
-			return true;
-		}
-		return false;
-	}
+		};
+	};
 }
