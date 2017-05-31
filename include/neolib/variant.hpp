@@ -151,6 +151,11 @@ namespace neolib
 			iContents = std::move(other.iContents);
 			return *this;
 		}
+		variant& operator=(boost::none_t)
+		{
+			clear();
+			return *this;
+		}
 		template <typename T>
 		typename std::enable_if<!std::is_same<typename std::remove_cv<typename std::remove_reference<T>::type>::type, variant>::value, variant>::type& operator=(T&& aValue)
 		{
