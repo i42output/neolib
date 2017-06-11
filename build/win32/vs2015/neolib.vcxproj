@@ -85,9 +85,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="..\..\..\src\application_info.cpp" />
     <ClCompile Include="..\..\..\src\crc.cpp" />
     <ClCompile Include="..\..\..\src\event.cpp" />
@@ -101,6 +98,7 @@
     <ClCompile Include="..\..\..\src\plugin_manager.cpp" />
     <ClCompile Include="..\..\..\src\setting.cpp" />
     <ClCompile Include="..\..\..\src\thread.cpp" />
+    <ClCompile Include="..\..\..\src\thread_pool.cpp" />
     <ClCompile Include="..\..\..\src\timer.cpp" />
     <ClCompile Include="..\..\..\src\uri.cpp" />
     <ClCompile Include="..\..\..\src\win32\win32_message_queue.cpp" />
@@ -209,6 +207,7 @@
     <ClInclude Include="..\..\..\include\neolib\targetver.hpp" />
     <ClInclude Include="..\..\..\include\neolib\tcp_packet_stream_server.hpp" />
     <ClInclude Include="..\..\..\include\neolib\thread.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\thread_pool.hpp" />
     <ClInclude Include="..\..\..\include\neolib\timer.hpp" />
     <ClInclude Include="..\..\..\include\neolib\tld_packet.hpp" />
     <ClInclude Include="..\..\..\include\neolib\tree.hpp" />

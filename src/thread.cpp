@@ -35,9 +35,9 @@
 
 #include <neolib/neolib.hpp>
 #include <iostream>
-#include <boost/bind.hpp>
+#include <chrono>
+#include <functional>
 #include <boost/chrono/thread_clock.hpp>
-#include <boost/chrono/system_clocks.hpp>
 #include <neolib/singleton.hpp>
 #include <neolib/thread.hpp>
 
@@ -80,7 +80,7 @@ namespace neolib
 			iState = Starting;
 			if (!iUsingExistingThread)
 			{
-				iThreadObject = std::make_unique<boost::thread>(boost::bind(&thread::entry_point, this));
+				iThreadObject = std::make_unique<std::thread>(std::bind(&thread::entry_point, this));
 				unlock();
 			}
 			else
@@ -261,7 +261,7 @@ namespace neolib
 	{
 		if (!started())
 			throw thread_not_started();
-		return boost::this_thread::get_id() == iId;
+		return std::this_thread::get_id() == iId;
 	}
 
 	bool thread::blocked() const 
@@ -283,12 +283,12 @@ namespace neolib
 
 	void thread::sleep(uint32_t aDelayInMilleseconds)
 	{
-		boost::this_thread::sleep(boost::posix_time::milliseconds(aDelayInMilleseconds));
+		std::this_thread::sleep_for(std::chrono::milliseconds(aDelayInMilleseconds));
 	}
 
 	void thread::yield()
 	{
-		boost::this_thread::yield();
+		std::this_thread::yield();
 	}
 
 	uint64_t thread::elapsed_ms()
@@ -299,25 +299,24 @@ namespace neolib
 
 	namespace
 	{
-		uint64_t sProgramStartTime = boost::chrono::duration_cast<boost::chrono::milliseconds>(boost::chrono::steady_clock::time_point(boost::chrono::steady_clock::now()).time_since_epoch()).count();
+		uint64_t sProgramStartTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::time_point(std::chrono::steady_clock::now()).time_since_epoch()).count();
 	}
 
 	uint64_t thread::program_elapsed_ms()
 	{
-		using namespace boost::chrono;
-		return duration_cast<milliseconds>(steady_clock::time_point(steady_clock::now()).time_since_epoch()).count() - sProgramStartTime;
+		return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::time_point(std::chrono::steady_clock::now()).time_since_epoch()).count() - sProgramStartTime;
 	}
 
 	bool thread::waitable_ready() const
 	{
-		return thread_object().get_id() == boost::thread::id();
+		return thread_object().get_id() == std::thread::id();
 	}
 
 	void thread::entry_point()
 	{
 		lock();
 		iState = Started;
-		iId = boost::this_thread::get_id();
+		iId = std::this_thread::get_id();
 		unlock();
 		try
 		{

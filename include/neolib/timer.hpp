@@ -37,14 +37,14 @@
 
 #include "neolib.hpp"
 #include <stdexcept>
-#include <boost/noncopyable.hpp>
 #include <boost/bind.hpp>
+#include "noncopyable.hpp"
 #include "io_task.hpp"
 #include "destroyable.hpp"
 
 namespace neolib
 {
-	class timer : private boost::noncopyable, public destroyable
+	class timer : private noncopyable, public destroyable
 	{
 		// types
 	public:

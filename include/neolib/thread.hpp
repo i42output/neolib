@@ -38,8 +38,8 @@
 #include "neolib.hpp"
 #include <stdexcept>
 #include <memory>
-#include <boost/noncopyable.hpp>
-#include <boost/thread.hpp>
+#include <thread>
+#include "noncopyable.hpp"
 #include "lockable.hpp"
 #include "waitable.hpp"
 #include "event.hpp"
@@ -47,12 +47,12 @@
 
 namespace neolib
 {
-	class thread : public i_thread, public lockable, public waitable, private boost::noncopyable
+	class thread : public i_thread, public lockable, public waitable, private noncopyable
 	{
 		// types
 	public:
-		typedef boost::thread::id id_type;
-		typedef boost::thread thread_object_type;
+		typedef std::thread::id id_type;
+		typedef std::thread thread_object_type;
 		// exceptions
 	public:
 		struct thread_not_started : public std::logic_error { thread_not_started() : std::logic_error("neolib::thread::thread_not_started") {} };
