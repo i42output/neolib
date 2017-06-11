@@ -35,12 +35,13 @@
 
 #include <neolib/neolib.hpp>
 #include <condition_variable>
+#include <neolib/destroyable.hpp>
 #include <neolib/thread.hpp>
 #include <neolib/thread_pool.hpp>
 
 namespace neolib
 {
-	class thread_pool_thread : public thread
+	class thread_pool_thread : public thread, private destroyable
 	{
 	public:
 		struct already_have_task : std::logic_error { already_have_task() : std::logic_error("neolib::thread_pool_thread::already_have_task") {} };
@@ -59,7 +60,10 @@ namespace neolib
 				iConditionVariable.wait(lk, [this] { return iTask != nullptr; });
 				lk.unlock();
 				iTask->run();
-				release();
+				if (!release())
+					break;
+				else
+					iThreadPool.next_task();
 			}
 		}
 	public:
@@ -78,7 +82,7 @@ namespace neolib
 			}
 			iConditionVariable.notify_one();
 		}
-		void release()
+		bool release()
 		{
 			i_task* currentTask = nullptr;
 			{
@@ -89,7 +93,7 @@ namespace neolib
 				iTask = nullptr;
 			}
 			iThreadPool.delete_task(*currentTask);
-			iThreadPool.next_task();
+			return !iThreadPool.too_many_threads();
 		}
 	private:
 		thread_pool& iThreadPool;
@@ -124,6 +128,24 @@ namespace neolib
 	{
 		std::lock_guard<std::recursive_mutex> lk{ iMutex };
 		return max_threads() - active_threads();
+	}
+
+	std::size_t thread_pool::total_threads() const
+	{
+		std::size_t result = 0;
+		for (auto& t : iThreads)
+			if (!static_cast<thread_pool_thread&>(*t).finished())
+				++result;
+		return result;
+	}
+
+	std::size_t thread_pool::zombie_threads() const
+	{
+		std::size_t result = 0;
+		for (auto& t : iThreads)
+			if (static_cast<thread_pool_thread&>(*t).finished())
+				++result;
+		return result;
 	}
 
 	std::size_t thread_pool::max_threads() const
@@ -165,16 +187,14 @@ namespace neolib
 	void thread_pool::start(i_task& aTask, int32_t aPriority)
 	{
 		std::lock_guard<std::recursive_mutex> lk{ iMutex };
-		iWaitingTasks.emplace_back(std::shared_ptr<i_task>(std::shared_ptr<i_task>(), &aTask), aPriority);
-		sort_task_queue();
+		iWaitingTasks.emplace(free_slot(aPriority), std::shared_ptr<i_task>(std::shared_ptr<i_task>(), &aTask), aPriority);
 		next_task();
 	}
 
 	void thread_pool::start(std::shared_ptr<i_task> aTask, int32_t aPriority)
 	{
 		std::lock_guard<std::recursive_mutex> lk{ iMutex };
-		iWaitingTasks.emplace_back(aTask, aPriority);
-		sort_task_queue();
+		iWaitingTasks.emplace(free_slot(aPriority), aTask, aPriority);
 		next_task();
 	}
 
@@ -247,10 +267,15 @@ namespace neolib
 		return sDefaultThreadPool;
 	}
 
-	void thread_pool::sort_task_queue()
+	bool thread_pool::too_many_threads() const
 	{
-		std::lock_guard<std::recursive_mutex> lk{ iMutex };
-		std::stable_sort(iWaitingTasks.begin(), iWaitingTasks.end(), [](const task_queue_entry& aLeft, const task_queue_entry& aRight)
+		return max_threads() < total_threads();
+	}
+
+	thread_pool::task_queue::const_iterator thread_pool::free_slot(int32_t aPriority) const
+	{
+		return std::upper_bound(iWaitingTasks.begin(), iWaitingTasks.end(), task_queue_entry{ std::shared_ptr<i_task>{}, aPriority }, 
+			[](const task_queue_entry& aLeft, const task_queue_entry& aRight)
 		{
 			return aLeft.second < aRight.second;
 		});
@@ -259,11 +284,11 @@ namespace neolib
 	void thread_pool::delete_task(i_task& aTask)
 	{
 		std::lock_guard<std::recursive_mutex> lk{ iMutex };
-		for (auto i = iActiveTasks.begin(); i != iActiveTasks.end(); ++i)
-			if (&*i->first == &aTask)
+		for (auto iterTask = iActiveTasks.begin(); iterTask != iActiveTasks.end(); ++iterTask)
+			if (&*iterTask->first == &aTask)
 			{
-				iActiveTasks.erase(i);
-				return;
+				iActiveTasks.erase(iterTask);
+				break;
 			}
 	}
 
@@ -276,16 +301,22 @@ namespace neolib
 		while (!iWaitingTasks.empty() && !exhuasted)
 		{
 			exhuasted = true;
-			for (auto& t : iThreads)
-				if (!static_cast<thread_pool_thread&>(*t).acquired())
+			for (auto iterThread = iThreads.begin(); iterThread != iThreads.end();)
+			{
+				if ((**iterThread).finished())
+					iterThread = iThreads.erase(iterThread);
+				else if (!static_cast<thread_pool_thread&>(**iterThread).acquired())
 				{
 					auto nextTask = iWaitingTasks.back();
 					iWaitingTasks.pop_back();
 					iActiveTasks.push_back(nextTask);
-					static_cast<thread_pool_thread&>(*t).acquire(*iActiveTasks.back().first);
+					static_cast<thread_pool_thread&>(**iterThread).acquire(*iActiveTasks.back().first);
 					exhuasted = false;
 					break;
 				}
+				else
+					++iterThread;
+			}
 		}
 	}
 }

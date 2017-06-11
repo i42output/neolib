@@ -63,6 +63,7 @@ namespace neolib
 	private:
 		typedef std::unique_ptr<thread_object_type> thread_object_pointer;
 		enum state_e { ReadyToStart, Starting, Started, Finished, Aborted, Cancelled, Error };
+	protected:
 		struct cancellation {};
 		// construction
 	public:

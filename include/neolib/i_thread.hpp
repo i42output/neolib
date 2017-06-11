@@ -41,6 +41,9 @@ namespace neolib
 {
 	class i_thread
 	{
+		// construction
+	public:
+		virtual ~i_thread() {}
 		// operations
 	public:
 		virtual const std::string& name() const = 0;

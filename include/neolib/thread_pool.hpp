@@ -50,13 +50,17 @@ namespace neolib
 	{
 		friend class thread_pool_thread;
 	private:
+		typedef std::vector<std::unique_ptr<i_thread>> thread_list;
 		typedef std::pair<std::shared_ptr<i_task>, int32_t> task_queue_entry;
+		typedef std::vector<task_queue_entry> task_queue;
 	public:
 		thread_pool();
 	public:
 		void reserve(std::size_t aMaxThreads);
 		std::size_t active_threads() const;
 		std::size_t available_threads() const;
+		std::size_t total_threads() const;
+		std::size_t zombie_threads() const;
 		std::size_t max_threads() const;
 		std::size_t waiting_tasks() const;
 		std::size_t active_tasks() const;
@@ -75,15 +79,16 @@ namespace neolib
 	public:
 		static thread_pool& default_thread_pool();
 	private:
-		void sort_task_queue();
+		bool too_many_threads() const;
+		task_queue::const_iterator free_slot(int32_t aPriority) const;
 		void delete_task(i_task& aTask);
 		void next_task();
 	private:
 		mutable std::recursive_mutex iMutex;
 		std::size_t iMaxThreads;
-		std::vector<std::unique_ptr<i_thread>> iThreads;
-		std::vector<task_queue_entry> iWaitingTasks;
-		std::vector<task_queue_entry> iActiveTasks;
+		thread_list iThreads;
+		task_queue iWaitingTasks;
+		task_queue iActiveTasks;
 		bool iPaused;
 	};
 
