@@ -41,7 +41,7 @@
 
 namespace neolib
 {
-	class thread_pool_thread : public thread, private destroyable
+	class thread_pool_thread : public thread
 	{
 	public:
 		struct already_have_task : std::logic_error { already_have_task() : std::logic_error("neolib::thread_pool_thread::already_have_task") {} };

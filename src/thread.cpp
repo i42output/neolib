@@ -55,7 +55,8 @@ namespace neolib
 	{
 		if (!finished() && !using_existing_thread())
 			abort();
-		iThreadObject->join();
+		if (has_thread_object())
+			thread_object().join();
 	}
 
 	const std::string& thread::name() const
