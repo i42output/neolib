@@ -1,6 +1,6 @@
-// io_thread.hpp v1.0
+// io_task.hpp v1.0
 /*
- *  Copyright (c) 2012 Leigh Johnston.
+ *  Copyright (c) 2012-2017 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -37,12 +37,12 @@
 
 #include "neolib.hpp"
 #include <boost/asio.hpp>
-#include "thread.hpp"
+#include "i_task.hpp"
 #include "message_queue.hpp"
 
 namespace neolib
 {
-	class io_thread;
+	class io_task;
 
 	class io_service
 	{
@@ -50,14 +50,14 @@ namespace neolib
 	public:
 		typedef boost::asio::io_service native_io_service_type;
 	public:
-		io_service(io_thread& aThread) : iThread(aThread) {}
+		io_service(io_task& aTask) : iTask(aTask) {}
 		// operations
 	public:
 		bool do_io(bool aProcessEvents = true);
 		native_io_service_type& native_object() { return iNativeIoService; }
 		// attributes
 	private:
-		io_thread& iThread;
+		io_task& iTask;
 		native_io_service_type iNativeIoService;
 	};
 
@@ -68,19 +68,21 @@ namespace neolib
 		Sleep
 	};
 
-	class io_thread : public thread
+	class io_task : public i_task
 	{
 		// types
 	private:
 		typedef std::unique_ptr<neolib::message_queue> message_queue_pointer;
 		// exceptions
 	public:
-		struct no_message_queue : std::logic_error { no_message_queue() : std::logic_error("neolib::io_thread::no_message_queue") {} };
+		struct no_message_queue : std::logic_error { no_message_queue() : std::logic_error("neolib::io_task::no_message_queue") {} };
 		// construction
 	public:
-		io_thread(const std::string& aName = "", bool aAttachToCurrentThread = false);
+		io_task(i_thread& aThread, const std::string& aName = "");
 		// operations
 	public:
+		i_thread& thread() const override;
+		const std::string& name() const override;
 		bool do_io(yield_type aYieldIfNoWork = yield_type::NoYield);
 		io_service& timer_io_service() { return iTimerIoService; }
 		io_service& networking_io_service() { return iNetworkingIoService; }
@@ -94,9 +96,11 @@ namespace neolib
 		void halt();
 		// implementation
 	public:
-		virtual void task() = 0;
+		void run() override;
 		// attributes
 	private:
+		i_thread& iThread;
+		std::string iName;
 		io_service iTimerIoService;
 		io_service iNetworkingIoService;
 		message_queue_pointer iMessageQueue;

@@ -1,4 +1,4 @@
-// oauth.h
+// i_task.hpp v1.0
 /*
  *  Copyright (c) 2012 Leigh Johnston.
  *
@@ -31,64 +31,25 @@
  *  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ */
 
 #pragma once
 
 #include "neolib.hpp"
-#include <vector>
 #include <string>
-#include <utility>
-#include "observable.hpp"
-#include "string_utils.hpp"
-#include "optional.hpp"
-#include "io_task.hpp"
-#include "http.hpp"
+#include "i_thread.hpp"
 
 namespace neolib
 {
-	class oauth_observer
+	class i_task
 	{
-		friend class oauth;
-	private:
-		virtual void oauth_request_started(oauth& aRequest) = 0;
-		virtual void oauth_request_completed(oauth& aRequest) = 0;
-		virtual void oauth_request_failure(oauth& aRequest) = 0;
-	public:
-		enum notify_type { NotifyStarted, NotifyCompleted, NotifyFailure };
-	};
-
-	class oauth : public observable<oauth_observer>, private i_http_observer
-	{
-		// types
-	public:
-		typedef std::pair<http::type_e, std::string> operation;
-
-		// construction
-	public:
-		oauth(io_task& IoTask, const std::string& aConsumerKey, const std::string& aConsumerSecret, const operation& aRequestTokenOp, const operation& aUserAuthorizationOp, const operation& aAccessTokenOp);
-		virtual ~oauth();
-
 		// operations
 	public:
-		void request();
+		virtual i_thread& thread() const = 0;
+		virtual const std::string& name() const = 0;
 
 		// implementation
-	private:
-		// from observable<oauth_observer>
-		virtual void notify_observer(oauth_observer& aObserver, oauth_observer::notify_type aType, const void* aParameter, const void* aParameter2);
-		// from i_http_observer
-		virtual void http_request_started(http& aRequest);
-		virtual void http_request_completed(http& aRequest);
-		virtual void http_request_failure(http& aRequest);
-
-		// attributes
-	private:
-		http iHttpRequester;
-		std::string iConsumerKey;
-		std::string iConsumerSecret;
-		operation iRequestTokenOp;
-		operation iUserAuthorizationOp;
-		operation iAccessTokenOp;
+	public:
+		virtual void run() = 0;
 	};
 }

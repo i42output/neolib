@@ -41,7 +41,7 @@
 #include <memory>
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
-#include "io_thread.hpp"
+#include "io_task.hpp"
 
 namespace neolib
 {
@@ -150,9 +150,9 @@ namespace neolib
 	
 		// construction
 	public:
-		basic_resolver(io_thread& aOwnerThread) :
-			iOwnerThread(aOwnerThread), 
-			iResolver(aOwnerThread.networking_io_service().native_object())
+		basic_resolver(io_task& aIoTask) :
+			iIoTask(aIoTask),
+			iResolver(aIoTask.networking_io_service().native_object())
 		{
 		}
 		~basic_resolver()
@@ -213,7 +213,7 @@ namespace neolib
 
 		// attibutes
 	private:
-		io_thread& iOwnerThread;
+		io_task& iIoTask;
 		resolver_type iResolver;
 		request_list iRequests;
 	};

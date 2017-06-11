@@ -45,7 +45,7 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include "string_utils.hpp"
-#include "io_thread.hpp"
+#include "io_task.hpp"
 #include "resolver.hpp" // protocol_family
 #include "i_packet.hpp"
 #include "variant.hpp"
@@ -152,11 +152,11 @@ namespace neolib
 		// construction
 	public:
 		basic_packet_connection(
-			io_thread& aOwnerThread, 
+			io_task& aIoTask, 
 			owner_type& aOwner,
 			bool aSecure = false,
 			protocol_family aProtocolFamily = IPv4) :
-			iOwnerThread(aOwnerThread), 
+			iIoTask(aIoTask), 
 			iOwner(aOwner),
 			iHandlerProxy(new handler_proxy(*this)),
 			iLocalHostName(),
@@ -166,7 +166,7 @@ namespace neolib
 			iSecure(aSecure),
 			iProtocolFamily(aProtocolFamily),
 			iError(false),
-			iResolver(aOwnerThread.networking_io_service().native_object()),
+			iResolver(aIoTask.networking_io_service().native_object()),
 			iConnected(false),
 			iPacketBeingSent(0),
 			iReceiveBufferPtr(&iReceiveBuffer[0]),
@@ -174,13 +174,13 @@ namespace neolib
 		{
 		}
 		basic_packet_connection(
-			io_thread& aOwnerThread, 
+			io_task& aIoTask, 
 			owner_type& aOwner, 
 			const std::string& aRemoteHostName, 
 			unsigned short aRemotePort,
 			bool aSecure = false,
 			protocol_family aProtocolFamily = IPv4) : 
-			iOwnerThread(aOwnerThread), 
+			iIoTask(aIoTask), 
 			iOwner(aOwner),
 			iHandlerProxy(new handler_proxy(*this)),
 			iLocalHostName(),
@@ -190,7 +190,7 @@ namespace neolib
 			iSecure(aSecure),
 			iProtocolFamily(aProtocolFamily),
 			iError(false),
-			iResolver(aOwnerThread.networking_io_service().native_object()),
+			iResolver(aIoTask.networking_io_service().native_object()),
 			iConnected(false),
 			iPacketBeingSent(0),
 			iReceiveBufferPtr(&iReceiveBuffer[0]),
@@ -224,13 +224,13 @@ namespace neolib
 				throw already_open();
 			if (!iSecure)
 			{
-				iSocketHolder = socket_pointer(new socket_type(iOwnerThread.networking_io_service().native_object()));
+				iSocketHolder = socket_pointer(new socket_type(iIoTask.networking_io_service().native_object()));
 			}
 			else
 			{
 				if (iSecureStreamContext == nullptr)
 					iSecureStreamContext.reset(new secure_stream_context(boost::asio::ssl::context::sslv23));
-				iSocketHolder = secure_stream_pointer(new secure_stream_type(iOwnerThread.networking_io_service().native_object(), *iSecureStreamContext));
+				iSocketHolder = secure_stream_pointer(new secure_stream_type(iIoTask.networking_io_service().native_object(), *iSecureStreamContext));
 			}
 			if (aAcceptingSocket)
 				return true;
@@ -599,7 +599,7 @@ namespace neolib
 		
 		// attibutes
 	private:
-		io_thread& iOwnerThread;
+		io_task& iIoTask;
 		owner_type& iOwner;
 		std::shared_ptr<handler_proxy> iHandlerProxy;
 		std::string iLocalHostName;

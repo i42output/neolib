@@ -1,6 +1,6 @@
-// thread.cpp - v3.0
+// io_task.cpp - v3.1
 /*
- *  Copyright (c) 2012 Leigh Johnston.
+ *  Copyright (c) 2012-2017 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -34,18 +34,14 @@
 */
 
 #include <neolib/neolib.hpp>
-#include <neolib/io_thread.hpp>
+#include <neolib/thread.hpp>
 #ifdef _WIN32
 #include <neolib/win32_message_queue.hpp>
 #endif
+#include <neolib/io_task.hpp>
 
 namespace neolib
 {
-	io_thread::io_thread(const std::string& aName, bool aAttachToCurrentThread) : 
-		thread(aName, aAttachToCurrentThread), iTimerIoService(*this), iNetworkingIoService(*this), iHalted(false)
-	{
-	}
-
 	namespace
 	{
 		const std::size_t kMaxiumPollIterations = 256;
@@ -57,11 +53,11 @@ namespace neolib
 		bool didSome = false;
 		while (iterationsLeft-- > 0)
 		{
-			if (iThread.halted())
+			if (iTask.halted())
 				return didSome;
 			bool didSomeThisIteration = false;
 			if (aProcessEvents)
-				didSomeThisIteration = (iThread.pump_messages() || didSomeThisIteration);
+				didSomeThisIteration = (iTask.pump_messages() || didSomeThisIteration);
 			didSomeThisIteration = (iNativeIoService.poll_one() != 0 || didSomeThisIteration);
 			if (!didSomeThisIteration)
 				break;
@@ -70,7 +66,22 @@ namespace neolib
 		return didSome;
 	}
 
-	bool io_thread::do_io(yield_type aYieldIfNoWork)
+	io_task::io_task(i_thread& aThread, const std::string& aName) :
+		iThread{ aThread }, iName { aName }, iTimerIoService{ *this }, iNetworkingIoService{ *this }, iHalted{ false }
+	{
+	}
+
+	i_thread& io_task::thread() const
+	{
+		return iThread;
+	}
+
+	const std::string& io_task::name() const
+	{
+		return iName;
+	}
+
+	bool io_task::do_io(yield_type aYieldIfNoWork)
 	{
 		if (iHalted)
 			return false;
@@ -81,45 +92,45 @@ namespace neolib
 		if (!didSome && aYieldIfNoWork != yield_type::NoYield)
 		{
 			if (aYieldIfNoWork == yield_type::Yield)
-				yield();
+				thread::yield();
 			else if (aYieldIfNoWork == yield_type::Sleep)
-				sleep(1);
+				thread::sleep(1);
 		}
 		return didSome;
 	}
 
-	bool io_thread::have_message_queue() const
+	bool io_task::have_message_queue() const
 	{
 		return iMessageQueue != nullptr;
 	}
 
-	bool io_thread::have_messages() const
+	bool io_task::have_messages() const
 	{
 		return have_message_queue() && message_queue().have_message();
 	}
 
-	void io_thread::create_message_queue(std::function<bool()> aIdleFunction)
+	void io_task::create_message_queue(std::function<bool()> aIdleFunction)
 	{
 		#ifdef _WIN32
 		iMessageQueue = std::make_unique<win32_message_queue>(*this, aIdleFunction);
 		#endif
 	}
 
-	const neolib::message_queue& io_thread::message_queue() const
+	const neolib::message_queue& io_task::message_queue() const
 	{
 		if (iMessageQueue == nullptr)
 			throw no_message_queue();
 		return *iMessageQueue;
 	}
 
-	neolib::message_queue& io_thread::message_queue()
+	neolib::message_queue& io_task::message_queue()
 	{
 		if (iMessageQueue == nullptr)
 			throw no_message_queue();
 		return *iMessageQueue;
 	}
 
-	bool io_thread::pump_messages()
+	bool io_task::pump_messages()
 	{
 		bool didWork = false;
 		while (have_messages())
@@ -136,19 +147,19 @@ namespace neolib
 		return didWork;
 	}
 
-	bool io_thread::halted() const
+	bool io_task::halted() const
 	{
 		return iHalted;
 	}
 
-	void io_thread::halt()
+	void io_task::halt()
 	{
 		iHalted = true;
 	}
 
-	void io_thread::task()
+	void io_task::run()
 	{
-		while(!finished())
+		while(!iThread.finished())
 			do_io(yield_type::Sleep);
 	}
 

@@ -39,9 +39,9 @@
 
 namespace neolib
 {
-	http::http(io_thread& aOwnerThread) : 
-		iOwnerThread(aOwnerThread), 
-		iPacketStream(aOwnerThread), 
+	http::http(io_task& aIoTask) : 
+		iIoTask(aIoTask), 
+		iPacketStream(aIoTask), 
 		iPort(80), 
 		iSecure(false), 
 		iType(Get), 
@@ -54,8 +54,8 @@ namespace neolib
 	}
 
 	http::http(const http& aOther) : 
-		iOwnerThread(aOther.iOwnerThread), 
-		iPacketStream(aOther.iOwnerThread), 
+		iIoTask(aOther.iIoTask), 
+		iPacketStream(aOther.iIoTask), 
 		iHost(aOther.iHost), 
 		iPort(aOther.iPort), 
 		iSecure(aOther.iSecure), 

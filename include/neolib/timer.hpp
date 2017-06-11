@@ -39,7 +39,7 @@
 #include <stdexcept>
 #include <boost/noncopyable.hpp>
 #include <boost/bind.hpp>
-#include "io_thread.hpp"
+#include "io_task.hpp"
 #include "destroyable.hpp"
 
 namespace neolib
@@ -79,13 +79,13 @@ namespace neolib
 		};
 		// construction
 	public:
-		timer(io_thread& aOwnerThread, uint32_t aDuration_ms, bool aInitialWait = true);
+		timer(io_task& aIoTask, uint32_t aDuration_ms, bool aInitialWait = true);
 		timer(const timer& aOther);
 		timer& operator=(const timer& aOther);
 		virtual ~timer();
 		// operations
 	public:
-		io_thread& owner_thread() const;
+		io_task& owner_task() const;
 		void enable(bool aWait = true);
 		void disable();
 		bool enabled() const;
@@ -104,7 +104,7 @@ namespace neolib
 		virtual void ready() = 0;
 		// attributes
 	private:
-		io_thread& iOwnerThread;
+		io_task& iIoTask;
 		std::shared_ptr<handler_proxy> iHandlerProxy;
 		boost::asio::deadline_timer iTimerObject;
 		uint32_t iDuration_ms;
@@ -116,7 +116,7 @@ namespace neolib
 	class callback_timer : public timer
 	{
 	public:
-		callback_timer(io_thread& aOwnerThread, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true);
+		callback_timer(io_task& aIoTask, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true);
 		~callback_timer();
 	private:
 		virtual void ready();

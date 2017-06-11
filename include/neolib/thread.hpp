@@ -43,10 +43,11 @@
 #include "lockable.hpp"
 #include "waitable.hpp"
 #include "event.hpp"
+#include "i_thread.hpp"
 
 namespace neolib
 {
-	class thread : public lockable, public waitable, private boost::noncopyable
+	class thread : public i_thread, public lockable, public waitable, private boost::noncopyable
 	{
 		// types
 	public:
@@ -69,7 +70,7 @@ namespace neolib
 		virtual ~thread();
 		// operations
 	public:
-		const std::string& name() const;
+		const std::string& name() const override;
 		bool using_existing_thread() const;
 		void start();
 		void cancel();
@@ -82,7 +83,7 @@ namespace neolib
 		void unblock();
 		bool started() const;
 		bool running() const;
-		virtual bool finished() const;
+		bool finished() const override;
 		bool aborted() const;
 		bool cancelled() const;
 		bool error() const;
@@ -101,7 +102,6 @@ namespace neolib
 		virtual bool waitable_ready() const;
 		// own
 		void entry_point();
-		virtual void task() = 0;
 		// attributes
 	private:
 		const std::string iName;

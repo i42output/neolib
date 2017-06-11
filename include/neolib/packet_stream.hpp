@@ -38,7 +38,7 @@
 #include "neolib.hpp"
 #include <stdexcept>
 #include <vector>
-#include "io_thread.hpp"
+#include "io_task.hpp"
 #include "observable.hpp"
 #include "i_packet.hpp"
 #include "binary_packet.hpp"
@@ -101,12 +101,12 @@ namespace neolib
 		
 		// construction
 	public:
-		packet_stream(io_thread& aOwnerThread, bool aSecure = false, protocol_family aProtocolFamily = IPv4) : 
-			iConnection(aOwnerThread, *this, aSecure, aProtocolFamily)
+		packet_stream(io_task& aIoTask, bool aSecure = false, protocol_family aProtocolFamily = IPv4) : 
+			iConnection(aIoTask, *this, aSecure, aProtocolFamily)
 		{
 		}
-		packet_stream(io_thread& aOwnerThread, const std::string& aHostName, unsigned short aPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4) : 
-			iConnection(aOwnerThread, *this, aHostName, aPort, aSecure, aProtocolFamily)
+		packet_stream(io_task& aIoTask, const std::string& aHostName, unsigned short aPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4) :
+			iConnection(aIoTask, *this, aHostName, aPort, aSecure, aProtocolFamily)
 		{
 		}
 		~packet_stream()

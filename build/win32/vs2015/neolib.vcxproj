@@ -94,7 +94,7 @@
     <ClCompile Include="..\..\..\src\file.cpp" />
     <ClCompile Include="..\..\..\src\gunzip.cpp" />
     <ClCompile Include="..\..\..\src\http.cpp" />
-    <ClCompile Include="..\..\..\src\io_thread.cpp" />
+    <ClCompile Include="..\..\..\src\io_task.cpp" />
     <ClCompile Include="..\..\..\src\module.cpp" />
     <ClCompile Include="..\..\..\src\oauth.cpp" />
     <ClCompile Include="..\..\..\src\os_version.cpp" />
@@ -138,7 +138,7 @@
     <ClInclude Include="..\..\..\include\neolib\indexitor.hpp" />
     <ClInclude Include="..\..\..\include\neolib\index_array_tree.hpp" />
     <ClInclude Include="..\..\..\include\neolib\interlockable.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\io_thread.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\io_task.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_application.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_application_info.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_container.hpp" />
@@ -160,6 +160,8 @@
     <ClInclude Include="..\..\..\include\neolib\i_settings.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_simple_variant.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_string.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_task.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_thread.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_vector.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_version.hpp" />
     <ClInclude Include="..\..\..\include\neolib\lexer.hpp" />

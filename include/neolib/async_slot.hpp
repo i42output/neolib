@@ -39,7 +39,7 @@
 #include <set>
 #include <deque>
 #include <functional>
-#include "io_thread.hpp"
+#include "io_task.hpp"
 #include "timer.hpp"
 #include "locking_policy.hpp"
 #include "slot_interface.hpp"
@@ -60,8 +60,8 @@ namespace neolib
 		typedef std::deque<std::function<void()> > event_list;
 		// construction
 	public:
-		has_async_slots(neolib::io_thread& aThread) : 
-			neolib::timer(aThread)
+		has_async_slots(neolib::io_task& aTask) : 
+			neolib::timer(aTask)
 		{
 		}
 		virtual ~has_async_slots()

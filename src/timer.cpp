@@ -38,10 +38,10 @@
 
 namespace neolib
 {
-	timer::timer(io_thread& aOwnerThread, uint32_t aDuration_ms, bool aInitialWait) :
-		iOwnerThread(aOwnerThread),
+	timer::timer(io_task& aIoTask, uint32_t aDuration_ms, bool aInitialWait) :
+		iIoTask(aIoTask),
 		iHandlerProxy(new handler_proxy(*this)),
-		iTimerObject(aOwnerThread.timer_io_service().native_object()),
+		iTimerObject(aIoTask.timer_io_service().native_object()),
 		iDuration_ms(aDuration_ms), 
 		iEnabled(true),
 		iWaiting(false), 
@@ -52,9 +52,9 @@ namespace neolib
 	}
 
 	timer::timer(const timer& aOther) :
-		iOwnerThread(aOther.iOwnerThread),
+		iIoTask(aOther.iIoTask),
 		iHandlerProxy(new handler_proxy(*this)),
-		iTimerObject(aOther.iOwnerThread.timer_io_service().native_object()),
+		iTimerObject(aOther.iIoTask.timer_io_service().native_object()),
 		iDuration_ms(aOther.iDuration_ms), 
 		iEnabled(aOther.iEnabled),
 		iWaiting(false), 
@@ -80,9 +80,9 @@ namespace neolib
 		cancel();
 	}
 
-	io_thread& timer::owner_thread() const
+	io_task& timer::owner_task() const
 	{
-		return iOwnerThread;
+		return iIoTask;
 	}
 
 	void timer::enable(bool aWait)
@@ -203,8 +203,8 @@ namespace neolib
 		}
 	}
 
-	callback_timer::callback_timer(io_thread& aOwnerThread, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait) :
-		timer(aOwnerThread, aDuration_ms, aInitialWait),
+	callback_timer::callback_timer(io_task& aIoTask, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait) :
+		timer(aIoTask, aDuration_ms, aInitialWait),
 		iCallback(aCallback)
 	{
 	}

@@ -88,7 +88,7 @@ namespace neolib
 		
 		// construction
 	public:
-		http(io_thread& aOwnerThread);
+		http(io_task& aIoTask);
 		http(const http& aOther);
 		virtual ~http();
 		http& operator=(const http& aOther);
@@ -125,7 +125,7 @@ namespace neolib
 
 		// attributes
 	private:
-		io_thread& iOwnerThread;
+		io_task& iIoTask;
 		http_stream iPacketStream;
 		std::string iHost;
 		unsigned short iPort;

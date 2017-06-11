@@ -38,9 +38,9 @@
 
 namespace neolib
 {
-	oauth::oauth(io_thread& OwnerThread, const std::string& aConsumerKey, const std::string& aConsumerSecret, 
+	oauth::oauth(io_task& IoTask, const std::string& aConsumerKey, const std::string& aConsumerSecret, 
 		const operation& aRequestTokenOp, const operation& aUserAuthorizationOp, const operation& aAccessTokenOp) : 
-		iHttpRequester(OwnerThread), iConsumerKey(aConsumerKey), iConsumerSecret(aConsumerSecret), 
+		iHttpRequester(IoTask), iConsumerKey(aConsumerKey), iConsumerSecret(aConsumerSecret), 
 			iRequestTokenOp(aRequestTokenOp), iUserAuthorizationOp(aUserAuthorizationOp), iAccessTokenOp(aAccessTokenOp)
 	{
 		iHttpRequester.add_observer(*this);
