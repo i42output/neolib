@@ -38,13 +38,19 @@
 #include "neolib.hpp"
 #include <memory>
 #include <vector>
+#include <deque>
 #include <future>
+#include <mutex>
+#include "i_thread.hpp"
 #include "i_task.hpp"
 
 namespace neolib
 {
 	class thread_pool
 	{
+		friend class thread_pool_thread;
+	private:
+		typedef std::pair<std::shared_ptr<i_task>, int32_t> task_queue_entry;
 	public:
 		thread_pool();
 	public:
@@ -52,26 +58,40 @@ namespace neolib
 		std::size_t active_threads() const;
 		std::size_t available_threads() const;
 		std::size_t max_threads() const;
+		std::size_t waiting_tasks() const;
+		std::size_t active_tasks() const;
+	public:
+		bool paused() const;
+		void pause();
+		void resume();
 	public:
 		void start(i_task& aTask, int32_t aPriority = 0);
 		void start(std::shared_ptr<i_task> aTask, int32_t aPriority = 0);
-		bool tryStart(i_task& aTask);
-		bool tryStart(std::shared_ptr<i_task> aTask);
+		bool try_start(i_task& aTask);
+		bool try_start(std::shared_ptr<i_task> aTask);
 		std::future<void> run(std::function<void()> aFunction);
 		template <typename T>
 		std::future<T> run(std::function<T()> aFunction);
 	public:
 		static thread_pool& default_thread_pool();
 	private:
+		void sort_task_queue();
+		void delete_task(i_task& aTask);
+		void next_task();
+	private:
+		mutable std::recursive_mutex iMutex;
+		std::size_t iMaxThreads;
 		std::vector<std::unique_ptr<i_thread>> iThreads;
-		std::vector<std::shared_ptr<i_task>> iTasks;
+		std::vector<task_queue_entry> iWaitingTasks;
+		std::vector<task_queue_entry> iActiveTasks;
+		bool iPaused;
 	};
 
 	template <typename T>
-	std::future<T> thread_pool::run(std::function<T()> aFunction)
+	inline std::future<T> thread_pool::run(std::function<T()> aFunction)
 	{
-		/* todo */
-		std::future<T> result;
-		return std::move(result);
+		auto newTask = std::make_shared<function_task<T>>(aFunction);
+		start(newTask);
+		return newTask->get_future();
 	}
 }

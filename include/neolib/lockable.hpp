@@ -1,6 +1,6 @@
-// lockable.hpp v2.0
+// lockable.hpp v2.1
 /*
- *  Copyright (c) 2012 Leigh Johnston.
+ *  Copyright (c) 2012-2017 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -36,7 +36,8 @@
 #pragma once
 
 #include "neolib.hpp"
-#include <boost/thread/recursive_mutex.hpp>
+#include <mutex>
+#include "noncopyable.hpp"
 
 #ifdef _WIN32
 #include <intrin.h>
@@ -70,17 +71,15 @@ namespace neolib
 		void unlock() const { iMutex.unlock(); }
 		// attributes
 	private:
-		mutable boost::recursive_mutex iMutex;
+		mutable std::recursive_mutex iMutex;
 	};
 
-	class lock
+	class lock : noncopyable
 	{
 		// construction
 	public:
 		lock(const lockable& aLockable) : iLockable(aLockable) { iLockable.lock(); }
 		~lock() { iLockable.unlock(); }
-	private:
-		lock& operator=(const lock&);
 		// attributes
 	private:
 		const lockable& iLockable;

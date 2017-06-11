@@ -37,6 +37,7 @@
 
 #include "neolib.hpp"
 #include <boost/asio.hpp>
+#include "i_thread.hpp"
 #include "i_task.hpp"
 #include "message_queue.hpp"
 
@@ -81,8 +82,8 @@ namespace neolib
 		io_task(i_thread& aThread, const std::string& aName = "");
 		// operations
 	public:
-		i_thread& thread() const override;
 		const std::string& name() const override;
+		i_thread& thread() const;
 		bool do_io(yield_type aYieldIfNoWork = yield_type::NoYield);
 		io_service& timer_io_service() { return iTimerIoService; }
 		io_service& networking_io_service() { return iNetworkingIoService; }

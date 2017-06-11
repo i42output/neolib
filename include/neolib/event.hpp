@@ -37,8 +37,8 @@
 
 #include "neolib.hpp"
 #include <stdexcept>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/condition_variable.hpp>
+#include <thread>
+#include <mutex>
 #include "message_queue.hpp"
 #include "waitable.hpp"
 #include "variant.hpp"
@@ -70,8 +70,8 @@ namespace neolib
 		bool msg_wait(const message_queue& aMessageQueue, uint32_t aTimeout_ms) const;
 		void reset() const;
 	private:
-		mutable boost::mutex iMutex;
-		mutable boost::condition_variable iCondVar;
+		mutable std::mutex iMutex;
+		mutable std::condition_variable iCondVar;
 		mutable bool iReady;
 		mutable std::size_t iTotalWaiting;
 		mutable signal_type iSignalType;

@@ -34,7 +34,7 @@
 */
 
 #include <neolib/neolib.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <chrono>
 #include <neolib/event.hpp>
 #include <neolib/thread.hpp>
 
@@ -46,7 +46,7 @@ namespace neolib
 
 	void event::signal_one() const
 	{
-		boost::lock_guard<boost::mutex> lock(iMutex);
+		std::lock_guard<std::mutex> lock(iMutex);
 		iReady = true;
 		iSignalType = SignalOne;
 		iCondVar.notify_one();
@@ -54,7 +54,7 @@ namespace neolib
 
 	void event::signal_all() const
 	{
-		boost::lock_guard<boost::mutex> lock(iMutex);
+		std::lock_guard<std::mutex> lock(iMutex);
 		iReady = true;
 		iSignalType = SignalAll;
 		iCondVar.notify_all();
@@ -62,7 +62,7 @@ namespace neolib
 
 	void event::wait() const
 	{
-		boost::unique_lock<boost::mutex> lock(iMutex);
+		std::unique_lock<std::mutex> lock(iMutex);
 		++iTotalWaiting;
 		while (!iReady)
 			iCondVar.wait(lock);
@@ -74,10 +74,10 @@ namespace neolib
 	bool event::wait(uint32_t aTimeout_ms) const
 	{
 		bool result = true;
-		boost::unique_lock<boost::mutex> lock(iMutex);
+		std::unique_lock<std::mutex> lock(iMutex);
 		++iTotalWaiting;
 		if (!iReady)
-			result = iCondVar.timed_wait(lock, boost::posix_time::milliseconds(aTimeout_ms));
+			result = (iCondVar.wait_for(lock, std::chrono::milliseconds(aTimeout_ms)) == std::cv_status::no_timeout);
 		--iTotalWaiting;
 		if (result && iSignalType == SignalOne || iTotalWaiting == 0)
 			iReady = false;
@@ -113,7 +113,7 @@ namespace neolib
 
 	void event::reset() const
 	{
-		boost::lock_guard<boost::mutex> lock(iMutex);
+		std::lock_guard<std::mutex> lock(iMutex);
 		iReady = false;
 	}
 
