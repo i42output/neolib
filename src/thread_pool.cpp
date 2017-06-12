@@ -139,15 +139,6 @@ namespace neolib
 		return result;
 	}
 
-	std::size_t thread_pool::zombie_threads() const
-	{
-		std::size_t result = 0;
-		for (auto& t : iThreads)
-			if (static_cast<thread_pool_thread&>(*t).finished())
-				++result;
-		return result;
-	}
-
 	std::size_t thread_pool::max_threads() const
 	{
 		return iMaxThreads;

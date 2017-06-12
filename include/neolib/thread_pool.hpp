@@ -60,7 +60,6 @@ namespace neolib
 		std::size_t active_threads() const;
 		std::size_t available_threads() const;
 		std::size_t total_threads() const;
-		std::size_t zombie_threads() const;
 		std::size_t max_threads() const;
 		std::size_t waiting_tasks() const;
 		std::size_t active_tasks() const;
