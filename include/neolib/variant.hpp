@@ -68,7 +68,9 @@ namespace neolib
 		typename T18 = unused_variant_type<18>, typename T19 = unused_variant_type<19>, typename T20 = unused_variant_type<20>, typename T21 = unused_variant_type<21>, 
 		typename T22 = unused_variant_type<22>, typename T23 = unused_variant_type<23>, typename T24 = unused_variant_type<24>, typename T25 = unused_variant_type<25>, 
 		typename T26 = unused_variant_type<26>, typename T27 = unused_variant_type<27>, typename T28 = unused_variant_type<28>, typename T29 = unused_variant_type<29>,
-		typename T30 = unused_variant_type<30> >
+		typename T30 = unused_variant_type<30>, typename T31 = unused_variant_type<31>,	typename T32 = unused_variant_type<32>, typename T33 = unused_variant_type<33>, 
+		typename T34 = unused_variant_type<34>, typename T35 = unused_variant_type<35>,	typename T36 = unused_variant_type<36>, typename T37 = unused_variant_type<37>, 
+		typename T38 = unused_variant_type<38>, typename T39 = unused_variant_type<39>,	typename T40 = unused_variant_type<40> >
 	class variant
 	{
 		// friends
@@ -80,7 +82,11 @@ namespace neolib
 
 		// types
 	public:
-		typedef boost::variant<boost::blank, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30> contents_type;
+		typedef boost::variant<boost::blank, 
+			T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, 
+			T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, 
+			T21, T22, T23, T24, T25, T26, T27, T28, T29, T30,
+			T31, T32, T33, T34, T35, T36, T37, T38, T39, T40> contents_type;
 	public:
 		typedef T1 type_1; typedef T2 type_2; typedef T3 type_3; typedef T4 type_4; typedef T5 type_5; 
 		typedef T6 type_6; typedef T7 type_7; typedef T8 type_8; typedef T9 type_9; typedef T10 type_10;
@@ -88,6 +94,8 @@ namespace neolib
 		typedef T16 type_16; typedef T17 type_17; typedef T18 type_18; typedef T19 type_19; typedef T20 type_20;
 		typedef T21 type_21; typedef T22 type_22; typedef T23 type_23; typedef T24 type_24; typedef T25 type_25; 
 		typedef T26 type_26; typedef T27 type_27; typedef T28 type_28; typedef T29 type_29; typedef T30 type_30;
+		typedef T31 type_31; typedef T32 type_32; typedef T33 type_33; typedef T34 type_34; typedef T35 type_35;
+		typedef T36 type_36; typedef T37 type_37; typedef T38 type_38; typedef T39 type_39; typedef T40 type_40;
 
 		template <typename T> struct type_id;
 		template <> struct type_id<boost::blank> { static const int value = 0; };
@@ -121,6 +129,16 @@ namespace neolib
 		template <> struct type_id<type_28> { static const int value = 28; };
 		template <> struct type_id<type_29> { static const int value = 29; };
 		template <> struct type_id<type_30> { static const int value = 30; };
+		template <> struct type_id<type_31> { static const int value = 31; };
+		template <> struct type_id<type_32> { static const int value = 32; };
+		template <> struct type_id<type_33> { static const int value = 33; };
+		template <> struct type_id<type_34> { static const int value = 34; };
+		template <> struct type_id<type_35> { static const int value = 35; };
+		template <> struct type_id<type_36> { static const int value = 36; };
+		template <> struct type_id<type_37> { static const int value = 37; };
+		template <> struct type_id<type_38> { static const int value = 38; };
+		template <> struct type_id<type_39> { static const int value = 39; };
+		template <> struct type_id<type_40> { static const int value = 40; };
 
 		// construction
 	public:
@@ -243,6 +261,16 @@ namespace neolib
 		operator T28&() { return boost::get<T28>(iContents); }
 		operator T29&() { return boost::get<T29>(iContents); }
 		operator T30&() { return boost::get<T30>(iContents); }
+		operator T31&() { return boost::get<T31>(iContents); }
+		operator T32&() { return boost::get<T32>(iContents); }
+		operator T33&() { return boost::get<T33>(iContents); }
+		operator T34&() { return boost::get<T34>(iContents); }
+		operator T35&() { return boost::get<T35>(iContents); }
+		operator T36&() { return boost::get<T36>(iContents); }
+		operator T37&() { return boost::get<T37>(iContents); }
+		operator T38&() { return boost::get<T38>(iContents); }
+		operator T39&() { return boost::get<T39>(iContents); }
+		operator T40&() { return boost::get<T40>(iContents); }
 		operator const T1&() const { return boost::get<T1>(iContents); }
 		operator const T2&() const { return boost::get<T2>(iContents); }
 		operator const T3&() const { return boost::get<T3>(iContents); }
@@ -273,6 +301,16 @@ namespace neolib
 		operator const T28&() const { return boost::get<T28>(iContents); }
 		operator const T29&() const { return boost::get<T29>(iContents); }
 		operator const T30&() const { return boost::get<T30>(iContents); }
+		operator const T31&() const { return boost::get<T31>(iContents); }
+		operator const T32&() const { return boost::get<T32>(iContents); }
+		operator const T33&() const { return boost::get<T33>(iContents); }
+		operator const T34&() const { return boost::get<T34>(iContents); }
+		operator const T35&() const { return boost::get<T35>(iContents); }
+		operator const T36&() const { return boost::get<T36>(iContents); }
+		operator const T37&() const { return boost::get<T37>(iContents); }
+		operator const T38&() const { return boost::get<T38>(iContents); }
+		operator const T39&() const { return boost::get<T39>(iContents); }
+		operator const T40&() const { return boost::get<T40>(iContents); }
 
 		// implementation
 	private:
@@ -310,6 +348,16 @@ namespace neolib
 			case 28: return &boost::get<T28>(iContents); 
 			case 29: return &boost::get<T29>(iContents); 
 			case 30: return &boost::get<T30>(iContents); 
+			case 31: return &boost::get<T31>(iContents);
+			case 32: return &boost::get<T32>(iContents);
+			case 33: return &boost::get<T33>(iContents);
+			case 34: return &boost::get<T34>(iContents);
+			case 35: return &boost::get<T35>(iContents);
+			case 36: return &boost::get<T36>(iContents);
+			case 37: return &boost::get<T37>(iContents);
+			case 38: return &boost::get<T38>(iContents);
+			case 39: return &boost::get<T39>(iContents);
+			case 40: return &boost::get<T40>(iContents);
 			default: return 0;
 			}
 		}
@@ -347,6 +395,16 @@ namespace neolib
 			case 28: return &boost::get<T28>(iContents); 
 			case 29: return &boost::get<T29>(iContents); 
 			case 30: return &boost::get<T30>(iContents); 
+			case 31: return &boost::get<T31>(iContents);
+			case 32: return &boost::get<T32>(iContents);
+			case 33: return &boost::get<T33>(iContents);
+			case 34: return &boost::get<T34>(iContents);
+			case 35: return &boost::get<T35>(iContents);
+			case 36: return &boost::get<T36>(iContents);
+			case 37: return &boost::get<T37>(iContents);
+			case 38: return &boost::get<T38>(iContents);
+			case 39: return &boost::get<T39>(iContents);
+			case 40: return &boost::get<T40>(iContents);
 			default: return 0;
 			}
 		}
@@ -374,9 +432,10 @@ namespace neolib
 	template <
 		typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10,
 		typename T11, typename T12, typename T13, typename T14, typename T15, typename T16, typename T17, typename T18, typename T19, typename T20,
-		typename T21, typename T22, typename T23, typename T24, typename T25, typename T26, typename T27, typename T28, typename T29, typename T30>
+		typename T21, typename T22, typename T23, typename T24, typename T25, typename T26, typename T27, typename T28, typename T29, typename T30,
+		typename T31, typename T32, typename T33, typename T34, typename T35, typename T36, typename T37, typename T38, typename T39, typename T40>
 	inline std::size_t hash_value(const variant<
-		T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30>& aVariant)
+		T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36, T37, T38, T39, T40>& aVariant)
 	{
 		boost::hash<decltype(aVariant.contents())> hasher;
 		return hasher(aVariant.contents());
