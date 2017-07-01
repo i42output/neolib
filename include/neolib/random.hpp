@@ -41,20 +41,64 @@
 namespace neolib 
 {
 	template <typename T = uint32_t, typename Gen = std::mt19937>
-	class basic_random
+	class random_traits
 	{
-		// types
 	public:
 		typedef T value_type;
 		typedef Gen generator_type;
 		typedef typename generator_type::result_type generator_result_type;
-			// construction
+		static const std::size_t state_size = generator_type::state_size;
+	private:
+		template <bool IsInteger>
+		struct distribution_selector
+		{
+			typedef generator_result_type interval_value_type;
+			typedef std::uniform_int_distribution<interval_value_type> distribution_type;
+			static std::pair<interval_value_type, interval_value_type> interval(interval_value_type aLower, interval_value_type aUpper)
+			{
+				return std::make_pair(aLower, aUpper);
+			}
+		};
+		template <>
+		struct distribution_selector<false>
+		{
+			typedef value_type interval_value_type;
+			typedef std::uniform_real_distribution<interval_value_type> distribution_type;
+			static std::pair<interval_value_type, interval_value_type> interval(interval_value_type aLower, interval_value_type aUpper)
+			{
+				return std::make_pair(aLower, std::nextafter(aUpper, std::numeric_limits<interval_value_type>::max()));
+			}
+		};
+		typedef typename distribution_selector<std::is_integral<value_type>::value> distribution_selector_type;
 	public:
-		basic_random() : iGen{ std::random_device{}() }, iSecure{ true }, iDis{ 0.0, 1.0 }, iCounter{ 0 }
+		typedef typename distribution_selector_type::distribution_type distribution_type;
+		typedef typename distribution_selector_type::interval_value_type interval_value_type;
+	public:
+		static std::pair<interval_value_type, interval_value_type> interval(value_type aLower, value_type aUpper)
+		{
+			return distribution_selector_type::interval(static_cast<interval_value_type>(aLower), static_cast<interval_value_type>(aUpper));
+		}
+	};
+
+	template <typename T = uint32_t, typename Gen = std::mt19937, typename Traits = random_traits<T, Gen>>
+	class basic_random
+	{
+		// types
+	public:
+		typedef Traits traits_type;
+		typedef typename traits_type::value_type value_type;
+		typedef typename traits_type::distribution_type distribution_type;
+	private:
+		typedef typename traits_type::generator_type generator_type;
+		typedef typename traits_type::generator_result_type generator_result_type;
+
+		// construction
+	public:
+		basic_random() : iGen{ std::random_device{}() }, iSecure{ true }, iCounter{ 0 }
 		{
 		}
 		template <typename T2>
-		basic_random(T2 aSeed) : iGen{ static_cast<generator_result_type>(aSeed) }, iSecure{ false }, iDis{ 0.0, 1.0 }, iCounter{ 0 }
+		basic_random(T2 aSeed) : iGen{ static_cast<generator_result_type>(aSeed) }, iSecure{ false }, iCounter{ 0 }
 		{
 		}
 		// operations
@@ -72,44 +116,35 @@ namespace neolib
 		template <typename T2>
 		value_type operator()(T2 aUpper)
 		{
-			increment_counter();
-			return static_cast<value_type>(std::uniform_int_distribution<generator_result_type>(0, static_cast<generator_result_type>(aUpper))(iGen));
+			return get(aUpper);
 		}
 		template <typename T2>
 		value_type operator()(T2 aLower, T2 aUpper)
 		{
-			increment_counter();
-			return static_cast<value_type>(std::uniform_int_distribution<generator_result_type>(static_cast<generator_result_type>(aLower), static_cast<generator_result_type>(aUpper))(iGen));
+			return get(aLower, aUpper);
 		}
 		template <typename T2>
 		value_type get(T2 aUpper)
 		{
 			increment_counter();
-			return static_cast<value_type>(std::uniform_int_distribution<generator_result_type>(0, static_cast<generator_result_type>(aUpper))(iGen));
+			return distribution(static_cast<value_type>(0), static_cast<value_type>(aUpper))(iGen);
 		}
 		template <typename T2>
 		value_type get(T2 aLower, T2 aUpper)
 		{
 			increment_counter();
-			return static_cast<value_type>(std::uniform_int_distribution<generator_result_type>(static_cast<generator_result_type>(aLower), static_cast<generator_result_type>(aUpper))(iGen));
-		}
-		double getf(double aUpper)
-		{
-			increment_counter();
-			return iDis(iGen) * aUpper;
-		}
-		double getf(double aLower, double aUpper)
-		{
-			increment_counter();
-			if (aUpper <= aLower)
-				return aLower;
-			return getf(aUpper - aLower) + aLower;
+			return distribution(static_cast<value_type>(aLower), static_cast<value_type>(aUpper))(iGen);
 		}
 		// implementation
 	private:
+		distribution_type distribution(value_type aLower, value_type aUpper)
+		{
+			auto interval = traits_type::interval(aLower, aUpper);
+			return distribution_type{ interval.first, interval.second };
+		}
 		void increment_counter()
 		{
-			if (iSecure && ++iCounter == generator_type::state_size)
+			if (iSecure && ++iCounter == traits_type::state_size)
 			{
 				iCounter = 0;
 				iGen.seed(std::random_device{}());
@@ -119,7 +154,6 @@ namespace neolib
 	private:
 		generator_type iGen;
 		bool iSecure;
-		std::uniform_real_distribution<> iDis;
 		std::size_t iCounter;
 	};
 
