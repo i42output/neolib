@@ -1,6 +1,6 @@
-// random.hpp - v2.0
+// random.hpp - v2.1
 /*
- *  Copyright (c) 2014 Leigh Johnston.
+ *  Copyright (c) 2017 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -50,11 +50,11 @@ namespace neolib
 		typedef typename generator_type::result_type generator_result_type;
 			// construction
 	public:
-		basic_random() : iGen(std::random_device()()), iDis(0.0, 1.0)
+		basic_random() : iGen{ std::random_device{}() }, iSecure{ true }, iDis{ 0.0, 1.0 }, iCounter{ 0 }
 		{
 		}
 		template <typename T2>
-		basic_random(T2 aSeed) : iGen(static_cast<generator_result_type>(aSeed)), iDis(0.0, 1.0)
+		basic_random(T2 aSeed) : iGen{ static_cast<generator_result_type>(aSeed) }, iSecure{ false }, iDis{ 0.0, 1.0 }, iCounter{ 0 }
 		{
 		}
 		// operations
@@ -62,42 +62,65 @@ namespace neolib
 		template <typename T2>
 		void seed(T2 aSeed)
 		{
+			iCounter = 0;
 			iGen.seed(static_cast<generator_result_type>(aSeed));
+		}
+		void set_secure(bool aSecure)
+		{
+			iSecure = aSecure;
 		}
 		template <typename T2>
 		value_type operator()(T2 aUpper)
 		{
+			increment_counter();
 			return static_cast<value_type>(std::uniform_int_distribution<generator_result_type>(0, static_cast<generator_result_type>(aUpper))(iGen));
 		}
 		template <typename T2>
 		value_type operator()(T2 aLower, T2 aUpper)
 		{
+			increment_counter();
 			return static_cast<value_type>(std::uniform_int_distribution<generator_result_type>(static_cast<generator_result_type>(aLower), static_cast<generator_result_type>(aUpper))(iGen));
 		}
 		template <typename T2>
 		value_type get(T2 aUpper)
 		{
+			increment_counter();
 			return static_cast<value_type>(std::uniform_int_distribution<generator_result_type>(0, static_cast<generator_result_type>(aUpper))(iGen));
 		}
 		template <typename T2>
 		value_type get(T2 aLower, T2 aUpper)
 		{
+			increment_counter();
 			return static_cast<value_type>(std::uniform_int_distribution<generator_result_type>(static_cast<generator_result_type>(aLower), static_cast<generator_result_type>(aUpper))(iGen));
 		}
 		double getf(double aUpper)
 		{
+			increment_counter();
 			return iDis(iGen) * aUpper;
 		}
 		double getf(double aLower, double aUpper)
 		{
+			increment_counter();
 			if (aUpper <= aLower)
 				return aLower;
 			return getf(aUpper - aLower) + aLower;
 		}
+		// implementation
+	private:
+		void increment_counter()
+		{
+			if (iSecure && ++iCounter == generator_type::state_size)
+			{
+				iCounter = 0;
+				iGen.seed(std::random_device{}());
+			}
+		}
 		// attributes 
 	private:
 		generator_type iGen;
+		bool iSecure;
 		std::uniform_real_distribution<> iDis;
+		std::size_t iCounter;
 	};
 
 	using random = basic_random<uint32_t>;
@@ -158,7 +181,7 @@ namespace neolib
 		typedef unsigned int value_type;
 		// construction
 	public:
-		random_traversal(random& aRandom, value_type aNumElements) : iRandom(aRandom), iNumElements(aNumElements)
+		random_traversal(random& aRandom, value_type aNumElements) : iRandom{ aRandom }, iNumElements{ aNumElements }
 		{
 			reset();
 		}
