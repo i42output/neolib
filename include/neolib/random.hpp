@@ -50,7 +50,9 @@ namespace neolib
 		static const std::size_t state_size = generator_type::state_size;
 	private:
 		template <bool IsInteger>
-		struct distribution_selector
+		struct distribution_selector;
+		template <>
+		struct distribution_selector<true>
 		{
 			typedef generator_result_type interval_value_type;
 			typedef std::uniform_int_distribution<interval_value_type> distribution_type;
