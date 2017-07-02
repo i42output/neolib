@@ -108,8 +108,13 @@ namespace neolib
 		template <typename T2>
 		void seed(T2 aSeed)
 		{
+			iSecure = false;
 			iCounter = 0;
 			iGen.seed(static_cast<generator_result_type>(aSeed));
+		}
+		bool is_secure() const
+		{
+			return iSecure;
 		}
 		void set_secure(bool aSecure)
 		{
@@ -129,13 +134,13 @@ namespace neolib
 		value_type get(T2 aUpper)
 		{
 			increment_counter();
-			return distribution(static_cast<value_type>(0), static_cast<value_type>(aUpper))(iGen);
+			return static_cast<value_type>(distribution(static_cast<value_type>(0), static_cast<value_type>(aUpper))(iGen));
 		}
 		template <typename T2>
 		value_type get(T2 aLower, T2 aUpper)
 		{
 			increment_counter();
-			return distribution(static_cast<value_type>(aLower), static_cast<value_type>(aUpper))(iGen);
+			return static_cast<value_type>(distribution(static_cast<value_type>(aLower), static_cast<value_type>(aUpper))(iGen));
 		}
 		// implementation
 	private:
@@ -146,7 +151,7 @@ namespace neolib
 		}
 		void increment_counter()
 		{
-			if (iSecure && ++iCounter == traits_type::state_size)
+			if (iSecure && ++iCounter > traits_type::state_size)
 			{
 				iCounter = 0;
 				iGen.seed(std::random_device{}());
