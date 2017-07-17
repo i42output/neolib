@@ -82,7 +82,6 @@ namespace neolib
 		return uuid_to_key(lhs) < uuid_to_key(rhs);
 	}
 
-
 	inline uuid make_uuid(const std::string& aHyphenatedHexString /* "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" */)
 	{
 		uuid result;
