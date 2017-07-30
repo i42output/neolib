@@ -311,4 +311,10 @@ namespace neolib
 			return wrapped_iterator().operator!=(aOther.wrapped_iterator());
 		}
 	};
+
+	template <typename Iterator>
+	inline specialized_generic_iterator<Iterator> make_generic_iterator(Iterator aIterator)
+	{
+		return specialized_generic_iterator<Iterator>{ aIterator };
+	}
 }
