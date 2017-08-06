@@ -192,12 +192,12 @@ namespace neolib
 	std::string program_file()
 	{
 #ifdef _WIN32
-		char result[MAX_PATH];
-		return std::string(result, GetModuleFileNameA(NULL, result, MAX_PATH));
+		wchar_t result[MAX_PATH];
+		return convert_path(std::wstring{ result, GetModuleFileName(NULL, result, MAX_PATH) });
 #else
 		char result[PATH_MAX];
 		ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
-		return std::string(result, (count > 0) ? count : 0);
+		return std::string{ result, (count > 0) ? count : 0 };
 #endif
 	}
 
