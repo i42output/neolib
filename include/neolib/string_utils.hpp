@@ -43,6 +43,7 @@
 #include <sstream>
 #include <cstdlib>
 #include <cwchar>
+#include <cuchar>
 #include <cctype>
 #include <cwctype>
 #include <cassert>
@@ -699,7 +700,8 @@ namespace neolib
 				if (i == old)
 				{
 					wchar_t wch;
-					if (mbtowc(&wch, reinterpret_cast<char*>(&nch), 1) > 0)
+					std::mbstate_t state = std::mbstate_t{};
+					if (std::mbrtowc(&wch, reinterpret_cast<char*>(&nch), 1, &state) == 1)
 						uch = static_cast<unicode_char_t>(wch);
 					else
 						uch = static_cast<unicode_char_t>(nch);
@@ -757,9 +759,10 @@ namespace neolib
 					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xFF), 6, i, aEnd);
 				if (i == old)
 				{
-					wchar_t wch;
-					if (mbtowc(&wch, reinterpret_cast<char*>(&nch), 1) > 0)
-						uch = static_cast<unicode_char_t>(wch);
+					char32_t ch32;
+					std::mbstate_t state = std::mbstate_t{};
+					if (std::mbrtoc32(&ch32, reinterpret_cast<char*>(&nch), 1, &state) == 1)
+						uch = static_cast<unicode_char_t>(ch32);
 					else
 						uch = static_cast<unicode_char_t>(nch);
 				}
