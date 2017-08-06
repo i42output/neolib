@@ -142,6 +142,7 @@
     <ClInclude Include="..\..\..\include\neolib\i_container.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_custom_type.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_custom_type_factory.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_destroyable.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_discoverable.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_iterator.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_list.hpp" />

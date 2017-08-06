@@ -59,6 +59,8 @@ namespace neolib
 		public:
 			virtual i_wrapper& operator++() = 0;
 			virtual i_wrapper& operator--() = 0;
+			virtual i_wrapper& operator+=(difference_type aDelta) = 0;
+			virtual i_wrapper& operator-=(difference_type aDelta) = 0;
 			virtual bool operator==(const i_wrapper& aOther) const = 0;
 			virtual bool operator!=(const i_wrapper& aOther) const = 0;
 		};
@@ -95,6 +97,16 @@ namespace neolib
 			virtual wrapper& operator--()
 			{
 				iIterator.operator--();
+				return *this;
+			}
+			virtual wrapper& operator+=(difference_type aDelta)
+			{
+				iIterator.operator+=(aDelta);
+				return *this;
+			}
+			virtual wrapper& operator-=(difference_type aDelta)
+			{
+				iIterator.operator-=(aDelta);
 				return *this;
 			}
 			virtual reference operator*() const
@@ -168,6 +180,28 @@ namespace neolib
 			generic_iterator old = *this;
 			(*iWrappedIterator).operator--();
 			return old;
+		}
+		generic_iterator& operator+=(difference_type aDelta)
+		{
+			(*iWrappedIterator).operator+=(aDelta);
+			return *this;
+		}
+		generic_iterator& operator-=(difference_type aDelta)
+		{
+			(*iWrappedIterator).operator-=(aDelta);
+			return *this;
+		}
+		generic_iterator operator+(difference_type aDelta)
+		{
+			generic_iterator result = *this;
+			(*result.iWrappedIterator).operator+=(aDelta);
+			return result;
+		}
+		generic_iterator operator-(difference_type aDelta)
+		{
+			generic_iterator result = *this;
+			(*result.iWrappedIterator).operator-=(aDelta);
+			return result;
 		}
 		bool operator==(const generic_iterator& aOther) const
 		{
@@ -293,6 +327,24 @@ namespace neolib
 			generic_iterator old = *this;
 			wrapped_iterator().operator--();
 			return old;
+		}
+		specialized_generic_iterator& operator+=(difference_type aDelta)
+		{
+			wrapped_iterator().operator+=(aDelta);
+			return *this;
+		}
+		specialized_generic_iterator& operator-=(difference_type aDelta)
+		{
+			wrapped_iterator().operator-=(aDelta);
+			return *this;
+		}
+		specialized_generic_iterator operator+(difference_type aDelta)
+		{
+			return wrapped_iterator().operator+(aDelta);
+		}
+		specialized_generic_iterator operator-(difference_type aDelta)
+		{
+			return wrapped_iterator().operator-(aDelta);
 		}
 		reference operator*() const
 		{

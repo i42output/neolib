@@ -38,62 +38,65 @@
 #include "neolib.hpp"
 #include <set>
 #include <boost/pool/pool_alloc.hpp>
+#include "i_destroyable.hpp"
 
 namespace neolib
 {
-	class destroyable
+	class destroyed_flag : public i_destroyed_flag
 	{
 	public:
-		class destroyed_flag
+		destroyed_flag(const i_destroyable& aOwner) : iOwner(aOwner), iDestroyed(false)
 		{
-		public:
-			destroyed_flag(const destroyable& aOwner) : iOwner(aOwner), iDestroyed(false)
-			{
-				iOwner.add_flag(this);
-			}
-			~destroyed_flag()
-			{
-				if (!destroyed())
-					iOwner.remove_flag(this);
-			}
-		public:
-			bool destroyed() const
-			{
-				return iDestroyed;
-			}
-			operator bool() const
-			{
-				return iDestroyed;
-			}
-			void set_destroyed()
-			{
-				iDestroyed = true;
-			}
-		private:
-			const destroyable& iOwner;
-			bool iDestroyed;
-		};
+			iOwner.add_flag(this);
+		}
+		~destroyed_flag()
+		{
+			if (!destroyed())
+				iOwner.remove_flag(this);
+		}
+	public:
+		bool destroyed() const override
+		{
+			return iDestroyed;
+		}
+		operator bool() const override
+		{
+			return iDestroyed;
+		}
+		void set_destroyed() override
+		{
+			iDestroyed = true;
+		}
+	private:
+		const i_destroyable& iOwner;
+		bool iDestroyed;
+	};
+
+	class destroyable : public i_destroyable
+	{
+	public:
+		typedef neolib::destroyed_flag destroyed_flag;
 	public:
 		virtual ~destroyable()
 		{
 			set_destroyed();
 		}
 	public:
-		void set_destroyed()
+		void set_destroyed() override
 		{
 			for (auto flag : iDestroyedFlags)
 				flag->set_destroyed();
 		}
 	public:
-		void add_flag(destroyed_flag* aFlag) const
+		void add_flag(i_destroyed_flag* aFlag) const override
 		{
 			iDestroyedFlags.insert(aFlag);
 		}
-		void remove_flag(destroyed_flag* aFlag) const
+		void remove_flag(i_destroyed_flag* aFlag) const override
 		{
 			iDestroyedFlags.erase(aFlag);
 		}
 	private:
-		mutable std::set<destroyed_flag*, std::less<destroyed_flag*>, boost::fast_pool_allocator<destroyed_flag*>> iDestroyedFlags;
+		mutable std::set<i_destroyed_flag*, std::less<i_destroyed_flag*>, boost::fast_pool_allocator<i_destroyed_flag*>> iDestroyedFlags;
 	};
 }

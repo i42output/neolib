@@ -1,6 +1,6 @@
-// raii.hpp
+// i_destroyable.hpp
 /*
- *  Copyright (c) 2016 Leigh Johnston.
+ *  Copyright (c) 2012 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -39,18 +39,24 @@
 
 namespace neolib
 {
-	struct scoped_flag
+	class i_destroyed_flag
 	{
-		bool& iFlag;
-		bool iSaved;
-		scoped_flag(bool& aFlag, bool aValue = true) : iFlag{ aFlag }, iSaved{ aFlag } { iFlag = aValue; }
-		~scoped_flag() { iFlag = iSaved; }
+	public:
+		virtual ~i_destroyed_flag() {}
+	public:
+		virtual bool destroyed() const = 0;
+		virtual operator bool() const = 0;
+		virtual void set_destroyed() = 0;
 	};
 
-	struct scoped_counter
+	class i_destroyable
 	{
-		uint32_t& iCounter;
-		scoped_counter(uint32_t& aCounter) : iCounter(aCounter) { ++iCounter; }
-		~scoped_counter() { --iCounter; }
+	public:
+		virtual ~i_destroyable() {}
+	public:
+		virtual void set_destroyed() = 0;
+	public:
+		virtual void add_flag(i_destroyed_flag* aFlag) const = 0;
+		virtual void remove_flag(i_destroyed_flag* aFlag) const = 0;
 	};
 }

@@ -8,3 +8,5 @@
 /build/win32/vs2015/neolib.sdf
 /build/win32/vs2015/Debug
 /build/win32/vs2015/Release
+/build/win32/vs2015/.vs/neolib/v14/.suo
+/build/win32/vs2015/neolib.vcxproj.user
