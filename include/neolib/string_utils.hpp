@@ -533,13 +533,18 @@ namespace neolib
 			aString.append(1, static_cast<char>((aCharacter& 0x3F) | 0x80));
 			return 3;
 		}
-		else
+		else if (aCharacter <= 0x10FFF)
 		{
 			aString.append(1, static_cast<char>(((aCharacter >> 18) & 0x07) | 0xF0));
 			aString.append(1, static_cast<char>(((aCharacter >> 12 ) & 0x3F) | 0x80));
 			aString.append(1, static_cast<char>(((aCharacter >> 6 ) & 0x3F) | 0x80));
 			aString.append(1, static_cast<char>((aCharacter& 0x3F) | 0x80));
 			return 4;
+		}
+		else
+		{
+			aString.append(1, '?');
+			return 1;
 		}
 	}
 
@@ -574,7 +579,6 @@ namespace neolib
 	template <bool AllowUpper128, typename CharacterMapUpdater>
 	inline std::string utf16_to_utf8(const std::u16string& aString, CharacterMapUpdater aCharacterMapUpdater)
 	{
-		setlocale(LC_CTYPE, "");
 		bool previousWasUtf8Prefix = false;
 		std::string narrowString;
 		std::u16string::size_type from = 0;
@@ -643,8 +647,10 @@ namespace neolib
 	namespace detail
 	{
 		template <typename FwdIter>
-		inline unicode_char_t next_utf16_bits(unicode_char_t aUnicodeChar, std::size_t aCount, FwdIter& aCurrent, FwdIter aEnd)
+		inline unicode_char_t next_utf_bits(unicode_char_t aUnicodeChar, std::size_t aCount, FwdIter& aCurrent, FwdIter aEnd)
 		{
+			if (aUnicodeChar == 0)
+				return 0xFFFD;
 			unicode_char_t unicodeChar = aUnicodeChar;
 			FwdIter start = aCurrent;
 			for (std::size_t i = 0; i != aCount; ++i)
@@ -653,7 +659,7 @@ namespace neolib
 				if (aCurrent == aEnd)
 				{
 					aCurrent = start;
-					return L'?';
+					return 0xFFFD;
 				}
 				unsigned char nch = static_cast<unsigned char>(*aCurrent);
 				if ((nch & 0xC0) == 0x80)
@@ -661,7 +667,7 @@ namespace neolib
 				else
 				{
 					aCurrent = start;
-					return L'?';
+					return 0xFFFD;
 				}
 			}
 			return unicodeChar;
@@ -671,9 +677,8 @@ namespace neolib
 	}
 
 	template <typename Callback>
-	inline std::u16string utf8_to_utf16(const std::string& aString, Callback aCallback)
+	inline std::u16string utf8_to_utf16(const std::string& aString, Callback aCallback, bool aCodePageFallback = false)
 	{
-		setlocale(LC_CTYPE, "");
 		std::u16string utf16String;
 		for (std::string::const_iterator i = aString.begin(); i != aString.end();)
 		{
@@ -686,18 +691,12 @@ namespace neolib
 			{
 				std::string::const_iterator old = i;
 				if ((nch & 0xE0) == 0xC0)
-					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xE0), 1, i, aString.end());
+					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xE0), 1, i, aString.end());
 				else if ((nch & 0xF0) == 0xE0)
-					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xF0), 2, i, aString.end());
+					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF0), 2, i, aString.end());
 				else if ((nch & 0xF8) == 0xF0)
-					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xF8), 3, i, aString.end());
-				else if ((nch & 0xFC) == 0xF8)
-					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xFC), 4, i, aString.end());
-				else if ((nch & 0xFE) == 0xFC)
-					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xFE), 5, i, aString.end());
-				else if ((nch & 0xFF) == 0xFE)
-					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xFF), 6, i, aString.end());
-				if (i == old)
+					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF8), 3, i, aString.end());
+				if (i == old && aCodePageFallback)
 				{
 					wchar_t wch;
 					std::mbstate_t state = std::mbstate_t{};
@@ -724,15 +723,14 @@ namespace neolib
 		return utf16String;
 	}
 
-	inline std::u16string utf8_to_utf16(const std::string& aString)
+	inline std::u16string utf8_to_utf16(const std::string& aString, bool aCodePageFallback = false)
 	{
-		return utf8_to_utf16(aString, detail::default_utf16_conversion_callback);
+		return utf8_to_utf16(aString, detail::default_utf16_conversion_callback, aCodePageFallback);
 	}
 
 	template <typename Callback>
-	inline std::u32string utf8_to_utf32(std::string::const_iterator aBegin, std::string::const_iterator aEnd, Callback aCallback)
+	inline std::u32string utf8_to_utf32(std::string::const_iterator aBegin, std::string::const_iterator aEnd, Callback aCallback, bool aCodePageFallback = false)
 	{
-		setlocale(LC_CTYPE, "");
 		std::u32string utf32String;
 		for (std::string::const_iterator i = aBegin; i != aEnd;)
 		{
@@ -746,18 +744,12 @@ namespace neolib
 			{
 				std::string::const_iterator old = i;
 				if ((nch & 0xE0) == 0xC0)
-					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xE0), 1, i, aEnd);
+					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xE0), 1, i, aEnd);
 				else if ((nch & 0xF0) == 0xE0)
-					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xF0), 2, i, aEnd);
+					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF0), 2, i, aEnd);
 				else if ((nch & 0xF8) == 0xF0)
-					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xF8), 3, i, aEnd);
-				else if ((nch & 0xFC) == 0xF8)
-					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xFC), 4, i, aEnd);
-				else if ((nch & 0xFE) == 0xFC)
-					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xFE), 5, i, aEnd);
-				else if ((nch & 0xFF) == 0xFE)
-					uch = detail::next_utf16_bits(static_cast<unicode_char_t>(nch & ~0xFF), 6, i, aEnd);
-				if (i == old)
+					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF8), 3, i, aEnd);
+				if (i == old && aCodePageFallback)
 				{
 					char32_t ch32;
 					std::mbstate_t state = std::mbstate_t{};
@@ -777,19 +769,19 @@ namespace neolib
 	}
 
 	template <typename Callback>
-	inline std::u32string utf8_to_utf32(const std::string& aString, Callback aCallback)
+	inline std::u32string utf8_to_utf32(const std::string& aString, Callback aCallback, bool aCodePageFallback = false)
 	{
-		return utf8_to_utf32(aString.begin(), aStirng.end(), aCallBack);
+		return utf8_to_utf32(aString.begin(), aStirng.end(), aCallBack, aCodePageFallback);
 	}
 
-	inline std::u32string utf8_to_utf32(std::string::const_iterator aBegin, std::string::const_iterator aEnd)
+	inline std::u32string utf8_to_utf32(std::string::const_iterator aBegin, std::string::const_iterator aEnd, bool aCodePageFallback = false)
 	{
-		return utf8_to_utf32(aBegin, aEnd, detail::default_utf32_conversion_callback);
+		return utf8_to_utf32(aBegin, aEnd, detail::default_utf32_conversion_callback, aCodePageFallback);
 	}
 
-	inline std::u32string utf8_to_utf32(const std::string& aString)
+	inline std::u32string utf8_to_utf32(const std::string& aString, bool aCodePageFallback = false)
 	{
-		return utf8_to_utf32(aString.begin(), aString.end());
+		return utf8_to_utf32(aString.begin(), aString.end(), aCodePageFallback);
 	}
 
 	inline std::string utf32_to_utf8(const std::u32string& aString)
@@ -818,20 +810,20 @@ namespace neolib
 	}
 
 	template <typename StringT>
-	inline StringT utf8_to_any(const std::string& aString)
+	inline StringT utf8_to_any(const std::string& aString, bool aCodePageFallback = false)
 	{
-		return utf8_to_utf16(aString);
+		return utf8_to_utf16(aString, aCodePageFallback);
 	}
 
 	template <>
-	inline std::string utf8_to_any<std::string>(const std::string& aString)
+	inline std::string utf8_to_any<std::string>(const std::string& aString, bool)
 	{
 		return aString;
 	}
 
-	inline std::u16string any_to_utf16(const std::string& aString)
+	inline std::u16string any_to_utf16(const std::string& aString, bool aCodePageFallback = false)
 	{
-		return utf8_to_utf16(aString);
+		return utf8_to_utf16(aString, aCodePageFallback);
 	}
 
 	inline const std::string& any_to_utf8(const std::string& aString)
@@ -853,8 +845,8 @@ namespace neolib
 	class any_to_utf16_result
 	{
 	public:
-		any_to_utf16_result(const typename StringT::value_type* aString, typename StringT::size_type aStringLength) :
-			iString(utf8_to_utf16(StringT(aString, aStringLength)))
+		any_to_utf16_result(const typename StringT::value_type* aString, typename StringT::size_type aStringLength, bool aCodePageFallback = false) :
+			iString(utf8_to_utf16(StringT(aString, aStringLength), aCodePageFallback))
 		{
 		}
 	public:
@@ -906,7 +898,6 @@ namespace neolib
 	template <typename CharT, typename Traits, typename Alloc>
 	inline std::string utf16_to_narrow(const std::basic_string<CharT, Traits, Alloc>& aWideString)
 	{
-		setlocale(LC_CTYPE, "");
 		std::vector<char> narrowString;
 		narrowString.resize(aWideString.size() + 1);
 		wcstombs(&narrowString[0], aWideString.c_str(), aWideString.size() + 1);
@@ -916,7 +907,6 @@ namespace neolib
 	template <typename CharT, typename Traits, typename Alloc>
 	inline std::u16string narrow_to_utf16(const std::basic_string<CharT, Traits, Alloc>& aNarrowString)
 	{
-		setlocale(LC_CTYPE, "");
 		std::vector<char16_t> utf16String;
 		utf16String.resize(aNarrowString.size() + 1);
 		mbstowcs(&utf16String[0], aNarrowString.c_str(), aNarrowString.size() + 1);
