@@ -495,7 +495,9 @@ namespace neolib
 		return do_wildcard_match<CharT, Traits, std::basic_string<CharT, Traits, Alloc>::const_iterator>(aText.begin(), aText.end(), aPattern.begin(), aPattern.end());
 	}
 
-	typedef unsigned long unicode_char_t;
+	typedef char32_t unicode_char_t;
+	const char INVALID_CHAR8 = '?';
+	const unicode_char_t INVALID_CHAR32 = static_cast<unicode_char_t>(0xFFFD);
 
 	namespace utf16
 	{
@@ -533,7 +535,7 @@ namespace neolib
 			aString.append(1, static_cast<char>((aCharacter& 0x3F) | 0x80));
 			return 3;
 		}
-		else if (aCharacter <= 0x10FFF)
+		else if (aCharacter <= 0x10FFFF)
 		{
 			aString.append(1, static_cast<char>(((aCharacter >> 18) & 0x07) | 0xF0));
 			aString.append(1, static_cast<char>(((aCharacter >> 12 ) & 0x3F) | 0x80));
@@ -543,7 +545,7 @@ namespace neolib
 		}
 		else
 		{
-			aString.append(1, '?');
+			aString.append(1, INVALID_CHAR8);
 			return 1;
 		}
 	}
@@ -601,8 +603,7 @@ namespace neolib
 				if (narrowChar != static_cast<int>(EOF) && narrowChar != static_cast<int>(WEOF) && static_cast<unsigned char>(narrowChar) > 0x7Fu)
 				{
 					unsigned char nch = static_cast<unsigned char>(narrowChar);
-					if ((nch & 0xE0) == 0xC0 || (nch & 0xF0) == 0xE0 || (nch & 0xF8) == 0xF0 ||
-						(nch & 0xFC) == 0xF8 || (nch & 0xFE) == 0xFC || (nch & 0xFF) == 0xFE)
+					if ((nch & 0xE0) == 0xC0 || (nch & 0xF0) == 0xE0 || (nch & 0xF8) == 0xF0)
 					{
 						previousWasUtf8Prefix = true;
 					}
@@ -649,8 +650,8 @@ namespace neolib
 		template <typename FwdIter>
 		inline unicode_char_t next_utf_bits(unicode_char_t aUnicodeChar, std::size_t aCount, FwdIter& aCurrent, FwdIter aEnd)
 		{
-			if (aUnicodeChar == 0)
-				return 0xFFFD;
+			if (aUnicodeChar == 0 || (aUnicodeChar == 1 && aCount == 1)) // overlong sequences including encoding ASCII as 2-byte UTF-8
+				return INVALID_CHAR32;
 			unicode_char_t unicodeChar = aUnicodeChar;
 			FwdIter start = aCurrent;
 			for (std::size_t i = 0; i != aCount; ++i)
@@ -659,7 +660,7 @@ namespace neolib
 				if (aCurrent == aEnd)
 				{
 					aCurrent = start;
-					return 0xFFFD;
+					return INVALID_CHAR32;
 				}
 				unsigned char nch = static_cast<unsigned char>(*aCurrent);
 				if ((nch & 0xC0) == 0x80)
@@ -667,7 +668,7 @@ namespace neolib
 				else
 				{
 					aCurrent = start;
-					return 0xFFFD;
+					return INVALID_CHAR32;
 				}
 			}
 			return unicodeChar;
@@ -696,6 +697,8 @@ namespace neolib
 					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF0), 2, i, aString.end());
 				else if ((nch & 0xF8) == 0xF0)
 					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF8), 3, i, aString.end());
+				else
+					uch = INVALID_CHAR32;
 				if (i == old && aCodePageFallback)
 				{
 					wchar_t wch;
@@ -749,6 +752,8 @@ namespace neolib
 					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF0), 2, i, aEnd);
 				else if ((nch & 0xF8) == 0xF0)
 					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF8), 3, i, aEnd);
+				else
+					uch = INVALID_CHAR32;
 				if (i == old && aCodePageFallback)
 				{
 					char32_t ch32;
