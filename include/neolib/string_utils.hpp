@@ -650,8 +650,6 @@ namespace neolib
 		template <typename FwdIter>
 		inline unicode_char_t next_utf_bits(unicode_char_t aUnicodeChar, std::size_t aCount, FwdIter& aCurrent, FwdIter aEnd)
 		{
-			if (aUnicodeChar == 0 || (aUnicodeChar == 1 && aCount == 1)) // overlong sequences including encoding ASCII as 2-byte UTF-8
-				return INVALID_CHAR32;
 			unicode_char_t unicodeChar = aUnicodeChar;
 			FwdIter start = aCurrent;
 			for (std::size_t i = 0; i != aCount; ++i)
@@ -663,6 +661,11 @@ namespace neolib
 					return INVALID_CHAR32;
 				}
 				unsigned char nch = static_cast<unsigned char>(*aCurrent);
+				if (nch == 0xC0 || nch == 0xC1)
+				{
+					aCurrent = start;
+					return INVALID_CHAR32;
+				}
 				if ((nch & 0xC0) == 0x80)
 					unicodeChar = (unicodeChar << 6) | (static_cast<unicode_char_t>(nch & ~0xC0));
 				else
@@ -670,6 +673,12 @@ namespace neolib
 					aCurrent = start;
 					return INVALID_CHAR32;
 				}
+			}
+			static const unicode_char_t sMaxCodePoint[] = { 0x7F, 0x7FF, 0xFFFF, 0x10FFFF };
+			if (unicodeChar <= sMaxCodePoint[aCount - 1]) // overlong sequences
+			{
+				aCurrent = start;
+				return INVALID_CHAR32;
 			}
 			return unicodeChar;
 		}
@@ -691,7 +700,9 @@ namespace neolib
 			else
 			{
 				std::string::const_iterator old = i;
-				if ((nch & 0xE0) == 0xC0)
+				if (nch == 0xC0 || nch == 0xC1)
+					uch = INVALID_CHAR32;
+				else if ((nch & 0xE0) == 0xC0)
 					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xE0), 1, i, aString.end());
 				else if ((nch & 0xF0) == 0xE0)
 					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF0), 2, i, aString.end());
@@ -746,7 +757,9 @@ namespace neolib
 			else
 			{
 				std::string::const_iterator old = i;
-				if ((nch & 0xE0) == 0xC0)
+				if (nch == 0xC0 || nch == 0xC1)
+					uch = INVALID_CHAR32;
+				else if ((nch & 0xE0) == 0xC0)
 					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xE0), 1, i, aEnd);
 				else if ((nch & 0xF0) == 0xE0)
 					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF0), 2, i, aEnd);
