@@ -208,7 +208,7 @@ namespace neolib
 		{ 
 			return iContents == rhs.iContents;
 		} 
-		bool operator==(boost::none_t)
+		bool operator==(boost::none_t) const
 		{
 			return empty();
 		}
