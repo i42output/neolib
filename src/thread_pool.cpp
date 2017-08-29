@@ -35,6 +35,7 @@
 
 #include <neolib/neolib.hpp>
 #include <condition_variable>
+#include <neolib/raii.hpp>
 #include <neolib/destroyable.hpp>
 #include <neolib/thread.hpp>
 #include <neolib/thread_pool.hpp>
@@ -44,10 +45,14 @@ namespace neolib
 	class thread_pool_thread : public thread
 	{
 	public:
-		struct already_have_task : std::logic_error { already_have_task() : std::logic_error("neolib::thread_pool_thread::already_have_task") {} };
-		struct no_task : std::logic_error { no_task() : std::logic_error("neolib::thread_pool_thread::no_task") {} };
+		typedef std::shared_ptr<i_task> task_pointer;
+		typedef std::pair<task_pointer, int32_t> task_queue_entry;
+		typedef std::vector<task_queue_entry> task_queue;
 	public:
-		thread_pool_thread(thread_pool& aThreadPool) : thread{ "neolib::thread_pool_thread" }, iThreadPool{ aThreadPool }, iTask { nullptr }
+		struct no_active_task : std::logic_error { no_active_task() : std::logic_error("neolib::thread_pool_thread::no_active_task") {} };
+		struct already_active : std::logic_error { already_active() : std::logic_error("neolib::thread_pool_thread::already_active") {} };
+	public:
+		thread_pool_thread(thread_pool& aThreadPool) : thread{ "neolib::thread_pool_thread" }, iThreadPool{ aThreadPool }
 		{
 			start();
 		}
@@ -56,59 +61,98 @@ namespace neolib
 		{
 			while (!finished())
 			{
-				std::unique_lock<std::mutex> lk(iMutex);
-				iConditionVariable.wait(lk, [this] { return iTask != nullptr; });
+				std::unique_lock<std::mutex> lk(iCondVarMutex);
+				iConditionVariable.wait(lk, [this] { return iActiveTask != nullptr; });
 				lk.unlock();
-				iTask->run();
-				if (!release())
-					break;
-				else
-					iThreadPool.next_task();
+				iActiveTask->run();
+				std::lock_guard<std::recursive_mutex> lk2(sMutex);
+				release();
+				next_task();
 			}
 		}
 	public:
-		bool acquired() const
+		bool active() const
 		{
-			std::lock_guard<std::mutex> lk(iMutex);
-			return iTask != nullptr;
+			std::lock_guard<std::mutex> lk(iCondVarMutex);
+			return iActiveTask != nullptr;
 		}
-		void acquire(i_task& aTask)
+		bool idle() const
 		{
-			{
-				std::lock_guard<std::mutex> lk(iMutex);
-				if (iTask != nullptr)
-					throw already_have_task();
-				iTask = &aTask;
-			}
-			iConditionVariable.notify_one();
+			std::lock_guard<std::recursive_mutex> lk(sMutex);
+			std::lock_guard<std::mutex> lk2(iCondVarMutex);
+			return iActiveTask == nullptr && iWaitingTasks.empty();
 		}
-		bool release()
+		void add(std::shared_ptr<i_task> aTask, int32_t aPriority)
 		{
-			i_task* currentTask = nullptr;
+			std::lock_guard<std::recursive_mutex> lk(sMutex);
+			auto where = std::upper_bound(iWaitingTasks.begin(), iWaitingTasks.end(), task_queue_entry{ std::shared_ptr<i_task>{}, aPriority },
+				[](const task_queue_entry& aLeft, const task_queue_entry& aRight)
 			{
-				std::lock_guard<std::mutex> lk(iMutex);
-				if (iTask == nullptr)
-					throw no_task();
-				currentTask = iTask;
-				iTask = nullptr;
+				return aLeft.second < aRight.second;
+			});
+			iWaitingTasks.emplace(where, aTask, aPriority);
+			if (!active())
+				next_task();
+		}
+		bool steal_work(thread_pool_thread& aIdleThread)
+		{
+			std::unique_lock<std::recursive_mutex> lk(sMutex);
+			if (!iWaitingTasks.empty())
+			{
+				auto newTask = iWaitingTasks.back();
+				iWaitingTasks.pop_back();
+				aIdleThread.add(newTask.first, newTask.second);
+				return true;
 			}
-			iThreadPool.delete_task(*currentTask);
-			return !iThreadPool.too_many_threads();
+			return false;
+		}
+	private:
+		void next_task()
+		{
+			std::unique_lock<std::recursive_mutex> lk(sMutex);
+			if (active())
+				throw already_active();
+			if (iWaitingTasks.empty())
+				iThreadPool.steal_work(*this);
+			if (!iWaitingTasks.empty())
+			{
+				{
+					std::lock_guard<std::mutex> lk2(iCondVarMutex);
+					iActiveTask = iWaitingTasks.back().first;
+					iWaitingTasks.pop_back();
+				}
+				iConditionVariable.notify_one();
+			}
+		}
+		void release()
+		{
+			task_pointer currentTask;
+			{
+				std::lock_guard<std::mutex> lk(iCondVarMutex);
+				if (iActiveTask == nullptr)
+					throw no_active_task();
+				currentTask = iActiveTask;
+				iActiveTask = nullptr;
+			}
 		}
 	private:
 		thread_pool& iThreadPool;
-		mutable std::mutex iMutex;
+		mutable std::mutex iCondVarMutex;
+		static std::recursive_mutex sMutex;
 		std::condition_variable iConditionVariable;
-		i_task* iTask;
+		task_queue iWaitingTasks;
+		task_pointer iActiveTask;
 	};
 
-	thread_pool::thread_pool() : iMaxThreads{ 0 }, iPaused{ false }
+	std::recursive_mutex thread_pool_thread::sMutex;
+
+	thread_pool::thread_pool() : iMaxThreads{ 0 }
 	{
+		reserve(std::thread::hardware_concurrency());
 	}
 
 	void thread_pool::reserve(std::size_t aMaxThreads)
 	{
-		std::lock_guard<std::recursive_mutex> lk{ iMutex };
 		iMaxThreads = aMaxThreads;
 		while (iThreads.size() < iMaxThreads)
 			iThreads.push_back(std::make_unique<thread_pool_thread>(*this));
@@ -116,17 +160,15 @@ namespace neolib
 
 	std::size_t thread_pool::active_threads() const
 	{
-		std::lock_guard<std::recursive_mutex> lk{ iMutex };
 		std::size_t result = 0;
 		for (auto& t : iThreads)
-			if (static_cast<thread_pool_thread&>(*t).acquired())
+			if (static_cast<thread_pool_thread&>(*t).active())
 				++result;
 		return result;
 	}
 
 	std::size_t thread_pool::available_threads() const
 	{
-		std::lock_guard<std::recursive_mutex> lk{ iMutex };
 		return max_threads() - active_threads();
 	}
 
@@ -144,66 +186,40 @@ namespace neolib
 		return iMaxThreads;
 	}
 
-	std::size_t thread_pool::waiting_tasks() const
-	{
-		std::lock_guard<std::recursive_mutex> lk{ iMutex };
-		return iWaitingTasks.size();
-	}
-
-	std::size_t thread_pool::active_tasks() const
-	{
-		std::lock_guard<std::recursive_mutex> lk{ iMutex };
-		return iActiveTasks.size();
-	}
-
-	bool thread_pool::paused() const
-	{
-		std::lock_guard<std::recursive_mutex> lk{ iMutex };
-		return iPaused;
-	}
-
-	void thread_pool::pause()
-	{
-		std::lock_guard<std::recursive_mutex> lk{ iMutex };
-		iPaused = true;
-	}
-
-	void thread_pool::resume()
-	{
-		std::lock_guard<std::recursive_mutex> lk{ iMutex };
-		iPaused = false;
-		next_task();
-	}
-
 	void thread_pool::start(i_task& aTask, int32_t aPriority)
 	{
-		std::lock_guard<std::recursive_mutex> lk{ iMutex };
-		iWaitingTasks.emplace(free_slot(aPriority), std::shared_ptr<i_task>(std::shared_ptr<i_task>(), &aTask), aPriority);
-		next_task();
+		start(task_pointer{ task_pointer{}, &aTask }, aPriority);
 	}
 
 	void thread_pool::start(std::shared_ptr<i_task> aTask, int32_t aPriority)
 	{
-		std::lock_guard<std::recursive_mutex> lk{ iMutex };
-		iWaitingTasks.emplace(free_slot(aPriority), aTask, aPriority);
-		next_task();
+		if (iThreads.empty())
+			throw no_threads();
+		for (auto& t : iThreads)
+		{
+			auto& tpt = static_cast<thread_pool_thread&>(*t);
+			if (!tpt.active())
+			{
+				tpt.add(aTask, aPriority);
+				return;
+			}
+		}
+		static_cast<thread_pool_thread&>(*iThreads[0]).add(aTask, aPriority);
 	}
 
-	bool thread_pool::try_start(i_task& aTask)
+	bool thread_pool::try_start(i_task& aTask, int32_t aPriority)
 	{
-		std::lock_guard<std::recursive_mutex> lk{ iMutex };
 		if (available_threads() == 0)
 			return false;
-		start(aTask);
+		start(aTask, aPriority);
 		return true;
 	}
 
-	bool thread_pool::try_start(std::shared_ptr<i_task> aTask)
+	bool thread_pool::try_start(std::shared_ptr<i_task> aTask, int32_t aPriority)
 	{
-		std::lock_guard<std::recursive_mutex> lk{ iMutex };
 		if (available_threads() == 0)
 			return false;
-		start(aTask);
+		start(aTask, aPriority);
 		return true;
 	}
 
@@ -244,12 +260,26 @@ namespace neolib
 		}
 	}
 
-	std::future<void> thread_pool::run(std::function<void()> aFunction)
+	std::future<void> thread_pool::run(std::function<void()> aFunction, int32_t aPriority)
 	{
-		std::lock_guard<std::recursive_mutex> lk{ iMutex };
 		auto newTask = std::make_shared<function_task<void>>(aFunction);
-		start(newTask);
+		start(newTask, aPriority);
 		return newTask->get_future();
+	}
+
+	bool thread_pool::idle() const
+	{
+		for (auto& t : iThreads)
+		{
+			if (!static_cast<thread_pool_thread&>(*t).idle())
+				return false;
+		}
+		return true;
+	}
+
+	bool thread_pool::busy() const
+	{
+		return !idle();
 	}
 
 	thread_pool& thread_pool::default_thread_pool()
@@ -258,56 +288,17 @@ namespace neolib
 		return sDefaultThreadPool;
 	}
 
-	bool thread_pool::too_many_threads() const
+	void thread_pool::steal_work(thread_pool_thread& aIdleThread)
 	{
-		return max_threads() < total_threads();
-	}
-
-	thread_pool::task_queue::const_iterator thread_pool::free_slot(int32_t aPriority) const
-	{
-		return std::upper_bound(iWaitingTasks.begin(), iWaitingTasks.end(), task_queue_entry{ std::shared_ptr<i_task>{}, aPriority }, 
-			[](const task_queue_entry& aLeft, const task_queue_entry& aRight)
+		if (iThreads.empty())
+			throw no_threads();
+		for (auto& t : iThreads)
 		{
-			return aLeft.second < aRight.second;
-		});
-	}
-
-	void thread_pool::delete_task(i_task& aTask)
-	{
-		std::lock_guard<std::recursive_mutex> lk{ iMutex };
-		for (auto iterTask = iActiveTasks.begin(); iterTask != iActiveTasks.end(); ++iterTask)
-			if (&*iterTask->first == &aTask)
-			{
-				iActiveTasks.erase(iterTask);
-				break;
-			}
-	}
-
-	void thread_pool::next_task()
-	{
-		std::lock_guard<std::recursive_mutex> lk{ iMutex };
-		if (iPaused)
-			return;
-		bool exhuasted = false;
-		while (!iWaitingTasks.empty() && !exhuasted)
-		{
-			exhuasted = true;
-			for (auto iterThread = iThreads.begin(); iterThread != iThreads.end();)
-			{
-				if ((**iterThread).finished())
-					iterThread = iThreads.erase(iterThread);
-				else if (!static_cast<thread_pool_thread&>(**iterThread).acquired())
-				{
-					auto nextTask = iWaitingTasks.back();
-					iWaitingTasks.pop_back();
-					iActiveTasks.push_back(nextTask);
-					static_cast<thread_pool_thread&>(**iterThread).acquire(*iActiveTasks.back().first);
-					exhuasted = false;
-					break;
-				}
-				else
-					++iterThread;
-			}
+			if (&*t == &aIdleThread)
+				continue;
+			auto& tpt = static_cast<thread_pool_thread&>(*t);
+			if (tpt.steal_work(aIdleThread))
+				return;
 		}
 	}
 }

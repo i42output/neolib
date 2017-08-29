@@ -49,10 +49,12 @@ namespace neolib
 	class thread_pool
 	{
 		friend class thread_pool_thread;
+	public:
+		typedef std::shared_ptr<i_task> task_pointer;
+	public:
+		struct no_threads : std::logic_error { no_threads() : std::logic_error("neolib::thread_pool::no_threads") {} };
 	private:
 		typedef std::vector<std::unique_ptr<i_thread>> thread_list;
-		typedef std::pair<std::shared_ptr<i_task>, int32_t> task_queue_entry;
-		typedef std::vector<task_queue_entry> task_queue;
 	public:
 		thread_pool();
 	public:
@@ -61,41 +63,31 @@ namespace neolib
 		std::size_t available_threads() const;
 		std::size_t total_threads() const;
 		std::size_t max_threads() const;
-		std::size_t waiting_tasks() const;
-		std::size_t active_tasks() const;
-	public:
-		bool paused() const;
-		void pause();
-		void resume();
 	public:
 		void start(i_task& aTask, int32_t aPriority = 0);
 		void start(std::shared_ptr<i_task> aTask, int32_t aPriority = 0);
-		bool try_start(i_task& aTask);
-		bool try_start(std::shared_ptr<i_task> aTask);
-		std::future<void> run(std::function<void()> aFunction);
+		bool try_start(i_task& aTask, int32_t aPriority = 0);
+		bool try_start(std::shared_ptr<i_task> aTask, int32_t aPriority = 0);
+		std::future<void> run(std::function<void()> aFunction, int32_t aPriority = 0);
 		template <typename T>
-		std::future<T> run(std::function<T()> aFunction);
+		std::future<T> run(std::function<T()> aFunction, int32_t aPriority = 0);
+	public:
+		bool idle() const;
+		bool busy() const;
 	public:
 		static thread_pool& default_thread_pool();
 	private:
-		bool too_many_threads() const;
-		task_queue::const_iterator free_slot(int32_t aPriority) const;
-		void delete_task(i_task& aTask);
-		void next_task();
+		void steal_work(thread_pool_thread& aIdleThread);
 	private:
-		mutable std::recursive_mutex iMutex;
 		std::size_t iMaxThreads;
 		thread_list iThreads;
-		task_queue iWaitingTasks;
-		task_queue iActiveTasks;
-		bool iPaused;
 	};
 
 	template <typename T>
-	inline std::future<T> thread_pool::run(std::function<T()> aFunction)
+	inline std::future<T> thread_pool::run(std::function<T()> aFunction, int32_t aPriority)
 	{
 		auto newTask = std::make_shared<function_task<T>>(aFunction);
-		start(newTask);
+		start(newTask, aPriority);
 		return newTask->get_future();
 	}
 }
