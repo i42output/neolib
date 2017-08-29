@@ -76,9 +76,11 @@ namespace neolib
 		bool busy() const;
 	public:
 		static thread_pool& default_thread_pool();
+		std::recursive_mutex& mutex() const;
 	private:
 		void steal_work(thread_pool_thread& aIdleThread);
 	private:
+		mutable std::recursive_mutex iMutex;
 		std::size_t iMaxThreads;
 		thread_list iThreads;
 	};
