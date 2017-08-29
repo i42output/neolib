@@ -74,15 +74,19 @@ namespace neolib
 	public:
 		bool idle() const;
 		bool busy() const;
+		void wait();
 	public:
 		static thread_pool& default_thread_pool();
 		std::recursive_mutex& mutex() const;
 	private:
 		void steal_work(thread_pool_thread& aIdleThread);
+		void thread_gone_idle();
 	private:
 		mutable std::recursive_mutex iMutex;
 		std::size_t iMaxThreads;
 		thread_list iThreads;
+		mutable std::mutex iWaitMutex;
+		std::condition_variable iWaitConditionVariable;
 	};
 
 	template <typename T>

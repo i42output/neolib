@@ -123,6 +123,8 @@ namespace neolib
 				}
 				iConditionVariable.notify_one();
 			}
+			else
+				iThreadPool.thread_gone_idle();
 		}
 		void release()
 		{
@@ -280,6 +282,12 @@ namespace neolib
 		return !idle();
 	}
 
+	void thread_pool::wait()
+	{
+		std::unique_lock<std::mutex> lk(iWaitMutex);
+		iWaitConditionVariable.wait(lk, [this] { return idle(); });
+	}
+
 	thread_pool& thread_pool::default_thread_pool()
 	{
 		static thread_pool sDefaultThreadPool;
@@ -303,5 +311,10 @@ namespace neolib
 			if (tpt.steal_work(aIdleThread))
 				return;
 		}
+	}
+
+	void thread_pool::thread_gone_idle()
+	{
+		iWaitConditionVariable.notify_one();
 	}
 }
