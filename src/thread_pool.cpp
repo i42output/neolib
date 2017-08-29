@@ -153,6 +153,7 @@ namespace neolib
 
 	void thread_pool::reserve(std::size_t aMaxThreads)
 	{
+		std::lock_guard<std::recursive_mutex> lk(iMutex);
 		iMaxThreads = aMaxThreads;
 		while (iThreads.size() < iMaxThreads)
 			iThreads.push_back(std::make_unique<thread_pool_thread>(*this));
@@ -160,6 +161,7 @@ namespace neolib
 
 	std::size_t thread_pool::active_threads() const
 	{
+		std::lock_guard<std::recursive_mutex> lk(iMutex);
 		std::size_t result = 0;
 		for (auto& t : iThreads)
 			if (static_cast<thread_pool_thread&>(*t).active())
@@ -169,11 +171,13 @@ namespace neolib
 
 	std::size_t thread_pool::available_threads() const
 	{
+		std::lock_guard<std::recursive_mutex> lk(iMutex);
 		return max_threads() - active_threads();
 	}
 
 	std::size_t thread_pool::total_threads() const
 	{
+		std::lock_guard<std::recursive_mutex> lk(iMutex);
 		std::size_t result = 0;
 		for (auto& t : iThreads)
 			if (!static_cast<thread_pool_thread&>(*t).finished())
@@ -193,6 +197,7 @@ namespace neolib
 
 	void thread_pool::start(std::shared_ptr<i_task> aTask, int32_t aPriority)
 	{
+		std::lock_guard<std::recursive_mutex> lk(iMutex);
 		if (iThreads.empty())
 			throw no_threads();
 		for (auto& t : iThreads)
@@ -269,6 +274,7 @@ namespace neolib
 
 	bool thread_pool::idle() const
 	{
+		std::lock_guard<std::recursive_mutex> lk(iMutex);
 		for (auto& t : iThreads)
 		{
 			if (!static_cast<thread_pool_thread&>(*t).idle())
@@ -282,7 +288,7 @@ namespace neolib
 		return !idle();
 	}
 
-	void thread_pool::wait()
+	void thread_pool::wait() const
 	{
 		std::unique_lock<std::mutex> lk(iWaitMutex);
 		iWaitConditionVariable.wait(lk, [this] { return idle(); });
@@ -301,6 +307,7 @@ namespace neolib
 
 	void thread_pool::steal_work(thread_pool_thread& aIdleThread)
 	{
+		std::lock_guard<std::recursive_mutex> lk(iMutex);
 		if (iThreads.empty())
 			throw no_threads();
 		for (auto& t : iThreads)
