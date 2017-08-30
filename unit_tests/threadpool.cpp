@@ -15,7 +15,7 @@ void benchmark_thread_pool()
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 	
 	for (int i = 0; i < ITERATIONS; ++i)
-		threadPool.run([ITERATIONS, i, &v]()
+		threadPool.run([i, &v]()
 	{ 
 		v[i] = i;
 	});
