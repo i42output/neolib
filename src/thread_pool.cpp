@@ -47,7 +47,7 @@ namespace neolib
 	public:
 		typedef std::shared_ptr<i_task> task_pointer;
 		typedef std::pair<task_pointer, int32_t> task_queue_entry;
-		typedef std::vector<task_queue_entry> task_queue;
+		typedef std::deque<task_queue_entry> task_queue;
 	public:
 		struct no_active_task : std::logic_error { no_active_task() : std::logic_error("neolib::thread_pool_thread::no_active_task") {} };
 		struct already_active : std::logic_error { already_active() : std::logic_error("neolib::thread_pool_thread::already_active") {} };
@@ -89,7 +89,7 @@ namespace neolib
 			auto where = std::upper_bound(iWaitingTasks.begin(), iWaitingTasks.end(), task_queue_entry{ std::shared_ptr<i_task>{}, aPriority },
 				[](const task_queue_entry& aLeft, const task_queue_entry& aRight)
 			{
-				return aLeft.second < aRight.second;
+				return aLeft.second > aRight.second;
 			});
 			iWaitingTasks.emplace(where, aTask, aPriority);
 			if (!active())
@@ -100,8 +100,8 @@ namespace neolib
 			std::unique_lock<std::recursive_mutex> lk(iPoolMutex);
 			if (!iWaitingTasks.empty())
 			{
-				auto newTask = iWaitingTasks.back();
-				iWaitingTasks.pop_back();
+				auto newTask = iWaitingTasks.front();
+				iWaitingTasks.pop_front();
 				aIdleThread.add(newTask.first, newTask.second);
 				return true;
 			}
@@ -119,8 +119,8 @@ namespace neolib
 			{
 				{
 					std::lock_guard<std::mutex> lk2(iCondVarMutex);
-					iActiveTask = iWaitingTasks.back().first;
-					iWaitingTasks.pop_back();
+					iActiveTask = iWaitingTasks.front().first;
+					iWaitingTasks.pop_front();
 				}
 				iConditionVariable.notify_one();
 			}
