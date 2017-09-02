@@ -266,11 +266,11 @@ namespace neolib
 		}
 	}
 
-	std::pair<std::future<void>, i_task*> thread_pool::run(std::function<void()> aFunction, int32_t aPriority)
+	std::pair<std::future<void>, thread_pool::task_pointer> thread_pool::run(std::function<void()> aFunction, int32_t aPriority)
 	{
 		auto newTask = std::make_shared<function_task<void>>(aFunction);
 		start(newTask, aPriority);
-		return std::make_pair(newTask->get_future(), &*newTask);
+		return std::make_pair(newTask->get_future(), newTask);
 	}
 
 	bool thread_pool::idle() const

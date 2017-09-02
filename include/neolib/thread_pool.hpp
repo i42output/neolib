@@ -66,12 +66,12 @@ namespace neolib
 		std::size_t max_threads() const;
 	public:
 		void start(i_task& aTask, int32_t aPriority = 0);
-		void start(std::shared_ptr<i_task> aTask, int32_t aPriority = 0);
+		void start(task_pointer aTask, int32_t aPriority = 0);
 		bool try_start(i_task& aTask, int32_t aPriority = 0);
-		bool try_start(std::shared_ptr<i_task> aTask, int32_t aPriority = 0);
-		std::pair<std::future<void>, i_task*> run(std::function<void()> aFunction, int32_t aPriority = 0);
+		bool try_start(task_pointer aTask, int32_t aPriority = 0);
+		std::pair<std::future<void>, task_pointer> run(std::function<void()> aFunction, int32_t aPriority = 0);
 		template <typename T>
-		std::pair<std::future<T>, i_task*> run(std::function<T()> aFunction, int32_t aPriority = 0);
+		std::pair<std::future<T>, task_pointer> run(std::function<T()> aFunction, int32_t aPriority = 0);
 		bool cancel(i_task& aTask);
 	public:
 		bool idle() const;
@@ -92,10 +92,10 @@ namespace neolib
 	};
 
 	template <typename T>
-	inline std::pair<std::future<T>, i_task*> thread_pool::run(std::function<T()> aFunction, int32_t aPriority)
+	inline std::pair<std::future<T>, thread_pool::task_pointer> thread_pool::run(std::function<T()> aFunction, int32_t aPriority)
 	{
 		auto newTask = std::make_shared<function_task<T>>(aFunction);
 		start(newTask, aPriority);
-		return std::make_pair(newTask->get_future(), &*newTask);
+		return std::make_pair(newTask->get_future(), newTask);
 	}
 }
