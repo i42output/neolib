@@ -42,7 +42,7 @@
 #include <future>
 #include <mutex>
 #include "i_thread.hpp"
-#include "i_task.hpp"
+#include "task.hpp"
 
 namespace neolib
 {
@@ -53,6 +53,7 @@ namespace neolib
 		typedef std::shared_ptr<i_task> task_pointer;
 	public:
 		struct no_threads : std::logic_error { no_threads() : std::logic_error("neolib::thread_pool::no_threads") {} };
+		struct task_not_found : std::logic_error { task_not_found() : std::logic_error("neolib::thread_pool::task_not_found") {} };
 	private:
 		typedef std::vector<std::unique_ptr<i_thread>> thread_list;
 	public:
@@ -68,9 +69,10 @@ namespace neolib
 		void start(std::shared_ptr<i_task> aTask, int32_t aPriority = 0);
 		bool try_start(i_task& aTask, int32_t aPriority = 0);
 		bool try_start(std::shared_ptr<i_task> aTask, int32_t aPriority = 0);
-		std::future<void> run(std::function<void()> aFunction, int32_t aPriority = 0);
+		std::pair<std::future<void>, i_task*> run(std::function<void()> aFunction, int32_t aPriority = 0);
 		template <typename T>
-		std::future<T> run(std::function<T()> aFunction, int32_t aPriority = 0);
+		std::pair<std::future<T>, i_task*> run(std::function<T()> aFunction, int32_t aPriority = 0);
+		bool cancel(i_task& aTask);
 	public:
 		bool idle() const;
 		bool busy() const;
@@ -90,10 +92,10 @@ namespace neolib
 	};
 
 	template <typename T>
-	inline std::future<T> thread_pool::run(std::function<T()> aFunction, int32_t aPriority)
+	inline std::pair<std::future<T>, i_task*> thread_pool::run(std::function<T()> aFunction, int32_t aPriority)
 	{
 		auto newTask = std::make_shared<function_task<T>>(aFunction);
 		start(newTask, aPriority);
-		return newTask->get_future();
+		return std::make_pair(newTask->get_future(), &*newTask);
 	}
 }

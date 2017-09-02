@@ -271,6 +271,7 @@
     <ClInclude Include="..\..\..\include\neolib\string_utils.hpp" />
     <ClInclude Include="..\..\..\include\neolib\tag_array.hpp" />
     <ClInclude Include="..\..\..\include\neolib\targetver.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\task.hpp" />
     <ClInclude Include="..\..\..\include\neolib\tcp_packet_stream_server.hpp" />
     <ClInclude Include="..\..\..\include\neolib\thread.hpp" />
     <ClInclude Include="..\..\..\include\neolib\thread_pool.hpp" />

@@ -1,4 +1,4 @@
-// i_task.hpp v1.0
+// task.hpp v1.0
 /*
  *  Copyright (c) 2017 Leigh Johnston.
  *
@@ -36,19 +36,36 @@
 #pragma once
 
 #include "neolib.hpp"
-#include <string>
+#include "i_task.hpp"
 
 namespace neolib
 {
-	class i_task
+	class task : public i_task
 	{
+		// construction
+	public:
+		task(const std::string& aName = std::string{}) : iName{ aName }, iCancelled{ false }
+		{
+		}
 		// operations
 	public:
-		virtual const std::string& name() const = 0;
+		const std::string& name() const override
+		{
+			return iName;
+		}
 		// implementation
 	public:
-		virtual void run() = 0;
-		virtual void cancel() = 0;
-		virtual bool cancelled() const = 0;
+		void cancel() override
+		{
+			iCancelled = true;
+		}
+		bool cancelled() const override
+		{
+			return iCancelled;
+		}
+		// attributes
+	private:
+		std::string iName;
+		bool iCancelled;
 	};
 }

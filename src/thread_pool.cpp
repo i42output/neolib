@@ -64,7 +64,8 @@ namespace neolib
 				std::unique_lock<std::mutex> lk(iCondVarMutex);
 				iConditionVariable.wait(lk, [this] { return iActiveTask != nullptr; });
 				lk.unlock();
-				iActiveTask->run();
+				if (!iActiveTask->cancelled())
+					iActiveTask->run();
 				std::lock_guard<std::recursive_mutex> lk2(iPoolMutex);
 				release();
 				next_task();
@@ -231,10 +232,10 @@ namespace neolib
 	namespace
 	{
 		template <typename T>
-		class function_task : public i_task
+		class function_task : public task
 		{
 		public:
-			function_task(std::function<T()> aFunction) : iFunction{ aFunction }
+			function_task(std::function<T()> aFunction) : task{}, iFunction { aFunction }
 			{
 			}
 		public:
@@ -265,11 +266,11 @@ namespace neolib
 		}
 	}
 
-	std::future<void> thread_pool::run(std::function<void()> aFunction, int32_t aPriority)
+	std::pair<std::future<void>, i_task*> thread_pool::run(std::function<void()> aFunction, int32_t aPriority)
 	{
 		auto newTask = std::make_shared<function_task<void>>(aFunction);
 		start(newTask, aPriority);
-		return newTask->get_future();
+		return std::make_pair(newTask->get_future(), &*newTask);
 	}
 
 	bool thread_pool::idle() const
