@@ -36,6 +36,7 @@
 #pragma once
 
 #include "neolib.hpp"
+#include <atomic>
 #include "i_task.hpp"
 
 namespace neolib
@@ -66,6 +67,6 @@ namespace neolib
 		// attributes
 	private:
 		std::string iName;
-		bool iCancelled;
+		std::atomic<bool> iCancelled;
 	};
 }
