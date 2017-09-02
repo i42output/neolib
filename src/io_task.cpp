@@ -67,18 +67,13 @@ namespace neolib
 	}
 
 	io_task::io_task(i_thread& aThread, const std::string& aName) :
-		iThread{ aThread }, iName { aName }, iTimerIoService{ *this }, iNetworkingIoService{ *this }, iHalted{ false }
+		task{ aName }, iThread{ aThread }, iTimerIoService{ *this }, iNetworkingIoService{ *this }, iHalted{ false }
 	{
 	}
 
 	i_thread& io_task::thread() const
 	{
 		return iThread;
-	}
-
-	const std::string& io_task::name() const
-	{
-		return iName;
 	}
 
 	bool io_task::do_io(yield_type aYieldIfNoWork)

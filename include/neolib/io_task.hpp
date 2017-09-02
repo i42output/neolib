@@ -38,7 +38,7 @@
 #include "neolib.hpp"
 #include <boost/asio.hpp>
 #include "i_thread.hpp"
-#include "i_task.hpp"
+#include "task.hpp"
 #include "message_queue.hpp"
 
 namespace neolib
@@ -69,7 +69,7 @@ namespace neolib
 		Sleep
 	};
 
-	class io_task : public i_task
+	class io_task : public task
 	{
 		// types
 	private:
@@ -79,10 +79,9 @@ namespace neolib
 		struct no_message_queue : std::logic_error { no_message_queue() : std::logic_error("neolib::io_task::no_message_queue") {} };
 		// construction
 	public:
-		io_task(i_thread& aThread, const std::string& aName = "");
+		io_task(i_thread& aThread, const std::string& aName = std::string{});
 		// operations
 	public:
-		const std::string& name() const override;
 		i_thread& thread() const;
 		bool do_io(yield_type aYieldIfNoWork = yield_type::NoYield);
 		io_service& timer_io_service() { return iTimerIoService; }
@@ -101,7 +100,6 @@ namespace neolib
 		// attributes
 	private:
 		i_thread& iThread;
-		std::string iName;
 		io_service iTimerIoService;
 		io_service iNetworkingIoService;
 		message_queue_pointer iMessageQueue;
