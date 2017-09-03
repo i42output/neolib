@@ -42,6 +42,9 @@ namespace neolib
 {
 	class i_task
 	{
+		// construction
+	public:
+		virtual ~i_task() {}
 		// operations
 	public:
 		virtual const std::string& name() const = 0;
