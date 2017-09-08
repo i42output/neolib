@@ -44,7 +44,6 @@
 #include <iterator>
 #include <type_traits>
 #include <vector>
-#include "align.hpp"
 
 namespace neolib
 {
@@ -416,8 +415,7 @@ namespace neolib
 	private:
 		union
 		{
-			max_align alignTo;
-			char iData[sizeof(T) * ArraySize];
+			alignas(T) char iData[sizeof(T) * ArraySize];
 			char iVector[sizeof(vector_type)];
 		} iAlignedBuffer;
 		size_type iSize;

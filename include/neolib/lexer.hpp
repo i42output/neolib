@@ -587,12 +587,12 @@ namespace neolib
 		{
 			context newContext{ *this };
 			newContext.iInput = stream_pointer(stream_pointer{}, &aStream);
-			return context;
+			return newContext;
 		}
-		context use(const std::string& aStyleSheet) const
+		context use(const std::string& aText) const
 		{
 			context newContext{ *this };
-			newContext.iInput = std::make_sahred<std::istringstream>(aStyleSheet);
+			newContext.iInput = std::make_shared<std::istringstream>(aText);
 			return newContext;
 		}
 	private:

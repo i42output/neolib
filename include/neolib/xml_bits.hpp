@@ -635,7 +635,7 @@ namespace neolib
 					string content(contentToken.first, contentToken.second);
 					strip_if(content);
 					bool hasContent = false;
-					for (typename string::const_iterator i = content.begin(); !hasContent && i != content.end(); ++i)
+					for (typename string::const_iterator i = content.cbegin(); !hasContent && i != content.cend(); ++i)
 					{
 						switch(*i)
 						{
@@ -769,12 +769,12 @@ namespace neolib
 				document.append(buffer, static_cast<typename string::size_type>(aStream.gcount()));
 		}
 
-		tag nextTag = next_tag(document.begin(), document.end());		
-		while (nextTag.first != document.end())
+		tag nextTag = next_tag(document.cbegin(), document.cend());		
+		while (nextTag.first != document.cend())
 		{
-			while(nextTag.first != document.end() && nextTag.first == nextTag.second)
-				nextTag = next_tag(nextTag.first, document.end());
-			nextTag = next_tag(parse(iDocument, nextTag, document.end()), document.end());
+			while(nextTag.first != document.cend() && nextTag.first == nextTag.second)
+				nextTag = next_tag(nextTag.first, document.cend());
+			nextTag = next_tag(parse(iDocument, nextTag, document.cend()), document.cend());
 		};
 
 		return got_root();

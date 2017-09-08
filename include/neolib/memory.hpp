@@ -44,7 +44,6 @@
 #include <new>
 #include <stdexcept>
 #include <memory>
-#include "align.hpp"
 #include "detail_memory.hpp"
 
 namespace neolib
@@ -73,11 +72,7 @@ namespace neolib
 		struct chunk
 		{
 			enum { size = ChunkSize};
-			union 
-			{
-				max_align alignTo;
-				char iMem[size];
-			};
+			alignas(T) char iMem[size];
 			chunk* iNext;
 		};
 		struct pool
@@ -200,11 +195,10 @@ namespace neolib
 			size_type iElementSize;
 			union
 			{
-				max_align alignTo;
 				union
 				{
-					char a[sizeof(T)];
-					char b[sizeof(link)];
+					alignas(T) char a[sizeof(T)];
+					alignas(link) char b[sizeof(link)];
 				} iBuffer[N];
 			} iBuffer;
 			char* iMem;
