@@ -1,6 +1,6 @@
-// uuid.hpp - v1.0
+// uuid.hpp - v1.0.1
 /*
- *  Copyright (c) 2014 Leigh Johnston.
+ *  Copyright (c) 2017 Leigh Johnston.
  *
  *  All rights reserved.
  *
