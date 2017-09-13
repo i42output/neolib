@@ -44,6 +44,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <boost/functional/hash.hpp>
 
 namespace neolib
 {
@@ -113,4 +114,18 @@ namespace neolib
 		oss << aId;
 		return oss.str();
 	}
+}
+
+namespace std
+{
+	template <> struct hash<neolib::uuid>
+	{
+		typedef neolib::uuid argument_type;
+		typedef std::size_t result_type;
+		result_type operator()(argument_type const& aUuid) const
+		{
+			auto const& t = std::tie(aUuid.iPart1, aUuid.iPart2, aUuid.iPart3, aUuid.iPart4, aUuid.iPart5);
+			return boost::hash<decltype(t)>{}(t);
+		}
+	};
 }
