@@ -39,6 +39,7 @@
 #include <string>
 #include <cstdint>
 #include <array>
+#include <tuple>
 #include <utility>
 #include <iostream>
 #include <sstream>
@@ -65,21 +66,10 @@ namespace neolib
 		return !(lhs == rhs);
 	}
 
-	inline std::pair<uint64_t, uint64_t> uuid_to_key(const uuid& id)
-	{
-		return std::pair<uint64_t, uint64_t>(static_cast<uint64_t>(id.iPart1) << 32 | static_cast<uint64_t>(id.iPart2) << 16 | static_cast<uint64_t>(id.iPart3),
-			static_cast<uint64_t>(id.iPart4) << 48
-			| static_cast<uint64_t>(id.iPart5[0]) << 40
-			| static_cast<uint64_t>(id.iPart5[1]) << 32
-			| static_cast<uint64_t>(id.iPart5[2]) << 24
-			| static_cast<uint64_t>(id.iPart5[3]) << 16
-			| static_cast<uint64_t>(id.iPart5[4]) << 8
-			| static_cast<uint64_t>(id.iPart5[5]));
-	}
-
 	inline bool operator<(const uuid& lhs, const uuid& rhs)
 	{
-		return uuid_to_key(lhs) < uuid_to_key(rhs);
+		return std::tie(lhs.iPart1, lhs.iPart2, lhs.iPart3, lhs.iPart4, lhs.iPart5) <
+			std::tie(rhs.iPart1, rhs.iPart2, rhs.iPart3, rhs.iPart4, rhs.iPart5);
 	}
 
 	inline uuid make_uuid(const std::string& aHyphenatedHexString /* "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" */)
