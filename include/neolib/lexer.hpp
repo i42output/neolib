@@ -323,18 +323,16 @@ namespace neolib
 					iParent.get_token(*this, atom);
 					if (*this)
 						aToken = lexer_token_type{ atom.token(), atom.token_value() };
-					return *this;
 				}
 				catch (std::exception& e)
 				{
 					throw_with_info<std::exception>(e.what());
-					throw; // removes annoying compiler warning (not all control paths return a value) 
 				}
 				catch (...)
 				{
 					throw_with_info<std::exception>("unknown exception");
-					throw; // removes annoying compiler warning (not all control paths return a value) 
 				}
+				return *this;
 			}
 			explicit operator bool() const
 			{
