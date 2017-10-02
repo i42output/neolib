@@ -44,6 +44,7 @@
 #include <iterator>
 #include <type_traits>
 #include <stdexcept>
+#include <iostream>
 #include <boost/utility/string_view.hpp>
 #include <neolib/variant.hpp>
 
@@ -875,4 +876,10 @@ private:
 	std::set<wchar_t> iMap;
 };
 
+template <typename Elem, typename Traits, typename Alloc>
+inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const quick_string<Elem, Traits, Alloc>& aString)
+{
+	aStream << std::basic_string<Elem, Traits>{ aString.data(), aString.size() };
+	return aStream;
+}
 }
