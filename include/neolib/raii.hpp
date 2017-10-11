@@ -43,14 +43,18 @@ namespace neolib
 	{
 		bool& iFlag;
 		bool iSaved;
-		scoped_flag(bool& aFlag, bool aValue = true) : iFlag{ aFlag }, iSaved{ aFlag } { iFlag = aValue; }
-		~scoped_flag() { iFlag = iSaved; }
+		bool iIgnore;
+		scoped_flag(bool& aFlag, bool aValue = true) : iFlag{ aFlag }, iSaved{ aFlag }, iIgnore{ false } { iFlag = aValue; }
+		~scoped_flag() { if (!iIgnore) iFlag = iSaved; }
+		void ignore() { iIgnore = true; }
 	};
 
 	struct scoped_counter
 	{
 		uint32_t& iCounter;
-		scoped_counter(uint32_t& aCounter) : iCounter(aCounter) { ++iCounter; }
-		~scoped_counter() { --iCounter; }
+		bool iIgnore;
+		scoped_counter(uint32_t& aCounter) : iCounter(aCounter), iIgnore{ false } { ++iCounter; }
+		~scoped_counter() { if (!iIgnore) --iCounter; }
+		void ignore() { iIgnore = true; }
 	};
 }
