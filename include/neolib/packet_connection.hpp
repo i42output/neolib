@@ -432,7 +432,7 @@ namespace neolib
 				iConnected = true;
 				if (!iSecure)
 				{
-					destroyed_flag destroyed(*this);
+					destroyed_flag destroyed{ *this };
 					iOwner.connection_established();
 					if (destroyed)
 						return;
@@ -459,7 +459,7 @@ namespace neolib
 				return;
 			if (!aError)
 			{
-				destroyed_flag destroyed(*this);
+				destroyed_flag destroyed{ *this };
 				iOwner.connection_established();
 				if (destroyed)
 					return;
@@ -534,7 +534,7 @@ namespace neolib
 		}
 		void handle_write(const boost::system::error_code& aError, size_t)
 		{
-			destroyed_flag destroyed(*this);
+			destroyed_flag destroyed{ *this };
 			if (closed())
 				return;
 			const_packet_pointer sentPacket = iPacketBeingSent;
@@ -558,7 +558,7 @@ namespace neolib
 		}
 		void handle_read(const boost::system::error_code& aError, size_t aBytesTransferred)
 		{
-			destroyed_flag destroyed(*this);
+			destroyed_flag destroyed{ *this };
 			if (closed())
 				return;
 			if (!aError)
