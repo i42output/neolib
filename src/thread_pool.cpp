@@ -83,10 +83,10 @@ namespace neolib
 			std::lock_guard<std::mutex> lk2(iCondVarMutex);
 			return iActiveTask == nullptr && iWaitingTasks.empty();
 		}
-		void add(std::shared_ptr<i_task> aTask, int32_t aPriority)
+		void add(task_pointer aTask, int32_t aPriority)
 		{
 			std::lock_guard<std::recursive_mutex> lk(iPoolMutex);
-			auto where = std::upper_bound(iWaitingTasks.begin(), iWaitingTasks.end(), task_queue_entry{ std::shared_ptr<i_task>{}, aPriority },
+			auto where = std::upper_bound(iWaitingTasks.begin(), iWaitingTasks.end(), task_queue_entry{ task_pointer{}, aPriority },
 				[](const task_queue_entry& aLeft, const task_queue_entry& aRight)
 			{
 				return aLeft.second > aRight.second;
@@ -196,7 +196,7 @@ namespace neolib
 		start(task_pointer{ task_pointer{}, &aTask }, aPriority);
 	}
 
-	void thread_pool::start(std::shared_ptr<i_task> aTask, int32_t aPriority)
+	void thread_pool::start(task_pointer aTask, int32_t aPriority)
 	{
 		std::lock_guard<std::recursive_mutex> lk(iMutex);
 		if (iThreads.empty())
@@ -221,7 +221,7 @@ namespace neolib
 		return true;
 	}
 
-	bool thread_pool::try_start(std::shared_ptr<i_task> aTask, int32_t aPriority)
+	bool thread_pool::try_start(task_pointer aTask, int32_t aPriority)
 	{
 		if (available_threads() == 0)
 			return false;

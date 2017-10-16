@@ -74,7 +74,6 @@ namespace neolib
 		std::pair<std::future<void>, task_pointer> run(std::function<void()> aFunction, int32_t aPriority = 0);
 		template <typename T>
 		std::pair<std::future<T>, task_pointer> run(std::function<T()> aFunction, int32_t aPriority = 0);
-		bool cancel(i_task& aTask);
 	public:
 		bool idle() const;
 		bool busy() const;
