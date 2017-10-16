@@ -46,6 +46,8 @@
 
 namespace neolib
 {
+	class thread_pool_thread;
+
 	class thread_pool
 	{
 		friend class thread_pool_thread;

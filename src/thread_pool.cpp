@@ -229,43 +229,6 @@ namespace neolib
 		return true;
 	}
 
-	namespace
-	{
-		template <typename T>
-		class function_task : public task
-		{
-		public:
-			function_task(std::function<T()> aFunction) : task{}, iFunction { aFunction }
-			{
-			}
-		public:
-			std::future<T> get_future()
-			{
-				return iPromise.get_future();
-			}
-		public:
-			const std::string& name() const override
-			{
-				static std::string sName = "neogfx::{}::function_task";
-				return sName;
-			}
-			void run() override
-			{
-				iPromise.set_value(iFunction());
-			}
-		private:
-			std::function<T()> iFunction;
-			std::promise<T> iPromise;
-		};
-
-		template <>
-		inline void function_task<void>::run()
-		{
-			iFunction();
-			iPromise.set_value();
-		}
-	}
-
 	std::pair<std::future<void>, thread_pool::task_pointer> thread_pool::run(std::function<void()> aFunction, int32_t aPriority)
 	{
 		auto newTask = std::make_shared<function_task<void>>(aFunction);

@@ -36,6 +36,7 @@
 #pragma once
 
 #include "neolib.hpp"
+#include <future>
 #include <atomic>
 #include "i_task.hpp"
 
@@ -69,4 +70,38 @@ namespace neolib
 		std::string iName;
 		std::atomic<bool> iCancelled;
 	};
+
+	template <typename T>
+	class function_task : public task
+	{
+	public:
+		function_task(std::function<T()> aFunction) : task{}, iFunction{ aFunction }
+		{
+		}
+	public:
+		std::future<T> get_future()
+		{
+			return iPromise.get_future();
+		}
+	public:
+		const std::string& name() const override
+		{
+			static std::string sName = "neogfx::function_task";
+			return sName;
+		}
+		void run() override
+		{
+			iPromise.set_value(iFunction());
+		}
+	private:
+		std::function<T()> iFunction;
+		std::promise<T> iPromise;
+	};
+
+	template <>
+	inline void function_task<void>::run()
+	{
+		iFunction();
+		iPromise.set_value();
+	}
 }
