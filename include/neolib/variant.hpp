@@ -37,15 +37,12 @@
 
 #include "neolib.hpp"
 
-#ifndef BOOST_MPL_LIMIT_LIST_SIZE
-static_assert(false, "neolib variants require BOOST_MPL_LIMIT_LIST_SIZE >= 50");
-#endif
-static_assert(BOOST_MPL_LIMIT_LIST_SIZE >= 50, "neolib variants require BOOST_MPL_LIMIT_LIST_SIZE >= 50");
-
 #include <type_traits>
 #include <boost/variant.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/none_t.hpp>
+
+static_assert(BOOST_MPL_LIMIT_LIST_SIZE >= 50, "neolib variants require BOOST_MPL_LIMIT_LIST_SIZE >= 50");
 
 namespace boost
 {
