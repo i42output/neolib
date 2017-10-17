@@ -35,6 +35,8 @@
 
 #pragma once
 
+static_assert(BOOST_MPL_LIMIT_LIST_SIZE >= 50, "neolib variants require BOOST_MPL_LIMIT_LIST_SIZE >= 50");
+
 #include "neolib.hpp"
 #include <type_traits>
 #include <boost/variant.hpp>
