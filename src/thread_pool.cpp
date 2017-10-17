@@ -166,6 +166,7 @@ namespace neolib
 
 	thread_pool::~thread_pool()
 	{
+		wait();
 		for (auto& t : iThreads)
 			static_cast<thread_pool_thread&>(*t).stop();
 	}
