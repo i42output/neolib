@@ -37,6 +37,7 @@
 #pragma once
 
 #include <cstdint>
+#include <boost/mpl/limits/list.hpp>
 
 namespace std
 {
@@ -49,8 +50,10 @@ namespace std
 
 #define USING_BOOST
 #define BOOST_BIND_NO_PLACEHOLDERS
-#define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
+#if BOOST_MPL_LIMIT_LIST_SIZE < 50
 #define BOOST_MPL_LIMIT_LIST_SIZE 50
+#define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
+#endif
 #define BOOST_ASIO_DISABLE_SMALL_BLOCK_RECYCLING
 
 #ifdef _WIN32
