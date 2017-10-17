@@ -60,6 +60,7 @@ namespace neolib
 		typedef std::vector<std::unique_ptr<i_thread>> thread_list;
 	public:
 		thread_pool();
+		~thread_pool();
 	public:
 		void reserve(std::size_t aMaxThreads);
 		std::size_t active_threads() const;

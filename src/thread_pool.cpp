@@ -52,7 +52,7 @@ namespace neolib
 		struct no_active_task : std::logic_error { no_active_task() : std::logic_error("neolib::thread_pool_thread::no_active_task") {} };
 		struct already_active : std::logic_error { already_active() : std::logic_error("neolib::thread_pool_thread::already_active") {} };
 	public:
-		thread_pool_thread(thread_pool& aThreadPool) : thread{ "neolib::thread_pool_thread" }, iThreadPool{ aThreadPool }, iPoolMutex{ aThreadPool.mutex() }
+		thread_pool_thread(thread_pool& aThreadPool) : thread{ "neolib::thread_pool_thread" }, iThreadPool{ aThreadPool }, iPoolMutex{ aThreadPool.mutex() }, iStopped{ false }
 		{
 			start();
 		}
@@ -62,8 +62,10 @@ namespace neolib
 			while (!finished())
 			{
 				std::unique_lock<std::mutex> lk(iCondVarMutex);
-				iConditionVariable.wait(lk, [this] { return iActiveTask != nullptr; });
+				iConditionVariable.wait(lk, [this] { return iActiveTask != nullptr || iStopped; });
 				lk.unlock();
+				if (iStopped)
+					return;
 				if (!iActiveTask->cancelled())
 					iActiveTask->run();
 				std::lock_guard<std::recursive_mutex> lk2(iPoolMutex);
@@ -107,6 +109,15 @@ namespace neolib
 			}
 			return false;
 		}
+		void stop()
+		{
+			{
+				std::lock_guard<std::mutex> lk(iCondVarMutex);
+				iStopped = true;
+			}
+			iConditionVariable.notify_one();
+			wait();
+		}
 	private:
 		void next_task()
 		{
@@ -145,11 +156,18 @@ namespace neolib
 		std::condition_variable iConditionVariable;
 		task_queue iWaitingTasks;
 		task_pointer iActiveTask;
+		bool iStopped;
 	};
 
 	thread_pool::thread_pool() : iMaxThreads{ 0 }
 	{
 		reserve(std::thread::hardware_concurrency());
+	}
+
+	thread_pool::~thread_pool()
+	{
+		for (auto& t : iThreads)
+			static_cast<thread_pool_thread&>(*t).stop();
 	}
 
 	void thread_pool::reserve(std::size_t aMaxThreads)

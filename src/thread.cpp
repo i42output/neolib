@@ -55,7 +55,7 @@ namespace neolib
 	{
 		if (!finished() && !using_existing_thread())
 			abort();
-		if (has_thread_object())
+		if (has_thread_object() && thread_object().joinable())
 			thread_object().join();
 	}
 
@@ -163,7 +163,8 @@ namespace neolib
 			throw thread_not_started();
 		if (in())
 			throw cannot_wait_on_self();
-		thread_object().join();
+		if (thread_object().joinable())
+			thread_object().join();
 	}
 
 	wait_result thread::wait(const event_list& aEventList) const
