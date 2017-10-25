@@ -1,4 +1,4 @@
-// uuid.hpp - v1.0.1
+// uuid.hpp - v1.1
 /*
  *  Copyright (c) 2017 Leigh Johnston.
  *
@@ -85,6 +85,10 @@ namespace neolib
 			result.iPart5[i] = static_cast<uint8_t>((bytes >> (5 - i) * 8) & 0xFF);
 		return result;
 	}
+
+	struct unable_to_generate_uuid : std::runtime_error { unable_to_generate_uuid() : std::runtime_error("neolib::unable_to_generate_uuid") {} };
+
+	uuid generate_uuid();
 
 	inline std::istream& operator>>(std::istream& aStream, uuid& aId)
 	{

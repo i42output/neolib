@@ -166,6 +166,7 @@
     <ClCompile Include="..\..\..\src\thread_pool.cpp" />
     <ClCompile Include="..\..\..\src\timer.cpp" />
     <ClCompile Include="..\..\..\src\uri.cpp" />
+    <ClCompile Include="..\..\..\src\uuid.cpp" />
     <ClCompile Include="..\..\..\src\win32\win32_message_queue.cpp" />
     <ClCompile Include="..\..\..\src\win32\win32_module.cpp" />
     <ClCompile Include="..\..\..\src\zip.cpp" />
