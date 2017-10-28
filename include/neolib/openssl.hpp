@@ -1,4 +1,4 @@
-// uuid.cpp - v1.1
+// openssl.hpp
 /*
  *  Copyright (c) 2017 Leigh Johnston.
  *
@@ -33,33 +33,25 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <neolib/neolib.hpp>
-#include <neolib/openssl.hpp>
-#include <neolib/uuid.hpp>
+#pragma once
+
+#include "neolib.hpp"
+#include <random>
 
 namespace neolib
 {
-	uuid generate_uuid()
+	class openssl
 	{
-		uint8_t key[16];
-		if (!openssl::instance().generate_key(key, sizeof(key)))
-			throw unable_to_generate_uuid();
-		uuid result{ 
-			*reinterpret_cast<const uint32_t*>(&key[0]),
-			*reinterpret_cast<const uint16_t*>(&key[sizeof uint32_t]),
-			*reinterpret_cast<const uint16_t*>(&key[sizeof uint32_t + sizeof uint16_t]),
-			*reinterpret_cast<const uint16_t*>(&key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t]),
-			{
-				key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 0],
-				key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 1],
-				key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 2],
-				key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 3],
-				key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 4],
-				key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 5]
-			}
-		};
-		result.iPart3 = static_cast<uint16_t>((result.iPart3 & (0x0FFF)) | (0x4 << 12));
-		result.iPart4 = static_cast<uint16_t>((result.iPart4 & (0b0011111111111111)) | (0b10 << 14));
-		return result;
-	}
+	private:
+		static const std::size_t SEED_BUFFER_SIZE = 8;
+	public:
+		openssl();
+		~openssl();
+		static openssl& instance();
+	public:
+		bool generate_key(uint8_t* aKeyBuffer, std::size_t aKeySize);
+	private:
+		bool need_entropy() const;
+		void generate_entropy();
+	};
 }

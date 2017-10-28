@@ -1,4 +1,4 @@
-// uuid.cpp - v1.1
+// openssl.cpp
 /*
  *  Copyright (c) 2017 Leigh Johnston.
  *
@@ -33,33 +33,49 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#pragma once
+
 #include <neolib/neolib.hpp>
+#include <openssl/opensslv.h>
+#include <openssl/rand.h>
 #include <neolib/openssl.hpp>
-#include <neolib/uuid.hpp>
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000
+static_assert(false, "OpenSSL version too old")
+#endif
 
 namespace neolib
 {
-	uuid generate_uuid()
+	openssl::openssl()
 	{
-		uint8_t key[16];
-		if (!openssl::instance().generate_key(key, sizeof(key)))
-			throw unable_to_generate_uuid();
-		uuid result{ 
-			*reinterpret_cast<const uint32_t*>(&key[0]),
-			*reinterpret_cast<const uint16_t*>(&key[sizeof uint32_t]),
-			*reinterpret_cast<const uint16_t*>(&key[sizeof uint32_t + sizeof uint16_t]),
-			*reinterpret_cast<const uint16_t*>(&key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t]),
-			{
-				key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 0],
-				key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 1],
-				key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 2],
-				key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 3],
-				key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 4],
-				key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 5]
-			}
-		};
-		result.iPart3 = static_cast<uint16_t>((result.iPart3 & (0x0FFF)) | (0x4 << 12));
-		result.iPart4 = static_cast<uint16_t>((result.iPart4 & (0b0011111111111111)) | (0b10 << 14));
-		return result;
+	}
+
+	openssl::~openssl()
+	{
+	}
+
+	openssl& openssl::instance()
+	{
+		static openssl sInstance;
+		return sInstance;
+	}
+
+	bool openssl::generate_key(uint8_t* aKeyBuffer, std::size_t aKeySize)
+	{
+		return RAND_bytes(aKeyBuffer, static_cast<int>(aKeySize)) == 1;
+	}
+
+	bool openssl::need_entropy() const
+	{
+		return RAND_status() == 0;
+	}
+
+	void openssl::generate_entropy()
+	{
+		thread_local std::random_device tRandomDevice;
+		thread_local std::random_device::result_type tSeedBuffer[SEED_BUFFER_SIZE];
+		for (std::size_t n = 0; n < SEED_BUFFER_SIZE; ++n)
+			tSeedBuffer[n] = tRandomDevice();
+		RAND_seed(tSeedBuffer, sizeof(tSeedBuffer));
 	}
 }

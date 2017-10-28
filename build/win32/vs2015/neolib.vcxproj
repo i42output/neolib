@@ -159,6 +159,7 @@
     <ClCompile Include="..\..\..\src\io_task.cpp" />
     <ClCompile Include="..\..\..\src\module.cpp" />
     <ClCompile Include="..\..\..\src\oauth.cpp" />
+    <ClCompile Include="..\..\..\src\openssl.cpp" />
     <ClCompile Include="..\..\..\src\os_version.cpp" />
     <ClCompile Include="..\..\..\src\plugin_manager.cpp" />
     <ClCompile Include="..\..\..\src\setting.cpp" />
@@ -243,6 +244,7 @@
     <ClInclude Include="..\..\..\include\neolib\neolib.hpp" />
     <ClInclude Include="..\..\..\include\neolib\oauth.hpp" />
     <ClInclude Include="..\..\..\include\neolib\observable.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\openssl.hpp" />
     <ClInclude Include="..\..\..\include\neolib\optional.hpp" />
     <ClInclude Include="..\..\..\include\neolib\os_version.hpp" />
     <ClInclude Include="..\..\..\include\neolib\packet_connection.hpp" />
