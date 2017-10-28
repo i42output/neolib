@@ -33,8 +33,6 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#pragma once
-
 #include <neolib/neolib.hpp>
 #include <openssl/opensslv.h>
 #include <openssl/rand.h>
@@ -62,6 +60,8 @@ namespace neolib
 
 	bool openssl::generate_key(uint8_t* aKeyBuffer, std::size_t aKeySize)
 	{
+		while (need_entropy())
+			generate_entropy();
 		return RAND_bytes(aKeyBuffer, static_cast<int>(aKeySize)) == 1;
 	}
 
