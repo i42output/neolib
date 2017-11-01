@@ -38,6 +38,7 @@
 #include "neolib.hpp"
 #include <set>
 #include <boost/pool/pool_alloc.hpp>
+#include <boost/optional.hpp>
 #include "i_destroyable.hpp"
 
 namespace neolib
@@ -72,18 +73,32 @@ namespace neolib
 		bool iDestroyed;
 	};
 
+	typedef boost::optional<neolib::destroyed_flag> optional_destroyed_flag;
+
 	class destroyable : public i_destroyable
 	{
 	public:
 		typedef neolib::destroyed_flag destroyed_flag;
 	public:
+		destroyable() : iDestroyed{ false }
+		{
+		}
 		virtual ~destroyable()
 		{
 			set_destroyed();
 		}
 	public:
+		bool destroyed() const override
+		{
+			return iDestroyed;
+		}
+		operator bool() const override
+		{
+			return iDestroyed;
+		}
 		void set_destroyed() override
 		{
+			iDestroyed = true;
 			for (auto flag : iDestroyedFlags)
 				flag->set_destroyed();
 		}
@@ -91,12 +106,15 @@ namespace neolib
 		void add_flag(i_destroyed_flag* aFlag) const override
 		{
 			iDestroyedFlags.insert(aFlag);
+			if (iDestroyed)
+				aFlag->set_destroyed();
 		}
 		void remove_flag(i_destroyed_flag* aFlag) const override
 		{
 			iDestroyedFlags.erase(aFlag);
 		}
 	private:
+		bool iDestroyed;
 		mutable std::set<i_destroyed_flag*, std::less<i_destroyed_flag*>, boost::fast_pool_allocator<i_destroyed_flag*>> iDestroyedFlags;
 	};
 }

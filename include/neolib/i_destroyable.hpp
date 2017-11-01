@@ -54,6 +54,8 @@ namespace neolib
 	public:
 		virtual ~i_destroyable() {}
 	public:
+		virtual bool destroyed() const = 0;
+		virtual operator bool() const = 0;
 		virtual void set_destroyed() = 0;
 	public:
 		virtual void add_flag(i_destroyed_flag* aFlag) const = 0;
