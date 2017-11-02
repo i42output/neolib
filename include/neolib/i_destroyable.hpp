@@ -1,6 +1,6 @@
 // i_destroyable.hpp
 /*
- *  Copyright (c) 2012 Leigh Johnston.
+ *  Copyright (c) 2012, 2017 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -44,18 +44,34 @@ namespace neolib
 	public:
 		virtual ~i_destroyed_flag() {}
 	public:
-		virtual bool destroyed() const = 0;
+		virtual bool is_alive() const = 0;
+		virtual bool is_destroying() const = 0;
+		virtual bool is_destroyed() const = 0;
 		virtual operator bool() const = 0;
+		virtual void set_destroying() = 0;
 		virtual void set_destroyed() = 0;
 	};
 
 	class i_destroyable
 	{
+		friend class destroyed_flag;
+	public:
+		struct already_destroyed : std::logic_error { already_destroyed() : std::logic_error("neolib::i_destroyable::already_destroyed") {} };
+	protected:
+		enum state_e
+		{
+			Alive,
+			Destroying,
+			Destroyed
+		};
 	public:
 		virtual ~i_destroyable() {}
 	public:
-		virtual bool destroyed() const = 0;
+		virtual bool is_alive() const = 0;
+		virtual bool is_destroying() const = 0;
+		virtual bool is_destroyed() const = 0;
 		virtual operator bool() const = 0;
+		virtual void set_destroying() = 0;
 		virtual void set_destroyed() = 0;
 	public:
 		virtual void add_flag(i_destroyed_flag* aFlag) const = 0;

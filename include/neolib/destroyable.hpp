@@ -1,6 +1,6 @@
 // destroyable.hpp
 /*
- *  Copyright (c) 2012 Leigh Johnston.
+ *  Copyright (c) 2012, 2017 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -46,31 +46,44 @@ namespace neolib
 	class destroyed_flag : public i_destroyed_flag
 	{
 	public:
-		destroyed_flag(const i_destroyable& aOwner) : iOwner(aOwner), iDestroyed(false)
+		destroyed_flag(const i_destroyable& aOwner) : iOwner(aOwner), iState(i_destroyable::Alive)
 		{
 			iOwner.add_flag(this);
 		}
 		~destroyed_flag()
 		{
-			if (!destroyed())
+			if (!is_destroyed())
 				iOwner.remove_flag(this);
 		}
 	public:
-		bool destroyed() const override
+		bool is_alive() const final
 		{
-			return iDestroyed;
+			return iState == i_destroyable::Alive;
 		}
-		operator bool() const override
+		bool is_destroying() const final
 		{
-			return iDestroyed;
+			return iState == i_destroyable::Destroying;
 		}
-		void set_destroyed() override
+		bool is_destroyed() const final
 		{
-			iDestroyed = true;
+			return iState == i_destroyable::Destroyed;
+		}
+		operator bool() const final
+		{
+			return !is_alive();
+		}
+		void set_destroying() final
+		{
+			iState = i_destroyable::Destroying;
+		}
+		void set_destroyed() final
+		{
+			iState = i_destroyable::Destroyed;
+			iOwner.remove_flag(this);
 		}
 	private:
 		const i_destroyable& iOwner;
-		bool iDestroyed;
+		i_destroyable::state_e iState;
 	};
 
 	typedef boost::optional<neolib::destroyed_flag> optional_destroyed_flag;
@@ -80,41 +93,80 @@ namespace neolib
 	public:
 		typedef neolib::destroyed_flag destroyed_flag;
 	public:
-		destroyable() : iDestroyed{ false }
+		destroyable() : iState{ Alive }
 		{
 		}
 		virtual ~destroyable()
 		{
-			set_destroyed();
+			if (!is_destroyed())
+			{
+				set_destroying();
+				set_destroyed();
+			}
 		}
 	public:
-		bool destroyed() const override
+		bool is_alive() const final
 		{
-			return iDestroyed;
+			return iState == Alive;
 		}
-		operator bool() const override
+		bool is_destroying() const final
 		{
-			return iDestroyed;
+			return iState == Destroying;
+		}
+		bool is_destroyed() const final
+		{
+			return iState == Destroyed;
+		}
+		operator bool() const final
+		{
+			return !is_alive();
+		}
+		void set_destroying() override
+		{
+			if (!is_destroying())
+			{
+				if (is_destroyed())
+					throw already_destroyed();
+				iState = Destroying;
+				for (auto i = iDestroyedFlags.begin(); i != iDestroyedFlags.end();)
+					(*i++)->set_destroying();
+			}
 		}
 		void set_destroyed() override
 		{
-			iDestroyed = true;
-			for (auto flag : iDestroyedFlags)
-				flag->set_destroyed();
+			if (!is_destroyed())
+			{
+				if (iState == Alive)
+					set_destroying();
+				iState = Destroyed;
+				for (auto i = iDestroyedFlags.begin(); i != iDestroyedFlags.end();)
+					(*i++)->set_destroyed();
+			}
 		}
 	public:
-		void add_flag(i_destroyed_flag* aFlag) const override
+		void add_flag(i_destroyed_flag* aFlag) const final
 		{
 			iDestroyedFlags.insert(aFlag);
-			if (iDestroyed)
+			switch (iState)
+			{
+			case Alive:
+				break;
+			case Destroying:
+				aFlag->set_destroying();
+				break;
+			case Destroyed:
+			default:
+				aFlag->set_destroying();
 				aFlag->set_destroyed();
+				break;
+			}
 		}
-		void remove_flag(i_destroyed_flag* aFlag) const override
+		void remove_flag(i_destroyed_flag* aFlag) const final
 		{
 			iDestroyedFlags.erase(aFlag);
 		}
 	private:
-		bool iDestroyed;
+		state_e iState;
 		mutable std::set<i_destroyed_flag*, std::less<i_destroyed_flag*>, boost::fast_pool_allocator<i_destroyed_flag*>> iDestroyedFlags;
 	};
 }
