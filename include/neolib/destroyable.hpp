@@ -70,7 +70,7 @@ namespace neolib
 		}
 		operator bool() const final
 		{
-			return !is_alive();
+			return is_destroyed();
 		}
 		void set_destroying() final
 		{
@@ -119,7 +119,7 @@ namespace neolib
 		}
 		operator bool() const final
 		{
-			return !is_alive();
+			return is_destroyed();
 		}
 		void set_destroying() override
 		{
