@@ -54,6 +54,10 @@ namespace neolib
 			friend index_array_tree;
 
 		public:
+			struct no_left_node : std::logic_error { no_left_node() : std::logic_error("neolib::index_array_tree::node::no_left_node") {} };
+			struct no_right_node : std::logic_error { no_right_node() : std::logic_error("neolib::index_array_tree::node::no_right_node") {} };
+
+		public:
 			enum color_e
 			{
 				NIL,
@@ -63,7 +67,11 @@ namespace neolib
 
 		public:
 			node(color_e aColor = RED) :
-				iColor(aColor), iParent(0), iLeft(0), iRight(0), iPrevious(0), iNext(0), iSize(0), iForeignIndex{}
+				iColor{ aColor }, iParent{ aColor != NIL ? nullptr : this }, iLeft{ aColor != NIL ? nullptr : this }, iRight{ aColor != NIL ? nullptr : this }, iPrevious{ nullptr }, iNext{ nullptr }, iSize{ 0 }, iForeignIndex{}
+			{
+			}
+			node(const node& aOther) :
+				iColor{ aOther.iColor }, iParent{ aOther.iColor != NIL ? nullptr : this }, iLeft{ aOther.iColor != NIL ? nullptr : this }, iRight{ aOther.iColor != NIL ? nullptr : this }, iPrevious{ nullptr }, iNext{ nullptr }, iSize{ 0 }, iForeignIndex{}
 			{
 			}
 			~node()
@@ -94,7 +102,9 @@ namespace neolib
 			}
 			node* left() const
 			{
-				return iLeft;
+				if (iLeft != nullptr)
+					return iLeft;
+				throw no_left_node();
 			}
 			void set_left(node* aLeft)
 			{
@@ -102,7 +112,9 @@ namespace neolib
 			}
 			node* right() const
 			{
-				return iRight;
+				if (iRight != nullptr)
+					return iRight;
+				throw no_right_node();
 			}
 			void set_right(node* aRight)
 			{
@@ -192,10 +204,19 @@ namespace neolib
 					parent()->set_left(this);
 				else if (parent()->right() == aGarbage)
 					parent()->set_right(this);
-				if (left() != aNil)
+				if (!left()->is_nil())
 					left()->set_parent(this);
-				if (right() != aNil)
+				if (!right()->is_nil())
 					right()->set_parent(this);
+				aGarbage->set_parent(nullptr);
+				aGarbage->set_left(nullptr);
+				aGarbage->set_right(nullptr);
+				if (aNil->parent() == aGarbage)
+					aNil->set_parent(this);
+				if (aNil->left() == aGarbage)
+					aNil->set_left(this);
+				if (aNil->right() == aGarbage)
+					aNil->set_right(this);
 			}
 
 		private:
@@ -415,8 +436,7 @@ namespace neolib
 				else
 					y->parent()->set_right(x);
 			}
-			if (y->color() == node::BLACK)
-				delete_fixup(x);
+			bool performDeleteFixup = (y->color() == node::BLACK);
 			if (y != z)
 			{
 				z->parent()->set_size(z->parent()->size() - z->size());
@@ -425,15 +445,9 @@ namespace neolib
 				y->iSize = y->size() - size_left(y) - size_right(y);
 				/* do not use set_foreign_index() as we don't want to propagate to ancestors */
 				y->iForeignIndex = y->foreign_index() - foreign_index_left(y) - foreign_index_right(y);
-				y->replace(z, iNil);
+				y->replace(z, nil_node());
 				if (root_node() == z)
 					set_root_node(y);
-				if (nil_node()->parent() == z)
-					nil_node()->set_parent(y);
-				if (nil_node()->left() == z)
-					nil_node()->set_left(y);
-				if (nil_node()->right() == z)
-					nil_node()->set_right(y);
 				/* do not use set_size() as we don't want to propagate to ancestors */
 				y->iSize = y->size() + size_left(y) + size_right(y);
 				/* do not use set_foreign_index() as we don't want to propagate to ancestors */
@@ -441,6 +455,8 @@ namespace neolib
 				y->parent()->set_size(y->parent()->size() + y->size());
 				y->parent()->set_foreign_index(y->parent()->foreign_index() + y->foreign_index());
 			}
+			if (performDeleteFixup)
+				delete_fixup(x);
 		}
 		void swap(index_array_tree& aOther)
 		{

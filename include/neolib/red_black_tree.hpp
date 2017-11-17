@@ -1,7 +1,7 @@
 /*
- *  array_tree.hpp
+ *  red_black_tree.hpp
  *
- *  Copyright (c) 2014-2016 Leigh Johnston.
+ *  Copyright (c) 2014-2017 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -40,22 +40,18 @@
 
 namespace neolib
 {
-	template <typename Alloc>
-	class array_tree
+	class red_black_tree
 	{
 	public:
-		typedef std::size_t size_type;
-		typedef std::ptrdiff_t difference_type;
-		typedef Alloc allocator_type;
+		struct already_have_left_node : std::logic_error { already_have_left_node() : std::logic_error("neolib::red_black_tree::already_have_left_node") {} };
+		struct already_have_right_node : std::logic_error { already_have_right_node() : std::logic_error("neolib::red_black_tree::already_have_right_node") {} };
 	protected:
 		class node
 		{
-			friend array_tree;
-
 		public:
-			struct no_left_node : std::logic_error { no_left_node() : std::logic_error("neolib::array_tree::node::no_left_node") {} };
-			struct no_right_node : std::logic_error { no_right_node() : std::logic_error("neolib::array_tree::node::no_right_node") {} };
-
+			struct no_left_node : std::logic_error { no_left_node() : std::logic_error("neolib::red_black_tree::node::no_left_node") {} };
+			struct no_right_node : std::logic_error { no_right_node() : std::logic_error("neolib::red_black_tree::node::no_right_node") {} };
+			struct no_sibling : std::logic_error { no_sibling() : std::logic_error("neolib::red_black_tree::node::no_sibling") {} };
 		public:
 			enum color_e
 			{
@@ -66,11 +62,11 @@ namespace neolib
 
 		public:
 			node(color_e aColor = RED) :
-				iColor{ aColor }, iParent{ aColor != NIL ? nullptr : this }, iLeft{ aColor != NIL ? nullptr : this }, iRight{ aColor != NIL ? nullptr : this }, iPrevious{ nullptr }, iNext{ nullptr }, iSize { 0 }
+				iColor{ aColor }, iParent{ aColor != NIL ? nullptr : this }, iLeft{ aColor != NIL ? nullptr : this }, iRight{ aColor != NIL ? nullptr : this }
 			{
 			}
 			node(const node& aOther) :
-				iColor{ aOther.iColor }, iParent{ aOther.iColor != NIL ? nullptr : this }, iLeft{ aOther.iColor != NIL ? nullptr : this }, iRight{ aOther.iColor != NIL ? nullptr : this }, iPrevious{ nullptr }, iNext{ nullptr }, iSize{ 0 }
+				iColor{ aOther.iColor }, iParent{ aOther.iColor != NIL ? nullptr : this }, iLeft{ aOther.iColor != NIL ? nullptr : this }, iRight{ aOther.iColor != NIL ? nullptr : this }
 			{
 			}
 			~node()
@@ -91,6 +87,10 @@ namespace neolib
 				if (iColor != NIL)
 					iColor = aColor;
 			}
+			bool has_parent() const
+			{
+				return iParent != nullptr && !iParent->is_nil();
+			}
 			node* parent() const
 			{
 				return iParent;
@@ -98,6 +98,10 @@ namespace neolib
 			void set_parent(node* aParent)
 			{
 				iParent = aParent;
+			}
+			bool has_left() const
+			{
+				return iLeft != nullptr && !iLeft->is_nil();
 			}
 			node* left() const
 			{
@@ -109,6 +113,10 @@ namespace neolib
 			{
 				iLeft = aLeft;
 			}
+			bool has_right() const
+			{
+				return iRight != nullptr && !iRight->is_nil();
+			}
 			node* right() const
 			{
 				if (iRight != nullptr)
@@ -119,46 +127,15 @@ namespace neolib
 			{
 				iRight = aRight;
 			}
-			node* previous() const
+			bool has_sibling() const
 			{
-				return iPrevious;
+				return has_parent() && ((parent()->left() == this && parent()->has_right()) || (parent()->right() == this && parent()->has_left()));
 			}
-			void set_previous(node* aPrevoius)
+			node* sibling() const
 			{
-				iPrevious = aPrevoius;
-			}
-			node* next() const
-			{
-				return iNext;
-			}
-			void set_next(node* aNext)
-			{
-				iNext = aNext;
-			}
-			size_type size() const
-			{
-				return iColor != NIL ? iSize : 0;
-			}
-			size_type left_size() const
-			{
-				return left() ? left()->size() : 0;
-			}
-			size_type right_size() const
-			{
-				return right() ? right()->size() : 0;
-			}
-			void set_size(size_type aSize)
-			{
-				if (!is_nil())
-				{
-					difference_type difference = aSize - iSize;
-					if (difference != 0)
-					{
-						iSize += difference;
-						if (parent() != 0 && !parent()->is_nil())
-							parent()->set_size(parent()->size() + difference);
-					}
-				}
+				if (has_sibling())
+					return parent()->left() == this ? parent()->right() : parent()->left();
+				throw no_sibling();
 			}
 			void replace(node* aGarbage, node* aNil)
 			{
@@ -190,43 +167,27 @@ namespace neolib
 			node* iParent;
 			node* iLeft;
 			node* iRight;
-			node* iPrevious;
-			node* iNext;
-			size_type iSize;
 		};
-	private:
-		typedef typename allocator_type:: template rebind<node>::other node_allocator_type;
 
 	public:
-		array_tree(const Alloc& aAllocator = Alloc()) :
-			iAllocator(aAllocator),
-			iRoot(0),
-			iFront(0),
-			iBack(0),
-			iNil(0)
+		red_black_tree() :
+			iRoot{ nullptr }, iNil{ node::NIL }
 		{
-			iNil = std::allocator_traits<node_allocator_type>::allocate(iAllocator, 1);
-			try
-			{
-				std::allocator_traits<node_allocator_type>::construct(iAllocator, iNil, node(node::NIL));
-			}
-			catch (...)
-			{
-				std::allocator_traits<node_allocator_type>::deallocate(iAllocator, iNil, 1);
-				throw;
-			}
-			set_root_node(iNil);
+			set_root_node(nil_node());
 		}
-		~array_tree()
+		~red_black_tree()
 		{
-			std::allocator_traits<node_allocator_type>::destroy(iAllocator, iNil);
-			std::allocator_traits<node_allocator_type>::deallocate(iAllocator, iNil, 1);
 		}
 
 	public:
+		void clear()
+		{
+			*nil_node() = node{ node::NIL };
+			set_root_node(nil_node());
+		}
 		node* nil_node() const
 		{
-			return iNil;
+			return &iNil;
 		}
 		node* root_node() const
 		{
@@ -236,100 +197,37 @@ namespace neolib
 		{
 			iRoot = aRoot;
 		}
-		node* front_node() const
-		{
-			return iFront;
-		}
-		void set_front_node(node* aFront)
-		{
-			iFront = aFront;
-		}
-		node* back_node() const
-		{
-			return iBack;
-		}
-		void set_back_node(node* aBack)
-		{
-			iBack = aBack;
-		}
-		static size_type size(node* aNode)
-		{
-			return aNode ? aNode->size() : 0;
-		}
-		static size_type size_parent(node* aNode)
-		{
-			return aNode && aNode->parent() ? aNode->parent()->size() : 0;
-		}
-		static size_type size_left(node* aNode)
-		{
-			return aNode && aNode->left() ? aNode->left()->size() : 0;
-		}
-		static size_type size_right(node* aNode)
-		{
-			return aNode && aNode->right() ? aNode->right()->size() : 0;
-		}
-		node* find_node(size_type aPosition, size_type& aNodeIndex) const
-		{
-			node* x = root_node();
-			size_type index = size_left(x);
-			while (x != nil_node() && (aPosition < index || aPosition >= index + (size(x) - size_left(x) - size_right(x))))
-			{
-				if (aPosition < index)
-				{
-					x = x->left();
-					index -= (size(x) - size_left(x));
-				}
-				else
-				{
-					index += size(x) - size_left(x) - size_right(x) + size_left(x->right());
-					x = x->right();
-				}
-			}
-			aNodeIndex = index;
-			return x;
-		}
-		void insert_node(node* aNode, size_type aPosition)
+		template <typename Predicate>
+		void insert_node(node* aNode, Predicate aPredicate, node* aHint = nullptr)
 		{
 			node* z = aNode;
 			node* y = nil_node();
-			node* x = root_node();
-			size_type index = size_left(x);
-			size_type previousIndex = index;
+			node* x = (aHint == nullptr ? root_node() : aHint);
 			while (x != nil_node())
 			{
-				previousIndex = index;
 				y = x;
-				if (aPosition <= index)
-				{
+				if (aPredicate(z, x))
 					x = x->left();
-					index -= (size(x) - size_left(x));
-				}
 				else
-				{
-					index += size(x) - size_left(x) - size_right(x) + size_left(x->right());
 					x = x->right();
-				}
 			}
 			z->set_parent(y);
 			if (y == nil_node())
 				set_root_node(z);
 			else
 			{
-				if (aPosition <= previousIndex)
+				if (aPredicate(z, y))
 					y->set_left(z);
 				else
 					y->set_right(z);
 			}
 			z->set_left(nil_node());
 			z->set_right(nil_node());
-			if (z->parent() != nil_node())
-				z->parent()->set_size(z->parent()->size() + z->size());
 			insert_fixup(z);
 		}
 		void delete_node(node* aNode)
 		{
 			node* z = aNode;
-			z->set_size(z->left_size() + z->right_size());
 			node *y;
 			if (z->left() == nil_node() || z->right() == nil_node())
 				y = z;
@@ -340,11 +238,6 @@ namespace neolib
 				x = y->left();
 			else
 				x = y->right();
-			if (y != z)
-			{
-				y->parent()->set_size(y->parent()->size() - y->size());
-				y->parent()->set_size(y->parent()->size() + x->size());
-			}
 			x->set_parent(y->parent());
 			if (y->parent() == nil_node())
 				set_root_node(x);
@@ -358,23 +251,16 @@ namespace neolib
 			bool performDeleteFixup = (y->color() == node::BLACK);
 			if (y != z)
 			{
-				z->parent()->set_size(z->parent()->size() - z->size());
-				y->iSize = y->size() - size_left(y) - size_right(y);
 				y->replace(z, nil_node());
 				if (root_node() == z)
 					set_root_node(y);
-				y->iSize = y->size() + size_left(y) + size_right(y);
-				y->parent()->set_size(y->parent()->size() + y->size());
 			}
 			if (performDeleteFixup)
 				delete_fixup(x);
 		}
-		void swap(array_tree& aOther)
+		void swap(red_black_tree& aOther)
 		{
-			std::swap(iAllocator, aOther.iAllocator);
 			std::swap(iRoot, aOther.iRoot);
-			std::swap(iFront, aOther.iFront);
-			std::swap(iBack, aOther.iBack);
 			std::swap(iNil, aOther.iNil);
 		}
 
@@ -450,11 +336,6 @@ namespace neolib
 			}
 			y->set_left(x);
 			x->set_parent(y);
-			size_type previousSize = y->size();
-			/* do not use set_size() as we don't want to propagate to ancestors */
-			y->iSize = x->size();
-			x->iSize -= previousSize;
-			x->iSize += x->right()->size();
 		}
 		void right_rotate(node* aNode)
 		{
@@ -475,11 +356,6 @@ namespace neolib
 			}
 			x->set_right(y);
 			y->set_parent(x);
-			size_type previousSize = x->size();
-			/* do not use set_size() as we don't want to propagate to ancestors */
-			x->iSize = y->size();
-			y->iSize -= previousSize;
-			y->iSize += y->left()->size();
 		}
 		node* tree_minimum(node* aNode)
 		{
@@ -573,10 +449,7 @@ namespace neolib
 		}
 
 	private:
-		node_allocator_type iAllocator;
 		node* iRoot;
-		node* iFront;
-		node* iBack;
-		node* iNil;
+		mutable node iNil;
 	};
 }
