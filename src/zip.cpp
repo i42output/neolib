@@ -206,7 +206,7 @@ namespace neolib
 		stream.avail_in = static_cast<uInt>(lh->iCompressedSize);
 		aBuffer.resize(lh->iUncompressedSize);
 		stream.next_out = static_cast<Bytef*>(&aBuffer[0]);
-		stream.avail_out = aBuffer.size();
+		stream.avail_out = static_cast<uInt>(aBuffer.size());
 		stream.zalloc = static_cast<alloc_func>(0);
 		stream.zfree = static_cast<free_func>(0);
 		int result = inflateInit2(&stream, -MAX_WBITS);
