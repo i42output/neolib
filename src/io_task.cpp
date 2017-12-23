@@ -104,11 +104,12 @@ namespace neolib
 		return have_message_queue() && message_queue().have_message();
 	}
 
-	void io_task::create_message_queue(std::function<bool()> aIdleFunction)
+	neolib::message_queue& io_task::create_message_queue(std::function<bool()> aIdleFunction)
 	{
 		#ifdef _WIN32
 		iMessageQueue = std::make_unique<win32_message_queue>(*this, aIdleFunction);
 		#endif
+		return message_queue();
 	}
 
 	const neolib::message_queue& io_task::message_queue() const

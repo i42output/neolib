@@ -88,7 +88,7 @@ namespace neolib
 		io_service& networking_io_service() { return iNetworkingIoService; }
 		bool have_message_queue() const;
 		bool have_messages() const;
-		void create_message_queue(std::function<bool()> aIdleFunction = std::function<bool()>());
+		neolib::message_queue& create_message_queue(std::function<bool()> aIdleFunction = std::function<bool()>());
 		const neolib::message_queue& message_queue() const;
 		neolib::message_queue& message_queue();
 		bool pump_messages();
