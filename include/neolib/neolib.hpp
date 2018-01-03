@@ -38,13 +38,12 @@
 
 #include <cstdint>
 #include <boost/mpl/limits/list.hpp>
+#include <boost/bind/placeholders.hpp>
 
-namespace std
+namespace boost
 {
-	namespace placeholders {}
+	using namespace placeholders;
 }
-
-//using namespace std::placeholders;
 
 #ifdef NEOLIB_HOSTED_ENVIRONMENT
 

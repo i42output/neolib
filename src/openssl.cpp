@@ -39,7 +39,7 @@
 #include <neolib/openssl.hpp>
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000
-static_assert(false, "OpenSSL version too old")
+static_assert(false, "OpenSSL version too old");
 #endif
 
 namespace neolib

@@ -456,9 +456,7 @@ namespace neolib
 		{
 			clear();
 			if (using_vector())
-			{
 				vector().~vector_type();
-			}
 		}
 		// traversals
 		iterator begin() { return using_array() ? iterator(reinterpret_cast<pointer>(iAlignedBuffer.iData)) : iterator(vector().begin()); }
@@ -536,9 +534,7 @@ namespace neolib
 				}
 			}
 			else
-			{
-				vector().insert(remove_const(position.vector_iter()), count, value);
-			}
+				vector().insert(position.vector_iter(), count, value);
 		}
 		iterator erase(const_iterator position)
 		{ 
@@ -552,9 +548,7 @@ namespace neolib
 				return const_cast<pointer>(position.array_ptr());
 			}
 			else
-			{
-				return vector().erase(remove_const(position.vector_iter()));
-			}
+				return vector().erase(position.vector_iter());
 		}
 		iterator erase(const_iterator first, const_iterator last) 
 		{ 
@@ -567,9 +561,7 @@ namespace neolib
 				return const_cast<pointer>(first.array_ptr());
 			}
 			else
-			{
-				return vector().erase(remove_const(first.vector_iter()), remove_const(last.vector_iter()));
-			}
+				return vector().erase(first.vector_iter(), last.vector_iter());
 		}
 		void clear()
 		{
