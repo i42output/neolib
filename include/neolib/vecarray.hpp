@@ -688,9 +688,11 @@ namespace neolib
 		{
 			if (using_array())
 			{
-				vecarray copy = *this;
+				vector_type copy;
+				copy.reserve(ArraySize * 2);
+				copy.insert(copy.begin(), begin(), end());
 				clear();
-				new (iAlignedBuffer.iVector) vector_type(copy.begin(), copy.end());
+				new (iAlignedBuffer.iVector) vector_type{ std::move(copy) };
 				iSize = USING_VECTOR;
 			}
 		}
