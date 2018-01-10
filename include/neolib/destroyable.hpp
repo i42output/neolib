@@ -46,7 +46,11 @@ namespace neolib
 	class destroyed_flag : public i_destroyed_flag
 	{
 	public:
-		destroyed_flag(const i_destroyable& aOwner) : iOwner(aOwner), iState(i_destroyable::Alive)
+		destroyed_flag(const i_destroyable& aOwner) : iOwner{ aOwner }, iState{ i_destroyable::Alive }
+		{
+			iOwner.add_flag(this);
+		}
+		destroyed_flag(const destroyed_flag& aOther) : iOwner{ aOther.iOwner }, iState{ aOther.iState }
 		{
 			iOwner.add_flag(this);
 		}
