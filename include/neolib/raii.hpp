@@ -57,4 +57,16 @@ namespace neolib
 		~scoped_counter() { if (!iIgnore) --iCounter; }
 		void ignore() { iIgnore = true; }
 	};
+
+	template <typename T>
+	struct scoped_pointer
+	{
+		T*& iPointer;
+		T* iSaved;
+		bool iIgnore;
+		scoped_pointer(T*& aPointer, T* aValue) : iPointer{ aPointer }, iSaved{ aPointer }, iIgnore{ false } { iPointer = aValue; }
+		~scoped_pointer() { if (!iIgnore) iPointer = iSaved; }
+		void ignore() { iIgnore = true; }
+	};
+
 }
