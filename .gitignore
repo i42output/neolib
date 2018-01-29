@@ -13,3 +13,5 @@
 /build/win32/vs2015/x64/Release
 /build/win32/vs2015/x64/Debug
 /build/win32/vs2015/My Amplifier Results - neolib/*.amplxeproj
+/build/win32/vs2017/Release
+/build/win32/vs2017/neolib.vcxproj.user
