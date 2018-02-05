@@ -426,8 +426,6 @@ namespace neolib
 		}
 		iterator insert(const_iterator aPosition, size_type aCount, const value_type& aValue)
 		{
-			if (aCount == 0)
-				return iterator(*this, aPosition.iNode, aPosition.iContainerPosition, aPosition.iSegmentPosition);
 			auto pos = aPosition.iContainerPosition;
 			while (aCount > 0)
 			{
@@ -593,12 +591,13 @@ namespace neolib
 		typename std::enable_if<std::is_same<typename std::iterator_traits<InputIterator>::iterator_category, std::input_iterator_tag>::value, iterator>::type
 		do_insert(const_iterator aPosition, InputIterator aFirst, InputIterator aLast)
 		{
+			auto pos = aPosition.iContainerPosition;
 			while (aFirst != aLast)
 			{
 				aPosition = insert(aPosition, 1, *aFirst++);
 				++aPosition;
 			}
-			return iterator{*this, aPosition.iContainerPosition};
+			return iterator{*this, pos};
 		}
 		node* find_node(size_type aContainerPosition, size_type& aSegmentPosition) const
 		{

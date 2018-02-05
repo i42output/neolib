@@ -357,7 +357,22 @@ namespace neolib
 		{
 			erase(begin(), end());
 		}
-
+	public:
+		tag_array& operator=(const tag_array& aRhs)
+		{
+			clear();
+			insert(begin(), aRhs.begin(), aRhs.end());
+			return *this;
+		}
+	public:
+		bool operator==(const tag_array& aRhs) const
+		{
+			return size() == aRhs.size() && std::equal(begin(), end(), aRhs.begin(), aRhs.end());
+		}
+		bool operator!=(const tag_array& aRhs) const
+		{
+			return !(*this == aRhs);
+		}
 	public:
 		size_type size() const
 		{
@@ -427,6 +442,16 @@ namespace neolib
 		{
 			return *(begin() + aIndex);
 		}
+		iterator insert(const_iterator aPosition, const_iterator aFirst, const_iterator aLast)
+		{
+			auto pos = aPosition.iContainerPosition;
+			while (aFirst != aLast)
+			{
+				aPosition = insert(aFirst.segment().tag(), aPosition, 1, *aFirst++);
+				++aPosition;
+			}
+			return iterator(*this, pos);
+		}
 		template <class InputIterator>
 		typename std::enable_if<!std::is_integral<InputIterator>::value, iterator>::type
 		insert(const tag_type& aTag, const_iterator aPosition, InputIterator aFirst, InputIterator aLast)
@@ -435,15 +460,14 @@ namespace neolib
 		}
 		iterator insert(const tag_type& aTag, const_iterator aPosition, size_type aCount, const value_type& aValue)
 		{
-			if (aCount == 0)
-				return iterator(*this, aPosition.iNode, aPosition.iContainerPosition, aPosition.iSegmentPosition);
+			auto pos = aPosition.iContainerPosition;
 			while (aCount > 0)
 			{
 				aPosition = insert(aTag, aPosition, &aValue, &aValue+1);
 				++aPosition;
 				--aCount;
 			}
-			return iterator(*this, aPosition.iContainerPosition);
+			return iterator(*this, pos);
 		}
 		void clear()
 		{
@@ -514,6 +538,7 @@ namespace neolib
 		void swap(tag_array& aOther)
 		{
 			base::swap(aOther);
+			std::swap(iAllocator, aOther.iAllocator);
 			std::swap(iSize, aOther.iSize);
 		}
 		const tag_type& tag(const_iterator aWhere) const
@@ -607,14 +632,15 @@ namespace neolib
 		}
 		template <class InputIterator>
 		typename std::enable_if<std::is_same<typename std::iterator_traits<InputIterator>::iterator_category, std::input_iterator_tag>::value, iterator>::type
-		do_insert(const_iterator aPosition, InputIterator aFirst, InputIterator aLast)
+		do_insert(const tag_type& aTag, const_iterator aPosition, InputIterator aFirst, InputIterator aLast)
 		{
+			auto pos = aPosition.iContainerPosition;
 			while (aFirst != aLast)
 			{
-				aPosition = insert(aPosition, 1, *aFirst++);
+				aPosition = insert(aTag, aPosition, 1, *aFirst++);
 				++aPosition;
 			}
-			return iterator(*this, aPosition.iContainerPosition);
+			return iterator(*this, pos);
 		}
 		node* find_node(size_type aContainerPosition, size_type& aSegmentPosition) const
 		{
