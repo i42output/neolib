@@ -13,6 +13,7 @@
 #pragma warning (disable: 4521 ) // multiple copy constructors specified
 #pragma warning (disable: 4996 ) // 'function': was declared deprecated
 #pragma warning (disable: 4345 ) // behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized
+#pragma warning( disable: 4250 ) // class1' : inherits 'class2::member' via dominance
 
 #if _MSC_VER < 1900
 #pragma execution_character_set("utf-8")
