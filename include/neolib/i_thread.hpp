@@ -1,6 +1,6 @@
 // i_thread.hpp v1.0
 /*
- *  Copyright (c) 2017 Leigh Johnston.
+ *  Copyright (c) 2012-present, Leigh Johnston.
  *
  *  All rights reserved.
  *

@@ -1,6 +1,6 @@
 // raii.hpp
 /*
- *  Copyright (c) 2016 Leigh Johnston.
+ *  Copyright (c) 2012-present, Leigh Johnston.
  *
  *  All rights reserved.
  *

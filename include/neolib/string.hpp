@@ -1,6 +1,6 @@
 // string.hpp - v1.0
 /*
- *  Copyright (c) 2014 Leigh Johnston.
+ *  Copyright (c) 2012-present, Leigh Johnston.
  *
  *  All rights reserved.
  *

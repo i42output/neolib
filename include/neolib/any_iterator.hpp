@@ -1,6 +1,6 @@
 // any_iterator.hpp
 /*
- *  Copyright (c) 2012 Leigh Johnston.
+ *  Copyright (c) 2012-present, Leigh Johnston.
  *
  *  All rights reserved.
  *
