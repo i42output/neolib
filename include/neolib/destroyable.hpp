@@ -1,6 +1,6 @@
 // destroyable.hpp
 /*
- *  Copyright (c) 2012, 2017 Leigh Johnston.
+ *  Copyright (c) 2012-present, Leigh Johnston.  All Rights Reserved.
  *
  *  All rights reserved.
  *

@@ -1,6 +1,6 @@
 // interlockable.hpp v1.2
 /*
- *  Copyright (c) 2012-present, Leigh Johnston.
+ *  Copyright (c) 2012-present, Leigh Johnston.  All Rights Reserved.
  *
  *  All rights reserved.
  *

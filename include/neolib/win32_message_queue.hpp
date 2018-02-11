@@ -1,6 +1,6 @@
 // win32_message_queue.hpp
 /*
- *  Copyright (c) 2012-present, Leigh Johnston.
+ *  Copyright (c) 2012-present, Leigh Johnston.  All Rights Reserved.
  *
  *  All rights reserved.
  *

@@ -1,6 +1,6 @@
 // plugin_manager.cpp
 /*
- *  Copyright (c) 2014-2016 Leigh Johnston.
+ *  Copyright (c) 2012-present, Leigh Johnston.  All Rights Reserved.
  *
  *  All rights reserved.
  *

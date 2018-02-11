@@ -1,6 +1,6 @@
 // i_iterator.hpp - v1.0
 /*
- *  Copyright (c) 2012-present, Leigh Johnston.
+ *  Copyright (c) 2012-present, Leigh Johnston.  All Rights Reserved.
  *
  *  All rights reserved.
  *
