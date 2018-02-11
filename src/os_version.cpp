@@ -1,6 +1,6 @@
 // os_version.cpp
 /* 
- * Parts Copyright (c) 2010-2014 Leigh Johnston.  All Rights Reserved.
+ * Parts Copyright (c) 2010-present, Leigh Johnston.  All Rights Reserved.
  * The author makes no representations about the
  * suitability of this software for any purpose. It is provided
  * "as is" without express or implied warranty.
