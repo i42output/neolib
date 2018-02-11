@@ -1,7 +1,7 @@
 /*
  *  red_black_tree.hpp
  *
- *  Copyright (c) 2014-2017 Leigh Johnston.
+ *  Copyright (c) 2007-present, Leigh Johnston.  All Rights Reserved.
  *
  *  All rights reserved.
  *

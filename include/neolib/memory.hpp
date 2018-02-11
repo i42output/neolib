@@ -1,6 +1,6 @@
 // memory.hpp v2.4.1
 /*
- *  Copyright (c) 2012-present, Leigh Johnston.  All Rights Reserved.
+ *  Copyright (c) 2007-present, Leigh Johnston.  All Rights Reserved.
  *
  *  All rights reserved.
  *

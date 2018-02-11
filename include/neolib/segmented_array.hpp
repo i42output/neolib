@@ -1,7 +1,7 @@
 /*
 *  segmented_array.hpp
 *
-*  Copyright (c) 2007-2016 Leigh Johnston.
+*  Copyright (c) 2007-present, Leigh Johnston.  All Rights Reserved.
 *
 *  All rights reserved.
 *

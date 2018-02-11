@@ -1,6 +1,6 @@
 // observable.hpp v1.3
 /*
- *  Copyright (c) 2007 - 2013 Leigh Johnston.
+ *  Copyright (c) 2007-present, Leigh Johnston.  All Rights Reserved.
  *
  *  All rights reserved.
  *
