@@ -56,12 +56,21 @@ namespace neolib
 		typedef std::vector<observer_type*> observer_list;
 	private:
 		typedef std::list<observer_list> notification_list;
+	public:
+		struct already_an_observer : std::logic_error { already_an_observer() : std::logic_error("neolib::observable::already_an_observer") {} };
 
 		// construction
 	public:
-		observable() {}
-		observable(const observable&) {} // no op == no copying of observer lists
-		observable& operator=(const observable&) { return *this; } // no op == no copying of observer lists
+		observable() 
+		{
+		}
+		observable(const observable&) 
+		{ // no op == no copying of observer lists
+		} 
+		observable& operator=(const observable&) 
+		{ // no op == no copying of observer lists
+			return *this; 
+		} 
 		virtual ~observable()
 		{
 		}
@@ -70,7 +79,10 @@ namespace neolib
 	public:
 		virtual void add_observer(observer_type& aObserver)
 		{
-			iObservers.push_back(&aObserver);
+			if (std::find(iObservers.begin(), iObservers.end(), &aObserver) == iObservers.end())
+				iObservers.push_back(&aObserver);
+			else
+				throw already_an_observer();
 		}
 		virtual void remove_observer(observer_type& aObserver)
 		{
