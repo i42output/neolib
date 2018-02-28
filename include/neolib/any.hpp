@@ -38,7 +38,6 @@
 #include "neolib.hpp"
 #include <stdexcept>
 #include <typeinfo>
-#include "align.hpp"
 
 namespace neolib
 {

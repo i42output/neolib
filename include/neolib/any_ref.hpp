@@ -38,7 +38,6 @@
 #include "neolib.hpp"
 #include <stdexcept>
 #include <typeinfo>
-#include "align.hpp"
 
 namespace neolib
 {
@@ -170,7 +169,7 @@ namespace neolib
 	private:
 		union
 		{
-			max_align alignTo;
+			std::max_align_t alignTo;
 			char iBytes[sizeof(any_ref_holder<char>)];
 		} iSpace;
 		any_ref_holder_base* iHolder;
@@ -210,7 +209,7 @@ namespace neolib
 	private:
 		union
 		{
-			max_align alignTo;
+			std::max_align_t alignTo;
 			char iBytes[sizeof(any_const_ref_holder<char>)];
 		} iSpace;
 		any_const_ref_holder_base* iHolder;
