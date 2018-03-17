@@ -42,7 +42,7 @@
 #include "observable.hpp"
 #include "string_utils.hpp"
 #include "optional.hpp"
-#include "io_task.hpp"
+#include "async_task.hpp"
 #include "http.hpp"
 
 namespace neolib
@@ -66,7 +66,7 @@ namespace neolib
 
 		// construction
 	public:
-		oauth(io_task& IoTask, const std::string& aConsumerKey, const std::string& aConsumerSecret, const operation& aRequestTokenOp, const operation& aUserAuthorizationOp, const operation& aAccessTokenOp);
+		oauth(async_task& IoTask, const std::string& aConsumerKey, const std::string& aConsumerSecret, const operation& aRequestTokenOp, const operation& aUserAuthorizationOp, const operation& aAccessTokenOp);
 		virtual ~oauth();
 
 		// operations

@@ -5,7 +5,7 @@ namespace neolib
 {
 	std::map<UINT_PTR, win32_message_queue*> win32_message_queue::sTimerMap;
 
-	win32_message_queue::win32_message_queue(io_task& aIoTask, std::function<bool()> aIdleFunction, bool aCreateTimer) :
+	win32_message_queue::win32_message_queue(async_task& aIoTask, std::function<bool()> aIdleFunction, bool aCreateTimer) :
 		iIoTask(aIoTask),
 		iIdleFunction(aIdleFunction)
 	{

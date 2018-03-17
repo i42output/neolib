@@ -57,7 +57,7 @@ namespace neolib
 			start();
 		}
 	public:
-		virtual void task()
+		virtual void exec()
 		{
 			while (!finished())
 			{

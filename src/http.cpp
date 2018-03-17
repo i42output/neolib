@@ -39,7 +39,7 @@
 
 namespace neolib
 {
-	http::http(io_task& aIoTask) : 
+	http::http(async_task& aIoTask) : 
 		iIoTask(aIoTask), 
 		iPacketStream(aIoTask), 
 		iPort(80), 

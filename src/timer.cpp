@@ -38,7 +38,7 @@
 
 namespace neolib
 {
-	timer::timer(io_task& aIoTask, uint32_t aDuration_ms, bool aInitialWait) :
+	timer::timer(async_task& aIoTask, uint32_t aDuration_ms, bool aInitialWait) :
 		iIoTask(aIoTask),
 		iHandlerProxy(new handler_proxy(*this)),
 		iTimerObject(aIoTask.timer_io_service().native_object()),
@@ -80,7 +80,7 @@ namespace neolib
 		cancel();
 	}
 
-	io_task& timer::owner_task() const
+	async_task& timer::owner_task() const
 	{
 		return iIoTask;
 	}
@@ -203,7 +203,7 @@ namespace neolib
 		}
 	}
 
-	callback_timer::callback_timer(io_task& aIoTask, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait) :
+	callback_timer::callback_timer(async_task& aIoTask, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait) :
 		timer(aIoTask, aDuration_ms, aInitialWait),
 		iCallback(aCallback)
 	{

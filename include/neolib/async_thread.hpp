@@ -1,4 +1,4 @@
-// io_task.hpp v1.0
+// async_thread.hpp
 /*
  *  Copyright (c) 2007-present, Leigh Johnston.  All Rights Reserved.
  *
@@ -36,73 +36,18 @@
 #pragma once
 
 #include "neolib.hpp"
-#include <boost/asio.hpp>
-#include "i_thread.hpp"
-#include "task.hpp"
-#include "message_queue.hpp"
+#include "thread.hpp"
+#include "async_task.hpp"
 
 namespace neolib
 {
-	class io_task;
-
-	class io_service
+	class async_thread : public thread, public async_task
 	{
-		// types
-	public:
-		typedef boost::asio::io_service native_io_service_type;
-	public:
-		io_service(io_task& aTask) : iTask(aTask) {}
-		// operations
-	public:
-		bool do_io(bool aProcessEvents = true);
-		native_io_service_type& native_object() { return iNativeIoService; }
-		// attributes
-	private:
-		io_task& iTask;
-		native_io_service_type iNativeIoService;
-	};
-
-	enum class yield_type
-	{
-		NoYield,
-		Yield,
-		Sleep
-	};
-
-	class io_task : public task
-	{
-		// types
-	private:
-		typedef std::unique_ptr<neolib::message_queue> message_queue_pointer;
-		// exceptions
-	public:
-		struct no_message_queue : std::logic_error { no_message_queue() : std::logic_error("neolib::io_task::no_message_queue") {} };
 		// construction
 	public:
-		io_task(i_thread& aThread, const std::string& aName = std::string{});
-		// operations
-	public:
-		i_thread& thread() const;
-		bool do_io(yield_type aYieldIfNoWork = yield_type::NoYield);
-		io_service& timer_io_service() { return iTimerIoService; }
-		io_service& networking_io_service() { return iNetworkingIoService; }
-		bool have_message_queue() const;
-		bool have_messages() const;
-		neolib::message_queue& create_message_queue(std::function<bool()> aIdleFunction = std::function<bool()>());
-		const neolib::message_queue& message_queue() const;
-		neolib::message_queue& message_queue();
-		bool pump_messages();
-		bool halted() const;
-		void halt();
-		// implementation
-	public:
-		void run() override;
-		// attributes
-	private:
-		i_thread& iThread;
-		io_service iTimerIoService;
-		io_service iNetworkingIoService;
-		message_queue_pointer iMessageQueue;
-		bool iHalted;
+		async_thread(const std::string& aName = "", bool aAttachToCurrentThread = false);
+		// implemenation
+	protected:
+		void exec() override;
 	};
 }

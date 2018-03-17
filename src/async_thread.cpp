@@ -1,4 +1,4 @@
-// oauth.cpp
+// async_thread.cpp
 /*
  *  Copyright (c) 2007-present, Leigh Johnston.  All Rights Reserved.
  *
@@ -31,56 +31,20 @@
  *  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ */
 
 #include <neolib/neolib.hpp>
-#include <neolib/oauth.hpp>
+#include <neolib/async_thread.hpp>
 
 namespace neolib
 {
-	oauth::oauth(async_task& IoTask, const std::string& aConsumerKey, const std::string& aConsumerSecret, 
-		const operation& aRequestTokenOp, const operation& aUserAuthorizationOp, const operation& aAccessTokenOp) : 
-		iHttpRequester(IoTask), iConsumerKey(aConsumerKey), iConsumerSecret(aConsumerSecret), 
-			iRequestTokenOp(aRequestTokenOp), iUserAuthorizationOp(aUserAuthorizationOp), iAccessTokenOp(aAccessTokenOp)
-	{
-		iHttpRequester.add_observer(*this);
-	}
-
-	oauth::~oauth()
-	{
-		iHttpRequester.remove_observer(*this);
-	}
-
-	void oauth::request()
-	{
-		// TODO
-	}
-
-	void oauth::notify_observer(oauth_observer& aObserver, oauth_observer::notify_type aType, const void*, const void*)
-	{
-		switch(aType)
-		{
-		case oauth_observer::NotifyStarted:
-			aObserver.oauth_request_started(*this);
-			break;
-		case oauth_observer::NotifyCompleted:
-			aObserver.oauth_request_completed(*this);
-			break;
-		case oauth_observer::NotifyFailure:
-			aObserver.oauth_request_failure(*this);
-			break;
-		}
-	}
-
-	void oauth::http_request_started(http&)
+	async_thread::async_thread(const std::string& aName, bool aAttachToCurrentThread) : 
+		thread{ aName, aAttachToCurrentThread }, async_task{ static_cast<i_thread&>(*this) }
 	{
 	}
 
-	void oauth::http_request_completed(http&)
+	void async_thread::exec()
 	{
-	}
-
-	void oauth::http_request_failure(http&)
-	{
+		run();
 	}
 }

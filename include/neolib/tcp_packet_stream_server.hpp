@@ -40,7 +40,7 @@
 #include <vector>
 #include <memory>
 #include <boost/asio.hpp>
-#include "io_task.hpp"
+#include "async_task.hpp"
 #include "observable.hpp"
 #include "packet_stream.hpp"
 
@@ -123,7 +123,7 @@ namespace neolib
 
 		// construction
 	public:
-		tcp_packet_stream_server(io_task& aIoTask, unsigned short aLocalPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4) :
+		tcp_packet_stream_server(async_task& aIoTask, unsigned short aLocalPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4) :
 			iIoTask(aIoTask),
 			iHandlerProxy(new handler_proxy(*this)),
 			iLocalPort(aLocalPort),
@@ -135,7 +135,7 @@ namespace neolib
 		{
 			accept_connection();
 		}
-		tcp_packet_stream_server(io_task& aIoTask, const std::string& aLocalHostName, unsigned short aLocalPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4) :
+		tcp_packet_stream_server(async_task& aIoTask, const std::string& aLocalHostName, unsigned short aLocalPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4) :
 			iIoTask(aIoTask),
 			iHandlerProxy(new handler_proxy(*this)),
 			iLocalHostName(aLocalHostName),
@@ -219,7 +219,7 @@ namespace neolib
 		}
 		// own
 	private:
-		static endpoint_type resolve(io_task& aIoTask, const std::string& aHostname, unsigned short aPort, protocol_type aProtocolFamily)
+		static endpoint_type resolve(async_task& aIoTask, const std::string& aHostname, unsigned short aPort, protocol_type aProtocolFamily)
 		{
 			resolver_type resolver(aIoTask.networking_io_service().native_object());
 			boost::system::error_code ec;
@@ -264,7 +264,7 @@ namespace neolib
 		
 		// attributes
 	private:
-		io_task& iIoTask;
+		async_task& iIoTask;
 		std::shared_ptr<handler_proxy> iHandlerProxy;
 		std::string iLocalHostName;
 		unsigned short iLocalPort;

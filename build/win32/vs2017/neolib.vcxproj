@@ -157,7 +157,8 @@
     <ClCompile Include="..\..\..\src\file.cpp" />
     <ClCompile Include="..\..\..\src\gunzip.cpp" />
     <ClCompile Include="..\..\..\src\http.cpp" />
-    <ClCompile Include="..\..\..\src\io_task.cpp" />
+    <ClCompile Include="..\..\..\src\async_task.cpp" />
+    <ClCompile Include="..\..\..\src\async_thread.cpp" />
     <ClCompile Include="..\..\..\src\module.cpp" />
     <ClCompile Include="..\..\..\src\oauth.cpp" />
     <ClCompile Include="..\..\..\src\openssl.cpp" />
@@ -203,7 +204,8 @@
     <ClInclude Include="..\..\..\include\neolib\indexitor.hpp" />
     <ClInclude Include="..\..\..\include\neolib\index_array_tree.hpp" />
     <ClInclude Include="..\..\..\include\neolib\interlockable.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\io_task.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\async_task.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\async_thread.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_application.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_application_info.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_container.hpp" />

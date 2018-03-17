@@ -323,7 +323,7 @@ namespace neolib
 		unlock();
 		try
 		{
-			task();
+			exec();
 			if (!iUsingExistingThread)
 			{
 				lock();

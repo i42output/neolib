@@ -1,4 +1,4 @@
-// io_task.cpp - v3.1
+// async_task.cpp - v3.1
 /*
  *  Copyright (c) 2007-present, Leigh Johnston.  All Rights Reserved.
  *
@@ -38,7 +38,7 @@
 #ifdef _WIN32
 #include <neolib/win32_message_queue.hpp>
 #endif
-#include <neolib/io_task.hpp>
+#include <neolib/async_task.hpp>
 
 namespace neolib
 {
@@ -66,17 +66,17 @@ namespace neolib
 		return didSome;
 	}
 
-	io_task::io_task(i_thread& aThread, const std::string& aName) :
+	async_task::async_task(i_thread& aThread, const std::string& aName) :
 		task{ aName }, iThread{ aThread }, iTimerIoService{ *this }, iNetworkingIoService{ *this }, iHalted{ false }
 	{
 	}
 
-	i_thread& io_task::thread() const
+	i_thread& async_task::thread() const
 	{
 		return iThread;
 	}
 
-	bool io_task::do_io(yield_type aYieldIfNoWork)
+	bool async_task::do_io(yield_type aYieldIfNoWork)
 	{
 		if (iHalted)
 			return false;
@@ -94,17 +94,17 @@ namespace neolib
 		return didSome;
 	}
 
-	bool io_task::have_message_queue() const
+	bool async_task::have_message_queue() const
 	{
 		return iMessageQueue != nullptr;
 	}
 
-	bool io_task::have_messages() const
+	bool async_task::have_messages() const
 	{
 		return have_message_queue() && message_queue().have_message();
 	}
 
-	neolib::message_queue& io_task::create_message_queue(std::function<bool()> aIdleFunction)
+	neolib::message_queue& async_task::create_message_queue(std::function<bool()> aIdleFunction)
 	{
 		#ifdef _WIN32
 		iMessageQueue = std::make_unique<win32_message_queue>(*this, aIdleFunction);
@@ -112,21 +112,21 @@ namespace neolib
 		return message_queue();
 	}
 
-	const neolib::message_queue& io_task::message_queue() const
+	const neolib::message_queue& async_task::message_queue() const
 	{
 		if (iMessageQueue == nullptr)
 			throw no_message_queue();
 		return *iMessageQueue;
 	}
 
-	neolib::message_queue& io_task::message_queue()
+	neolib::message_queue& async_task::message_queue()
 	{
 		if (iMessageQueue == nullptr)
 			throw no_message_queue();
 		return *iMessageQueue;
 	}
 
-	bool io_task::pump_messages()
+	bool async_task::pump_messages()
 	{
 		bool didWork = false;
 		while (have_messages())
@@ -143,17 +143,17 @@ namespace neolib
 		return didWork;
 	}
 
-	bool io_task::halted() const
+	bool async_task::halted() const
 	{
 		return iHalted;
 	}
 
-	void io_task::halt()
+	void async_task::halt()
 	{
 		iHalted = true;
 	}
 
-	void io_task::run()
+	void async_task::run()
 	{
 		while(!iThread.finished())
 			do_io(yield_type::Sleep);

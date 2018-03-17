@@ -38,7 +38,7 @@
 #include "neolib.hpp"
 #include <deque>
 #include <boost/optional.hpp>
-#include "io_task.hpp"
+#include "async_task.hpp"
 #include "message_queue.hpp"
 
 namespace neolib
@@ -46,7 +46,7 @@ namespace neolib
 	class win32_message_queue : public message_queue
 	{
 	public:
-		win32_message_queue(io_task& aIoTask, std::function<bool()> aIdleFunction, bool aCreateTimer = true);
+		win32_message_queue(async_task& aIoTask, std::function<bool()> aIdleFunction, bool aCreateTimer = true);
 		~win32_message_queue();
 	public:
 		virtual void push_context();
@@ -58,7 +58,7 @@ namespace neolib
 	private:
 		static void CALLBACK timer_proc(HWND, UINT, UINT_PTR, DWORD);
 	private:
-		io_task& iIoTask;
+		async_task& iIoTask;
 		std::function<bool()> iIdleFunction;
 		static std::map<UINT_PTR, win32_message_queue*> sTimerMap;
 		UINT_PTR iTimer;

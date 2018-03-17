@@ -45,7 +45,7 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include "string_utils.hpp"
-#include "io_task.hpp"
+#include "async_task.hpp"
 #include "resolver.hpp" // protocol_family
 #include "i_packet.hpp"
 #include "variant.hpp"
@@ -152,7 +152,7 @@ namespace neolib
 		// construction
 	public:
 		basic_packet_connection(
-			io_task& aIoTask, 
+			async_task& aIoTask, 
 			owner_type& aOwner,
 			bool aSecure = false,
 			protocol_family aProtocolFamily = IPv4) :
@@ -174,7 +174,7 @@ namespace neolib
 		{
 		}
 		basic_packet_connection(
-			io_task& aIoTask, 
+			async_task& aIoTask, 
 			owner_type& aOwner, 
 			const std::string& aRemoteHostName, 
 			unsigned short aRemotePort,
@@ -599,7 +599,7 @@ namespace neolib
 		
 		// attibutes
 	private:
-		io_task& iIoTask;
+		async_task& iIoTask;
 		owner_type& iOwner;
 		std::shared_ptr<handler_proxy> iHandlerProxy;
 		std::string iLocalHostName;

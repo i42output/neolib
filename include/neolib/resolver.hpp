@@ -41,7 +41,7 @@
 #include <memory>
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
-#include "io_task.hpp"
+#include "async_task.hpp"
 
 namespace neolib
 {
@@ -150,7 +150,7 @@ namespace neolib
 	
 		// construction
 	public:
-		basic_resolver(io_task& aIoTask) :
+		basic_resolver(async_task& aIoTask) :
 			iIoTask(aIoTask),
 			iResolver(aIoTask.networking_io_service().native_object())
 		{
@@ -213,7 +213,7 @@ namespace neolib
 
 		// attibutes
 	private:
-		io_task& iIoTask;
+		async_task& iIoTask;
 		resolver_type iResolver;
 		request_list iRequests;
 	};
