@@ -307,7 +307,7 @@
     <ClInclude Include="..\..\..\include\neolib\win32_message_queue.hpp" />
     <ClInclude Include="..\..\..\include\neolib\win32_module.hpp" />
     <ClInclude Include="..\..\..\include\neolib\xml.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\xml_bits.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\xml_bits.inl" />
     <ClInclude Include="..\..\..\include\neolib\zip.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

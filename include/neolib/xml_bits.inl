@@ -1,4 +1,4 @@
-// xml_bits.hpp
+// xml_bits.inl
 /*
  *  NoFussXML v5.3.3
  *
@@ -43,12 +43,6 @@
 #include <cwchar>
 #include "quick_string.hpp"
 
-#ifdef _MSC_VER
-#define SELECTANY __declspec( selectany ) 
-#else
-#define SELECTANY
-#endif
-
 namespace neolib
 {
 	namespace
@@ -75,22 +69,22 @@ namespace neolib
 			static const char sElementTagStart = '<';
 			static const char sElementTagEnd= '>';
 		};
-		const SELECTANY char characters<char>::sTabChar;
-		const SELECTANY char characters<char>::sSpaceChar;
-		const SELECTANY char characters<char>::sNewLineChar;
-		const SELECTANY char characters<char>::sCarriageReturnChar;
-		const SELECTANY char characters<char>::sLessThanChar;
-		const SELECTANY char characters<char>::sGreaterThanChar;
-		const SELECTANY char characters<char>::sEqualsChar;
-		const SELECTANY char characters<char>::sForwardSlashChar;
-		const SELECTANY char characters<char>::sAmpersandChar;
-		const SELECTANY char characters<char>::sSemicolonChar;
-		const SELECTANY char characters<char>::sHashChar;
-		const SELECTANY char characters<char>::sHexChar;
-		const SELECTANY char characters<char>::sQuoteChar;
-		const SELECTANY char characters<char>::sSingleQuoteChar;
-		const SELECTANY char characters<char>::sElementTagStart;
-		const SELECTANY char characters<char>::sElementTagEnd;
+		const char characters<char>::sTabChar;
+		const char characters<char>::sSpaceChar;
+		const char characters<char>::sNewLineChar;
+		const char characters<char>::sCarriageReturnChar;
+		const char characters<char>::sLessThanChar;
+		const char characters<char>::sGreaterThanChar;
+		const char characters<char>::sEqualsChar;
+		const char characters<char>::sForwardSlashChar;
+		const char characters<char>::sAmpersandChar;
+		const char characters<char>::sSemicolonChar;
+		const char characters<char>::sHashChar;
+		const char characters<char>::sHexChar;
+		const char characters<char>::sQuoteChar;
+		const char characters<char>::sSingleQuoteChar;
+		const char characters<char>::sElementTagStart;
+		const char characters<char>::sElementTagEnd;
 		template <>
 		struct characters<wchar_t>
 		{
@@ -111,22 +105,22 @@ namespace neolib
 			static const wchar_t sElementTagStart = L'<';
 			static const wchar_t sElementTagEnd= L'>';
 		};
-		const SELECTANY wchar_t characters<wchar_t>::sTabChar;
-		const SELECTANY wchar_t characters<wchar_t>::sSpaceChar;
-		const SELECTANY wchar_t characters<wchar_t>::sNewLineChar;
-		const SELECTANY wchar_t characters<wchar_t>::sCarriageReturnChar;
-		const SELECTANY wchar_t characters<wchar_t>::sLessThanChar;
-		const SELECTANY wchar_t characters<wchar_t>::sGreaterThanChar;
-		const SELECTANY wchar_t characters<wchar_t>::sEqualsChar;
-		const SELECTANY wchar_t characters<wchar_t>::sForwardSlashChar;
-		const SELECTANY wchar_t characters<wchar_t>::sAmpersandChar;
-		const SELECTANY wchar_t characters<wchar_t>::sSemicolonChar;
-		const SELECTANY wchar_t characters<wchar_t>::sHashChar;
-		const SELECTANY wchar_t characters<wchar_t>::sHexChar;
-		const SELECTANY wchar_t characters<wchar_t>::sQuoteChar;
-		const SELECTANY wchar_t characters<wchar_t>::sSingleQuoteChar;
-		const SELECTANY wchar_t characters<wchar_t>::sElementTagStart;
-		const SELECTANY wchar_t characters<wchar_t>::sElementTagEnd;
+		const wchar_t characters<wchar_t>::sTabChar;
+		const wchar_t characters<wchar_t>::sSpaceChar;
+		const wchar_t characters<wchar_t>::sNewLineChar;
+		const wchar_t characters<wchar_t>::sCarriageReturnChar;
+		const wchar_t characters<wchar_t>::sLessThanChar;
+		const wchar_t characters<wchar_t>::sGreaterThanChar;
+		const wchar_t characters<wchar_t>::sEqualsChar;
+		const wchar_t characters<wchar_t>::sForwardSlashChar;
+		const wchar_t characters<wchar_t>::sAmpersandChar;
+		const wchar_t characters<wchar_t>::sSemicolonChar;
+		const wchar_t characters<wchar_t>::sHashChar;
+		const wchar_t characters<wchar_t>::sHexChar;
+		const wchar_t characters<wchar_t>::sQuoteChar;
+		const wchar_t characters<wchar_t>::sSingleQuoteChar;
+		const wchar_t characters<wchar_t>::sElementTagStart;
+		const wchar_t characters<wchar_t>::sElementTagEnd;
 
 		template <typename CharT>
 		struct predefined_entities;
@@ -137,7 +131,7 @@ namespace neolib
 			typedef std::pair<const char*, const char*> entity;
 			static const entity sPredefinedEntities[PredefinedEntityCount];
 		};
-		const SELECTANY predefined_entities<char>::entity predefined_entities<char>::sPredefinedEntities[predefined_entities<char>::PredefinedEntityCount] = 
+		const predefined_entities<char>::entity predefined_entities<char>::sPredefinedEntities[predefined_entities<char>::PredefinedEntityCount] = 
 		{
 			std::make_pair("amp", "&"),
 			std::make_pair("lt", "<"),
@@ -152,7 +146,7 @@ namespace neolib
 			typedef std::pair<const wchar_t*, const wchar_t*> entity;
 			static const entity sPredefinedEntities[PredefinedEntityCount];
 		};
-		const SELECTANY predefined_entities<wchar_t>::entity predefined_entities<wchar_t>::sPredefinedEntities[predefined_entities<wchar_t>::PredefinedEntityCount] = 
+		const predefined_entities<wchar_t>::entity predefined_entities<wchar_t>::sPredefinedEntities[predefined_entities<wchar_t>::PredefinedEntityCount] = 
 		{
 			std::make_pair(L"amp", L"&"),
 			std::make_pair(L"lt", L"<"),
@@ -186,23 +180,23 @@ namespace neolib
 			static const string sEmptyTagWithAttributes;
 			static const string sEmptyTag;
 		};
-		const SELECTANY parsing_bits<char>::character_map parsing_bits<char>::sNameDelimeter = std::string("<>/=\"\'");
-		const SELECTANY parsing_bits<char>::character_map parsing_bits<char>::sNameBadDelimeter = std::string("<=\"\'");
-		const SELECTANY parsing_bits<char>::character_map parsing_bits<char>::sAttributeValueDelimeter = std::string("\"\'");
-		const SELECTANY parsing_bits<char>::character_map parsing_bits<char>::sAttributeValueInvalidOne = std::string("<>\"");
-		const SELECTANY parsing_bits<char>::character_map parsing_bits<char>::sAttributeValueInvalidTwo = std::string("<>\'");
-		const SELECTANY parsing_bits<char>::character_map parsing_bits<char>::sTagDelimeter = std::string("<>");
-		const SELECTANY parsing_bits<char>::character_map parsing_bits<char>::sWhitespace = std::string(" \t\r\n");
-		const SELECTANY parsing_bits<char>::string parsing_bits<char>::sCommentStart = "!--";
-		const SELECTANY parsing_bits<char>::string parsing_bits<char>::sCommentEnd = "-->";
-		const SELECTANY parsing_bits<char>::string parsing_bits<char>::sCdataStart = "![CDATA[";
-		const SELECTANY parsing_bits<char>::string parsing_bits<char>::sCdataEnd = "]]>";
-		const SELECTANY parsing_bits<char>::string parsing_bits<char>::sDtdStart = "!DOCTYPE";
-		const SELECTANY parsing_bits<char>::string parsing_bits<char>::sDtdEnd = ">";
-		const SELECTANY parsing_bits<char>::string parsing_bits<char>::sDeclarationStart = "?";
-		const SELECTANY parsing_bits<char>::string parsing_bits<char>::sDeclarationEnd = "?>";
-		const SELECTANY parsing_bits<char>::string parsing_bits<char>::sEmptyTagWithAttributes = " />";
-		const SELECTANY parsing_bits<char>::string parsing_bits<char>::sEmptyTag = "/>";
+		const parsing_bits<char>::character_map parsing_bits<char>::sNameDelimeter = std::string("<>/=\"\'");
+		const parsing_bits<char>::character_map parsing_bits<char>::sNameBadDelimeter = std::string("<=\"\'");
+		const parsing_bits<char>::character_map parsing_bits<char>::sAttributeValueDelimeter = std::string("\"\'");
+		const parsing_bits<char>::character_map parsing_bits<char>::sAttributeValueInvalidOne = std::string("<>\"");
+		const parsing_bits<char>::character_map parsing_bits<char>::sAttributeValueInvalidTwo = std::string("<>\'");
+		const parsing_bits<char>::character_map parsing_bits<char>::sTagDelimeter = std::string("<>");
+		const parsing_bits<char>::character_map parsing_bits<char>::sWhitespace = std::string(" \t\r\n");
+		const parsing_bits<char>::string parsing_bits<char>::sCommentStart = "!--";
+		const parsing_bits<char>::string parsing_bits<char>::sCommentEnd = "-->";
+		const parsing_bits<char>::string parsing_bits<char>::sCdataStart = "![CDATA[";
+		const parsing_bits<char>::string parsing_bits<char>::sCdataEnd = "]]>";
+		const parsing_bits<char>::string parsing_bits<char>::sDtdStart = "!DOCTYPE";
+		const parsing_bits<char>::string parsing_bits<char>::sDtdEnd = ">";
+		const parsing_bits<char>::string parsing_bits<char>::sDeclarationStart = "?";
+		const parsing_bits<char>::string parsing_bits<char>::sDeclarationEnd = "?>";
+		const parsing_bits<char>::string parsing_bits<char>::sEmptyTagWithAttributes = " />";
+		const parsing_bits<char>::string parsing_bits<char>::sEmptyTag = "/>";
 		template <>
 		struct parsing_bits<wchar_t>
 		{
@@ -226,23 +220,23 @@ namespace neolib
 			static const string sEmptyTagWithAttributes;
 			static const string sEmptyTag;
 		};
-		const SELECTANY parsing_bits<wchar_t>::character_map parsing_bits<wchar_t>::sNameDelimeter = std::wstring(L"<>/=\"\'");
-		const SELECTANY parsing_bits<wchar_t>::character_map parsing_bits<wchar_t>::sNameBadDelimeter = std::wstring(L"<=\"\'");
-		const SELECTANY parsing_bits<wchar_t>::character_map parsing_bits<wchar_t>::sAttributeValueDelimeter = std::wstring(L"\"\'");
-		const SELECTANY parsing_bits<wchar_t>::character_map parsing_bits<wchar_t>::sAttributeValueInvalidOne = std::wstring(L"<>\"");
-		const SELECTANY parsing_bits<wchar_t>::character_map parsing_bits<wchar_t>::sAttributeValueInvalidTwo = std::wstring(L"<>\'");
-		const SELECTANY parsing_bits<wchar_t>::character_map parsing_bits<wchar_t>::sTagDelimeter = std::wstring(L"<>");
-		const SELECTANY parsing_bits<wchar_t>::character_map parsing_bits<wchar_t>::sWhitespace = std::wstring(L" \t\r\n");
-		const SELECTANY parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sCommentStart = L"!--";
-		const SELECTANY parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sCommentEnd = L"-->";
-		const SELECTANY parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sCdataStart = L"![CDATA[";
-		const SELECTANY parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sCdataEnd = L"]]>";
-		const SELECTANY parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sDtdStart = L"!DOCTYPE";
-		const SELECTANY parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sDtdEnd = L">";
-		const SELECTANY parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sDeclarationStart = L"?";
-		const SELECTANY parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sDeclarationEnd = L"?>";
-		const SELECTANY parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sEmptyTagWithAttributes = L" />";
-		const SELECTANY parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sEmptyTag = L"/>";
+		const parsing_bits<wchar_t>::character_map parsing_bits<wchar_t>::sNameDelimeter = std::wstring(L"<>/=\"\'");
+		const parsing_bits<wchar_t>::character_map parsing_bits<wchar_t>::sNameBadDelimeter = std::wstring(L"<=\"\'");
+		const parsing_bits<wchar_t>::character_map parsing_bits<wchar_t>::sAttributeValueDelimeter = std::wstring(L"\"\'");
+		const parsing_bits<wchar_t>::character_map parsing_bits<wchar_t>::sAttributeValueInvalidOne = std::wstring(L"<>\"");
+		const parsing_bits<wchar_t>::character_map parsing_bits<wchar_t>::sAttributeValueInvalidTwo = std::wstring(L"<>\'");
+		const parsing_bits<wchar_t>::character_map parsing_bits<wchar_t>::sTagDelimeter = std::wstring(L"<>");
+		const parsing_bits<wchar_t>::character_map parsing_bits<wchar_t>::sWhitespace = std::wstring(L" \t\r\n");
+		const parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sCommentStart = L"!--";
+		const parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sCommentEnd = L"-->";
+		const parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sCdataStart = L"![CDATA[";
+		const parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sCdataEnd = L"]]>";
+		const parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sDtdStart = L"!DOCTYPE";
+		const parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sDtdEnd = L">";
+		const parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sDeclarationStart = L"?";
+		const parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sDeclarationEnd = L"?>";
+		const parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sEmptyTagWithAttributes = L" />";
+		const parsing_bits<wchar_t>::string parsing_bits<wchar_t>::sEmptyTag = L"/>";
 	}
 
 	template <typename CharT, typename Alloc>
