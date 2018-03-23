@@ -82,8 +82,21 @@ namespace neolib
 		typedef std::list<self_type, value_allocator> json_array;
 	private:
 		typedef variant<json_object, json_array, json_number, json_string, json_true, json_false, json_null> value_type;
+	public:
+		basic_json_value(const value_type& aValue) : 
+			iValue{ aValue }
+		{
+		}
+		basic_json_value(value_type&& aValue) :
+			iValue{ std::move(aValue) }
+		{
+		}
+	public:
+		json_type type() const
+		{
+			return static_cast<json_type>(iValue.which() - 1);
+		}
 	private:
-		json_type iType;
 		value_type iValue;
 	};
 

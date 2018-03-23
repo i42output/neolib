@@ -84,7 +84,7 @@ namespace neolib
 		quick_string(size_type n, charT c, const Alloc& a = Alloc()) : iContents{ string_type{ n, c, a } } {}
 		template<class InputIterator>
 		quick_string(InputIterator begin, InputIterator end, const Alloc& a = Alloc()) : iContents{ string_type{ begin, end, a } } {}
-		quick_string(const quick_string& str, const Alloc& a) : iContents{ str.iContents.is<string_type>() ?
+		quick_string(const quick_string& str, const Alloc& a) : iContents{ str.iContents.template is<string_type>() ?
 			contents_type{ string_type{ static_variant_cast<const string_type&>(str.iContents), a } } :
 			contents_type{ view_contents_type{ static_variant_cast<const view_contents_type&>(str.iContents).first, a } } } {}
 		quick_string(const_iterator begin, const_iterator end, const Alloc& a = Alloc()) : iContents{ view_contents_type{ string_view_type{ begin, static_cast<size_type>(std::distance(begin, end)) }, a } } {}
@@ -424,7 +424,7 @@ namespace neolib
 	public:
 		bool is_view() const 
 		{ 
-			return iContents.is<view_contents_type>(); 
+			return iContents.template is<view_contents_type>(); 
 		}
 		operator string_type&()
 		{
