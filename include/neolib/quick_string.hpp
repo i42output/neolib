@@ -118,7 +118,7 @@ namespace neolib
 			iContents{ view_contents_type{ string_view_type{ begin, static_cast<size_type>(std::distance(begin, end)) }, a } } 
 		{
 		}
-		quick_string(iterator begin, iterator end) :
+		quick_string(iterator begin, iterator end, const Alloc& a = Alloc()) :
 			iContents{ view_contents_type{ string_view_type{ begin, end }, a } } 
 		{
 		}
