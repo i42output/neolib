@@ -75,23 +75,68 @@ namespace neolib
 		typedef neolib::variant<string_type, view_contents_type> contents_type;
 	public:
 		// construct/copy/destroy
-		explicit quick_string(const Alloc& a = Alloc()) : iContents{ string_type{ a } } {}
-		quick_string(const string_type& str) : iContents{ str } {}
-		quick_string(const quick_string& str) : iContents{ str.iContents } {}
-		quick_string(const quick_string& str, size_type pos, size_type n = npos) : iContents{ view_contents_type{ string_view_type{ str.begin() + pos, str.begin() + pos + (n == npos ? str.size() - pos : n) }, str.get_allocator() } } {}
-		quick_string(const charT* s, size_type n, const Alloc& a = Alloc()) : iContents{ view_contents_type{ string_view_type{ s, n }, a } } {}
-		quick_string(const charT* s, const Alloc& a = Alloc()) : iContents{ view_contents_type{ string_view_type{ s, }, a } } {}
-		quick_string(size_type n, charT c, const Alloc& a = Alloc()) : iContents{ string_type{ n, c, a } } {}
+		explicit quick_string(const Alloc& a = Alloc()) : 
+			iContents{ string_type{ a } } 
+		{
+		}
+		quick_string(const string_type& str) : 
+			iContents{ str } 
+		{
+		}
+		quick_string(const quick_string& str) : 
+			iContents{ str.iContents } 
+		{
+		}
+		quick_string(const quick_string& str, size_type pos, size_type n = npos) : 
+			iContents{ view_contents_type{ string_view_type{ str.begin() + pos, str.begin() + pos + (n == npos ? str.size() - pos : n) }, str.get_allocator() } } 
+		{
+		}
+		quick_string(const charT* s, size_type n, const Alloc& a = Alloc()) : 
+			iContents{ view_contents_type{ string_view_type{ s, n }, a } } 
+		{
+		}
+		quick_string(const charT* s, const Alloc& a = Alloc()) : 
+			iContents{ view_contents_type{ string_view_type{ s, }, a } } 
+		{
+		}
+		quick_string(size_type n, charT c, const Alloc& a = Alloc()) : 
+			iContents{ string_type{ n, c, a } } 
+		{
+		}
 		template<class InputIterator>
-		quick_string(InputIterator begin, InputIterator end, const Alloc& a = Alloc()) : iContents{ string_type{ begin, end, a } } {}
-		quick_string(const quick_string& str, const Alloc& a) : iContents{ str.iContents.template is<string_type>() ?
-			contents_type{ string_type{ static_variant_cast<const string_type&>(str.iContents), a } } :
-			contents_type{ view_contents_type{ static_variant_cast<const view_contents_type&>(str.iContents).first, a } } } {}
-		quick_string(const_iterator begin, const_iterator end, const Alloc& a = Alloc()) : iContents{ view_contents_type{ string_view_type{ begin, static_cast<size_type>(std::distance(begin, end)) }, a } } {}
-		quick_string(iterator begin, iterator end) : iContents(begin, end) : iContents{ view_contents_type{ string_view_type{ begin, end }, a } } {}
-		quick_string& operator=(const quick_string& str) { iContents = str.iContents; return *this; }
-		quick_string& operator=(const charT* s) { iContents = view_contents_type{ string_view_type{ s }, Alloc{} }; return *this; }
-		quick_string& operator=(charT c) { iContents = string_type{ 1, c }; return *this; }
+		quick_string(InputIterator begin, InputIterator end, const Alloc& a = Alloc()) : 
+			iContents{ string_type{ begin, end, a } } 
+		{
+		}
+		quick_string(const quick_string& str, const Alloc& a) : 
+			iContents{ str.iContents.template is<string_type>() ?
+				contents_type{ string_type{ static_variant_cast<const string_type&>(str.iContents), a } } :
+				contents_type{ view_contents_type{ static_variant_cast<const view_contents_type&>(str.iContents).first, a } } } 
+		{
+		}
+		quick_string(const_iterator begin, const_iterator end, const Alloc& a = Alloc()) : 
+			iContents{ view_contents_type{ string_view_type{ begin, static_cast<size_type>(std::distance(begin, end)) }, a } } 
+		{
+		}
+		quick_string(iterator begin, iterator end) :
+			iContents{ view_contents_type{ string_view_type{ begin, end }, a } } 
+		{
+		}
+		quick_string& operator=(const quick_string& str) 
+		{ 
+			iContents = str.iContents; 
+			return *this; 
+		}
+		quick_string& operator=(const charT* s) 
+		{ 
+			iContents = view_contents_type{ string_view_type{ s }, Alloc{} }; 
+			return *this; 
+		}
+		quick_string& operator=(charT c) 
+		{ 
+			iContents = string_type{ 1, c }; 
+			return *this; 
+		}
 		// iterators
 		iterator begin() { return get_string().begin(); }
 		const_iterator begin() const { return is_view() ? get_view_string().begin() : static_cast<string_view_type>(get_string()).begin(); }
