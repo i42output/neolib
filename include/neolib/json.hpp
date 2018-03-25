@@ -95,16 +95,16 @@ namespace neolib
 			virtual void visit(const json_string& aString) = 0;
 			virtual void visit(const json_object& aObject) = 0;
 			virtual void visit(const json_array& aArray) = 0;
-			virtual void visit(const json_true&) = 0;
-			virtual void visit(const json_false&) = 0;
-			virtual void visit(const json_null&) = 0;
+			virtual void visit(json_true) = 0;
+			virtual void visit(json_false) = 0;
+			virtual void visit(json_null) = 0;
 			virtual void visit(const json_string& aName, const json_number& aNumber) = 0;
 			virtual void visit(const json_string& aName, const json_string& aString) = 0;
 			virtual void visit(const json_string& aName, const json_object& aObject) = 0;
 			virtual void visit(const json_string& aName, const json_array& aArray) = 0;
-			virtual void visit(const json_string& aName, const json_true&) = 0;
-			virtual void visit(const json_string& aName, const json_false&) = 0;
-			virtual void visit(const json_string& aName, const json_null&) = 0;
+			virtual void visit(const json_string& aName, json_true) = 0;
+			virtual void visit(const json_string& aName, json_false) = 0;
+			virtual void visit(const json_string& aName, json_null) = 0;
 		};
 		class default_visitor : public i_visitor
 		{
@@ -113,16 +113,16 @@ namespace neolib
 			void visit(const json_string& aString) override {}
 			void visit(const json_object& aObject) override {}
 			void visit(const json_array& aArray) override {}
-			void visit(const json_true&) override {}
-			void visit(const json_false&) override {}
-			void visit(const json_null&) override {}
+			void visit(json_true) override {}
+			void visit(json_false) override {}
+			void visit(json_null) override {}
 			void visit(const json_string& aName, const json_number& aNumber) override {}
 			void visit(const json_string& aName, const json_string& aString) override {}
 			void visit(const json_string& aName, const json_object& aObject) override {}
 			void visit(const json_string& aName, const json_array& aArray) override {}
-			void visit(const json_string& aName, const json_true&) override {}
-			void visit(const json_string& aName, const json_false&) override {}
-			void visit(const json_string& aName, const json_null&) override {}
+			void visit(const json_string& aName, json_true) override {}
+			void visit(const json_string& aName, json_false) override {}
+			void visit(const json_string& aName, json_null) override {}
 		};
 	private:
 		typedef variant<json_object, json_array, json_number, json_string, json_true, json_false, json_null> value_type;
