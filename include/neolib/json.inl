@@ -214,12 +214,12 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	basic_json<Alloc, CharT, Traits, CharAlloc>::basic_json()
+	inline basic_json<Alloc, CharT, Traits, CharAlloc>::basic_json()
 	{
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	basic_json<Alloc, CharT, Traits, CharAlloc>::basic_json(const std::string& aPath, bool aValidateUtf8)
+	inline basic_json<Alloc, CharT, Traits, CharAlloc>::basic_json(const std::string& aPath, bool aValidateUtf8)
 	{
 		if (!read(aPath, aValidateUtf8))
 			throw json_error(error_text());
@@ -227,20 +227,20 @@ namespace neolib
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename Elem, typename ElemTraits>
-	basic_json<Alloc, CharT, Traits, CharAlloc>::basic_json(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8)
+	inline basic_json<Alloc, CharT, Traits, CharAlloc>::basic_json(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8)
 	{
 		if (!read(aInput, aValidateUtf8))
 			throw json_error(error_text());
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	void basic_json<Alloc, CharT, Traits, CharAlloc>::clear()
+	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::clear()
 	{
 		document().clear();
 	}
 		
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	bool basic_json<Alloc, CharT, Traits, CharAlloc>::read(const std::string& aPath, bool aValidateUtf8)
+	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::read(const std::string& aPath, bool aValidateUtf8)
 	{
 		std::ifstream input{ aPath };
 		if (!input)
@@ -253,7 +253,7 @@ namespace neolib
 		
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename Elem, typename ElemTraits>
-	bool basic_json<Alloc, CharT, Traits, CharAlloc>::read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8)
+	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8)
 	{
 		clear();
 
@@ -303,7 +303,7 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	bool basic_json<Alloc, CharT, Traits, CharAlloc>::write(const std::string& aPath)
+	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::write(const std::string& aPath)
 	{
 		std::ofstream output{ aPath, std::ofstream::out | std::ofstream::trunc };
 		return write(output);
@@ -311,7 +311,7 @@ namespace neolib
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename Elem, typename ElemTraits>
-	bool basic_json<Alloc, CharT, Traits, CharAlloc>::write(std::basic_ostream<Elem, ElemTraits>& aOutput)
+	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::write(std::basic_ostream<Elem, ElemTraits>& aOutput)
 	{
 		// todo: generate
 
@@ -319,19 +319,19 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	typename const basic_json<Alloc, CharT, Traits, CharAlloc>::json_string& basic_json<Alloc, CharT, Traits, CharAlloc>::document() const
+	inline typename const basic_json<Alloc, CharT, Traits, CharAlloc>::json_string& basic_json<Alloc, CharT, Traits, CharAlloc>::document() const
 	{
 		return iDocumentText;
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	typename const basic_json<Alloc, CharT, Traits, CharAlloc>::string& basic_json<Alloc, CharT, Traits, CharAlloc>::error_text() const
+	inline typename const basic_json<Alloc, CharT, Traits, CharAlloc>::string& basic_json<Alloc, CharT, Traits, CharAlloc>::error_text() const
 	{
 		return iErrorText;
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	typename basic_json<Alloc, CharT, Traits, CharAlloc>::json_string& basic_json<Alloc, CharT, Traits, CharAlloc>::document()
+	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::json_string& basic_json<Alloc, CharT, Traits, CharAlloc>::document()
 	{
 		return iDocumentText;
 	}

@@ -48,10 +48,12 @@
 #include <utility>
 #include <memory>
 #include <exception>
+#include <boost/optional.hpp>
+#include <boost/pool/pool_alloc.hpp>
 #include "variant.hpp"
 #include "quick_string.hpp"
 
-namespace neolib 
+namespace neolib
 {
 	enum class json_type
 	{
@@ -81,12 +83,28 @@ namespace neolib
 		typedef std::true_type json_true;
 		typedef std::false_type json_false;
 		typedef std::nullptr_t json_null;
-		typedef std::multimap<json_string, self_type, value_allocator> json_object;
+		typedef std::multiset<self_type, std::less<self_type>, value_allocator> json_object;
 		typedef std::list<self_type, value_allocator> json_array;
+	public:
+		typedef boost::optional<json_string> optional_json_string;
+	public:
+		class i_visitor
+		{
+		public:
+			virtual void visit(const optional_json_string& aName, const json_number& aNumber) = 0;
+			virtual void visit(const optional_json_string& aName, const json_string& aString) = 0;
+			virtual void visit(const optional_json_string& aName, const json_object& aObject) = 0;
+			virtual void visit(const optional_json_string& aName, const json_array& aArray) = 0;
+			virtual void visit(const optional_json_string& aName, const json_true&) = 0;
+			virtual void visit(const optional_json_string& aName, const json_false&) = 0;
+			virtual void visit(const optional_json_string& aName, const json_null&) = 0;
+		};
 	private:
 		typedef variant<json_object, json_array, json_number, json_string, json_true, json_false, json_null> value_type;
 	public:
-		basic_json_value(const value_type& aValue) : 
+		struct no_name : std::logic_error { no_name() : std::logic_error("neolib::basic_json_value::no_name") {} };
+	public:
+		basic_json_value(const value_type& aValue) :
 			iValue{ aValue }
 		{
 		}
@@ -95,11 +113,59 @@ namespace neolib
 		{
 		}
 	public:
+		bool operator<(const self_type& aRhs) const
+		{
+			return name() < aRhs.name();
+		}
+	public:
+		bool has_name() const
+		{
+			return iName != boost::none;
+		}
+		const json_string& name() const
+		{
+			if (has_name())
+				return *iName;
+			throw no_name();
+		}
 		json_type type() const
 		{
 			return static_cast<json_type>(iValue.which() - 1);
 		}
+	public:
+		void accept(i_visitor& aVisitor)
+		{
+			switch(type())
+			{
+			case Object:
+				aVisitor.visit(iName, static_variant_cast<const json_object&>(iValue));
+				for (const auto& e : static_variant_cast<const json_object&>(iValue))
+					e.accept(aVisitor);
+				break;
+			case Array:
+				aVisitor.visit(iName, static_variant_cast<const json_array&>(iValue));
+				for (const auto& e : static_variant_cast<const json_array&>(iValue))
+					e.accept(aVisitor);
+				break;
+			case Number:
+				aVisitor.visit(iName, static_variant_cast<const json_number&>(iValue));
+				break;
+			case String:
+				aVisitor.visit(iName, static_variant_cast<const json_string&>(iValue));
+				break;
+			case True:
+				aVisitor.visit(iName, json_true{});
+				break;
+			case False:
+				aVisitor.visit(iName, json_false{});
+				break;
+			case Null:
+				aVisitor.visit(iName, json_null{});
+				break;
+			}
+		}
 	private:
+		optional_json_string iName;
 		value_type iValue;
 	};
 
