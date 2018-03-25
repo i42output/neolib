@@ -1,6 +1,6 @@
 // file.hpp v1.3.1
 /*
- *  Copyright (c) 2007-present, Leigh Johnston.  All Rights Reserved.
+ *  Copyright (c) 2007-present, Leigh Johnston.
  *
  *  All rights reserved.
  *

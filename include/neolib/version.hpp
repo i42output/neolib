@@ -1,6 +1,6 @@
 // i_version.hpp - v1.0
 /*
- *  Copyright (c) 2007-present, Leigh Johnston.  All Rights Reserved.
+ *  Copyright (c) 2007-present, Leigh Johnston.
  *
  *  All rights reserved.
  *

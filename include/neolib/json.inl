@@ -2,7 +2,7 @@
 /*
  *  NoFussJSON v1.0
  *
- *  Copyright (c) 2018-present, Leigh Johnston.  All Rights Reserved.
+ *  Copyright (c) 2018-present, Leigh Johnston.
  *
  *  All rights reserved.
  *
