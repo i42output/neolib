@@ -325,7 +325,7 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	typename const basic_json<Alloc, CharT, Traits, CharAlloc>::std_string& basic_json<Alloc, CharT, Traits, CharAlloc>::error_text() const
+	typename const basic_json<Alloc, CharT, Traits, CharAlloc>::string& basic_json<Alloc, CharT, Traits, CharAlloc>::error_text() const
 	{
 		return iErrorText;
 	}

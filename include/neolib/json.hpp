@@ -122,7 +122,7 @@ namespace neolib
 		typedef typename value::json_false json_false;
 		typedef typename value::json_null json_null;
 	private:
-		typedef std::basic_string<CharT, Traits, CharAlloc> std_string;
+		typedef std::basic_string<CharT, Traits, CharAlloc> string;
 	public:
 		basic_json();
 		basic_json(const std::string& aPath, bool aValidateUtf8 = false);
@@ -138,12 +138,12 @@ namespace neolib
 		bool write(std::basic_ostream<Elem, ElemTraits>& aOutput);
 	public:
 		const json_string& document() const;
-		const std_string& error_text() const;
+		const string& error_text() const;
 	private:
 		json_string& document();
 	private:
 		json_string iDocumentText;
-		std_string iErrorText;
+		string iErrorText;
 	};
 
 	typedef basic_json<> json;
