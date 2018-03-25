@@ -91,13 +91,38 @@ namespace neolib
 		class i_visitor
 		{
 		public:
-			virtual void visit(const optional_json_string& aName, const json_number& aNumber) = 0;
-			virtual void visit(const optional_json_string& aName, const json_string& aString) = 0;
-			virtual void visit(const optional_json_string& aName, const json_object& aObject) = 0;
-			virtual void visit(const optional_json_string& aName, const json_array& aArray) = 0;
-			virtual void visit(const optional_json_string& aName, const json_true&) = 0;
-			virtual void visit(const optional_json_string& aName, const json_false&) = 0;
-			virtual void visit(const optional_json_string& aName, const json_null&) = 0;
+			virtual void visit(const json_number& aNumber) = 0;
+			virtual void visit(const json_string& aString) = 0;
+			virtual void visit(const json_object& aObject) = 0;
+			virtual void visit(const json_array& aArray) = 0;
+			virtual void visit(const json_true&) = 0;
+			virtual void visit(const json_false&) = 0;
+			virtual void visit(const json_null&) = 0;
+			virtual void visit(const json_string& aName, const json_number& aNumber) = 0;
+			virtual void visit(const json_string& aName, const json_string& aString) = 0;
+			virtual void visit(const json_string& aName, const json_object& aObject) = 0;
+			virtual void visit(const json_string& aName, const json_array& aArray) = 0;
+			virtual void visit(const json_string& aName, const json_true&) = 0;
+			virtual void visit(const json_string& aName, const json_false&) = 0;
+			virtual void visit(const json_string& aName, const json_null&) = 0;
+		};
+		class default_visitor : public i_visitor
+		{
+		public:
+			void visit(const json_number& aNumber) override {}
+			void visit(const json_string& aString) override {}
+			void visit(const json_object& aObject) override {}
+			void visit(const json_array& aArray) override {}
+			void visit(const json_true&) override {}
+			void visit(const json_false&) override {}
+			void visit(const json_null&) override {}
+			void visit(const json_string& aName, const json_number& aNumber) override {}
+			void visit(const json_string& aName, const json_string& aString) override {}
+			void visit(const json_string& aName, const json_object& aObject) override {}
+			void visit(const json_string& aName, const json_array& aArray) override {}
+			void visit(const json_string& aName, const json_true&) override {}
+			void visit(const json_string& aName, const json_false&) override {}
+			void visit(const json_string& aName, const json_null&) override {}
 		};
 	private:
 		typedef variant<json_object, json_array, json_number, json_string, json_true, json_false, json_null> value_type;
@@ -138,29 +163,50 @@ namespace neolib
 			switch(type())
 			{
 			case Object:
-				aVisitor.visit(iName, static_variant_cast<const json_object&>(iValue));
+				if (has_name())
+					aVisitor.visit(name(), static_variant_cast<const json_object&>(iValue));
+				else
+					aVisitor.visit(static_variant_cast<const json_object&>(iValue));
 				for (const auto& e : static_variant_cast<const json_object&>(iValue))
 					e.accept(aVisitor);
 				break;
 			case Array:
-				aVisitor.visit(iName, static_variant_cast<const json_array&>(iValue));
+				if (has_name())
+					aVisitor.visit(name(), static_variant_cast<const json_array&>(iValue));
+				else
+					aVisitor.visit(static_variant_cast<const json_array&>(iValue));
 				for (const auto& e : static_variant_cast<const json_array&>(iValue))
 					e.accept(aVisitor);
 				break;
 			case Number:
-				aVisitor.visit(iName, static_variant_cast<const json_number&>(iValue));
+				if (has_name())
+					aVisitor.visit(name(), static_variant_cast<const json_number&>(iValue));
+				else
+					aVisitor.visit(static_variant_cast<const json_number&>(iValue));
 				break;
 			case String:
-				aVisitor.visit(iName, static_variant_cast<const json_string&>(iValue));
+				if (has_name())
+					aVisitor.visit(name(), static_variant_cast<const json_string&>(iValue));
+				else
+					aVisitor.visit(static_variant_cast<const json_string&>(iValue));
 				break;
 			case True:
-				aVisitor.visit(iName, json_true{});
+				if (has_name())
+					aVisitor.visit(name(), json_true{});
+				else
+					aVisitor.visit(json_true{});
 				break;
 			case False:
-				aVisitor.visit(iName, json_false{});
+				if (has_name())
+					aVisitor.visit(name(), json_false{});
+				else
+					aVisitor.visit(json_false{});
 				break;
 			case Null:
-				aVisitor.visit(iName, json_null{});
+				if (has_name())
+					aVisitor.visit(name(), json_null{});
+				else
+					aVisitor.visit(json_null{});
 				break;
 			}
 		}
