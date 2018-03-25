@@ -58,7 +58,13 @@ namespace neolib
 			Quote,
 			Character,
 			Escape,
+			Escaped,
+			Plus,
+			Minus,
 			Digit,
+			HexDigit,
+			DecimalPoint,
+			Exponent,
 			Whitespace
 		};
 
@@ -70,10 +76,18 @@ namespace neolib
 			Object,
 			Array,
 			String,
-			Number,
-			Escaping
+			NumberIntNeedDigit,
+			NumberInt,
+			NumberFracNeedDigit,
+			NumberFrac,
+			NumberExpSign,
+			NumberExpIntNeedDigit,
+			NumberExpInt,
+			Escaping,
+			EscapingUnicode,
+			STATE_COUNT
 		};
-		constexpr std::size_t STATE_COUNT = static_cast<std::size_t>(state::Escaping) + 1;
+		constexpr std::size_t STATE_COUNT = static_cast<std::size_t>(state::STATE_COUNT);
 
 		constexpr token TIN = token::Invalid;
 		constexpr token TOO = token::OpenObject;
@@ -85,7 +99,13 @@ namespace neolib
 		constexpr token TQT = token::Quote;
 		constexpr token TCH = token::Character;
 		constexpr token TES = token::Escape;
+		constexpr token TED = token::Escaped;
+		constexpr token TPL = token::Plus;
+		constexpr token TMI = token::Minus;
 		constexpr token TDI = token::Digit;
+		constexpr token THD = token::HexDigit;
+		constexpr token TDP = token::DecimalPoint;
+		constexpr token TEX = token::Exponent;
 		constexpr token TWH = token::Whitespace;
 
 		const std::array<std::array<token, 256>, STATE_COUNT> sTokenTables =
@@ -95,7 +115,7 @@ namespace neolib
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
 				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TWH, TWH, TIN, TIN, TWH, TIN, TIN, // 0x0
 				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
-				TWH, TIN, TQT, TIN, TCH, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TDI, TDI, TIN, // 0x2
+				TWH, TIN, TQT, TIN, TCH, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TDI, TIN, TIN, // 0x2
 				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
 				TIN, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TOA, TIN, TIN, TIN, TCH, // 0x5
@@ -209,7 +229,187 @@ namespace neolib
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xD
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xE
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xF
-			}}		
+			}},
+			// state::NumberIntNeedDigit
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x0
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x2
+				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
+				TIN, TIN, TIN, TIN, TIN, TEX, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
+				TIN, TIN, TIN, TIN, TIN, TEX, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+			}},
+			// state::NumberInt
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TWH, TWH, TIN, TIN, TWH, TIN, TIN, // 0x0
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TDP, TIN, // 0x2
+				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
+				TIN, TIN, TIN, TIN, TIN, TEX, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
+				TIN, TIN, TIN, TIN, TIN, TEX, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+			}},
+			// state::NumberFracNeedDigit
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x0
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x2
+				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+			}},
+			// state::NumberFrac
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TWH, TWH, TIN, TIN, TWH, TIN, TIN, // 0x0
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x2
+				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
+				TIN, TIN, TIN, TIN, TIN, TEX, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
+				TIN, TIN, TIN, TIN, TIN, TEX, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+			}},
+			// state::NumberExpSign
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TWH, TWH, TIN, TIN, TWH, TIN, TIN, // 0x0
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TPL, TIN, TMI, TIN, TIN, // 0x2
+				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+			}},
+			// state::NumberExpIntNeedDigit
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x0
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x2
+				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+			}},
+			// state::NumberExpInt
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TWH, TWH, TIN, TIN, TWH, TIN, TIN, // 0x0
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x2
+				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+			}},
+			// state::Escaping 
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x0
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
+				TIN, TIN, TED, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TED, // 0x2
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TED, TIN, TIN, TIN, // 0x5
+				TIN, TIN, TED, TIN, TIN, TIN, TED, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TED, TIN, // 0x6
+				TIN, TIN, TED, TIN, TED, TED, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+			}},
+			// state::EscapingUnicode
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TWH, TWH, TIN, TIN, TWH, TIN, TIN, // 0x0
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x2
+				THD, THD, THD, THD, THD, THD, THD, THD, THD, THD, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
+				TIN, THD, THD, THD, THD, THD, THD, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
+				TIN, THD, THD, THD, THD, THD, THD, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
+				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+			}}
 		};
 	}
 
