@@ -70,6 +70,8 @@ namespace neolib
 	class basic_json_value
 	{
 	public:
+		struct no_name : std::logic_error { no_name() : std::logic_error("neolib::basic_json_value::no_name") {} };
+	public:
 		typedef Alloc allocator_type;
 		typedef CharT character_type;
 		typedef Traits character_traits_type;
@@ -106,28 +108,8 @@ namespace neolib
 			virtual void visit(const json_string& aName, json_false) = 0;
 			virtual void visit(const json_string& aName, json_null) = 0;
 		};
-		class default_visitor : public i_visitor
-		{
-		public:
-			void visit(const json_number& aNumber) override {}
-			void visit(const json_string& aString) override {}
-			void visit(const json_object& aObject) override {}
-			void visit(const json_array& aArray) override {}
-			void visit(json_true) override {}
-			void visit(json_false) override {}
-			void visit(json_null) override {}
-			void visit(const json_string& aName, const json_number& aNumber) override {}
-			void visit(const json_string& aName, const json_string& aString) override {}
-			void visit(const json_string& aName, const json_object& aObject) override {}
-			void visit(const json_string& aName, const json_array& aArray) override {}
-			void visit(const json_string& aName, json_true) override {}
-			void visit(const json_string& aName, json_false) override {}
-			void visit(const json_string& aName, json_null) override {}
-		};
 	private:
 		typedef variant<json_object, json_array, json_number, json_string, json_true, json_false, json_null> value_type;
-	public:
-		struct no_name : std::logic_error { no_name() : std::logic_error("neolib::basic_json_value::no_name") {} };
 	public:
 		basic_json_value(const value_type& aValue) :
 			iValue{ aValue }
@@ -220,12 +202,14 @@ namespace neolib
 	{
 	public:
 		struct json_error : std::runtime_error { json_error(const std::string& aReason) : std::runtime_error(aReason) {} };
+		struct no_root : std::logic_error { no_root() : std::logic_error("neolib::basic_json::no_root") {} };
 	public:
 		typedef Alloc allocator_type;
 		typedef CharT character_type;
 		typedef Traits character_traits_type;
 		typedef CharAlloc character_allocator_type;
 		typedef basic_json_value<allocator_type, character_type, character_traits_type, character_allocator_type> value;
+		typedef boost::optional<value> optional_value;
 		typedef typename value::json_object json_object;
 		typedef typename value::json_array json_array;
 		typedef typename value::json_number json_number;
@@ -233,6 +217,26 @@ namespace neolib
 		typedef typename value::json_true json_true;
 		typedef typename value::json_false json_false;
 		typedef typename value::json_null json_null;
+	public:
+		typedef typename value::i_visitor i_visitor;
+		class default_visitor : public i_visitor
+		{
+		public:
+			void visit(const json_number& aNumber) override {}
+			void visit(const json_string& aString) override {}
+			void visit(const json_object& aObject) override {}
+			void visit(const json_array& aArray) override {}
+			void visit(json_true) override {}
+			void visit(json_false) override {}
+			void visit(json_null) override {}
+			void visit(const json_string& aName, const json_number& aNumber) override {}
+			void visit(const json_string& aName, const json_string& aString) override {}
+			void visit(const json_string& aName, const json_object& aObject) override {}
+			void visit(const json_string& aName, const json_array& aArray) override {}
+			void visit(const json_string& aName, json_true) override {}
+			void visit(const json_string& aName, json_false) override {}
+			void visit(const json_string& aName, json_null) override {}
+		};
 	private:
 		typedef std::basic_string<CharT, Traits, CharAlloc> string;
 	public:
@@ -251,11 +255,16 @@ namespace neolib
 	public:
 		const json_string& document() const;
 		const string& error_text() const;
+		bool has_root() const;
+		const value& root() const;
+		value& root();
+		void accept(i_visitor& aVisitor);
 	private:
 		json_string& document();
 	private:
 		json_string iDocumentText;
 		string iErrorText;
+		optional_value iRoot;
 	};
 
 	typedef basic_json<> json;

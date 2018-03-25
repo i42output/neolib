@@ -331,6 +331,35 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::has_root() const
+	{
+		return iRoot != boost::none;
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline const typename basic_json<Alloc, CharT, Traits, CharAlloc>::value& basic_json<Alloc, CharT, Traits, CharAlloc>::root() const
+	{
+		if (has_root())
+			return *iRoot;
+		throw no_root();
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::value& basic_json<Alloc, CharT, Traits, CharAlloc>::root()
+	{
+		return const_cast<value&>(const_cast<const self_type*>(this)->root());
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::accept(i_visitor& aVisitor)
+	{
+		if (has_root())
+			root().accept(aVisitor);
+		else
+			throw no_root();
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::json_string& basic_json<Alloc, CharT, Traits, CharAlloc>::document()
 	{
 		return iDocumentText;
