@@ -48,6 +48,7 @@
 #include <cwctype>
 #include <cassert>
 #include <boost/locale.hpp> 
+#include <boost/utility/string_view.hpp>
 
 namespace neolib 
 {
@@ -746,7 +747,7 @@ namespace neolib
 	inline std::u32string utf8_to_utf32(std::string::const_iterator aBegin, std::string::const_iterator aEnd, Callback aCallback, bool aCodePageFallback = false)
 	{
 		std::u32string utf32String;
-		for (std::string::const_iterator i = aBegin; i != aEnd;)
+		for (auto i = aBegin; i != aEnd; ++i)
 		{
 			aCallback(i - aBegin, utf32String.size());
 
@@ -756,7 +757,7 @@ namespace neolib
 				uch = static_cast<unicode_char_t>(nch & 0x7F);
 			else
 			{
-				std::string::const_iterator old = i;
+				auto old = i;
 				if (nch == 0xC0 || nch == 0xC1)
 					uch = INVALID_CHAR32;
 				else if ((nch & 0xE0) == 0xC0)
@@ -779,9 +780,6 @@ namespace neolib
 			}
 
 			utf32String.append(1, uch);
-
-			if (i != aEnd)
-				++i;
 		}
 		return utf32String;
 	}
@@ -813,6 +811,42 @@ namespace neolib
 	inline bool is_utf8_trailing(char aCharacter)
 	{
 		return (aCharacter & 0xC0) == 0x80;
+	}
+
+	template <typename CharT, typename Traits>
+	inline bool check_utf8(const boost::basic_string_view<CharT, Traits>& aString)
+	{
+		auto end = aString.end();
+		for (auto i = aString.begin(); i != end; ++i)
+		{
+			unsigned char nch = static_cast<unsigned char>(*i);
+			unicode_char_t uch = 0;
+			if ((nch & 0x80) == 0)
+				uch = static_cast<unicode_char_t>(nch & 0x7F);
+			else
+			{
+				auto old = i;
+				if (nch == 0xC0 || nch == 0xC1)
+					uch = INVALID_CHAR32;
+				else if ((nch & 0xE0) == 0xC0)
+					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xE0), 1, i, end);
+				else if ((nch & 0xF0) == 0xE0)
+					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF0), 2, i, end);
+				else if ((nch & 0xF8) == 0xF0)
+					uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF8), 3, i, end);
+				else
+					uch = INVALID_CHAR32;
+				if (i == old || uch == INVALID_CHAR32)
+					return false;
+			}
+		}
+		return true;
+	}
+
+	template <typename CharT, typename Traits, typename Alloc>
+	inline bool check_utf8(const std::basic_string<CharT, Traits, Alloc>& aString)
+	{
+		return check_utf8(boost::basic_string_view<CharT, Traits>{ aString });
 	}
 
 	template <typename StringT>

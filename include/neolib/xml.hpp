@@ -551,4 +551,4 @@ namespace neolib
 	#endif
 }
 
-#include "xml_bits.inl"
+#include "xml.inl"

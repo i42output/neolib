@@ -1,4 +1,4 @@
-// xml_bits.inl
+// xml.inl
 /*
  *  NoFussXML v5.3.3
  *

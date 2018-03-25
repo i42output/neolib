@@ -232,6 +232,7 @@
     <ClInclude Include="..\..\..\include\neolib\i_thread.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_vector.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_version.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\json.hpp" />
     <ClInclude Include="..\..\..\include\neolib\lexer.hpp" />
     <ClInclude Include="..\..\..\include\neolib\lifetime.hpp" />
     <ClInclude Include="..\..\..\include\neolib\list.hpp" />
@@ -307,8 +308,11 @@
     <ClInclude Include="..\..\..\include\neolib\win32_message_queue.hpp" />
     <ClInclude Include="..\..\..\include\neolib\win32_module.hpp" />
     <ClInclude Include="..\..\..\include\neolib\xml.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\xml_bits.inl" />
+    <ClInclude Include="..\..\..\include\neolib\xml.inl" />
     <ClInclude Include="..\..\..\include\neolib\zip.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\include\neolib\json.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

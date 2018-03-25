@@ -407,9 +407,6 @@
     <ClInclude Include="..\..\..\include\neolib\xml.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\xml_bits.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\zip.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -488,5 +485,16 @@
     <ClInclude Include="..\..\..\include\neolib\async_thread.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\include\neolib\xml.inl">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\neolib\json.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\include\neolib\json.inl">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

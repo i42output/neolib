@@ -64,21 +64,24 @@ namespace neolib
 		Null
 	};
 
-	template <typename Alloc = std::allocator<char>>
+	template <typename Alloc = std::allocator<json_type>, typename CharT = char, typename Traits = std::char_traits<CharT>, typename CharAlloc = std::allocator<CharT>>
 	class basic_json_value
 	{
 	public:
 		typedef Alloc allocator_type;
-		typedef basic_json_value<allocator_type> self_type;
+		typedef CharT character_type;
+		typedef Traits character_traits_type;
+		typedef CharAlloc character_allocator_type;
+		typedef basic_json_value<allocator_type, character_type, character_traits_type, character_allocator_type> self_type;
 	private:
 		typedef typename allocator_type::template rebind<self_type>::other value_allocator;
 	public:
-		typedef variant<uint64_t, int64_t, double> json_number;
-		typedef std::string json_string;
+		typedef double json_number;
+		typedef basic_quick_string<character_type, character_traits_type, character_allocator_type> json_string;
 		typedef std::true_type json_true;
 		typedef std::false_type json_false;
 		typedef std::nullptr_t json_null;
-		typedef std::map<json_string, self_type, value_allocator> json_object;
+		typedef std::multimap<json_string, self_type, value_allocator> json_object;
 		typedef std::list<self_type, value_allocator> json_array;
 	private:
 		typedef variant<json_object, json_array, json_number, json_string, json_true, json_false, json_null> value_type;
@@ -100,30 +103,59 @@ namespace neolib
 		value_type iValue;
 	};
 
-	template <typename CharT, typename Alloc = std::allocator<CharT>>
+	template <typename Alloc = std::allocator<json_type>, typename CharT = char, typename Traits = std::char_traits<CharT>, typename CharAlloc = std::allocator<CharT>>
 	class basic_json
 	{
 	public:
+		struct json_error : std::runtime_error { json_error(const std::string& aReason) : std::runtime_error(aReason) {} };
+	public:
 		typedef Alloc allocator_type;
-		typedef basic_json_value<allocator_type> value;
+		typedef CharT character_type;
+		typedef Traits character_traits_type;
+		typedef CharAlloc character_allocator_type;
+		typedef basic_json_value<allocator_type, character_type, character_traits_type, character_allocator_type> value;
+		typedef typename value::json_object json_object;
+		typedef typename value::json_array json_array;
+		typedef typename value::json_number json_number;
+		typedef typename value::json_string json_string;
+		typedef typename value::json_true json_true;
+		typedef typename value::json_false json_false;
+		typedef typename value::json_null json_null;
+	private:
+		typedef std::basic_string<CharT, Traits, CharAlloc> std_string;
 	public:
 		basic_json();
-		basic_json(const std::string& aPath);
+		basic_json(const std::string& aPath, bool aValidateUtf8 = false);
+		template <typename Elem, typename ElemTraits>
+		basic_json(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8 = false);
 	public:
-		template <typename Elem, typename Traits>
-		bool read(std::basic_istream<Elem, Traits>& aInput);
-		template <typename Elem, typename Traits>
-		bool write(std::basic_ostream<Elem, Traits>& aOutput);
+		void clear();
+		bool read(const std::string& aPath, bool aValidateUtf8 = false);
+		template <typename Elem, typename ElemTraits>
+		bool read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8 = false);
+		bool write(const std::string& aPath);
+		template <typename Elem, typename ElemTraits>
+		bool write(std::basic_ostream<Elem, ElemTraits>& aOutput);
+	public:
+		const json_string& document() const;
+		const std_string& error_text() const;
+	private:
+		json_string& document();
+	private:
+		json_string iDocumentText;
+		std_string iErrorText;
 	};
 
-	typedef basic_json<char> json;
+	typedef basic_json<> json;
 	typedef json::value json_value;
-	typedef json_value::json_object json_object;
-	typedef json_value::json_array json_array;
-	typedef json_value::json_number json_number;
-	typedef json_value::json_string json_string;
-	typedef json_value::json_true json_true;
-	typedef json_value::json_false json_false;
-	typedef json_value::json_null json_null;
+	typedef json::json_object json_object;
+	typedef json::json_array json_array;
+	typedef json::json_number json_number;
+	typedef json::json_string json_string;
+	typedef json::json_true json_true;
+	typedef json::json_false json_false;
+	typedef json::json_null json_null;
 }
+
+#include "json.inl"
 
