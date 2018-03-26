@@ -65,31 +65,11 @@ namespace neolib
 			HexDigit,
 			DecimalPoint,
 			Exponent,
-			Whitespace
+			Whitespace,
+			TOKEN_COUNT
 		};
-
-		enum class state
-		{
-			Value,
-			Name,
-			EndName,
-			Object,
-			Array,
-			String,
-			NumberIntNeedDigit,
-			NumberInt,
-			NumberFracNeedDigit,
-			NumberFrac,
-			NumberExpSign,
-			NumberExpIntNeedDigit,
-			NumberExpInt,
-			Escaping,
-			EscapingUnicode,
-			STATE_COUNT
-		};
-		constexpr std::size_t STATE_COUNT = static_cast<std::size_t>(state::STATE_COUNT);
-
-		constexpr token TIN = token::Invalid;
+		constexpr std::size_t TOKEN_COUNT = static_cast<std::size_t>(token::TOKEN_COUNT);
+		constexpr token TXX = token::Invalid;
 		constexpr token TOO = token::OpenObject;
 		constexpr token TCO = token::CloseObject;
 		constexpr token TOA = token::OpenArray;
@@ -108,79 +88,236 @@ namespace neolib
 		constexpr token TEX = token::Exponent;
 		constexpr token TWH = token::Whitespace;
 
+		enum class state
+		{
+			Error,
+			Ignore,
+			Element,
+			Object,
+			Array,
+			Close,
+			Value,
+			Keyword,
+			Name,
+			EndName,
+			String,
+			NumberIntNeedDigit,
+			NumberInt,
+			NumberFracNeedDigit,
+			NumberFrac,
+			NumberExpSign,
+			NumberExpIntNeedDigit,
+			NumberExpInt,
+			Escaping,
+			Escaped,
+			EscapingUnicode,
+			STATE_COUNT,
+		};
+		constexpr std::size_t STATE_COUNT = static_cast<std::size_t>(state::STATE_COUNT);
+		constexpr state SXX = state::Error;
+		constexpr state SIG = state::Ignore;
+		constexpr state SEL = state::Element;
+		constexpr state SOB = state::Object;
+		constexpr state SAR = state::Array;
+		constexpr state SCL = state::Close;
+		constexpr state SVA = state::Value;
+		constexpr state SKE = state::Keyword;
+		constexpr state SNA = state::Name;
+		constexpr state SEN = state::EndName;
+		constexpr state SST = state::String;
+		constexpr state SN1 = state::NumberIntNeedDigit;
+		constexpr state SN2 = state::NumberInt;
+		constexpr state SN3 = state::NumberFracNeedDigit;
+		constexpr state SN4 = state::NumberFrac;
+		constexpr state SN5 = state::NumberExpSign;
+		constexpr state SN6 = state::NumberExpIntNeedDigit;
+		constexpr state SN7 = state::NumberExpInt;
+		constexpr state SES = state::Escaping;
+		constexpr state SED = state::Escaped;
+		constexpr state SEU = state::EscapingUnicode;
+
+		const std::array<std::array<state, TOKEN_COUNT>, STATE_COUNT> sStateTables = 
+		{
+			// state::Error
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			}},
+			// state::Ignore
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			}},
+			// state::Element
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			}},
+			// state::Object
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SOB, SCL, SXX, SXX, SXX, SXX, SNA, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG
+			}},
+			// state::Array
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SOB, SXX, SAR, SCL, SXX, SXX, SST, SKE, SXX, SXX, SXX, SN1, SN2, SXX, SXX, SXX, SIG
+			}},
+			// state::Close
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			}},
+			// state::Value
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SOB, SXX, SAR, SXX, SXX, SVA, SST, SKE, SXX, SXX, SXX, SN1, SN2, SXX, SXX, SXX, SIG
+			}},
+			// state::Keyword
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SVA, SXX, SXX, SKE, SXX, SXX, SXX, SXX, SKE, SXX, SXX, SXX, SEL
+			}},
+			// state::Name
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SEN, SNA, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			}},
+			// state::EndName
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SVA, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG
+			}},
+			// state::String
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SEL, SST, SES, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			}},
+			// state::NumberIntNeedDigit
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN2, SXX, SXX, SXX, SXX
+			}},
+			// state::NumberInt
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN2, SXX, SN3, SN5, SEL
+			}},
+			// state::NumberFracNeedDigit
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN4, SXX, SXX, SXX, SXX
+			}},
+			// state::NumberFrac
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN4, SXX, SXX, SN5, SEL
+			}},
+			// state::NumberExpSign
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN6, SN6, SXX, SXX, SXX, SXX, SXX
+			}},
+			// state::NumberExpIntNeedDigit
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN7, SXX, SXX, SXX, SXX
+			}},
+			// state::NumberExpInt
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN7, SXX, SXX, SXX, SEL
+			}},
+			// state::Escaping
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SED, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			}},
+			// state::Escaped
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			}},
+			// state::EscapingUnicode
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			}}
+		};
+
 		const std::array<std::array<token, 256>, STATE_COUNT> sTokenTables =
 		{ 
-			// state::Value 
+			// state::Error 
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TWH, TWH, TIN, TIN, TWH, TIN, TIN, // 0x0
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
-				TWH, TIN, TQT, TIN, TCH, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TDI, TIN, TIN, // 0x2
-				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
-				TIN, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TOA, TIN, TIN, TIN, TCH, // 0x5
-				TIN, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TOO, TIN, TIN, TIN, TIN, // 0x7
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x8
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x9
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xA
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xB
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xC
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xD
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xE
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
 			}},
-			// state::Name 
+			// state::Ignore 
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TWH, TWH, TIN, TIN, TWH, TIN, TIN, // 0x0
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
-				TWH, TIN, TIN, TIN, TCH, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x2
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCL, TIN, TIN, TIN, TIN, TIN, // 0x3
-				TIN, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TIN, TIN, TIN, TIN, TCH, // 0x5
-				TIN, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TIN, TIN, TIN, TIN, TIN, // 0x7
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x8
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x9
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xA
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xB
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xC
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xD
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xE
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
 			}},
-			// state::EndName 
+			// state::Element
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TWH, TWH, TIN, TIN, TWH, TIN, TIN, // 0x0
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
-				TWH, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x2
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TCL, TIN, TIN, TIN, TIN, TIN, // 0x3
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
 			}},
 			// state::Object 
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TWH, TWH, TIN, TIN, TWH, TIN, TIN, // 0x0
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
-				TWH, TIN, TIN, TIN, TCH, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x2
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
-				TIN, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TIN, TIN, TIN, TIN, TCH, // 0x5
-				TIN, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TIN, TIN, TCO, TIN, TIN, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TWH, TXX, TXX, TXX, TCH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TXX, TXX, TXX, TXX, TCH, // 0x5
+				TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TXX, TXX, TCO, TXX, TXX, // 0x7
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x8
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x9
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xA
@@ -193,14 +330,14 @@ namespace neolib
 			// state::Array 
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TWH, TWH, TIN, TIN, TWH, TIN, TIN, // 0x0
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
-				TWH, TIN, TQT, TIN, TCH, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TCM, TDI, TDI, TIN, // 0x2
-				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
-				TIN, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TOA, TIN, TCA, TIN, TCH, // 0x5
-				TIN, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TOO, TIN, TIN, TIN, TIN, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TWH, TXX, TQT, TXX, TCH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCM, TDI, TDI, TXX, // 0x2
+				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TOA, TXX, TCA, TXX, TCH, // 0x5
+				TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TOO, TXX, TXX, TXX, TXX, // 0x7
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x8
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x9
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xA
@@ -210,17 +347,117 @@ namespace neolib
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xE
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xF
 			}},
-			// state::String 
+			// state::Close 
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x0
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
+			}},
+			// state::Value 
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TWH, TXX, TQT, TXX, TCH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TDI, TXX, TXX, // 0x2
+				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TOA, TXX, TXX, TXX, TCH, // 0x5
+				TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TOO, TXX, TXX, TXX, TXX, // 0x7
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x8
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x9
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xA
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xB
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xC
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xD
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xE
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xF
+			}},
+			// state::Keyword 
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TWH, TXX, TXX, TXX, TCH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCL, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TXX, TXX, TXX, TXX, TCH, // 0x5
+				TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TXX, TXX, TXX, TXX, TXX, // 0x7
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x8
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x9
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xA
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xB
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xC
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xD
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xE
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xF
+			}},
+			// state::Name 
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
 				TCH, TCH, TQT, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x2
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x3
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TES, TCH, TCH, TCH, // 0x5
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
-				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TIN, // 0x7
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TXX, // 0x7
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x8
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x9
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xA
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xB
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xC
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xD
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xE
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xF
+			}},
+			// state::EndName 
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TWH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCL, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
+			}},
+			// state::String 
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TCH, TCH, TQT, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x2
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x3
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TES, TCH, TCH, TCH, // 0x5
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
+				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TXX, // 0x7
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x8
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x9
 				TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xA
@@ -233,182 +470,202 @@ namespace neolib
 			// state::NumberIntNeedDigit
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x0
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x2
-				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
-				TIN, TIN, TIN, TIN, TIN, TEX, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
-				TIN, TIN, TIN, TIN, TIN, TEX, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TXX, TXX, TXX, TXX, TEX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+				TXX, TXX, TXX, TXX, TXX, TEX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
 			}},
 			// state::NumberInt
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TWH, TWH, TIN, TIN, TWH, TIN, TIN, // 0x0
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TDP, TIN, // 0x2
-				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
-				TIN, TIN, TIN, TIN, TIN, TEX, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
-				TIN, TIN, TIN, TIN, TIN, TEX, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TDP, TXX, // 0x2
+				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TXX, TXX, TXX, TXX, TEX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+				TXX, TXX, TXX, TXX, TXX, TEX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
 			}},
 			// state::NumberFracNeedDigit
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x0
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x2
-				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
 			}},
 			// state::NumberFrac
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TWH, TWH, TIN, TIN, TWH, TIN, TIN, // 0x0
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x2
-				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
-				TIN, TIN, TIN, TIN, TIN, TEX, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
-				TIN, TIN, TIN, TIN, TIN, TEX, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TXX, TXX, TXX, TXX, TEX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+				TXX, TXX, TXX, TXX, TXX, TEX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
 			}},
 			// state::NumberExpSign
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TWH, TWH, TIN, TIN, TWH, TIN, TIN, // 0x0
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TPL, TIN, TMI, TIN, TIN, // 0x2
-				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TPL, TXX, TMI, TXX, TXX, // 0x2
+				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
 			}},
 			// state::NumberExpIntNeedDigit
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x0
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x2
-				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
 			}},
 			// state::NumberExpInt
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TWH, TWH, TIN, TIN, TWH, TIN, TIN, // 0x0
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x2
-				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+				TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
 			}},
 			// state::Escaping 
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x0
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
-				TIN, TIN, TED, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TED, // 0x2
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TED, TIN, TIN, TIN, // 0x5
-				TIN, TIN, TED, TIN, TIN, TIN, TED, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TED, TIN, // 0x6
-				TIN, TIN, TED, TIN, TED, TED, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TXX, TXX, TED, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TED, // 0x2
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TED, TXX, TXX, TXX, // 0x5
+				TXX, TXX, TED, TXX, TXX, TXX, TED, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TED, TXX, // 0x6
+				TXX, TXX, TED, TXX, TED, TED, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
+			}},
+			// state::Escaped
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
 			}},
 			// state::EscapingUnicode
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TWH, TWH, TIN, TIN, TWH, TIN, TIN, // 0x0
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x1
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x2
-				THD, THD, THD, THD, THD, THD, THD, THD, THD, THD, TIN, TIN, TIN, TIN, TIN, TIN, // 0x3
-				TIN, THD, THD, THD, THD, THD, THD, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x4
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x5
-				TIN, THD, THD, THD, THD, THD, THD, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x6
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x7
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x8
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0x9
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xA
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xB
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xC
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xD
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xE
-				TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, TIN, // 0xF
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+				THD, THD, THD, THD, THD, THD, THD, THD, THD, THD, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+				TXX, THD, THD, THD, THD, THD, THD, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+				TXX, THD, THD, THD, THD, THD, THD, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
 			}}
 		};
 	}
