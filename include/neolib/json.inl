@@ -40,6 +40,7 @@
 #include <neolib/neolib.hpp>
 #include <unordered_map>
 #include <fstream>
+#include <boost/lexical_cast.hpp>
 #include <neolib/string_utils.hpp>
 
 namespace neolib
@@ -780,6 +781,23 @@ namespace neolib
 			std::cout << *nextCh;
 			if (nextState == json_detail::state::Ignore)
 				continue;
+			else if (nextState == json_detail::state::Error)
+			{
+				uint32_t line = 1;
+				uint32_t col = 1;
+				for (auto pos = view.begin(); pos != nextCh; ++pos)
+				{
+					if (*pos == '\n')
+					{
+						++line;
+						col = 1;
+					}
+					else
+						++col;
+				}
+				iErrorText = "JSON parse failure: line " + boost::lexical_cast<std::string>(line) + ", col " + boost::lexical_cast<std::string>(col);
+				return false;
+			}
 			currentState = nextState;
 			if (currentState != previousState)
 				std::cout << "(" << (int)previousState << " >> " << (int)currentState << ")";
