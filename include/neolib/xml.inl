@@ -490,7 +490,7 @@ namespace neolib
 	}
 
 	template <typename CharT, typename Alloc>
-	typename basic_xml<CharT, Alloc>::tag basic_xml<CharT, Alloc>::next_tag(typename basic_xml<CharT, Alloc>::string::const_iterator aNext, typename basic_xml<CharT, Alloc>::string::const_iterator aDocumentEnd)
+	typename basic_xml<CharT, Alloc>::tag basic_xml<CharT, Alloc>::next_tag(typename basic_xml<CharT, Alloc>::string::view_const_iterator aNext, typename basic_xml<CharT, Alloc>::string::view_const_iterator aDocumentEnd)
 	{
 		tag nextTag;
 		nextTag.first = std::find(aNext, aDocumentEnd, CharT(characters<CharT>::sElementTagStart));
@@ -545,7 +545,7 @@ namespace neolib
 	}
 
 	template <typename CharT, typename Alloc>
-	typename basic_xml<CharT, Alloc>::string::const_iterator basic_xml<CharT, Alloc>::parse(node& aNode, const tag& aStartTag, typename basic_xml<CharT, Alloc>::string::const_iterator aDocumentEnd)
+	typename basic_xml<CharT, Alloc>::string::view_const_iterator basic_xml<CharT, Alloc>::parse(node& aNode, const tag& aStartTag, typename basic_xml<CharT, Alloc>::string::view_const_iterator aDocumentEnd)
 	{
 		if (aStartTag.first == aDocumentEnd || aStartTag.first >= aStartTag.second)
 			return aDocumentEnd;
@@ -570,7 +570,7 @@ namespace neolib
 				}
 				theElement.name() = string(elementName.first, elementName.second);
 
-				typename string::const_iterator next = elementName.second;
+				typename string::view_const_iterator next = elementName.second;
 
 				/* get element attributes */
 				while(next != aStartTag.second)
@@ -629,7 +629,7 @@ namespace neolib
 					string content(contentToken.first, contentToken.second);
 					strip_if(content);
 					bool hasContent = false;
-					for (typename string::const_iterator i = content.cbegin(); !hasContent && i != content.cend(); ++i)
+					for (typename string::view_const_iterator i = content.cbegin(); !hasContent && i != content.cend(); ++i)
 					{
 						switch(*i)
 						{
@@ -1096,7 +1096,7 @@ namespace neolib
 	}
 
 	template <typename CharT, typename Alloc>
-	typename basic_xml<CharT, Alloc>::token basic_xml<CharT, Alloc>::next_token(const basic_character_map<CharT>& aDelimeters, bool aIgnoreWhitespace, typename basic_xml<CharT, Alloc>::string::const_iterator aCurrent, typename basic_xml<CharT, Alloc>::string::const_iterator aEnd) const
+	typename basic_xml<CharT, Alloc>::token basic_xml<CharT, Alloc>::next_token(const basic_character_map<CharT>& aDelimeters, bool aIgnoreWhitespace, typename basic_xml<CharT, Alloc>::string::view_const_iterator aCurrent, typename basic_xml<CharT, Alloc>::string::view_const_iterator aEnd) const
 	{
 		if (!aIgnoreWhitespace)
 		{

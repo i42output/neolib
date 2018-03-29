@@ -493,9 +493,17 @@ namespace neolib
 			return get_string();
 		}
 	public:
-		operator string_view_type() const
+		operator string_type() const
+		{
+			return as_view().to_string();
+		}
+		operator string_type&()
 		{
 			return as_string();
+		}
+		operator string_view_type() const
+		{
+			return as_view();
 		}
 	private:
 		const string_type& get_string() const

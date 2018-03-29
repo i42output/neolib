@@ -137,7 +137,36 @@ namespace neolib
 		constexpr state SED = state::Escaped;
 		constexpr state SEU = state::EscapingUnicode;
 
-		const std::array<std::array<state, TOKEN_COUNT>, STATE_COUNT> sStateTables = 
+		inline std::string to_string(state aState)
+		{
+			switch (aState)
+			{
+			case state::Error:				   return std::string{ "Error" };
+			case state::Ignore:				   return std::string{ "Ignore" };
+			case state::Element:			   return std::string{ "Element" };
+			case state::Object:				   return std::string{ "Object" };
+			case state::Array:				   return std::string{ "Array" };
+			case state::Close:				   return std::string{ "Close" };
+			case state::Value:				   return std::string{ "Value" };
+			case state::Keyword:			   return std::string{ "Keyword" };
+			case state::Name:				   return std::string{ "Name" };
+			case state::EndName:			   return std::string{ "EndName" };
+			case state::String:				   return std::string{ "String" };
+			case state::NumberIntNeedDigit:	   return std::string{ "NumberIntNeedDigit" };
+			case state::NumberInt:			   return std::string{ "NumberInt" };
+			case state::NumberFracNeedDigit:   return std::string{ "NumberFracNeedDigit" };
+			case state::NumberFrac:			   return std::string{ "NumberFrac" };
+			case state::NumberExpSign:		   return std::string{ "NumberExpSign" };
+			case state::NumberExpIntNeedDigit: return std::string{ "NumberExpIntNeedDigit" };
+			case state::NumberExpInt:		   return std::string{ "NumberExpInt" };
+			case state::Escaping:			   return std::string{ "Escaping" };
+			case state::Escaped:			   return std::string{ "Escaped" };
+			case state::EscapingUnicode:	   return std::string{ "EscapingUnicode" };
+			default: return std::string{ "??" };
+			}
+		}
+
+		const std::array<std::array<state, TOKEN_COUNT>, STATE_COUNT> sStateTables =
 		{
 			// state::Error
 			std::array<state, TOKEN_COUNT>
@@ -172,7 +201,7 @@ namespace neolib
 			// state::Value
 			std::array<state, TOKEN_COUNT>
 			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SOB, SXX, SAR, SXX, SXX, SVA, SST, SKE, SXX, SXX, SXX, SN1, SN2, SXX, SXX, SXX, SIG
+			    SXX, SOB, SXX, SAR, SXX, SXX, SEL, SST, SKE, SXX, SXX, SXX, SN1, SN2, SXX, SXX, SXX, SIG
 			}},
 			// state::Keyword
 			std::array<state, TOKEN_COUNT>
@@ -774,6 +803,7 @@ namespace neolib
 		std::size_t idx = 0;
 		json_detail::state previousState = json_detail::state::Value;
 		json_detail::state currentState = json_detail::state::Value;
+		value* currentValue = nullptr;
 		for (json_detail::state nextState = json_detail::next_state(previousState, *nextCh);
 			nextCh != endCh; 
 			nextState = json_detail::next_state(currentState, *(++nextCh)))
@@ -798,9 +828,12 @@ namespace neolib
 				iErrorText = "JSON parse failure: line " + boost::lexical_cast<std::string>(line) + ", col " + boost::lexical_cast<std::string>(col);
 				return false;
 			}
-			currentState = nextState;
-			if (currentState != previousState)
-				std::cout << "(" << (int)previousState << " >> " << (int)currentState << ")";
+			if (currentState == json_detail::state::Value && iRoot == boost::none)
+			{
+				iRoot = value{};
+				currentValue = &*iRoot;
+			}
+			currentValue = change_state(currentState, nextState, currentValue);
 			previousState = currentState;
 		}
 

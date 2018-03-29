@@ -61,7 +61,7 @@ namespace neolib
 		// types
 		enum type_e { Document = 0x1, Element = 0x2, Text = 0x4, Comment = 0x8, Declaration = 0x10, Cdata = 0x20, Dtd = 0x40, All = 0xFF };
 		typedef Alloc allocator_type;
-		typedef quick_string<CharT> string;
+		typedef basic_quick_string<CharT> string;
 		typedef xml_node<CharT, allocator_type> node;
 		typedef node* node_ptr;
 	private:
@@ -463,7 +463,7 @@ namespace neolib
 
 		// implementation
 	private:
-		struct tag : std::pair<typename string::const_iterator, typename string::const_iterator>
+		struct tag : std::pair<typename string::view_const_iterator, typename string::view_const_iterator>
 		{
 			typename node::type_e iType;
 			tag() : iType(node::Element) {}
@@ -487,13 +487,13 @@ namespace neolib
 				}
 			}
 		};
-		struct token : std::pair<typename string::const_iterator, typename string::const_iterator>
+		struct token : std::pair<typename string::view_const_iterator, typename string::view_const_iterator>
 		{
 			bool iHasEntities;
 			token() : iHasEntities(false) {}
 		};
-		tag next_tag(typename string::const_iterator aNext, typename string::const_iterator aDocumentEnd);
-		typename string::const_iterator parse(node& aNode, const tag& aStartTag, typename string::const_iterator aDocumentEnd);
+		tag next_tag(typename string::view_const_iterator aNext, typename string::view_const_iterator aDocumentEnd);
+		typename string::view_const_iterator parse(node& aNode, const tag& aStartTag, typename string::view_const_iterator aDocumentEnd);
 		struct node_writer
 		{
 			std::basic_ostream<CharT>& iStream;
@@ -510,7 +510,7 @@ namespace neolib
 		string generate_entities(const string& aString) const;
 		void strip(string& aString) const;
 		void strip_if(string& aString) const;
-		token next_token(const basic_character_map<CharT>& aDelimeters, bool aIgnoreWhitespace, typename string::const_iterator aCurrent, typename string::const_iterator aEnd) const;
+		token next_token(const basic_character_map<CharT>& aDelimeters, bool aIgnoreWhitespace, typename string::view_const_iterator aCurrent, typename string::view_const_iterator aEnd) const;
 
 		// attributes
 	private:
