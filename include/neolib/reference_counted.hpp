@@ -176,6 +176,8 @@ namespace neolib
 		}
 		auto_ref& operator=(const i_auto_ref& aOther)
 		{
+			if (&aOther == this)
+				return *this;
 			reset(aOther.ptr(), aOther.reference_counted());
 			return *this;
 		}
