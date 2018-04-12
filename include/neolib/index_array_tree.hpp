@@ -160,7 +160,7 @@ namespace neolib
 					if (difference != 0)
 					{
 						iSize += difference;
-						if (parent() != 0 && !parent()->is_nil())
+						if (parent() != nullptr && !parent()->is_nil())
 							parent()->set_size(parent()->size() + difference);
 					}
 				}
@@ -189,7 +189,7 @@ namespace neolib
 					if (difference != foreign_index_type{})
 					{
 						iForeignIndex += difference;
-						if (parent() != 0 && !parent()->is_nil())
+						if (parent() != nullptr && !parent()->is_nil())
 							parent()->set_foreign_index(parent()->foreign_index() + difference);
 					}
 				}
@@ -235,10 +235,10 @@ namespace neolib
 	public:
 		index_array_tree(const Alloc& aAllocator = Alloc()) :
 			iAllocator(aAllocator),
-			iRoot(0),
-			iFront(0),
-			iBack(0),
-			iNil(0)
+			iRoot(nullptr),
+			iFront(nullptr),
+			iBack(nullptr),
+			iNil(nullptr)
 		{
 			iNil = std::allocator_traits<node_allocator_type>::allocate(iAllocator, 1);
 			try

@@ -93,7 +93,7 @@ namespace neolib
 			}
 			void* allocate()
 			{
-				if (iHead == 0)
+				if (iHead == nullptr)
 					grow();
 				link* p = iHead;
 				iHead = p->iNext;
@@ -214,7 +214,7 @@ namespace neolib
 			}
 			void* allocate()
 			{
-				if (iHead == 0)
+				if (iHead == nullptr)
 					throw std::bad_alloc("neolib::reserve_allocator::allocate() when full");
 				link* p = iHead;
 				iHead = p->iNext;

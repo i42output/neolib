@@ -55,6 +55,11 @@
 
 namespace neolib
 {
+	namespace json_detail
+	{
+		enum class state;
+	}
+
 	enum class json_type
 	{
 		Object,
@@ -111,6 +116,10 @@ namespace neolib
 	private:
 		typedef variant<json_object, json_array, json_number, json_string, json_true, json_false, json_null> value_type;
 	public:
+		basic_json_value() :
+			iValue{}
+		{
+		}
 		basic_json_value(const value_type& aValue) :
 			iValue{ aValue }
 		{
@@ -139,12 +148,16 @@ namespace neolib
 		{
 			return static_cast<json_type>(iValue.which() - 1);
 		}
+		bool is_composite() const
+		{
+			return type() == json_type::Object || type() == json_type::Array;
+		}
 	public:
 		void accept(i_visitor& aVisitor)
 		{
 			switch(type())
 			{
-			case Object:
+			case json_type::Object:
 				if (has_name())
 					aVisitor.visit(name(), static_variant_cast<const json_object&>(iValue));
 				else
@@ -152,7 +165,7 @@ namespace neolib
 				for (const auto& e : static_variant_cast<const json_object&>(iValue))
 					e.accept(aVisitor);
 				break;
-			case Array:
+			case json_type::Array:
 				if (has_name())
 					aVisitor.visit(name(), static_variant_cast<const json_array&>(iValue));
 				else
@@ -160,31 +173,31 @@ namespace neolib
 				for (const auto& e : static_variant_cast<const json_array&>(iValue))
 					e.accept(aVisitor);
 				break;
-			case Number:
+			case json_type::Number:
 				if (has_name())
 					aVisitor.visit(name(), static_variant_cast<const json_number&>(iValue));
 				else
 					aVisitor.visit(static_variant_cast<const json_number&>(iValue));
 				break;
-			case String:
+			case json_type::String:
 				if (has_name())
 					aVisitor.visit(name(), static_variant_cast<const json_string&>(iValue));
 				else
 					aVisitor.visit(static_variant_cast<const json_string&>(iValue));
 				break;
-			case True:
+			case json_type::True:
 				if (has_name())
 					aVisitor.visit(name(), json_true{});
 				else
 					aVisitor.visit(json_true{});
 				break;
-			case False:
+			case json_type::False:
 				if (has_name())
 					aVisitor.visit(name(), json_false{});
 				else
 					aVisitor.visit(json_false{});
 				break;
-			case Null:
+			case json_type::Null:
 				if (has_name())
 					aVisitor.visit(name(), json_null{});
 				else
@@ -262,9 +275,14 @@ namespace neolib
 	private:
 		json_string& document();
 	private:
+		template <typename Elem, typename ElemTraits>
+		bool do_read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8 = false);
+		value* change_state(json_detail::state aCurrentState, json_detail::state aNextState, value* aCurrentValue);
+	private:
 		json_string iDocumentText;
 		string iErrorText;
 		optional_value iRoot;
+		std::vector<value*> iCompositeValueStack;
 	};
 
 	typedef basic_json<> json;

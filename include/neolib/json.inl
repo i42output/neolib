@@ -739,15 +739,34 @@ namespace neolib
 		std::ifstream input{ aPath };
 		if (!input)
 		{
-			iErrorText = "failed to open '" + aPath + "'";
+			iErrorText = "failed to open JSON file '" + aPath + "'";
 			return false;
 		}
-		return read(input, aValidateUtf8);
+		bool ok = do_read(input, aValidateUtf8);
+		if (!ok)
+			iErrorText = "failed to parse JSON file '" + aPath + "', " + iErrorText;
+		return ok;
 	}
-		
+
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename Elem, typename ElemTraits>
 	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8)
+	{
+		std::ifstream input{ aPath };
+		if (!input)
+		{
+			iErrorText = "failed to read JSON text";
+			return false;
+		}
+		bool ok = do_read(input, aValidateUtf8);
+		if (!ok)
+			iErrorText = "failed to parse JSON text, " + iErrorText;
+		return ok;
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	template <typename Elem, typename ElemTraits>
+	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::do_read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8)
 	{
 		clear();
 
@@ -801,10 +820,9 @@ namespace neolib
 		auto nextCh = view.begin();
 		auto endCh = view.end();
 		std::size_t idx = 0;
-		json_detail::state previousState = json_detail::state::Value;
 		json_detail::state currentState = json_detail::state::Value;
 		value* currentValue = nullptr;
-		for (json_detail::state nextState = json_detail::next_state(previousState, *nextCh);
+		for (json_detail::state nextState = json_detail::next_state(currentState, *nextCh);
 			nextCh != endCh; 
 			nextState = json_detail::next_state(currentState, *(++nextCh)))
 		{
@@ -825,16 +843,16 @@ namespace neolib
 					else
 						++col;
 				}
-				iErrorText = "JSON parse failure: line " + boost::lexical_cast<std::string>(line) + ", col " + boost::lexical_cast<std::string>(col);
+				iErrorText = "line " + boost::lexical_cast<std::string>(line) + ", col " + boost::lexical_cast<std::string>(col);
 				return false;
 			}
-			if (currentState == json_detail::state::Value && iRoot == boost::none)
+			if (nextState == json_detail::state::Value && iRoot == boost::none)
 			{
 				iRoot = value{};
 				currentValue = &*iRoot;
 			}
 			currentValue = change_state(currentState, nextState, currentValue);
-			previousState = currentState;
+			currentState = nextState;
 		}
 
 		return true;
@@ -901,6 +919,15 @@ namespace neolib
 	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::json_string& basic_json<Alloc, CharT, Traits, CharAlloc>::document()
 	{
 		return iDocumentText;
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::value* basic_json<Alloc, CharT, Traits, CharAlloc>::change_state(json_detail::state aCurrentState, json_detail::state aNextState, value* aCurrentValue)
+	{
+		if (aCurrentState == aNextState && aNextState != json_detail::state::Object && aNextState != json_detail::state::Array)
+			return aCurrentValue;
+		std::cout << "(" << to_string(aCurrentState) << " -> " << to_string(aNextState) << ")";
+		return aCurrentValue;
 	}
 }
 

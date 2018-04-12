@@ -116,7 +116,7 @@ namespace neolib
 			node_pointer next() const { return iNext; }
 			node_pointer& next() { return iNext; }
 			bool empty() const { return iNext == this && iPrevious == this; }
-			bool has_parent() const { return iParent != 0; }
+			bool has_parent() const { return iParent != nullptr; }
 			bool is_head() const { return iIsHead; }
 			bool is_root() const { return !has_parent() && is_head(); }
 			size_type depth() const
@@ -213,7 +213,7 @@ namespace neolib
 			typedef NodePointer our_node_pointer_type;
 			typedef NodeWithValuePointer our_node_with_value_pointer_type;
 		protected:
-			iterator_base() : iNode(0) {}
+			iterator_base() : iNode(nullptr) {}
 			iterator_base(our_node_pointer_type aNode) : iNode(aNode) {}
 			iterator_base(const iterator_base& x) : iNode(x.iNode) {}
 			template <typename NodePointer2, typename NodeWithValuePointer2, typename Pointer2, typename Reference2, bool SiblingIterator2>
@@ -383,23 +383,23 @@ namespace neolib
 		
 		// construction
 	public:
-		tree(const element_deleter& elementDeleter = element_deleter()) : iElementDeleter(elementDeleter), iHead(0, true), iSize(0) {}
-		tree(const A& allocator, const element_deleter& elementDeleter = element_deleter()) : iAllocator(allocator), iElementDeleter(elementDeleter), iHead(0, true), iSize(0) {}
-		tree(const tree& rhs) : iAllocator(rhs.iAllocator), iElementDeleter(rhs.iElementDeleter), iHead(0, true), iSize(0)
+		tree(const element_deleter& elementDeleter = element_deleter()) : iElementDeleter(elementDeleter), iHead(nullptr, true), iSize(0) {}
+		tree(const A& allocator, const element_deleter& elementDeleter = element_deleter()) : iAllocator(allocator), iElementDeleter(elementDeleter), iHead(nullptr, true), iSize(0) {}
+		tree(const tree& rhs) : iAllocator(rhs.iAllocator), iElementDeleter(rhs.iElementDeleter), iHead(nullptr, true), iSize(0)
 		{
 			copy(rhs);
 		}
 		template <typename T2, typename A2, typename ElementDeleter2>
-		tree(const tree<T2, A2, ElementDeleter2>& rhs) : iHead(0, true), iSize(0) 
+		tree(const tree<T2, A2, ElementDeleter2>& rhs) : iHead(nullptr, true), iSize(0) 
 		{
 			copy(rhs);
 		}
-		tree(size_type n, parameter_type value = value_type()) : iHead(0, true), iSize(0)
+		tree(size_type n, parameter_type value = value_type()) : iHead(nullptr, true), iSize(0)
 		{
 			insert(begin(), n, value);
 		}
 		template <typename InputIterator>
-		tree(InputIterator first, InputIterator last) : iHead(0, true), iSize(0)
+		tree(InputIterator first, InputIterator last) : iHead(nullptr, true), iSize(0)
 		{
 			insert(begin(), first, last);
 		}
@@ -654,7 +654,7 @@ namespace neolib
 		iterator create_node(const_iterator position, const value_type& value)
 		{
 			node_with_value_pointer newNode = iAllocator.allocate(1);
-			if (position.ptr()->parent() != 0)
+			if (position.ptr()->parent() != nullptr)
 				iAllocator.construct(newNode, node_with_value(position.ptr()->parent(), value));
 			else
 				iAllocator.construct(newNode, node_with_value(&iHead, value));

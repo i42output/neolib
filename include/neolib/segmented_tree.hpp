@@ -82,32 +82,32 @@ namespace neolib
 
 	public:
 		// construction
-		segmented_tree() : iRoot(0) {}
+		segmented_tree() : iRoot(nullptr) {}
 		~segmented_tree() 
 		{
-			if (iRoot != 0)
+			if (iRoot != nullptr)
 				erase(iRoot); 
 		}
 
 		// traversals
-		node_pointer root() { if (iRoot == 0) new_root(0); return iRoot; }
+		node_pointer root() { if (iRoot == nullptr) new_root(nullptr); return iRoot; }
 		const_node_pointer root() const { return iRoot; }
-		bool empty() const { return iRoot == 0 || iRoot->iChildren.size() == 0; }
+		bool empty() const { return iRoot == nullptr || iRoot->iChildren.size() == nullptr; }
 		// modifiers
 		void new_root(node_pointer node)
 		{
-			if (iRoot != 0)
+			if (iRoot != nullptr)
 				erase(iRoot);
-			if (node == 0)
+			if (node == nullptr)
 				node = buy_node(value_type());
 			iRoot = node;
 		}
 		void push_back(node_pointer parent, const value_type& value) 
 		{			
-			if (parent == 0)
+			if (parent == nullptr)
 			{
-				if (iRoot == 0)
-					new_root(0);
+				if (iRoot == nullptr)
+					new_root(nullptr);
 				parent = iRoot;
 			}
 			node_pointer new_node = buy_node(value);
@@ -115,34 +115,34 @@ namespace neolib
 		}
 		void push_front(node_pointer parent, const value_type& value) 
 		{			
-			if (parent == 0)
+			if (parent == nullptr)
 			{
-				if (iRoot == 0)
+				if (iRoot == nullptr)
 					iRoot = buy_node(value_type());
 				parent = iRoot;
 			}
 			node_pointer new_node = buy_node(value);
 			parent->iChildren.insert(parent->iChildren.begin(), new_node);
 		} 
-		void erase(node_pointer position, node_pointer parent = 0) 
+		void erase(node_pointer position, node_pointer parent = nullptr) 
 		{ 
-			if (position == 0)
+			if (position == nullptr)
 				return;
 
 			if (position == iRoot)
-				iRoot = 0;
+				iRoot = nullptr;
 
 			while(!position->iChildren.empty())
 				erase(static_cast<node_pointer>(*position->iChildren.begin()), position);
 
 			iAllocator.destroy(position);
 			iAllocator.deallocate(reinterpret_cast<node_allocator::pointer>(position), 1);
-			if (parent != 0)
+			if (parent != nullptr)
 				parent->children().remove(position, false);
 		}
 		void erase_children(node_pointer position)
 		{
-			if (position == 0)
+			if (position == nullptr)
 				return;
 			while(!position->children().empty())
 				erase(static_cast<node_pointer>(*position->children().begin()), position);

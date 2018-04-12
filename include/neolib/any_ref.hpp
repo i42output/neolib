@@ -140,11 +140,11 @@ namespace neolib
 		friend class any_const_ref;
 		// construction
 	public:
-		any_ref() : iHolder(0) {}
+		any_ref() : iHolder(nullptr) {}
 		template <typename T>
 		any_ref(T& aObject) : iHolder(new (iSpace.iBytes) any_ref_holder<T>(aObject)) {}
-		any_ref(const any_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(iSpace.iBytes) : 0) {}
-		any_ref(any_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(iSpace.iBytes) : 0) {}
+		any_ref(const any_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(iSpace.iBytes) : nullptr) {}
+		any_ref(any_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(iSpace.iBytes) : nullptr) {}
 		~any_ref() { destroy(); }
 		any_ref& operator=(const any_ref& aOther) 
 		{ 
@@ -159,12 +159,12 @@ namespace neolib
 		operator T&() const { if (empty()) throw any_ref_bad_cast(); return *iHolder; }
 		template <typename T>
 		bool is() const { return iHolder && iHolder->is<T>(); }
-		bool something() const { return iHolder != 0; }
+		bool something() const { return iHolder != nullptr; }
 		bool empty() const { return !something(); }
 		void reset() { destroy(); }
 		// implementation
 	private:
-		void destroy() { if (iHolder != 0) iHolder->~any_ref_holder_base(); iHolder = 0; }
+		void destroy() { if (iHolder != nullptr) iHolder->~any_ref_holder_base(); iHolder = nullptr; }
 		// attributes
 	private:
 		union
@@ -179,12 +179,12 @@ namespace neolib
 	{
 		// construction
 	public:
-		any_const_ref() : iHolder(0) {}
+		any_const_ref() : iHolder(nullptr) {}
 		template <typename T>
 		any_const_ref(const T& aObject) : iHolder(new (iSpace.iBytes) any_const_ref_holder<T>(aObject)) {}
-		any_const_ref(const any_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->const_clone(iSpace.iBytes) : 0) {}
-		any_const_ref(const any_const_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(iSpace.iBytes) : 0) {}
-		any_const_ref(any_const_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(iSpace.iBytes) : 0) {}
+		any_const_ref(const any_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->const_clone(iSpace.iBytes) : nullptr) {}
+		any_const_ref(const any_const_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(iSpace.iBytes) : nullptr) {}
+		any_const_ref(any_const_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(iSpace.iBytes) : nullptr) {}
 		~any_const_ref() { destroy(); }
 		any_const_ref& operator=(const any_const_ref& aOther) 
 		{ 
@@ -199,12 +199,12 @@ namespace neolib
 		operator const T&() const { if (empty()) throw any_const_ref_bad_cast(); return *iHolder; }
 		template <typename T>
 		bool is() const { return iHolder && iHolder->is<T>(); }
-		bool something() const { return iHolder != 0; }
+		bool something() const { return iHolder != nullptr; }
 		bool empty() const { return !something(); }
 		void reset() { destroy(); }
 		// implementation
 	private:
-		void destroy() { if (iHolder != 0) iHolder->~any_const_ref_holder_base(); iHolder = 0; }
+		void destroy() { if (iHolder != nullptr) iHolder->~any_const_ref_holder_base(); iHolder = nullptr; }
 		// attributes
 	private:
 		union

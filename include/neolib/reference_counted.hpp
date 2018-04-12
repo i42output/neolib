@@ -136,7 +136,7 @@ namespace neolib
 		typedef typename base::no_object no_object;
 		typedef typename base::interface_not_found interface_not_found;
 	public:
-		auto_ref(Interface* aObject = 0) :
+		auto_ref(Interface* aObject = nullptr) :
 			iObject(aObject), iReferenceCounted(true)
 		{
 			if (valid())
@@ -159,7 +159,7 @@ namespace neolib
 				iObject->add_ref();
 		}
 		auto_ref(i_discoverable& aDiscoverable) :
-			iObject(0), iReferenceCounted(true)
+			iObject(nullptr), iReferenceCounted(true)
 		{
 			if (!aDiscoverable.discover(*this))
 				throw interface_not_found();
@@ -186,7 +186,7 @@ namespace neolib
 		{
 			return iReferenceCounted;
 		}
-		virtual void reset(Interface* aObject = 0, bool aReferenceCounted = true)
+		virtual void reset(Interface* aObject = nullptr, bool aReferenceCounted = true)
 		{
 			auto_ref copy(*this);
 			if (valid() && iReferenceCounted)
@@ -198,15 +198,15 @@ namespace neolib
 		}
 		virtual Interface* release()
 		{
-			if (iObject == 0)
+			if (iObject == nullptr)
 				throw no_object();
 			Interface* releasedObject = static_cast<Interface*>(iObject->release_and_take_ownership());
-			iObject = 0;
+			iObject = nullptr;
 			return releasedObject;
 		}
 		virtual bool valid() const
 		{
-			return iObject != 0;
+			return iObject != nullptr;
 		}
 		virtual Interface* ptr() const
 		{
@@ -214,13 +214,13 @@ namespace neolib
 		}
 		virtual Interface* operator->() const
 		{
-			if (iObject == 0)
+			if (iObject == nullptr)
 				throw no_object();
 			return iObject;
 		}
 		virtual Interface& operator*() const
 		{
-			if (iObject == 0)
+			if (iObject == nullptr)
 				throw no_object();
 			return *iObject;
 		}
@@ -239,7 +239,7 @@ namespace neolib
 		typedef typename base::bad_release bad_release;
 		typedef typename base::wrong_object wrong_object;
 	public:
-		weak_auto_ref(Interface* aObject = 0) :
+		weak_auto_ref(Interface* aObject = nullptr) :
 			iObject(aObject)
 		{
 			if (valid())
@@ -264,7 +264,7 @@ namespace neolib
 				iObject->subcribe_destruction_watcher(*this);
 		}
 		weak_auto_ref(i_discoverable& aDiscoverable) :
-			iObject(0)
+			iObject(nullptr)
 		{
 			if (!aDiscoverable.discover(*this))
 				throw interface_not_found();
@@ -291,7 +291,7 @@ namespace neolib
 		{
 			return false;
 		}
-		virtual void reset(Interface* aObject = 0, bool = false)
+		virtual void reset(Interface* aObject = nullptr, bool = false)
 		{
 			weak_auto_ref copy(*this);
 			iObject = aObject;
@@ -300,14 +300,14 @@ namespace neolib
 		}
 		virtual Interface* release()
 		{
-			if (iObject == 0)
+			if (iObject == nullptr)
 				throw no_object();
 			else
 				throw bad_release();
 		}
 		virtual bool valid() const
 		{
-			return iObject != 0;
+			return iObject != nullptr;
 		}
 		virtual Interface* ptr() const
 		{
@@ -315,13 +315,13 @@ namespace neolib
 		}
 		virtual Interface* operator->() const
 		{
-			if (iObject == 0)
+			if (iObject == nullptr)
 				throw no_object();
 			return iObject;
 		}
 		virtual Interface& operator*() const
 		{
-			if (iObject == 0)
+			if (iObject == nullptr)
 				throw no_object();
 			return *iObject;
 		}
@@ -330,7 +330,7 @@ namespace neolib
 		{
 			if (&aObject != iObject)
 				throw wrong_object();
-			iObject = 0;
+			iObject = nullptr;
 		}
 	private:
 		Interface* iObject;

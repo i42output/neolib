@@ -63,9 +63,9 @@ namespace neolib
 			enum type_e { Send, Post };
 			// construction
 		public:
-			entry(const QueueItem& aItem, type_e aType) : iItem(aItem), iType(aType), iEvent(0), iFrom(0) {}
-			entry(const QueueItem& aItem, type_e aType, const event& aEvent) : iItem(aItem), iType(aType), iEvent(&aEvent), iFrom(0) {}
-			entry(const QueueItem& aItem, type_e aType, const interlockable& aFrom) : iItem(aItem), iType(aType), iEvent(0), iFrom(&aFrom) {}
+			entry(const QueueItem& aItem, type_e aType) : iItem(aItem), iType(aType), iEvent(nullptr), iFrom(nullptr) {}
+			entry(const QueueItem& aItem, type_e aType, const event& aEvent) : iItem(aItem), iType(aType), iEvent(&aEvent), iFrom(nullptr) {}
+			entry(const QueueItem& aItem, type_e aType, const interlockable& aFrom) : iItem(aItem), iType(aType), iEvent(nullptr), iFrom(&aFrom) {}
 			entry(const QueueItem& aItem, type_e aType, const event& aEvent, const interlockable& aFrom) : iItem(aItem), iType(aType), iEvent(&aEvent), iFrom(&aFrom) {}
 			// operations
 		public:
@@ -73,7 +73,7 @@ namespace neolib
 			QueueItem& item() { return iItem; }
 			type_e type() const { return iType; }
 			const interlockable* from() const { return iFrom; }
-			void signal() const { if (iEvent != 0) iEvent->signal_one(); }
+			void signal() const { if (iEvent != nullptr) iEvent->signal_one(); }
 			// attributes
 		private:
 			QueueItem iItem;
@@ -87,7 +87,7 @@ namespace neolib
 		typedef std::vector<iterator> working_list;
 		// construction
 	public:
-		queue() :  iSink(0) {}
+		queue() :  iSink(nullptr) {}
 		queue(sink& aSink) : iSink(&aSink) {}
 		// operations
 	public:
@@ -99,9 +99,9 @@ namespace neolib
 		{
 			return iNewItemEvent.wait(aTimeout_ms);
 		}
-		void loop(bool (*aYieldProc)() = 0)
+		void loop(bool (*aYieldProc)() = nullptr)
 		{
-			if (iSink == 0)
+			if (iSink == nullptr)
 				throw std::logic_error("neolib::queue::loop");
 			while (!aYieldProc || !aYieldProc())
 			{
@@ -109,9 +109,9 @@ namespace neolib
 				process_queue();
 			}
 		}
-		void loop(uint32_t aTimeout_ms, bool (*aYieldProc)() = 0)
+		void loop(uint32_t aTimeout_ms, bool (*aYieldProc)() = nullptr)
 		{
-			if (iSink == 0)
+			if (iSink == nullptr)
 				throw std::logic_error("neolib::queue::loop");
 			while ((!aYieldProc || !aYieldProc()) && wait(aTimeout_ms))
 				process_queue();
@@ -229,7 +229,7 @@ namespace neolib
 		}
 		void process_queue()
 		{
-			if (iSink == 0)
+			if (iSink == nullptr)
 				throw no_sink();
 			while (any())
 			{
@@ -241,7 +241,7 @@ namespace neolib
 		// from interlockable
 		virtual bool purge(const interlockable& aOther)
 		{
-			if (iSink == 0)
+			if (iSink == nullptr)
 				throw std::logic_error("neolib::queue::purge");
 			neolib::lock lock(*this);
 			for (working_list::const_iterator i = iWorkingList.begin(); i != iWorkingList.end(); ++i)

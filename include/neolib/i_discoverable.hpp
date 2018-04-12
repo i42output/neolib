@@ -47,12 +47,12 @@ namespace neolib
 		template <typename Interface>
 		bool discover(i_auto_ref<Interface>& aObject)
 		{
-			void* result = 0;
+			void* result = nullptr;
 			if (discover(Interface::id(), result))
 			{
 				aObject.reset(static_cast<Interface*>(result));
 			}
-			return result != 0;
+			return result != nullptr;
 		}
 		virtual bool discover(const uuid& aId, void*& aObject) = 0;
 	};

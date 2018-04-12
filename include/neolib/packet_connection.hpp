@@ -168,7 +168,7 @@ namespace neolib
 			iError(false),
 			iResolver(aIoTask.networking_io_service().native_object()),
 			iConnected(false),
-			iPacketBeingSent(0),
+			iPacketBeingSent(nullptr),
 			iReceiveBufferPtr(&iReceiveBuffer[0]),
 			iReceivePacket(aOwner.create_empty_packet())
 		{
@@ -192,7 +192,7 @@ namespace neolib
 			iError(false),
 			iResolver(aIoTask.networking_io_service().native_object()),
 			iConnected(false),
-			iPacketBeingSent(0),
+			iPacketBeingSent(nullptr),
 			iReceiveBufferPtr(&iReceiveBuffer[0]),
 			iReceivePacket(aOwner.create_empty_packet())
 		{
@@ -479,7 +479,7 @@ namespace neolib
 				return;
 			if (iSendQueue.empty())
 				return;
-			if (iPacketBeingSent != 0)
+			if (iPacketBeingSent != nullptr)
 				return;
 			iPacketBeingSent = iSendQueue.front();
 			iSendQueue.pop_front();
@@ -538,7 +538,7 @@ namespace neolib
 			if (closed())
 				return;
 			const_packet_pointer sentPacket = iPacketBeingSent;
-			iPacketBeingSent = 0;
+			iPacketBeingSent = nullptr;
 			if (!aError)
 			{
 				iOwner.packet_sent(*sentPacket);

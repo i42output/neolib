@@ -106,10 +106,10 @@ namespace neolib
 		};
 		// construction
 	public:
-		any_const_iterator() : iHolder(0) {}
+		any_const_iterator() : iHolder(nullptr) {}
 		template <typename T>
 		any_const_iterator(const T& aObject) : iHolder(create(aObject)) {}
-		any_const_iterator(const any_const_iterator& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(*this) : 0) {}
+		any_const_iterator(const any_const_iterator& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(*this) : nullptr) {}
 		~any_const_iterator() { destroy(); }
 		any_const_iterator& operator=(const any_const_iterator& aOther) 
 		{ 
@@ -168,7 +168,7 @@ namespace neolib
 		operator T&() { if (empty()) throw bad_cast(); return *iHolder; }
 		template <typename T>
 		bool is() const { return iHolder && iHolder->is<T>(); }
-		bool something() const { return iHolder != 0; }
+		bool something() const { return iHolder != nullptr; }
 		bool empty() const { return !something(); }
 		void reset() { destroy(); }
 		// implementation
@@ -188,7 +188,7 @@ namespace neolib
 				iHolder->~holder_base(); 
 			else 
 				delete iHolder; 
-			iHolder = 0; 
+			iHolder = nullptr; 
 		}
 		// attributes
 	private:
@@ -264,10 +264,10 @@ namespace neolib
 		};
 		// construction
 	public:
-		any_iterator() : iHolder(0) {}
+		any_iterator() : iHolder(nullptr) {}
 		template <typename T>
 		any_iterator(const T& aObject) : iHolder(new holder<T>(aObject)) {}
-		any_iterator(const any_iterator& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(*this) : 0) {}
+		any_iterator(const any_iterator& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(*this) : nullptr) {}
 		~any_iterator() { destroy(); }
 		any_iterator& operator=(const any_iterator& aOther) 
 		{ 
@@ -324,7 +324,7 @@ namespace neolib
 		operator T&() { if (empty()) throw bad_cast(); return *iHolder; }
 		template <typename T>
 		bool is() const { return iHolder && iHolder->is<T>(); }
-		bool something() const { return iHolder != 0; }
+		bool something() const { return iHolder != nullptr; }
 		bool empty() const { return !something(); }
 		void reset() { destroy(); }
 		// implementation
@@ -344,7 +344,7 @@ namespace neolib
 				iHolder->~holder_base(); 
 			else 
 				delete iHolder; 
-			iHolder = 0; 
+			iHolder = nullptr; 
 		}
 		// attributes
 	private:

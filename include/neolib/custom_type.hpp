@@ -102,15 +102,15 @@ namespace neolib
 		}
 		virtual bool operator==(const i_custom_type& aRhs) const
 		{
-			return instance_ptr() == aRhs.instance_ptr() || (instance_ptr() != 0 && aRhs.instance_ptr() != 0 && instance_as<AbstractType>() == aRhs.instance_as<AbstractType>());
+			return instance_ptr() == aRhs.instance_ptr() || (instance_ptr() != nullptr && aRhs.instance_ptr() != nullptr && instance_as<AbstractType>() == aRhs.instance_as<AbstractType>());
 		}
 		virtual bool operator<(const i_custom_type& aRhs) const
 		{
-			return (instance_ptr() != 0 && aRhs.instance_ptr() != 0 && instance_as<AbstractType>() < aRhs.instance_as<AbstractType>()) || (instance_ptr() < aRhs.instance_ptr());
+			return (instance_ptr() != nullptr && aRhs.instance_ptr() != nullptr && instance_as<AbstractType>() < aRhs.instance_as<AbstractType>()) || (instance_ptr() < aRhs.instance_ptr());
 		}
 	public:
-		virtual const void* instance_ptr() const { return iInstance != boost::none ? static_cast<const AbstractType*>(&*iInstance) : static_cast<const AbstractType*>(0); }
-		virtual void* instance_ptr() { return iInstance != boost::none ? static_cast<AbstractType*>(&*iInstance) : static_cast<AbstractType*>(0); }
+		virtual const void* instance_ptr() const { return iInstance != boost::none ? static_cast<const AbstractType*>(&*iInstance) : static_cast<const AbstractType*>(nullptr); }
+		virtual void* instance_ptr() { return iInstance != boost::none ? static_cast<AbstractType*>(&*iInstance) : static_cast<AbstractType*>(nullptr); }
 	private:
 		string iName;
 		container_type iInstance;

@@ -61,7 +61,7 @@ namespace neolib
 		virtual bool operator==(const i_custom_type&) const = 0;
 		virtual bool operator<(const i_custom_type&) const = 0;
 	public:
-		bool has_instance() const { return instance_ptr() != 0; }
+		bool has_instance() const { return instance_ptr() != nullptr; }
 		template <typename T>
 		const T& instance_as() const { if (!has_instance()) throw no_instance();  return *static_cast<const T*>(instance_ptr()); }
 		template <typename T>

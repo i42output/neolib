@@ -50,13 +50,13 @@ namespace neolib
 			// construction
 		public:
 			watcher(lifetime& aParent, bool aMenu) : iParent(&aParent), iMenu(aMenu) { iParent->add(*this); }
-			~watcher() { if (iParent != 0) iParent->remove(*this); }
+			~watcher() { if (iParent != nullptr) iParent->remove(*this); }
 			// operations
 		public:
-			bool lifetime_ended() const { return iParent == 0; }
+			bool lifetime_ended() const { return iParent == nullptr; }
 			bool menu_open() const { return iMenu; }
 		private:
-			void lifetime_ending() { iParent = 0; }
+			void lifetime_ending() { iParent = nullptr; }
 			// attributes
 		private:
 			lifetime* iParent;

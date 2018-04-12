@@ -107,7 +107,7 @@ namespace neolib
 			}
 		private:
 			iterator(segmented_array& aContainer, size_type aContainerPosition) :
-				iContainer(&aContainer), iNode(0), iContainerPosition(aContainerPosition), iSegmentPosition(0)
+				iContainer(&aContainer), iNode(nullptr), iContainerPosition(aContainerPosition), iSegmentPosition(0)
 			{
 				iNode = iContainer->find_node(aContainerPosition, iSegmentPosition);
 				if (iNode->is_nil())
@@ -148,7 +148,7 @@ namespace neolib
 			{
 				if (aDifference < 0)
 					return operator-=(-aDifference);
-				else if (iNode == 0 || aDifference >= static_cast<difference_type>(segment().size() - iSegmentPosition))
+				else if (iNode == nullptr || aDifference >= static_cast<difference_type>(segment().size() - iSegmentPosition))
 					*this = iterator(*iContainer, iContainerPosition + aDifference);
 				else
 				{
@@ -229,7 +229,7 @@ namespace neolib
 			}
 		private:
 			const_iterator(const segmented_array& aContainer, size_type aContainerPosition) :
-				iContainer(&aContainer), iNode(0), iContainerPosition(aContainerPosition), iSegmentPosition(0)
+				iContainer(&aContainer), iNode(nullptr), iContainerPosition(aContainerPosition), iSegmentPosition(0)
 			{
 				iNode = iContainer->find_node(aContainerPosition, iSegmentPosition);
 				if (iNode->is_nil())
@@ -270,7 +270,7 @@ namespace neolib
 			{
 				if (aDifference < 0)
 					return operator-=(-aDifference);
-				else if (iNode == 0 || aDifference >= static_cast<difference_type>(segment().size() - iSegmentPosition))
+				else if (iNode == nullptr || aDifference >= static_cast<difference_type>(segment().size() - iSegmentPosition))
 					*this = const_iterator(*iContainer, iContainerPosition + aDifference);
 				else
 				{
@@ -524,9 +524,9 @@ namespace neolib
 			if (count == 0)
 				return iterator{*this, aPosition.iNode, aPosition.iContainerPosition, aPosition.iSegmentPosition};
 			node* before = aPosition.iNode;
-			node* after = aPosition.iNode ? static_cast<node*>(aPosition.iNode->next()) : 0;
+			node* after = aPosition.iNode ? static_cast<node*>(aPosition.iNode->next()) : nullptr;
 			node* lastNode = aPosition.iNode;
-			if (aPosition.iNode != 0 && count <= static_cast<node*>(aPosition.iNode)->segment().available())
+			if (aPosition.iNode != nullptr && count <= static_cast<node*>(aPosition.iNode)->segment().available())
 			{
 				segment_type& segment = static_cast<node*>(aPosition.iNode)->segment();
 				segment.insert(segment.begin() + aPosition.iSegmentPosition, aFirst, aLast);
@@ -536,7 +536,7 @@ namespace neolib
 			else
 			{
 				lastNode = allocate_space(aPosition, count);
-				if (aPosition.iNode == 0)
+				if (aPosition.iNode == nullptr)
 					aPosition = begin();
 				segment_type& segment = aPosition.iNode->segment();
 				typename segment_type::const_iterator tailEnd = segment.end();
@@ -614,8 +614,8 @@ namespace neolib
 				aCount -= std::min(aCount, (aPosition.iNode->segment().available()));
 			if (aCount == 0)
 				return aPosition.iNode;
-			node* lastNode = 0;
-			if (aCount > 0 && aPosition.iNode && aPosition.iNode->next() != 0 && aCount <= static_cast<node*>(aPosition.iNode->next())->segment().available())
+			node* lastNode = nullptr;
+			if (aCount > 0 && aPosition.iNode && aPosition.iNode->next() != nullptr && aCount <= static_cast<node*>(aPosition.iNode->next())->segment().available())
 			{
 				lastNode = static_cast<node*>(aPosition.iNode->next());
 				aCount -= std::min(aCount, lastNode->segment().available());
@@ -623,7 +623,7 @@ namespace neolib
 			node* nextNode = aPosition.iNode;
 			while (aCount > 0)
 				aCount -= std::min(aCount, (nextNode = allocate_node(nextNode))->segment().available());
-			if (aPosition.iNode == 0)
+			if (aPosition.iNode == nullptr)
 				aPosition = begin();
 			segment_type& segment = aPosition.iNode->segment();
 			if (aPosition.iSegmentPosition < segment.size() && nextNode->segment().available() < segment.size() - aPosition.iSegmentPosition)
@@ -642,7 +642,7 @@ namespace neolib
 				std::allocator_traits<node_allocator_type>::deallocate(iAllocator, newNode, 1);
 				throw;
 			}
-			if (aAfter == 0)
+			if (aAfter == nullptr)
 			{
 				base::set_front_node(newNode);
 				base::set_back_node(newNode);
@@ -650,7 +650,7 @@ namespace neolib
 			else
 			{
 				newNode->set_previous(aAfter);
-				if (aAfter->next() != 0)
+				if (aAfter->next() != nullptr)
 				{
 					newNode->set_next(aAfter->next());
 					aAfter->next()->set_previous(newNode);

@@ -155,7 +155,7 @@ namespace neolib
 					if (difference != 0)
 					{
 						iSize += difference;
-						if (parent() != 0 && !parent()->is_nil())
+						if (parent() != nullptr && !parent()->is_nil())
 							parent()->set_size(parent()->size() + difference);
 					}
 				}

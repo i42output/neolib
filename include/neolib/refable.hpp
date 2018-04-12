@@ -162,27 +162,27 @@ namespace neolib
 
 	template <typename ObjectType>
 	basic_ref<ObjectType>::basic_ref() : 
-		iWeak(false), iObject(0), iPrevious(0), iNext(0) 
+		iWeak(false), iObject(nullptr), iPrevious(nullptr), iNext(nullptr) 
 	{
 	}
 	
 	template <typename ObjectType>
 	basic_ref<ObjectType>::basic_ref(pointer aObject) :
-		iWeak(false), iObject(aObject), iPrevious(0), iNext(0) 
+		iWeak(false), iObject(aObject), iPrevious(nullptr), iNext(nullptr) 
 	{
 		link();
 	}
 
 	template <typename ObjectType>
 	basic_ref<ObjectType>::basic_ref(reference aObject) :
-		iWeak(false), iObject(&aObject), iPrevious(0), iNext(0) 
+		iWeak(false), iObject(&aObject), iPrevious(nullptr), iNext(nullptr) 
 	{
 		link();
 	}
 
 	template <typename ObjectType>
 	basic_ref<ObjectType>::basic_ref(const self& aOther) : 
-		iWeak(false), iObject(aOther.iObject), iPrevious(0), iNext(0) 
+		iWeak(false), iObject(aOther.iObject), iPrevious(nullptr), iNext(nullptr) 
 	{
 		link();
 	}
@@ -214,7 +214,7 @@ namespace neolib
 	template <typename ObjectType>
 	bool basic_ref<ObjectType>::valid() const 
 	{ 
-		return iObject != 0; 
+		return iObject != nullptr; 
 	}
 
 	template <typename ObjectType>
@@ -223,9 +223,9 @@ namespace neolib
 		if (valid())
 		{
 			unlink();
-			iObject = 0;
-			iPrevious = 0;
-			iNext = 0;
+			iObject = nullptr;
+			iPrevious = nullptr;
+			iNext = nullptr;
 		}
 	}
 
@@ -254,7 +254,7 @@ namespace neolib
 	template <typename ObjectType>
 	bool basic_ref<ObjectType>::operator==(const self& aOther) const
 	{
-		if (iObject == 0 || aOther.iObject == 0)
+		if (iObject == nullptr || aOther.iObject == nullptr)
 			return false;
 		else
 			return iObject == aOther.iObject;
@@ -319,7 +319,7 @@ namespace neolib
 	template <typename ObjectType>
 	void basic_ref<ObjectType>::link(self*& aHead)
 	{
-		if (aHead == 0)
+		if (aHead == nullptr)
 			aHead = this;
 		else
 		{
@@ -380,7 +380,7 @@ namespace neolib
 	}
 
 	template <typename ObjectType>
-	refable<ObjectType>::refable() : iConstRefHead(0), iRefHead(0), iDestroying(false)
+	refable<ObjectType>::refable() : iConstRefHead(nullptr), iRefHead(nullptr), iDestroying(false)
 	{
 	}
 
@@ -410,10 +410,10 @@ namespace neolib
 	template <typename ObjectType>
 	bool refable<ObjectType>::any_strong_references() const
 	{
-		for (const const_ref* i = iConstRefHead; i != 0; i = i->next())
+		for (const const_ref* i = iConstRefHead; i != nullptr; i = i->next())
 			if (!i->weak())
 				return true;
-		for (const ref* i = iRefHead; i != 0; i = i->next())
+		for (const ref* i = iRefHead; i != nullptr; i = i->next())
 			if (!i->weak())
 				return true;
 		return false;
@@ -423,10 +423,10 @@ namespace neolib
 	std::size_t refable<ObjectType>::strong_reference_count() const
 	{
 		std::size_t count = 0;
-		for (const const_ref* i = iConstRefHead; i != 0; i = i->next())
+		for (const const_ref* i = iConstRefHead; i != nullptr; i = i->next())
 			if (!i->weak())
 				++count;;
-		for (const ref* i = iRefHead; i != 0; i = i->next())
+		for (const ref* i = iRefHead; i != nullptr; i = i->next())
 			if (!i->weak())
 				++count;
 		return count;

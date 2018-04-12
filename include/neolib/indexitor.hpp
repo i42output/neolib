@@ -118,7 +118,7 @@ namespace neolib
 			}
 		private:
 			iterator(indexitor& aContainer, size_type aContainerPosition) :
-				iContainer{ &aContainer }, iNode{ 0 }, iContainerPosition{ aContainerPosition }
+				iContainer{ &aContainer }, iNode{ nullptr }, iContainerPosition{ aContainerPosition }
 			{
 				iNode = iContainer->find_node(aContainerPosition);
 				if (iNode->is_nil())
@@ -142,7 +142,7 @@ namespace neolib
 			}
 			iterator& operator--()
 			{
-				iNode = static_cast<node*>(iNode != 0 ? iNode->previous() : iContainer->back_node());
+				iNode = static_cast<node*>(iNode != nullptr ? iNode->previous() : iContainer->back_node());
 				--iContainerPosition;
 				return *this;
 			}
@@ -218,7 +218,7 @@ namespace neolib
 			}
 		private:
 			const_iterator(const indexitor& aContainer, size_type aContainerPosition) :
-				iContainer{ &aContainer }, iNode{ 0 }, iContainerPosition{ aContainerPosition }
+				iContainer{ &aContainer }, iNode{ nullptr }, iContainerPosition{ aContainerPosition }
 			{
 				iNode = iContainer->find_node(aContainerPosition);
 				if (iNode->is_nil())
@@ -242,7 +242,7 @@ namespace neolib
 			}
 			const_iterator& operator--()
 			{
-				iNode = static_cast<node*>(iNode != 0 ? iNode->previous() : iContainer->back_node());
+				iNode = static_cast<node*>(iNode != nullptr ? iNode->previous() : iContainer->back_node());
 				--iContainerPosition;
 				return *this;
 			}
@@ -377,9 +377,9 @@ namespace neolib
 		}
 		size_type index(const_iterator aPosition) const
 		{
-			if (aPosition.iNode != 0)
+			if (aPosition.iNode != nullptr)
 			{
-				if (aPosition.iNode->parent() != 0)
+				if (aPosition.iNode->parent() != nullptr)
 					return do_index(aPosition.iNode);
 				else
 					return aPosition.iNode->left_size();
@@ -389,9 +389,9 @@ namespace neolib
 		}
 		size_type index(iterator aPosition) const
 		{
-			if (aPosition.iNode != 0)
+			if (aPosition.iNode != nullptr)
 			{
-				if (aPosition.iNode->parent() != 0)
+				if (aPosition.iNode->parent() != nullptr)
 					return do_index(aPosition.iNode);
 				else
 					return aPosition.iNode->left_size();
@@ -524,21 +524,21 @@ namespace neolib
 		}
 		foreign_index_type foreign_index(const_iterator aPosition) const
 		{
-			if (aPosition.iNode != 0)
+			if (aPosition.iNode != nullptr)
 				return do_foreign_index(aPosition.iNode) + aPosition.iNode->skip().first;
 			else
 				return empty() ? foreign_index_type{} : do_foreign_index(static_cast<const node*>(base::back_node())) + base::back_node()->foreign_index();
 		}
 		foreign_index_type skip_before(const_iterator aPosition) const
 		{
-			if (aPosition.iNode != 0)
+			if (aPosition.iNode != nullptr)
 				return aPosition.iNode->skip().first;
 			else
 				return foreign_index_type{};
 		}
 		foreign_index_type skip_after(const_iterator aPosition) const
 		{
-			if (aPosition.iNode != 0)
+			if (aPosition.iNode != nullptr)
 				return aPosition.iNode->skip().second;
 			else
 				return foreign_index_type{};

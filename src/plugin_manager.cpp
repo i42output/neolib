@@ -78,7 +78,7 @@ namespace neolib
 	{
 		bool loaded = false;
 		i_plugin* newPlugin = create_plugin(aPluginPath);
-		if (newPlugin != 0)
+		if (newPlugin != nullptr)
 			loaded = newPlugin->load();
 		if (loaded)
 			notify_observers(i_subscriber::NotifyPluginLoaded, *newPlugin);
@@ -123,7 +123,7 @@ namespace neolib
 		for (plugin_list::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
 			if ((*i)->id() == aId)
 				return (*i);
-		return 0;
+		return nullptr;
 	}
 
 	bool plugin_manager::open_uri(const i_string& aUri)
@@ -163,17 +163,17 @@ namespace neolib
 	i_plugin* plugin_manager::create_plugin(const i_string& aPluginPath)
 	{
 		auto pm = std::make_unique<module>(aPluginPath.to_std_string());
-		i_plugin* newPlugin = 0;
+		i_plugin* newPlugin = nullptr;
 		try
 		{
 			if (!pm->load())
-				return 0;
+				return nullptr;
 			entry_point entryPoint = pm->procedure<entry_point>("entry_point");
-			if (entryPoint == 0)
-				return 0;
+			if (entryPoint == nullptr)
+				return nullptr;
 			entryPoint(iApplication, string(boost::filesystem::path(aPluginPath.to_std_string()).parent_path().generic_string()), newPlugin);
-			if (newPlugin == 0)
-				return 0;
+			if (newPlugin == nullptr)
+				return nullptr;
 			iPlugins.push_back(newPlugin);
 			iModules[newPlugin->id()] = std::move(pm);
 		}

@@ -118,17 +118,17 @@ namespace neolib
 			}
 			bool has_requester() const
 			{
-				return iRequester != 0;
+				return iRequester != nullptr;
 			}
 			requester_type& requester() const
 			{
-				if (iRequester == 0)
+				if (iRequester == nullptr)
 					throw no_requester();
 				return *iRequester;
 			}
 			void reset()
 			{
-				iRequester = 0;
+				iRequester = nullptr;
 			}
 			void handle_resolve(const boost::system::error_code& aError, iterator aEndPointIterator)
 			{

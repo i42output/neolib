@@ -108,14 +108,14 @@ namespace neolib
 		void reset_cache() const { iEndConstIterator = const_iterator(); iEndIterator = iterator(); }
 		void populate_cache() const 
 		{ 
-			if (iEndConstIterator.wrapped_iterator() == 0) 
+			if (iEndConstIterator.wrapped_iterator() == nullptr)
 				iEndConstIterator = const_iterator(new container_const_iterator(iVector.end())); 
 		}
 		void populate_cache()
 		{
-			if (iEndConstIterator.wrapped_iterator() == 0)
+			if (iEndConstIterator.wrapped_iterator() == nullptr)
 				iEndConstIterator = const_iterator(new container_const_iterator(iVector.end()));
-			if (iEndIterator.wrapped_iterator() == 0)
+			if (iEndIterator.wrapped_iterator() == nullptr)
 				iEndIterator = iterator(new container_iterator(iVector.end()));
 		}
 		// attributes

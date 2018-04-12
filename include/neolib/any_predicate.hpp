@@ -100,10 +100,10 @@ namespace neolib
 		};
 		// construction
 	public:
-		any_predicate() : iHolder(0) {}
+		any_predicate() : iHolder(nullptr) {}
 		template <typename T>
 		any_predicate(const T& aObject) : iHolder(new holder<T>(aObject)) {}
-		any_predicate(const any_predicate& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone() : 0) {}
+		any_predicate(const any_predicate& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone() : nullptr) {}
 		~any_predicate() { destroy(); }
 		any_predicate& operator=(const any_predicate& aOther) 
 		{ 
@@ -126,12 +126,12 @@ namespace neolib
 		operator T&() { if (empty()) throw bad_cast(); return *iHolder; }
 		template <typename T>
 		bool is() const { return iHolder && iHolder->is<T>(); }
-		bool something() const { return iHolder != 0; }
+		bool something() const { return iHolder != nullptr; }
 		bool empty() const { return !something(); }
 		void reset() { destroy(); }
 		// implementation
 	private:
-		void destroy() { delete iHolder; iHolder = 0; }
+		void destroy() { delete iHolder; iHolder = nullptr; }
 		// attributes
 	private:
 		holder_base* iHolder;
