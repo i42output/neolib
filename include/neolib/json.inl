@@ -141,32 +141,54 @@ namespace neolib
 		{
 			switch (aState)
 			{
-			case state::Error:				   return std::string{ "Error" };
-			case state::Ignore:				   return std::string{ "Ignore" };
-			case state::Element:			   return std::string{ "Element" };
-			case state::Object:				   return std::string{ "Object" };
-			case state::Array:				   return std::string{ "Array" };
-			case state::Close:				   return std::string{ "Close" };
-			case state::Value:				   return std::string{ "Value" };
-			case state::Keyword:			   return std::string{ "Keyword" };
-			case state::Name:				   return std::string{ "Name" };
-			case state::EndName:			   return std::string{ "EndName" };
-			case state::String:				   return std::string{ "String" };
-			case state::NumberIntNeedDigit:	   return std::string{ "NumberIntNeedDigit" };
-			case state::NumberInt:			   return std::string{ "NumberInt" };
-			case state::NumberFracNeedDigit:   return std::string{ "NumberFracNeedDigit" };
-			case state::NumberFrac:			   return std::string{ "NumberFrac" };
-			case state::NumberExpSign:		   return std::string{ "NumberExpSign" };
-			case state::NumberExpIntNeedDigit: return std::string{ "NumberExpIntNeedDigit" };
-			case state::NumberExpInt:		   return std::string{ "NumberExpInt" };
-			case state::Escaping:			   return std::string{ "Escaping" };
-			case state::Escaped:			   return std::string{ "Escaped" };
-			case state::EscapingUnicode:	   return std::string{ "EscapingUnicode" };
-			default: return std::string{ "??" };
+			case state::Error: 
+				return std::string{ "Error" };
+			case state::Ignore:
+				return std::string{ "Ignore" };
+			case state::Element:
+				return std::string{ "Element" };
+			case state::Object:
+				return std::string{ "Object" };
+			case state::Array:
+				return std::string{ "Array" };
+			case state::Close:
+				return std::string{ "Close" };
+			case state::Value:
+				return std::string{ "Value" };
+			case state::Keyword:
+				return std::string{ "Keyword" };
+			case state::Name:
+				return std::string{ "Name" };
+			case state::EndName:
+				return std::string{ "EndName" };
+			case state::String:
+				return std::string{ "String" };
+			case state::NumberIntNeedDigit:
+				return std::string{ "NumberIntNeedDigit" };
+			case state::NumberInt:
+				return std::string{ "NumberInt" };
+			case state::NumberFracNeedDigit:
+				return std::string{ "NumberFracNeedDigit" };
+			case state::NumberFrac:
+				return std::string{ "NumberFrac" };
+			case state::NumberExpSign:
+				return std::string{ "NumberExpSign" };
+			case state::NumberExpIntNeedDigit:
+				return std::string{ "NumberExpIntNeedDigit" };
+			case state::NumberExpInt:
+				return std::string{ "NumberExpInt" };
+			case state::Escaping:
+				return std::string{ "Escaping" };
+			case state::Escaped:
+				return std::string{ "Escaped" };
+			case state::EscapingUnicode:
+				return std::string{ "EscapingUnicode" };
+			default:
+				return std::string{ "??" };
 			}
 		}
 
-		const std::array<std::array<state, TOKEN_COUNT>, STATE_COUNT> sStateTables =
+		constexpr std::array<std::array<state, TOKEN_COUNT>, STATE_COUNT> sStateTables =
 		{
 			// state::Error
 			std::array<state, TOKEN_COUNT>
@@ -275,7 +297,7 @@ namespace neolib
 			}}
 		};
 
-		const std::array<std::array<token, 256>, STATE_COUNT> sTokenTables =
+		constexpr std::array<std::array<token, 256>, STATE_COUNT> sTokenTables =
 		{ 
 			// state::Error 
 			std::array<token, 256>
