@@ -49,6 +49,16 @@ namespace neolib
 		void ignore() { iIgnore = true; }
 	};
 
+	struct scoped_atomic_flag
+	{
+		std::atomic<bool>& iFlag;
+		bool iSaved;
+		bool iIgnore;
+		scoped_atomic_flag(std::atomic<bool>& aFlag, bool aValue = true) : iFlag{ aFlag }, iSaved{ aFlag }, iIgnore{ false } { iFlag = aValue; }
+		~scoped_atomic_flag() { if (!iIgnore) iFlag = iSaved; }
+		void ignore() { iIgnore = true; }
+	};
+
 	struct scoped_counter
 	{
 		uint32_t& iCounter;

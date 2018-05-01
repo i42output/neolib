@@ -47,6 +47,7 @@ namespace neolib
 		iName(aName), 
 		iUsingExistingThread(aAttachToCurrentThread), 
 		iState(ReadyToStart), 
+		iId{ aAttachToCurrentThread ? std::this_thread::get_id() : std::thread::id{} },
 		iBlockedCount(0)
 	{
 	}
@@ -262,7 +263,7 @@ namespace neolib
 
 	bool thread::in() const 
 	{
-		if (!started())
+		if (!started() && !using_existing_thread())
 			throw thread_not_started();
 		return std::this_thread::get_id() == iId;
 	}
