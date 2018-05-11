@@ -77,7 +77,7 @@ namespace neolib
 		private:
 			mutable bool iAtom;
 		};
-		typedef std::tr1::shared_ptr<interlock> interlock_ptr;
+		typedef std::shared_ptr<interlock> interlock_ptr;
 		typedef std::map<const interlockable*, interlock_ptr> interlocks;
 		// operations
 	public:

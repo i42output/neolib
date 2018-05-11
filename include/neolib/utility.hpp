@@ -41,6 +41,7 @@
 #pragma once
 
 #include "neolib.hpp"
+#include <array>
 
 namespace neolib
 {

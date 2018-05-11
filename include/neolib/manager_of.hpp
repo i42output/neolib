@@ -47,7 +47,7 @@ namespace neolib
 		// types
 	public:
 		typedef T value_type;
-		typedef std::tr1::shared_ptr<T> value_ptr;
+		typedef std::shared_ptr<T> value_ptr;
 		typedef typename ManagerObserver::notify_type notify_type;
 		typedef typename observable<ManagerObserver> observable_type;
 		// construction

@@ -91,7 +91,7 @@ namespace neolib
 		int error() const { return iError; }
 		// attributes
 	private:
-		std::tr1::shared_ptr<handle> iFile;
+		std::shared_ptr<handle> iFile;
 		int iError;
 	};
 }
