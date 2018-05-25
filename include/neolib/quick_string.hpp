@@ -190,6 +190,17 @@ namespace neolib
 		{ 
 			return get_string().at(n);
 		}
+		const_reference back() const
+		{
+			if (is_view())
+				return get_view_string().back();
+			else
+				return get_string().back();
+		}
+		reference back()
+		{
+			return get_string().back();
+		}
 		// modifiers
 		basic_quick_string& operator+=(const string_type& str) { get_string().operator+=(str); return *this; }
 		basic_quick_string& operator+=(const charT* s) { get_string().operator+=(s); return *this; }

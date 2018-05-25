@@ -189,7 +189,7 @@ namespace neolib
 				return true;
 			if (aMessageQueue.have_message())
 				return false;
-			sleep(0);
+			yield();
 		}
 	}
 

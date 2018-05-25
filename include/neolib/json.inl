@@ -774,13 +774,12 @@ namespace neolib
 	template <typename Elem, typename ElemTraits>
 	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8)
 	{
-		std::ifstream input{ aPath };
-		if (!input)
+		if (!aInput)
 		{
 			iErrorText = "failed to read JSON text";
 			return false;
 		}
-		bool ok = do_read(input, aValidateUtf8);
+		bool ok = do_read(aInput, aValidateUtf8);
 		if (!ok)
 			iErrorText = "failed to parse JSON text, " + iErrorText;
 		return ok;
@@ -813,6 +812,7 @@ namespace neolib
 
 		if (count != typename std::basic_istream<CharT>::pos_type(0))
 		{
+			document().reserve(static_cast<typename json_string::size_type>(count) + 1);
 			document().resize(static_cast<typename json_string::size_type>(count));
 			aInput.read(&document()[0], count);
 			document().resize(static_cast<typename json_string::size_type>(aInput.gcount()));
@@ -831,6 +831,9 @@ namespace neolib
 			iErrorText = "empty document";
 			return false;
 		}
+
+		if (json_detail::sTokenTables[static_cast<std::size_t>(json_detail::state::Value)][document().back()] != json_detail::token::Whitespace)
+			document().push_back('\n');
 
 		if (aValidateUtf8 && !neolib::check_utf8(document().as_view()))
 		{
