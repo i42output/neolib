@@ -192,7 +192,6 @@
     <ClInclude Include="..\..\..\include\neolib\crc.hpp" />
     <ClInclude Include="..\..\..\include\neolib\custom_type.hpp" />
     <ClInclude Include="..\..\..\include\neolib\data_packet.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\destroyable.hpp" />
     <ClInclude Include="..\..\..\include\neolib\detail_memory.hpp" />
     <ClInclude Include="..\..\..\include\neolib\event.hpp" />
     <ClInclude Include="..\..\..\include\neolib\file.hpp" />
@@ -211,7 +210,7 @@
     <ClInclude Include="..\..\..\include\neolib\i_container.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_custom_type.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_custom_type_factory.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\i_destroyable.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_lifetime.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_discoverable.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_iterator.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_list.hpp" />

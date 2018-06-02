@@ -40,11 +40,11 @@
 #include <boost/bind.hpp>
 #include "noncopyable.hpp"
 #include "async_task.hpp"
-#include "destroyable.hpp"
+#include "lifetime.hpp"
 
 namespace neolib
 {
-	class timer : private noncopyable, public destroyable
+	class timer : private noncopyable, public lifetime
 	{
 		// types
 	public:

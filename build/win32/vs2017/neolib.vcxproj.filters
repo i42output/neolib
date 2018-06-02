@@ -134,9 +134,6 @@
     <ClInclude Include="..\..\..\include\neolib\data_packet.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\destroyable.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\detail_memory.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -231,9 +228,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\interlockable.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\lifetime.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\list.hpp">
@@ -461,9 +455,6 @@
     <ClInclude Include="..\..\..\include\neolib\thread_pool.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\i_destroyable.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\task.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -489,6 +480,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\json.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\neolib\i_lifetime.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\neolib\lifetime.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

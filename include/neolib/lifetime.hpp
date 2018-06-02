@@ -36,68 +36,168 @@
 #pragma once
 
 #include "neolib.hpp"
-#include <set>
+#include <unordered_set>
+#include <boost/pool/pool_alloc.hpp>
+#include <boost/optional.hpp>
+#include "i_lifetime.hpp"
 
 namespace neolib
 {
-	class lifetime
+	template <lifetime_state RequiredState>
+	class lifetime_flag : public i_lifetime_flag
 	{
-		// types
+		friend class lifetime;
 	public:
-		class watcher
+		lifetime_flag(const i_lifetime& aOwner) : iOwner{ aOwner }, iState{ iOwner.state() }
 		{
-			friend class lifetime;
-			// construction
-		public:
-			watcher(lifetime& aParent, bool aMenu) : iParent(&aParent), iMenu(aMenu) { iParent->add(*this); }
-			~watcher() { if (iParent != nullptr) iParent->remove(*this); }
-			// operations
-		public:
-			bool lifetime_ended() const { return iParent == nullptr; }
-			bool menu_open() const { return iMenu; }
-		private:
-			void lifetime_ending() { iParent = nullptr; }
-			// attributes
-		private:
-			lifetime* iParent;
-			bool iMenu;
-		};
-	private:
-		typedef std::set<watcher*> watchers;
-		// construction
+			iOwner.add_flag(this);
+		}
+		lifetime_flag(const lifetime_flag& aOther) : iOwner{ aOther.iOwner }, iState{ iOwner.state() }
+		{
+			iOwner.add_flag(this);
+		}
+		~lifetime_flag()
+		{
+			if (!is_destroyed())
+				iOwner.remove_flag(this);
+		}
 	public:
-		~lifetime()
+		bool is_creating() const final
 		{
-			for (watchers::iterator i = iWatchers.begin(); i != iWatchers.end(); ++i)
-				(*i)->lifetime_ending();
+			return iState == lifetime_state::Creating;
 		}
-		// operations
+		bool is_alive() const final
+		{
+			return iState == lifetime_state::Alive;
+		}
+		bool is_destroying() const final
+		{
+			return iState == lifetime_state::Destroying;
+		}
+		bool is_destroyed() const final
+		{
+			return iState == lifetime_state::Destroyed;
+		}
+		operator bool() const final
+		{
+			return iState == RequiredState;
+		}
+	private:
+		void set_alive() final
+		{
+			iState = lifetime_state::Alive;
+		}
+		void set_destroying() final
+		{
+			iState = lifetime_state::Destroying;
+		}
+		void set_destroyed() final
+		{
+			iState = lifetime_state::Destroyed;
+			iOwner.remove_flag(this);
+		}
+	private:
+		const i_lifetime& iOwner;
+		lifetime_state iState;
+	};
+
+	typedef lifetime_flag<lifetime_state::Destroyed> destroyed_flag;
+	typedef boost::optional<destroyed_flag> optional_destroyed_flag;
+
+	class lifetime : public i_lifetime
+	{
 	public:
-		bool menu_open() const
+		typedef neolib::destroyed_flag destroyed_flag;
+	private:
+		typedef std::unordered_set<i_lifetime_flag*, std::hash<i_lifetime_flag*>, std::equal_to<i_lifetime_flag*>, boost::fast_pool_allocator<i_lifetime_flag*>> lifetime_flag_list;
+	public:
+		lifetime(lifetime_state aState = lifetime_state::Alive) : iState{ aState }
 		{
-			for (watchers::const_iterator i = iWatchers.begin(); i != iWatchers.end(); ++i)
-				if ((*i)->menu_open())
-					return true;
-			return false;
 		}
-		// implementation
+		virtual ~lifetime()
+		{
+			if (!is_destroyed())
+			{
+				set_destroying();
+				set_destroyed();
+			}
+		}
+	public:
+		lifetime_state state() const final
+		{
+			return iState;
+		}
+		bool is_creating() const final
+		{
+			return iState == lifetime_state::Creating;
+		}
+		bool is_alive() const final
+		{
+			return iState == lifetime_state::Alive;
+		}
+		bool is_destroying() const final
+		{
+			return iState == lifetime_state::Destroying;
+		}
+		bool is_destroyed() const final
+		{
+			return iState == lifetime_state::Destroyed;
+		}
+		void set_alive() override
+		{
+			if (!is_creating())
+				throw not_creating();
+			iState = lifetime_state::Alive;
+			for (auto i = iFlags.begin(); i != iFlags.end();)
+				(*i++)->set_alive();
+		}
+		void set_destroying() override
+		{
+			if (!is_destroying())
+			{
+				if (is_destroyed())
+					throw already_destroyed();
+				iState = lifetime_state::Destroying;
+				for (auto i = iFlags.begin(); i != iFlags.end();)
+					(*i++)->set_destroying();
+			}
+		}
+		void set_destroyed() override
+		{
+			if (!is_destroyed())
+			{
+				if (iState == lifetime_state::Creating || iState == lifetime_state::Alive)
+					set_destroying();
+				iState = lifetime_state::Destroyed;
+				for (auto i = iFlags.begin(); i != iFlags.end();)
+					(*i++)->set_destroyed();
+			}
+		}
+	public:
+		void add_flag(i_lifetime_flag* aFlag) const final
+		{
+			iFlags.insert(aFlag);
+			switch (iState)
+			{
+			case lifetime_state::Creating:
+			case lifetime_state::Alive:
+				break;
+			case lifetime_state::Destroying:
+				aFlag->set_destroying();
+				break;
+			case lifetime_state::Destroyed:
+			default:
+				aFlag->set_destroying();
+				aFlag->set_destroyed();
+				break;
+			}
+		}
+		void remove_flag(i_lifetime_flag* aFlag) const final
+		{
+			iFlags.erase(aFlag);
+		}
 	private:
-		void add(watcher& aWatcher) 
-		{ 
-			iWatchers.insert(&aWatcher);
-			lifetime_watcher_added(aWatcher);
-		}
-		void remove(watcher& aWatcher) 
-		{ 
-			watchers::iterator i = iWatchers.find(&aWatcher); 
-			if (i != iWatchers.end())
-				iWatchers.erase(i); 
-			lifetime_watcher_removed(aWatcher);
-		}
-		virtual void lifetime_watcher_added(watcher& aWatcher) {}
-		virtual void lifetime_watcher_removed(watcher& aWatcher) {}
-		// attributes
-	private:
-		watchers iWatchers;
+		lifetime_state iState;
+		mutable lifetime_flag_list iFlags;
 	};
 }

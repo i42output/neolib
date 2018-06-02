@@ -40,7 +40,7 @@
 #include <list>
 #include <algorithm>
 #include <cassert>
-#include "destroyable.hpp"
+#include "lifetime.hpp"
 
 namespace neolib
 {
@@ -147,7 +147,7 @@ namespace neolib
 		template <typename OurType>
 		static void do_notify_observers(OurType& aThis, notify_type aType, const void* aParameter = 0, const void* aParameter2 = 0)
 		{
-			destroyable::destroyed_flag destroyed(aThis.iDestroyable);
+			lifetime::destroyed_flag destroyed(aThis.iDestroyable);
 			aThis.iNotifications.push_front(aThis.iObservers);
 			typename notification_list::iterator theNotifications = aThis.iNotifications.begin();
 			while (!theNotifications->empty())
@@ -167,6 +167,6 @@ namespace neolib
 		observer_list iObservers;
 	private:
 		mutable notification_list iNotifications;
-		mutable destroyable iDestroyable;
+		mutable lifetime iDestroyable;
 	};
 }
