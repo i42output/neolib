@@ -56,11 +56,11 @@ namespace neolib
 		typedef const i_lifetime* subject_pointer;
 		typedef Owner* owner_pointer;
 	public:
-		lifetime_flag(const i_lifetime& aSubject, owner_pointer aOwner = nullptr) : iSubject{ &aSubject }, iOwner{ aOwner }, iState { subject().state() }, iDebug{ false }
+		lifetime_flag(const i_lifetime& aSubject, owner_pointer aOwner = nullptr) : iSubject{ &aSubject }, iOwner{ aOwner }, iState { subject().lifetime_state() }, iDebug{ false }
 		{
 			subject().add_flag(this);
 		}
-		lifetime_flag(const lifetime_flag& aOther) : iSubject{ aOther.iSubject }, iOwner{ aOther.iOwner }, iState { subject().state() }, iDebug{ false }
+		lifetime_flag(const lifetime_flag& aOther) : iSubject{ aOther.iSubject }, iOwner{ aOther.iOwner }, iState { subject().lifetime_state() }, iDebug{ false }
 		{
 			subject().add_flag(this);
 		}
@@ -205,7 +205,7 @@ namespace neolib
 	private:
 		typedef typename flag_list_representation_type::mutex_type mutex_type;
 	public:
-		basic_lifetime(lifetime_state aState = lifetime_state::Alive) : iState{ aState }
+		basic_lifetime(enum class lifetime_state aState = lifetime_state::Alive) : iState{ aState }
 		{
 		}
 		virtual ~basic_lifetime()
@@ -219,7 +219,7 @@ namespace neolib
 			iFlagListRep.destroy(this);
 		}
 	public:
-		lifetime_state state() const final
+		enum class lifetime_state lifetime_state() const final
 		{
 			return iState;
 		}
@@ -303,7 +303,7 @@ namespace neolib
 			return iFlagListRep.flags(aLifetime);
 		}
 	private:
-		lifetime_state iState;
+		enum class lifetime_state iState;
 		mutable flag_list_representation_type iFlagListRep;
 	};
 
