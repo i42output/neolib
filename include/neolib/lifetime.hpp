@@ -36,6 +36,7 @@
 #pragma once
 
 #include "neolib.hpp"
+#include <iostream>
 #include <unordered_set>
 #include <unordered_map>
 #include <mutex>
@@ -46,24 +47,27 @@
 
 namespace neolib
 {
-	template <lifetime_state RequiredState>
+	template <lifetime_state RequiredState, typename Owner = void>
 	class lifetime_flag : public i_lifetime_flag
 	{
 		template <typename Mutex>
 		friend class basic_lifetime;
+	private:
+		typedef const i_lifetime* subject_pointer;
+		typedef Owner* owner_pointer;
 	public:
-		lifetime_flag(const i_lifetime& aOwner) : iOwner{ aOwner }, iState{ iOwner.state() }
+		lifetime_flag(const i_lifetime& aSubject, owner_pointer aOwner = nullptr) : iSubject{ &aSubject }, iOwner{ aOwner }, iState { subject().state() }, iDebug{ false }
 		{
-			iOwner.add_flag(this);
+			subject().add_flag(this);
 		}
-		lifetime_flag(const lifetime_flag& aOther) : iOwner{ aOther.iOwner }, iState{ iOwner.state() }
+		lifetime_flag(const lifetime_flag& aOther) : iSubject{ aOther.iSubject }, iOwner{ aOther.iOwner }, iState { subject().state() }, iDebug{ false }
 		{
-			iOwner.add_flag(this);
+			subject().add_flag(this);
 		}
 		~lifetime_flag()
 		{
 			if (!is_destroyed())
-				iOwner.remove_flag(this);
+				subject().remove_flag(this);
 		}
 	public:
 		bool is_creating() const final
@@ -86,23 +90,50 @@ namespace neolib
 		{
 			return iState == RequiredState;
 		}
-	private:
 		void set_alive() final
 		{
+			if (iState == lifetime_state::Alive)
+				return;
+			if (debug())
+				std::cerr << "lifetime_flag::set_alive()" << std::endl;
 			iState = lifetime_state::Alive;
 		}
 		void set_destroying() final
 		{
+			if (iState == lifetime_state::Destroying)
+				return;
+			if (debug())
+				std::cerr << "lifetime_flag::set_destroying()" << std::endl;
 			iState = lifetime_state::Destroying;
 		}
 		void set_destroyed() final
 		{
+			if (iState == lifetime_state::Destroyed)
+				return;
+			if (debug())
+				std::cerr << "lifetime_flag::set_destroyed()" << std::endl;
 			iState = lifetime_state::Destroyed;
-			iOwner.remove_flag(this);
+			subject().remove_flag(this);
+		}
+	public:
+		bool debug() const override
+		{
+			return iDebug;
+		}
+		void set_debug(bool aDebug = true) override
+		{
+			iDebug = aDebug;
 		}
 	private:
-		const i_lifetime& iOwner;
+		const i_lifetime& subject() const
+		{
+			return *iSubject;
+		}
+	private:
+		subject_pointer iSubject;
+		owner_pointer iOwner;
 		lifetime_state iState;
+		bool iDebug;
 	};
 
 	typedef lifetime_flag<lifetime_state::Destroyed> destroyed_flag;

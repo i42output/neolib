@@ -52,6 +52,9 @@ namespace neolib
 		virtual void set_alive() = 0;
 		virtual void set_destroying() = 0;
 		virtual void set_destroyed() = 0;
+	public:
+		virtual bool debug() const = 0;
+		virtual void set_debug(bool aDebug = true) = 0;
 	};
 
 	enum class lifetime_state
