@@ -1,6 +1,6 @@
 // os_version.hpp
 /* 
- * Parts Copyright (c) 2007-present, Leigh Johnston.
+ * Parts Copyright (c) 2007 Leigh Johnston.
  * The author makes no representations about the
  * suitability of this software for any purpose. It is provided
  * "as is" without express or implied warranty.
