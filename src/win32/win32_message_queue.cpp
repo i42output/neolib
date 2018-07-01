@@ -35,7 +35,8 @@ namespace neolib
 
 	bool win32_message_queue::have_message() const
 	{
-		return ::PeekMessage(NULL, NULL, 0, 0, PM_NOREMOVE) != 0;
+		MSG msg;
+		return ::PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE) != 0;
 	}
 
 	int win32_message_queue::get_message() const

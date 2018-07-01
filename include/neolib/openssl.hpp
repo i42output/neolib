@@ -1,6 +1,6 @@
 // openssl.hpp
 /*
- *  Copyright (c) 2007-present, Leigh Johnston.
+ *  Copyright (c) 2007 Leigh Johnston.
  *
  *  All rights reserved.
  *

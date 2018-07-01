@@ -1,6 +1,6 @@
 // variant.hpp - v1.0
 /*
- *  Copyright (c) 2007-present, Leigh Johnston.
+ *  Copyright (c) 2007 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -63,48 +63,52 @@ namespace neolib
 	};
 
 	template <typename Variant, typename T>
-	struct type_id_cracker;
-	template <typename Variant> struct type_id_cracker<Variant, boost::blank> { static const int value = 0; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_1> { static const int value = 1; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_2> { static const int value = 2; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_3> { static const int value = 3; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_4> { static const int value = 4; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_5> { static const int value = 5; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_6> { static const int value = 6; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_7> { static const int value = 7; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_8> { static const int value = 8; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_9> { static const int value = 9; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_10> { static const int value = 10; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_11> { static const int value = 11; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_12> { static const int value = 12; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_13> { static const int value = 13; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_14> { static const int value = 14; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_15> { static const int value = 15; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_16> { static const int value = 16; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_17> { static const int value = 17; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_18> { static const int value = 18; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_19> { static const int value = 19; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_20> { static const int value = 20; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_21> { static const int value = 21; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_22> { static const int value = 22; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_23> { static const int value = 23; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_24> { static const int value = 24; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_25> { static const int value = 25; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_26> { static const int value = 26; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_27> { static const int value = 27; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_28> { static const int value = 28; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_29> { static const int value = 29; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_30> { static const int value = 30; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_31> { static const int value = 31; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_32> { static const int value = 32; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_33> { static const int value = 33; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_34> { static const int value = 34; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_35> { static const int value = 35; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_36> { static const int value = 36; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_37> { static const int value = 37; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_38> { static const int value = 38; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_39> { static const int value = 39; };
-	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_40> { static const int value = 40; };
+	struct type_id_cracker
+	{
+		static constexpr bool valid = false; 
+		static constexpr int value = -1;
+	};
+	template <typename Variant> struct type_id_cracker<Variant, boost::blank> { static constexpr bool valid = true; static constexpr int value = 0; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_1> { static constexpr bool valid = true; static constexpr int value = 1; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_2> { static constexpr bool valid = true; static constexpr int value = 2; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_3> { static constexpr bool valid = true; static constexpr int value = 3; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_4> { static constexpr bool valid = true; static constexpr int value = 4; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_5> { static constexpr bool valid = true; static constexpr int value = 5; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_6> { static constexpr bool valid = true; static constexpr int value = 6; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_7> { static constexpr bool valid = true; static constexpr int value = 7; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_8> { static constexpr bool valid = true; static constexpr int value = 8; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_9> { static constexpr bool valid = true; static constexpr int value = 9; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_10> { static constexpr bool valid = true; static constexpr int value = 10; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_11> { static constexpr bool valid = true; static constexpr int value = 11; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_12> { static constexpr bool valid = true; static constexpr int value = 12; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_13> { static constexpr bool valid = true; static constexpr int value = 13; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_14> { static constexpr bool valid = true; static constexpr int value = 14; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_15> { static constexpr bool valid = true; static constexpr int value = 15; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_16> { static constexpr bool valid = true; static constexpr int value = 16; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_17> { static constexpr bool valid = true; static constexpr int value = 17; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_18> { static constexpr bool valid = true; static constexpr int value = 18; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_19> { static constexpr bool valid = true; static constexpr int value = 19; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_20> { static constexpr bool valid = true; static constexpr int value = 20; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_21> { static constexpr bool valid = true; static constexpr int value = 21; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_22> { static constexpr bool valid = true; static constexpr int value = 22; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_23> { static constexpr bool valid = true; static constexpr int value = 23; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_24> { static constexpr bool valid = true; static constexpr int value = 24; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_25> { static constexpr bool valid = true; static constexpr int value = 25; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_26> { static constexpr bool valid = true; static constexpr int value = 26; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_27> { static constexpr bool valid = true; static constexpr int value = 27; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_28> { static constexpr bool valid = true; static constexpr int value = 28; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_29> { static constexpr bool valid = true; static constexpr int value = 29; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_30> { static constexpr bool valid = true; static constexpr int value = 30; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_31> { static constexpr bool valid = true; static constexpr int value = 31; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_32> { static constexpr bool valid = true; static constexpr int value = 32; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_33> { static constexpr bool valid = true; static constexpr int value = 33; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_34> { static constexpr bool valid = true; static constexpr int value = 34; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_35> { static constexpr bool valid = true; static constexpr int value = 35; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_36> { static constexpr bool valid = true; static constexpr int value = 36; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_37> { static constexpr bool valid = true; static constexpr int value = 37; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_38> { static constexpr bool valid = true; static constexpr int value = 38; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_39> { static constexpr bool valid = true; static constexpr int value = 39; };
+	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_40> { static constexpr bool valid = true; static constexpr int value = 40; };
 
 	template <
 		typename T1, 
@@ -147,7 +151,8 @@ namespace neolib
 		template <typename T>
 		struct type_id
 		{
-			static const int value = type_id_cracker<variant, T>::value;
+			static constexpr bool valid = type_id_cracker<variant, T>::valid;
+			static constexpr int value = type_id_cracker<variant, T>::value;
 		};
 
 		// construction
@@ -162,7 +167,7 @@ namespace neolib
 		{
 		}
 		template <typename T>
-		variant(T&& aValue, typename std::enable_if<!std::is_same<typename std::remove_cv<typename std::remove_reference<T>::type>::type, variant>::value, variant>::type* = nullptr) : 
+		variant(T&& aValue, typename std::enable_if<type_id<typename std::remove_cv<typename std::remove_reference<T>::type>::type>::valid, void>::type* = nullptr) : 
 			iContents(std::forward<T>(aValue))
 		{
 		}

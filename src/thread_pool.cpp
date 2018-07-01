@@ -1,6 +1,6 @@
 // thread_pool.cpp
 /*
- *  Copyright (c) 2007-present, Leigh Johnston.
+ *  Copyright (c) 2007 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -36,7 +36,7 @@
 #include <neolib/neolib.hpp>
 #include <condition_variable>
 #include <neolib/raii.hpp>
-#include <neolib/destroyable.hpp>
+#include <neolib/lifetime.hpp>
 #include <neolib/thread.hpp>
 #include <neolib/thread_pool.hpp>
 

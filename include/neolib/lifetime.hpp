@@ -1,6 +1,6 @@
 // lifetime.hpp
 /*
- *  Copyright (c) 2007-present, Leigh Johnston.
+ *  Copyright (c) 2007 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -36,68 +36,279 @@
 #pragma once
 
 #include "neolib.hpp"
-#include <set>
+#include <iostream>
+#include <unordered_set>
+#include <unordered_map>
+#include <mutex>
+#include <boost/pool/pool_alloc.hpp>
+#include <boost/optional.hpp>
+#include "mutex.hpp"
+#include "i_lifetime.hpp"
 
 namespace neolib
 {
-	class lifetime
+	template <lifetime_state RequiredState, typename Owner = void>
+	class lifetime_flag : public i_lifetime_flag
 	{
-		// types
-	public:
-		class watcher
-		{
-			friend class lifetime;
-			// construction
-		public:
-			watcher(lifetime& aParent, bool aMenu) : iParent(&aParent), iMenu(aMenu) { iParent->add(*this); }
-			~watcher() { if (iParent != nullptr) iParent->remove(*this); }
-			// operations
-		public:
-			bool lifetime_ended() const { return iParent == nullptr; }
-			bool menu_open() const { return iMenu; }
-		private:
-			void lifetime_ending() { iParent = nullptr; }
-			// attributes
-		private:
-			lifetime* iParent;
-			bool iMenu;
-		};
+		template <typename Mutex>
+		friend class basic_lifetime;
 	private:
-		typedef std::set<watcher*> watchers;
-		// construction
+		typedef const i_lifetime* subject_pointer;
+		typedef Owner* owner_pointer;
 	public:
-		~lifetime()
+		lifetime_flag(const i_lifetime& aSubject, owner_pointer aOwner = nullptr) : iSubject{ &aSubject }, iOwner{ aOwner }, iState { subject().lifetime_state() }, iDebug{ false }
 		{
-			for (watchers::iterator i = iWatchers.begin(); i != iWatchers.end(); ++i)
-				(*i)->lifetime_ending();
+			subject().add_flag(this);
 		}
-		// operations
+		lifetime_flag(const lifetime_flag& aOther) : iSubject{ aOther.iSubject }, iOwner{ aOther.iOwner }, iState { subject().lifetime_state() }, iDebug{ false }
+		{
+			subject().add_flag(this);
+		}
+		~lifetime_flag()
+		{
+			if (!is_destroyed())
+				subject().remove_flag(this);
+		}
 	public:
-		bool menu_open() const
+		bool is_creating() const final
 		{
-			for (watchers::const_iterator i = iWatchers.begin(); i != iWatchers.end(); ++i)
-				if ((*i)->menu_open())
-					return true;
-			return false;
+			return iState == lifetime_state::Creating;
 		}
-		// implementation
+		bool is_alive() const final
+		{
+			return iState == lifetime_state::Alive;
+		}
+		bool is_destroying() const final
+		{
+			return iState == lifetime_state::Destroying;
+		}
+		bool is_destroyed() const final
+		{
+			return iState == lifetime_state::Destroyed;
+		}
+		operator bool() const final
+		{
+			return iState == RequiredState;
+		}
+		void set_alive() final
+		{
+			if (iState == lifetime_state::Alive)
+				return;
+			if (debug())
+				std::cerr << "lifetime_flag::set_alive()" << std::endl;
+			iState = lifetime_state::Alive;
+		}
+		void set_destroying() final
+		{
+			if (iState == lifetime_state::Destroying)
+				return;
+			if (debug())
+				std::cerr << "lifetime_flag::set_destroying()" << std::endl;
+			iState = lifetime_state::Destroying;
+		}
+		void set_destroyed() final
+		{
+			if (iState == lifetime_state::Destroyed)
+				return;
+			if (debug())
+				std::cerr << "lifetime_flag::set_destroyed()" << std::endl;
+			iState = lifetime_state::Destroyed;
+			subject().remove_flag(this);
+		}
+	public:
+		bool debug() const override
+		{
+			return iDebug;
+		}
+		void set_debug(bool aDebug = true) override
+		{
+			iDebug = aDebug;
+		}
 	private:
-		void add(watcher& aWatcher) 
-		{ 
-			iWatchers.insert(&aWatcher);
-			lifetime_watcher_added(aWatcher);
+		const i_lifetime& subject() const
+		{
+			return *iSubject;
 		}
-		void remove(watcher& aWatcher) 
-		{ 
-			watchers::iterator i = iWatchers.find(&aWatcher); 
-			if (i != iWatchers.end())
-				iWatchers.erase(i); 
-			lifetime_watcher_removed(aWatcher);
-		}
-		virtual void lifetime_watcher_added(watcher& aWatcher) {}
-		virtual void lifetime_watcher_removed(watcher& aWatcher) {}
-		// attributes
 	private:
-		watchers iWatchers;
+		subject_pointer iSubject;
+		owner_pointer iOwner;
+		lifetime_state iState;
+		bool iDebug;
 	};
+
+	typedef lifetime_flag<lifetime_state::Destroyed> destroyed_flag;
+	typedef boost::optional<destroyed_flag> optional_destroyed_flag;
+
+	class own_flag_list
+	{
+	public:
+		typedef null_mutex mutex_type;
+		typedef std::unordered_set<i_lifetime_flag*, std::hash<i_lifetime_flag*>, std::equal_to<i_lifetime_flag*>, boost::fast_pool_allocator<i_lifetime_flag*>> flag_list;
+	public:
+		static mutex_type& mutex()
+		{
+			static mutex_type sMutex;
+			return sMutex;
+		}
+		flag_list& flags(const i_lifetime*)
+		{
+			return iFlags;
+		}
+		void destroy(const i_lifetime*)
+		{
+		}
+	private:
+		flag_list iFlags;
+	};
+
+	class shared_flag_list
+	{
+	public:
+		typedef std::recursive_mutex mutex_type;
+		typedef std::unordered_set<i_lifetime_flag*, std::hash<i_lifetime_flag*>, std::equal_to<i_lifetime_flag*>, boost::fast_pool_allocator<i_lifetime_flag*>> flag_list;
+	private:
+		typedef std::unordered_map<const i_lifetime*, flag_list, std::hash<const i_lifetime*>, std::equal_to<const i_lifetime*>, boost::fast_pool_allocator<std::pair<const i_lifetime*, i_lifetime_flag*>>> flag_map;
+	public:
+		static mutex_type& mutex()
+		{
+			static mutex_type sMutex;
+			return sMutex;
+		}
+		flag_list& flags(const i_lifetime* aLifetime)
+		{
+			std::lock_guard<mutex_type> lk(mutex());
+			return map()[aLifetime];
+		}
+		void destroy(const i_lifetime* aLifetime)
+		{
+			std::lock_guard<mutex_type> lk(mutex());
+			auto iterMap = map().find(aLifetime);
+			if (iterMap != map().end())
+				map().erase(iterMap);
+		}
+	private:
+		static flag_map& map()
+		{
+			static flag_map sFlagMap;
+			return sFlagMap;
+		}
+	};
+
+	template <typename FlagListRepresentation>
+	class basic_lifetime : public i_lifetime
+	{
+	private:
+		typedef FlagListRepresentation flag_list_representation_type;
+	public:
+		typedef neolib::destroyed_flag destroyed_flag;
+		typedef typename flag_list_representation_type::flag_list flag_list;
+	private:
+		typedef typename flag_list_representation_type::mutex_type mutex_type;
+	public:
+		basic_lifetime(enum class lifetime_state aState = lifetime_state::Alive) : iState{ aState }
+		{
+		}
+		virtual ~basic_lifetime()
+		{
+			std::lock_guard<mutex_type> lk(iFlagListRep.mutex());
+			if (!is_destroyed())
+			{
+				set_destroying();
+				set_destroyed();
+			}
+			iFlagListRep.destroy(this);
+		}
+	public:
+		enum class lifetime_state lifetime_state() const final
+		{
+			return iState;
+		}
+		bool is_creating() const final
+		{
+			return iState == lifetime_state::Creating;
+		}
+		bool is_alive() const final
+		{
+			return iState == lifetime_state::Alive;
+		}
+		bool is_destroying() const final
+		{
+			return iState == lifetime_state::Destroying;
+		}
+		bool is_destroyed() const final
+		{
+			return iState == lifetime_state::Destroyed;
+		}
+		void set_alive() override
+		{
+			std::lock_guard<mutex_type> lk(iFlagListRep.mutex());
+			if (!is_creating())
+				throw not_creating();
+			iState = lifetime_state::Alive;
+			for (auto i = flags(this).begin(); i != flags(this).end();)
+				(*i++)->set_alive();
+		}
+		void set_destroying() override
+		{
+			std::lock_guard<mutex_type> lk(iFlagListRep.mutex());
+			if (!is_destroying())
+			{
+				if (is_destroyed())
+					throw already_destroyed();
+				iState = lifetime_state::Destroying;
+				for (auto i = flags(this).begin(); i != flags(this).end();)
+					(*i++)->set_destroying();
+			}
+		}
+		void set_destroyed() override
+		{
+			std::lock_guard<mutex_type> lk(iFlagListRep.mutex());
+			if (!is_destroyed())
+			{
+				if (iState == lifetime_state::Creating || iState == lifetime_state::Alive)
+					set_destroying();
+				iState = lifetime_state::Destroyed;
+				for (auto i = flags(this).begin(); i != flags(this).end();)
+					(*i++)->set_destroyed();
+			}
+		}
+	public:
+		void add_flag(i_lifetime_flag* aFlag) const final
+		{
+			std::lock_guard<mutex_type> lk(iFlagListRep.mutex());
+			flags(this).insert(aFlag);
+			switch (iState)
+			{
+			case lifetime_state::Creating:
+			case lifetime_state::Alive:
+				break;
+			case lifetime_state::Destroying:
+				aFlag->set_destroying();
+				break;
+			case lifetime_state::Destroyed:
+			default:
+				aFlag->set_destroying();
+				aFlag->set_destroyed();
+				break;
+			}
+		}
+		void remove_flag(i_lifetime_flag* aFlag) const final
+		{
+			std::lock_guard<mutex_type> lk(iFlagListRep.mutex());
+			flags(this).erase(aFlag);
+		}
+	private:
+		flag_list& flags(const i_lifetime* aLifetime) const
+		{
+			return iFlagListRep.flags(aLifetime);
+		}
+	private:
+		enum class lifetime_state iState;
+		mutable flag_list_representation_type iFlagListRep;
+	};
+
+	typedef basic_lifetime<own_flag_list> single_threaded_lifetime;
+	typedef basic_lifetime<shared_flag_list> multi_threaded_lifetime;
+
+	typedef multi_threaded_lifetime lifetime;
 }

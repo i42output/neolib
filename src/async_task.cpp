@@ -1,6 +1,6 @@
 // async_task.cpp - v3.1
 /*
- *  Copyright (c) 2007-present, Leigh Johnston.
+ *  Copyright (c) 2007 Leigh Johnston.
  *
  *  All rights reserved.
  *

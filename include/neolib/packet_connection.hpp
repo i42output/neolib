@@ -1,6 +1,6 @@
 // packet_connection.hpp
 /*
- *  Copyright (c) 2007-present, Leigh Johnston.
+ *  Copyright (c) 2007 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -49,7 +49,7 @@
 #include "resolver.hpp" // protocol_family
 #include "i_packet.hpp"
 #include "variant.hpp"
-#include "destroyable.hpp"
+#include "lifetime.hpp"
 
 namespace neolib
 {
@@ -77,7 +77,7 @@ namespace neolib
 	typedef i_basic_packet_connection_owner<char> packet_connection_owner;
 
 	template <typename CharType, typename Protocol, size_t ReceiveBufferSize = 1024>
-	class basic_packet_connection : public destroyable
+	class basic_packet_connection : public lifetime
 	{
 		// types
 	public:
