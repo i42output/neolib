@@ -62,6 +62,7 @@ namespace neolib
 
 	enum class json_type
 	{
+		Unknown,
 		Object,
 		Array,
 		Number,
@@ -129,6 +130,12 @@ namespace neolib
 		{
 		}
 	public:
+		basic_json_value& operator=(const value_type& aValue)
+		{
+			iValue = aValue;
+			return *this;
+		}
+	public:
 		bool operator<(const self_type& aRhs) const
 		{
 			return name() < aRhs.name();
@@ -146,7 +153,7 @@ namespace neolib
 		}
 		json_type type() const
 		{
-			return static_cast<json_type>(iValue.which() - 1);
+			return static_cast<json_type>(iValue.which());
 		}
 		bool is_composite() const
 		{
@@ -252,6 +259,12 @@ namespace neolib
 		};
 	private:
 		typedef std::basic_string<CharT, Traits, CharAlloc> string;
+		struct parse_value
+		{
+			value* value;
+			json_type type;
+			const char* start;
+		};
 	public:
 		basic_json();
 		basic_json(const std::string& aPath, bool aValidateUtf8 = false);
@@ -277,7 +290,7 @@ namespace neolib
 	private:
 		template <typename Elem, typename ElemTraits>
 		bool do_read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8 = false);
-		value* change_state(json_detail::state aCurrentState, json_detail::state aNextState, value* aCurrentValue);
+		void change_state(json_detail::state aCurrentState, json_detail::state aNextState, const char* aNextCh, parse_value& aCurrentValue);
 	private:
 		json_string iDocumentText;
 		string iErrorText;

@@ -846,7 +846,7 @@ namespace neolib
 		auto endCh = view.end();
 		std::size_t idx = 0;
 		json_detail::state currentState = json_detail::state::Value;
-		value* currentValue = nullptr;
+		parse_value currentValue = {};
 		for (json_detail::state nextState = json_detail::next_state(currentState, *nextCh);
 			nextCh != endCh; 
 			nextState = json_detail::next_state(currentState, *(++nextCh)))
@@ -871,12 +871,12 @@ namespace neolib
 				iErrorText = "line " + boost::lexical_cast<std::string>(line) + ", col " + boost::lexical_cast<std::string>(col);
 				return false;
 			}
-			if (nextState == json_detail::state::Value && iRoot == boost::none)
+			if (currentState == json_detail::state::Value && iRoot == boost::none)
 			{
 				iRoot = value{};
-				currentValue = &*iRoot;
+				currentValue = parse_value{ &*iRoot };
 			}
-			currentValue = change_state(currentState, nextState, currentValue);
+			change_state(currentState, nextState, nextCh, currentValue);
 			currentState = nextState;
 		}
 
@@ -947,12 +947,27 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::value* basic_json<Alloc, CharT, Traits, CharAlloc>::change_state(json_detail::state aCurrentState, json_detail::state aNextState, value* aCurrentValue)
+	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::change_state(json_detail::state aCurrentState, json_detail::state aNextState, const char* aNextCh, parse_value& aCurrentValue)
 	{
 		if (aCurrentState == aNextState && aNextState != json_detail::state::Object && aNextState != json_detail::state::Array)
-			return aCurrentValue;
+			return;
 		std::cout << "(" << to_string(aCurrentState) << " -> " << to_string(aNextState) << ")";
-		return aCurrentValue;
+		switch (aNextState)
+		{
+		case json_detail::state::Element:
+			switch (aCurrentState)
+			{
+			case json_detail::state::String:
+				*aCurrentValue.value = json_string{ aCurrentValue.start, aNextCh };
+				aCurrentValue = parse_value{};
+				break;
+			}
+			break;
+		case json_detail::state::String:
+			aCurrentValue.type = json_type::String;
+			aCurrentValue.start = aNextCh + 1;
+			break;
+		}
 	}
 }
 
