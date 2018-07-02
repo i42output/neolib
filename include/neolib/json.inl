@@ -203,7 +203,7 @@ namespace neolib
 			// state::Element
 			std::array<state, TOKEN_COUNT>
 			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG
 			}},
 			// state::Object
 			std::array<state, TOKEN_COUNT>
@@ -342,9 +342,9 @@ namespace neolib
 			// state::Element
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+			    TWH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
@@ -876,7 +876,7 @@ namespace neolib
 				iRoot = value{};
 				currentValue = parse_value{ &*iRoot };
 			}
-			change_state(currentState, nextState, nextCh, currentValue);
+			nextState = change_state(currentState, nextState, nextCh, currentValue);
 			currentState = nextState;
 		}
 
@@ -947,10 +947,10 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::change_state(json_detail::state aCurrentState, json_detail::state aNextState, const char* aNextCh, parse_value& aCurrentValue)
+	inline json_detail::state basic_json<Alloc, CharT, Traits, CharAlloc>::change_state(json_detail::state aCurrentState, json_detail::state aNextState, const char* aNextCh, parse_value& aCurrentValue)
 	{
 		if (aCurrentState == aNextState && aNextState != json_detail::state::Object && aNextState != json_detail::state::Array)
-			return;
+			return aNextState;
 		std::cout << "(" << to_string(aCurrentState) << " -> " << to_string(aNextState) << ")";
 		switch (aNextState)
 		{
@@ -962,12 +962,18 @@ namespace neolib
 				aCurrentValue = parse_value{};
 				break;
 			}
+			switch (aCurrentValue.type)
+			{
+			case json_type::Unknown:
+				break;
+			}
 			break;
 		case json_detail::state::String:
 			aCurrentValue.type = json_type::String;
 			aCurrentValue.start = aNextCh + 1;
 			break;
 		}
+		return aNextState;
 	}
 }
 

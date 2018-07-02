@@ -290,7 +290,7 @@ namespace neolib
 	private:
 		template <typename Elem, typename ElemTraits>
 		bool do_read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8 = false);
-		void change_state(json_detail::state aCurrentState, json_detail::state aNextState, const char* aNextCh, parse_value& aCurrentValue);
+		json_detail::state change_state(json_detail::state aCurrentState, json_detail::state aNextState, const char* aNextCh, parse_value& aCurrentValue);
 	private:
 		json_string iDocumentText;
 		string iErrorText;
