@@ -160,7 +160,7 @@ namespace neolib
 			return type() == json_type::Object || type() == json_type::Array;
 		}
 	public:
-		void accept(i_visitor& aVisitor)
+		void accept(i_visitor& aVisitor) const
 		{
 			switch(type())
 			{
@@ -228,6 +228,7 @@ namespace neolib
 		typedef CharT character_type;
 		typedef Traits character_traits_type;
 		typedef CharAlloc character_allocator_type;
+		typedef basic_json<Alloc, CharT, Traits, CharAlloc> self_type;
 		typedef basic_json_value<allocator_type, character_type, character_traits_type, character_allocator_type> value;
 		typedef boost::optional<value> optional_value;
 		typedef typename value::json_object json_object;

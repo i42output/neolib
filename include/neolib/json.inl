@@ -832,9 +832,6 @@ namespace neolib
 			return false;
 		}
 
-		if (json_detail::sTokenTables[static_cast<std::size_t>(json_detail::state::Value)][document().back()] != json_detail::token::Whitespace)
-			document().push_back('\n');
-
 		if (aValidateUtf8 && !neolib::check_utf8(document().as_view()))
 		{
 			iErrorText = "invalid utf-8";
@@ -890,12 +887,51 @@ namespace neolib
 		return write(output);
 	}
 
+	namespace
+	{
+		template <typename Alloc, typename CharT, typename Traits, typename CharAlloc, typename Elem, typename ElemTraits>
+		class writer : basic_json<Alloc, CharT, Traits, CharAlloc>::value::i_visitor
+		{
+		public:
+			typedef typename basic_json<Alloc, CharT, Traits, CharAlloc>::value value;
+			typedef typename value::json_object json_object;
+			typedef typename value::json_array json_array;
+			typedef typename value::json_number json_number;
+			typedef typename value::json_string json_string;
+			typedef typename value::json_true json_true;
+			typedef typename value::json_false json_false;
+			typedef typename value::json_null json_null;
+		public:
+			writer(basic_json<Alloc, CharT, Traits, CharAlloc>& aInput, std::basic_ostream<Elem, ElemTraits>& aOutput) : iInput{ aInput }, iOutput { aOutput }
+			{
+				iInput.root().accept(*this);
+			}
+		private:
+			void visit(const json_number& aNumber) override { /* todo */ }
+			void visit(const json_string& aString) override { iOutput << "\"" << aString.as_view() << "\"" << std::endl; }
+			void visit(const json_object& aObject) override { /* todo */ }
+			void visit(const json_array& aArray) override { /* todo */ }
+			void visit(json_true) override { /* todo */ }
+			void visit(json_false) override { /* todo */ }
+			void visit(json_null) override { /* todo */ }
+			void visit(const json_string& aName, const json_number& aNumber) override { /* todo */ }
+			void visit(const json_string& aName, const json_string& aString) override { /* todo */ }
+			void visit(const json_string& aName, const json_object& aObject) override { /* todo */ }
+			void visit(const json_string& aName, const json_array& aArray) override { /* todo */ }
+			void visit(const json_string& aName, json_true) override { /* todo */ }
+			void visit(const json_string& aName, json_false) override { /* todo */ }
+			void visit(const json_string& aName, json_null) override { /* todo */ }
+		private:
+			basic_json<Alloc, CharT, Traits, CharAlloc>& iInput;
+			std::basic_ostream<Elem, ElemTraits>& iOutput;
+		};
+	}
+
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename Elem, typename ElemTraits>
 	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::write(std::basic_ostream<Elem, ElemTraits>& aOutput)
 	{
-		// todo: generate
-
+		writer<Alloc, CharT, Traits, CharAlloc, Elem, ElemTraits> w{ *this, aOutput };
 		return true;
 	}
 
