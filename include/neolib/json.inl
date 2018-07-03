@@ -985,6 +985,18 @@ namespace neolib
 		return iDocumentText;
 	}
 
+	namespace
+	{
+		template <typename StringViewType>
+		struct hash_first_character
+		{
+			std::size_t operator()(const StringViewType& aString) const noexcept
+			{
+				return std::hash<typename StringViewType::value_type>{}(aString[0]);
+			}
+		};
+	}
+
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	inline json_detail::state basic_json<Alloc, CharT, Traits, CharAlloc>::change_state(json_detail::state aCurrentState, json_detail::state aNextState, const character_type* aNextCh, parse_value& aCurrentValue)
 	{
@@ -1006,14 +1018,7 @@ namespace neolib
 				break;
 			case json_type::Keyword:
 				{
-					struct hash_first_character
-					{
-						std::size_t operator()(const json_string::string_view_type& aString) const noexcept
-						{
-							return std::hash<character_type>{}(aString[0]);
-						}
-					};
-					static const std::unordered_map<json_string::string_view_type, json_type, hash_first_character> sJsonKeywords =
+					static const std::unordered_map<json_string::string_view_type, json_type, hash_first_character<json_string::string_view_type>> sJsonKeywords =
 					{
 						{ "true", json_type::True },
 						{ "false", json_type::False },
