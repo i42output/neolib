@@ -41,6 +41,7 @@
 #include <unordered_map>
 #include <fstream>
 #include <boost/lexical_cast.hpp>
+#include <boost/functional/hash.hpp>
 #include <neolib/string_utils.hpp>
 
 namespace neolib
@@ -913,9 +914,9 @@ namespace neolib
 			void visit(const json_string& aString) override { iOutput << "\"" << aString.as_view() << "\"" << std::endl; }
 			void visit(const json_object& aObject) override { /* todo */ }
 			void visit(const json_array& aArray) override { /* todo */ }
-			void visit(json_true) override { /* todo */ }
-			void visit(json_false) override { /* todo */ }
-			void visit(json_null) override { /* todo */ }
+			void visit(json_true) override { iOutput << "true" << std::endl; }
+			void visit(json_false) override { iOutput << "false" << std::endl; }
+			void visit(json_null) override { iOutput << "null" << std::endl; }
 			void visit(const json_string& aName, const json_number& aNumber) override { /* todo */ }
 			void visit(const json_string& aName, const json_string& aString) override { /* todo */ }
 			void visit(const json_string& aName, const json_object& aObject) override { /* todo */ }
@@ -1003,6 +1004,42 @@ namespace neolib
 				*aCurrentValue.value = boost::lexical_cast<json_number>(json_string{ aCurrentValue.start, aNextCh });
 				aCurrentValue = parse_value{};
 				break;
+			case json_type::Keyword:
+				{
+					struct hash_first_character
+					{
+						std::size_t operator()(const json_string::string_view_type& aString) const noexcept
+						{
+							return std::hash<character_type>{}(aString[0]);
+						}
+					};
+					static const std::unordered_map<json_string::string_view_type, json_type, hash_first_character> sJsonKeywords =
+					{
+						{ "true", json_type::True },
+						{ "false", json_type::False },
+						{ "null", json_type::Null }
+					};
+					auto keywordText = json_string{ aCurrentValue.start, aNextCh };
+					auto keyword = sJsonKeywords.find(keywordText);
+					if (keyword != sJsonKeywords.end())
+					{
+						switch (keyword->second)
+						{
+						case json_type::True:
+							*aCurrentValue.value = json_true{};
+							break;
+						case json_type::False:
+							*aCurrentValue.value = json_false{};
+							break;
+						case json_type::Null:
+							*aCurrentValue.value = json_null{};
+							break;
+						}
+					}
+					else
+						*aCurrentValue.value = json_keyword{ keywordText }; // todo: make custom keywords optional and raise parser error if not enabled
+				}
+				break;
 			}
 			switch (aCurrentValue.type)
 			{
@@ -1016,6 +1053,10 @@ namespace neolib
 			break;
 		case json_detail::state::NumberInt:
 			aCurrentValue.type = json_type::Number;
+			aCurrentValue.start = aNextCh;
+			break;
+		case json_detail::state::Keyword:
+			aCurrentValue.type = json_type::Keyword;
 			aCurrentValue.start = aNextCh;
 			break;
 		}

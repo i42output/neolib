@@ -69,7 +69,8 @@ namespace neolib
 		String,
 		True,
 		False,
-		Null
+		Null,
+		Keyword
 	};
 
 	template <typename Alloc = std::allocator<json_type>, typename CharT = char, typename Traits = std::char_traits<CharT>, typename CharAlloc = std::allocator<CharT>>
@@ -93,6 +94,7 @@ namespace neolib
 		typedef std::nullptr_t json_null;
 		typedef std::multiset<self_type, std::less<self_type>, value_allocator> json_object;
 		typedef std::list<self_type, value_allocator> json_array;
+		typedef struct { json_string text; } json_keyword;
 	public:
 		typedef boost::optional<json_string> optional_json_string;
 	public:
@@ -106,6 +108,7 @@ namespace neolib
 			virtual void visit(json_true) = 0;
 			virtual void visit(json_false) = 0;
 			virtual void visit(json_null) = 0;
+			virtual void visit(const json_keyword& aKeyword) {}
 			virtual void visit(const json_string& aName, const json_number& aNumber) = 0;
 			virtual void visit(const json_string& aName, const json_string& aString) = 0;
 			virtual void visit(const json_string& aName, const json_object& aObject) = 0;
@@ -113,9 +116,10 @@ namespace neolib
 			virtual void visit(const json_string& aName, json_true) = 0;
 			virtual void visit(const json_string& aName, json_false) = 0;
 			virtual void visit(const json_string& aName, json_null) = 0;
+			virtual void visit(const json_string& aName, const json_keyword& aKeyword) {}
 		};
 	private:
-		typedef variant<json_object, json_array, json_number, json_string, json_true, json_false, json_null> value_type;
+		typedef variant<json_object, json_array, json_number, json_string, json_true, json_false, json_null, json_keyword> value_type;
 	public:
 		basic_json_value() :
 			iValue{}
@@ -238,6 +242,7 @@ namespace neolib
 		typedef typename value::json_true json_true;
 		typedef typename value::json_false json_false;
 		typedef typename value::json_null json_null;
+		typedef typename value::json_keyword json_keyword;
 	public:
 		typedef typename value::i_visitor i_visitor;
 		class default_visitor : public i_visitor
@@ -309,6 +314,7 @@ namespace neolib
 	typedef json::json_true json_true;
 	typedef json::json_false json_false;
 	typedef json::json_null json_null;
+	typedef json::json_keyword json_keyword;
 }
 
 #include "json.inl"
