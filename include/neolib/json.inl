@@ -268,7 +268,7 @@ namespace neolib
 			// state::NumberExpSign
 			std::array<state, TOKEN_COUNT>
 			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN6, SN6, SXX, SXX, SXX, SXX, SXX
+			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN6, SN6, SN7, SXX, SXX, SXX, SXX
 			}},
 			// state::NumberExpIntNeedDigit
 			std::array<state, TOKEN_COUNT>
@@ -544,7 +544,7 @@ namespace neolib
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TDP, TXX, // 0x2
+			    TWH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TDP, TXX, // 0x2
 			    TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
 			    TXX, TXX, TXX, TXX, TXX, TEX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
@@ -584,7 +584,7 @@ namespace neolib
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+			    TWH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
 			    TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
 			    TXX, TXX, TXX, TXX, TXX, TEX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
@@ -644,7 +644,7 @@ namespace neolib
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+			    TWH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
 			    TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
@@ -832,49 +832,51 @@ namespace neolib
 			return false;
 		}
 
+		if (json_detail::next_state(json_detail::state::Value, document().back()) != json_detail::state::Ignore)
+			document().push_back(character_type{ '\n' });
+			
 		if (aValidateUtf8 && !neolib::check_utf8(document().as_view()))
 		{
 			iErrorText = "invalid utf-8";
 			return false;
 		}
 
-		const auto& view = document().as_view();
-		auto nextCh = view.begin();
-		auto endCh = view.end();
 		std::size_t idx = 0;
+
 		json_detail::state currentState = json_detail::state::Value;
+		json_detail::state nextState;
 		parse_value currentValue = {};
-		for (json_detail::state nextState = json_detail::next_state(currentState, *nextCh);
-			nextCh != endCh; 
-			nextState = json_detail::next_state(currentState, *(++nextCh)))
+
+		auto process_token = [&](const character_type* pch) -> bool
 		{
-			std::cout << *nextCh;
+			nextState = json_detail::next_state(currentState, *pch);
 			if (nextState == json_detail::state::Ignore)
-				continue;
+				return true;
 			else if (nextState == json_detail::state::Error)
-			{
-				uint32_t line = 1;
-				uint32_t col = 1;
-				for (auto pos = view.begin(); pos != nextCh; ++pos)
-				{
-					if (*pos == '\n')
-					{
-						++line;
-						col = 1;
-					}
-					else
-						++col;
-				}
-				iErrorText = "line " + boost::lexical_cast<std::string>(line) + ", col " + boost::lexical_cast<std::string>(col);
 				return false;
-			}
-			if (currentState == json_detail::state::Value && iRoot == boost::none)
+			else if (currentState == json_detail::state::Value && iRoot == boost::none)
 			{
 				iRoot = value{};
 				currentValue = parse_value{ &*iRoot };
 			}
-			nextState = change_state(currentState, nextState, nextCh, currentValue);
+			nextState = change_state(currentState, nextState, pch, currentValue);
 			currentState = nextState;
+			return true;
+		};
+
+		const auto& view = document().as_view();
+		auto viewEnd = view.end();
+		for (auto pch = view.begin(); pch != viewEnd; ++pch)
+		{
+			if (*pch != '\n')
+				std::cout << *pch;
+			else
+				std::cout << "\\n";
+			if (!process_token(pch))
+			{
+				create_parse_error(pch);
+				return false;
+			}
 		}
 
 		return true;
@@ -907,7 +909,7 @@ namespace neolib
 				iInput.root().accept(*this);
 			}
 		private:
-			void visit(const json_number& aNumber) override { /* todo */ }
+			void visit(const json_number& aNumber) override { iOutput << aNumber << std::endl; }
 			void visit(const json_string& aString) override { iOutput << "\"" << aString.as_view() << "\"" << std::endl; }
 			void visit(const json_object& aObject) override { /* todo */ }
 			void visit(const json_array& aArray) override { /* todo */ }
@@ -983,7 +985,7 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline json_detail::state basic_json<Alloc, CharT, Traits, CharAlloc>::change_state(json_detail::state aCurrentState, json_detail::state aNextState, const char* aNextCh, parse_value& aCurrentValue)
+	inline json_detail::state basic_json<Alloc, CharT, Traits, CharAlloc>::change_state(json_detail::state aCurrentState, json_detail::state aNextState, const character_type* aNextCh, parse_value& aCurrentValue)
 	{
 		if (aCurrentState == aNextState && aNextState != json_detail::state::Object && aNextState != json_detail::state::Array)
 			return aNextState;
@@ -991,10 +993,14 @@ namespace neolib
 		switch (aNextState)
 		{
 		case json_detail::state::Element:
-			switch (aCurrentState)
+			switch (aCurrentValue.type)
 			{
-			case json_detail::state::String:
+			case json_type::String:
 				*aCurrentValue.value = json_string{ aCurrentValue.start, aNextCh };
+				aCurrentValue = parse_value{};
+				break;
+			case json_type::Number:
+				*aCurrentValue.value = boost::lexical_cast<json_number>(json_string{ aCurrentValue.start, aNextCh });
 				aCurrentValue = parse_value{};
 				break;
 			}
@@ -1008,8 +1014,30 @@ namespace neolib
 			aCurrentValue.type = json_type::String;
 			aCurrentValue.start = aNextCh + 1;
 			break;
+		case json_detail::state::NumberInt:
+			aCurrentValue.type = json_type::Number;
+			aCurrentValue.start = aNextCh;
+			break;
 		}
 		return aNextState;
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::create_parse_error(const character_type* aDocumentPos)
+	{
+		uint32_t line = 1;
+		uint32_t col = 1;
+		for (auto pos = document().as_view().begin(); pos != aDocumentPos; ++pos)
+		{
+			if (*pos == '\n')
+			{
+				++line;
+				col = 1;
+			}
+			else
+				++col;
+		}
+		iErrorText = "line " + boost::lexical_cast<std::string>(line) + ", col " + boost::lexical_cast<std::string>(col);
 	}
 }
 
