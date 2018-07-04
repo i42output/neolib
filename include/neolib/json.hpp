@@ -134,6 +134,24 @@ namespace neolib
 		{
 		}
 	public:
+		template <typename T>
+		const T& as() const
+		{
+			return static_variant_cast<const T&>(iValue);
+		}
+		template <typename T>
+		T& as()
+		{
+			return static_variant_cast<T&>(iValue);
+		}
+		const value_type& operator*() const
+		{
+			return iValue;
+		}
+		value_type& operator*()
+		{
+			return iValue;
+		}
 		basic_json_value& operator=(const value_type& aValue)
 		{
 			iValue = aValue;
@@ -265,10 +283,16 @@ namespace neolib
 		};
 	private:
 		typedef std::basic_string<CharT, Traits, CharAlloc> string;
-		struct parse_value
+		struct element
 		{
 			value* value;
-			json_type type;
+			enum type_e
+			{
+				Unknown,
+				String,
+				Number,
+				Keyword,
+			} type;
 			const char* start;
 		};
 	public:
@@ -296,7 +320,7 @@ namespace neolib
 	private:
 		template <typename Elem, typename ElemTraits>
 		bool do_read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8 = false);
-		json_detail::state change_state(json_detail::state aCurrentState, json_detail::state aNextState, const character_type* aNextCh, parse_value& aCurrentValue);
+		json_detail::state change_state(json_detail::state aCurrentState, json_detail::state aNextState, const character_type* aNextCh, element& aCurrentElement);
 		void create_parse_error(const character_type* aDocumentPos);
 	private:
 		json_string iDocumentText;

@@ -44,6 +44,8 @@
 #include <boost/functional/hash.hpp>
 #include <neolib/string_utils.hpp>
 
+#define DEBUG_JSON
+
 namespace neolib
 {
 	namespace json_detail
@@ -846,7 +848,7 @@ namespace neolib
 
 		json_detail::state currentState = json_detail::state::Value;
 		json_detail::state nextState;
-		parse_value currentValue = {};
+		element currentElement = {};
 
 		auto process_token = [&](const character_type* pch) -> bool
 		{
@@ -858,9 +860,9 @@ namespace neolib
 			else if (currentState == json_detail::state::Value && iRoot == boost::none)
 			{
 				iRoot = value{};
-				currentValue = parse_value{ &*iRoot };
+				currentElement = element{ &*iRoot };
 			}
-			nextState = change_state(currentState, nextState, pch, currentValue);
+			nextState = change_state(currentState, nextState, pch, currentElement);
 			currentState = nextState;
 			return true;
 		};
@@ -869,10 +871,12 @@ namespace neolib
 		auto viewEnd = view.end();
 		for (auto pch = view.begin(); pch != viewEnd; ++pch)
 		{
+#ifdef DEBUG_JSON
 			if (*pch != '\n')
 				std::cout << *pch;
 			else
 				std::cout << "\\n";
+#endif
 			if (!process_token(pch))
 			{
 				create_parse_error(pch);
@@ -998,25 +1002,34 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline json_detail::state basic_json<Alloc, CharT, Traits, CharAlloc>::change_state(json_detail::state aCurrentState, json_detail::state aNextState, const character_type* aNextCh, parse_value& aCurrentValue)
+	inline json_detail::state basic_json<Alloc, CharT, Traits, CharAlloc>::change_state(json_detail::state aCurrentState, json_detail::state aNextState, const character_type* aNextCh, element& aCurrentElement)
 	{
 		if (aCurrentState == aNextState && aNextState != json_detail::state::Object && aNextState != json_detail::state::Array)
 			return aNextState;
+#ifdef DEBUG_JSON
+		bool changedState = false;
 		std::cout << "(" << to_string(aCurrentState) << " -> " << to_string(aNextState) << ")";
+#endif
 		switch (aNextState)
 		{
 		case json_detail::state::Element:
-			switch (aCurrentValue.type)
+			switch (aCurrentElement.type)
 			{
-			case json_type::String:
-				*aCurrentValue.value = json_string{ aCurrentValue.start, aNextCh };
-				aCurrentValue = parse_value{};
+			case element::Unknown:
 				break;
-			case json_type::Number:
-				*aCurrentValue.value = boost::lexical_cast<json_number>(json_string{ aCurrentValue.start, aNextCh });
-				aCurrentValue = parse_value{};
+			case element::String:
+				if (aCurrentElement.value->type() != json_type::String)
+					**aCurrentElement.value = json_string{ aCurrentElement.start, aNextCh };
+				else
+				{
+					auto& string = aCurrentElement.value->as<json_string>();
+					string.insert(string.end(), aCurrentElement.start, aNextCh);
+				}
 				break;
-			case json_type::Keyword:
+			case element::Number:
+				*aCurrentElement.value = boost::lexical_cast<json_number>(json_string{ aCurrentElement.start, aNextCh });
+				break;
+			case element::Keyword:
 				{
 					static const std::unordered_map<json_string::string_view_type, json_type, hash_first_character<json_string::string_view_type>> sJsonKeywords =
 					{
@@ -1024,47 +1037,91 @@ namespace neolib
 						{ "false", json_type::False },
 						{ "null", json_type::Null }
 					};
-					auto keywordText = json_string{ aCurrentValue.start, aNextCh };
+					auto keywordText = json_string{ aCurrentElement.start, aNextCh };
 					auto keyword = sJsonKeywords.find(keywordText);
 					if (keyword != sJsonKeywords.end())
 					{
 						switch (keyword->second)
 						{
 						case json_type::True:
-							*aCurrentValue.value = json_true{};
+							*aCurrentElement.value = json_true{};
 							break;
 						case json_type::False:
-							*aCurrentValue.value = json_false{};
+							*aCurrentElement.value = json_false{};
 							break;
 						case json_type::Null:
-							*aCurrentValue.value = json_null{};
+							*aCurrentElement.value = json_null{};
 							break;
 						}
 					}
 					else
-						*aCurrentValue.value = json_keyword{ keywordText }; // todo: make custom keywords optional and raise parser error if not enabled
+						*aCurrentElement.value = json_keyword{ keywordText }; // todo: make custom keywords optional and raise parser error if not enabled
 				}
 				break;
 			}
-			switch (aCurrentValue.type)
-			{
-			case json_type::Unknown:
-				break;
-			}
+			aCurrentElement = element{};
 			break;
 		case json_detail::state::String:
-			aCurrentValue.type = json_type::String;
-			aCurrentValue.start = aNextCh + 1;
+			aCurrentElement.type = element::String;
+			aCurrentElement.start = aNextCh + 1;
 			break;
 		case json_detail::state::NumberInt:
-			aCurrentValue.type = json_type::Number;
-			aCurrentValue.start = aNextCh;
+			aCurrentElement.type = element::Number;
+			aCurrentElement.start = aNextCh;
 			break;
 		case json_detail::state::Keyword:
-			aCurrentValue.type = json_type::Keyword;
-			aCurrentValue.start = aNextCh;
+			aCurrentElement.type = element::Keyword;
+			aCurrentElement.start = aNextCh;
+			break;
+		case json_detail::state::Escaped:
+			{
+				if (aCurrentElement.value->type() != json_type::String)
+					*aCurrentElement.value = json_string{ aCurrentElement.start, aNextCh - 1 };
+				else
+				{
+					auto& string = aCurrentElement.value->as<json_string>();
+					string.insert(string.end(), aCurrentElement.start, aNextCh - 1);
+				}
+				auto& string = aCurrentElement.value->as<json_string>();
+				switch (*(aNextCh))
+				{
+				case '\"':
+					string.push_back('\"');
+					break;
+				case '\\':
+					string.push_back('\\');
+					break;
+				case '/':
+					string.push_back('/');
+					break;
+				case 'b':
+					string.push_back('\b');
+					break;
+				case 'f':
+					string.push_back('\f');
+					break;
+				case 'n':
+					string.push_back('\n');
+					break;
+				case 'r':
+					string.push_back('\r');
+					break;
+				case 't':
+					string.push_back('\t');
+					break;
+				}
+				aCurrentElement.start = aNextCh + 1;
+				aNextState = json_detail::state::String;
+#ifdef DEBUG_JSON
+				changedState = true;
+#endif
+			}
 			break;
 		}
+#ifdef DEBUG_JSON
+		if (changedState)
+			std::cout << "(" << to_string(aNextState) << ")";
+#endif
 		return aNextState;
 	}
 
