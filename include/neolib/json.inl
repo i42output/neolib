@@ -62,6 +62,7 @@ namespace neolib
 			Quote,
 			Character,
 			Escape,
+			EscapingUnicode,
 			Escaped,
 			Plus,
 			Minus,
@@ -83,6 +84,7 @@ namespace neolib
 		constexpr token TQT = token::Quote;
 		constexpr token TCH = token::Character;
 		constexpr token TES = token::Escape;
+		constexpr token TEU = token::EscapingUnicode;
 		constexpr token TED = token::Escaped;
 		constexpr token TPL = token::Plus;
 		constexpr token TMI = token::Minus;
@@ -195,108 +197,108 @@ namespace neolib
 		{
 			// state::Error
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
 			}},
 			// state::Ignore
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
 			}},
 			// state::Element
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG
 			}},
 			// state::Object
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SOB, SCL, SXX, SXX, SXX, SXX, SNA, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SOB, SCL, SXX, SXX, SXX, SXX, SNA, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG
 			}},
 			// state::Array
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SOB, SXX, SAR, SCL, SXX, SXX, SST, SKE, SXX, SXX, SXX, SN1, SN2, SXX, SXX, SXX, SIG
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SOB, SXX, SAR, SCL, SXX, SXX, SST, SKE, SXX, SXX, SXX, SXX, SN1, SN2, SXX, SXX, SXX, SIG
 			}},
 			// state::Close
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
 			}},
 			// state::Value
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SOB, SXX, SAR, SXX, SXX, SEL, SST, SKE, SXX, SXX, SXX, SN1, SN2, SXX, SXX, SXX, SIG
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SOB, SXX, SAR, SXX, SXX, SEL, SST, SKE, SXX, SXX, SXX, SXX, SN1, SN2, SXX, SXX, SXX, SIG
 			}},
 			// state::Keyword
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SVA, SXX, SXX, SKE, SXX, SXX, SXX, SXX, SKE, SXX, SXX, SXX, SEL
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SVA, SXX, SXX, SKE, SXX, SXX, SXX, SXX, SXX, SKE, SXX, SXX, SXX, SEL
 			}},
 			// state::Name
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SEN, SNA, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SEN, SNA, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
 			}},
 			// state::EndName
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SVA, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SVA, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG
 			}},
 			// state::String
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SEL, SST, SES, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SEL, SST, SES, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
 			}},
 			// state::NumberIntNeedDigit
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN2, SXX, SXX, SXX, SXX
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN2, SXX, SXX, SXX, SXX
 			}},
 			// state::NumberInt
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN2, SXX, SN3, SN5, SEL
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN2, SXX, SN3, SN5, SEL
 			}},
 			// state::NumberFracNeedDigit
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN4, SXX, SXX, SXX, SXX
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN4, SXX, SXX, SXX, SXX
 			}},
 			// state::NumberFrac
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN4, SXX, SXX, SN5, SEL
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN4, SXX, SXX, SN5, SEL
 			}},
 			// state::NumberExpSign
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN6, SN6, SN7, SXX, SXX, SXX, SXX
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN6, SN6, SN7, SXX, SXX, SXX, SXX
 			}},
 			// state::NumberExpIntNeedDigit
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN7, SXX, SXX, SXX, SXX
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN7, SXX, SXX, SXX, SXX
 			}},
 			// state::NumberExpInt
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN7, SXX, SXX, SXX, SEL
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN7, SXX, SXX, SXX, SEL
 			}},
 			// state::Escaping
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SED, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SEU, SED, SXX, SXX, SXX, SXX, SXX, SXX, SXX
 			}},
 			// state::Escaped
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
 			}},
 			// state::EscapingUnicode
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SED, SXX, SXX, SXX
 			}}
 		};
 
@@ -672,7 +674,7 @@ namespace neolib
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TED, TXX, TXX, TXX, // 0x5
 			    TXX, TXX, TED, TXX, TXX, TXX, TED, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TED, TXX, // 0x6
-			    TXX, TXX, TED, TXX, TED, TED, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+			    TXX, TXX, TED, TXX, TED, TEU, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
@@ -733,22 +735,22 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline basic_json<Alloc, CharT, Traits, CharAlloc>::basic_json()
+	inline basic_json<Alloc, CharT, Traits, CharAlloc>::basic_json() : iEncoding{ json_detail::default_encoding<CharT>::DEFAULT_ENCODING }
 	{
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline basic_json<Alloc, CharT, Traits, CharAlloc>::basic_json(const std::string& aPath, bool aValidateUtf8)
+	inline basic_json<Alloc, CharT, Traits, CharAlloc>::basic_json(const std::string& aPath, bool aValidateUtf) : iEncoding{ json_detail::default_encoding<CharT>::DEFAULT_ENCODING }
 	{
-		if (!read(aPath, aValidateUtf8))
+		if (!read(aPath, aValidateUtf))
 			throw json_error(error_text());
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename Elem, typename ElemTraits>
-	inline basic_json<Alloc, CharT, Traits, CharAlloc>::basic_json(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8)
+	inline basic_json<Alloc, CharT, Traits, CharAlloc>::basic_json(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf) : iEncoding{ json_detail::default_encoding<CharT>::DEFAULT_ENCODING }
 	{
-		if (!read(aInput, aValidateUtf8))
+		if (!read(aInput, aValidateUtf))
 			throw json_error(error_text());
 	}
 
@@ -756,10 +758,11 @@ namespace neolib
 	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::clear()
 	{
 		document().clear();
+		iUtf16HighSurrogate = boost::none;
 	}
 		
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::read(const std::string& aPath, bool aValidateUtf8)
+	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::read(const std::string& aPath, bool aValidateUtf)
 	{
 		std::ifstream input{ aPath };
 		if (!input)
@@ -767,7 +770,7 @@ namespace neolib
 			iErrorText = "failed to open JSON file '" + aPath + "'";
 			return false;
 		}
-		bool ok = do_read(input, aValidateUtf8);
+		bool ok = do_read(input, aValidateUtf);
 		if (!ok)
 			iErrorText = "failed to parse JSON file '" + aPath + "', " + iErrorText;
 		return ok;
@@ -775,14 +778,14 @@ namespace neolib
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename Elem, typename ElemTraits>
-	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8)
+	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf)
 	{
 		if (!aInput)
 		{
 			iErrorText = "failed to read JSON text";
 			return false;
 		}
-		bool ok = do_read(aInput, aValidateUtf8);
+		bool ok = do_read(aInput, aValidateUtf);
 		if (!ok)
 			iErrorText = "failed to parse JSON text, " + iErrorText;
 		return ok;
@@ -790,7 +793,7 @@ namespace neolib
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename Elem, typename ElemTraits>
-	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::do_read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8)
+	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::do_read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf)
 	{
 		clear();
 
@@ -838,7 +841,7 @@ namespace neolib
 		if (json_detail::next_state(json_detail::state::Value, document().back()) != json_detail::state::Ignore)
 			document().push_back(character_type{ '\n' });
 			
-		if (aValidateUtf8 && !neolib::check_utf8(document().as_view()))
+		if (aValidateUtf && !neolib::check_utf8(document().as_view()))
 		{
 			iErrorText = "invalid utf-8";
 			return false;
@@ -877,9 +880,17 @@ namespace neolib
 			else
 				std::cout << "\\n";
 #endif
-			if (!process_token(pch))
+			try
 			{
-				create_parse_error(pch);
+				if (!process_token(pch))
+				{
+					create_parse_error(pch);
+					return false;
+				}
+			}
+			catch (std::exception& e)
+			{
+				create_parse_error(pch, e.what());
 				return false;
 			}
 		}
@@ -943,13 +954,19 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline json_encoding basic_json<Alloc, CharT, Traits, CharAlloc>::encoding() const
+	{
+		return iEncoding;
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	inline typename const basic_json<Alloc, CharT, Traits, CharAlloc>::json_string& basic_json<Alloc, CharT, Traits, CharAlloc>::document() const
 	{
 		return iDocumentText;
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline typename const basic_json<Alloc, CharT, Traits, CharAlloc>::string& basic_json<Alloc, CharT, Traits, CharAlloc>::error_text() const
+	inline typename const basic_json<Alloc, CharT, Traits, CharAlloc>::string_type& basic_json<Alloc, CharT, Traits, CharAlloc>::error_text() const
 	{
 		return iErrorText;
 	}
@@ -1076,45 +1093,121 @@ namespace neolib
 		case json_detail::state::Escaped:
 			{
 				if (aCurrentElement.value->type() != json_type::String)
-					*aCurrentElement.value = json_string{ aCurrentElement.start, aNextCh - 1 };
-				else
+					*aCurrentElement.value = json_string{ aCurrentElement.start, aNextCh - (aCurrentState != json_detail::state::EscapingUnicode ? 1 : 2) };
+				else if (aCurrentState != json_detail::state::EscapingUnicode || aCurrentElement.type != element::EscapedUnicode)
 				{
 					auto& string = aCurrentElement.value->as<json_string>();
-					string.insert(string.end(), aCurrentElement.start, aNextCh - 1);
+					string.insert(string.end(), aCurrentElement.start, aNextCh - (aCurrentState != json_detail::state::EscapingUnicode ? 1 : 2));
 				}
 				auto& string = aCurrentElement.value->as<json_string>();
-				switch (*(aNextCh))
+				if (aCurrentState == json_detail::state::Escaping)
 				{
-				case '\"':
-					string.push_back('\"');
-					break;
-				case '\\':
-					string.push_back('\\');
-					break;
-				case '/':
-					string.push_back('/');
-					break;
-				case 'b':
-					string.push_back('\b');
-					break;
-				case 'f':
-					string.push_back('\f');
-					break;
-				case 'n':
-					string.push_back('\n');
-					break;
-				case 'r':
-					string.push_back('\r');
-					break;
-				case 't':
-					string.push_back('\t');
-					break;
-				}
-				aCurrentElement.start = aNextCh + 1;
-				aNextState = json_detail::state::String;
+					switch (*(aNextCh))
+					{
+					case '\"':
+						string.push_back('\"');
+						break;
+					case '\\':
+						string.push_back('\\');
+						break;
+					case '/':
+						string.push_back('/');
+						break;
+					case 'b':
+						string.push_back('\b');
+						break;
+					case 'f':
+						string.push_back('\f');
+						break;
+					case 'n':
+						string.push_back('\n');
+						break;
+					case 'r':
+						string.push_back('\r');
+						break;
+					case 't':
+						string.push_back('\t');
+						break;
+					}
+					aCurrentElement.type = element::String;
+					aCurrentElement.start = aNextCh + 1;
+					aNextState = json_detail::state::String;
 #ifdef DEBUG_JSON
-				changedState = true;
+					changedState = true;
 #endif
+				}
+				else if (aCurrentState == json_detail::state::EscapingUnicode)
+				{
+					if (aCurrentElement.type != element::EscapedUnicode)
+					{
+						aCurrentElement.type = element::EscapedUnicode;
+						aCurrentElement.start = aNextCh;
+					}
+					if (aNextCh + 1 - aCurrentElement.start == 4)
+					{
+						string_type s{ aCurrentElement.start, aNextCh + 1 };
+						aCurrentElement.start = aNextCh + 1;
+						char16_t u16ch = static_cast<char16_t>(std::stoul(s, nullptr, 16));
+						if (utf16::is_high_surrogate(u16ch))
+						{
+							iUtf16HighSurrogate = u16ch;
+							aCurrentElement.type = element::String;
+							aCurrentElement.start = aNextCh + 1;
+							aNextState = json_detail::state::String;
+							break;
+						}
+						else if (utf16::is_low_surrogate(u16ch) && iUtf16HighSurrogate != boost::none)
+						{
+							switch (encoding())
+							{
+							case json_encoding::Utf8:
+								{
+									char16_t surrogatePair[] = { *iUtf16HighSurrogate, u16ch };
+									string.append(utf16_to_utf8(std::u16string(&surrogatePair[0], 2)));
+								}
+								break;
+							case json_encoding::Utf16LE:
+							case json_encoding::Utf16BE:
+								string.push_back(static_cast<character_type>(*iUtf16HighSurrogate));
+								string.push_back(static_cast<character_type>(u16ch));
+								break;
+							case json_encoding::Utf32:
+								{
+									char16_t surrogatePair[] = { *iUtf16HighSurrogate, u16ch };
+									string.push_back(static_cast<character_type>(utf8_to_utf32(utf16_to_utf8(std::u16string{ &surrogatePair[0], 2 }))[0]));
+								}
+								break;
+							}
+							iUtf16HighSurrogate = boost::none;
+						}
+						else
+						{
+							switch (encoding())
+							{
+							case json_encoding::Utf8:
+								string.append(utf16_to_utf8(std::u16string(1, u16ch)));
+								break;
+							case json_encoding::Utf16LE:
+							case json_encoding::Utf16BE:
+								string.push_back(static_cast<character_type>(u16ch));
+								break;
+							case json_encoding::Utf32:
+								string.push_back(static_cast<character_type>(u16ch));
+								break;
+							}
+						}
+						aCurrentElement.type = element::String;
+						aCurrentElement.start = aNextCh + 1;
+						aNextState = json_detail::state::String;
+					}
+					else
+					{
+						aNextState = json_detail::state::EscapingUnicode;
+					}
+#ifdef DEBUG_JSON
+					changedState = true;
+#endif
+				}
 			}
 			break;
 		}
@@ -1126,7 +1219,7 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::create_parse_error(const character_type* aDocumentPos)
+	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::create_parse_error(const character_type* aDocumentPos, const string_type& aExtraInfo)
 	{
 		uint32_t line = 1;
 		uint32_t col = 1;
@@ -1140,7 +1233,14 @@ namespace neolib
 			else
 				++col;
 		}
-		iErrorText = "line " + boost::lexical_cast<std::string>(line) + ", col " + boost::lexical_cast<std::string>(col);
+		iErrorText.clear();
+		if (!aExtraInfo.empty())
+		{
+			iErrorText += "(";
+			iErrorText += aExtraInfo;
+			iErrorText += ") ";
+		}
+		iErrorText += "line " + boost::lexical_cast<std::string>(line) + ", col " + boost::lexical_cast<std::string>(col);
 	}
 }
 

@@ -55,9 +55,26 @@
 
 namespace neolib
 {
+	enum class json_encoding
+	{
+		Utf8,
+		Utf16LE,
+		Utf16BE,
+		Utf32
+	};
+
 	namespace json_detail
 	{
 		enum class state;
+
+		template <std::size_t CharSize>
+		struct default_encoding_helper;
+		template <> struct default_encoding_helper<1> { static const json_encoding DEFAULT_ENCODING = json_encoding::Utf8; };
+		template <> struct default_encoding_helper<2> { static const json_encoding DEFAULT_ENCODING = json_encoding::Utf16LE; };
+		template <> struct default_encoding_helper<4> { static const json_encoding DEFAULT_ENCODING = json_encoding::Utf32; };
+
+		template <typename CharT>
+		struct default_encoding	{ static const json_encoding DEFAULT_ENCODING = default_encoding_helper<sizeof(CharT)>::DEFAULT_ENCODING; };
 	}
 
 	enum class json_type
@@ -282,7 +299,7 @@ namespace neolib
 			void visit(const json_string& aName, json_null) override {}
 		};
 	private:
-		typedef std::basic_string<CharT, Traits, CharAlloc> string;
+		typedef std::basic_string<CharT, Traits, CharAlloc> string_type;
 		struct element
 		{
 			value* value;
@@ -292,25 +309,27 @@ namespace neolib
 				String,
 				Number,
 				Keyword,
+				EscapedUnicode
 			} type;
 			const char* start;
 		};
 	public:
 		basic_json();
-		basic_json(const std::string& aPath, bool aValidateUtf8 = false);
+		basic_json(const std::string& aPath, bool aValidateUtf = false);
 		template <typename Elem, typename ElemTraits>
-		basic_json(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8 = false);
+		basic_json(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf = false);
 	public:
 		void clear();
-		bool read(const std::string& aPath, bool aValidateUtf8 = false);
+		bool read(const std::string& aPath, bool aValidateUtf = false);
 		template <typename Elem, typename ElemTraits>
-		bool read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8 = false);
+		bool read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf = false);
 		bool write(const std::string& aPath);
 		template <typename Elem, typename ElemTraits>
 		bool write(std::basic_ostream<Elem, ElemTraits>& aOutput);
 	public:
+		json_encoding encoding() const;
 		const json_string& document() const;
-		const string& error_text() const;
+		const string_type& error_text() const;
 		bool has_root() const;
 		const value& root() const;
 		value& root();
@@ -319,14 +338,16 @@ namespace neolib
 		json_string& document();
 	private:
 		template <typename Elem, typename ElemTraits>
-		bool do_read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf8 = false);
+		bool do_read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf = false);
 		json_detail::state change_state(json_detail::state aCurrentState, json_detail::state aNextState, const character_type* aNextCh, element& aCurrentElement);
-		void create_parse_error(const character_type* aDocumentPos);
+		void create_parse_error(const character_type* aDocumentPos, const string_type& aExtraInfo = {});
 	private:
+		json_encoding iEncoding;
 		json_string iDocumentText;
-		string iErrorText;
+		string_type iErrorText;
 		optional_value iRoot;
 		std::vector<value*> iCompositeValueStack;
+		boost::optional<char16_t> iUtf16HighSurrogate;
 	};
 
 	typedef basic_json<> json;
