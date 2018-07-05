@@ -853,9 +853,9 @@ namespace neolib
 		json_detail::state nextState;
 		element currentElement = {};
 
-		auto process_token = [&](const character_type* pch) -> bool
+		auto process_token = [&](character_type* aNextInputCh, character_type*& aNextOutputCh) -> bool
 		{
-			nextState = json_detail::next_state(currentState, *pch);
+			nextState = json_detail::next_state(currentState, *aNextInputCh);
 			if (nextState == json_detail::state::Ignore)
 				return true;
 			else if (nextState == json_detail::state::Error)
@@ -865,32 +865,32 @@ namespace neolib
 				iRoot = value{};
 				currentElement = element{ &*iRoot };
 			}
-			nextState = change_state(currentState, nextState, pch, currentElement);
+			nextState = change_state(currentState, nextState, aNextInputCh, aNextOutputCh, currentElement);
 			currentState = nextState;
 			return true;
 		};
 
-		const auto& view = document().as_view();
-		auto viewEnd = view.end();
-		for (auto pch = view.begin(); pch != viewEnd; ++pch)
+		auto docBegin = &*document().begin();
+		auto docEnd = docBegin + document().size();
+		for (auto aNextInputCh = docBegin, aNextOutputCh = aNextInputCh; aNextInputCh != docEnd; ++aNextInputCh)
 		{
 #ifdef DEBUG_JSON
-			if (*pch != '\n')
-				std::cout << *pch;
+			if (*aNextInputCh != '\n')
+				std::cout << *aNextInputCh;
 			else
 				std::cout << "\\n";
 #endif
 			try
 			{
-				if (!process_token(pch))
+				if (!process_token(aNextInputCh, aNextOutputCh))
 				{
-					create_parse_error(pch);
+					create_parse_error(aNextInputCh);
 					return false;
 				}
 			}
 			catch (std::exception& e)
 			{
-				create_parse_error(pch, e.what());
+				create_parse_error(aNextInputCh, e.what());
 				return false;
 			}
 		}
@@ -1019,10 +1019,20 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline json_detail::state basic_json<Alloc, CharT, Traits, CharAlloc>::change_state(json_detail::state aCurrentState, json_detail::state aNextState, const character_type* aNextCh, element& aCurrentElement)
+	inline json_detail::state basic_json<Alloc, CharT, Traits, CharAlloc>::change_state(json_detail::state aCurrentState, json_detail::state aNextState, character_type* aNextInputCh, character_type*& aNextOutputCh, element& aCurrentElement)
 	{
 		if (aCurrentState == aNextState && aNextState != json_detail::state::Object && aNextState != json_detail::state::Array)
+		{
+			switch (aCurrentState)
+			{
+			case json_detail::state::String:
+			case json_detail::state::Keyword:
+				if (aCurrentElement.start != aNextOutputCh)
+					*aNextOutputCh++ = *aNextInputCh;
+				break;
+			}
 			return aNextState;
+		}
 #ifdef DEBUG_JSON
 		bool changedState = false;
 		std::cout << "(" << to_string(aCurrentState) << " -> " << to_string(aNextState) << ")";
@@ -1036,15 +1046,10 @@ namespace neolib
 				break;
 			case element::String:
 				if (aCurrentElement.value->type() != json_type::String)
-					**aCurrentElement.value = json_string{ aCurrentElement.start, aNextCh };
-				else
-				{
-					auto& string = aCurrentElement.value->as<json_string>();
-					string.insert(string.end(), aCurrentElement.start, aNextCh);
-				}
+					**aCurrentElement.value = json_string{ aCurrentElement.start, aCurrentElement.start == aNextOutputCh ? aNextInputCh : aNextOutputCh};
 				break;
 			case element::Number:
-				*aCurrentElement.value = boost::lexical_cast<json_number>(json_string{ aCurrentElement.start, aNextCh });
+				*aCurrentElement.value = boost::lexical_cast<json_number>(json_string{ aCurrentElement.start, aNextInputCh });
 				break;
 			case element::Keyword:
 				{
@@ -1054,7 +1059,7 @@ namespace neolib
 						{ "false", json_type::False },
 						{ "null", json_type::Null }
 					};
-					auto keywordText = json_string{ aCurrentElement.start, aNextCh };
+					auto keywordText = json_string{ aCurrentElement.start, aCurrentElement.start == aNextOutputCh ? aNextInputCh : aNextOutputCh };
 					auto keyword = sJsonKeywords.find(keywordText);
 					if (keyword != sJsonKeywords.end())
 					{
@@ -1080,57 +1085,50 @@ namespace neolib
 			break;
 		case json_detail::state::String:
 			aCurrentElement.type = element::String;
-			aCurrentElement.start = aNextCh + 1;
+			aCurrentElement.start = (aNextOutputCh = aNextInputCh + 1);
 			break;
 		case json_detail::state::NumberInt:
 			aCurrentElement.type = element::Number;
-			aCurrentElement.start = aNextCh;
+			aCurrentElement.start = aNextInputCh;
 			break;
 		case json_detail::state::Keyword:
 			aCurrentElement.type = element::Keyword;
-			aCurrentElement.start = aNextCh;
+			aCurrentElement.start = (aNextOutputCh = aNextInputCh);
 			break;
 		case json_detail::state::Escaped:
 			{
-				if (aCurrentElement.value->type() != json_type::String)
-					*aCurrentElement.value = json_string{ aCurrentElement.start, aNextCh - (aCurrentState != json_detail::state::EscapingUnicode ? 1 : 2) };
-				else if (aCurrentState != json_detail::state::EscapingUnicode || aCurrentElement.type != element::EscapedUnicode)
-				{
-					auto& string = aCurrentElement.value->as<json_string>();
-					string.insert(string.end(), aCurrentElement.start, aNextCh - (aCurrentState != json_detail::state::EscapingUnicode ? 1 : 2));
-				}
-				auto& string = aCurrentElement.value->as<json_string>();
+				if (aNextOutputCh == aCurrentElement.start)
+					aNextOutputCh = (aCurrentState != json_detail::state::EscapingUnicode ? aNextInputCh - 1 : aNextInputCh - 2);
 				if (aCurrentState == json_detail::state::Escaping)
 				{
-					switch (*(aNextCh))
+					switch (*(aNextInputCh))
 					{
 					case '\"':
-						string.push_back('\"');
+						(*aNextOutputCh++) = '\"';
 						break;
 					case '\\':
-						string.push_back('\\');
+						(*aNextOutputCh++) = '\\';
 						break;
 					case '/':
-						string.push_back('/');
+						(*aNextOutputCh++) = '/';
 						break;
 					case 'b':
-						string.push_back('\b');
+						(*aNextOutputCh++) = '\b';
 						break;
 					case 'f':
-						string.push_back('\f');
+						(*aNextOutputCh++) = '\f';
 						break;
 					case 'n':
-						string.push_back('\n');
+						(*aNextOutputCh++) = '\n';
 						break;
 					case 'r':
-						string.push_back('\r');
+						(*aNextOutputCh++) = '\r';
 						break;
 					case 't':
-						string.push_back('\t');
+						(*aNextOutputCh++) = '\t';
 						break;
 					}
 					aCurrentElement.type = element::String;
-					aCurrentElement.start = aNextCh + 1;
 					aNextState = json_detail::state::String;
 #ifdef DEBUG_JSON
 					changedState = true;
@@ -1138,21 +1136,20 @@ namespace neolib
 				}
 				else if (aCurrentState == json_detail::state::EscapingUnicode)
 				{
+					// todo throw an error if there are invalid surrogate pairs
 					if (aCurrentElement.type != element::EscapedUnicode)
 					{
 						aCurrentElement.type = element::EscapedUnicode;
-						aCurrentElement.start = aNextCh;
+						aCurrentElement.aux_start = aNextInputCh;
 					}
-					if (aNextCh + 1 - aCurrentElement.start == 4)
+					if (aNextInputCh + 1 - aCurrentElement.aux_start == 4)
 					{
-						string_type s{ aCurrentElement.start, aNextCh + 1 };
-						aCurrentElement.start = aNextCh + 1;
+						string_type s{ aCurrentElement.aux_start, aNextInputCh + 1 };
 						char16_t u16ch = static_cast<char16_t>(std::stoul(s, nullptr, 16));
 						if (utf16::is_high_surrogate(u16ch))
 						{
 							iUtf16HighSurrogate = u16ch;
 							aCurrentElement.type = element::String;
-							aCurrentElement.start = aNextCh + 1;
 							aNextState = json_detail::state::String;
 							break;
 						}
@@ -1163,18 +1160,19 @@ namespace neolib
 							case json_encoding::Utf8:
 								{
 									char16_t surrogatePair[] = { *iUtf16HighSurrogate, u16ch };
-									string.append(utf16_to_utf8(std::u16string(&surrogatePair[0], 2)));
+									auto utf8 = utf16_to_utf8(std::u16string(&surrogatePair[0], 2));
+									aNextOutputCh = std::copy(utf8.begin(), utf8.end(), aNextOutputCh);
 								}
 								break;
 							case json_encoding::Utf16LE:
 							case json_encoding::Utf16BE:
-								string.push_back(static_cast<character_type>(*iUtf16HighSurrogate));
-								string.push_back(static_cast<character_type>(u16ch));
+								(*aNextOutputCh++) = static_cast<character_type>(*iUtf16HighSurrogate);
+								(*aNextOutputCh++) = static_cast<character_type>(u16ch);
 								break;
 							case json_encoding::Utf32:
 								{
 									char16_t surrogatePair[] = { *iUtf16HighSurrogate, u16ch };
-									string.push_back(static_cast<character_type>(utf8_to_utf32(utf16_to_utf8(std::u16string{ &surrogatePair[0], 2 }))[0]));
+									(*aNextOutputCh++) = static_cast<character_type>(utf8_to_utf32(utf16_to_utf8(std::u16string{ &surrogatePair[0], 2 }))[0]);
 								}
 								break;
 							}
@@ -1185,19 +1183,21 @@ namespace neolib
 							switch (encoding())
 							{
 							case json_encoding::Utf8:
-								string.append(utf16_to_utf8(std::u16string(1, u16ch)));
+								{
+									auto utf8 = utf16_to_utf8(std::u16string(1, u16ch));
+									aNextOutputCh = std::copy(utf8.begin(), utf8.end(), aNextOutputCh);
+								}
 								break;
 							case json_encoding::Utf16LE:
 							case json_encoding::Utf16BE:
-								string.push_back(static_cast<character_type>(u16ch));
+								*(aNextOutputCh++) = static_cast<character_type>(u16ch);
 								break;
 							case json_encoding::Utf32:
-								string.push_back(static_cast<character_type>(u16ch));
+								*(aNextOutputCh++) = static_cast<character_type>(u16ch);
 								break;
 							}
 						}
 						aCurrentElement.type = element::String;
-						aCurrentElement.start = aNextCh + 1;
 						aNextState = json_detail::state::String;
 					}
 					else

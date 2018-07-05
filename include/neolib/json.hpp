@@ -311,7 +311,8 @@ namespace neolib
 				Keyword,
 				EscapedUnicode
 			} type;
-			const char* start;
+			character_type* start;
+			character_type* aux_start;
 		};
 	public:
 		basic_json();
@@ -339,7 +340,7 @@ namespace neolib
 	private:
 		template <typename Elem, typename ElemTraits>
 		bool do_read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf = false);
-		json_detail::state change_state(json_detail::state aCurrentState, json_detail::state aNextState, const character_type* aNextCh, element& aCurrentElement);
+		json_detail::state change_state(json_detail::state aCurrentState, json_detail::state aNextState, character_type* aNextInputCh, character_type*& aNextOutputCh, element& aCurrentElement);
 		void create_parse_error(const character_type* aDocumentPos, const string_type& aExtraInfo = {});
 	private:
 		json_encoding iEncoding;
