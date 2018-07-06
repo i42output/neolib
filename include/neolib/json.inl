@@ -829,51 +829,194 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	class basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator : 
-		public std::iterator<std::bidirectional_iterator_tag, value, std::ptrdiff_t, const_pointer, const_reference>
+	template <typename IteratorTraits>
+	class basic_json<Alloc, CharT, Traits, CharAlloc>::iterator_base : public IteratorTraits
 	{
-		friend class basic_json<Alloc, CharT, Traits, CharAlloc>;
+		friend class Document;
 	public:
-		const_iterator() : iValue{ nullptr }
+		typedef IteratorTraits traits;
+		using typename traits::iterator_category;
+		using typename traits::value_type;
+		using typename traits::difference_type;
+		using typename traits::pointer;
+		using typename traits::reference;
+	public:
+		iterator_base() : iValue{ nullptr }
 		{
 		}
-	private:
-		const_iterator(pointer aValue) : iValue{ aValue }
+		iterator_base(const iterator_base& aOther) : iValue{ aOther.iValue }
 		{
 		}
-	private:
-		const_iterator parent() const
+	protected:
+		iterator_base(pointer aValue) : iValue{ aValue }
 		{
-			if (iValue != nullptr)
+		}
+	protected:
+		pointer operator->() const
+		{
+			return iValue;
+		}
+		reference operator*() const
+		{
+			return *iValue;
+		}
+	protected:
+		void operator++()
+		{
+			// todo
+			iValue = nullptr;
+		}
+		void operator--()
+		{
+			// todo
+			iValue = nullptr;
+		}
+	protected:
+		bool operator==(const iterator_base& aOther) const
+		{
+			return iValue == aOther.iValue;
+		}
+		bool operator!=(const iterator_base& aOther) const
+		{
+			return iValue != aOther.iValue;
+		}
+	protected:
+		bool has_parent() const
+		{
+			return iValue != nullptr;
+		}
+		iterator parent() const
+		{
+			if (has_parent())
 				return iValue->parent();
-			return const_iterator{};
+			return iterator{};
+		}
+		uint32_t level() const
+		{
+			uint32_t result = 0;
+			auto p = this;
+			while (p->has_parent())
+			{
+				++result;
+				p = p->parent();
+			}
+			return result;
 		}
 	private:
-		const_pointer iValue;
+		pointer iValue;
 	};
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	class basic_json<Alloc, CharT, Traits, CharAlloc>::iterator :
-		public std::iterator<std::bidirectional_iterator_tag, value, std::ptrdiff_t, pointer, reference>
+		public iterator_base<std::iterator<std::bidirectional_iterator_tag, value, std::ptrdiff_t, pointer, reference>>
 	{
 		friend class basic_json<Alloc, CharT, Traits, CharAlloc>;
+	private:
+		typedef iterator_base<std::iterator<std::bidirectional_iterator_tag, value, std::ptrdiff_t, pointer, reference>> base_type;
 	public:
-		iterator() : iValue{ nullptr }
+		using typename base_type::iterator_category;
+		using typename base_type::value_type;
+		using typename base_type::difference_type;
+		using typename base_type::pointer;
+		using typename base_type::reference;
+	public:
+		iterator()
+		{
+		}
+		iterator(const iterator& aOther) : base_type{ aOther }
 		{
 		}
 	private:
-		iterator(pointer aValue) : iValue{ aValue }
+		iterator(pointer aValue) : base_type{ aValue }
+		{
+		}
+	public:
+		using base_type::operator*;
+		using base_type::operator->;
+	public:
+		iterator& operator++()
+		{
+			base_type::operator++();
+			return *this;
+		}
+		iterator operator++(int)
+		{
+			auto previous = *this;
+			base_type::operator++();
+			return previous;
+		}
+		iterator& operator--()
+		{
+			base_type::operator--();
+			return *this;
+		}
+		iterator operator--(int)
+		{
+			auto previous = *this;
+			base_type::operator--();
+			return previous;
+		}
+	public:
+		using base_type::operator==;
+		using base_type::operator!=;
+	};
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	class basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator :
+		public iterator_base<std::iterator<std::bidirectional_iterator_tag, value, std::ptrdiff_t, const_pointer, const_reference>>
+	{
+		friend class basic_json<Alloc, CharT, Traits, CharAlloc>;
+	private:
+		typedef iterator_base<std::iterator<std::bidirectional_iterator_tag, value, std::ptrdiff_t, const_pointer, const_reference>> base_type;
+	public:
+		using typename base_type::iterator_category;
+		using typename base_type::value_type;
+		using typename base_type::difference_type;
+		using typename base_type::pointer;
+		using typename base_type::reference;
+	public:
+		const_iterator()
+		{
+		}
+		const_iterator(const const_iterator& aOther) : base_type{ aOther }
+		{
+		}
+		const_iterator(const iterator& aOther) : base_type{ aOther.iValue }
 		{
 		}
 	private:
-		iterator parent() const
+		const_iterator(pointer aValue) : base_type{ aValue }
 		{
-			if (iValue != nullptr)
-				return iValue->parent();
-			return iterator{};
 		}
-	private:
-		pointer iValue;
+	public:
+		using base_type::operator*;
+		using base_type::operator->;
+	public:
+		const_iterator& operator++()
+		{
+			base_type::operator++();
+			return *this;
+		}
+		const_iterator operator++(int)
+		{
+			auto previous = *this;
+			base_type::operator++();
+			return previous;
+		}
+		const_iterator& operator--()
+		{
+			base_type::operator--();
+			return *this;
+		}
+		const_iterator operator--(int)
+		{
+			auto previous = *this;
+			base_type::operator--();
+			return previous;
+		}
+	public:
+		using base_type::operator==;
+		using base_type::operator!=;
 	};
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
@@ -1036,17 +1179,20 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::write(const std::string& aPath)
+	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::write(const std::string& aPath, const string_type& aIndent)
 	{
 		std::ofstream output{ aPath, std::ofstream::out | std::ofstream::trunc };
-		return write(output);
+		return write(output, aIndent);
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename Elem, typename ElemTraits>
-	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::write(std::basic_ostream<Elem, ElemTraits>& aOutput)
+	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::write(std::basic_ostream<Elem, ElemTraits>& aOutput, const string_type& aIndent)
 	{
-		// todo
+		for (auto i = cbegin(); i != cend(); ++i)
+		{
+
+		}
 		return true;
 	}
 
@@ -1112,21 +1258,29 @@ namespace neolib
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	typename basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator basic_json<Alloc, CharT, Traits, CharAlloc>::begin() const
 	{
+		if (iRoot != boost::none)
+			return const_iterator{ &*iRoot };
+		return const_iterator{};
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	typename basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator basic_json<Alloc, CharT, Traits, CharAlloc>::end() const
 	{
+		return const_iterator{};
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	typename basic_json<Alloc, CharT, Traits, CharAlloc>::iterator basic_json<Alloc, CharT, Traits, CharAlloc>::begin()
 	{
+		if (iRoot != boost::none)
+			return iterator{ &*iRoot };
+		return iterator{};
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	typename basic_json<Alloc, CharT, Traits, CharAlloc>::iterator basic_json<Alloc, CharT, Traits, CharAlloc>::end()
 	{
+		return iterator{};
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>

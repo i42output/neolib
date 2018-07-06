@@ -308,6 +308,9 @@ namespace neolib
 			void visit(const json_null&) override {}
 
 		};
+	private:
+		template <typename IteratorTraits>
+		class iterator_base;
 	public:
 		class const_iterator;
 		class iterator;
@@ -336,9 +339,9 @@ namespace neolib
 		bool read(const std::string& aPath, bool aValidateUtf = false);
 		template <typename Elem, typename ElemTraits>
 		bool read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf = false);
-		bool write(const std::string& aPath);
+		bool write(const std::string& aPath, const string_type& aIndent = string_type{ 1, character_type{'\t'} });
 		template <typename Elem, typename ElemTraits>
-		bool write(std::basic_ostream<Elem, ElemTraits>& aOutput);
+		bool write(std::basic_ostream<Elem, ElemTraits>& aOutput, const string_type& aIndent = string_type{ 1, character_type{ '\t' } });
 	public:
 		json_encoding encoding() const;
 		const json_string& document() const;
