@@ -50,6 +50,13 @@ namespace neolib
 {
 	namespace json_detail
 	{
+		enum class keyword
+		{
+			True,
+			False,
+			Null
+		};
+
 		enum class token
 		{
 			Invalid,
@@ -822,6 +829,54 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	class basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator : 
+		public std::iterator<std::bidirectional_iterator_tag, value, std::ptrdiff_t, const_pointer, const_reference>
+	{
+		friend class basic_json<Alloc, CharT, Traits, CharAlloc>;
+	public:
+		const_iterator() : iValue{ nullptr }
+		{
+		}
+	private:
+		const_iterator(pointer aValue) : iValue{ aValue }
+		{
+		}
+	private:
+		const_iterator parent() const
+		{
+			if (iValue != nullptr)
+				return iValue->parent();
+			return const_iterator{};
+		}
+	private:
+		const_pointer iValue;
+	};
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	class basic_json<Alloc, CharT, Traits, CharAlloc>::iterator :
+		public std::iterator<std::bidirectional_iterator_tag, value, std::ptrdiff_t, pointer, reference>
+	{
+		friend class basic_json<Alloc, CharT, Traits, CharAlloc>;
+	public:
+		iterator() : iValue{ nullptr }
+		{
+		}
+	private:
+		iterator(pointer aValue) : iValue{ aValue }
+		{
+		}
+	private:
+		iterator parent() const
+		{
+			if (iValue != nullptr)
+				return iValue->parent();
+			return iterator{};
+		}
+	private:
+		pointer iValue;
+	};
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	inline basic_json<Alloc, CharT, Traits, CharAlloc>::basic_json() : iEncoding{ json_detail::default_encoding<CharT>::DEFAULT_ENCODING }
 	{
 	}
@@ -1043,6 +1098,38 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	typename basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator basic_json<Alloc, CharT, Traits, CharAlloc>::cbegin() const
+	{
+		return begin();
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	typename basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator basic_json<Alloc, CharT, Traits, CharAlloc>::cend() const
+	{
+		return end();
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	typename basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator basic_json<Alloc, CharT, Traits, CharAlloc>::begin() const
+	{
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	typename basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator basic_json<Alloc, CharT, Traits, CharAlloc>::end() const
+	{
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	typename basic_json<Alloc, CharT, Traits, CharAlloc>::iterator basic_json<Alloc, CharT, Traits, CharAlloc>::begin()
+	{
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	typename basic_json<Alloc, CharT, Traits, CharAlloc>::iterator basic_json<Alloc, CharT, Traits, CharAlloc>::end()
+	{
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::json_string& basic_json<Alloc, CharT, Traits, CharAlloc>::document()
 	{
 		return iDocumentText;
@@ -1061,23 +1148,27 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::value* basic_json<Alloc, CharT, Traits, CharAlloc>::buy_value()
+	template <typename T>
+	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::value* basic_json<Alloc, CharT, Traits, CharAlloc>::buy_value(T&& aValue)
 	{
 		if (!iCompositeValueStack.empty())
 		{
 			switch (iCompositeValueStack.back()->type())
 			{
 			case json_type::Array:
-				iCompositeValueStack.back()->as<json_array>().emplace_back();
+				iCompositeValueStack.back()->as<json_array>().emplace_back(*iCompositeValueStack.back(), std::forward<T>(aValue));
 				return &iCompositeValueStack.back()->as<json_array>().back();
 			case json_type::Object:
 				// todo
+				return nullptr;
+			default:
 				return nullptr;
 			}
 		}
 		else
 		{
 			iRoot = value{};
+			*iRoot = std::forward<T>(aValue);
 			return &*iRoot;
 		}
 	}
@@ -1112,25 +1203,38 @@ namespace neolib
 			case element::Unknown:
 				break;
 			case element::String:
-				*buy_value() = json_string{ aCurrentElement.start, aCurrentElement.start == aNextOutputCh ? aNextInputCh - 1 : aNextOutputCh};
+				buy_value(json_string{ aCurrentElement.start, aCurrentElement.start == aNextOutputCh ? aNextInputCh - 1 : aNextOutputCh});
 				break;
 			case element::Number:
-				*buy_value() = boost::lexical_cast<json_number>(json_string{ aCurrentElement.start, aNextInputCh });
+				buy_value(boost::lexical_cast<json_number>(json_string{ aCurrentElement.start, aNextInputCh }));
 				break;
 			case element::Keyword:
 				{
-					static const std::unordered_map<json_string::string_view_type, value, hash_first_character<json_string::string_view_type>> sJsonKeywords =
+					static const std::unordered_map<json_string::string_view_type, json_detail::keyword, hash_first_character<json_string::string_view_type>> sJsonKeywords =
 					{
-						{ "true", value{json_bool{true}} },
-						{ "false", value{json_bool{false}} },
-						{ "null",  value{json_null{}} },
+						{ "true", json_detail::keyword::True },
+						{ "false", json_detail::keyword::False },
+						{ "null",  json_detail::keyword::Null },
 					};
 					auto keywordText = json_string{ aCurrentElement.start, aCurrentElement.start == aNextOutputCh ? aNextInputCh : aNextOutputCh };
 					auto keyword = sJsonKeywords.find(keywordText);
 					if (keyword != sJsonKeywords.end())
-						*buy_value() = keyword->second;
+					{
+						switch (keyword->second)
+						{
+						case json_detail::keyword::True:
+							buy_value(json_bool{ true });
+							break;
+						case json_detail::keyword::False:
+							buy_value(json_bool{ false });
+							break;
+						case json_detail::keyword::Null:
+							buy_value(json_null{});
+							break;
+						}
+					}
 					else
-						*buy_value() = json_keyword{ keywordText }; // todo: make custom keywords optional and raise parser error if not enabled
+						buy_value(json_keyword{ keywordText }); // todo: make custom keywords optional and raise parser error if not enabled
 				}
 				break;
 			}
@@ -1162,8 +1266,7 @@ namespace neolib
 			break;
 		case json_detail::state::Array:
 			{
-				value* newArray = buy_value();
-				*newArray = json_array{};
+				value* newArray = buy_value(json_array{});
 				iCompositeValueStack.push_back(newArray);
 				aNextState = json_detail::state::Value;
 #ifdef DEBUG_JSON

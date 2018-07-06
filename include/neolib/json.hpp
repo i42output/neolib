@@ -136,15 +136,15 @@ namespace neolib
 		typedef variant<json_object, json_array, json_number, json_string, json_bool, json_null, json_keyword> value_type;
 	public:
 		basic_json_value() :
-			iValue{}
+			iParent{ nullptr }, iValue{}
 		{
 		}
-		basic_json_value(const value_type& aValue) :
-			iValue{ aValue }
+		basic_json_value(basic_json_value& aParent, const value_type& aValue) :
+			iParent{ &aParent }, iValue { aValue }
 		{
 		}
-		basic_json_value(value_type&& aValue) :
-			iValue{ std::move(aValue) }
+		basic_json_value(basic_json_value& aParent, value_type&& aValue) :
+			iParent{ &aParent }, iValue{ std::move(aValue) }
 		{
 		}
 	public:
@@ -169,6 +169,11 @@ namespace neolib
 		basic_json_value& operator=(const value_type& aValue)
 		{
 			iValue = aValue;
+			return *this;
+		}
+		basic_json_value& operator=(value_type&& aValue)
+		{
+			iValue = std::move(aValue);
 			return *this;
 		}
 	public:
@@ -259,6 +264,7 @@ namespace neolib
 			}
 		}
 	private:
+		basic_json_value* iParent;
 		value_type iValue;
 	};
 
@@ -284,6 +290,12 @@ namespace neolib
 		typedef typename value::json_null json_null;
 		typedef typename value::json_keyword json_keyword;
 	public:
+		typedef value value_type;
+		typedef value_type* pointer;
+		typedef const value_type* const_pointer;
+		typedef value_type& reference;
+		typedef const value_type& const_reference;
+	public:
 		typedef typename value::i_visitor i_visitor;
 		class default_visitor : public i_visitor
 		{
@@ -296,6 +308,9 @@ namespace neolib
 			void visit(const json_null&) override {}
 
 		};
+	public:
+		class const_iterator;
+		class iterator;
 	private:
 		typedef std::basic_string<CharT, Traits, CharAlloc> string_type;
 		struct element
@@ -328,17 +343,25 @@ namespace neolib
 		json_encoding encoding() const;
 		const json_string& document() const;
 		const string_type& error_text() const;
+	public:
 		bool has_root() const;
 		const value& root() const;
 		value& root();
 		void accept(i_visitor& aVisitor);
+		const_iterator cbegin() const;
+		const_iterator cend() const;
+		const_iterator begin() const;
+		const_iterator end() const;
+		iterator begin();
+		iterator end();
 	private:
 		json_string& document();
 	private:
 		template <typename Elem, typename ElemTraits>
 		bool do_read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf = false);
 		json_detail::state change_state(json_detail::state aCurrentState, json_detail::state aNextState, character_type* aNextInputCh, character_type*& aNextOutputCh, element& aCurrentElement);
-		value* buy_value();
+		template <typename T>
+		value* buy_value(T&& aValue);
 		void create_parse_error(const character_type* aDocumentPos, const string_type& aExtraInfo = {});
 	private:
 		json_encoding iEncoding;
