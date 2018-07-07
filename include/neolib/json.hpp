@@ -49,6 +49,7 @@
 #include <memory>
 #include <exception>
 #include <boost/optional.hpp>
+#include <boost/container/stable_vector.hpp>
 #include <boost/pool/pool_alloc.hpp>
 #include "variant.hpp"
 #include "quick_string.hpp"
@@ -78,7 +79,7 @@ namespace neolib
 		struct default_encoding	{ static const json_encoding DEFAULT_ENCODING = default_encoding_helper<sizeof(CharT)>::DEFAULT_ENCODING; };
 	}
 
-	enum class json_type : int
+	enum class json_type
 	{
 		Unknown,
 		Object,
@@ -106,7 +107,7 @@ namespace neolib
 	public:
 		typedef basic_quick_string<character_type, character_traits_type, character_allocator_type> json_string;
 		typedef std::multimap<json_string, self_type, std::less<json_string>, value_allocator> json_object;
-		typedef std::list<self_type, value_allocator> json_array;
+		typedef boost::container::stable_vector<self_type, value_allocator> json_array;
 		typedef double json_number;
 		typedef bool json_bool;
 		typedef std::nullptr_t json_null;
@@ -494,6 +495,16 @@ namespace neolib
 	typedef json::json_bool json_bool;
 	typedef json::json_null json_null;
 	typedef json::json_keyword json_keyword;
+
+	typedef basic_json<boost::fast_pool_allocator<json_type>> fast_json;
+	typedef fast_json::value fast_json_value;
+	typedef fast_json::json_object fast_json_object;
+	typedef fast_json::json_array fast_json_array;
+	typedef fast_json::json_number fast_json_number;
+	typedef fast_json::json_string fast_json_string;
+	typedef fast_json::json_bool fast_json_bool;
+	typedef fast_json::json_null fast_json_null;
+	typedef fast_json::json_keyword fast_json_keyword;
 }
 
 #include "json.inl"
