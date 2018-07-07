@@ -78,7 +78,7 @@ namespace neolib
 		struct default_encoding	{ static const json_encoding DEFAULT_ENCODING = default_encoding_helper<sizeof(CharT)>::DEFAULT_ENCODING; };
 	}
 
-	enum class json_type
+	enum class json_type : int
 	{
 		Unknown,
 		Object,
@@ -114,6 +114,7 @@ namespace neolib
 	public:
 		typedef boost::optional<json_string> optional_json_string;
 	public:
+		typedef variant<json_object, json_array, json_number, json_string, json_bool, json_null, json_keyword> value_type;
 		class i_visitor
 		{
 		public:
@@ -133,14 +134,14 @@ namespace neolib
 			virtual void visit(json_keyword& aKeyword) { visit(const_cast<const json_keyword&>(aKeyword)); }
 		};
 	private:
-		typedef variant<json_object, json_array, json_number, json_string, json_bool, json_null, json_keyword> value_type;
+		typedef variant<typename json_object::iterator, typename json_array::iterator> parent_container_iterator;
 	public:
 		basic_json_value() :
 			iParent{ nullptr }, iValue{}
 		{
 		}
 		basic_json_value(basic_json_value& aParent, const value_type& aValue) :
-			iParent{ &aParent }, iValue { aValue }
+			iParent{ &aParent }, iValue {	aValue }
 		{
 		}
 		basic_json_value(basic_json_value& aParent, value_type&& aValue) :
@@ -177,21 +178,6 @@ namespace neolib
 			return *this;
 		}
 	public:
-		bool operator<(const self_type& aRhs) const
-		{
-			return name() < aRhs.name();
-		}
-	public:
-		bool has_name() const
-		{
-			return iName != boost::none;
-		}
-		const json_string& name() const
-		{
-			if (has_name())
-				return *iName;
-			throw no_name();
-		}
 		json_type type() const
 		{
 			return static_cast<json_type>(iValue.which());
@@ -199,6 +185,129 @@ namespace neolib
 		bool is_composite() const
 		{
 			return type() == json_type::Object || type() == json_type::Array;
+		}
+		bool is_empty_composite() const
+		{
+			return (type() == json_type::Object && as<json_object>().empty()) || (type() == json_type::Array && as<json_array>().empty());
+		}
+		bool is_populated_composite() const
+		{
+			return (type() == json_type::Object && !as<json_object>().empty()) || (type() == json_type::Array && !as<json_array>().empty());
+		}
+		bool has_name() const
+		{
+			return has_parent() && parent().type() == json_type::Object;
+		}
+		const json_string& name() const
+		{
+			return static_variant_cast<json_object::iterator>(parent_container_iterator())->first;
+		}
+	public:
+		bool has_parent() const
+		{
+			return iParent != nullptr;
+		}
+		const basic_json_value& parent() const
+		{
+			return *iParent;
+		}
+		basic_json_value& parent()
+		{
+			return *iParent;
+		}
+		const parent_container_iterator& parent_pos() const
+		{
+			return iParentPos;
+		}
+		void set_parent_pos(const parent_container_iterator& aParentPos)
+		{
+			iParentPos = aParentPos;
+		}
+		const basic_json_value* first_child() const
+		{
+			if (type() == json_type::Array)
+			{
+				auto& a = as<json_array>();
+				if (!a.empty())
+					return &*a.begin();
+				else
+					return nullptr;
+			}
+			else if (type() == json_type::Object)
+			{
+				auto& o = as<json_object>();
+				if (!o.empty())
+					return &(*o.begin()).second;
+				else
+					return nullptr;
+			}
+			else
+				return nullptr;
+		}
+		basic_json_value* first_child()
+		{
+			return const_cast<basic_json_value*>(const_cast<const basic_json_value*>(this)->first_child());
+		}
+		bool is_last_sibling() const
+		{
+			if (!has_parent())
+				return true;
+			if (iParent->type() == json_type::Array)
+			{
+				auto& a = iParent->as<json_array>();
+				return static_variant_cast<json_array::iterator>(parent_pos()) == std::prev(a.end());
+			}
+			else if (iParent->type() == json_type::Object)
+			{
+				auto& o = iParent->as<json_object>();
+				return static_variant_cast<json_object::iterator>(parent_pos()) == std::prev(o.end());
+			}
+			return true;
+		}
+		const basic_json_value* next_sibling() const
+		{
+			if (is_last_sibling())
+				return nullptr;
+			else if (parent().type() == json_type::Array)
+			{
+				auto& a = parent().as<json_array>();
+				return &*std::next(static_variant_cast<json_array::iterator>(parent_pos()));
+			}
+			else if (parent().type() == json_type::Object)
+			{
+				auto& o = parent().as<json_object>();
+				return &(*std::next(static_variant_cast<json_object::iterator>(parent_pos()))).second;
+			}
+			return nullptr;
+		}
+		basic_json_value* next_sibling()
+		{
+			return const_cast<basic_json_value*>(const_cast<const basic_json_value*>(this)->next_sibling());
+		}
+		const basic_json_value* next_parent_sibling() const
+		{
+			auto tryParent = iParent;
+			if (tryParent == nullptr)
+				return nullptr;
+			while (tryParent->has_parent() && tryParent->is_last_sibling())
+				tryParent = &tryParent->parent();
+			if (tryParent->is_last_sibling())
+				return nullptr;
+			else if (tryParent->parent().type() == json_type::Array)
+			{
+				auto& a = tryParent->parent().as<json_array>();
+				return &*std::next(static_variant_cast<json_array::iterator>(tryParent->parent_pos()));
+			}
+			else if (tryParent->parent().type() == json_type::Object)
+			{
+				auto& o = tryParent->parent().as<json_object>();
+				return &(*std::next(static_variant_cast<json_object::iterator>(tryParent->parent_pos()))).second;
+			}
+			return nullptr;
+		}
+		basic_json_value* next_parent_sibling()
+		{
+			return const_cast<basic_json_value*>(const_cast<const basic_json_value*>(this)->next_parent_sibling());
 		}
 	public:
 		void accept(i_visitor& aVisitor) const
@@ -265,6 +374,7 @@ namespace neolib
 		}
 	private:
 		basic_json_value* iParent;
+		parent_container_iterator iParentPos;
 		value_type iValue;
 	};
 
@@ -290,7 +400,7 @@ namespace neolib
 		typedef typename value::json_null json_null;
 		typedef typename value::json_keyword json_keyword;
 	public:
-		typedef value value_type;
+		typedef typename value::value_type value_type;
 		typedef value_type* pointer;
 		typedef const value_type* const_pointer;
 		typedef value_type& reference;
@@ -339,9 +449,9 @@ namespace neolib
 		bool read(const std::string& aPath, bool aValidateUtf = false);
 		template <typename Elem, typename ElemTraits>
 		bool read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf = false);
-		bool write(const std::string& aPath, const string_type& aIndent = string_type{ 1, character_type{'\t'} });
+		bool write(const std::string& aPath, const string_type& aIndent = string_type(1, character_type{'\t'}));
 		template <typename Elem, typename ElemTraits>
-		bool write(std::basic_ostream<Elem, ElemTraits>& aOutput, const string_type& aIndent = string_type{ 1, character_type{ '\t' } });
+		bool write(std::basic_ostream<Elem, ElemTraits>& aOutput, const string_type& aIndent = string_type(1, character_type{ '\t' }));
 	public:
 		json_encoding encoding() const;
 		const json_string& document() const;

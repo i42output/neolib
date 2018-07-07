@@ -41,7 +41,7 @@
 
 namespace neolib
 {
-	namespace type_traits
+	namespace type_traits_detail
 	{
 		// This type traits is type streamable code is a modified version of http://stackoverflow.com/questions/4434569/is-it-possible-to-use-sfinae-templates-to-check-if-an-operator-exists
 
@@ -56,25 +56,36 @@ namespace neolib
 		template <class T> yes check(T const&);
 		no check(no);
 
-		template <typename T, typename StreamType = std::istream>
-		struct has_loading_support {
-			static StreamType & stream;
-			static T & x;
-			static const bool value = sizeof(check(stream >> x)) == sizeof(yes);
-		};
-
-		template <typename T, typename StreamType = std::ostream>
-		struct has_saving_support {
-			static StreamType & stream;
-			static T & x;
-			static const bool value = sizeof(check(stream << x)) == sizeof(yes);
-		};
-
-		template <typename T, typename LoadingStreamType = std::istream, typename SavingStreamType = std::ostream>
-		struct has_stream_operators {
-			static const bool can_load = has_loading_support<LoadingStreamType, T>::value;
-			static const bool can_save = has_saving_support<SavingStreamType, T>::value;
-			static const bool value = can_load && can_save;
-		};
 	}
+
+	template <typename T, typename StreamType = std::istream>
+	struct has_loading_support {
+		static StreamType & stream;
+		static T & x;
+		static constexpr bool value = sizeof(type_traits_detail::check(stream >> x)) == sizeof(type_traits_detail::yes);
+	};
+
+	template <typename T, typename StreamType = std::ostream>
+	struct has_saving_support {
+		static StreamType & stream;
+		static T & x;
+		static constexpr bool value = sizeof(type_traits_detail::check(stream << x)) == sizeof(type_traits_detail::yes);
+	};
+
+	template <typename T, typename LoadingStreamType = std::istream, typename SavingStreamType = std::ostream>
+	struct has_stream_operators {
+		static constexpr bool can_load = has_loading_support<LoadingStreamType, T>::value;
+		static constexpr bool can_save = has_saving_support<SavingStreamType, T>::value;
+		static constexpr bool value = can_load && can_save;
+	};
+
+	template <typename ConstType, typename NonConstType, bool IsConst>
+	struct const_selector;
+	template <typename ConstType, typename NonConstType>
+	struct const_selector<ConstType, NonConstType, true> { typedef ConstType type; };
+	template <typename ConstType, typename NonConstType>
+	struct const_selector<ConstType, NonConstType, false> { typedef NonConstType type; };
+
+	template<typename ConstType, typename NonConstType, typename Pointer>
+	struct const_selector_from_pointer : const_selector<ConstType, NonConstType, std::is_const<typename std::remove_pointer<Pointer>::type>::value> {};
 }

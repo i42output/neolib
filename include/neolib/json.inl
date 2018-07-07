@@ -40,9 +40,12 @@
 #include <neolib/neolib.hpp>
 #include <unordered_map>
 #include <fstream>
+#include <iomanip>
+#include <type_traits>
 #include <boost/lexical_cast.hpp>
 #include <boost/functional/hash.hpp>
 #include <neolib/string_utils.hpp>
+#include <neolib/type_traits.hpp>
 
 #define DEBUG_JSON
 
@@ -832,15 +835,18 @@ namespace neolib
 	template <typename IteratorTraits>
 	class basic_json<Alloc, CharT, Traits, CharAlloc>::iterator_base : public IteratorTraits
 	{
-		friend class Document;
-	public:
+	private:
 		typedef IteratorTraits traits;
+	protected:
 		using typename traits::iterator_category;
 		using typename traits::value_type;
 		using typename traits::difference_type;
 		using typename traits::pointer;
 		using typename traits::reference;
-	public:
+	protected:
+		typedef typename const_selector_from_pointer<const value*, value*, pointer>::type value_pointer;
+		typedef typename const_selector_from_pointer<const value&, value&, pointer>::type value_reference;
+	protected:
 		iterator_base() : iValue{ nullptr }
 		{
 		}
@@ -848,23 +854,27 @@ namespace neolib
 		{
 		}
 	protected:
-		iterator_base(pointer aValue) : iValue{ aValue }
+		iterator_base(value_pointer aValue) : iValue{ aValue }
 		{
 		}
 	protected:
 		pointer operator->() const
 		{
-			return iValue;
+			return &**iValue;
 		}
 		reference operator*() const
 		{
-			return *iValue;
+			return **iValue;
 		}
 	protected:
 		void operator++()
 		{
-			// todo
-			iValue = nullptr;
+			if ((value().type() == json_type::Array && !value().as<json_array>().empty()) || (value().type() == json_type::Object && !value().as<json_object>().empty()))
+				iValue = value().first_child();
+			else if (!value().is_last_sibling())
+				iValue = value().next_sibling();
+			else
+				iValue = value().next_parent_sibling();
 		}
 		void operator--()
 		{
@@ -881,44 +891,38 @@ namespace neolib
 			return iValue != aOther.iValue;
 		}
 	protected:
+		value_reference value() const
+		{
+			return *iValue;
+		}
 		bool has_parent() const
 		{
-			return iValue != nullptr;
+			return iValue != nullptr && value().has_parent();
 		}
-		iterator parent() const
+		value_pointer parent() const
 		{
 			if (has_parent())
-				return iValue->parent();
-			return iterator{};
-		}
-		uint32_t level() const
-		{
-			uint32_t result = 0;
-			auto p = this;
-			while (p->has_parent())
-			{
-				++result;
-				p = p->parent();
-			}
-			return result;
+				return &value().parent();
+			return nullptr;
 		}
 	private:
-		pointer iValue;
+		value_pointer iValue;
 	};
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	class basic_json<Alloc, CharT, Traits, CharAlloc>::iterator :
-		public iterator_base<std::iterator<std::bidirectional_iterator_tag, value, std::ptrdiff_t, pointer, reference>>
+	class basic_json<Alloc, CharT, Traits, CharAlloc>::iterator : public iterator_base<std::iterator<std::bidirectional_iterator_tag, value_type, std::ptrdiff_t, pointer, reference>>
 	{
 		friend class basic_json<Alloc, CharT, Traits, CharAlloc>;
 	private:
-		typedef iterator_base<std::iterator<std::bidirectional_iterator_tag, value, std::ptrdiff_t, pointer, reference>> base_type;
+		typedef iterator_base<std::iterator<std::bidirectional_iterator_tag, value_type, std::ptrdiff_t, pointer, reference>> base_type;
 	public:
 		using typename base_type::iterator_category;
 		using typename base_type::value_type;
 		using typename base_type::difference_type;
 		using typename base_type::pointer;
 		using typename base_type::reference;
+	public:
+		using typename base_type::value_pointer;
 	public:
 		iterator()
 		{
@@ -927,7 +931,7 @@ namespace neolib
 		{
 		}
 	private:
-		iterator(pointer aValue) : base_type{ aValue }
+		iterator(value_pointer aValue) : base_type{ aValue }
 		{
 		}
 	public:
@@ -959,21 +963,24 @@ namespace neolib
 	public:
 		using base_type::operator==;
 		using base_type::operator!=;
+	public:
+		using base_type::value;
 	};
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	class basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator :
-		public iterator_base<std::iterator<std::bidirectional_iterator_tag, value, std::ptrdiff_t, const_pointer, const_reference>>
+	class basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator : public iterator_base<std::iterator<std::bidirectional_iterator_tag, value_type, std::ptrdiff_t, const_pointer, const_reference>>
 	{
 		friend class basic_json<Alloc, CharT, Traits, CharAlloc>;
 	private:
-		typedef iterator_base<std::iterator<std::bidirectional_iterator_tag, value, std::ptrdiff_t, const_pointer, const_reference>> base_type;
+		typedef iterator_base<std::iterator<std::bidirectional_iterator_tag, value_type, std::ptrdiff_t, const_pointer, const_reference>> base_type;
 	public:
 		using typename base_type::iterator_category;
 		using typename base_type::value_type;
 		using typename base_type::difference_type;
 		using typename base_type::pointer;
 		using typename base_type::reference;
+	public:
+		using typename base_type::value_pointer;
 	public:
 		const_iterator()
 		{
@@ -985,7 +992,7 @@ namespace neolib
 		{
 		}
 	private:
-		const_iterator(pointer aValue) : base_type{ aValue }
+		const_iterator(value_pointer aValue) : base_type{ aValue }
 		{
 		}
 	public:
@@ -1017,6 +1024,8 @@ namespace neolib
 	public:
 		using base_type::operator==;
 		using base_type::operator!=;
+	public:
+		using base_type::value;
 	};
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
@@ -1189,9 +1198,107 @@ namespace neolib
 	template <typename Elem, typename ElemTraits>
 	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::write(std::basic_ostream<Elem, ElemTraits>& aOutput, const string_type& aIndent)
 	{
-		for (auto i = cbegin(); i != cend(); ++i)
+		static const string_type trueString = "true";
+		static const string_type falseString = "false";
+		static const string_type nullString = "null";
+		int32_t level = 0;
+		auto end = cend();
+		auto indent = [&aOutput, &aIndent, &level]() 
 		{
-
+			for (int32_t l = 0; l < level; ++l)
+				aOutput << aIndent;
+		};
+		for (auto i = cbegin(); i != end; ++i)
+		{
+			indent();
+			if (i.value().has_name())
+				aOutput << '\"' << i.value().name() << "\": ";
+			switch (i.value().type())
+			{
+			case json_type::Object:
+				aOutput << '{';
+				if (i.value().is_populated_composite())
+				{
+					++level;
+					aOutput << std::endl;
+				}
+				else
+					aOutput << '}';
+				break;
+			case json_type::Array:
+				aOutput << '[';
+				if (i.value().is_populated_composite())
+				{
+					++level;
+					aOutput << std::endl;
+				}
+				else
+					aOutput << ']';
+				break;
+			case json_type::Number:
+				aOutput << static_variant_cast<json_number>(*i);
+				break;
+			case json_type::String:
+				aOutput << '\"';
+				for (auto const& ch : static_variant_cast<json_string>(*i))
+					switch (ch)
+					{
+					case '\"':
+						aOutput << "\\\"";
+						break;
+					case '\\':
+						aOutput << "\\\\";
+						break;
+					case '/':
+						aOutput << "\\/";
+						break;
+					case '\b':
+						aOutput << "\\b";
+						break;
+					case '\f':
+						aOutput << "\\f";
+						break;
+					case '\n':
+						aOutput << "\\n";
+						break;
+					case '\r':
+						aOutput << "\\r";
+						break;
+					case '\t':
+						aOutput << "\\t";
+						break;
+					default:
+						if (static_cast<uint32_t>(ch) >= 32u)
+							aOutput << ch;
+						else
+							aOutput << "\\u" << std::hex << std::setw(4) << std::setfill('0') << (int)ch;
+					}
+				aOutput << '\"';
+				break;
+			case json_type::Bool:
+				aOutput << (static_variant_cast<json_bool>(*i) ? trueString : falseString);
+				break;
+			case json_type::Null:
+				aOutput << nullString;
+				break;
+			}
+			if (i.value().is_last_sibling() && i.value().has_parent())
+			{
+				--level;
+				aOutput << std::endl;
+				indent();
+				auto& check = i.value().parent();
+				if (check.type() == json_type::Array)
+					aOutput << ']';
+				else if (check.type() == json_type::Object)
+					aOutput << '}';
+				if (!check.is_last_sibling())
+					aOutput << ',';
+				if (level > 0)
+					aOutput << std::endl;
+			}
+			if (!i.value().is_last_sibling() && (!i.value().is_composite() || i.value().is_empty_composite()))
+				aOutput << ',' << std::endl;
 		}
 		return true;
 	}
@@ -1310,8 +1417,12 @@ namespace neolib
 			switch (iCompositeValueStack.back()->type())
 			{
 			case json_type::Array:
-				iCompositeValueStack.back()->as<json_array>().emplace_back(*iCompositeValueStack.back(), std::forward<T>(aValue));
-				return &iCompositeValueStack.back()->as<json_array>().back();
+				{
+					auto& a = iCompositeValueStack.back()->as<json_array>();
+					a.emplace_back(*iCompositeValueStack.back(), std::forward<T>(aValue));
+					a.back().set_parent_pos(std::prev(iCompositeValueStack.back()->as<json_array>().end()));
+					return &a.back();
+				}
 			case json_type::Object:
 				// todo
 				return nullptr;
