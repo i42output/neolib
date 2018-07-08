@@ -201,7 +201,7 @@ namespace neolib
 		}
 		const json_string& name() const
 		{
-			return static_variant_cast<json_object::iterator>(parent_container_iterator())->first;
+			return static_variant_cast<json_object::iterator>(parent_pos())->first;
 		}
 	public:
 		bool has_parent() const
@@ -417,7 +417,6 @@ namespace neolib
 			void visit(const json_array& aArray) override {}
 			void visit(const json_bool& aBool) override {}
 			void visit(const json_null&) override {}
-
 		};
 	private:
 		template <typename IteratorTraits>
@@ -435,10 +434,14 @@ namespace neolib
 				String,
 				Number,
 				Keyword,
-				EscapedUnicode
-			} type;
+				EscapedUnicode,
+				Name
+			};
+			type_e type;
+			type_e auxType;
 			character_type* start;
-			character_type* aux_start;
+			character_type* auxStart;
+			boost::optional<json_string> name;
 		};
 	public:
 		basic_json();
@@ -450,9 +453,9 @@ namespace neolib
 		bool read(const std::string& aPath, bool aValidateUtf = false);
 		template <typename Elem, typename ElemTraits>
 		bool read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf = false);
-		bool write(const std::string& aPath, const string_type& aIndent = string_type(1, character_type{'\t'}));
+		bool write(const std::string& aPath, const string_type& aIndent = string_type(2, character_type{' '}));
 		template <typename Elem, typename ElemTraits>
-		bool write(std::basic_ostream<Elem, ElemTraits>& aOutput, const string_type& aIndent = string_type(1, character_type{ '\t' }));
+		bool write(std::basic_ostream<Elem, ElemTraits>& aOutput, const string_type& aIndent = string_type(2, character_type{' '}));
 	public:
 		json_encoding encoding() const;
 		const json_string& document() const;
@@ -474,8 +477,9 @@ namespace neolib
 		template <typename Elem, typename ElemTraits>
 		bool do_read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf = false);
 		json_detail::state change_state(json_detail::state aCurrentState, json_detail::state aNextState, character_type* aNextInputCh, character_type*& aNextOutputCh, element& aCurrentElement);
+		json_type context() const;
 		template <typename T>
-		value* buy_value(T&& aValue);
+		value* buy_value(element& aCurrentElement, T&& aValue);
 		void create_parse_error(const character_type* aDocumentPos, const string_type& aExtraInfo = {});
 	private:
 		json_encoding iEncoding;

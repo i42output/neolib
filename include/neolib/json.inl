@@ -47,8 +47,6 @@
 #include <neolib/string_utils.hpp>
 #include <neolib/type_traits.hpp>
 
-#define DEBUG_JSON
-
 namespace neolib
 {
 	namespace json_detail
@@ -115,6 +113,8 @@ namespace neolib
 			Value,
 			NeedValueSeparator,
 			NeedValue,
+			NeedObjectValueSeparator,
+			NeedObjectValue,
 			Keyword,
 			Name,
 			EndName,
@@ -142,6 +142,8 @@ namespace neolib
 		constexpr state SVA = state::Value;
 		constexpr state SVS = state::NeedValueSeparator;
 		constexpr state SNV = state::NeedValue;
+		constexpr state SOS = state::NeedObjectValueSeparator;
+		constexpr state SOV = state::NeedObjectValue;
 		constexpr state SKE = state::Keyword;
 		constexpr state SNA = state::Name;
 		constexpr state SEN = state::EndName;
@@ -180,6 +182,10 @@ namespace neolib
 				return std::string{ "NeedValueSeparator" };
 			case state::NeedValue:
 				return std::string{ "NeedValue" };
+			case state::NeedObjectValueSeparator:
+				return std::string{ "NeedObjectValueSeparator" };
+			case state::NeedObjectValue:
+				return std::string{ "NeedObjectValue" };
 			case state::Keyword:
 				return std::string{ "Keyword" };
 			case state::Name:
@@ -235,7 +241,7 @@ namespace neolib
 			// state::Object
 			std::array<state, TOKEN_COUNT>
 			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-				SXX, SOB, SCL, SXX, SXX, SXX, SXX, SNA, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG
+				SXX, SOB, SCL, SXX, SXX, SXX, SOV, SNA, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG
 			}},
 			// state::Array
 			std::array<state, TOKEN_COUNT>
@@ -262,10 +268,20 @@ namespace neolib
 			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
 				SXX, SOB, SXX, SAR, SXX, SXX, SXX, SST, SKE, SXX, SXX, SXX, SXX, SN1, SN2, SXX, SXX, SXX, SIG
 			}},
+			// state::NeedObjectValueSeparator
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SCL, SXX, SCL, SXX, SOV, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG
+			}},
+			// state::NeedObjectValue
+			std::array<state, TOKEN_COUNT>
+			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
+				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SNA, SKE, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG
+			}},
 			// state::Keyword
 			std::array<state, TOKEN_COUNT>
 			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-				SXX, SXX, SCL, SXX, SCL, SVA, SEL, SXX, SKE, SXX, SXX, SXX, SXX, SXX, SKE, SXX, SXX, SXX, SEL
+				SXX, SXX, SCL, SXX, SCL, SEL, SEL, SXX, SKE, SXX, SXX, SXX, SXX, SXX, SKE, SXX, SXX, SXX, SEL
 			}},
 			// state::Name
 			std::array<state, TOKEN_COUNT>
@@ -275,7 +291,7 @@ namespace neolib
 			// state::EndName
 			std::array<state, TOKEN_COUNT>
 			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-				SXX, SXX, SXX, SXX, SXX, SVA, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG
+				SXX, SXX, SXX, SXX, SXX, SEL, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG
 			}},
 			// state::String
 			std::array<state, TOKEN_COUNT>
@@ -285,7 +301,7 @@ namespace neolib
 			// state::StringEnd
 			std::array<state, TOKEN_COUNT>
 			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH
-				SXX, SXX, SXX, SXX, SCL, SVA, SEL, SXX, SKE, SXX, SXX, SXX, SXX, SXX, SKE, SXX, SXX, SXX, SEL
+				SXX, SXX, SCL, SXX, SCL, SXX, SEL, SXX, SKE, SXX, SXX, SXX, SXX, SXX, SKE, SXX, SXX, SXX, SEL
 			}},
 			// state::NumberIntNeedDigit
 			std::array<state, TOKEN_COUNT>
@@ -409,9 +425,9 @@ namespace neolib
 			    TWH, TXX, TQT, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TOA, TXX, TXX, TXX, TXX, // 0x5
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCO, TXX, TXX, // 0x7
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TOO, TXX, TCO, TXX, TXX, // 0x7
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
 			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
@@ -521,6 +537,46 @@ namespace neolib
 			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xE
 			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xF
 			}},
+			// state::NeedObjectValueSeparator
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+			    TWH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCM, TXX, TXX, TXX, // 0x2
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCO, TXX, TXX, // 0x7
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
+			}},
+			// state::NeedObjectValue 
+			std::array<token, 256>
+			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
+			    TWH, TXX, TQT, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
+			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
+			}},
 			// state::Keyword
 			std::array<token, 256>
 			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
@@ -611,7 +667,7 @@ namespace neolib
 			    TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
 			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TXX, TXX, TCA, TXX, TCH, // 0x5
 			    TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TXX, TXX, TXX, TXX, TXX, // 0x7
+			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TXX, TXX, TCO, TXX, TXX, // 0x7
 			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x8
 			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x9
 			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xA
@@ -1282,19 +1338,37 @@ namespace neolib
 				aOutput << nullString;
 				break;
 			}
-			if (i.value().is_last_sibling() && i.value().has_parent())
+			
+			if (!i.value().is_composite() || i.value().is_empty_composite())
 			{
-				--level;
-				aOutput << std::endl;
-				indent();
-				auto& check = i.value().parent();
-				if (check.type() == json_type::Array)
-					aOutput << ']';
-				else if (check.type() == json_type::Object)
-					aOutput << '}';
-				if (!check.is_last_sibling())
-					aOutput << ',';
-				if (level > 0)
+				auto next = &i.value();
+				bool needNewline = false;
+				while (next->is_last_sibling() && next->has_parent())
+				{
+					--level;
+					auto nextParent = &next->parent();
+					if (nextParent->type() == json_type::Array)
+					{
+						aOutput << std::endl;
+						indent();
+						aOutput << ']';
+						needNewline = true;
+					}
+					else if (nextParent->type() == json_type::Object)
+					{
+						aOutput << std::endl;
+						indent();
+						aOutput << '}';
+						needNewline = true;
+					}
+					if (!nextParent->is_last_sibling())
+					{
+						aOutput << ',';
+						needNewline = true;
+					}
+					next = nextParent;
+				}
+				if (needNewline && level > 0)
 					aOutput << std::endl;
 			}
 			if (!i.value().is_last_sibling() && (!i.value().is_composite() || i.value().is_empty_composite()))
@@ -1409,29 +1483,35 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	template <typename T>
-	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::value* basic_json<Alloc, CharT, Traits, CharAlloc>::buy_value(T&& aValue)
+	inline json_type basic_json<Alloc, CharT, Traits, CharAlloc>::context() const
 	{
 		if (!iCompositeValueStack.empty())
+			return iCompositeValueStack.back()->type();
+		return json_type::Unknown;
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	template <typename T>
+	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::value* basic_json<Alloc, CharT, Traits, CharAlloc>::buy_value(element& aCurrentElement, T&& aValue)
+	{
+		switch (context())
 		{
-			switch (iCompositeValueStack.back()->type())
+		case json_type::Array:
 			{
-			case json_type::Array:
-				{
-					auto& a = iCompositeValueStack.back()->as<json_array>();
-					a.emplace_back(*iCompositeValueStack.back(), std::forward<T>(aValue));
-					a.back().set_parent_pos(std::prev(iCompositeValueStack.back()->as<json_array>().end()));
-					return &a.back();
-				}
-			case json_type::Object:
-				// todo
-				return nullptr;
-			default:
-				return nullptr;
+				auto& a = iCompositeValueStack.back()->as<json_array>();
+				auto iterNewValue = a.emplace(a.end(), *iCompositeValueStack.back(), std::forward<T>(aValue));
+				iterNewValue->set_parent_pos(iterNewValue);
+				return &a.back();
 			}
-		}
-		else
-		{
+		case json_type::Object:
+			{
+				auto& o = iCompositeValueStack.back()->as<json_object>();
+				auto iterNewValue = o.emplace(std::make_pair(*aCurrentElement.name, value{ *iCompositeValueStack.back(), aValue }));
+				iterNewValue->second.set_parent_pos(iterNewValue);
+				aCurrentElement.name = boost::none;
+				return &iterNewValue->second;
+			}
+		default:
 			iRoot = value{};
 			*iRoot = std::forward<T>(aValue);
 			return &*iRoot;
@@ -1447,6 +1527,7 @@ namespace neolib
 			{
 			case json_detail::state::String:
 			case json_detail::state::Keyword:
+			case json_detail::state::Name:
 				if (aCurrentElement.start != aNextOutputCh)
 					*aNextOutputCh++ = *aNextInputCh;
 				break;
@@ -1468,10 +1549,17 @@ namespace neolib
 			case element::Unknown:
 				break;
 			case element::String:
-				buy_value(json_string{ aCurrentElement.start, aCurrentElement.start == aNextOutputCh ? aNextInputCh - 1 : aNextOutputCh});
+			case element::Name:
+				{
+					json_string newString{ aCurrentElement.start, aCurrentElement.start == aNextOutputCh ? aNextInputCh - 1 : aNextOutputCh };
+					if (context() == json_type::Object && aCurrentElement.name == boost::none)
+						aCurrentElement.name = newString;
+					else
+						buy_value(aCurrentElement, newString);
+				}
 				break;
 			case element::Number:
-				buy_value(boost::lexical_cast<json_number>(json_string{ aCurrentElement.start, aNextInputCh }));
+				buy_value(aCurrentElement, boost::lexical_cast<json_number>(json_string{ aCurrentElement.start, aNextInputCh }));
 				break;
 			case element::Keyword:
 				{
@@ -1488,41 +1576,66 @@ namespace neolib
 						switch (keyword->second)
 						{
 						case json_detail::keyword::True:
-							buy_value(json_bool{ true });
+							buy_value(aCurrentElement, json_bool{ true });
 							break;
 						case json_detail::keyword::False:
-							buy_value(json_bool{ false });
+							buy_value(aCurrentElement, json_bool{ false });
 							break;
 						case json_detail::keyword::Null:
-							buy_value(json_null{});
+							buy_value(aCurrentElement, json_null{});
 							break;
 						}
 					}
 					else
-						buy_value(json_keyword{ keywordText }); // todo: make custom keywords optional and raise parser error if not enabled
+						buy_value(aCurrentElement, json_keyword{ keywordText }); // todo: make custom keywords optional and raise parser error if not enabled
 				}
 				break;
 			}
-			aCurrentElement = element{};
 			if (aNextState == json_detail::state::Close)
 				iCompositeValueStack.pop_back();
-			if (!iCompositeValueStack.empty())
+			switch (context())
 			{
-				aNextState = (*aNextInputCh == ',' ? json_detail::state::NeedValue : json_detail::state::NeedValueSeparator);
+			case json_type::Object:
+				if (aCurrentElement.type == element::Name)
+					aNextState = json_detail::state::NeedValue;
+				else if (aNextState == json_detail::state::Close)
+					aNextState = json_detail::state::NeedObjectValueSeparator;
+				else if (*aNextInputCh == ',')
+					aNextState = json_detail::state::NeedObjectValue;
+				else
+					aNextState = json_detail::state::NeedObjectValueSeparator;
 #ifdef DEBUG_JSON
 				changedState = true;
 #endif
-			}
-			else if (aNextState == json_detail::state::Close)
-			{
-				aNextState = json_detail::state::Value;
+				break;
+			case json_type::Array:
+				if (*aNextInputCh == ',')
+					aNextState = json_detail::state::NeedValue;
+				else
+					aNextState = json_detail::state::NeedValueSeparator;
 #ifdef DEBUG_JSON
 				changedState = true;
 #endif
+				break;
+			default:
+				if (aNextState == json_detail::state::Close)
+				{
+					aNextState = json_detail::state::Value;
+#ifdef DEBUG_JSON
+					changedState = true;
+#endif
+				}
+				break;
 			}
+			aCurrentElement.type = element::Unknown;
+			aCurrentElement.start = nullptr;
 			break;
 		case json_detail::state::String:
 			aCurrentElement.type = element::String;
+			aCurrentElement.start = (aNextOutputCh = aNextInputCh + 1);
+			break;
+		case json_detail::state::Name:
+			aCurrentElement.type = element::Name;
 			aCurrentElement.start = (aNextOutputCh = aNextInputCh + 1);
 			break;
 		case json_detail::state::NumberInt:
@@ -1531,9 +1644,18 @@ namespace neolib
 			break;
 		case json_detail::state::Array:
 			{
-				value* newArray = buy_value(json_array{});
+				value* newArray = buy_value(aCurrentElement, json_array{});
 				iCompositeValueStack.push_back(newArray);
 				aNextState = json_detail::state::Value;
+#ifdef DEBUG_JSON
+				changedState = true;
+#endif
+			}
+			break;
+		case json_detail::state::Object:
+			{
+				value* newObject = buy_value(aCurrentElement, json_object{});
+				iCompositeValueStack.push_back(newObject);
 #ifdef DEBUG_JSON
 				changedState = true;
 #endif
@@ -1576,7 +1698,6 @@ namespace neolib
 						(*aNextOutputCh++) = '\t';
 						break;
 					}
-					aCurrentElement.type = element::String;
 					aNextState = json_detail::state::String;
 #ifdef DEBUG_JSON
 					changedState = true;
@@ -1585,14 +1706,14 @@ namespace neolib
 				else if (aCurrentState == json_detail::state::EscapingUnicode)
 				{
 					// todo throw an error if there are invalid surrogate pairs
-					if (aCurrentElement.type != element::EscapedUnicode)
+					if (aCurrentElement.auxType != element::EscapedUnicode)
 					{
-						aCurrentElement.type = element::EscapedUnicode;
-						aCurrentElement.aux_start = aNextInputCh;
+						aCurrentElement.auxType = element::EscapedUnicode;
+						aCurrentElement.auxStart = aNextInputCh;
 					}
-					if (aNextInputCh + 1 - aCurrentElement.aux_start == 4)
+					if (aNextInputCh + 1 - aCurrentElement.auxStart == 4)
 					{
-						string_type s{ aCurrentElement.aux_start, aNextInputCh + 1 };
+						string_type s{ aCurrentElement.auxStart, aNextInputCh + 1 };
 						char16_t u16ch = static_cast<char16_t>(std::stoul(s, nullptr, 16));
 						if (utf16::is_high_surrogate(u16ch))
 						{
@@ -1647,7 +1768,7 @@ namespace neolib
 								break;
 							}
 						}
-						aCurrentElement.type = element::String;
+						aCurrentElement.auxType = element::Unknown;
 						aNextState = json_detail::state::String;
 					}
 					else
