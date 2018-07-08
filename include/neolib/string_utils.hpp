@@ -814,7 +814,7 @@ namespace neolib
 	}
 
 	template <typename CharT, typename Traits>
-	inline bool check_utf8(const boost::basic_string_view<CharT, Traits>& aString)
+	inline bool check_utf8(const std::basic_string_view<CharT, Traits>& aString)
 	{
 		auto end = aString.end();
 		for (auto i = aString.begin(); i != end; ++i)
@@ -846,7 +846,7 @@ namespace neolib
 	template <typename CharT, typename Traits, typename Alloc>
 	inline bool check_utf8(const std::basic_string<CharT, Traits, Alloc>& aString)
 	{
-		return check_utf8(boost::basic_string_view<CharT, Traits>{ aString });
+		return check_utf8(std::basic_string_view<CharT, Traits>{ aString });
 	}
 
 	template <typename StringT>

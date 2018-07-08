@@ -1794,7 +1794,7 @@ namespace neolib
 	{
 		uint32_t line = 1;
 		uint32_t col = 1;
-		for (auto pos = document().as_view().begin(); pos != aDocumentPos; ++pos)
+		for (auto pos = &*document().as_view().begin(); pos != aDocumentPos; ++pos)
 		{
 			if (*pos == '\n')
 			{

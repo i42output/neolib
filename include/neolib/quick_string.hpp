@@ -45,7 +45,7 @@
 #include <type_traits>
 #include <stdexcept>
 #include <iostream>
-#include <boost/utility/string_view.hpp>
+#include <string_view>
 #include <neolib/variant.hpp>
 
 namespace neolib 
@@ -68,7 +68,7 @@ namespace neolib
 		typedef typename string_type::const_iterator const_iterator;
 		typedef std::reverse_iterator<iterator> reverse_iterator;
 		typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-		typedef typename boost::basic_string_view<charT, Traits> string_view_type;
+		typedef typename std::basic_string_view<charT, Traits> string_view_type;
 		typedef typename string_view_type::const_reference view_const_reference;
 		typedef typename string_view_type::const_pointer view_const_pointer;
 		typedef typename string_view_type::const_iterator view_const_iterator;
@@ -952,11 +952,7 @@ namespace std
 	{
 		std::size_t operator()(const neolib::basic_quick_string<charT, Traits, Alloc>& sv) const noexcept
 		{
-			unsigned long __h = 0;
-			auto __e = sv.end();
-			for (auto __s = sv.begin(); __s != __e; ++__s)
-				__h = 5 * __h + *__s;
-			return std::size_t(__h);
+			return std::hash<std::basic_string_view<charT, Traits>>()(sv.as_view());
 		}
 	};
 }
