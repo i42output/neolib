@@ -23,3 +23,5 @@
 /build/win32/vs2017/x64/Release
 /unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/My Amplifier Results - NoFussJSONTest/*.amplxeproj
 /unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/Release
+/unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/*.psess
+/unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/*.vspx
