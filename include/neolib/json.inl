@@ -1499,14 +1499,16 @@ namespace neolib
 		case json_type::Array:
 			{
 				auto& a = iCompositeValueStack.back()->as<json_array>();
-				auto iterNewValue = a.emplace(a.end(), *iCompositeValueStack.back(), std::forward<T>(aValue));
+//				auto iterNewValue = a.emplace(a.end(), *iCompositeValueStack.back(), std::forward<T>(aValue));
+				auto iterNewValue = a.insert(a.end(), value{ *iCompositeValueStack.back(), std::forward<T>(aValue) });
 				iterNewValue->set_parent_pos(iterNewValue);
 				return &a.back();
 			}
 		case json_type::Object:
 			{
 				auto& o = iCompositeValueStack.back()->as<json_object>();
-				auto iterNewValue = o.emplace(std::make_pair(*aCurrentElement.name, value{ *iCompositeValueStack.back(), aValue }));
+//				auto iterNewValue = o.emplace(o.end(), std::make_pair(*aCurrentElement.name, value{ *iCompositeValueStack.back(), aValue }));
+				auto iterNewValue = o.insert(o.end(), std::make_pair(*aCurrentElement.name, value{ *iCompositeValueStack.back(), aValue }));
 				iterNewValue->second.set_parent_pos(iterNewValue);
 				aCurrentElement.name = boost::none;
 				return &iterNewValue->second;
