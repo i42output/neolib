@@ -106,11 +106,19 @@ namespace neolib
 		{
 		}
 		basic_quick_string(const charT* s, const Alloc& a = Alloc()) : 
-			iContents{ view_contents_type{ string_view_type{ s, }, a } } 
+			iContents{ view_contents_type{ string_view_type{ s }, a } } 
 		{
 		}
 		basic_quick_string(size_type n, charT c, const Alloc& a = Alloc()) : 
 			iContents{ string_type{ n, c, a } } 
+		{
+		}
+		basic_quick_string(const charT* begin, const charT* end, const Alloc& a = Alloc()) :
+			iContents{ view_contents_type{ string_view_type{ begin, static_cast<size_type>(end - begin) }, a } }
+		{
+		}
+		basic_quick_string(charT* begin, charT* end, const Alloc& a = Alloc()) :
+			iContents{ view_contents_type{ string_view_type{ const_cast<const charT*>(begin), static_cast<size_type>(end - begin) }, a } }
 		{
 		}
 		template<class InputIterator>
