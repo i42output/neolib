@@ -84,12 +84,6 @@
     <ClCompile Include="..\..\..\src\async_thread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\3rdparty\xxHash\xxhash.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\fast_hash.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\neolib\any.hpp">
@@ -504,6 +498,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\string_ci.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\neolib\3rdparty\flat_hash_map\flat_hash_map.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

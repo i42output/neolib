@@ -153,11 +153,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\3rdparty\xxHash\xxhash.c" />
     <ClCompile Include="..\..\..\src\application_info.cpp" />
     <ClCompile Include="..\..\..\src\crc.cpp" />
     <ClCompile Include="..\..\..\src\event.cpp" />
-    <ClCompile Include="..\..\..\src\fast_hash.cpp" />
     <ClCompile Include="..\..\..\src\file.cpp" />
     <ClCompile Include="..\..\..\src\gunzip.cpp" />
     <ClCompile Include="..\..\..\src\http.cpp" />
@@ -179,6 +177,7 @@
     <ClCompile Include="..\..\..\src\zip.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\include\neolib\3rdparty\flat_hash_map\flat_hash_map.hpp" />
     <ClInclude Include="..\..\..\include\neolib\bresenham_counter.hpp" />
     <ClInclude Include="..\..\..\include\neolib\any.hpp" />
     <ClInclude Include="..\..\..\include\neolib\any_iterator.hpp" />

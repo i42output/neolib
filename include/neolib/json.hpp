@@ -39,7 +39,6 @@
 
 #include "neolib.hpp"
 #include <cstddef>
-#include <unordered_map>
 #include <list>
 #include <string>
 #include <type_traits>
