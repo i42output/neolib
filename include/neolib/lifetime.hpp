@@ -40,7 +40,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <mutex>
-#include <boost/pool/pool_alloc.hpp>
+#include <neolib/allocator.hpp>
 #include <optional>
 #include "mutex.hpp"
 #include "i_lifetime.hpp"

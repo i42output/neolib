@@ -148,7 +148,7 @@ namespace neolib
 
 		// construction
 	public:
-		variant()
+		variant() : iContents{}
 		{
 		}
 		variant(const variant& other) : iContents(other.iContents)
@@ -204,7 +204,7 @@ namespace neolib
 		template <typename T>
 		bool is() const
 		{
-			return iContents.index() == type_id<T>::value;
+			return std::holds_alternative<T>(iContents);
 		}
 		int which() const
 		{
@@ -237,86 +237,16 @@ namespace neolib
 
 		// element access
 	public:
-		operator T1&() { return std::get<T1>(iContents); }
-		operator T2&() { return std::get<T2>(iContents); }
-		operator T3&() { return std::get<T3>(iContents); }
-		operator T4&() { return std::get<T4>(iContents); }
-		operator T5&() { return std::get<T5>(iContents); }
-		operator T6&() { return std::get<T6>(iContents); }
-		operator T7&() { return std::get<T7>(iContents); }
-		operator T8&() { return std::get<T8>(iContents); }
-		operator T9&() { return std::get<T9>(iContents); }
-		operator T10&() { return std::get<T10>(iContents); }
-		operator T11&() { return std::get<T11>(iContents); }
-		operator T12&() { return std::get<T12>(iContents); }
-		operator T13&() { return std::get<T13>(iContents); }
-		operator T14&() { return std::get<T14>(iContents); }
-		operator T15&() { return std::get<T15>(iContents); }
-		operator T16&() { return std::get<T16>(iContents); }
-		operator T17&() { return std::get<T17>(iContents); }
-		operator T18&() { return std::get<T18>(iContents); }
-		operator T19&() { return std::get<T19>(iContents); }
-		operator T20&() { return std::get<T20>(iContents); }
-		operator T21&() { return std::get<T21>(iContents); }
-		operator T22&() { return std::get<T22>(iContents); }
-		operator T23&() { return std::get<T23>(iContents); }
-		operator T24&() { return std::get<T24>(iContents); }
-		operator T25&() { return std::get<T25>(iContents); }
-		operator T26&() { return std::get<T26>(iContents); }
-		operator T27&() { return std::get<T27>(iContents); }
-		operator T28&() { return std::get<T28>(iContents); }
-		operator T29&() { return std::get<T29>(iContents); }
-		operator T30&() { return std::get<T30>(iContents); }
-		operator T31&() { return std::get<T31>(iContents); }
-		operator T32&() { return std::get<T32>(iContents); }
-		operator T33&() { return std::get<T33>(iContents); }
-		operator T34&() { return std::get<T34>(iContents); }
-		operator T35&() { return std::get<T35>(iContents); }
-		operator T36&() { return std::get<T36>(iContents); }
-		operator T37&() { return std::get<T37>(iContents); }
-		operator T38&() { return std::get<T38>(iContents); }
-		operator T39&() { return std::get<T39>(iContents); }
-		operator T40&() { return std::get<T40>(iContents); }
-		operator const T1&() const { return std::get<T1>(iContents); }
-		operator const T2&() const { return std::get<T2>(iContents); }
-		operator const T3&() const { return std::get<T3>(iContents); }
-		operator const T4&() const { return std::get<T4>(iContents); }
-		operator const T5&() const { return std::get<T5>(iContents); }
-		operator const T6&() const { return std::get<T6>(iContents); }
-		operator const T7&() const { return std::get<T7>(iContents); }
-		operator const T8&() const { return std::get<T8>(iContents); }
-		operator const T9&() const { return std::get<T9>(iContents); }
-		operator const T10&() const { return std::get<T10>(iContents); }
-		operator const T11&() const { return std::get<T11>(iContents); }
-		operator const T12&() const { return std::get<T12>(iContents); }
-		operator const T13&() const { return std::get<T13>(iContents); }
-		operator const T14&() const { return std::get<T14>(iContents); }
-		operator const T15&() const { return std::get<T15>(iContents); }
-		operator const T16&() const { return std::get<T16>(iContents); }
-		operator const T17&() const { return std::get<T17>(iContents); }
-		operator const T18&() const { return std::get<T18>(iContents); }
-		operator const T19&() const { return std::get<T19>(iContents); }
-		operator const T20&() const { return std::get<T20>(iContents); }
-		operator const T21&() const { return std::get<T21>(iContents); }
-		operator const T22&() const { return std::get<T22>(iContents); }
-		operator const T23&() const { return std::get<T23>(iContents); }
-		operator const T24&() const { return std::get<T24>(iContents); }
-		operator const T25&() const { return std::get<T25>(iContents); }
-		operator const T26&() const { return std::get<T26>(iContents); }
-		operator const T27&() const { return std::get<T27>(iContents); }
-		operator const T28&() const { return std::get<T28>(iContents); }
-		operator const T29&() const { return std::get<T29>(iContents); }
-		operator const T30&() const { return std::get<T30>(iContents); }
-		operator const T31&() const { return std::get<T31>(iContents); }
-		operator const T32&() const { return std::get<T32>(iContents); }
-		operator const T33&() const { return std::get<T33>(iContents); }
-		operator const T34&() const { return std::get<T34>(iContents); }
-		operator const T35&() const { return std::get<T35>(iContents); }
-		operator const T36&() const { return std::get<T36>(iContents); }
-		operator const T37&() const { return std::get<T37>(iContents); }
-		operator const T38&() const { return std::get<T38>(iContents); }
-		operator const T39&() const { return std::get<T39>(iContents); }
-		operator const T40&() const { return std::get<T40>(iContents); }
+		template <typename T>
+		operator T&()
+		{
+			return std::get<T>(iContents);
+		}
+		template <typename T>
+		operator const T&() const
+		{
+			return std::get<T>(iContents);
+		}
 
 		// implementation
 	private:

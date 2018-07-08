@@ -44,7 +44,8 @@
 #include <type_traits>
 #include <boost/lexical_cast.hpp>
 #include <boost/functional/hash.hpp>
-#include <neolib/string_utils.hpp>
+#include <neolib/string_numeric.hpp>
+#include <neolib/string_utf.hpp>
 #include <neolib/type_traits.hpp>
 
 namespace neolib
@@ -1559,7 +1560,10 @@ namespace neolib
 				}
 				break;
 			case element::Number:
-				buy_value(aCurrentElement, std::strtod(aCurrentElement.start, nullptr));
+				{
+					json_string newNumber{ aCurrentElement.start, aCurrentElement.start == aNextOutputCh ? aNextInputCh - 1 : aNextOutputCh };
+					buy_value(aCurrentElement, neolib::string_to_double(newNumber.as_view()));
+				}
 				break;
 			case element::Keyword:
 				{

@@ -50,9 +50,9 @@
 #include <exception>
 #include <optional>
 #include <boost/container/stable_vector.hpp>
-#include <boost/pool/pool_alloc.hpp>
-#include "variant.hpp"
-#include "quick_string.hpp"
+#include <neolib/allocator.hpp>
+#include <neolib/variant.hpp>
+#include <neolib/quick_string.hpp>
 
 namespace neolib
 {
@@ -201,7 +201,7 @@ namespace neolib
 		}
 		const json_string& name() const
 		{
-			return static_variant_cast<json_object::iterator>(parent_pos())->first;
+			return (*static_variant_cast<typename json_object::iterator>(parent_pos())).first;
 		}
 	public:
 		bool has_parent() const
@@ -500,7 +500,7 @@ namespace neolib
 	typedef json::json_null json_null;
 	typedef json::json_keyword json_keyword;
 
-	typedef basic_json<boost::fast_pool_allocator<json_type, boost::default_user_allocator_new_delete, boost::details::pool::null_mutex>> fast_json;
+	typedef basic_json<neolib::fast_pool_allocator<json_type>> fast_json;
 	typedef fast_json::value fast_json_value;
 	typedef fast_json::json_object fast_json_object;
 	typedef fast_json::json_array fast_json_array;

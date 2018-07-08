@@ -47,6 +47,7 @@
 #include <iostream>
 #include <string_view>
 #include <neolib/variant.hpp>
+#include <neolib/fast_hash.hpp>
 
 namespace neolib 
 {
@@ -960,7 +961,7 @@ namespace std
 	{
 		std::size_t operator()(const neolib::basic_quick_string<charT, Traits, Alloc>& sv) const noexcept
 		{
-			return std::hash<std::basic_string_view<charT, Traits>>()(sv.as_view());
+			return neolib::fast_hash(&*sv.as_view().cbegin(), sv.size(), 0u);
 		}
 	};
 }
