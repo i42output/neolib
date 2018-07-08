@@ -132,9 +132,9 @@ namespace neolib
 	class auto_ref : public i_auto_ref<Interface>
 	{
 	public:
-		typedef i_auto_ref<Interface> base;
-		typedef typename base::no_object no_object;
-		typedef typename base::interface_not_found interface_not_found;
+		typedef i_auto_ref<Interface> abstract_base;
+		typedef typename abstract_base::no_object no_object;
+		typedef typename abstract_base::interface_not_found interface_not_found;
 	public:
 		auto_ref(Interface* aObject = nullptr) :
 			iObject(aObject), iReferenceCounted(true)
@@ -152,7 +152,7 @@ namespace neolib
 			if (valid() && iReferenceCounted)
 				iObject->add_ref();
 		}
-		auto_ref(const i_auto_ref& aOther) :
+		auto_ref(const abstract_base& aOther) :
 			iObject(aOther.ptr()), iReferenceCounted(aOther.reference_counted())
 		{
 			if (valid() && iReferenceCounted)
@@ -174,7 +174,7 @@ namespace neolib
 			reset(aOther.ptr(), aOther.reference_counted());
 			return *this;
 		}
-		auto_ref& operator=(const i_auto_ref& aOther)
+		auto_ref& operator=(const abstract_base& aOther)
 		{
 			if (&aOther == this)
 				return *this;

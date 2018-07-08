@@ -106,7 +106,7 @@ namespace neolib
 		typedef typename allocator_type::template rebind<self_type>::other value_allocator;
 	public:
 		typedef basic_quick_string<character_type, character_traits_type, character_allocator_type> json_string;
-		typedef std::unordered_multimap<json_string, self_type, std::hash<json_string>, std::equal_to<json_string>, value_allocator> json_object;
+		typedef std::unordered_multimap<json_string, self_type, std::hash<json_string>, std::equal_to<json_string>, typename value_allocator:: template rebind<std::pair<const json_string, self_type>>::other> json_object;
 		typedef boost::container::stable_vector<self_type, value_allocator> json_array;
 		typedef double json_number;
 		typedef bool json_bool;

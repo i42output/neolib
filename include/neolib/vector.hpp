@@ -54,11 +54,15 @@ namespace neolib
 		typedef ConcreteType concrete_type;
 		typedef std::vector<concrete_type> container_type;
 		typedef typename i_vector<T>::size_type size_type;
+		typedef typename i_vector<T>::const_iterator const_iterator;
+		typedef typename i_vector<T>::iterator iterator;
+		typedef typename i_vector<T>::generic_container_type generic_container_type;
+	protected:
+		typedef typename i_vector<T>::abstract_const_iterator abstract_const_iterator;
+		typedef typename i_vector<T>::abstract_iterator abstract_iterator;
 	protected:
 		typedef container::random_access_const_iterator<T, typename container_type::const_iterator> container_const_iterator;
 		typedef container::random_access_iterator<T, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
-		typedef typename base::abstract_const_iterator abstract_const_iterator;
-		typedef typename base::abstract_iterator abstract_iterator;
 		// construction
 	public:
 		vector() : iEndConstIterator(), iEndIterator() {}
@@ -79,7 +83,7 @@ namespace neolib
 		virtual size_type size() const { return iVector.size(); }
 		virtual size_type max_size() const { return iVector.max_size(); }
 		virtual void clear() { reset_cache(); iVector.clear(); }
-		virtual void assign(const i_container& aOther) { if (&aOther == this) return; reset_cache(); iVector.assign(aOther.begin(), aOther.end()); }
+		virtual void assign(const generic_container_type& aOther) { if (&aOther == this) return; reset_cache(); iVector.assign(aOther.begin(), aOther.end()); }
 	private:
 		// from i_container
 		virtual abstract_const_iterator* do_begin() const { populate_cache(); return new container_const_iterator(iVector.begin()); }

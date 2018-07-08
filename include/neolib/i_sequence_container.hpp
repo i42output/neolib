@@ -44,14 +44,14 @@ namespace neolib
 	class i_sequence_container : public i_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators>
 	{
 	private:
-		typedef i_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators> base;
+		typedef i_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators> generic_container_type;
 	public:
-		typedef typename base::value_type value_type;
-		typedef typename base::size_type size_type;
-		typedef typename base::const_iterator const_iterator;
-		typedef typename base::iterator iterator;
-		typedef typename base::abstract_const_iterator abstract_const_iterator;
-		typedef typename base::abstract_iterator abstract_iterator;
+		typedef typename generic_container_type::value_type value_type;
+		typedef typename generic_container_type::size_type size_type;
+		typedef typename generic_container_type::const_iterator const_iterator;
+		typedef typename generic_container_type::iterator iterator;
+		typedef typename generic_container_type::abstract_const_iterator abstract_const_iterator;
+		typedef typename generic_container_type::abstract_iterator abstract_iterator;
 	public:
 		virtual size_type capacity() const = 0;
 		virtual void reserve(size_type aCapacity) = 0;
