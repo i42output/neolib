@@ -1296,7 +1296,7 @@ namespace neolib
 				break;
 			case json_type::String:
 				aOutput << '\"';
-				for (auto const& ch : static_variant_cast<json_string>(*i))
+				for (auto const& ch : static_variant_cast<const json_string&>(*i))
 					switch (ch)
 					{
 					case '\"':
@@ -1559,7 +1559,7 @@ namespace neolib
 				}
 				break;
 			case element::Number:
-				buy_value(aCurrentElement, boost::lexical_cast<json_number>(json_string{ aCurrentElement.start, aNextInputCh }));
+				buy_value(aCurrentElement, std::strtod(aCurrentElement.start, nullptr));
 				break;
 			case element::Keyword:
 				{

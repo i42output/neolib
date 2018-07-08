@@ -93,7 +93,11 @@ namespace neolib
 			iContents{ str.iContents } 
 		{
 		}
-		basic_quick_string(const basic_quick_string& str, size_type pos, size_type n = npos) : 
+		basic_quick_string(basic_quick_string&& str) :
+			iContents{ std::move(str.iContents) }
+		{
+		}
+		basic_quick_string(const basic_quick_string& str, size_type pos, size_type n = npos) :
 			iContents{ view_contents_type{ string_view_type{ str.cbegin() + pos, (n == npos ? str.size() - pos : n) }, str.get_allocator() } } 
 		{
 		}
@@ -939,4 +943,20 @@ namespace neolib
 	}
 
 	typedef basic_quick_string<char> quick_string;
+}
+
+namespace std
+{
+	template <typename charT, typename Traits, typename Alloc>
+	struct hash<neolib::basic_quick_string<charT, Traits, Alloc>>
+	{
+		std::size_t operator()(const neolib::basic_quick_string<charT, Traits, Alloc>& sv) const noexcept
+		{
+			unsigned long __h = 0;
+			auto __e = sv.end();
+			for (auto __s = sv.begin(); __s != __e; ++__s)
+				__h = 5 * __h + *__s;
+			return std::size_t(__h);
+		}
+	};
 }

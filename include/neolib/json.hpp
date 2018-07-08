@@ -39,7 +39,7 @@
 
 #include "neolib.hpp"
 #include <cstddef>
-#include <map>
+#include <unordered_map>
 #include <list>
 #include <string>
 #include <type_traits>
@@ -106,7 +106,7 @@ namespace neolib
 		typedef typename allocator_type::template rebind<self_type>::other value_allocator;
 	public:
 		typedef basic_quick_string<character_type, character_traits_type, character_allocator_type> json_string;
-		typedef std::multimap<json_string, self_type, std::less<json_string>, value_allocator> json_object;
+		typedef std::unordered_multimap<json_string, self_type, std::hash<json_string>, std::equal_to<json_string>, value_allocator> json_object;
 		typedef boost::container::stable_vector<self_type, value_allocator> json_array;
 		typedef double json_number;
 		typedef bool json_bool;
@@ -500,7 +500,7 @@ namespace neolib
 	typedef json::json_null json_null;
 	typedef json::json_keyword json_keyword;
 
-	typedef basic_json<boost::fast_pool_allocator<json_type>> fast_json;
+	typedef basic_json<boost::fast_pool_allocator<json_type, boost::default_user_allocator_new_delete, boost::details::pool::null_mutex>> fast_json;
 	typedef fast_json::value fast_json_value;
 	typedef fast_json::json_object fast_json_object;
 	typedef fast_json::json_array fast_json_array;
