@@ -42,7 +42,6 @@
 #include <array>
 #include <algorithm>
 #include <boost/bind.hpp>
-#include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include "string_utils.hpp"
 #include "async_task.hpp"

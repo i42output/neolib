@@ -39,7 +39,6 @@
 #include <stdexcept>
 #include <vector>
 #include <memory>
-#include <boost/asio.hpp>
 #include "async_task.hpp"
 #include "observable.hpp"
 #include "packet_stream.hpp"

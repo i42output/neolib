@@ -43,7 +43,7 @@
 #include <fstream>
 #include <sstream>
 #include <boost/functional/hash.hpp>
-#include <boost/optional.hpp>
+#include <optional>
 #include "variant.hpp"
 
 namespace neolib
@@ -380,7 +380,7 @@ namespace neolib
 		public:
 			typedef neolib::variant<token_type, function_type, scope_change_type> value_type;
 			typedef std::pair<node*, value_type> next_type;
-			typedef boost::optional<next_type> optional_next_type;
+			typedef std::optional<next_type> optional_next_type;
 		public:
 			struct bad_terminal_atom : std::logic_error { bad_terminal_atom() : std::logic_error("neolib::lexer::node::bad_terminal_atom") {} };
 			struct unsupported_atom_type : std::logic_error { unsupported_atom_type() : std::logic_error("neolib::lexer::node::unsupported_atom_type") {} };

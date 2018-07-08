@@ -1,6 +1,6 @@
-// i_vector.hpp - v1.0
+// allocator.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2018 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -36,20 +36,12 @@
 #pragma once
 
 #include "neolib.hpp"
-#include "i_sequence_container.hpp"
+#include <memory>
+#include <type_traits>
+#include <boost/pool/pool_alloc.hpp>
 
 namespace neolib
 {
 	template <typename T>
-	class i_vector : public i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T>, true>
-	{
-	private:
-		typedef i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T> > base;
-	public:
-		typedef typename base::generic_container_type generic_container_type;
-		typedef typename base::size_type size_type;
-	public:
-		virtual const T& operator[](size_type aIndex) const = 0;
-		virtual T& operator[](size_type aIndex) = 0;
-	};
+	using fast_pool_allocator = boost::fast_pool_allocator<T, boost::default_user_allocator_new_delete, boost::details::pool::null_mutex>;
 }

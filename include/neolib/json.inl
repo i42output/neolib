@@ -44,7 +44,8 @@
 #include <type_traits>
 #include <boost/lexical_cast.hpp>
 #include <boost/functional/hash.hpp>
-#include <neolib/string_utils.hpp>
+#include <neolib/string_numeric.hpp>
+#include <neolib/string_utf.hpp>
 #include <neolib/type_traits.hpp>
 
 namespace neolib
@@ -1108,7 +1109,7 @@ namespace neolib
 	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::clear()
 	{
 		document().clear();
-		iUtf16HighSurrogate = boost::none;
+		iUtf16HighSurrogate = std::nullopt;
 	}
 		
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
@@ -1296,7 +1297,7 @@ namespace neolib
 				break;
 			case json_type::String:
 				aOutput << '\"';
-				for (auto const& ch : static_variant_cast<json_string>(*i))
+				for (auto const& ch : static_variant_cast<const json_string&>(*i))
 					switch (ch)
 					{
 					case '\"':
@@ -1398,7 +1399,7 @@ namespace neolib
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::has_root() const
 	{
-		return iRoot != boost::none;
+		return iRoot != std::nullopt;
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
@@ -1439,7 +1440,7 @@ namespace neolib
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	typename basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator basic_json<Alloc, CharT, Traits, CharAlloc>::begin() const
 	{
-		if (iRoot != boost::none)
+		if (iRoot != std::nullopt)
 			return const_iterator{ &*iRoot };
 		return const_iterator{};
 	}
@@ -1453,7 +1454,7 @@ namespace neolib
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	typename basic_json<Alloc, CharT, Traits, CharAlloc>::iterator basic_json<Alloc, CharT, Traits, CharAlloc>::begin()
 	{
-		if (iRoot != boost::none)
+		if (iRoot != std::nullopt)
 			return iterator{ &*iRoot };
 		return iterator{};
 	}
@@ -1510,7 +1511,7 @@ namespace neolib
 //				auto iterNewValue = o.emplace(o.end(), std::make_pair(*aCurrentElement.name, value{ *iCompositeValueStack.back(), aValue }));
 				auto iterNewValue = o.insert(o.end(), std::make_pair(*aCurrentElement.name, value{ *iCompositeValueStack.back(), aValue }));
 				iterNewValue->second.set_parent_pos(iterNewValue);
-				aCurrentElement.name = boost::none;
+				aCurrentElement.name = std::nullopt;
 				return &iterNewValue->second;
 			}
 		default:
@@ -1554,14 +1555,17 @@ namespace neolib
 			case element::Name:
 				{
 					json_string newString{ aCurrentElement.start, aCurrentElement.start == aNextOutputCh ? aNextInputCh - 1 : aNextOutputCh };
-					if (context() == json_type::Object && aCurrentElement.name == boost::none)
+					if (context() == json_type::Object && aCurrentElement.name == std::nullopt)
 						aCurrentElement.name = newString;
 					else
 						buy_value(aCurrentElement, newString);
 				}
 				break;
 			case element::Number:
-				buy_value(aCurrentElement, boost::lexical_cast<json_number>(json_string{ aCurrentElement.start, aNextInputCh }));
+				{
+					json_string newNumber{ aCurrentElement.start, aCurrentElement.start == aNextOutputCh ? aNextInputCh - 1 : aNextOutputCh };
+					buy_value(aCurrentElement, neolib::string_to_double(newNumber.as_view()));
+				}
 				break;
 			case element::Keyword:
 				{
@@ -1724,7 +1728,7 @@ namespace neolib
 							aNextState = json_detail::state::String;
 							break;
 						}
-						else if (utf16::is_low_surrogate(u16ch) && iUtf16HighSurrogate != boost::none)
+						else if (utf16::is_low_surrogate(u16ch) && iUtf16HighSurrogate != std::nullopt)
 						{
 							switch (encoding())
 							{
@@ -1748,7 +1752,7 @@ namespace neolib
 								}
 								break;
 							}
-							iUtf16HighSurrogate = boost::none;
+							iUtf16HighSurrogate = std::nullopt;
 						}
 						else
 						{
@@ -1796,7 +1800,7 @@ namespace neolib
 	{
 		uint32_t line = 1;
 		uint32_t col = 1;
-		for (auto pos = document().as_view().begin(); pos != aDocumentPos; ++pos)
+		for (auto pos = &*document().as_view().begin(); pos != aDocumentPos; ++pos)
 		{
 			if (*pos == '\n')
 			{

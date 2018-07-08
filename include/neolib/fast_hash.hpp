@@ -1,6 +1,6 @@
-// i_vector.hpp - v1.0
+// fast_hash.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2018 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -36,20 +36,53 @@
 #pragma once
 
 #include "neolib.hpp"
-#include "i_sequence_container.hpp"
 
 namespace neolib
 {
-	template <typename T>
-	class i_vector : public i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T>, true>
+	namespace detail
 	{
-	private:
-		typedef i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T> > base;
-	public:
-		typedef typename base::generic_container_type generic_container_type;
-		typedef typename base::size_type size_type;
-	public:
-		virtual const T& operator[](size_type aIndex) const = 0;
-		virtual T& operator[](size_type aIndex) = 0;
-	};
+		template <typename T>
+		inline T fast_hash(const void* aInput, std::size_t aLength);
+
+		// https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
+
+		template <>
+		inline uint32_t fast_hash<uint32_t>(const void* aInput, std::size_t aLength)
+		{
+			uint32_t hash = 2166136261u;
+			const uint8_t* octet = static_cast<const uint8_t*>(aInput);
+			auto endOctet = octet + aLength;
+			while (octet != endOctet)
+			{
+				hash = hash ^ *octet++;
+				hash = hash * 16777619u;
+			}
+			return hash;
+		}
+
+		template <>
+		inline uint64_t fast_hash<uint64_t>(const void* aInput, std::size_t aLength)
+		{
+			uint64_t hash = 14695981039346656037ull;
+			const uint8_t* octet = static_cast<const uint8_t*>(aInput);
+			auto endOctet = octet + aLength;
+			while (octet != endOctet)
+			{
+				hash = hash ^ *octet++;
+				hash = hash * 1099511628211ull;
+			}
+			return hash;
+		}
+	}
+
+	template <typename T>
+	inline T fast_hash(const void* aInput, std::size_t aLength)
+	{
+		return detail::fast_hash<T>(aInput, aLength);
+	}
+
+	uint32_t fast_hash(const void* aInput, std::size_t aLength)
+	{
+		return fast_hash<uint32_t>(aInput, aLength);
+	}
 }

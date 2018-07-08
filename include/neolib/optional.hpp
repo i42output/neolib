@@ -36,14 +36,14 @@
 #pragma once
 
 #include "neolib.hpp"
-#include <boost/optional.hpp>
+#include <optional>
 #include "reference_counted.hpp"
 #include "i_optional.hpp"
 
 namespace neolib
 {
 	template<typename T, typename ConcreteType = T>
-	class optional : public reference_counted<i_optional<T> >, public boost::optional<ConcreteType>
+	class optional : public reference_counted<i_optional<T> >, public std::optional<ConcreteType>
 	{
 		// types
 	public:
@@ -56,7 +56,7 @@ namespace neolib
 		typedef typename i_optional<T>::not_valid not_valid;
 	private:
 		typedef i_optional<T> abstract_base;
-		typedef boost::optional<ConcreteType> base;
+		typedef std::optional<ConcreteType> base;
 		// construction
 	public:
 		optional() {}
@@ -66,7 +66,7 @@ namespace neolib
 	public:
 		virtual bool valid() const
 		{
-			return static_cast<const base&>(*this) != boost::none;
+			return static_cast<const base&>(*this) != std::nullopt;
 		}
 		virtual bool invalid() const
 		{
@@ -81,13 +81,13 @@ namespace neolib
 		virtual reference get()
 		{
 			if (valid())
-				return base::get();
+				return base::value();
 			throw not_valid();
 		}
 		virtual const_reference get() const
 		{
 			if (valid())
-				return base::get();
+				return base::value();
 			throw not_valid();
 		}
 		virtual reference operator*()
@@ -110,11 +110,11 @@ namespace neolib
 	public:
 		virtual void reset()
 		{ 
-			static_cast<base&>(*this) = boost::none;
+			static_cast<base&>(*this) = std::nullopt;
 		}
-		virtual optional& operator=(const boost::none_t&)
+		virtual optional& operator=(const std::nullopt_t&)
 		{
-			static_cast<base&>(*this) = boost::none;
+			static_cast<base&>(*this) = std::nullopt;
 			return *this;
 		}
 		virtual optional& operator=(const abstract_base& rhs)

@@ -89,6 +89,7 @@
       <PreprocessorDefinitions>WIN32;NEOLIB_HOSTED_ENVIRONMENT;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(DevDirNeolib)\include;$(DevDirBoost);$(DevDirOpenSSL)\include;$(DevDirZlib)\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalOptions>/std:c++latest %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -122,6 +123,7 @@
       <AdditionalIncludeDirectories>$(DevDirNeolib)\include;$(DevDirBoost);$(DevDirOpenSSL)\include;$(DevDirZlib)\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalOptions>/std:c++latest %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -175,6 +177,7 @@
     <ClCompile Include="..\..\..\src\zip.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\include\neolib\3rdparty\flat_hash_map\flat_hash_map.hpp" />
     <ClInclude Include="..\..\..\include\neolib\bresenham_counter.hpp" />
     <ClInclude Include="..\..\..\include\neolib\any.hpp" />
     <ClInclude Include="..\..\..\include\neolib\any_iterator.hpp" />
@@ -194,6 +197,7 @@
     <ClInclude Include="..\..\..\include\neolib\data_packet.hpp" />
     <ClInclude Include="..\..\..\include\neolib\detail_memory.hpp" />
     <ClInclude Include="..\..\..\include\neolib\event.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\fast_hash.hpp" />
     <ClInclude Include="..\..\..\include\neolib\file.hpp" />
     <ClInclude Include="..\..\..\include\neolib\functional.hpp" />
     <ClInclude Include="..\..\..\include\neolib\generic_iterator.hpp" />
@@ -275,7 +279,10 @@
     <ClInclude Include="..\..\..\include\neolib\slot_interface.hpp" />
     <ClInclude Include="..\..\..\include\neolib\stdint.hpp" />
     <ClInclude Include="..\..\..\include\neolib\string.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\string_ci.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\string_numeric.hpp" />
     <ClInclude Include="..\..\..\include\neolib\string_packet.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\string_utf.hpp" />
     <ClInclude Include="..\..\..\include\neolib\string_utils.hpp" />
     <ClInclude Include="..\..\..\include\neolib\tag_array.hpp" />
     <ClInclude Include="..\..\..\include\neolib\targetver.hpp" />

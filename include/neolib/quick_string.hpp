@@ -45,8 +45,9 @@
 #include <type_traits>
 #include <stdexcept>
 #include <iostream>
-#include <boost/utility/string_view.hpp>
+#include <string_view>
 #include <neolib/variant.hpp>
+#include <neolib/fast_hash.hpp>
 
 namespace neolib 
 {
@@ -68,7 +69,7 @@ namespace neolib
 		typedef typename string_type::const_iterator const_iterator;
 		typedef std::reverse_iterator<iterator> reverse_iterator;
 		typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-		typedef typename boost::basic_string_view<charT, Traits> string_view_type;
+		typedef typename std::basic_string_view<charT, Traits> string_view_type;
 		typedef typename string_view_type::const_reference view_const_reference;
 		typedef typename string_view_type::const_pointer view_const_pointer;
 		typedef typename string_view_type::const_iterator view_const_iterator;
@@ -93,7 +94,11 @@ namespace neolib
 			iContents{ str.iContents } 
 		{
 		}
-		basic_quick_string(const basic_quick_string& str, size_type pos, size_type n = npos) : 
+		basic_quick_string(basic_quick_string&& str) :
+			iContents{ std::move(str.iContents) }
+		{
+		}
+		basic_quick_string(const basic_quick_string& str, size_type pos, size_type n = npos) :
 			iContents{ view_contents_type{ string_view_type{ str.cbegin() + pos, (n == npos ? str.size() - pos : n) }, str.get_allocator() } } 
 		{
 		}
@@ -102,11 +107,19 @@ namespace neolib
 		{
 		}
 		basic_quick_string(const charT* s, const Alloc& a = Alloc()) : 
-			iContents{ view_contents_type{ string_view_type{ s, }, a } } 
+			iContents{ view_contents_type{ string_view_type{ s }, a } } 
 		{
 		}
 		basic_quick_string(size_type n, charT c, const Alloc& a = Alloc()) : 
 			iContents{ string_type{ n, c, a } } 
+		{
+		}
+		basic_quick_string(const charT* begin, const charT* end, const Alloc& a = Alloc()) :
+			iContents{ view_contents_type{ string_view_type{ begin, static_cast<size_type>(end - begin) }, a } }
+		{
+		}
+		basic_quick_string(charT* begin, charT* end, const Alloc& a = Alloc()) :
+			iContents{ view_contents_type{ string_view_type{ const_cast<const charT*>(begin), static_cast<size_type>(end - begin) }, a } }
 		{
 		}
 		template<class InputIterator>
@@ -939,4 +952,16 @@ namespace neolib
 	}
 
 	typedef basic_quick_string<char> quick_string;
+}
+
+namespace std
+{
+	template <typename charT, typename Traits, typename Alloc>
+	struct hash<neolib::basic_quick_string<charT, Traits, Alloc>>
+	{
+		std::size_t operator()(const neolib::basic_quick_string<charT, Traits, Alloc>& sv) const noexcept
+		{
+			return neolib::fast_hash(&*sv.as_view().cbegin(), sv.size());
+		}
+	};
 }

@@ -14,6 +14,7 @@
 #pragma warning (disable: 4996 ) // 'function': was declared deprecated
 #pragma warning (disable: 4345 ) // behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized
 #pragma warning( disable: 4250 ) // class1' : inherits 'class2::member' via dominance
+#pragma warning (disable: 4834 ) // discarding return value of function with 'nodiscard' attribute
 
 #if _MSC_VER < 1900
 #pragma execution_character_set("utf-8")
@@ -47,15 +48,17 @@
 	#undef WIN32_LEAN_AND_MEAN
 #endif
 
+#ifdef USING_BOOST
+#undef _HAS_AUTO_PTR_ETC
+#define _HAS_AUTO_PTR_ETC 1
+#define BOOST_ASIO_NO_WIN32_LEAN_AND_MEAN
+#include <boost/asio.hpp>
+#endif
+
 #include <algorithm> // for min/max
 
 using std::min;
 using std::max;
-
-#ifdef USING_BOOST
-#define BOOST_ASIO_NO_WIN32_LEAN_AND_MEAN
-#include <boost/asio.hpp>
-#endif
 
 namespace neolib
 {

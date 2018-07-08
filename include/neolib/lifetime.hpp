@@ -40,8 +40,8 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <mutex>
-#include <boost/pool/pool_alloc.hpp>
-#include <boost/optional.hpp>
+#include <neolib/allocator.hpp>
+#include <optional>
 #include "mutex.hpp"
 #include "i_lifetime.hpp"
 
@@ -137,7 +137,7 @@ namespace neolib
 	};
 
 	typedef lifetime_flag<lifetime_state::Destroyed> destroyed_flag;
-	typedef boost::optional<destroyed_flag> optional_destroyed_flag;
+	typedef std::optional<destroyed_flag> optional_destroyed_flag;
 
 	class own_flag_list
 	{
@@ -167,7 +167,7 @@ namespace neolib
 		typedef std::recursive_mutex mutex_type;
 		typedef std::unordered_set<i_lifetime_flag*, std::hash<i_lifetime_flag*>, std::equal_to<i_lifetime_flag*>, boost::fast_pool_allocator<i_lifetime_flag*>> flag_list;
 	private:
-		typedef std::unordered_map<const i_lifetime*, flag_list, std::hash<const i_lifetime*>, std::equal_to<const i_lifetime*>, boost::fast_pool_allocator<std::pair<const i_lifetime*, i_lifetime_flag*>>> flag_map;
+		typedef std::unordered_map<const i_lifetime*, flag_list, std::hash<const i_lifetime*>, std::equal_to<const i_lifetime*>, boost::fast_pool_allocator<std::pair<const i_lifetime* const, flag_list>>> flag_map;
 	public:
 		static mutex_type& mutex()
 		{

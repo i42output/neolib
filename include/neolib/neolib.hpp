@@ -37,23 +37,10 @@
 #pragma once
 
 #include <cstdint>
-#include <boost/mpl/limits/list.hpp>
-#include <boost/bind/placeholders.hpp>
-
-namespace boost
-{
-	using namespace placeholders;
-}
 
 #ifdef NEOLIB_HOSTED_ENVIRONMENT
 
 #define USING_BOOST
-#define BOOST_BIND_NO_PLACEHOLDERS
-#if BOOST_MPL_LIMIT_LIST_SIZE < 50
-#undef BOOST_MPL_LIMIT_LIST_SIZE
-#define BOOST_MPL_LIMIT_LIST_SIZE 50
-#define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
-#endif
 #define BOOST_ASIO_DISABLE_SMALL_BLOCK_RECYCLING
 
 #ifdef _WIN32

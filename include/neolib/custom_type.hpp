@@ -38,7 +38,7 @@
 #include "neolib.hpp"
 #include <boost/any.hpp>
 #include <sstream>
-#include <boost/optional.hpp>
+#include <optional>
 #include "reference_counted.hpp"
 #include "string.hpp"
 #include "type_traits.hpp"
@@ -76,7 +76,7 @@ namespace neolib
 	public:
 		struct type_mismatch : std::logic_error { type_mismatch() : std::logic_error("neolib::custom_type::type_mismatch") {} };
 	private:
-		typedef boost::optional<ConcreteType> container_type;
+		typedef std::optional<ConcreteType> container_type;
 	public:
 		custom_type(const string& aName) :
 			iName(aName) {}
@@ -94,7 +94,7 @@ namespace neolib
 		{
 			if (aRhs.name() != name())
 				throw type_mismatch();
-			if (iInstance == boost::none)
+			if (iInstance == std::nullopt)
 				iInstance = ConcreteType(aRhs.instance_as<AbstractType>());
 			else
 				*iInstance = aRhs.instance_as<AbstractType>();
@@ -109,8 +109,8 @@ namespace neolib
 			return (instance_ptr() != nullptr && aRhs.instance_ptr() != nullptr && instance_as<AbstractType>() < aRhs.instance_as<AbstractType>()) || (instance_ptr() < aRhs.instance_ptr());
 		}
 	public:
-		virtual const void* instance_ptr() const { return iInstance != boost::none ? static_cast<const AbstractType*>(&*iInstance) : static_cast<const AbstractType*>(nullptr); }
-		virtual void* instance_ptr() { return iInstance != boost::none ? static_cast<AbstractType*>(&*iInstance) : static_cast<AbstractType*>(nullptr); }
+		virtual const void* instance_ptr() const { return iInstance != std::nullopt ? static_cast<const AbstractType*>(&*iInstance) : static_cast<const AbstractType*>(nullptr); }
+		virtual void* instance_ptr() { return iInstance != std::nullopt ? static_cast<AbstractType*>(&*iInstance) : static_cast<AbstractType*>(nullptr); }
 	private:
 		string iName;
 		container_type iInstance;

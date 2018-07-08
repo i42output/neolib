@@ -38,19 +38,7 @@
 #include "neolib.hpp"
 
 #include <type_traits>
-#include <boost/variant.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/none_t.hpp>
-
-static_assert(BOOST_MPL_LIMIT_LIST_SIZE >= 50, "neolib variants require BOOST_MPL_LIMIT_LIST_SIZE >= 50");
-
-namespace boost
-{
-	inline std::size_t hash_value(const blank&)
-	{
-		return 0u;
-	}
-}
+#include <variant>
 
 namespace neolib
 {
@@ -62,13 +50,16 @@ namespace neolib
 		bool operator<(const unused_variant_type&) const { return false; }
 	};
 
+	typedef struct {} none_t;
+	const none_t none;
+
 	template <typename Variant, typename T>
 	struct type_id_cracker
 	{
 		static constexpr bool valid = false; 
 		static constexpr int value = -1;
 	};
-	template <typename Variant> struct type_id_cracker<Variant, boost::blank> { static constexpr bool valid = true; static constexpr int value = 0; };
+	template <typename Variant> struct type_id_cracker<Variant, std::monostate> { static constexpr bool valid = true; static constexpr int value = 0; };
 	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_1> { static constexpr bool valid = true; static constexpr int value = 1; };
 	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_2> { static constexpr bool valid = true; static constexpr int value = 2; };
 	template <typename Variant> struct type_id_cracker<Variant, typename Variant::type_3> { static constexpr bool valid = true; static constexpr int value = 3; };
@@ -133,7 +124,7 @@ namespace neolib
 
 		// types
 	public:
-		typedef boost::variant<boost::blank, 
+		typedef std::variant<std::monostate, 
 			T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, 
 			T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, 
 			T21, T22, T23, T24, T25, T26, T27, T28, T29, T30,
@@ -157,7 +148,7 @@ namespace neolib
 
 		// construction
 	public:
-		variant()
+		variant() : iContents{}
 		{
 		}
 		variant(const variant& other) : iContents(other.iContents)
@@ -184,7 +175,7 @@ namespace neolib
 			iContents = std::move(other.iContents);
 			return *this;
 		}
-		variant& operator=(boost::none_t)
+		variant& operator=(none_t)
 		{
 			clear();
 			return *this;
@@ -200,30 +191,30 @@ namespace neolib
 	public:
 		bool valid() const
 		{
-			return !is<boost::blank>();
+			return !is<std::monostate>();
 		}
 		bool empty() const
 		{
-			return is<boost::blank>();
+			return is<std::monostate>();
 		}
 		void clear() 
 		{
-			iContents = boost::blank();
+			iContents = std::monostate();
 		}
 		template <typename T>
 		bool is() const
 		{
-			return iContents.which() == type_id<T>::value;
+			return std::holds_alternative<T>(iContents);
 		}
 		int which() const
 		{
-			return iContents.which();
+			return iContents.index();
 		}
 		bool operator==(const variant& rhs) const 
 		{ 
 			return iContents == rhs.iContents;
 		} 
-		bool operator==(boost::none_t) const
+		bool operator==(none_t) const
 		{
 			return empty();
 		}
@@ -231,7 +222,7 @@ namespace neolib
 		{ 
 			return !(iContents == rhs.iContents);
 		} 
-		bool operator!=(boost::none_t) const
+		bool operator!=(none_t) const
 		{
 			return !empty();
 		}
@@ -246,180 +237,67 @@ namespace neolib
 
 		// element access
 	public:
-		operator T1&() { return boost::get<T1>(iContents); }
-		operator T2&() { return boost::get<T2>(iContents); }
-		operator T3&() { return boost::get<T3>(iContents); }
-		operator T4&() { return boost::get<T4>(iContents); }
-		operator T5&() { return boost::get<T5>(iContents); }
-		operator T6&() { return boost::get<T6>(iContents); }
-		operator T7&() { return boost::get<T7>(iContents); }
-		operator T8&() { return boost::get<T8>(iContents); }
-		operator T9&() { return boost::get<T9>(iContents); }
-		operator T10&() { return boost::get<T10>(iContents); }
-		operator T11&() { return boost::get<T11>(iContents); }
-		operator T12&() { return boost::get<T12>(iContents); }
-		operator T13&() { return boost::get<T13>(iContents); }
-		operator T14&() { return boost::get<T14>(iContents); }
-		operator T15&() { return boost::get<T15>(iContents); }
-		operator T16&() { return boost::get<T16>(iContents); }
-		operator T17&() { return boost::get<T17>(iContents); }
-		operator T18&() { return boost::get<T18>(iContents); }
-		operator T19&() { return boost::get<T19>(iContents); }
-		operator T20&() { return boost::get<T20>(iContents); }
-		operator T21&() { return boost::get<T21>(iContents); }
-		operator T22&() { return boost::get<T22>(iContents); }
-		operator T23&() { return boost::get<T23>(iContents); }
-		operator T24&() { return boost::get<T24>(iContents); }
-		operator T25&() { return boost::get<T25>(iContents); }
-		operator T26&() { return boost::get<T26>(iContents); }
-		operator T27&() { return boost::get<T27>(iContents); }
-		operator T28&() { return boost::get<T28>(iContents); }
-		operator T29&() { return boost::get<T29>(iContents); }
-		operator T30&() { return boost::get<T30>(iContents); }
-		operator T31&() { return boost::get<T31>(iContents); }
-		operator T32&() { return boost::get<T32>(iContents); }
-		operator T33&() { return boost::get<T33>(iContents); }
-		operator T34&() { return boost::get<T34>(iContents); }
-		operator T35&() { return boost::get<T35>(iContents); }
-		operator T36&() { return boost::get<T36>(iContents); }
-		operator T37&() { return boost::get<T37>(iContents); }
-		operator T38&() { return boost::get<T38>(iContents); }
-		operator T39&() { return boost::get<T39>(iContents); }
-		operator T40&() { return boost::get<T40>(iContents); }
-		operator const T1&() const { return boost::get<T1>(iContents); }
-		operator const T2&() const { return boost::get<T2>(iContents); }
-		operator const T3&() const { return boost::get<T3>(iContents); }
-		operator const T4&() const { return boost::get<T4>(iContents); }
-		operator const T5&() const { return boost::get<T5>(iContents); }
-		operator const T6&() const { return boost::get<T6>(iContents); }
-		operator const T7&() const { return boost::get<T7>(iContents); }
-		operator const T8&() const { return boost::get<T8>(iContents); }
-		operator const T9&() const { return boost::get<T9>(iContents); }
-		operator const T10&() const { return boost::get<T10>(iContents); }
-		operator const T11&() const { return boost::get<T11>(iContents); }
-		operator const T12&() const { return boost::get<T12>(iContents); }
-		operator const T13&() const { return boost::get<T13>(iContents); }
-		operator const T14&() const { return boost::get<T14>(iContents); }
-		operator const T15&() const { return boost::get<T15>(iContents); }
-		operator const T16&() const { return boost::get<T16>(iContents); }
-		operator const T17&() const { return boost::get<T17>(iContents); }
-		operator const T18&() const { return boost::get<T18>(iContents); }
-		operator const T19&() const { return boost::get<T19>(iContents); }
-		operator const T20&() const { return boost::get<T20>(iContents); }
-		operator const T21&() const { return boost::get<T21>(iContents); }
-		operator const T22&() const { return boost::get<T22>(iContents); }
-		operator const T23&() const { return boost::get<T23>(iContents); }
-		operator const T24&() const { return boost::get<T24>(iContents); }
-		operator const T25&() const { return boost::get<T25>(iContents); }
-		operator const T26&() const { return boost::get<T26>(iContents); }
-		operator const T27&() const { return boost::get<T27>(iContents); }
-		operator const T28&() const { return boost::get<T28>(iContents); }
-		operator const T29&() const { return boost::get<T29>(iContents); }
-		operator const T30&() const { return boost::get<T30>(iContents); }
-		operator const T31&() const { return boost::get<T31>(iContents); }
-		operator const T32&() const { return boost::get<T32>(iContents); }
-		operator const T33&() const { return boost::get<T33>(iContents); }
-		operator const T34&() const { return boost::get<T34>(iContents); }
-		operator const T35&() const { return boost::get<T35>(iContents); }
-		operator const T36&() const { return boost::get<T36>(iContents); }
-		operator const T37&() const { return boost::get<T37>(iContents); }
-		operator const T38&() const { return boost::get<T38>(iContents); }
-		operator const T39&() const { return boost::get<T39>(iContents); }
-		operator const T40&() const { return boost::get<T40>(iContents); }
+		template <typename T>
+		operator T&()
+		{
+			return std::get<T>(iContents);
+		}
+		template <typename T>
+		operator const T&() const
+		{
+			return std::get<T>(iContents);
+		}
 
 		// implementation
 	private:
 		void* address()
 		{
-			switch(which())
-			{
-			case 1: return &boost::get<T1>(iContents); 
-			case 2: return &boost::get<T2>(iContents); 
-			case 3: return &boost::get<T3>(iContents); 
-			case 4: return &boost::get<T4>(iContents); 
-			case 5: return &boost::get<T5>(iContents); 
-			case 6: return &boost::get<T6>(iContents); 
-			case 7: return &boost::get<T7>(iContents); 
-			case 8: return &boost::get<T8>(iContents); 
-			case 9: return &boost::get<T9>(iContents); 
-			case 10: return &boost::get<T10>(iContents); 
-			case 11: return &boost::get<T11>(iContents); 
-			case 12: return &boost::get<T12>(iContents); 
-			case 13: return &boost::get<T13>(iContents); 
-			case 14: return &boost::get<T14>(iContents); 
-			case 15: return &boost::get<T15>(iContents); 
-			case 16: return &boost::get<T16>(iContents); 
-			case 17: return &boost::get<T17>(iContents); 
-			case 18: return &boost::get<T18>(iContents); 
-			case 19: return &boost::get<T19>(iContents); 
-			case 20: return &boost::get<T20>(iContents); 
-			case 21: return &boost::get<T21>(iContents); 
-			case 22: return &boost::get<T22>(iContents); 
-			case 23: return &boost::get<T23>(iContents); 
-			case 24: return &boost::get<T24>(iContents); 
-			case 25: return &boost::get<T25>(iContents); 
-			case 26: return &boost::get<T26>(iContents); 
-			case 27: return &boost::get<T27>(iContents); 
-			case 28: return &boost::get<T28>(iContents); 
-			case 29: return &boost::get<T29>(iContents); 
-			case 30: return &boost::get<T30>(iContents); 
-			case 31: return &boost::get<T31>(iContents);
-			case 32: return &boost::get<T32>(iContents);
-			case 33: return &boost::get<T33>(iContents);
-			case 34: return &boost::get<T34>(iContents);
-			case 35: return &boost::get<T35>(iContents);
-			case 36: return &boost::get<T36>(iContents);
-			case 37: return &boost::get<T37>(iContents);
-			case 38: return &boost::get<T38>(iContents);
-			case 39: return &boost::get<T39>(iContents);
-			case 40: return &boost::get<T40>(iContents);
-			default: return 0;
-			}
+			return const_cast<void*>(const_cast<const variant*>(this)->address());
 		}
 		const void* address() const
 		{
 			switch(which())
 			{
-			case 1: return &boost::get<T1>(iContents); 
-			case 2: return &boost::get<T2>(iContents); 
-			case 3: return &boost::get<T3>(iContents); 
-			case 4: return &boost::get<T4>(iContents); 
-			case 5: return &boost::get<T5>(iContents); 
-			case 6: return &boost::get<T6>(iContents); 
-			case 7: return &boost::get<T7>(iContents); 
-			case 8: return &boost::get<T8>(iContents); 
-			case 9: return &boost::get<T9>(iContents); 
-			case 10: return &boost::get<T10>(iContents); 
-			case 11: return &boost::get<T11>(iContents); 
-			case 12: return &boost::get<T12>(iContents); 
-			case 13: return &boost::get<T13>(iContents); 
-			case 14: return &boost::get<T14>(iContents); 
-			case 15: return &boost::get<T15>(iContents); 
-			case 16: return &boost::get<T16>(iContents); 
-			case 17: return &boost::get<T17>(iContents); 
-			case 18: return &boost::get<T18>(iContents); 
-			case 19: return &boost::get<T19>(iContents); 
-			case 20: return &boost::get<T20>(iContents); 
-			case 21: return &boost::get<T21>(iContents); 
-			case 22: return &boost::get<T22>(iContents); 
-			case 23: return &boost::get<T23>(iContents); 
-			case 24: return &boost::get<T24>(iContents); 
-			case 25: return &boost::get<T25>(iContents); 
-			case 26: return &boost::get<T26>(iContents); 
-			case 27: return &boost::get<T27>(iContents); 
-			case 28: return &boost::get<T28>(iContents); 
-			case 29: return &boost::get<T29>(iContents); 
-			case 30: return &boost::get<T30>(iContents); 
-			case 31: return &boost::get<T31>(iContents);
-			case 32: return &boost::get<T32>(iContents);
-			case 33: return &boost::get<T33>(iContents);
-			case 34: return &boost::get<T34>(iContents);
-			case 35: return &boost::get<T35>(iContents);
-			case 36: return &boost::get<T36>(iContents);
-			case 37: return &boost::get<T37>(iContents);
-			case 38: return &boost::get<T38>(iContents);
-			case 39: return &boost::get<T39>(iContents);
-			case 40: return &boost::get<T40>(iContents);
+			case 1: return &std::get<T1>(iContents); 
+			case 2: return &std::get<T2>(iContents); 
+			case 3: return &std::get<T3>(iContents); 
+			case 4: return &std::get<T4>(iContents); 
+			case 5: return &std::get<T5>(iContents); 
+			case 6: return &std::get<T6>(iContents); 
+			case 7: return &std::get<T7>(iContents); 
+			case 8: return &std::get<T8>(iContents); 
+			case 9: return &std::get<T9>(iContents); 
+			case 10: return &std::get<T10>(iContents); 
+			case 11: return &std::get<T11>(iContents); 
+			case 12: return &std::get<T12>(iContents); 
+			case 13: return &std::get<T13>(iContents); 
+			case 14: return &std::get<T14>(iContents); 
+			case 15: return &std::get<T15>(iContents); 
+			case 16: return &std::get<T16>(iContents); 
+			case 17: return &std::get<T17>(iContents); 
+			case 18: return &std::get<T18>(iContents); 
+			case 19: return &std::get<T19>(iContents); 
+			case 20: return &std::get<T20>(iContents); 
+			case 21: return &std::get<T21>(iContents); 
+			case 22: return &std::get<T22>(iContents); 
+			case 23: return &std::get<T23>(iContents); 
+			case 24: return &std::get<T24>(iContents); 
+			case 25: return &std::get<T25>(iContents); 
+			case 26: return &std::get<T26>(iContents); 
+			case 27: return &std::get<T27>(iContents); 
+			case 28: return &std::get<T28>(iContents); 
+			case 29: return &std::get<T29>(iContents); 
+			case 30: return &std::get<T30>(iContents); 
+			case 31: return &std::get<T31>(iContents);
+			case 32: return &std::get<T32>(iContents);
+			case 33: return &std::get<T33>(iContents);
+			case 34: return &std::get<T34>(iContents);
+			case 35: return &std::get<T35>(iContents);
+			case 36: return &std::get<T36>(iContents);
+			case 37: return &std::get<T37>(iContents);
+			case 38: return &std::get<T38>(iContents);
+			case 39: return &std::get<T39>(iContents);
+			case 40: return &std::get<T40>(iContents);
 			default: return 0;
 			}
 		}
@@ -437,24 +315,33 @@ namespace neolib
 	{ 
 		return *static_cast<const typename std::remove_reference<T>::type*>(aVariant.address());
 	}
+}
 
-	template <unsigned int N>
-	inline std::size_t hash_value(const unused_variant_type<N>&)
-	{
-		return 0u;
-	}
-
+namespace std
+{
 	template <
-		typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10,
-		typename T11, typename T12, typename T13, typename T14, typename T15, typename T16, typename T17, typename T18, typename T19, typename T20,
-		typename T21, typename T22, typename T23, typename T24, typename T25, typename T26, typename T27, typename T28, typename T29, typename T30,
-		typename T31, typename T32, typename T33, typename T34, typename T35, typename T36, typename T37, typename T38, typename T39, typename T40>
-	inline std::size_t hash_value(const variant<
-		T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36, T37, T38, T39, T40>& aVariant)
+		typename T1,
+		typename T2 , typename T3 , typename T4 , typename T5 ,
+		typename T6 , typename T7 , typename T8 , typename T9 ,
+		typename T10 , typename T11 , typename T12 , typename T13 ,
+		typename T14 , typename T15 , typename T16 , typename T17 ,
+		typename T18 , typename T19 , typename T20 , typename T21 ,
+		typename T22 , typename T23 , typename T24 , typename T25 ,
+		typename T26 , typename T27 , typename T28 , typename T29 ,
+		typename T30 , typename T31 , typename T32 , typename T33 ,
+		typename T34 , typename T35 , typename T36 , typename T37 ,
+		typename T38 , typename T39 , typename T40  >
+	struct hash<neolib::variant<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20,
+								T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36, T37, T38, T39, T40>>
 	{
-		boost::hash<decltype(aVariant.contents())> hasher;
-		return hasher(aVariant.contents());
-	}
+		typedef neolib::variant<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20,
+			T21, T22, T23, T24, T25, T26, T27, T28, T29, T30, T31, T32, T33, T34, T35, T36, T37, T38, T39, T40> argument_type;
+		typedef std::size_t result_type;;
+		result_type operator()(const argument_type& v) const noexcept
+		{
+			return std::hash<typename argument_type::contents_type>{}(v);
+		}
+	};
 }
 
 using neolib::static_variant_cast;

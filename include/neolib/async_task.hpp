@@ -36,7 +36,6 @@
 #pragma once
 
 #include "neolib.hpp"
-#include <boost/asio.hpp>
 #include "i_thread.hpp"
 #include "task.hpp"
 #include "message_queue.hpp"
