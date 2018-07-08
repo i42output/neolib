@@ -220,7 +220,7 @@ namespace neolib
 		neolib::tokens(first.first, first.second, delim.begin(), delim.end(), parts, 2);
 		if (parts.empty())
 			return;
-		boost::optional<unsigned short> port;
+		std::optional<unsigned short> port;
 		if (parts.size() == 2)
 			port = static_cast<unsigned short>(neolib::string_to_unsigned_integer(std::string(parts[1].first, parts[1].second)));
 		std::string address = std::string(parts[0].first, parts[0].second);

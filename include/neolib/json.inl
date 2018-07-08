@@ -1108,7 +1108,7 @@ namespace neolib
 	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::clear()
 	{
 		document().clear();
-		iUtf16HighSurrogate = boost::none;
+		iUtf16HighSurrogate = std::nullopt;
 	}
 		
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
@@ -1398,7 +1398,7 @@ namespace neolib
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::has_root() const
 	{
-		return iRoot != boost::none;
+		return iRoot != std::nullopt;
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
@@ -1439,7 +1439,7 @@ namespace neolib
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	typename basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator basic_json<Alloc, CharT, Traits, CharAlloc>::begin() const
 	{
-		if (iRoot != boost::none)
+		if (iRoot != std::nullopt)
 			return const_iterator{ &*iRoot };
 		return const_iterator{};
 	}
@@ -1453,7 +1453,7 @@ namespace neolib
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	typename basic_json<Alloc, CharT, Traits, CharAlloc>::iterator basic_json<Alloc, CharT, Traits, CharAlloc>::begin()
 	{
-		if (iRoot != boost::none)
+		if (iRoot != std::nullopt)
 			return iterator{ &*iRoot };
 		return iterator{};
 	}
@@ -1508,7 +1508,7 @@ namespace neolib
 				auto& o = iCompositeValueStack.back()->as<json_object>();
 				auto iterNewValue = o.emplace(std::make_pair(*aCurrentElement.name, value{ *iCompositeValueStack.back(), aValue }));
 				iterNewValue->second.set_parent_pos(iterNewValue);
-				aCurrentElement.name = boost::none;
+				aCurrentElement.name = std::nullopt;
 				return &iterNewValue->second;
 			}
 		default:
@@ -1552,7 +1552,7 @@ namespace neolib
 			case element::Name:
 				{
 					json_string newString{ aCurrentElement.start, aCurrentElement.start == aNextOutputCh ? aNextInputCh - 1 : aNextOutputCh };
-					if (context() == json_type::Object && aCurrentElement.name == boost::none)
+					if (context() == json_type::Object && aCurrentElement.name == std::nullopt)
 						aCurrentElement.name = newString;
 					else
 						buy_value(aCurrentElement, newString);
@@ -1722,7 +1722,7 @@ namespace neolib
 							aNextState = json_detail::state::String;
 							break;
 						}
-						else if (utf16::is_low_surrogate(u16ch) && iUtf16HighSurrogate != boost::none)
+						else if (utf16::is_low_surrogate(u16ch) && iUtf16HighSurrogate != std::nullopt)
 						{
 							switch (encoding())
 							{
@@ -1746,7 +1746,7 @@ namespace neolib
 								}
 								break;
 							}
-							iUtf16HighSurrogate = boost::none;
+							iUtf16HighSurrogate = std::nullopt;
 						}
 						else
 						{

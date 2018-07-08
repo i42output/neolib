@@ -41,7 +41,7 @@
 #include <unordered_map>
 #include <mutex>
 #include <boost/pool/pool_alloc.hpp>
-#include <boost/optional.hpp>
+#include <optional>
 #include "mutex.hpp"
 #include "i_lifetime.hpp"
 
@@ -137,7 +137,7 @@ namespace neolib
 	};
 
 	typedef lifetime_flag<lifetime_state::Destroyed> destroyed_flag;
-	typedef boost::optional<destroyed_flag> optional_destroyed_flag;
+	typedef std::optional<destroyed_flag> optional_destroyed_flag;
 
 	class own_flag_list
 	{

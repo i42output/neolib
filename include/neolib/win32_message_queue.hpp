@@ -37,7 +37,7 @@
 
 #include "neolib.hpp"
 #include <deque>
-#include <boost/optional.hpp>
+#include <optional>
 #include "async_task.hpp"
 #include "message_queue.hpp"
 

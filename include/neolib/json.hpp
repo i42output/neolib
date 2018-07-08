@@ -48,7 +48,7 @@
 #include <utility>
 #include <memory>
 #include <exception>
-#include <boost/optional.hpp>
+#include <optional>
 #include <boost/container/stable_vector.hpp>
 #include <boost/pool/pool_alloc.hpp>
 #include "variant.hpp"
@@ -113,7 +113,7 @@ namespace neolib
 		typedef std::nullptr_t json_null;
 		typedef struct { json_string text; } json_keyword;
 	public:
-		typedef boost::optional<json_string> optional_json_string;
+		typedef std::optional<json_string> optional_json_string;
 	public:
 		typedef variant<json_object, json_array, json_number, json_string, json_bool, json_null, json_keyword> value_type;
 		class i_visitor
@@ -392,7 +392,7 @@ namespace neolib
 		typedef CharAlloc character_allocator_type;
 		typedef basic_json<Alloc, CharT, Traits, CharAlloc> self_type;
 		typedef basic_json_value<allocator_type, character_type, character_traits_type, character_allocator_type> value;
-		typedef boost::optional<value> optional_value;
+		typedef std::optional<value> optional_value;
 		typedef typename value::json_object json_object;
 		typedef typename value::json_array json_array;
 		typedef typename value::json_number json_number;
@@ -441,7 +441,7 @@ namespace neolib
 			type_e auxType;
 			character_type* start;
 			character_type* auxStart;
-			boost::optional<json_string> name;
+			std::optional<json_string> name;
 		};
 	public:
 		basic_json();
@@ -487,7 +487,7 @@ namespace neolib
 		string_type iErrorText;
 		optional_value iRoot;
 		std::vector<value*> iCompositeValueStack;
-		boost::optional<char16_t> iUtf16HighSurrogate;
+		std::optional<char16_t> iUtf16HighSurrogate;
 	};
 
 	typedef basic_json<> json;

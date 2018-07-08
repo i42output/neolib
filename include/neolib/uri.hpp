@@ -37,7 +37,7 @@
 
 #include "neolib.hpp"
 #include <unordered_set>
-#include <boost/optional.hpp>
+#include <optional>
 
 namespace neolib
 {
@@ -47,9 +47,9 @@ namespace neolib
 		typedef std::string user_information_type;
 		typedef std::string host_type;
 		typedef uint16_t port_type;
-		typedef boost::optional<user_information_type> optional_user_information;
-		typedef boost::optional<host_type> optional_host;
-		typedef boost::optional<port_type> optional_port;
+		typedef std::optional<user_information_type> optional_user_information;
+		typedef std::optional<host_type> optional_host;
+		typedef std::optional<port_type> optional_port;
 	public:
 		uri_authority();
 		uri_authority(const std::string& aAuthority);
@@ -100,11 +100,11 @@ namespace neolib
 	template <typename Elem, typename Traits>
 	inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const uri_authority& aUriAuthority)
 	{
-		if (aUriAuthority.user_information() != boost::none)
+		if (aUriAuthority.user_information() != std::nullopt)
 			aStream << uri::escaped(*aUriAuthority.user_information()) << "@";
-		if (aUriAuthority.host() != boost::none)
+		if (aUriAuthority.host() != std::nullopt)
 			aStream << uri::escaped(*aUriAuthority.host());
-		if (aUriAuthority.port() != boost::none)
+		if (aUriAuthority.port() != std::nullopt)
 			aStream << ":" << *aUriAuthority.port();
 		return aStream;
 	}
