@@ -112,12 +112,12 @@ namespace neolib
 		return strtoull(aString.c_str(), 0, aBase);
 	}
 
-	typedef std::variant<std::monostate, double, int32_t, uint32_t, int64_t, uint64_t> integer_t;
+	typedef std::variant<std::monostate, double, int32_t, uint32_t, int64_t, uint64_t> number_t;
 
-	struct string_to_integer_failure : std::logic_error { string_to_integer_failure() : std::logic_error("neolib::string_to_integer_failure") {} };
+	struct string_to_number_failure : std::logic_error { string_to_number_failure() : std::logic_error("neolib::string_to_number_failure") {} };
 
 	template <typename CharT, typename Traits>
-	inline integer_t string_to_integer(const std::basic_string_view<CharT, Traits>& aStringView)
+	inline number_t string_to_number(const std::basic_string_view<CharT, Traits>& aStringView)
 	{
 		namespace qi = boost::spirit::qi;
 		{
@@ -145,7 +145,7 @@ namespace neolib
 			if (qi::parse(aStringView.begin(), aStringView.end(), qi::double_, result))
 				return result;
 		}
-		throw string_to_integer_failure();
+		throw string_to_number_failure();
 	}
 
 	template <typename CharT, typename Traits>
