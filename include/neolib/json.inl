@@ -1155,13 +1155,15 @@ namespace neolib
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::read(const std::string& aPath, bool aValidateUtf)
 	{
-		std::ifstream input{ aPath };
+		std::ifstream input{ aPath, std::ios::binary };
 		if (!input)
 		{
 			iErrorText = "failed to open JSON file '" + aPath + "'";
 			return false;
 		}
 		bool ok = do_read(input, aValidateUtf);
+		if (ok)
+			ok = do_parse();
 		if (!ok)
 			iErrorText = "failed to parse JSON file '" + aPath + "', " + iErrorText;
 		return ok;
@@ -1177,6 +1179,8 @@ namespace neolib
 			return false;
 		}
 		bool ok = do_read(aInput, aValidateUtf);
+		if (ok)
+			ok = do_parse();
 		if (!ok)
 			iErrorText = "failed to parse JSON text, " + iErrorText;
 		return ok;
@@ -1239,6 +1243,12 @@ namespace neolib
 			return false;
 		}
 
+		return true;
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::do_parse()
+	{
 		json_detail::state currentState = json_detail::state::Value;
 		json_detail::state nextState;
 		element currentElement = {};

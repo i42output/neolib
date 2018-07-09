@@ -668,6 +668,7 @@ namespace neolib
 	private:
 		template <typename Elem, typename ElemTraits>
 		bool do_read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf = false);
+		bool do_parse();
 		json_type context() const;
 		template <typename T>
 		value* buy_value(element& aCurrentElement, T&& aValue);
