@@ -914,7 +914,7 @@ namespace neolib
 		inline state next_state(state aCurrentState, char aToken)
 		{
 			auto stateIndex = static_cast<std::size_t>(aCurrentState);
-			auto token = sTokenTables[stateIndex][aToken];
+			auto token = sTokenTables[stateIndex][static_cast<std::size_t>(aToken)];
 			return sStateTables[stateIndex][static_cast<std::size_t>(token)];
 		}
 
