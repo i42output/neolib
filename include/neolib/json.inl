@@ -926,7 +926,7 @@ namespace neolib
 	protected:
 		void operator++()
 		{
-			if ((value().type() == json_type::Array && !value().as<json_array>().empty()) || (value().type() == json_type::Object && !value().as<json_object>().empty()))
+			if (value().has_children())
 				iValue = value().first_child();
 			else if (!value().is_last_sibling())
 				iValue = value().next_sibling();
@@ -1498,21 +1498,13 @@ namespace neolib
 		switch (context())
 		{
 		case json_type::Array:
-			{
-				auto& a = iCompositeValueStack.back()->as<json_array>();
-//				auto iterNewValue = a.emplace(a.end(), *iCompositeValueStack.back(), std::forward<T>(aValue));
-				auto iterNewValue = a.insert(a.end(), value{ *iCompositeValueStack.back(), std::forward<T>(aValue) });
-				iterNewValue->set_parent_pos(iterNewValue);
-				return &a.back();
-			}
+			return iCompositeValueStack.back()->buy_child(std::forward<T>(aValue));
 		case json_type::Object:
 			{
-				auto& o = iCompositeValueStack.back()->as<json_object>();
-//				auto iterNewValue = o.emplace(o.end(), std::make_pair(*aCurrentElement.name, value{ *iCompositeValueStack.back(), aValue }));
-				auto iterNewValue = o.insert(o.end(), std::make_pair(*aCurrentElement.name, value{ *iCompositeValueStack.back(), aValue }));
-				iterNewValue->second.set_parent_pos(iterNewValue);
+				auto newObject = iCompositeValueStack.back()->buy_child(std::forward<T>(aValue));
+				newObject->set_name(*aCurrentElement.name);
 				aCurrentElement.name = std::nullopt;
-				return &iterNewValue->second;
+				return newObject;
 			}
 		default:
 			iRoot = value{};

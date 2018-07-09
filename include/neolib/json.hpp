@@ -120,18 +120,23 @@ namespace neolib
 				iLastChild{ nullptr }
 			{
 			}
+			~basic_json_node()
+			{
+				while (iLastChild != nullptr)
+					destruct_child(iLastChild);
+			}
 		public:
 			json_value* buy_child(json_value& aParent)
 			{
-				construct_child(allocate_child(), aParent);
+				return construct_child(allocate_child(), aParent);
 			}
 			json_value* buy_child(json_value& aParent, const value_type& aValue)
 			{
-				construct_child(allocate_child(), aParent, aValue);
+				return construct_child(allocate_child(), aParent, aValue);
 			}
 			json_value* buy_child(json_value& aParent, value_type&& aValue)
 			{
-				construct_child(allocate_child(), aParent, std::move(aValue));
+				return construct_child(allocate_child(), aParent, std::move(aValue));
 			}
 		public:
 			bool has_parent() const
@@ -194,26 +199,43 @@ namespace neolib
 		private:
 			json_value* allocate_child()
 			{
-				auto address = iAllocator.allocate(1);
+				return iAllocator.allocate(1);
 			}
 			void deallocate_child(json_value* aAddress)
 			{
 				iAllocator.deallocate(aAddress);
 			}
 			template <typename... Args>
-			void construct_child(json_value* aAddress, Args&&... aArguments)
+			json_value* construct_child(json_value* aAddress, Args&&... aArguments)
 			{
 				iAllocator.construct(aAddress, std::forward<Args>(aArguments)...);
 				json_value& child = *aAddress;
-				if (iFirstChild == nullptr)
+				if (iLastChild == nullptr)
 				{
 					iFirstChild = &child;
 					iLastChild = &child;
 				}
+				else
+				{
+					iLastChild->iNode.iNext = &child;
+					child.iNode.iPrevious = iLastChild;
+					iLastChild = &child;
+				}
+				return &child;
 			}
 			void destruct_child(json_value* aAddress)
 			{
-				aAddress->~json_value();
+				json_value& child = *aAddress;
+				if (child.iNode.iPrevious != nullptr)
+					child.iNode.iPrevious->iNode.iNext = child.iNode.iNext;
+				if (child.iNode.iNext != nullptr)
+					child.iNode.iNext->iNode.iPrevious = child.iNode.iPrevious;
+				if (iLastChild == &child)
+					iLastChild = child.iNode.iPrevious;
+				if (iFirstChild == &child)
+					iFirstChild = child.iNode.iNext;
+				child.~json_value();
+				deallocate_child(aAddress);
 			}
 		private:
 			value_allocator iAllocator;
@@ -240,8 +262,8 @@ namespace neolib
 		typedef typename json_value::value_allocator allocator_type;
 		typedef std::unordered_multimap<json_string, json_value*, std::hash<json_string>, std::equal_to<json_string>, typename allocator_type:: template rebind<std::pair<const json_string, json_value*>>::other> dictionary_type;
 	public:
-		basic_json_object(json_value& aOwner) :
-			iOwner{ aOwner }
+		basic_json_object() :
+			iOwner{ nullptr }
 		{
 		}
 	private:
@@ -258,7 +280,7 @@ namespace neolib
 			return const_cast<dictionary_type&>(const_cast<const self_type*>(this)->cache());
 		}
 	private:
-		json_value & iOwner;
+		json_value* iOwner;
 		mutable std::unique_ptr<dictionary_type> iLazyDictionary;
 	};
 
@@ -277,8 +299,8 @@ namespace neolib
 		typedef typename json_value::value_allocator allocator_type;
 		typedef std::vector<json_value*> array_type;
 	public:
-		basic_json_array(json_value& aOwner) :
-			iOwner{ aOwner }
+		basic_json_array() :
+			iOwner{ nullptr }
 		{
 		}
 	private:
@@ -295,13 +317,19 @@ namespace neolib
 			return const_cast<array_type&>(const_cast<const self_type*>(this)->cache());
 		}
 	private:
-		json_value & iOwner;
+		json_value* iOwner;
 		mutable std::unique_ptr<array_type> iLazyArray;
 	};
 
 	template <typename Alloc = std::allocator<json_type>, typename CharT = char, typename Traits = std::char_traits<CharT>, typename CharAlloc = std::allocator<CharT>>
+	class basic_json;
+		
+	template <typename Alloc = std::allocator<json_type>, typename CharT = char, typename Traits = std::char_traits<CharT>, typename CharAlloc = std::allocator<CharT>>
 	class basic_json_value
 	{
+		friend class basic_json<Alloc, CharT, Traits, CharAlloc>;
+		template <typename T>
+		friend class json_detail::basic_json_node;
 	public:
 		struct no_name : std::logic_error { no_name() : std::logic_error("neolib::basic_json_value::no_name") {} };
 	public:
@@ -350,11 +378,11 @@ namespace neolib
 		{
 		}
 		basic_json_value(basic_json_value& aParent, const value_type& aValue) :
-			iNode{ &aParent }, iValue {	aValue }
+			iNode{ aParent }, iValue {	aValue }
 		{
 		}
 		basic_json_value(basic_json_value& aParent, value_type&& aValue) :
-			iNode{ &aParent }, iValue{ std::move(aValue) }
+			iNode{ aParent }, iValue{ std::move(aValue) }
 		{
 		}
 	public:
@@ -411,6 +439,10 @@ namespace neolib
 		{
 			return *iName;
 		}
+		void set_name(const json_string& aName)
+		{
+			iName = aName;
+		}
 	public:
 		bool has_parent() const
 		{
@@ -423,6 +455,10 @@ namespace neolib
 		basic_json_value& parent()
 		{
 			return *iNode.parent();
+		}
+		bool has_children() const
+		{
+			return iNode.has_children();
 		}
 		const basic_json_value* first_child() const
 		{
@@ -524,12 +560,18 @@ namespace neolib
 			}
 		}
 	private:
+		template <typename... Args>
+		basic_json_value* buy_child(Args&&... aArguments)
+		{
+			return iNode.buy_child(*this, std::forward<Args>(aArguments)...);
+		}
+	private:
 		node_type iNode;
 		std::optional<json_string> iName;
 		value_type iValue;
 	};
 
-	template <typename Alloc = std::allocator<json_type>, typename CharT = char, typename Traits = std::char_traits<CharT>, typename CharAlloc = std::allocator<CharT>>
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	class basic_json
 	{
 	public:
