@@ -41,8 +41,6 @@
 #include <cstddef>
 #include <list>
 #include <string>
-#include <unordered_map>
-#include <vector>
 #include <type_traits>
 #include <istream>
 #include <ostream>
@@ -98,6 +96,8 @@ namespace neolib
 		{
 			template <typename Alloc , typename CharT, typename Traits, typename CharAlloc>
 			friend class basic_json_value;
+		private:
+			typedef basic_json_node<T> self_type;
 		public:
 			typedef T json_value;
 			typedef typename json_value::value_type value_type;
@@ -120,6 +120,7 @@ namespace neolib
 				iLastChild{ nullptr }
 			{
 			}
+		public:
 			json_value* buy_child(json_value& aParent)
 			{
 				construct_child(allocate_child(), aParent);
@@ -131,6 +132,64 @@ namespace neolib
 			json_value* buy_child(json_value& aParent, value_type&& aValue)
 			{
 				construct_child(allocate_child(), aParent, std::move(aValue));
+			}
+		public:
+			bool has_parent() const
+			{
+				return iParent != nullptr;
+			}
+			const json_value* parent() const
+			{
+				return iParent;
+			}
+			json_value* parent()
+			{
+				return iParent;
+			}
+			bool has_children() const
+			{
+				return iFirstChild != nullptr;
+			}
+			const json_value* first_child() const
+			{
+				return iFirstChild;
+			}
+			json_value* first_child()
+			{
+				return iFirstChild;
+			}
+			const json_value* last_child() const
+			{
+				return iLastChild;
+			}
+			json_value* last_child()
+			{
+				return iLastChild;
+			}
+			bool is_last_sibling() const
+			{
+				return iNext == nullptr;
+			}
+			const json_value* next_sibling() const
+			{
+				return iNext;
+			}
+			json_value* next_sibling()
+			{
+				return iNext;
+			}
+			const json_value* next_parent_sibling() const
+			{
+				auto tryParent = iParent;
+				if (tryParent == nullptr)
+					return nullptr;
+				while (tryParent->has_parent() && tryParent->is_last_sibling())
+					tryParent = &tryParent->parent();
+				return tryParent->next_sibling();
+			}
+			json_value* next_parent_sibling()
+			{
+				return const_cast<json_value*>(const_cast<const self_type*>(this)->next_parent_sibling());
 			}
 		private:
 			json_value* allocate_child()
@@ -171,6 +230,8 @@ namespace neolib
 	{
 		template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 		friend class basic_json_value;
+	private:
+		typedef basic_json_object<T> self_type;
 	public:
 		typedef T json_value;
 		typedef typename json_value::value_type value_type;
@@ -184,8 +245,21 @@ namespace neolib
 		{
 		}
 	private:
+		const dictionary_type& cache() const
+		{
+			if (iLazyDictionary != nullptr)
+				return *iLazyDictionary;
+			iLazyDictionary = std::make_unique<dictionary_type>(); // todo: use allocator_type
+			// todo: populate dictionary using owner
+			return *iLazyDictionary;
+		}
+		dictionary_type& cache()
+		{
+			return const_cast<dictionary_type&>(const_cast<const self_type*>(this)->cache());
+		}
+	private:
 		json_value & iOwner;
-		std::unique_ptr<dictionary_type> iLazyDictionary;
+		mutable std::unique_ptr<dictionary_type> iLazyDictionary;
 	};
 
 	template <typename T>
@@ -193,6 +267,8 @@ namespace neolib
 	{
 		template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 		friend class basic_json_value;
+	private:
+		typedef basic_json_array<T> self_type;
 	public:
 		typedef T json_value;
 		typedef typename json_value::value_type value_type;
@@ -206,8 +282,21 @@ namespace neolib
 		{
 		}
 	private:
+		const array_type& cache() const
+		{
+			if (iLazyArray != nullptr)
+				return *iLazyArray;
+			iLazyArray = std::make_unique<array_type>(); // todo: use allocator_type
+			// todo: populate array using owner
+			return *iLazyArray;
+		}
+		array_type& cache()
+		{
+			return const_cast<array_type&>(const_cast<const self_type*>(this)->cache());
+		}
+	private:
 		json_value & iOwner;
-		std::unique_ptr<array_type> iLazyArray;
+		mutable std::unique_ptr<array_type> iLazyArray;
 	};
 
 	template <typename Alloc = std::allocator<json_type>, typename CharT = char, typename Traits = std::char_traits<CharT>, typename CharAlloc = std::allocator<CharT>>
@@ -255,7 +344,6 @@ namespace neolib
 		};
 	private:
 		typedef json_detail::basic_json_node<basic_json_value> node_type;
-		typedef variant<typename json_object::iterator, typename json_array::iterator> parent_container_iterator;
 	public:
 		basic_json_value() :
 			iNode{}, iValue {}
@@ -309,126 +397,68 @@ namespace neolib
 		}
 		bool is_empty_composite() const
 		{
-			return (type() == json_type::Object && as<json_object>().empty()) || (type() == json_type::Array && as<json_array>().empty());
+			return is_composite() && !iNode.has_children();
 		}
 		bool is_populated_composite() const
 		{
-			return (type() == json_type::Object && !as<json_object>().empty()) || (type() == json_type::Array && !as<json_array>().empty());
+			return is_composite() && iNode.has_children();
 		}
 		bool has_name() const
 		{
-			return has_parent() && parent().type() == json_type::Object;
+			return iName != std::nullopt;
 		}
 		const json_string& name() const
 		{
-			return (*static_variant_cast<typename json_object::iterator>(parent_pos())).first;
+			return *iName;
 		}
 	public:
 		bool has_parent() const
 		{
-			return iParent != nullptr;
+			return iNode.has_parent();
 		}
 		const basic_json_value& parent() const
 		{
-			return *iParent;
+			return *iNode.parent();
 		}
 		basic_json_value& parent()
 		{
-			return *iParent;
-		}
-		const parent_container_iterator& parent_pos() const
-		{
-			return iParentPos;
-		}
-		void set_parent_pos(const parent_container_iterator& aParentPos)
-		{
-			iParentPos = aParentPos;
+			return *iNode.parent();
 		}
 		const basic_json_value* first_child() const
 		{
-			if (type() == json_type::Array)
-			{
-				auto& a = as<json_array>();
-				if (!a.empty())
-					return &*a.begin();
-				else
-					return nullptr;
-			}
-			else if (type() == json_type::Object)
-			{
-				auto& o = as<json_object>();
-				if (!o.empty())
-					return &(*o.begin()).second;
-				else
-					return nullptr;
-			}
-			else
-				return nullptr;
+			return iNode.first_child();
 		}
 		basic_json_value* first_child()
 		{
-			return const_cast<basic_json_value*>(const_cast<const basic_json_value*>(this)->first_child());
+			return iNode.first_child();
+		}
+		const basic_json_value* last_child() const
+		{
+			return iNode.last_child();
+		}
+		basic_json_value* last_child()
+		{
+			return iNode.last_child();
 		}
 		bool is_last_sibling() const
 		{
-			if (!has_parent())
-				return true;
-			if (iParent->type() == json_type::Array)
-			{
-				auto& a = iParent->as<json_array>();
-				return static_variant_cast<json_array::iterator>(parent_pos()) == std::prev(a.end());
-			}
-			else if (iParent->type() == json_type::Object)
-			{
-				auto& o = iParent->as<json_object>();
-				return static_variant_cast<json_object::iterator>(parent_pos()) == std::prev(o.end());
-			}
-			return true;
+			return iNode.is_last_sibling();
 		}
 		const basic_json_value* next_sibling() const
 		{
-			if (is_last_sibling())
-				return nullptr;
-			else if (parent().type() == json_type::Array)
-			{
-				auto& a = parent().as<json_array>();
-				return &*std::next(static_variant_cast<json_array::iterator>(parent_pos()));
-			}
-			else if (parent().type() == json_type::Object)
-			{
-				auto& o = parent().as<json_object>();
-				return &(*std::next(static_variant_cast<json_object::iterator>(parent_pos()))).second;
-			}
-			return nullptr;
+			return iNode.next_sibling();
 		}
 		basic_json_value* next_sibling()
 		{
-			return const_cast<basic_json_value*>(const_cast<const basic_json_value*>(this)->next_sibling());
+			return iNode.next_sibling();
 		}
 		const basic_json_value* next_parent_sibling() const
 		{
-			auto tryParent = iParent;
-			if (tryParent == nullptr)
-				return nullptr;
-			while (tryParent->has_parent() && tryParent->is_last_sibling())
-				tryParent = &tryParent->parent();
-			if (tryParent->is_last_sibling())
-				return nullptr;
-			else if (tryParent->parent().type() == json_type::Array)
-			{
-				auto& a = tryParent->parent().as<json_array>();
-				return &*std::next(static_variant_cast<json_array::iterator>(tryParent->parent_pos()));
-			}
-			else if (tryParent->parent().type() == json_type::Object)
-			{
-				auto& o = tryParent->parent().as<json_object>();
-				return &(*std::next(static_variant_cast<json_object::iterator>(tryParent->parent_pos()))).second;
-			}
-			return nullptr;
+			return iNode.next_parent_sibling();
 		}
 		basic_json_value* next_parent_sibling()
 		{
-			return const_cast<basic_json_value*>(const_cast<const basic_json_value*>(this)->next_parent_sibling());
+			return iNode.next_parent_sibling();
 		}
 	public:
 		void accept(i_visitor& aVisitor) const
@@ -495,6 +525,7 @@ namespace neolib
 		}
 	private:
 		node_type iNode;
+		std::optional<json_string> iName;
 		value_type iValue;
 	};
 
