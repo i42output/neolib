@@ -285,10 +285,10 @@ namespace neolib
 				vecarray<std::string, 4> ver;
 				tokens(any_to_utf8(reinterpret_cast<char16_t*>(lpVersion)), std::string("."), ver, 4);
 				appVersion = version(
-					string_to_unsigned_integer(ver[0]), 
-					string_to_unsigned_integer(ver[1]), 
-					string_to_unsigned_integer(ver[2]),
-					string_to_unsigned_integer(ver[3]));
+					string_to_uint32(ver[0]), 
+					string_to_uint32(ver[1]), 
+					string_to_uint32(ver[2]),
+					string_to_uint32(ver[3]));
 			}
 			uVersionLen = 0;
 			lpVersion = NULL;

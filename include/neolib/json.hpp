@@ -203,7 +203,7 @@ namespace neolib
 			}
 			void deallocate_child(json_value* aAddress)
 			{
-				iAllocator.deallocate(aAddress);
+				iAllocator.deallocate(aAddress, 1);
 			}
 			template <typename... Args>
 			json_value* construct_child(json_value* aAddress, Args&&... aArguments)

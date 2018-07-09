@@ -150,7 +150,7 @@ namespace neolib
 			if (sUrlChars.find(ch) != sUrlChars.end())
 				escaped += ch;
 			else
-				escaped += "%" + unsigned_integer_to_string<char>(static_cast<uint8_t>(ch), 16, 2);
+				escaped += "%" + uint32_to_string<char>(static_cast<uint8_t>(ch), 16, 2);
 		return escaped;
 	}
 
@@ -162,7 +162,7 @@ namespace neolib
 				escaped += *i;
 			else if (i < aString.end() - 3)
 			{
-				escaped += static_cast<char>(string_to_unsigned_integer(std::string(i + 1, i + 3), 16));
+				escaped += static_cast<char>(string_to_uint32(std::string(i + 1, i + 3), 16));
 				i += 2;
 			}
 		return escaped;

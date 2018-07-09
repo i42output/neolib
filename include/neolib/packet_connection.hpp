@@ -345,7 +345,7 @@ namespace neolib
 				socket().bind(endpoint_type(to_protocol<protocol_type>(iProtocolFamily), iLocalPort), ec);
 			else
 			{
-				typename resolver_type::iterator result = iResolver.resolve(typename resolver_type::query(iLocalHostName, unsigned_integer_to_string<char>(iLocalPort)), ec);
+				typename resolver_type::iterator result = iResolver.resolve(typename resolver_type::query(iLocalHostName, uint32_to_string<char>(iLocalPort)), ec);
 				if (!ec)
 				{
 					bool foundGoodMatch = false;
@@ -385,7 +385,7 @@ namespace neolib
 		{
 			if (!iRemoteHostName.empty())
 			{
-				iResolver.async_resolve(typename resolver_type::query(iRemoteHostName, unsigned_integer_to_string<char>(iRemotePort)),
+				iResolver.async_resolve(typename resolver_type::query(iRemoteHostName, uint32_to_string<char>(iRemotePort)),
 					boost::bind(&handler_proxy::handle_resolve, iHandlerProxy, boost::asio::placeholders::error, boost::asio::placeholders::iterator));
 			}
 		}

@@ -43,112 +43,73 @@
 
 namespace neolib 
 {
-	template <typename CharT>
-	inline long string_to_integer(const std::basic_string<CharT>& aString, int aBase = 10)
+	template <typename CharT, typename Traits>
+	inline int32_t string_to_int32(const std::basic_string_view<CharT, Traits>& aStringView)
 	{
-		return strtol(aString.c_str(), 0, aBase);
+		namespace qi = boost::spirit::qi;
+		int32_t result = 0;
+		qi::parse(aStringView.begin(), aStringView.end(), qi::int_, result);
+		return result;
 	}
 
-	#ifdef _MSC_VER
-
-	template <typename CharT>
-	inline long long string_to_integer_64(const std::basic_string<CharT>& aString, int aBase = 10)
+	template <typename CharT, typename Traits, typename Alloc>
+	inline int32_t string_to_int32(const std::basic_string<CharT, Traits, Alloc>& aString, int aBase = 10)
 	{
-		return _strtoi64(aString.c_str(), 0, aBase);
+		if (aBase == 10) // todo: does spirit provide other bases?
+			string_to_int32(static_cast<std::basic_string_view<CharT, Traits>>(aString));
+		return strtol(aString.c_str(), nullptr, aBase);
+	}
+		
+	template <typename CharT, typename Traits>
+	inline int64_t string_to_int64(const std::basic_string_view<CharT, Traits>& aStringView)
+	{
+		namespace qi = boost::spirit::qi;
+		int64_t result = 0ll;
+		qi::parse(aStringView.begin(), aStringView.end(), qi::long_long, result);
+		return result;
 	}
 
-	#endif // _MSC_VER
-
-	template <typename CharT>
-	inline std::basic_string<CharT> integer_to_string(long aInteger, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0')
+	template <typename CharT, typename Traits, typename Alloc>
+	inline int64_t string_to_int64(const std::basic_string<CharT, Traits, Alloc>& aString, int aBase = 10)
 	{
-		std::basic_stringstream<CharT> string;
-		if (aBase == 16)
-			string << std::hex << std::uppercase;
-		if (aWidth != 0)
-		{
-			string.width(aWidth);
-			string.fill(aFill);
-		}
-		string << aInteger;
-		return string.str();
+		if (aBase == 10) // todo: does spirit provide other bases?
+			return string_to_int64(static_cast<std::basic_string_view<CharT, Traits>>(aString));
+		return strtoll(aString.c_str(), nullptr, aBase);
 	}
 
-	#ifdef _MSC_VER
-
-	template <typename CharT>
-	inline std::basic_string<CharT> integer_64_to_string(long long aInteger, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0')
+	template <typename CharT, typename Traits>
+	inline uint32_t string_to_uint32(const std::basic_string_view<CharT, Traits>& aStringView)
 	{
-		std::basic_stringstream<CharT> string;
-		switch(aBase)
-		{
-		case 8:
-			string << std::oct;
-			break;
-		case 16:
-			string << std::hex << std::uppercase;
-			break;
-		}
-		if (aWidth != 0)
-		{
-			string.width(aWidth);
-			string.fill(aFill);
-		}
-		string << aInteger;
-		return string.str();
+		namespace qi = boost::spirit::qi;
+		uint32_t result = 0u;
+		qi::parse(aStringView.begin(), aStringView.end(), qi::uint_, result);
+		return result;
 	}
 
-	#endif // _MSC_VER
-
-	template <typename CharT>
-	inline unsigned long string_to_unsigned_integer(const std::basic_string<CharT>& aString, int aBase = 10)
+	template <typename CharT, typename Traits, typename Alloc>
+	inline uint32_t string_to_uint32(const std::basic_string<CharT, Traits, Alloc>& aString, int aBase = 10)
 	{
+		if (aBase == 10)
+			return string_to_uint32(static_cast<std::basic_string_view<CharT, Traits>>(aString));
 		return strtoul(aString.c_str(), 0, aBase);
 	}
 
-	#ifdef _MSC_VER
-
-	template <typename CharT>
-	inline unsigned long long string_to_unsigned_integer_64(const std::basic_string<CharT>& aString, int aBase = 10)
+	template <typename CharT, typename Traits>
+	inline uint64_t string_to_uint64(const std::basic_string_view<CharT, Traits>& aStringView)
 	{
-		return _strtoui64(aString.c_str(), 0, aBase);
+		namespace qi = boost::spirit::qi;
+		int64_t result = 0ll;
+		qi::parse(aStringView.begin(), aStringView.end(), qi::long_long, result);
+		return result;
 	}
 
-	#endif // _MSC_VER
-
-	template <typename CharT>
-	inline std::basic_string<CharT> unsigned_integer_to_string(unsigned long aInteger, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0')
+	template <typename CharT, typename Traits, typename Alloc>
+	inline uint64_t string_to_uint64(const std::basic_string<CharT, Traits, Alloc>& aString, int aBase = 10)
 	{
-		std::basic_stringstream<CharT> string;
-		if (aBase == 16)
-			string << std::hex << std::uppercase;
-		if (aWidth != 0)
-		{
-			string.width(aWidth);
-			string.fill(aFill);
-		}
-		string << aInteger;
-		return string.str();
+		if (aBase == 10)
+			return string_to_uint64(static_cast<std::basic_string_view<CharT, Traits>>(aString));
+		return strtoull(aString.c_str(), 0, aBase);
 	}
-
-	#ifdef _MSC_VER
-
-	template <typename CharT>
-	inline std::basic_string<CharT> unsigned_integer_64_to_string(unsigned long long aInteger, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0')
-	{
-		std::basic_stringstream<CharT> string;
-		if (aBase == 16)
-			string << std::hex << std::uppercase;
-		if (aWidth != 0)
-		{
-			string.width(aWidth);
-			string.fill(aFill);
-		}
-		string << aInteger;
-		return string.str();
-	}
-
-	#endif // _MSC_VER
 
 	template <typename CharT, typename Traits>
 	inline double string_to_double(const std::basic_string_view<CharT, Traits>& aStringView)
@@ -165,10 +126,77 @@ namespace neolib
 		return string_to_double(static_cast<std::basic_string_view<CharT, Traits>>(aString));
 	}
 
-	template <typename CharT>
-	inline std::basic_string<CharT> double_to_string(double aDouble, std::size_t aPrecision = 0, bool aFixed = true, std::size_t aWidth = 0, CharT aFill = '0')
+	template <typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
+	inline std::basic_string<CharT, Traits, Alloc> int32_to_string(int32_t aint32, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0')
 	{
-		std::basic_stringstream<CharT> string;
+		std::basic_stringstream<CharT, Traits, Alloc> string;
+		if (aBase == 16)
+			string << std::hex << std::uppercase;
+		if (aWidth != 0)
+		{
+			string.width(aWidth);
+			string.fill(aFill);
+		}
+		string << aint32;
+		return string.str();
+	}
+
+	template <typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
+	inline std::basic_string<CharT, Traits, Alloc> int64_to_string(int64_t aint32, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0')
+	{
+		std::basic_stringstream<CharT, Traits, Alloc> string;
+		switch (aBase)
+		{
+		case 8:
+			string << std::oct;
+			break;
+		case 16:
+			string << std::hex << std::uppercase;
+			break;
+		}
+		if (aWidth != 0)
+		{
+			string.width(aWidth);
+			string.fill(aFill);
+		}
+		string << aint32;
+		return string.str();
+	}
+
+	template <typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
+	inline std::basic_string<CharT, Traits, Alloc> uint32_to_string(uint32_t aint32, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0')
+	{
+		std::basic_stringstream<CharT, Traits, Alloc> string;
+		if (aBase == 16)
+			string << std::hex << std::uppercase;
+		if (aWidth != 0)
+		{
+			string.width(aWidth);
+			string.fill(aFill);
+		}
+		string << aint32;
+		return string.str();
+	}
+
+	template <typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
+	inline std::basic_string<CharT, Traits, Alloc> uint64_to_string(uint64_t aint32, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0')
+	{
+		std::basic_stringstream<CharT, Traits, Alloc> string;
+		if (aBase == 16)
+			string << std::hex << std::uppercase;
+		if (aWidth != 0)
+		{
+			string.width(aWidth);
+			string.fill(aFill);
+		}
+		string << aint32;
+		return string.str();
+	}
+
+	template <typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
+	inline std::basic_string<CharT, Traits, Alloc> double_to_string(double aDouble, std::size_t aPrecision = 0, bool aFixed = true, std::size_t aWidth = 0, CharT aFill = '0')
+	{
+		std::basic_stringstream<CharT, Traits, Alloc> string;
 		if (aPrecision != 0)
 			string.precision(aPrecision);
 		if (aFixed)

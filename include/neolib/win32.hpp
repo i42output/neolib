@@ -15,6 +15,7 @@
 #pragma warning (disable: 4345 ) // behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized
 #pragma warning( disable: 4250 ) // class1' : inherits 'class2::member' via dominance
 #pragma warning (disable: 4834 ) // discarding return value of function with 'nodiscard' attribute
+#pragma warning (disable: 4459 ) // declaration of 'attr' hides global declaration
 
 #if _MSC_VER < 1900
 #pragma execution_character_set("utf-8")

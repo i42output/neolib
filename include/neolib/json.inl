@@ -1556,7 +1556,10 @@ namespace neolib
 			case element::Number:
 				{
 					json_string newNumber{ aCurrentElement.start, aCurrentElement.start == aNextOutputCh ? aNextInputCh - 1 : aNextOutputCh };
-					buy_value(aCurrentElement, neolib::string_to_double(newNumber.as_view()));
+					if (aCurrentState == json_detail::state::NumberInt)
+						buy_value(aCurrentElement, static_cast<double>(neolib::string_to_int64(newNumber.as_view())));
+					else
+						buy_value(aCurrentElement, neolib::string_to_double(newNumber.as_view()));
 				}
 				break;
 			case element::Keyword:

@@ -57,13 +57,13 @@ namespace neolib
 			neolib::vecarray<std::string, 5> bits;
 			neolib::tokens(aVersionString, std::string("."), bits, 4);
 			if (bits.size() > 0)
-				iMajor = neolib::string_to_integer(bits[0]);
+				iMajor = neolib::string_to_uint32(bits[0]);
 			if (bits.size() > 1)
-				iMinor = neolib::string_to_integer(bits[1]);
+				iMinor = neolib::string_to_uint32(bits[1]);
 			if (bits.size() > 2)
-				iMaintenance = neolib::string_to_integer(bits[2]);
+				iMaintenance = neolib::string_to_uint32(bits[2]);
 			if (bits.size() > 3)
-				iBuild = neolib::string_to_integer(bits[3]);
+				iBuild = neolib::string_to_uint32(bits[3]);
 			if (bits.size() > 4)
 				iName = bits[3];
 		}

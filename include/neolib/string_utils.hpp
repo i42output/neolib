@@ -288,7 +288,7 @@ namespace neolib
 		std::string ret = aString;
 		for (std::string::size_type pos = 0; pos != ret.length(); ++pos)
 			if (ret[pos] == '%' && pos + 2 < ret.length())
-				ret.replace(pos, 3, 1, static_cast<char>(string_to_integer(ret.substr(pos + 1, 2), 16)));
+				ret.replace(pos, 3, 1, static_cast<char>(string_to_int32(ret.substr(pos + 1, 2), 16)));
 		return ret;
 	}
 

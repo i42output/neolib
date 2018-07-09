@@ -125,7 +125,7 @@ namespace neolib
 				iResponseHeaders[make_ci_string(headerName)] += ("," + neolib::remove_leading(headerValue, std::string(" ")));
 			iLastResponseHeader = iResponseHeaders.find(make_ci_string(headerName));
 			if (make_ci_string(headerName) == "Content-Length")
-				iBodyLength = string_to_unsigned_integer(headerValue);
+				iBodyLength = string_to_uint32(headerValue);
 		}
 	}
 
@@ -166,7 +166,7 @@ namespace neolib
 			neolib::tokens(dataLine[0].first, dataLine[0].second, sizeTerminator.begin(), sizeTerminator.end(), dataSize, 1, false);
 			if (dataSize.empty())
 				return false;
-			unsigned int chunkSize = neolib::string_to_unsigned_integer(std::string(dataSize[0].first, dataSize[0].second), 16);
+			unsigned int chunkSize = neolib::string_to_uint32(std::string(dataSize[0].first, dataSize[0].second), 16);
 			if (chunkSize != 0)
 			{
 				if (static_cast<unsigned int>(encoded.end() - i) < chunkSize)
@@ -222,7 +222,7 @@ namespace neolib
 			return;
 		std::optional<unsigned short> port;
 		if (parts.size() == 2)
-			port = static_cast<unsigned short>(neolib::string_to_unsigned_integer(std::string(parts[1].first, parts[1].second)));
+			port = static_cast<unsigned short>(neolib::string_to_uint32(std::string(parts[1].first, parts[1].second)));
 		std::string address = std::string(parts[0].first, parts[0].second);
 		request(address, resource, aType, port ? *port : secure ? 443 : 80, secure, aRequestHeaders, aRequestBody);
 	}
@@ -334,7 +334,7 @@ namespace neolib
 								tokens(iResponseStatus, std::string(" "), bits, 3);
 								if (bits.size() >= 3)
 								{
-									iStatusCode = string_to_unsigned_integer(bits[1]);
+									iStatusCode = string_to_uint32(bits[1]);
 									iOk = (iStatusCode / 100 == 2);
 								}
 							}
