@@ -82,12 +82,48 @@ namespace neolib
 		Unknown,
 		Object,
 		Array,
-		Number,
+		Double,
+		Int64,
+		Uint64,
+		Int,
+		Uint,
 		String,
 		Bool,
 		Null,
 		Keyword
 	};
+
+	inline std::string to_string(json_type aType)
+	{
+		switch (aType)
+		{
+		default:
+		case json_type::Unknown:
+			return "Unknown";
+		case json_type::Object:
+			return "Object";
+		case json_type::Array:
+			return "Array";
+		case json_type::Double:
+			return "Double";
+		case json_type::Int64:
+			return "Int64";
+		case json_type::Uint64:
+			return "Uint64";
+		case json_type::Int:
+			return "Int";
+		case json_type::Uint:
+			return "Uint";
+		case json_type::String:
+			return "String";
+		case json_type::Bool:
+			return "Bool";
+		case json_type::Null:
+			return "Null";
+		case json_type::Keyword:
+			return "Keyword";
+		}
+	}
 
 	namespace json_detail
 	{
@@ -344,25 +380,37 @@ namespace neolib
 		typedef basic_quick_string<character_type, character_traits_type, character_allocator_type> json_string;
 		typedef basic_json_object<self_type> json_object;
 		typedef basic_json_array<self_type> json_array;
-		typedef double json_number;
+		typedef double json_double;
+		typedef int64_t json_int64;
+		typedef uint64_t json_uint64;
+		typedef int32_t json_int;
+		typedef uint32_t json_uint;
 		typedef bool json_bool;
 		typedef std::nullptr_t json_null;
 		typedef struct { json_string text; } json_keyword;
 	public:
 		typedef std::optional<json_string> optional_json_string;
 	public:
-		typedef variant<json_object, json_array, json_number, json_string, json_bool, json_null, json_keyword> value_type;
+		typedef variant<json_object, json_array, json_double, json_int64, json_uint64, json_int, json_uint, json_string, json_bool, json_null, json_keyword> value_type;
 		class i_visitor
 		{
 		public:
-			virtual void visit(const json_number& aNumber) = 0;
+			virtual void visit(const json_double& aNumber) = 0;
+			virtual void visit(const json_int64& aNumber) = 0;
+			virtual void visit(const json_uint64& aNumber) = 0;
+			virtual void visit(const json_int& aNumber) = 0;
+			virtual void visit(const json_uint& aNumber) = 0;
 			virtual void visit(const json_string& aString) = 0;
 			virtual void visit(const json_object& aObject) = 0;
 			virtual void visit(const json_array& aArray) = 0;
 			virtual void visit(const json_bool& aBool) = 0;
 			virtual void visit(const json_null&) = 0;
 			virtual void visit(const json_keyword& aKeyword) {}
-			virtual void visit(json_number& aNumber) { visit(const_cast<const json_number&>(aNumber)); }
+			virtual void visit(json_double& aNumber) { visit(const_cast<const json_double&>(aNumber)); }
+			virtual void visit(json_int64& aNumber) { visit(const_cast<const json_int64&>(aNumber)); }
+			virtual void visit(json_uint64& aNumber) { visit(const_cast<const json_uint64&>(aNumber)); }
+			virtual void visit(json_int& aNumber) { visit(const_cast<const json_int&>(aNumber)); }
+			virtual void visit(json_uint& aNumber) { visit(const_cast<const json_uint&>(aNumber)); }
 			virtual void visit(json_string& aString) { visit(const_cast<const json_string&>(aString)); }
 			virtual void visit(json_object& aObject) { visit(const_cast<const json_object&>(aObject)); }
 			virtual void visit(json_array& aArray) { visit(const_cast<const json_array&>(aArray)); }
@@ -511,8 +559,20 @@ namespace neolib
 				for (const auto& e : static_variant_cast<const json_array&>(iValue))
 					e.second.accept(aVisitor);
 				break;
-			case json_type::Number:
-				aVisitor.visit(static_variant_cast<const json_number&>(iValue));
+			case json_type::Double:
+				aVisitor.visit(static_variant_cast<const json_double&>(iValue));
+				break;
+			case json_type::Int64:
+				aVisitor.visit(static_variant_cast<const json_int64&>(iValue));
+				break;
+			case json_type::Uint64:
+				aVisitor.visit(static_variant_cast<const json_uint64&>(iValue));
+				break;
+			case json_type::Int:
+				aVisitor.visit(static_variant_cast<const json_int&>(iValue));
+				break;
+			case json_type::Uint:
+				aVisitor.visit(static_variant_cast<const json_uint&>(iValue));
 				break;
 			case json_type::String:
 				aVisitor.visit(static_variant_cast<const json_string&>(iValue));
@@ -542,8 +602,20 @@ namespace neolib
 				for (auto& e : static_variant_cast<json_array&>(iValue))
 					e.accept(aVisitor);
 				break;
-			case json_type::Number:
-				aVisitor.visit(static_variant_cast<json_number&>(iValue));
+			case json_type::Double:
+				aVisitor.visit(static_variant_cast<json_double&>(iValue));
+				break;
+			case json_type::Int64:
+				aVisitor.visit(static_variant_cast<json_int64&>(iValue));
+				break;
+			case json_type::Uint64:
+				aVisitor.visit(static_variant_cast<json_uint64&>(iValue));
+				break;
+			case json_type::Int:
+				aVisitor.visit(static_variant_cast<json_int&>(iValue));
+				break;
+			case json_type::Uint:
+				aVisitor.visit(static_variant_cast<json_uint&>(iValue));
 				break;
 			case json_type::String:
 				aVisitor.visit(static_variant_cast<json_string&>(iValue));
@@ -587,7 +659,11 @@ namespace neolib
 		typedef std::optional<value> optional_value;
 		typedef typename value::json_object json_object;
 		typedef typename value::json_array json_array;
-		typedef typename value::json_number json_number;
+		typedef typename value::json_double json_double;
+		typedef typename value::json_int64 json_int64;
+		typedef typename value::json_uint64 json_uint64;
+		typedef typename value::json_int json_int;
+		typedef typename value::json_uint json_uint;
 		typedef typename value::json_string json_string;
 		typedef typename value::json_bool json_bool;
 		typedef typename value::json_null json_null;
@@ -603,7 +679,11 @@ namespace neolib
 		class default_visitor : public i_visitor
 		{
 		public:
-			void visit(const json_number& aNumber) override {}
+			void visit(const json_double& aNumber) override {}
+			void visit(const json_int64& aNumber) override {}
+			void visit(const json_uint64& aNumber) override {}
+			void visit(const json_int& aNumber) override {}
+			void visit(const json_uint& aNumber) override {}
 			void visit(const json_string& aString) override {}
 			void visit(const json_object& aObject) override {}
 			void visit(const json_array& aArray) override {}
@@ -686,7 +766,11 @@ namespace neolib
 	typedef json::value json_value;
 	typedef json::json_object json_object;
 	typedef json::json_array json_array;
-	typedef json::json_number json_number;
+	typedef json::json_double json_double;
+	typedef json::json_int64 json_int64;
+	typedef json::json_uint64 json_uint64;
+	typedef json::json_int json_int;
+	typedef json::json_uint json_uint;
 	typedef json::json_string json_string;
 	typedef json::json_bool json_bool;
 	typedef json::json_null json_null;
@@ -696,7 +780,11 @@ namespace neolib
 	typedef fast_json::value fast_json_value;
 	typedef fast_json::json_object fast_json_object;
 	typedef fast_json::json_array fast_json_array;
-	typedef fast_json::json_number fast_json_number;
+	typedef fast_json::json_double fast_json_double;
+	typedef fast_json::json_int64 fast_json_int64;
+	typedef fast_json::json_uint64 fast_json_uint64;
+	typedef fast_json::json_int fast_json_int;
+	typedef fast_json::json_uint fast_json_uint;
 	typedef fast_json::json_string fast_json_string;
 	typedef fast_json::json_bool fast_json_bool;
 	typedef fast_json::json_null fast_json_null;

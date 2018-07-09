@@ -38,6 +38,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <variant>
 #include <unordered_map>
 #include <fstream>
 #include <iomanip>
@@ -1325,7 +1326,12 @@ namespace neolib
 								{
 									json_string newNumber{ currentElement.start, currentElement.start == nextOutputCh ? nextInputCh : nextOutputCh };
 									if (currentState == json_detail::state::NumberInt)
-										buy_value(currentElement, static_cast<double>(neolib::string_to_int64(newNumber.as_view())));
+									{
+										std::visit([this, &currentElement](auto&& arg)
+										{ 
+											buy_value(currentElement, arg); 
+										}, neolib::string_to_integer(newNumber.as_view()));
+									}
 									else
 										buy_value(currentElement, neolib::string_to_double(newNumber.as_view()));
 								}
@@ -1619,8 +1625,20 @@ namespace neolib
 				else
 					aOutput << ']';
 				break;
-			case json_type::Number:
-				aOutput << static_variant_cast<json_number>(*i);
+			case json_type::Double:
+				aOutput << static_variant_cast<json_double>(*i);
+				break;
+			case json_type::Int64:
+				aOutput << static_variant_cast<json_int64>(*i);
+				break;
+			case json_type::Uint64:
+				aOutput << static_variant_cast<json_uint64>(*i);
+				break;
+			case json_type::Int:
+				aOutput << static_variant_cast<json_int>(*i);
+				break;
+			case json_type::Uint:
+				aOutput << static_variant_cast<json_uint>(*i);
 				break;
 			case json_type::String:
 				aOutput << '\"';

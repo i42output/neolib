@@ -37,6 +37,7 @@
 
 #include "neolib.hpp"
 #include <string>
+#include <variant>
 #include <boost/utility/string_view.hpp>
 #include <boost/spirit/include/qi_parse.hpp>
 #include <boost/spirit/include/qi_numeric.hpp>
@@ -98,8 +99,8 @@ namespace neolib
 	inline uint64_t string_to_uint64(const std::basic_string_view<CharT, Traits>& aStringView)
 	{
 		namespace qi = boost::spirit::qi;
-		int64_t result = 0ll;
-		qi::parse(aStringView.begin(), aStringView.end(), qi::long_long, result);
+		uint64_t result = 0ill;
+		qi::parse(aStringView.begin(), aStringView.end(), qi::ulong_long, result);
 		return result;
 	}
 
@@ -109,6 +110,42 @@ namespace neolib
 		if (aBase == 10)
 			return string_to_uint64(static_cast<std::basic_string_view<CharT, Traits>>(aString));
 		return strtoull(aString.c_str(), 0, aBase);
+	}
+
+	typedef std::variant<std::monostate, double, int32_t, uint32_t, int64_t, uint64_t> integer_t;
+
+	struct string_to_integer_failure : std::logic_error { string_to_integer_failure() : std::logic_error("neolib::string_to_integer_failure") {} };
+
+	template <typename CharT, typename Traits>
+	inline integer_t string_to_integer(const std::basic_string_view<CharT, Traits>& aStringView)
+	{
+		namespace qi = boost::spirit::qi;
+		{
+			int32_t result = 0;
+			if (qi::parse(aStringView.begin(), aStringView.end(), qi::int_, result))
+				return result;
+		}
+		{
+			uint32_t result = 0u;
+			if (qi::parse(aStringView.begin(), aStringView.end(), qi::uint_, result))
+				return result;
+		}
+		{
+			int64_t result = 0ll;
+			if (qi::parse(aStringView.begin(), aStringView.end(), qi::long_long, result))
+				return result;
+		}
+		{
+			uint64_t result = 0ull;
+			if (qi::parse(aStringView.begin(), aStringView.end(), qi::ulong_long, result))
+				return result;
+		}
+		{
+			double result = 0.0;
+			if (qi::parse(aStringView.begin(), aStringView.end(), qi::double_, result))
+				return result;
+		}
+		throw string_to_integer_failure();
 	}
 
 	template <typename CharT, typename Traits>
