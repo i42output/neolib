@@ -1285,7 +1285,7 @@ namespace neolib
 					return true;
 				default:
 					{
-						if (currentState == nextState && nextState != json_detail::state::Object && nextState != json_detail::state::Array)
+						if (currentState == nextState)
 						{
 							switch (currentState)
 							{
@@ -1294,10 +1294,14 @@ namespace neolib
 							case json_detail::state::Name:
 								if (currentElement.start != nextOutputCh)
 									*nextOutputCh++ = *nextInputCh;
+								// fall through
+							default:
+								++nextInputCh;
+								continue;
+							case json_detail::state::Object:
+							case json_detail::state::Array:
 								break;
 							}
-							++nextInputCh;
-							continue;
 						}
 #ifdef DEBUG_JSON
 						bool changedState = false;
