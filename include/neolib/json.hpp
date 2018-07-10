@@ -302,6 +302,19 @@ namespace neolib
 			iOwner{ nullptr }
 		{
 		}
+		basic_json_object(json_value& aOwner) :
+			iOwner{ &aOwner }
+		{
+		}
+	public:
+		json_value& owner() const
+		{
+			return *iOwner;
+		}
+		void set_owner(json_value& aOwner)
+		{
+			iOwner = &aOwner;
+		}
 	private:
 		const dictionary_type& cache() const
 		{
@@ -339,6 +352,19 @@ namespace neolib
 			iOwner{ nullptr }
 		{
 		}
+		basic_json_array(json_value& aOwner) :
+			iOwner{ aOwner }
+		{
+		}
+	public:
+		json_value& owner() const
+		{
+			return *iOwner;
+		}
+		void set_owner(json_value& aOwner)
+		{
+			iOwner = &aOwner;
+		}
 	private:
 		const array_type& cache() const
 		{
@@ -357,6 +383,26 @@ namespace neolib
 		mutable std::unique_ptr<array_type> iLazyArray;
 	};
 
+	template <typename T>
+	struct basic_json_keyword
+	{
+	public:
+		typedef T json_value;
+		typedef typename json_value::json_string json_string;
+	public:
+		json_string text;
+	};
+
+	template <typename T>
+	struct basic_json_null
+	{
+	public:
+		typedef T json_value;
+	public:
+		bool operator==(std::nullptr_t) const { return true; }
+		bool operator!=(std::nullptr_t) const { return false; }
+	};
+
 	template <typename Alloc = std::allocator<json_type>, typename CharT = char, typename Traits = std::char_traits<CharT>, typename CharAlloc = std::allocator<CharT>>
 	class basic_json;
 		
@@ -373,9 +419,23 @@ namespace neolib
 		typedef CharT character_type;
 		typedef Traits character_traits_type;
 		typedef CharAlloc character_allocator_type;
+	private:
 		typedef basic_json_value<allocator_type, character_type, character_traits_type, character_allocator_type> self_type;
 	public:
+		typedef self_type node_value_type;
+	public:
 		typedef typename allocator_type::template rebind<self_type>::other value_allocator;
+	public:
+		typedef const self_type* const_pointer;
+		typedef self_type* pointer;
+		typedef const self_type& const_reference;
+		typedef self_type& reference;
+	private:
+		template <typename IteratorTraits>
+		class iterator_base;
+	public:
+		class const_iterator;
+		class iterator;
 	public:
 		typedef basic_quick_string<character_type, character_traits_type, character_allocator_type> json_string;
 		typedef basic_json_object<self_type> json_object;
@@ -386,38 +446,12 @@ namespace neolib
 		typedef int32_t json_int;
 		typedef uint32_t json_uint;
 		typedef bool json_bool;
-		typedef std::nullptr_t json_null;
-		typedef struct { json_string text; } json_keyword;
+		typedef basic_json_null<self_type> json_null;
+		typedef basic_json_keyword<self_type> json_keyword;
 	public:
 		typedef std::optional<json_string> optional_json_string;
 	public:
 		typedef variant<json_object, json_array, json_double, json_int64, json_uint64, json_int, json_uint, json_string, json_bool, json_null, json_keyword> value_type;
-		class i_visitor
-		{
-		public:
-			virtual void visit(const json_double& aNumber) = 0;
-			virtual void visit(const json_int64& aNumber) = 0;
-			virtual void visit(const json_uint64& aNumber) = 0;
-			virtual void visit(const json_int& aNumber) = 0;
-			virtual void visit(const json_uint& aNumber) = 0;
-			virtual void visit(const json_string& aString) = 0;
-			virtual void visit(const json_object& aObject) = 0;
-			virtual void visit(const json_array& aArray) = 0;
-			virtual void visit(const json_bool& aBool) = 0;
-			virtual void visit(const json_null&) = 0;
-			virtual void visit(const json_keyword& aKeyword) {}
-			virtual void visit(json_double& aNumber) { visit(const_cast<const json_double&>(aNumber)); }
-			virtual void visit(json_int64& aNumber) { visit(const_cast<const json_int64&>(aNumber)); }
-			virtual void visit(json_uint64& aNumber) { visit(const_cast<const json_uint64&>(aNumber)); }
-			virtual void visit(json_int& aNumber) { visit(const_cast<const json_int&>(aNumber)); }
-			virtual void visit(json_uint& aNumber) { visit(const_cast<const json_uint&>(aNumber)); }
-			virtual void visit(json_string& aString) { visit(const_cast<const json_string&>(aString)); }
-			virtual void visit(json_object& aObject) { visit(const_cast<const json_object&>(aObject)); }
-			virtual void visit(json_array& aArray) { visit(const_cast<const json_array&>(aArray)); }
-			virtual void visit(json_bool& aBool) { visit(const_cast<const json_bool&>(aBool)); }
-			virtual void visit(json_null& aNull) { visit(const_cast<const json_null&>(aNull)); }
-			virtual void visit(json_keyword& aKeyword) { visit(const_cast<const json_keyword&>(aKeyword)); }
-		};
 	private:
 		typedef json_detail::basic_json_node<basic_json_value> node_type;
 	public:
@@ -425,11 +459,11 @@ namespace neolib
 			iNode{}, iValue {}
 		{
 		}
-		basic_json_value(basic_json_value& aParent, const value_type& aValue) :
+		basic_json_value(reference aParent, const value_type& aValue) :
 			iNode{ aParent }, iValue {	aValue }
 		{
 		}
-		basic_json_value(basic_json_value& aParent, value_type&& aValue) :
+		basic_json_value(reference aParent, value_type&& aValue) :
 			iNode{ aParent }, iValue{ std::move(aValue) }
 		{
 		}
@@ -452,12 +486,12 @@ namespace neolib
 		{
 			return iValue;
 		}
-		basic_json_value& operator=(const value_type& aValue)
+		reference operator=(const value_type& aValue)
 		{
 			iValue = aValue;
 			return *this;
 		}
-		basic_json_value& operator=(value_type&& aValue)
+		reference operator=(value_type&& aValue)
 		{
 			iValue = std::move(aValue);
 			return *this;
@@ -465,7 +499,7 @@ namespace neolib
 	public:
 		json_type type() const
 		{
-			return static_cast<json_type>(iValue.which());
+			return static_cast<json_type>(iValue.index());
 		}
 		bool is_composite() const
 		{
@@ -496,11 +530,11 @@ namespace neolib
 		{
 			return iNode.has_parent();
 		}
-		const basic_json_value& parent() const
+		const_reference parent() const
 		{
 			return *iNode.parent();
 		}
-		basic_json_value& parent()
+		reference parent()
 		{
 			return *iNode.parent();
 		}
@@ -508,19 +542,19 @@ namespace neolib
 		{
 			return iNode.has_children();
 		}
-		const basic_json_value* first_child() const
+		const_pointer first_child() const
 		{
 			return iNode.first_child();
 		}
-		basic_json_value* first_child()
+		pointer first_child()
 		{
 			return iNode.first_child();
 		}
-		const basic_json_value* last_child() const
+		const_pointer last_child() const
 		{
 			return iNode.last_child();
 		}
-		basic_json_value* last_child()
+		pointer last_child()
 		{
 			return iNode.last_child();
 		}
@@ -528,112 +562,85 @@ namespace neolib
 		{
 			return iNode.is_last_sibling();
 		}
-		const basic_json_value* next_sibling() const
+		const_pointer next_sibling() const
 		{
 			return iNode.next_sibling();
 		}
-		basic_json_value* next_sibling()
+		pointer next_sibling()
 		{
 			return iNode.next_sibling();
 		}
-		const basic_json_value* next_parent_sibling() const
+		const_pointer next_parent_sibling() const
 		{
 			return iNode.next_parent_sibling();
 		}
-		basic_json_value* next_parent_sibling()
+		pointer next_parent_sibling()
 		{
 			return iNode.next_parent_sibling();
 		}
 	public:
-		void accept(i_visitor& aVisitor) const
+		const_iterator cbegin() const
 		{
-			switch(type())
-			{
-			case json_type::Object:
-				aVisitor.visit(static_variant_cast<const json_object&>(iValue));
-				for (const auto& e : static_variant_cast<const json_object&>(iValue))
-					e.accept(aVisitor);
-				break;
-			case json_type::Array:
-				aVisitor.visit(static_variant_cast<const json_array&>(iValue));
-				for (const auto& e : static_variant_cast<const json_array&>(iValue))
-					e.second.accept(aVisitor);
-				break;
-			case json_type::Double:
-				aVisitor.visit(static_variant_cast<const json_double&>(iValue));
-				break;
-			case json_type::Int64:
-				aVisitor.visit(static_variant_cast<const json_int64&>(iValue));
-				break;
-			case json_type::Uint64:
-				aVisitor.visit(static_variant_cast<const json_uint64&>(iValue));
-				break;
-			case json_type::Int:
-				aVisitor.visit(static_variant_cast<const json_int&>(iValue));
-				break;
-			case json_type::Uint:
-				aVisitor.visit(static_variant_cast<const json_uint&>(iValue));
-				break;
-			case json_type::String:
-				aVisitor.visit(static_variant_cast<const json_string&>(iValue));
-				break;
-			case json_type::Bool:
-				aVisitor.visit(static_variant_cast<const json_bool&>(iValue));
-				break;;
-			case json_type::Null:
-				aVisitor.visit(static_variant_cast<const json_null&>(iValue));
-				break;
-			case json_type::Keyword:
-				aVisitor.visit(static_variant_cast<const json_keyword&>(iValue));
-				break;
-			}
+			return begin();
 		}
-		void accept(i_visitor& aVisitor)
+		const_iterator cend() const
 		{
+			return end();
+		}
+		const_iterator begin() const
+		{
+			return first_child();
+		}
+		const_iterator end() const
+		{
+			return nullptr;
+		}
+		iterator begin()
+		{
+			return first_child();
+		}
+		iterator end()
+		{
+			return nullptr;
+		}
+	public:
+		template <typename Visitor>
+		void visit(Visitor&& aVisitor) const
+		{
+			std::visit([&aVisitor](auto&& arg) 
+			{ 
+				if constexpr(!std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, none_t>)
+					aVisitor(std::forward<decltype(arg)>(arg)); 
+			}, iValue);
 			switch (type())
 			{
 			case json_type::Object:
-				aVisitor.visit(static_variant_cast<json_object&>(iValue));
-				for (auto& e : static_variant_cast<json_object&>(iValue))
-					e.second.accept(aVisitor);
-				break;
 			case json_type::Array:
-				aVisitor.visit(static_variant_cast<json_array&>(iValue));
-				for (auto& e : static_variant_cast<json_array&>(iValue))
-					e.accept(aVisitor);
+				for (auto& v : *this)
+					v.visit(std::forward<Visitor>(aVisitor));
 				break;
-			case json_type::Double:
-				aVisitor.visit(static_variant_cast<json_double&>(iValue));
-				break;
-			case json_type::Int64:
-				aVisitor.visit(static_variant_cast<json_int64&>(iValue));
-				break;
-			case json_type::Uint64:
-				aVisitor.visit(static_variant_cast<json_uint64&>(iValue));
-				break;
-			case json_type::Int:
-				aVisitor.visit(static_variant_cast<json_int&>(iValue));
-				break;
-			case json_type::Uint:
-				aVisitor.visit(static_variant_cast<json_uint&>(iValue));
-				break;
-			case json_type::String:
-				aVisitor.visit(static_variant_cast<json_string&>(iValue));
-				break;
-			case json_type::Bool:
-				aVisitor.visit(static_variant_cast<json_bool&>(iValue));
-				break;
-			case json_type::Null:
-				aVisitor.visit(static_variant_cast<json_null&>(iValue));
-				break;
-			case json_type::Keyword:
-				aVisitor.visit(static_variant_cast<json_keyword&>(iValue));
+			}
+		}
+		template <typename Visitor>
+		void visit(Visitor&& aVisitor)
+		{
+			std::visit([&aVisitor](auto&& arg)
+			{
+				if constexpr(!std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, none_t>)
+					aVisitor(std::forward<decltype(arg)>(arg));
+			}, iValue);
+			switch (type())
+			{
+			case json_type::Object:
+			case json_type::Array:
+				for (auto i = begin(); i != end(); ++i)
+					i.value().visit(std::forward<Visitor>(aVisitor));
 				break;
 			}
 		}
 	private:
 		template <typename... Args>
-		basic_json_value* buy_child(Args&&... aArguments)
+		pointer buy_child(Args&&... aArguments)
 		{
 			return iNode.buy_child(*this, std::forward<Args>(aArguments)...);
 		}
@@ -674,22 +681,6 @@ namespace neolib
 		typedef const value_type* const_pointer;
 		typedef value_type& reference;
 		typedef const value_type& const_reference;
-	public:
-		typedef typename value::i_visitor i_visitor;
-		class default_visitor : public i_visitor
-		{
-		public:
-			void visit(const json_double& aNumber) override {}
-			void visit(const json_int64& aNumber) override {}
-			void visit(const json_uint64& aNumber) override {}
-			void visit(const json_int& aNumber) override {}
-			void visit(const json_uint& aNumber) override {}
-			void visit(const json_string& aString) override {}
-			void visit(const json_object& aObject) override {}
-			void visit(const json_array& aArray) override {}
-			void visit(const json_bool& aBool) override {}
-			void visit(const json_null&) override {}
-		};
 	private:
 		template <typename IteratorTraits>
 		class iterator_base;
@@ -736,7 +727,10 @@ namespace neolib
 		bool has_root() const;
 		const value& root() const;
 		value& root();
-		void accept(i_visitor& aVisitor);
+		template <typename Visitor>
+		void visit(Visitor&& aVisitor) const;
+		template <typename Visitor>
+		void visit(Visitor&& aVisitor);
 		const_iterator cbegin() const;
 		const_iterator cend() const;
 		const_iterator begin() const;

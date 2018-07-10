@@ -236,10 +236,10 @@ namespace neolib
 		iType = aType;
 		iResource = aResource;
 		iRequestHeaders = aRequestHeaders;
-		if (aRequestBody.is<body_t>() && !static_cast<const body_t&>(aRequestBody).empty())
-			iRequestBody = static_cast<const body_t&>(aRequestBody);
-		else if (aRequestBody.is<std::string>() && !static_cast<const std::string&>(aRequestBody).empty())
-			iRequestBody.assign(static_cast<const std::string&>(aRequestBody).begin(), static_cast<const std::string&>(aRequestBody).end());
+		if (std::holds_alternative<body_t>(aRequestBody) && !std::get<body_t>(aRequestBody).empty())
+			iRequestBody = std::get<body_t>(aRequestBody);
+		else if (std::holds_alternative<std::string>(aRequestBody) && !std::get<std::string>(aRequestBody).empty())
+			iRequestBody.assign(std::get<std::string>(aRequestBody).begin(), std::get<std::string>(aRequestBody).end());
 		if (iPacketStream.open(aHost, aPort, aSecure))
 			notify_observers(i_http_observer::NotifyStarted);
 		else

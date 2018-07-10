@@ -929,6 +929,211 @@ namespace neolib
 		};
 	}
 
+	namespace json_detail
+	{
+		template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+		struct iterator_traits
+		{
+			typedef neolib::basic_json<Alloc, CharT, Traits, CharAlloc> document_type;
+			typedef neolib::basic_json_value<Alloc, CharT, Traits, CharAlloc> node_value_type;
+			typedef typename node_value_type::value_type value_type;
+			typedef std::iterator<std::bidirectional_iterator_tag, value_type, std::ptrdiff_t, value_type*, value_type&> iterator;
+			typedef std::iterator<std::bidirectional_iterator_tag, value_type, std::ptrdiff_t, const value_type*, const value_type&> const_iterator;
+		};
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	template <typename IteratorTraits>
+	class basic_json_value<Alloc, CharT, Traits, CharAlloc>::iterator_base : public IteratorTraits
+	{
+	private:
+		typedef IteratorTraits traits;
+	protected:
+		using typename traits::iterator_category;
+		using typename traits::value_type;
+		using typename traits::difference_type;
+		using typename traits::pointer;
+		using typename traits::reference;
+	protected:
+		typedef typename const_selector_from_pointer<const node_value_type*, node_value_type*, pointer>::type value_pointer;
+		typedef typename const_selector_from_pointer<const node_value_type&, node_value_type&, pointer>::type value_reference;
+	protected:
+		iterator_base() : iValue{ nullptr }
+		{
+		}
+		iterator_base(const iterator_base& aOther) : iValue{ aOther.iValue }
+		{
+		}
+	protected:
+		iterator_base(value_pointer aValue) : iValue{ aValue }
+		{
+		}
+	protected:
+		pointer operator->() const
+		{
+			return &**iValue;
+		}
+		reference operator*() const
+		{
+			return **iValue;
+		}
+	protected:
+		void operator++()
+		{
+			iValue = value().next_sibling();
+		}
+		void operator--()
+		{
+			// todo
+			iValue = nullptr;
+		}
+	protected:
+		bool operator==(const iterator_base& aOther) const
+		{
+			return iValue == aOther.iValue;
+		}
+		bool operator!=(const iterator_base& aOther) const
+		{
+			return iValue != aOther.iValue;
+		}
+	protected:
+		value_reference value() const
+		{
+			return *iValue;
+		}
+		bool has_parent() const
+		{
+			return iValue != nullptr && value().has_parent();
+		}
+		value_pointer parent() const
+		{
+			if (has_parent())
+				return &value().parent();
+			return nullptr;
+		}
+	private:
+		value_pointer iValue;
+	};
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	class basic_json_value<Alloc, CharT, Traits, CharAlloc>::iterator : iterator_base<typename json_detail::iterator_traits<Alloc, CharT, Traits, CharAlloc>::iterator>
+	{
+		friend class basic_json_value<Alloc, CharT, Traits, CharAlloc>;
+	private:
+		typedef iterator_base<typename json_detail::iterator_traits<Alloc, CharT, Traits, CharAlloc>::iterator> base_type;
+	public:
+		using typename base_type::iterator_category;
+		using typename base_type::value_type;
+		using typename base_type::difference_type;
+		using typename base_type::pointer;
+		using typename base_type::reference;
+	public:
+		using typename base_type::value_pointer;
+	public:
+		iterator()
+		{
+		}
+		iterator(const iterator& aOther) : base_type{ aOther }
+		{
+		}
+	private:
+		iterator(value_pointer aValue) : base_type{ aValue }
+		{
+		}
+	public:
+		using base_type::operator*;
+		using base_type::operator->;
+	public:
+		iterator & operator++()
+		{
+			base_type::operator++();
+			return *this;
+		}
+		iterator operator++(int)
+		{
+			auto previous = *this;
+			base_type::operator++();
+			return previous;
+		}
+		iterator& operator--()
+		{
+			base_type::operator--();
+			return *this;
+		}
+		iterator operator--(int)
+		{
+			auto previous = *this;
+			base_type::operator--();
+			return previous;
+		}
+	public:
+		using base_type::operator==;
+		using base_type::operator!=;
+	public:
+		using base_type::value;
+	};
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	class basic_json_value<Alloc, CharT, Traits, CharAlloc>::const_iterator : iterator_base<typename json_detail::iterator_traits<Alloc, CharT, Traits, CharAlloc>::const_iterator>
+	{
+		friend class basic_json_value<Alloc, CharT, Traits, CharAlloc>;
+	private:
+		typedef iterator_base<typename json_detail::iterator_traits<Alloc, CharT, Traits, CharAlloc>::const_iterator> base_type;
+	public:
+		using typename base_type::iterator_category;
+		using typename base_type::value_type;
+		using typename base_type::difference_type;
+		using typename base_type::pointer;
+		using typename base_type::reference;
+	public:
+		using typename base_type::value_pointer;
+	public:
+		const_iterator()
+		{
+		}
+		const_iterator(const const_iterator& aOther) : base_type{ aOther }
+		{
+		}
+		const_iterator(const iterator& aOther) : base_type{ aOther.iValue }
+		{
+		}
+	private:
+		const_iterator(value_pointer aValue) : base_type{ aValue }
+		{
+		}
+	public:
+		using base_type::operator*;
+		using base_type::operator->;
+	public:
+		const_iterator & operator++()
+		{
+			base_type::operator++();
+			return *this;
+		}
+		const_iterator operator++(int)
+		{
+			auto previous = *this;
+			base_type::operator++();
+			return previous;
+		}
+		const_iterator& operator--()
+		{
+			base_type::operator--();
+			return *this;
+		}
+		const_iterator operator--(int)
+		{
+			auto previous = *this;
+			base_type::operator--();
+			return previous;
+		}
+	public:
+		using base_type::operator==;
+		using base_type::operator!=;
+	public:
+		using base_type::value;
+	};
+
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename IteratorTraits>
 	class basic_json<Alloc, CharT, Traits, CharAlloc>::iterator_base : public IteratorTraits
@@ -941,9 +1146,11 @@ namespace neolib
 		using typename traits::difference_type;
 		using typename traits::pointer;
 		using typename traits::reference;
+	private:
+		typedef value node_value_type; // from outer class
 	protected:
-		typedef typename const_selector_from_pointer<const value*, value*, pointer>::type value_pointer;
-		typedef typename const_selector_from_pointer<const value&, value&, pointer>::type value_reference;
+		typedef typename const_selector_from_pointer<const node_value_type*, node_value_type*, pointer>::type value_pointer;
+		typedef typename const_selector_from_pointer<const node_value_type&, node_value_type&, pointer>::type value_reference;
 	protected:
 		iterator_base() : iValue{ nullptr }
 		{
@@ -1008,11 +1215,11 @@ namespace neolib
 	};
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	class basic_json<Alloc, CharT, Traits, CharAlloc>::iterator : public iterator_base<std::iterator<std::bidirectional_iterator_tag, value_type, std::ptrdiff_t, pointer, reference>>
+	class basic_json<Alloc, CharT, Traits, CharAlloc>::iterator : public iterator_base<typename json_detail::iterator_traits<Alloc, CharT, Traits, CharAlloc>::iterator>
 	{
 		friend class basic_json<Alloc, CharT, Traits, CharAlloc>;
 	private:
-		typedef iterator_base<std::iterator<std::bidirectional_iterator_tag, value_type, std::ptrdiff_t, pointer, reference>> base_type;
+		typedef iterator_base<typename json_detail::iterator_traits<Alloc, CharT, Traits, CharAlloc>::iterator> base_type;
 	public:
 		using typename base_type::iterator_category;
 		using typename base_type::value_type;
@@ -1066,11 +1273,11 @@ namespace neolib
 	};
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	class basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator : public iterator_base<std::iterator<std::bidirectional_iterator_tag, value_type, std::ptrdiff_t, const_pointer, const_reference>>
+	class basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator : public iterator_base<typename json_detail::iterator_traits<Alloc, CharT, Traits, CharAlloc>::const_iterator>
 	{
 		friend class basic_json<Alloc, CharT, Traits, CharAlloc>;
 	private:
-		typedef iterator_base<std::iterator<std::bidirectional_iterator_tag, value_type, std::ptrdiff_t, const_pointer, const_reference>> base_type;
+		typedef iterator_base<typename json_detail::iterator_traits<Alloc, CharT, Traits, CharAlloc>::const_iterator> base_type;
 	public:
 		using typename base_type::iterator_category;
 		using typename base_type::value_type;
@@ -1766,10 +1973,21 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::accept(i_visitor& aVisitor)
+	template <typename Visitor>
+	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::visit(Visitor&& aVisitor) const
 	{
 		if (has_root())
-			root().accept(aVisitor);
+			root().visit(std::forward<Visitor>(aVisitor));
+		else
+			throw no_root();
+	}
+
+	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	template <typename Visitor>
+	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::visit(Visitor&& aVisitor)
+	{
+		if (has_root())
+			root().visit(std::forward<Visitor>(aVisitor));
 		else
 			throw no_root();
 	}
@@ -1835,10 +2053,21 @@ namespace neolib
 		switch (context())
 		{
 		case json_type::Array:
-			return iCompositeValueStack.back()->buy_child(std::forward<T>(aValue));
+			{
+				auto newObject = iCompositeValueStack.back()->buy_child(std::forward<T>(aValue));
+				if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_array>)
+					newObject->as<json_array>().set_owner(*newObject);
+				else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_object>)
+					newObject->as<json_object>().set_owner(*newObject);
+				return newObject;
+			}
 		case json_type::Object:
 			{
 				auto newObject = iCompositeValueStack.back()->buy_child(std::forward<T>(aValue));
+				if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_array>)
+					newObject->as<json_array>().set_owner(*newObject);
+				else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_object>)
+					newObject->as<json_object>().set_owner(*newObject);
 				newObject->set_name(*aCurrentElement.name);
 				aCurrentElement.name = std::nullopt;
 				return newObject;

@@ -68,8 +68,8 @@ namespace neolib
 			};
 		};
 	public:
-		virtual i_setting::id_type register_setting(const i_string& aSettingCategory, const i_string& aSettingName, i_simple_variant::type_e aSettingType, const i_simple_variant& aDefaultValue = simple_variant(), bool aHidden = false) = 0;
-		i_setting::id_type register_setting(const string& aSettingCategory, const string& aSettingName, i_simple_variant::type_e aSettingType, const simple_variant& aDefaultValue = simple_variant(), bool aHidden = false)
+		virtual i_setting::id_type register_setting(const i_string& aSettingCategory, const i_string& aSettingName, simple_variant_type aSettingType, const i_simple_variant& aDefaultValue = simple_variant(), bool aHidden = false) = 0;
+		i_setting::id_type register_setting(const string& aSettingCategory, const string& aSettingName, simple_variant_type aSettingType, const simple_variant& aDefaultValue = simple_variant(), bool aHidden = false)
 		{
 			return register_setting(static_cast<const i_string&>(aSettingCategory), static_cast<const i_string&>(aSettingName), aSettingType, static_cast<const i_simple_variant&>(aDefaultValue), aHidden);
 		}

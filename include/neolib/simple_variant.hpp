@@ -50,7 +50,7 @@ namespace neolib
 	{
 		// types
 	private:
-		typedef variant<bool, int64_t, double, string, auto_ref<i_custom_type>> variant_type;
+		typedef neolib::variant<bool, int64_t, double, string, auto_ref<i_custom_type>> variant_type;
 
 		// construction
 	public:
@@ -100,23 +100,23 @@ namespace neolib
 		{
 			switch (aVariant.type())
 			{
-			case Empty:
+			case simple_variant_type::Empty:
 				// nothing to copy
 				break;
-			case Boolean:
+			case simple_variant_type::Boolean:
 				static_cast<variant_type&>(*this) = get<bool>(aVariant);
 				break;
-			case Integer:
+			case simple_variant_type::Integer:
 				static_cast<variant_type&>(*this) = get<int64_t>(aVariant);
 				break;
-			case Real:
+			case simple_variant_type::Real:
 				static_cast<variant_type&>(*this) = get<double>(aVariant);
 				break;
-			case String:
+			case simple_variant_type::String:
 				static_cast<variant_type&>(*this) = string(get<i_string>(aVariant));
 				break;
-			case CustomType:
-				if (type() != CustomType || value_as_custom_type().name() != aVariant.value_as_custom_type().name())
+			case simple_variant_type::CustomType:
+				if (type() != simple_variant_type::CustomType || value_as_custom_type().name() != aVariant.value_as_custom_type().name())
 					static_cast<variant_type&>(*this) = auto_ref<i_custom_type>(get<i_custom_type>(aVariant).clone());
 				else
 					value_as_custom_type() = aVariant.value_as_custom_type();
@@ -129,25 +129,12 @@ namespace neolib
 
 		// operations
 	public:
-		virtual type_e type() const
+		virtual simple_variant_type type() const
 		{
-			switch (variant_type::which())
-			{
-			case 0:
-				return Empty;
-			case type_id<bool>::value:
-				return Boolean;
-			case type_id<int64_t>::value:
-				return Integer;
-			case type_id<double>::value:
-				return Real;
-			case type_id<string>::value:
-				return String;
-			case type_id<auto_ref<i_custom_type>>::value:
-				return CustomType;
-			default:
-				throw unknown_type();
-			}
+			auto result = static_cast<simple_variant_type>(variant_type::index());
+			if (result < simple_variant_type::COUNT)
+				return result;
+			throw unknown_type();
 		}
 		using i_simple_variant::empty;
 	public:
@@ -193,25 +180,25 @@ namespace neolib
 		}
 	};
 
-	inline simple_variant from_string(const std::string& aValue, i_simple_variant::type_e aType)
+	inline simple_variant from_string(const std::string& aValue, simple_variant_type aType)
 	{
 		switch (aType)
 		{
-		case i_simple_variant::Boolean:
+		case simple_variant_type::Boolean:
 			return boost::lexical_cast<bool>(aValue);
-		case i_simple_variant::Integer:
+		case simple_variant_type::Integer:
 			return boost::lexical_cast<int64_t>(aValue);
-		case i_simple_variant::Real:
+		case simple_variant_type::Real:
 			return boost::lexical_cast<double>(aValue);
-		case i_simple_variant::String:
+		case simple_variant_type::String:
 			return neolib::string(aValue);
-		case i_simple_variant::CustomType:
+		case simple_variant_type::CustomType:
 		default:
 			throw i_simple_variant::unsupported_operation("can't create from string");
 		}
 	}
 
-	inline simple_variant from_string(const i_string& aValue, i_simple_variant::type_e aType)
+	inline simple_variant from_string(const i_string& aValue, simple_variant_type aType)
 	{
 		return from_string(aValue.c_str(), aType);
 	}

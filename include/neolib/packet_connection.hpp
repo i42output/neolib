@@ -91,7 +91,7 @@ namespace neolib
 		typedef std::shared_ptr<socket_type> socket_pointer;
 		typedef boost::asio::ssl::stream<tcp_protocol::socket> secure_stream_type;
 		typedef std::shared_ptr<secure_stream_type> secure_stream_pointer;
-		typedef neolib::variant<socket_pointer, secure_stream_pointer> socket_holder_type;
+		typedef variant<socket_pointer, secure_stream_pointer> socket_holder_type;
 		typedef boost::asio::ssl::context secure_stream_context;
 		typedef std::unique_ptr<secure_stream_context> secure_stream_context_pointer;
 		typedef typename protocol_type::endpoint endpoint_type;
@@ -246,9 +246,9 @@ namespace neolib
 		{
 			iHandlerProxy->orphan();
 			iResolver.cancel();
-			if (!iSocketHolder.empty())
+			if (iSocketHolder != none)
 				socket().close();
-			iSocketHolder.clear();
+			iSocketHolder = none;
 			bool wasConnected = iConnected;
 			iConnected = false;
 			iReceiveBufferPtr = &iReceiveBuffer[0];
@@ -264,11 +264,11 @@ namespace neolib
 		{
 			if (!iSecure)
 			{
-				return !iSocketHolder.empty() && static_variant_cast<const socket_pointer&>(iSocketHolder) != nullptr;
+				return iSocketHolder != none && static_variant_cast<const socket_pointer&>(iSocketHolder) != nullptr;
 			}
 			else
 			{
-				return !iSocketHolder.empty() && static_variant_cast<const secure_stream_pointer&>(iSocketHolder) != nullptr;
+				return iSocketHolder != none && static_variant_cast<const secure_stream_pointer&>(iSocketHolder) != nullptr;
 			}
 		}
 		bool closed() const

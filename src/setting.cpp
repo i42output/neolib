@@ -52,7 +52,7 @@ namespace neolib
 		}
 		else if (!iNewValue.empty())
 		{
-			iNewValue.clear();
+			iNewValue = none;
 			iManager.setting_changed(*this);
 		}
 	}
@@ -62,7 +62,7 @@ namespace neolib
 		if (!iNewValue.empty())
 		{
 			iValue = iNewValue;
-			iNewValue.clear();
+			iNewValue = none;
 			iManager.setting_changed(*this);
 			return true;
 		}
@@ -73,7 +73,7 @@ namespace neolib
 	{ 
 		if (!iNewValue.empty())
 		{
-			iNewValue.clear();
+			iNewValue = none;
 			iManager.setting_changed(*this);
 			return true;
 		}

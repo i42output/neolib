@@ -128,9 +128,9 @@ namespace neolib
 		{
 		}
 		basic_quick_string(const basic_quick_string& str, const Alloc& a) : 
-			iContents{ str.iContents.template is<string_type>() ?
-				contents_type{ string_type{ static_variant_cast<const string_type&>(str.iContents), a } } :
-				contents_type{ view_contents_type{ static_variant_cast<const view_contents_type&>(str.iContents).first, a } } } 
+			iContents{ std::holds_alternative<string_type>(str.iContents) ?
+				contents_type{ string_type{ std::get<string_type>(str.iContents), a } } :
+				contents_type{ view_contents_type{ std::get<view_contents_type>(str.iContents).first, a } } } 
 		{
 		}
 		basic_quick_string(const_iterator begin, const_iterator end, const Alloc& a = Alloc()) : 
@@ -282,7 +282,7 @@ namespace neolib
 		allocator_type get_allocator() const 
 		{ 
 			if (is_view())
-				return static_cast<view_contents_type&>(iContents).second;
+				return std::get<view_contents_type>(iContents).second;
 			else
 				return get_string().get_allocator(); 
 		}
@@ -499,7 +499,7 @@ namespace neolib
 	public:
 		bool is_view() const 
 		{ 
-			return iContents.template is<view_contents_type>(); 
+			return std::holds_alternative<view_contents_type>(iContents);
 		}
 		string_view_type as_view() const
 		{

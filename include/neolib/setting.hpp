@@ -50,7 +50,7 @@ namespace neolib
 	public:
 		typedef id_type key_type;
 	public:
-		setting(i_settings& aManager, id_type aId, const i_string& aCategory, const i_string& aName, i_simple_variant::type_e aType, const simple_variant& aValue = simple_variant(), bool aHidden = false) :
+		setting(i_settings& aManager, id_type aId, const i_string& aCategory, const i_string& aName, simple_variant_type aType, const simple_variant& aValue = simple_variant(), bool aHidden = false) :
 			iManager(aManager), iId(aId), iCategory(aCategory), iName(aName), iType(aType), iValue(aValue), iHidden(aHidden) {}
 		setting(const i_setting& aSetting) :
 			iManager(aSetting.manager()), iId(aSetting.id()), iCategory(aSetting.category()), iName(aSetting.name()), iType(aSetting.type()), iValue(aSetting.value()), iHidden(aSetting.hidden()) {}
@@ -59,7 +59,7 @@ namespace neolib
 		virtual const id_type id() const { return iId; }
 		virtual const i_string& category() const { return iCategory; }
 		virtual const i_string& name() const { return iName; }
-		virtual i_simple_variant::type_e type() const { return iType; }
+		virtual simple_variant_type type() const { return iType; }
 		virtual const i_simple_variant& value() const { return iValue; }
 		virtual void set(const i_simple_variant& aNewValue);
 		virtual const i_simple_variant& new_value() const { if (!iNewValue.empty()) return iNewValue; return iValue; }
@@ -75,7 +75,7 @@ namespace neolib
 		id_type iId;
 		string iCategory;
 		string iName;
-		i_simple_variant::type_e iType;
+		simple_variant_type iType;
 		simple_variant iValue;
 		simple_variant iNewValue;
 		bool iHidden;

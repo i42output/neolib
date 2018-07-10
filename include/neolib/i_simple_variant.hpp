@@ -45,6 +45,17 @@
 
 namespace neolib
 {
+	enum class simple_variant_type
+	{
+		Empty,
+		Boolean,
+		Integer,
+		Real,
+		String,
+		CustomType,
+		COUNT
+	};
+
 	class i_simple_variant : public i_reference_counted
 	{
 	public:
@@ -52,19 +63,9 @@ namespace neolib
 		struct type_mismatch : std::logic_error { type_mismatch() : std::logic_error("neolib::i_variant::type_mismatch") {} };
 		struct unsupported_operation : std::logic_error { unsupported_operation(const std::string& aReason) : std::logic_error("neolib::simple_variant::unsupported_operation (" + aReason + ")") {} };
 	public:
-		enum type_e
-		{
-			Empty,
-			Boolean,
-			Integer,
-			Real,
-			String,
-			CustomType
-		};
-	public:
-		virtual type_e type() const = 0;
-		bool is(type_e aType) const { return type() == aType; }
-		bool empty() const { return is(Empty); }
+		virtual simple_variant_type type() const = 0;
+		bool is(simple_variant_type aType) const { return type() == aType; }
+		bool empty() const { return is(simple_variant_type::Empty); }
 	public:
 		virtual const bool& value_as_boolean() const = 0;
 		virtual bool& value_as_boolean() = 0;
@@ -131,17 +132,17 @@ namespace neolib
 			return false;
 		switch (lhs.type())
 		{
-		case i_simple_variant::Empty:
+		case simple_variant_type::Empty:
 			return true;
-		case i_simple_variant::Boolean:
+		case simple_variant_type::Boolean:
 			return get<bool>(lhs) == get<bool>(rhs);
-		case i_simple_variant::Integer:
+		case simple_variant_type::Integer:
 			return get<int64_t>(lhs) == get<int64_t>(rhs);
-		case i_simple_variant::Real:
+		case simple_variant_type::Real:
 			return get<double>(lhs) == get<double>(rhs);
-		case i_simple_variant::String:
+		case simple_variant_type::String:
 			return get<i_string>(lhs) == get<i_string>(rhs);
-		case i_simple_variant::CustomType:
+		case simple_variant_type::CustomType:
 			return get<i_custom_type>(lhs) == get<i_custom_type>(rhs);
 		default:
 			throw i_simple_variant::unknown_type();
@@ -154,17 +155,17 @@ namespace neolib
 			return true;
 		switch (lhs.type())
 		{
-		case i_simple_variant::Empty:
+		case simple_variant_type::Empty:
 			return false;
-		case i_simple_variant::Boolean:
+		case simple_variant_type::Boolean:
 			return get<bool>(lhs) != get<bool>(rhs);
-		case i_simple_variant::Integer:
+		case simple_variant_type::Integer:
 			return get<int64_t>(lhs) != get<int64_t>(rhs);
-		case i_simple_variant::Real:
+		case simple_variant_type::Real:
 			return get<double>(lhs) != get<double>(rhs);
-		case i_simple_variant::String:
+		case simple_variant_type::String:
 			return get<i_string>(lhs) != get<i_string>(rhs);
-		case i_simple_variant::CustomType:
+		case simple_variant_type::CustomType:
 			return get<i_custom_type>(lhs) != get<i_custom_type>(rhs);
 		default:
 			throw i_simple_variant::unknown_type();
@@ -177,17 +178,17 @@ namespace neolib
 			return lhs.type() < rhs.type();
 		switch (lhs.type())
 		{
-		case i_simple_variant::Empty:
+		case simple_variant_type::Empty:
 			return false;
-		case i_simple_variant::Boolean:
+		case simple_variant_type::Boolean:
 			return get<bool>(lhs) < get<bool>(rhs);
-		case i_simple_variant::Integer:
+		case simple_variant_type::Integer:
 			return get<int64_t>(lhs) < get<int64_t>(rhs);
-		case i_simple_variant::Real:
+		case simple_variant_type::Real:
 			return get<double>(lhs) < get<double>(rhs);
-		case i_simple_variant::String:
+		case simple_variant_type::String:
 			return get<i_string>(lhs) < get<i_string>(rhs);
-		case i_simple_variant::CustomType:
+		case simple_variant_type::CustomType:
 			return get<i_custom_type>(lhs) < get<i_custom_type>(rhs);
 		default:
 			throw i_simple_variant::unknown_type();
@@ -198,17 +199,17 @@ namespace neolib
 	{
 		switch (value.type())
 		{
-		case i_simple_variant::Empty:
+		case simple_variant_type::Empty:
 			return "";
-		case i_simple_variant::Boolean:
+		case simple_variant_type::Boolean:
 			return boost::lexical_cast<std::string>(get<bool>(value));
-		case i_simple_variant::Integer:
+		case simple_variant_type::Integer:
 			return boost::lexical_cast<std::string>(get<int64_t>(value));
-		case i_simple_variant::Real:
+		case simple_variant_type::Real:
 			return boost::lexical_cast<std::string>(get<double>(value));
-		case i_simple_variant::String:
+		case simple_variant_type::String:
 			return get<i_string>(value).to_std_string();
-		case i_simple_variant::CustomType:
+		case simple_variant_type::CustomType:
 			return get<i_custom_type>(value).to_std_string();
 		default:
 			throw i_simple_variant::unknown_type();

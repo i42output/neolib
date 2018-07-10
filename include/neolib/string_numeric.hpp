@@ -37,10 +37,10 @@
 
 #include "neolib.hpp"
 #include <string>
-#include <variant>
 #include <boost/utility/string_view.hpp>
 #include <boost/spirit/include/qi_parse.hpp>
 #include <boost/spirit/include/qi_numeric.hpp>
+#include <neolib/variant.hpp>
 
 namespace neolib 
 {
@@ -112,7 +112,7 @@ namespace neolib
 		return strtoull(aString.c_str(), 0, aBase);
 	}
 
-	typedef std::variant<std::monostate, double, int32_t, uint32_t, int64_t, uint64_t> number_t;
+	typedef variant<double, int32_t, uint32_t, int64_t, uint64_t> number_t;
 
 	struct string_to_number_failure : std::logic_error { string_to_number_failure() : std::logic_error("neolib::string_to_number_failure") {} };
 

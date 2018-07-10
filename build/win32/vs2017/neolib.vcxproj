@@ -178,6 +178,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\neolib\3rdparty\flat_hash_map\flat_hash_map.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\allocator.hpp" />
     <ClInclude Include="..\..\..\include\neolib\bresenham_counter.hpp" />
     <ClInclude Include="..\..\..\include\neolib\any.hpp" />
     <ClInclude Include="..\..\..\include\neolib\any_iterator.hpp" />

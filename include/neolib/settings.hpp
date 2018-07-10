@@ -64,7 +64,7 @@ namespace neolib
 			load();
 		}
 	public:
-		virtual i_setting::id_type register_setting(const i_string& aSettingCategory, const i_string& aSettingName, i_simple_variant::type_e aSettingType, const i_simple_variant& aDefaultValue = simple_variant(), bool aHidden = false)
+		virtual i_setting::id_type register_setting(const i_string& aSettingCategory, const i_string& aSettingName, simple_variant_type aSettingType, const i_simple_variant& aDefaultValue = simple_variant(), bool aHidden = false)
 		{
 			return do_register_setting(aSettingCategory, aSettingName, aSettingType, aDefaultValue, aHidden);
 		}

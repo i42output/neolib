@@ -54,7 +54,7 @@ namespace neolib
 		virtual const id_type id() const = 0;
 		virtual const i_string& category() const = 0;
 		virtual const i_string& name() const = 0;
-		virtual i_simple_variant::type_e type() const = 0;
+		virtual simple_variant_type type() const = 0;
 		virtual const i_simple_variant& value() const = 0;
 		virtual void set(const i_simple_variant& aNewValue) = 0;
 		virtual const i_simple_variant& new_value() const = 0;
