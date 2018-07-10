@@ -1541,7 +1541,7 @@ namespace neolib
 										std::visit([this, &currentElement](auto&& arg)
 										{ 
 											buy_value(currentElement, arg); 
-										}, neolib::string_to_number(newNumber.as_view()));
+										}, string_to_number(newNumber.as_view()));
 									}
 									else
 										buy_value(currentElement, neolib::string_to_double(newNumber.as_view()));
