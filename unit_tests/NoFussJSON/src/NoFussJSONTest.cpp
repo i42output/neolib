@@ -152,46 +152,53 @@ int main(int argc, char** argv)
 		else
 			input = argv[1];
 
-		neolib::fast_json json{ input };
-
-		std::cout << "Write:" << std::endl;
-		json.write(std::cout);
-		std::cout << "\nVisit:" << std::endl;
-		json.visit([](auto&& arg) 
-		{ 
-			if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, neolib::none_t>)
-				return;
-			else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, neolib::fast_json_object>)
-				std::cout << "(object)" << std::endl;
-			else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, neolib::fast_json_array>)
-				std::cout << "(array)" << std::endl;
-			else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, neolib::fast_json_null>)
-				std::cout << "null" << std::endl;
-			else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, neolib::fast_json_keyword>)
-				std::cout << "(keyword)" << std::endl;
-			else
-				std::cout << arg << std::endl;
-		});
-
-		std::string output;
-		if (argc < 3)
+		try
 		{
-			std::cout << "Output: ";
-			std::cin >> output;
-		}
-		else
-			output = argv[2];
+			neolib::fast_json json{ input };
+			std::cout << "Write:" << std::endl;
+			json.write(std::cout);
+			std::cout << "\nVisit:" << std::endl;
+			json.visit([](auto&& arg)
+			{
+				if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, neolib::none_t>)
+					return;
+				else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, neolib::fast_json_object>)
+					std::cout << "(object)" << std::endl;
+				else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, neolib::fast_json_array>)
+					std::cout << "(array)" << std::endl;
+				else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, neolib::fast_json_null>)
+					std::cout << "null" << std::endl;
+				else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, neolib::fast_json_keyword>)
+					std::cout << "(keyword)" << std::endl;
+				else
+					std::cout << arg << std::endl;
+			});
+			std::string output;
+			if (argc < 3)
+			{
+				std::cout << "Output: ";
+				std::cin >> output;
+			}
+			else
+				output = argv[2];
 
-		json.write(output);
+			json.write(output);
+
+		}
+		catch (std::exception& e)
+		{
+			std::cout << "\n****Parse Error***********" << std::endl;
+			std::cerr << e.what() << std::endl;
+		}
 
 		std::string inputBenchmark;
-		if (argc < 3)
+		if (argc < 4)
 		{
 			std::cout << "Input (benchmark): ";
 			std::cin >> inputBenchmark;
 		}
 		else
-			inputBenchmark = argv[2];
+			inputBenchmark = argv[3];
 
 		{
 			std::vector<uint64_t> timings;

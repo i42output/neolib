@@ -145,7 +145,7 @@ namespace neolib
 		public:
 			typedef const T value_type;
 			typedef ContainerIterator container_iterator;
-			typedef typename const container_iterator::value_type concrete_value_type;
+			typedef const typename container_iterator::value_type concrete_value_type;
 			typedef AbstractIterator abstract_iterator;
 			typedef typename container_iterator::difference_type difference_type;
 			typedef typename abstract_iterator::pointer pointer;

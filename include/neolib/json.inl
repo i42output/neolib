@@ -1941,13 +1941,13 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline typename const basic_json<Alloc, CharT, Traits, CharAlloc>::json_string& basic_json<Alloc, CharT, Traits, CharAlloc>::document() const
+	inline const typename basic_json<Alloc, CharT, Traits, CharAlloc>::json_string& basic_json<Alloc, CharT, Traits, CharAlloc>::document() const
 	{
 		return iDocumentText;
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline typename const basic_json<Alloc, CharT, Traits, CharAlloc>::string_type& basic_json<Alloc, CharT, Traits, CharAlloc>::error_text() const
+	inline const typename basic_json<Alloc, CharT, Traits, CharAlloc>::string_type& basic_json<Alloc, CharT, Traits, CharAlloc>::error_text() const
 	{
 		return iErrorText;
 	}
