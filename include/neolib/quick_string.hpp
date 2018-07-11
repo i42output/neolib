@@ -114,7 +114,7 @@ namespace neolib
 			iContents{ string_type{ n, c, a } } 
 		{
 		}
-		basic_quick_string(const charT* begin, const charT* end, const Alloc& a = Alloc()) :
+		basic_quick_string(const charT* begin, const charT* end, const Alloc& a = Alloc(), typename std::enable_if<!std::is_same<view_const_iterator, const char*>::value, void*>::type=0) :
 			iContents{ view_contents_type{ string_view_type{ begin, static_cast<size_type>(end - begin) }, a } }
 		{
 		}

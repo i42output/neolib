@@ -3,6 +3,7 @@
 #include <fstream>
 #include <numeric>
 #include <neolib/json.hpp>
+#include <chrono>
 
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
