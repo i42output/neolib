@@ -1147,7 +1147,7 @@ namespace neolib
 		using typename traits::pointer;
 		using typename traits::reference;
 	private:
-		typedef value node_value_type; // from outer class
+		typedef json_value node_value_type; // from outer class
 	protected:
 		typedef typename const_selector_from_pointer<const node_value_type*, node_value_type*, pointer>::type value_pointer;
 		typedef typename const_selector_from_pointer<const node_value_type&, node_value_type&, pointer>::type value_reference;
@@ -1630,7 +1630,7 @@ namespace neolib
 							break;
 						case json_detail::state::Array:
 							{
-								value* newArray = buy_value(currentElement, json_array{});
+								json_value* newArray = buy_value(currentElement, json_array{});
 								iCompositeValueStack.push_back(newArray);
 								nextState = json_detail::state::Value;
 #ifdef DEBUG_JSON
@@ -1640,7 +1640,7 @@ namespace neolib
 						break;
 							case json_detail::state::Object:
 							{
-								value* newObject = buy_value(currentElement, json_object{});
+								json_value* newObject = buy_value(currentElement, json_object{});
 								iCompositeValueStack.push_back(newObject);
 #ifdef DEBUG_JSON
 								changedState = true;
@@ -1959,7 +1959,7 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline const typename basic_json<Alloc, CharT, Traits, CharAlloc>::value& basic_json<Alloc, CharT, Traits, CharAlloc>::root() const
+	inline const typename basic_json<Alloc, CharT, Traits, CharAlloc>::json_value& basic_json<Alloc, CharT, Traits, CharAlloc>::root() const
 	{
 		if (has_root())
 			return *iRoot;
@@ -1967,9 +1967,9 @@ namespace neolib
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::value& basic_json<Alloc, CharT, Traits, CharAlloc>::root()
+	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::json_value& basic_json<Alloc, CharT, Traits, CharAlloc>::root()
 	{
-		return const_cast<value&>(const_cast<const self_type*>(this)->root());
+		return const_cast<json_value&>(const_cast<const self_type*>(this)->root());
 	}
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
@@ -2048,7 +2048,7 @@ namespace neolib
 
 	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename T>
-	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::value* basic_json<Alloc, CharT, Traits, CharAlloc>::buy_value(element& aCurrentElement, T&& aValue)
+	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::json_value* basic_json<Alloc, CharT, Traits, CharAlloc>::buy_value(element& aCurrentElement, T&& aValue)
 	{
 		switch (context())
 		{
@@ -2073,7 +2073,7 @@ namespace neolib
 				return newObject;
 			}
 		default:
-			iRoot = value{};
+			iRoot = json_value{};
 			*iRoot = std::forward<T>(aValue);
 			return &*iRoot;
 		}

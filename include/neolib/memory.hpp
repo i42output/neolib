@@ -54,8 +54,8 @@ namespace neolib
 		return detail::uninitialized_copy(first, last, result, *result);
 	}
 
-	template <typename T, std::size_t ChunkSize = 8 * 1024 - 16, std::size_t Instance = 0>
-	class chunk_allocator
+	template <typename T, std::size_t ChunkSize = 4096, bool Omega = false, std::size_t Instance = 0>
+	class pool_allocator
 	{
 	public:
 		typedef T value_type;
@@ -69,65 +69,138 @@ namespace neolib
 	// implementation
 	private:
 		struct link { link* iNext; };
+
+		static constexpr std::size_t chunk_size()
+		{
+			if constexpr (ChunkSize > sizeof(T))
+				return ChunkSize;
+			else
+				return sizeof(T);
+		}
+
+		static constexpr std::size_t element_size()
+		{
+			return sizeof(value_type) < sizeof(link) ? sizeof(link) : sizeof(value_type);
+		}
+
 		struct chunk
 		{
-			enum { size = ChunkSize};
-			alignas(T) char iMem[size];
+			alignas(T) char iMem[chunk_size()];
 			chunk* iNext;
 		};
-		struct pool
+		class pool
 		{
-			size_type iElementSize;
-			chunk* iChunks;
-			link* iHead;
-			pool() : iElementSize(sizeof(T) < sizeof(link) ? sizeof(link) : sizeof(T)), iChunks(0), iHead(0) {}
+		public:
+			pool() : iChunks(nullptr), iHead(nullptr) 
+			{
+			}
 			~pool()
 			{
 				chunk* n = iChunks;
-				while(n)
+				while (n)
 				{
 					chunk* p = n;
 					n = n->iNext;
 					delete p;
 				}
 			}
+		public:
 			void* allocate()
 			{
 				if (iHead == nullptr)
 					grow();
 				link* p = iHead;
-				iHead = p->iNext;
+				if constexpr (!Omega)
+					iHead = p->iNext;
+				else if (reinterpret_cast<intptr_t>(iHead->iNext) == intptr_t{ -1 })
+					iHead = reinterpret_cast<link*>(reinterpret_cast<char*>(p) + element_size());
+				else
+					iHead = p->iNext;
 				return p;
 			}
 			void deallocate(void* aObject)
 			{
-				link* p = reinterpret_cast<link*>(aObject);
-				p->iNext = iHead;
-				iHead = p;
+				if constexpr (!Omega)
+				{
+					link* p = reinterpret_cast<link*>(aObject);
+					p->iNext = iHead;
+					iHead = p;
+				}
 			}
+		public:
+			void omega_recycle()
+			{
+				if constexpr (Omega)
+				{
+					for (chunk* n = iChunks; n != nullptr; n = n->iNext)
+					{
+						constexpr std::size_t nelem = chunk_size() / element_size();
+						char* start = n->iMem;
+						char* last = start + nelem * element_size();
+						std::memset(start, 0xFF, last - start);
+						reinterpret_cast<link*>(last - element_size())->iNext = (n->iNext != nullptr ? reinterpret_cast<link*>(n->iNext->iMem) : nullptr);
+					}
+					iHead = reinterpret_cast<link*>(iChunks->iMem);
+				}
+			}
+			void info()
+			{
+				uint32_t total = 0;
+				uint32_t pct = 0;
+				for (chunk* n = iChunks; n != nullptr; n = n->iNext)
+				{
+					++total;
+					char* start = n->iMem;
+					char* last = start + chunk_size();
+					if (reinterpret_cast<char*>(iHead) >= start && reinterpret_cast<char*>(iHead) < last)
+						pct = (reinterpret_cast<char*>(iHead) - start) * 100 / (last - start);
+				}
+				std::cout << "Number of chunks: " << total << std::endl;
+				if constexpr (Omega)
+					std::cout << "% utilization of last used chunk: " << pct << "%" << std::endl;
+			}
+		private:
 			void grow()
 			{
 				chunk* n = new chunk;
 				n->iNext = iChunks;
 				iChunks = n;
 
-				const std::size_t nelem = chunk::size / iElementSize;
+				constexpr std::size_t nelem = chunk_size() / element_size();
 				char* start = n->iMem;
-				char* last = &start[(nelem-1) * iElementSize];
-				for (char* p = start; p < last; p+= iElementSize)
-					reinterpret_cast<link*>(p)->iNext = reinterpret_cast<link*>(p+iElementSize);
-				reinterpret_cast<link*>(last)->iNext = 0;
+				char* last = start + nelem * element_size();
+				if constexpr (!Omega)
+					for (char* p = start; p < last; p += element_size())
+						reinterpret_cast<link*>(p)->iNext = reinterpret_cast<link*>(p + element_size());
+				else
+					std::memset(start, 0xFF, last - start);
+
+				reinterpret_cast<link*>(last - element_size())->iNext = nullptr;
 				iHead = reinterpret_cast<link*>(start);
 			}
+		private:
+			chunk * iChunks;
+			link* iHead;
 		};
 
 	// construction
 	public:
-		chunk_allocator() {}
-		chunk_allocator(const chunk_allocator& rhs) {}
+		pool_allocator()
+		{
+		}
+
+		pool_allocator(const pool_allocator&) 
+		{
+		}
+
 		template <typename U>
-		chunk_allocator(const chunk_allocator<U, ChunkSize, Instance>& /*rhs*/) {}
-		~chunk_allocator() {}
+		pool_allocator(const pool_allocator<U, ChunkSize, Omega, Instance>& /*rhs*/)
+		{
+		}
+
+		~pool_allocator() 
+		{
+		}
 
 	// operations
 	public:
@@ -140,40 +213,59 @@ namespace neolib
 
 		void deallocate(pointer aObject, size_type aCount = 1)
 		{
-			if (aCount != 1)
-				throw std::logic_error("neolib::chunk_allocator::deallocate");
-			sPool.deallocate(aObject);
+			if constexpr (!Omega)
+			{
+				if (aCount != 1)
+					throw std::logic_error("neolib::pool_allocator::deallocate");
+				sPool.deallocate(aObject);
+			}
 		}
 
 		void construct(pointer aObject, const_reference val)
 		{
 			new (aObject) T(val);
 		}
-		
-		void destroy(pointer aObject)
+
+		template <typename... Args>
+		void construct(pointer aObject, Args&&... aArguments)
 		{
-			aObject;
-			aObject->~T();
+			new (aObject) T(std::forward<Args>(aArguments)...);
 		}
 
+		void destroy(pointer aObject)
+		{
+			if constexpr (!Omega)
+				aObject->~T();
+		}
+
+		void omega_recycle()
+		{
+			sPool.omega_recycle();
+		}
+
+		void info()
+		{
+			sPool.info();
+		}
+			
 		template <typename U>
 		struct rebind
 		{
-			typedef chunk_allocator<U, ChunkSize, Instance> other;
+			typedef pool_allocator<U, ChunkSize, Omega, Instance> other;
 		};
 
 		// this should really return 1 but popular implementations assume otherwise
 		size_type max_size() const { return std::allocator<T>().max_size(); }
 
-		bool operator==(const chunk_allocator&) const { return true; }
+		bool operator==(const pool_allocator&) const { return true; }
 
 	// attributes
 	private:
 		static pool sPool;
 	};
 
-	template <typename T, std::size_t ChunkSize, std::size_t Instance>
-	typename chunk_allocator<T, ChunkSize, Instance>::pool chunk_allocator<T, ChunkSize, Instance>::sPool;
+	template <typename T, std::size_t ChunkSize, bool Omega, std::size_t Instance>
+	typename pool_allocator<T, ChunkSize, Omega, Instance>::pool pool_allocator<T, ChunkSize, Omega, Instance>::sPool;
 
 	template <typename T, std::size_t N, std::size_t Instance = 0>
 	class reserve_allocator
@@ -210,7 +302,7 @@ namespace neolib
 				char* last = &start[(N-1) * iElementSize];
 				for (char* p = start; p < last; p+= iElementSize)
 					reinterpret_cast<link*>(p)->iNext = reinterpret_cast<link*>(p+iElementSize);
-				reinterpret_cast<link*>(last)->iNext = 0;
+				reinterpret_cast<link*>(last)->iNext = nullptr;
 			}
 			void* allocate()
 			{

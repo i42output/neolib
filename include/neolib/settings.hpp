@@ -159,7 +159,7 @@ namespace neolib
 				for (setting_list::const_iterator i = iSettings.begin(); i != iSettings.end(); ++i)
 				{
 					xml::element& category = static_cast<xml::element&>(*iStore->root().find_or_append(i->category().c_str()));
-					if (i->type() != i_simple_variant::CustomType)
+					if (i->type() != simple_variant_type::CustomType)
 						category.append(i->name().c_str()).set_attribute("value", to_string(i->value()).c_str());
 					else
 					{
@@ -184,7 +184,7 @@ namespace neolib
 		static const uuid& id() { static uuid sId = neolib::make_uuid("E19B3C48-04F7-4207-B24A-2967A3523CE7"); return sId; }
 
 	protected:
-		i_setting::id_type do_register_setting(const string& aSettingCategory, const string& aSettingName, simple_variant::type_e aSettingType, const simple_variant& aDefaultValue = simple_variant(), bool aHidden = false)
+		i_setting::id_type do_register_setting(const string& aSettingCategory, const string& aSettingName, simple_variant_type aSettingType, const simple_variant& aDefaultValue = simple_variant(), bool aHidden = false)
 		{
 			setting_by_name_list::iterator iterCheck = iSettingsByName.find(setting_by_name_list::key_type(aSettingCategory, aSettingName));
 			if (iterCheck != iSettingsByName.end())
@@ -198,7 +198,7 @@ namespace neolib
 					xml::element::iterator xmlIterSetting = xmlIterCategory->find(aSettingName.c_str());
 					if (xmlIterSetting != xmlIterCategory->end())
 					{
-						if (aSettingType != i_simple_variant::CustomType)
+						if (aSettingType != simple_variant_type::CustomType)
 							currentValue = from_string(xmlIterSetting->attribute_value("value"), aSettingType);
 						else
 						{

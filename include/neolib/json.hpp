@@ -235,16 +235,16 @@ namespace neolib
 		private:
 			json_value* allocate_child()
 			{
-				return iAllocator.allocate(1);
+				return allocator().allocate(1);
 			}
 			void deallocate_child(json_value* aAddress)
 			{
-				iAllocator.deallocate(aAddress, 1);
+				allocator().deallocate(aAddress, 1);
 			}
 			template <typename... Args>
 			json_value* construct_child(json_value* aAddress, Args&&... aArguments)
 			{
-				iAllocator.construct(aAddress, std::forward<Args>(aArguments)...);
+				allocator().construct(aAddress, std::forward<Args>(aArguments)...);
 				json_value& child = *aAddress;
 				if (iLastChild == nullptr)
 				{
@@ -274,7 +274,11 @@ namespace neolib
 				deallocate_child(aAddress);
 			}
 		private:
-			value_allocator iAllocator;
+			static value_allocator& allocator()
+			{
+				static value_allocator sAllocator;
+				return sAllocator;
+			}
 			json_value* iParent;
 			json_value* iPrevious;
 			json_value* iNext;
@@ -662,21 +666,21 @@ namespace neolib
 		typedef Traits character_traits_type;
 		typedef CharAlloc character_allocator_type;
 		typedef basic_json<Alloc, CharT, Traits, CharAlloc> self_type;
-		typedef basic_json_value<allocator_type, character_type, character_traits_type, character_allocator_type> value;
-		typedef std::optional<value> optional_value;
-		typedef typename value::json_object json_object;
-		typedef typename value::json_array json_array;
-		typedef typename value::json_double json_double;
-		typedef typename value::json_int64 json_int64;
-		typedef typename value::json_uint64 json_uint64;
-		typedef typename value::json_int json_int;
-		typedef typename value::json_uint json_uint;
-		typedef typename value::json_string json_string;
-		typedef typename value::json_bool json_bool;
-		typedef typename value::json_null json_null;
-		typedef typename value::json_keyword json_keyword;
+		typedef basic_json_value<allocator_type, character_type, character_traits_type, character_allocator_type> json_value;
+		typedef std::optional<json_value> optional_json_value;
+		typedef typename json_value::json_object json_object;
+		typedef typename json_value::json_array json_array;
+		typedef typename json_value::json_double json_double;
+		typedef typename json_value::json_int64 json_int64;
+		typedef typename json_value::json_uint64 json_uint64;
+		typedef typename json_value::json_int json_int;
+		typedef typename json_value::json_uint json_uint;
+		typedef typename json_value::json_string json_string;
+		typedef typename json_value::json_bool json_bool;
+		typedef typename json_value::json_null json_null;
+		typedef typename json_value::json_keyword json_keyword;
 	public:
-		typedef typename value::value_type value_type;
+		typedef typename json_value::value_type value_type;
 		typedef value_type* pointer;
 		typedef const value_type* const_pointer;
 		typedef value_type& reference;
@@ -725,8 +729,8 @@ namespace neolib
 		const string_type& error_text() const;
 	public:
 		bool has_root() const;
-		const value& root() const;
-		value& root();
+		const json_value& root() const;
+		json_value& root();
 		template <typename Visitor>
 		void visit(Visitor&& aVisitor) const;
 		template <typename Visitor>
@@ -745,19 +749,19 @@ namespace neolib
 		bool do_parse();
 		json_type context() const;
 		template <typename T>
-		value* buy_value(element& aCurrentElement, T&& aValue);
+		json_value* buy_value(element& aCurrentElement, T&& aValue);
 		void create_parse_error(const character_type* aDocumentPos, const string_type& aExtraInfo = {});
 	private:
 		json_encoding iEncoding;
 		json_string iDocumentText;
 		string_type iErrorText;
-		optional_value iRoot;
-		std::vector<value*> iCompositeValueStack;
+		optional_json_value iRoot;
+		std::vector<json_value*> iCompositeValueStack;
 		std::optional<char16_t> iUtf16HighSurrogate;
 	};
 
 	typedef basic_json<> json;
-	typedef json::value json_value;
+	typedef json::json_value json_value;
 	typedef json::json_object json_object;
 	typedef json::json_array json_array;
 	typedef json::json_double json_double;
@@ -770,8 +774,8 @@ namespace neolib
 	typedef json::json_null json_null;
 	typedef json::json_keyword json_keyword;
 
-	typedef basic_json<neolib::fast_pool_allocator<json_type>> fast_json;
-	typedef fast_json::value fast_json_value;
+	typedef basic_json<neolib::pool_allocator<json_type>> fast_json;
+	typedef fast_json::json_value fast_json_value;
 	typedef fast_json::json_object fast_json_object;
 	typedef fast_json::json_array fast_json_array;
 	typedef fast_json::json_double fast_json_double;

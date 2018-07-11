@@ -50,7 +50,7 @@
 #include "quick_string.hpp"
 #include "memory.hpp"
 
-#define NEOLIB_XML_USE_CHUNK_ALLOCATOR
+#define NEOLIB_XML_USE_POOL_ALLOCATOR
 
 namespace neolib 
 {
@@ -542,12 +542,12 @@ namespace neolib
 		static const string sEmptyTag;
 	};
 
-	#ifndef NEOLIB_XML_USE_CHUNK_ALLOCATOR
+	#ifndef NEOLIB_XML_USE_POOL_ALLOCATOR
 	typedef basic_xml<char> xml;
 	typedef basic_xml<wchar_t> wxml;
-	#else // NEOLIB_XML_USE_CHUNK_ALLOCATOR
-	typedef basic_xml<char, chunk_allocator<char> > xml;
-	typedef basic_xml<wchar_t, chunk_allocator<char> > wxml;
+	#else // NEOLIB_XML_USE_POOL_ALLOCATOR
+	typedef basic_xml<char, pool_allocator<char> > xml;
+	typedef basic_xml<wchar_t, pool_allocator<char> > wxml;
 	#endif
 }
 

@@ -143,7 +143,7 @@ namespace neolib
 	{
 	public:
 		typedef null_mutex mutex_type;
-		typedef std::unordered_set<i_lifetime_flag*, std::hash<i_lifetime_flag*>, std::equal_to<i_lifetime_flag*>, boost::fast_pool_allocator<i_lifetime_flag*>> flag_list;
+		typedef std::unordered_set<i_lifetime_flag*, std::hash<i_lifetime_flag*>, std::equal_to<i_lifetime_flag*>, pool_allocator<i_lifetime_flag*>> flag_list;
 	public:
 		static mutex_type& mutex()
 		{
@@ -165,9 +165,9 @@ namespace neolib
 	{
 	public:
 		typedef std::recursive_mutex mutex_type;
-		typedef std::unordered_set<i_lifetime_flag*, std::hash<i_lifetime_flag*>, std::equal_to<i_lifetime_flag*>, boost::fast_pool_allocator<i_lifetime_flag*>> flag_list;
+		typedef std::unordered_set<i_lifetime_flag*, std::hash<i_lifetime_flag*>, std::equal_to<i_lifetime_flag*>, pool_allocator<i_lifetime_flag*>> flag_list;
 	private:
-		typedef std::unordered_map<const i_lifetime*, flag_list, std::hash<const i_lifetime*>, std::equal_to<const i_lifetime*>, boost::fast_pool_allocator<std::pair<const i_lifetime* const, flag_list>>> flag_map;
+		typedef std::unordered_map<const i_lifetime*, flag_list, std::hash<const i_lifetime*>, std::equal_to<const i_lifetime*>, pool_allocator<std::pair<const i_lifetime* const, flag_list>>> flag_map;
 	public:
 		static mutex_type& mutex()
 		{
