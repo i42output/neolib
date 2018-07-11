@@ -342,7 +342,7 @@ namespace neolib
 	template <typename Callback>
 	inline std::u32string utf8_to_utf32(const std::string& aString, Callback aCallback, bool aCodePageFallback = false)
 	{
-		return utf8_to_utf32(aString.begin(), aStirng.end(), aCallBack, aCodePageFallback);
+		return utf8_to_utf32(aString.begin(), aString.end(), aCallBack, aCodePageFallback);
 	}
 
 	inline std::u32string utf8_to_utf32(std::string::const_iterator aBegin, std::string::const_iterator aEnd, bool aCodePageFallback = false)

@@ -99,7 +99,7 @@ namespace neolib
 	inline uint64_t string_to_uint64(const std::basic_string_view<CharT, Traits>& aStringView)
 	{
 		namespace qi = boost::spirit::qi;
-		uint64_t result = 0ill;
+		uint64_t result = 0ull;
 		qi::parse(aStringView.begin(), aStringView.end(), qi::ulong_long, result);
 		return result;
 	}
