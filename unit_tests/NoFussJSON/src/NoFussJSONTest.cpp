@@ -183,11 +183,14 @@ int main(int argc, char** argv)
 
 		json.write(output);
 
-		/*{
-			neolib::fast_json json{ "c:\\tmp\\test2.json" };
-			std::ofstream checkFile("c:\\tmp\\test2.check.json");
-			json.write(checkFile);
-		}*/
+		std::string inputBenchmark;
+		if (argc < 3)
+		{
+			std::cout << "Input (benchmark): ";
+			std::cin >> inputBenchmark;
+		}
+		else
+			inputBenchmark = argv[2];
 
 		{
 			std::vector<uint64_t> timings;
@@ -198,7 +201,7 @@ int main(int argc, char** argv)
 					typedef neolib::basic_json<neolib::omega_pool_allocator<neolib::json_type, 3 * 20 * 1024 * 1024>> omega_json;
 					if (i > 0)
 						omega_json::json_value::value_allocator().omega_recycle();
-					omega_json json{ "c:\\tmp\\test2.json" };
+					omega_json json{ inputBenchmark };
 					if (i == 0)
 						omega_json::json_value::value_allocator().info();
 				}
@@ -214,7 +217,7 @@ int main(int argc, char** argv)
 			{
 				auto start_time = std::chrono::high_resolution_clock::now();
 				{
-					FILE* fp = fopen("c:\\tmp\\test2.json", "r");
+					FILE* fp = fopen(inputBenchmark.c_str(), "r");
 					fseek(fp, 0, SEEK_END);
 					size_t filesize = (size_t)ftell(fp);
 					fseek(fp, 0, SEEK_SET);

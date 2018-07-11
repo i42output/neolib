@@ -41,6 +41,8 @@
 #include <cstddef>
 #include <list>
 #include <string>
+#include <unordered_map>
+#include <vector>
 #include <type_traits>
 #include <istream>
 #include <ostream>
