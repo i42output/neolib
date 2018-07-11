@@ -2056,18 +2056,18 @@ namespace neolib
 			{
 				auto newObject = iCompositeValueStack.back()->buy_child(std::forward<T>(aValue));
 				if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_array>)
-					newObject->as<json_array>().set_owner(*newObject);
+					newObject->template as<json_array>().set_owner(*newObject);
 				else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_object>)
-					newObject->as<json_object>().set_owner(*newObject);
+					newObject->template as<json_object>().set_owner(*newObject);
 				return newObject;
 			}
 		case json_type::Object:
 			{
 				auto newObject = iCompositeValueStack.back()->buy_child(std::forward<T>(aValue));
 				if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_array>)
-					newObject->as<json_array>().set_owner(*newObject);
+					newObject->template as<json_array>().set_owner(*newObject);
 				else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_object>)
-					newObject->as<json_object>().set_owner(*newObject);
+					newObject->template as<json_object>().set_owner(*newObject);
 				newObject->set_name(*aCurrentElement.name);
 				aCurrentElement.name = std::nullopt;
 				return newObject;
