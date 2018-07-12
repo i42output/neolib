@@ -1540,7 +1540,7 @@ namespace neolib
 									{
 										std::visit([this, &currentElement](auto&& arg)
 										{ 
-											buy_value(currentElement, arg); 
+											buy_value(currentElement, std::forward<decltype(arg)>(arg));
 										}, string_to_number(newNumber.as_view()));
 									}
 									else

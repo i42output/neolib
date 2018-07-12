@@ -67,8 +67,6 @@ namespace neolib
 
 	namespace json_detail
 	{
-		enum class state;
-
 		template <std::size_t CharSize>
 		struct default_encoding_helper;
 		template <> struct default_encoding_helper<1> { static const json_encoding DEFAULT_ENCODING = json_encoding::Utf8; };
