@@ -89,7 +89,7 @@
       <PreprocessorDefinitions>WIN32;NEOLIB_HOSTED_ENVIRONMENT;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(DevDirNeolib)\include;$(DevDirBoost);$(DevDirOpenSSL)\include;$(DevDirZlib)\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalOptions>/std:c++latest %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/std:c++latest %(AdditionalOptions) /std:c++latest </AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

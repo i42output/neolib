@@ -36,7 +36,7 @@
 #pragma once
 
 #include "neolib.hpp"
-#include <boost/any.hpp>
+#include <any>
 #include <sstream>
 #include <optional>
 #include "reference_counted.hpp"

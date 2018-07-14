@@ -81,7 +81,7 @@ namespace neolib
 		return detail::fast_hash<T>(aInput, aLength);
 	}
 
-	uint32_t fast_hash(const void* aInput, std::size_t aLength)
+	inline uint32_t fast_hash(const void* aInput, std::size_t aLength)
 	{
 		return fast_hash<uint32_t>(aInput, aLength);
 	}

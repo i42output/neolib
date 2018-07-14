@@ -60,7 +60,7 @@ namespace neolib
 			Null
 		};
 
-		enum class token
+		enum class token : uint8_t
 		{
 			Invalid,
 			OpenObject,
@@ -106,7 +106,7 @@ namespace neolib
 		constexpr token TWH = token::Whitespace;
 		constexpr token TZZ = token::EndOfInput;
 
-		enum class state
+		enum class state : uint8_t
 		{
 			Error,
 			Ignore,

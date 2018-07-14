@@ -258,6 +258,7 @@ namespace neolib
 		size_type max_size() const { return std::allocator<T>().max_size(); }
 
 		bool operator==(const pool_allocator&) const { return true; }
+		bool operator!=(const pool_allocator&) const { return false; }
 
 	// attributes
 	private:
@@ -363,7 +364,10 @@ namespace neolib
 		// this should really return 1 but popular implementations assume otherwise
 		size_type max_size() const { return std::allocator<T>().max_size(); }
 
-	// attributes
+		bool operator==(const reserve_allocator&) const { return true; }
+		bool operator!=(const reserve_allocator&) const { return false; }
+		
+		// attributes
 	private:
 		static block sBlock;
 	};

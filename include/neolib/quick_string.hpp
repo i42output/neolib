@@ -139,7 +139,7 @@ namespace neolib
 		{
 		}
 		basic_quick_string(view_const_iterator begin, view_const_iterator end, const Alloc& a = Alloc()) :
-			iContents{ view_contents_type{ string_view_type{ begin, static_cast<size_type>(std::distance(begin, end)) }, a } }
+			iContents{ view_contents_type{ string_view_type{ &*begin, static_cast<size_type>(std::distance(begin, end)) }, a } }
 		{
 		}
 		basic_quick_string& operator=(const basic_quick_string& str) 
@@ -520,7 +520,7 @@ namespace neolib
 	public:
 		operator string_type() const
 		{
-			return as_view().to_string();
+			return string_type{ as_view().begin(), as_view().end(), get_allocator() };
 		}
 		operator string_type&()
 		{

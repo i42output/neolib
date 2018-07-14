@@ -143,7 +143,7 @@ namespace neolib
 		template <typename T>
 		bool is() const
 		{
-			return iValue.is<T>();
+			return std::holds_alternative<T>(iValue);
 		}
 		const value_type& value() const
 		{
@@ -151,17 +151,17 @@ namespace neolib
 		}
 		bool is_token() const
 		{
-			return iValue.is<token_type>() || iValue.is<function_type>();
+			return std::holds_alternative<token_type>(iValue) || std::holds_alternative<function_type>(iValue);
 		}
 		token_type token() const
 		{
-			if (iValue.is<token_type>())
+			if (std::holds_alternative<token_type>(iValue))
 				return static_variant_cast<token_type>(iValue);
-			else if (iValue.is<function_type>())
+			else if (std::holds_alternative<function_type>(iValue))
 				return static_variant_cast<const function_type&>(iValue).first;
-			else if (iValue.is<char_type>())
+			else if (std::holds_alternative<char_type>(iValue))
 				throw not_token(std::string(1, static_variant_cast<char_type>(iValue)));
-			else if (iValue.is<string_type>())
+			else if (std::holds_alternative<string_type>(iValue))
 				throw not_token(static_variant_cast<const string_type&>(iValue));
 			else
 				throw not_token("???");
@@ -172,11 +172,11 @@ namespace neolib
 		}
 		bool is_scope() const
 		{
-			return iValue.is<scope_type>();
+			return std::holds_alternative<scope_type>(iValue);
 		}
 		scope_type scope() const
 		{
-			if (iValue.is<scope_type>())
+			if (std::holds_alternative<scope_type>(iValue))
 				return static_variant_cast<scope_typ>(iValue);
 			else
 				throw not_scope("???");
@@ -187,7 +187,7 @@ namespace neolib
 		}
 		bool has_functions() const
 		{
-			return iValue.is<function_type>();
+			return std::holds_alternative<function_type>(iValue);
 		}
 		const function_list& functions() const
 		{
@@ -209,6 +209,12 @@ namespace neolib
 		value_type iValue;
 		token_value_type iTokenValue;
 	};
+
+	template <typename T, typename Token, typename Scope, typename CharT>
+	inline bool holds_alternative(const lexer_atom<Token, Scope, CharT>& aAtom)
+	{
+		return aAtom.is<T>();
+	}
 
 	template <typename Atom>
 	class lexer_rule
@@ -394,29 +400,29 @@ namespace neolib
 		public:
 			void map(const atom_type& aAtom, node& aNextNode)
 			{
-				if (aAtom.is<char_type>())
+				if (holds_alternative<char_type>(aAtom))
 					map(static_variant_cast<char_type>(aAtom.value()), aNextNode);
-				else if (aAtom.is<token_type>())
+				else if (holds_alternative<token_type>(aAtom))
 					map(static_variant_cast<token_type>(aAtom.value()), aNextNode);
 			}
 			void map(const atom_type& aAtom, const atom_type& aTerminalAtom)
 			{
-				if (aTerminalAtom.is<token_type>())
+				if (holds_alternative<token_type>(aTerminalAtom))
 				{
-					if (aAtom.is<char_type>())
+					if (holds_alternative<char_type>(aAtom))
 						map(static_variant_cast<char_type>(aAtom.value()), static_variant_cast<token_type>(aTerminalAtom.value()));
-					else if (aAtom.is<token_type>())
+					else if (holds_alternative<token_type>(aAtom))
 						map(static_variant_cast<token_type>(aAtom.value()), static_variant_cast<token_type>(aTerminalAtom.value()));
-					else if (aAtom.is<function_type>())
+					else if (holds_alternative<function_type>(aAtom))
 						map(static_variant_cast<const function_type&>(aAtom.value()), static_variant_cast<token_type>(aTerminalAtom.value()));
 				}
-				else if (aTerminalAtom.is<function_type>())
+				else if (holds_alternative<function_type>(aTerminalAtom))
 				{
-					if (aAtom.is<char_type>())
+					if (holds_alternative<char_type>(aAtom))
 						map(static_variant_cast<char_type>(aAtom.value()), static_variant_cast<const function_type&>(aTerminalAtom.value()));
-					else if (aAtom.is<token_type>())
+					else if (holds_alternative<token_type>(aAtom))
 						map(static_variant_cast<token_type>(aAtom.value()), static_variant_cast<const function_type&>(aTerminalAtom.value()));
-					else if (aAtom.is<function_type>())
+					else if (holds_alternative<function_type>(aAtom))
 						map(static_variant_cast<const function_type&>(aAtom.value()), static_variant_cast<const function_type&>(aTerminalAtom.value()));
 				}
 				else
@@ -469,11 +475,11 @@ namespace neolib
 			}
 			const next_type& lookup(const atom_type& aAtom) const
 			{
-				if (aAtom.is<char_type>())
+				if (holds_alternative<char_type>(aAtom))
 					return lookup(static_variant_cast<char_type>(aAtom.value()));
-				else if (aAtom.is<token_type>())
+				else if (holds_alternative<token_type>(aAtom))
 					return lookup(static_variant_cast<token_type>(aAtom.value()));
-				else if (aAtom.is<function_type>())
+				else if (holds_alternative<function_type>(aAtom))
 					return lookup(static_variant_cast<const function_type&>(aAtom.value()));
 				else
 					throw unsupported_atom_type();
@@ -499,14 +505,14 @@ namespace neolib
 				{
 					if (aFirst == aLast)
 					{
-						if (!atomMatch->second.empty())
+						if (atomMatch->second != neolib::none)
 							return std::make_pair(match_result::Complete, atomMatch->second);
 						else if (atomMatch->first != nullptr)
 							return std::make_pair(match_result::Partial, value_type{});
 						else
 							return std::make_pair(match_result::None, value_type{});
 					}
-					else if (atomMatch->first != nullptr && (!atom.is<char_type>() || aSearchType == search_type::String))
+					else if (atomMatch->first != nullptr && (!holds_alternative<char_type>(atom) || aSearchType == search_type::String))
 						return atomMatch->first->match(aFirst, aLast, aSearchType);
 					else
 						return std::make_pair(match_result::None, value_type{});
@@ -517,7 +523,7 @@ namespace neolib
 		private:
 			optional_next_type match_atom(const atom_type& aAtom, search_type aSearchType) const
 			{
-				if (aAtom.is<char_type>())
+				if (holds_alternative<char_type>(aAtom))
 				{
 					if (this == &*iParent.iNodes.begin() || aSearchType == search_type::String)
 					{
@@ -527,7 +533,7 @@ namespace neolib
 					}
 					return optional_next_type{};
 				}
-				else if (aAtom.is<token_type>())
+				else if (holds_alternative<token_type>(aAtom))
 				{
 					auto token = static_variant_cast<token_type>(aAtom.value());
 					auto existingToken = iTokenMap.find(token);
@@ -620,9 +626,9 @@ namespace neolib
 				{
 					atom_type atom = atom_type{};
 					bool endToken = false;
-					if (match.second.is<token_type>())
+					if (std::holds_alternative<token_type>(match.second))
 						atom = atom_type{ static_variant_cast<token_type>(match.second) };
-					else if (match.second.is<function_type>())
+					else if (std::holds_alternative<function_type>(match.second))
 					{
 						auto& functions = static_variant_cast<const function_type&>(match.second);
 						atom = atom_type{ functions.first };
@@ -688,7 +694,7 @@ namespace neolib
 			if (match.first == match_result::Complete)
 			{
 				bool changed = false;
-				if (match.second.is<token_type>())
+				if (std::holds_alternative<token_type>(match.second))
 				{
 					auto token = static_variant_cast<token_type>(match.second);
 					if (aContext.iQueue[0].token() != token)
@@ -697,7 +703,7 @@ namespace neolib
 						changed = true;
 					}
 				}
-				else if (match.second.is<function_type>())
+				else if (std::holds_alternative<function_type>(match.second))
 				{
 					auto token = static_variant_cast<const function_type&>(match.second).first;
 					if (aContext.iQueue[0].token() != token)
@@ -725,14 +731,14 @@ namespace neolib
 		}
 		node& build(const rule_type& aRule, const atom_type& aAtom, std::size_t aExpressionIndex, node& aNode, bool aHalt = false)
 		{
-			if (aAtom.is<range_type>())
+			if (holds_alternative<range_type>(aAtom))
 			{
 				auto& r = static_variant_cast<const range_type&>(aAtom.value());
 				for (char_type ch = r.first; ch < r.second; ++ch)
 					build(aRule, ch, aExpressionIndex, aNode);
 				return build(aRule, r.second, aExpressionIndex, aNode);
 			}
-			else if (aAtom.is<string_type>())
+			else if (holds_alternative<string_type>(aAtom))
 			{
 				auto s = static_variant_cast<const std::string&>(aAtom.value());
 				auto& n = build(aRule, s[0], aExpressionIndex, aNode, s.size() > 1 ? true : false);
