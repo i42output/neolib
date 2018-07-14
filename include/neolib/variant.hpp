@@ -46,31 +46,31 @@ namespace neolib
 	const none_t none;
 
 	template <typename... Types>
-	using variant = std::variant<none_t, Types...>;
-
-	template <typename... Types>
-	inline bool operator==(const variant<Types...>& aVariant, none_t)
+	class variant : public std::variant<none_t, Types...>
 	{
-		return std::holds_alternative<none_t>(aVariant);
-	}
-
-	template <typename... Types>
-	inline bool operator==(none_t, const variant<Types...>& aVariant)
-	{
-		return std::holds_alternative<none_t>(aVariant);
-	}
-
-	template <typename... Types>
-	inline bool operator!=(const variant<Types...>& aVariant, none_t)
-	{
-		return !std::holds_alternative<none_t>(aVariant);
-	}
-
-	template <typename... Types>
-	inline bool operator!=(none_t, const variant<Types...>& aVariant)
-	{
-		return !std::holds_alternative<none_t>(aVariant);
-	}
+	public:
+		typedef std::variant<none_t, Types...> value_type;
+	public:
+		using value_type::value_type;
+	public:
+		const value_type& for_visitor() const
+		{
+			return *this;
+		}
+		value_type& for_visitor()
+		{
+			return *this;
+		}
+	public:
+		bool operator==(const none_t) const
+		{
+			return std::holds_alternative<std::monostate>(*this);
+		}
+		bool operator!=(const none_t) const
+		{
+			return !std::holds_alternative<std::monostate>(*this);
+		}
+	};
 
 	// Deprecated, use std::get.
 	template <typename T, typename Variant>
@@ -90,6 +90,15 @@ namespace neolib
 		typedef typename std::remove_cv<typename std::remove_reference<result_type>::type>::type alternative_type;
 		auto& result = std::get<alternative_type>(aVariant);
 		return static_cast<result_type>(result);
+	}
+}
+
+namespace std
+{
+	template <typename Visitor, typename... Types>
+	auto visit(Visitor&& vis, neolib::variant<Types...>&& var)
+	{
+		return std::visit(std::forward<Visitor>(vis), var.for_visitor());
 	}
 }
 
