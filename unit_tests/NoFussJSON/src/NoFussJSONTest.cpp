@@ -143,6 +143,27 @@ int main(int argc, char** argv)
 			std::cout << "---------------------------" << std::endl;
 		}
 
+		const std::string RJSON_test =
+		{
+			"// This is a sample RJSON file\n"
+			"\n"
+			"buy: [milk eggs butter 'dog bones']\n"
+			"tasks : [{name:exercise completed : false} {name:eat completed : true}]\n"
+			"\n"
+			"'another key' : 'another value'\n"
+			"\n"
+			"/*  It is very easy\n"
+			"to read and write RJSON\n"
+			"without quotes or commas!\n"
+			"*/\n"
+		};
+		/* todo: RJSON
+		std::istringstream rjsonStream(RJSON_test);
+		neolib::rjson rjson{ rjsonStream };
+		rjson.write(std::cout);
+		std::cout << std::endl; 
+		*/
+
 		std::string input;
 		if (argc < 2)
 		{
@@ -206,7 +227,7 @@ int main(int argc, char** argv)
 			{
 				auto start_time = std::chrono::high_resolution_clock::now();
 				{
-					typedef neolib::basic_json<neolib::omega_pool_allocator<neolib::json_type, 3 * 20 * 1024 * 1024>> omega_json;
+					typedef neolib::basic_json<neolib::json_syntax::Standard, neolib::omega_pool_allocator<neolib::json_type, 3 * 20 * 1024 * 1024>> omega_json;
 					if (i > 0)
 						omega_json::json_value::value_allocator().omega_recycle();
 					omega_json json{ inputBenchmark };

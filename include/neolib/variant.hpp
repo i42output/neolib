@@ -96,7 +96,13 @@ namespace neolib
 namespace std
 {
 	template <typename Visitor, typename... Types>
-	auto visit(Visitor&& vis, neolib::variant<Types...>&& var)
+	auto visit(Visitor&& vis, const neolib::variant<Types...>& var)
+	{
+		return std::visit(std::forward<Visitor>(vis), var.for_visitor());
+	}
+
+	template <typename Visitor, typename... Types>
+	auto visit(Visitor&& vis, neolib::variant<Types...>& var)
 	{
 		return std::visit(std::forward<Visitor>(vis), var.for_visitor());
 	}

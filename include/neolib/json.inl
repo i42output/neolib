@@ -60,7 +60,7 @@ namespace neolib
 			Null
 		};
 
-		enum class token : uint8_t
+		enum class token
 		{
 			Invalid,
 			OpenObject,
@@ -78,35 +78,45 @@ namespace neolib
 			Minus,
 			Digit,
 			HexDigit,
+			EscapedOrHexDigit,
 			DecimalPoint,
 			Exponent,
+			Asterisk,
+			ForwardSlash,
+			Symbol,
+			Space,
 			Whitespace,
 			EndOfInput,
 			TOKEN_COUNT
 		};
 		constexpr std::size_t TOKEN_COUNT = static_cast<std::size_t>(token::TOKEN_COUNT);
-		constexpr token TXX = token::Invalid;
-		constexpr token TOO = token::OpenObject;
-		constexpr token TCO = token::CloseObject;
-		constexpr token TOA = token::OpenArray;
-		constexpr token TCA = token::CloseArray;
-		constexpr token TCL = token::Colon;
-		constexpr token TCM = token::Comma;
-		constexpr token TQT = token::Quote;
-		constexpr token TCH = token::Character;
-		constexpr token TES = token::Escape;
-		constexpr token TEU = token::EscapingUnicode;
-		constexpr token TED = token::Escaped;
-		constexpr token TPL = token::Plus;
-		constexpr token TMI = token::Minus;
-		constexpr token TDI = token::Digit;
-		constexpr token THD = token::HexDigit;
-		constexpr token TDP = token::DecimalPoint;
-		constexpr token TEX = token::Exponent;
-		constexpr token TWH = token::Whitespace;
-		constexpr token TZZ = token::EndOfInput;
+		constexpr token TXXX = token::Invalid;
+		constexpr token TOBJ = token::OpenObject;
+		constexpr token TCLO = token::CloseObject;
+		constexpr token TARR = token::OpenArray;
+		constexpr token TCLA = token::CloseArray;
+		constexpr token TCOL = token::Colon;
+		constexpr token TCOM = token::Comma;
+		constexpr token TQOT = token::Quote;
+		constexpr token TCHA = token::Character;
+		constexpr token TESC = token::Escape;
+		constexpr token TESU = token::EscapingUnicode;
+		constexpr token TECH = token::Escaped;
+		constexpr token TPLU = token::Plus;
+		constexpr token TMIN = token::Minus;
+		constexpr token TDIG = token::Digit;
+		constexpr token THEX = token::HexDigit;
+		constexpr token TEHX = token::EscapedOrHexDigit;
+		constexpr token TDEC = token::DecimalPoint;
+		constexpr token TEXP = token::Exponent;
+		constexpr token TAST = token::Asterisk;
+		constexpr token TFWD = token::ForwardSlash;
+		constexpr token TSYM = token::Symbol;
+		constexpr token TSPA = token::Space;
+		constexpr token TWSP = token::Whitespace;
+		constexpr token TZZZ = token::EndOfInput;
 
-		enum class state : uint8_t
+		enum class state
 		{
 			Error,
 			Ignore,
@@ -138,33 +148,33 @@ namespace neolib
 			STATE_COUNT,
 		};
 		constexpr std::size_t STATE_COUNT = static_cast<std::size_t>(state::STATE_COUNT);
-		constexpr state SXX = state::Error;
-		constexpr state SIG = state::Ignore;
-		constexpr state SZZ = state::EndOfParse;
-		constexpr state SEL = state::Element;
-		constexpr state SOB = state::Object;
-		constexpr state SAR = state::Array;
-		constexpr state SCL = state::Close;
-		constexpr state SVA = state::Value;
-		constexpr state SVS = state::NeedValueSeparator;
-		constexpr state SNV = state::NeedValue;
-		constexpr state SOS = state::NeedObjectValueSeparator;
-		constexpr state SOV = state::NeedObjectValue;
-		constexpr state SKE = state::Keyword;
-		constexpr state SNA = state::Name;
-		constexpr state SEN = state::EndName;
-		constexpr state SST = state::String;
-		constexpr state SSE = state::StringEnd;
-		constexpr state SN1 = state::NumberIntNeedDigit;
-		constexpr state SN2 = state::NumberInt;
-		constexpr state SN3 = state::NumberFracNeedDigit;
-		constexpr state SN4 = state::NumberFrac;
-		constexpr state SN5 = state::NumberExpSign;
-		constexpr state SN6 = state::NumberExpIntNeedDigit;
-		constexpr state SN7 = state::NumberExpInt;
-		constexpr state SES = state::Escaping;
-		constexpr state SED = state::Escaped;
-		constexpr state SEU = state::EscapingUnicode;
+		constexpr state SXXX = state::Error;
+		constexpr state SIGN = state::Ignore;
+		constexpr state SZZZ = state::EndOfParse;
+		constexpr state SELE = state::Element;
+		constexpr state SOBJ = state::Object;
+		constexpr state SARR = state::Array;
+		constexpr state SCLO = state::Close;
+		constexpr state SVAL = state::Value;
+		constexpr state SNVS = state::NeedValueSeparator;
+		constexpr state SNVA = state::NeedValue;
+		constexpr state SOVS = state::NeedObjectValueSeparator;
+		constexpr state SNOV = state::NeedObjectValue;
+		constexpr state SKEY = state::Keyword;
+		constexpr state SNAM = state::Name;
+		constexpr state SENM = state::EndName;
+		constexpr state SSTR = state::String;
+		constexpr state SSEN = state::StringEnd;
+		constexpr state SNU1 = state::NumberIntNeedDigit;
+		constexpr state SNU2 = state::NumberInt;
+		constexpr state SNU3 = state::NumberFracNeedDigit;
+		constexpr state SNU4 = state::NumberFrac;
+		constexpr state SNU5 = state::NumberExpSign;
+		constexpr state SNU6 = state::NumberExpIntNeedDigit;
+		constexpr state SNU7 = state::NumberExpInt;
+		constexpr state SESC = state::Escaping;
+		constexpr state SESD = state::Escaped;
+		constexpr state SEUN = state::EscapingUnicode;
 
 		inline std::string to_string(state aState)
 		{
@@ -233,689 +243,167 @@ namespace neolib
 		{
 			// state::Error
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+			    SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
 			}},
 			// state::Ignore
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
 			}},
 			// state::EndOfParse
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-			    SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+			    SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
 			}},
 			// state::Element
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG, SZZ
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SIGN, SIGN, SZZZ
 			}},
 			// state::Object
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SOB, SCL, SXX, SXX, SXX, SOV, SNA, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SOBJ, SCLO, SXXX, SXXX, SXXX, SNOV, SNAM, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
 			}},
 			// state::Array
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SOB, SXX, SAR, SCL, SXX, SXX, SST, SKE, SXX, SXX, SXX, SXX, SN1, SN2, SXX, SXX, SXX, SIG, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SOBJ, SXXX, SARR, SCLO, SXXX, SXXX, SSTR, SKEY, SXXX, SXXX, SXXX, SXXX, SNU1, SNU2, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
 			}},
 			// state::Close
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
 			}},
 			// state::Value
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SOB, SCL, SAR, SCL, SXX, SXX, SST, SKE, SXX, SXX, SXX, SXX, SN1, SN2, SXX, SXX, SXX, SIG, SZZ
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SOBJ, SCLO, SARR, SCLO, SXXX, SXXX, SSTR, SKEY, SXXX, SXXX, SKEY, SXXX, SNU1, SNU2, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SZZZ
 			}},
 			// state::NeedValueSeparator
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SCL, SXX, SCL, SXX, SVA, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SCLO, SXXX, SCLO, SXXX, SVAL, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
 			}},
 			// state::NeedValue
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SOB, SXX, SAR, SXX, SXX, SXX, SST, SKE, SXX, SXX, SXX, SXX, SN1, SN2, SXX, SXX, SXX, SIG, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SOBJ, SXXX, SARR, SXXX, SXXX, SXXX, SSTR, SKEY, SXXX, SXXX, SKEY, SXXX, SNU1, SNU2, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
 			}},
 			// state::NeedObjectValueSeparator
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SCL, SXX, SCL, SXX, SOV, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SCLO, SXXX, SCLO, SXXX, SNOV, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
 			}},
 			// state::NeedObjectValue
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SNA, SKE, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SNAM, SKEY, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
 			}},
 			// state::Keyword
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SCL, SXX, SCL, SEL, SEL, SXX, SKE, SXX, SXX, SXX, SXX, SXX, SKE, SXX, SXX, SXX, SEL, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SCLO, SXXX, SCLO, SELE, SELE, SXXX, SKEY, SXXX, SKEY, SKEY, SXXX, SXXX, SKEY, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SELE, SELE, SXXX
 			}},
 			// state::Name
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SEN, SNA, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SNAM, SNAM, SNAM, SNAM, SNAM, SNAM, SENM, SNAM, SESC, SNAM, SNAM, SNAM, SNAM, SNAM, SNAM, SNAM, SNAM, SNAM, SNAM, SNAM, SNAM, SNAM, SXXX, SXXX
 			}},
 			// state::EndName
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SXX, SXX, SXX, SEL, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SIG, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SXXX, SXXX, SXXX, SELE, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
 			}},
 			// state::String
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SSE, SST, SES, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SSTR, SSTR, SSTR, SSTR, SSTR, SSTR, SSEN, SSTR, SESC, SSTR, SSTR, SSTR, SSTR, SSTR, SSTR, SSTR, SSTR, SSTR, SSTR, SSTR, SSTR, SSTR, SXXX, SXXX
 			}},
 			// state::StringEnd
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SCL, SXX, SCL, SXX, SEL, SXX, SKE, SXX, SXX, SXX, SXX, SXX, SKE, SXX, SXX, SXX, SEL, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SCLO, SXXX, SCLO, SXXX, SELE, SXXX, SKEY, SXXX, SXXX, SXXX, SXXX, SXXX, SKEY, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SELE, SELE, SXXX
 			}},
 			// state::NumberIntNeedDigit
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN2, SXX, SXX, SXX, SXX, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SNU2, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
 			}},
 			// state::NumberInt
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SCL, SXX, SCL, SXX, SEL, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN2, SXX, SN3, SN5, SEL, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SCLO, SXXX, SCLO, SXXX, SELE, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SNU2, SXXX, SXXX, SNU3, SNU5, SXXX, SXXX, SXXX, SELE, SELE, SXXX
 			}},
 			// state::NumberFracNeedDigit
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN4, SXX, SXX, SXX, SXX, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SNU4, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
 			}},
 			// state::NumberFrac
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SCL, SXX, SCL, SXX, SEL, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN4, SXX, SXX, SN5, SEL, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SCLO, SXXX, SCLO, SXXX, SELE, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SNU4, SXXX, SXXX, SXXX, SNU5, SXXX, SXXX, SXXX, SELE, SELE, SXXX
 			}},
 			// state::NumberExpSign
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN6, SN6, SN7, SXX, SXX, SXX, SXX, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SNU6, SNU6, SNU7, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
 			}},
 			// state::NumberExpIntNeedDigit
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN7, SXX, SXX, SXX, SXX, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SNU7, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
 			}},
 			// state::NumberExpInt
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SCL, SXX, SCL, SXX, SEL, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SN7, SXX, SXX, SXX, SEL, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SCLO, SXXX, SCLO, SXXX, SELE, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SNU7, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SELE, SELE, SXXX
 			}},
 			// state::Escaping
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SEU, SED, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SEUN, SESD, SXXX, SXXX, SXXX, SXXX, SESD, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
 			}},
 			// state::Escaped
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
 			}},
 			// state::EscapingUnicode
 			std::array<state, TOKEN_COUNT>
-			{{//TXX  TOO  TCO  TOA  TCA  TCL  TCM  TQT  TCH  TES  TEU  TED  TPL  TMI  TDI  THD  TDP  TEX  TWH  TZZ
-				SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SXX, SED, SXX, SXX, SXX, SXX
+			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+				SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SESD, SESD, SESD, SXXX, SESD, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
 			}}
 		};
 
-		constexpr std::array<std::array<token, 256>, STATE_COUNT> sTokenTables =
+		constexpr std::array<token, 256> sTokenTable =
 		{ 
-			// state::Error 
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::Ignore 
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::EndOfParse
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::Element
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TZZ, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TWH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::Object 
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TWH, TXX, TQT, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TOA, TXX, TXX, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TOO, TXX, TCO, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::Array 
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TWH, TXX, TQT, TXX, TCH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCM, TMI, TXX, TXX, // 0x2
-			    TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TOA, TXX, TCA, TXX, TCH, // 0x5
-			    TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TOO, TXX, TXX, TXX, TXX, // 0x7
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x8
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x9
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xA
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xB
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xC
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xD
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xE
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xF
-			}},
-			// state::Close 
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::Value 
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TZZ, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TWH, TXX, TQT, TXX, TCH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TDI, TXX, TXX, // 0x2
-			    TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TOA, TXX, TCA, TXX, TCH, // 0x5
-			    TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TOO, TXX, TCO, TXX, TXX, // 0x7
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x8
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x9
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xA
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xB
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xC
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xD
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xE
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xF
-			}},
-			// state::NeedValueSeparator
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TWH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCM, TXX, TXX, TXX, // 0x2
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCA, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCO, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::NeedValue 
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TWH, TXX, TQT, TXX, TCH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TDI, TXX, TXX, // 0x2
-			    TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TOA, TXX, TXX, TXX, TCH, // 0x5
-			    TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TOO, TXX, TXX, TXX, TXX, // 0x7
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x8
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x9
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xA
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xB
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xC
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xD
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xE
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xF
-			}},
-			// state::NeedObjectValueSeparator
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TWH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCM, TXX, TXX, TXX, // 0x2
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCO, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::NeedObjectValue 
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TWH, TXX, TQT, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::Keyword
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TWH, TXX, TXX, TXX, TCH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCM, TXX, TXX, TXX, // 0x2
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCL, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TXX, TXX, TCA, TXX, TCH, // 0x5
-			    TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x8
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x9
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xA
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xB
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xC
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xD
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xE
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xF
-			}},
-			// state::Name 
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TCH, TCH, TQT, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x2
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x3
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TES, TCH, TCH, TCH, // 0x5
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TXX, // 0x7
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x8
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x9
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xA
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xB
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xC
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xD
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xE
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xF
-			}},
-			// state::EndName 
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TWH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCL, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::String 
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TCH, TCH, TQT, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x2
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x3
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TES, TCA, TCH, TCH, // 0x5
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TXX, // 0x7
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x8
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x9
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xA
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xB
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xC
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xD
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xE
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xF
-			}},
-			// state::StringEnd
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TWH, TXX, TXX, TXX, TCH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCM, TXX, TXX, TXX, // 0x2
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCL, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x4
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TXX, TXX, TCA, TXX, TCH, // 0x5
-			    TXX, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x6
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TXX, TXX, TCO, TXX, TXX, // 0x7
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x8
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0x9
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xA
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xB
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xC
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xD
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xE
-			    TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, TCH, // 0xF
-			}},
-			// state::NumberIntNeedDigit
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
-			    TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TEX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TEX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::NumberInt
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-				TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TWH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCM, TXX, TDP, TXX, // 0x2
-			    TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TEX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCA, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TEX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::NumberFracNeedDigit
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
-			    TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::NumberFrac
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TWH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCM, TXX, TXX, TXX, // 0x2
-			    TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TEX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCA, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TEX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::NumberExpSign
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TPL, TXX, TMI, TXX, TXX, // 0x2
-			    TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::NumberExpIntNeedDigit
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
-			    TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::NumberExpInt
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TWH, TWH, TXX, TXX, TWH, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TWH, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCM, TXX, TXX, TXX, // 0x2
-			    TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TDI, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TCA, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::Escaping 
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TXX, TXX, TED, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TED, // 0x2
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TED, TXX, TXX, TXX, // 0x5
-			    TXX, TXX, TED, TXX, TXX, TXX, TED, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TED, TXX, // 0x6
-			    TXX, TXX, TED, TXX, TED, TEU, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::Escaped
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}},
-			// state::EscapingUnicode
-			std::array<token, 256>
-			{{//0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x0
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x1
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x2
-			    THD, THD, THD, THD, THD, THD, THD, THD, THD, THD, TXX, TXX, TXX, TXX, TXX, TXX, // 0x3
-			    TXX, THD, THD, THD, THD, THD, THD, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x4
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x5
-			    TXX, THD, THD, THD, THD, THD, THD, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x6
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x7
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x8
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0x9
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xA
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xB
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xC
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xD
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xE
-			    TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, TXX, // 0xF
-			}}
+			{//	0x0   0x1   0x2   0x3   0x4   0x5   0x6   0x7   0x8   0x9   0xA   0xB   0xC   0xD   0xE   0xF
+			    TZZZ, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TWSP, TWSP, TXXX, TXXX, TWSP, TXXX, TXXX, // 0x0
+			    TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, // 0x1
+			    TSPA, TSYM, TQOT, TSYM, TCHA, TSYM, TSYM, TSYM, TSYM, TSYM, TAST, TPLU, TCOM, TMIN, TDEC, TFWD, // 0x2
+			    TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TCOL, TSYM, TSYM, TSYM, TSYM, TSYM, // 0x3
+				TSYM, THEX, THEX, THEX, THEX, TEXP, THEX, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0x4
+			    TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TARR, TESC, TCLA, TSYM, TSYM, // 0x5
+				TSYM, THEX, TEHX, THEX, THEX, TEXP, TEHX, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TECH, TCHA, // 0x6
+			    TCHA, TCHA, TECH, TCHA, TECH, TESU, TCHA, TCHA, TCHA, TCHA, TCHA, TOBJ, TSYM, TCLO, TSYM, TSYM, // 0x7
+			    TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0x8
+			    TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0x9
+			    TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xA
+			    TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xB
+			    TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xC
+			    TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xD
+			    TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xE
+			    TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xF
+			},
 		};
 
 		inline state next_state(state aCurrentState, char aToken)
 		{
 			auto stateIndex = static_cast<std::size_t>(aCurrentState);
-			auto token = sTokenTables[stateIndex][static_cast<std::size_t>(aToken)];
+			auto token = sTokenTable[static_cast<std::size_t>(aToken)];
 			return sStateTables[stateIndex][static_cast<std::size_t>(token)];
 		}
 
@@ -931,20 +419,20 @@ namespace neolib
 
 	namespace json_detail
 	{
-		template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+		template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 		struct iterator_traits
 		{
-			typedef neolib::basic_json<Alloc, CharT, Traits, CharAlloc> document_type;
-			typedef neolib::basic_json_value<Alloc, CharT, Traits, CharAlloc> node_value_type;
+			typedef neolib::basic_json<Syntax, Alloc, CharT, Traits, CharAlloc> document_type;
+			typedef neolib::basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc> node_value_type;
 			typedef typename node_value_type::value_type value_type;
 			typedef std::iterator<std::bidirectional_iterator_tag, value_type, std::ptrdiff_t, value_type*, value_type&> iterator;
 			typedef std::iterator<std::bidirectional_iterator_tag, value_type, std::ptrdiff_t, const value_type*, const value_type&> const_iterator;
 		};
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename IteratorTraits>
-	class basic_json_value<Alloc, CharT, Traits, CharAlloc>::iterator_base : public IteratorTraits
+	class basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator_base : public IteratorTraits
 	{
 	private:
 		typedef IteratorTraits traits;
@@ -1015,12 +503,12 @@ namespace neolib
 		value_pointer iValue;
 	};
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	class basic_json_value<Alloc, CharT, Traits, CharAlloc>::iterator : iterator_base<typename json_detail::iterator_traits<Alloc, CharT, Traits, CharAlloc>::iterator>
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	class basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator : iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator>
 	{
-		friend class basic_json_value<Alloc, CharT, Traits, CharAlloc>;
+		friend class basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>;
 	private:
-		typedef iterator_base<typename json_detail::iterator_traits<Alloc, CharT, Traits, CharAlloc>::iterator> base_type;
+		typedef iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator> base_type;
 	public:
 		using typename base_type::iterator_category;
 		using typename base_type::value_type;
@@ -1073,12 +561,12 @@ namespace neolib
 		using base_type::value;
 	};
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	class basic_json_value<Alloc, CharT, Traits, CharAlloc>::const_iterator : iterator_base<typename json_detail::iterator_traits<Alloc, CharT, Traits, CharAlloc>::const_iterator>
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	class basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator : iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator>
 	{
-		friend class basic_json_value<Alloc, CharT, Traits, CharAlloc>;
+		friend class basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>;
 	private:
-		typedef iterator_base<typename json_detail::iterator_traits<Alloc, CharT, Traits, CharAlloc>::const_iterator> base_type;
+		typedef iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator> base_type;
 	public:
 		using typename base_type::iterator_category;
 		using typename base_type::value_type;
@@ -1134,9 +622,9 @@ namespace neolib
 		using base_type::value;
 	};
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename IteratorTraits>
-	class basic_json<Alloc, CharT, Traits, CharAlloc>::iterator_base : public IteratorTraits
+	class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator_base : public IteratorTraits
 	{
 	private:
 		typedef IteratorTraits traits;
@@ -1214,12 +702,12 @@ namespace neolib
 		value_pointer iValue;
 	};
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	class basic_json<Alloc, CharT, Traits, CharAlloc>::iterator : public iterator_base<typename json_detail::iterator_traits<Alloc, CharT, Traits, CharAlloc>::iterator>
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator : public iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator>
 	{
-		friend class basic_json<Alloc, CharT, Traits, CharAlloc>;
+		friend class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>;
 	private:
-		typedef iterator_base<typename json_detail::iterator_traits<Alloc, CharT, Traits, CharAlloc>::iterator> base_type;
+		typedef iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator> base_type;
 	public:
 		using typename base_type::iterator_category;
 		using typename base_type::value_type;
@@ -1272,12 +760,12 @@ namespace neolib
 		using base_type::value;
 	};
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	class basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator : public iterator_base<typename json_detail::iterator_traits<Alloc, CharT, Traits, CharAlloc>::const_iterator>
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator : public iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator>
 	{
-		friend class basic_json<Alloc, CharT, Traits, CharAlloc>;
+		friend class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>;
 	private:
-		typedef iterator_base<typename json_detail::iterator_traits<Alloc, CharT, Traits, CharAlloc>::const_iterator> base_type;
+		typedef iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator> base_type;
 	public:
 		using typename base_type::iterator_category;
 		using typename base_type::value_type;
@@ -1333,35 +821,35 @@ namespace neolib
 		using base_type::value;
 	};
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline basic_json<Alloc, CharT, Traits, CharAlloc>::basic_json() : iEncoding{ json_detail::default_encoding<CharT>::DEFAULT_ENCODING }
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::basic_json() : iEncoding{ json_detail::default_encoding<CharT>::DEFAULT_ENCODING }
 	{
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline basic_json<Alloc, CharT, Traits, CharAlloc>::basic_json(const std::string& aPath, bool aValidateUtf) : iEncoding{ json_detail::default_encoding<CharT>::DEFAULT_ENCODING }
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::basic_json(const std::string& aPath, bool aValidateUtf) : iEncoding{ json_detail::default_encoding<CharT>::DEFAULT_ENCODING }
 	{
 		if (!read(aPath, aValidateUtf))
 			throw json_error(error_text());
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename Elem, typename ElemTraits>
-	inline basic_json<Alloc, CharT, Traits, CharAlloc>::basic_json(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf) : iEncoding{ json_detail::default_encoding<CharT>::DEFAULT_ENCODING }
+	inline basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::basic_json(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf) : iEncoding{ json_detail::default_encoding<CharT>::DEFAULT_ENCODING }
 	{
 		if (!read(aInput, aValidateUtf))
 			throw json_error(error_text());
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::clear()
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline void basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::clear()
 	{
 		document().clear();
 		iUtf16HighSurrogate = std::nullopt;
 	}
 		
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::read(const std::string& aPath, bool aValidateUtf)
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline bool basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::read(const std::string& aPath, bool aValidateUtf)
 	{
 		std::ifstream input{ aPath, std::ios::binary };
 		if (!input)
@@ -1377,9 +865,9 @@ namespace neolib
 		return ok;
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename Elem, typename ElemTraits>
-	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf)
+	inline bool basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf)
 	{
 		if (!aInput)
 		{
@@ -1394,9 +882,9 @@ namespace neolib
 		return ok;
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename Elem, typename ElemTraits>
-	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::do_read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf)
+	inline bool basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::do_read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf)
 	{
 		clear();
 
@@ -1454,8 +942,8 @@ namespace neolib
 		return true;
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::do_parse()
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline bool basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::do_parse()
 	{
 		json_detail::state currentState = json_detail::state::Value;
 		json_detail::state nextState;
@@ -1624,9 +1112,16 @@ namespace neolib
 							currentElement.type = element::Name;
 							currentElement.start = (nextOutputCh = nextInputCh + 1);
 							break;
-						case json_detail::state::NumberInt:
+						case json_detail::state::NumberIntNeedDigit:
 							currentElement.type = element::Number;
 							currentElement.start = nextInputCh;
+							break;
+						case json_detail::state::NumberInt:
+							if (currentElement.type != element::Number)
+							{
+								currentElement.type = element::Number;
+								currentElement.start = nextInputCh;
+							}
 							break;
 						case json_detail::state::Array:
 							{
@@ -1788,16 +1283,16 @@ namespace neolib
 		return true;
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::write(const std::string& aPath, const string_type& aIndent)
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline bool basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::write(const std::string& aPath, const string_type& aIndent)
 	{
 		std::ofstream output{ aPath, std::ofstream::out | std::ofstream::trunc };
 		return write(output, aIndent);
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename Elem, typename ElemTraits>
-	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::write(std::basic_ostream<Elem, ElemTraits>& aOutput, const string_type& aIndent)
+	inline bool basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::write(std::basic_ostream<Elem, ElemTraits>& aOutput, const string_type& aIndent)
 	{
 		static const string_type trueString = "true";
 		static const string_type falseString = "false";
@@ -1934,47 +1429,47 @@ namespace neolib
 		return true;
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline json_encoding basic_json<Alloc, CharT, Traits, CharAlloc>::encoding() const
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline json_encoding basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::encoding() const
 	{
 		return iEncoding;
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline const typename basic_json<Alloc, CharT, Traits, CharAlloc>::json_string& basic_json<Alloc, CharT, Traits, CharAlloc>::document() const
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline const typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::json_string& basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::document() const
 	{
 		return iDocumentText;
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline const typename basic_json<Alloc, CharT, Traits, CharAlloc>::string_type& basic_json<Alloc, CharT, Traits, CharAlloc>::error_text() const
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline const typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::string_type& basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::error_text() const
 	{
 		return iErrorText;
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline bool basic_json<Alloc, CharT, Traits, CharAlloc>::has_root() const
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline bool basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::has_root() const
 	{
 		return iRoot != std::nullopt;
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline const typename basic_json<Alloc, CharT, Traits, CharAlloc>::json_value& basic_json<Alloc, CharT, Traits, CharAlloc>::root() const
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline const typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::json_value& basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::root() const
 	{
 		if (has_root())
 			return *iRoot;
 		throw no_root();
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::json_value& basic_json<Alloc, CharT, Traits, CharAlloc>::root()
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::json_value& basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::root()
 	{
 		return const_cast<json_value&>(const_cast<const self_type*>(this)->root());
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename Visitor>
-	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::visit(Visitor&& aVisitor) const
+	inline void basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::visit(Visitor&& aVisitor) const
 	{
 		if (has_root())
 			root().visit(std::forward<Visitor>(aVisitor));
@@ -1982,9 +1477,9 @@ namespace neolib
 			throw no_root();
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename Visitor>
-	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::visit(Visitor&& aVisitor)
+	inline void basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::visit(Visitor&& aVisitor)
 	{
 		if (has_root())
 			root().visit(std::forward<Visitor>(aVisitor));
@@ -1992,63 +1487,63 @@ namespace neolib
 			throw no_root();
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	typename basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator basic_json<Alloc, CharT, Traits, CharAlloc>::cbegin() const
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::cbegin() const
 	{
 		return begin();
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	typename basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator basic_json<Alloc, CharT, Traits, CharAlloc>::cend() const
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::cend() const
 	{
 		return end();
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	typename basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator basic_json<Alloc, CharT, Traits, CharAlloc>::begin() const
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::begin() const
 	{
 		if (iRoot != std::nullopt)
 			return const_iterator{ &*iRoot };
 		return const_iterator{};
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	typename basic_json<Alloc, CharT, Traits, CharAlloc>::const_iterator basic_json<Alloc, CharT, Traits, CharAlloc>::end() const
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::end() const
 	{
 		return const_iterator{};
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	typename basic_json<Alloc, CharT, Traits, CharAlloc>::iterator basic_json<Alloc, CharT, Traits, CharAlloc>::begin()
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::begin()
 	{
 		if (iRoot != std::nullopt)
 			return iterator{ &*iRoot };
 		return iterator{};
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	typename basic_json<Alloc, CharT, Traits, CharAlloc>::iterator basic_json<Alloc, CharT, Traits, CharAlloc>::end()
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::end()
 	{
 		return iterator{};
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::json_string& basic_json<Alloc, CharT, Traits, CharAlloc>::document()
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::json_string& basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::document()
 	{
 		return iDocumentText;
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline json_type basic_json<Alloc, CharT, Traits, CharAlloc>::context() const
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline json_type basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::context() const
 	{
 		if (!iCompositeValueStack.empty())
 			return iCompositeValueStack.back()->type();
 		return json_type::Unknown;
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	template <typename T>
-	inline typename basic_json<Alloc, CharT, Traits, CharAlloc>::json_value* basic_json<Alloc, CharT, Traits, CharAlloc>::buy_value(element& aCurrentElement, T&& aValue)
+	inline typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::json_value* basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::buy_value(element& aCurrentElement, T&& aValue)
 	{
 		switch (context())
 		{
@@ -2079,8 +1574,8 @@ namespace neolib
 		}
 	}
 
-	template <typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-	inline void basic_json<Alloc, CharT, Traits, CharAlloc>::create_parse_error(const character_type* aDocumentPos, const string_type& aExtraInfo)
+	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+	inline void basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::create_parse_error(const character_type* aDocumentPos, const string_type& aExtraInfo)
 	{
 		uint32_t line = 1;
 		uint32_t col = 1;
