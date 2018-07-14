@@ -65,6 +65,8 @@ namespace neolib
 		typedef const T& const_reference;
 		typedef std::size_t size_type;
 		typedef ptrdiff_t difference_type;
+	private:
+		typedef std::allocator<T> backup_allocator_t;
 
 	// implementation
 	private:
@@ -206,18 +208,20 @@ namespace neolib
 	public:
 		pointer allocate(size_type aCount = 1)
 		{
-			if (aCount != 1)
-				throw std::bad_alloc();
-			return reinterpret_cast<pointer>(sPool.allocate());
+			if (aCount == 1)
+				return reinterpret_cast<pointer>(sPool.allocate());
+			else
+				return backup_allocator().allocate(aCount);
 		}
 
 		void deallocate(pointer aObject, size_type aCount = 1)
 		{
 			if constexpr (!Omega)
 			{
-				if (aCount != 1)
-					throw std::logic_error("neolib::pool_allocator::deallocate");
-				sPool.deallocate(aObject);
+				if (aCount == 1)
+					sPool.deallocate(aObject);
+				else
+					backup_allocator().deallocate(aObject, aCount);
 			}
 		}
 
@@ -259,6 +263,13 @@ namespace neolib
 
 		bool operator==(const pool_allocator&) const { return true; }
 		bool operator!=(const pool_allocator&) const { return false; }
+
+	private:
+		static backup_allocator_t& backup_allocator()
+		{
+			static backup_allocator_t sBackupAllocator;
+			return sBackupAllocator;
+		}
 
 	// attributes
 	private:
