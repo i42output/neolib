@@ -218,6 +218,15 @@ int main(int argc, char** argv)
 			std::cerr << e.what() << std::endl;
 		}
 
+		std::cout << "------ code ------" << std::endl;
+		neolib::json json;
+		json.root() = neolib::json_object{};
+		json.root().as<neolib::json_object>()["answer"] = 42;
+//		for (auto& c : json.root())
+	//		;
+		json.write(std::cout);
+		std::cout << "------------------" << std::endl;
+
 		std::string inputBenchmark;
 		if (argc < 4)
 		{

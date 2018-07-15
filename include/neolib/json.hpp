@@ -318,6 +318,17 @@ namespace neolib
 		{
 		}
 	public:
+		json_value& operator[](const json_string& aKey)
+		{
+			auto iter = cache().find(aKey);
+			if (iter != cache().end())
+				return *iter->second;
+			auto& newChild = owner().emplace_back();
+			newChild.set_name(aKey.as_string());
+			cache().emplace(newChild.name(), &newChild);
+			return newChild;
+		}
+	private:
 		json_value& owner() const
 		{
 			return *iOwner;
@@ -332,7 +343,8 @@ namespace neolib
 			if (iLazyDictionary != nullptr)
 				return *iLazyDictionary;
 			iLazyDictionary = std::make_unique<dictionary_type>(); // todo: use allocator_type
-			// todo: populate dictionary using owner
+			for (auto i = owner().begin(); i != owner().end(); ++i)
+				iLazyDictionary->insert(i.value().name(), &i.value());
 			return *iLazyDictionary;
 		}
 		dictionary_type& cache()
@@ -663,6 +675,34 @@ namespace neolib
 				break;
 			}
 		}
+	public:
+		bool empty() const
+		{
+			return begin() == end();
+		}
+		std::size_t size() const
+		{
+			return std::distance(begin(), end()); // todo: this is O(n); have a size member instead for O(1)?
+		}
+		void clear()
+		{
+			iNode.~node_type();
+			new(&iNode) node_type();
+		}
+		template <typename... Args>
+		reference emplace_back(Args&&... aArguments)
+		{
+			return *buy_child(std::forward<Args>(aArguments)...);
+		}
+		template <typename T>
+		void push_back(T&& aValue)
+		{
+			buy_child(std::forward<T>(aValue));
+		}
+		void pop_back()
+		{
+			iNode.destruct_child(last_child());
+		}
 	private:
 		template <typename... Args>
 		pointer buy_child(Args&&... aArguments)
@@ -680,7 +720,6 @@ namespace neolib
 	{
 	public:
 		struct json_error : std::runtime_error { json_error(const std::string& aReason) : std::runtime_error(aReason) {} };
-		struct no_root : std::logic_error { no_root() : std::logic_error("neolib::basic_json::no_root") {} };
 	public:
 		static constexpr json_syntax syntax = Syntax;
 		typedef Alloc allocator_type;
@@ -777,7 +816,7 @@ namespace neolib
 		json_encoding iEncoding;
 		json_string iDocumentText;
 		string_type iErrorText;
-		optional_json_value iRoot;
+		mutable optional_json_value iRoot;
 		std::vector<json_value*> iCompositeValueStack;
 		std::optional<char16_t> iUtf16HighSurrogate;
 	};

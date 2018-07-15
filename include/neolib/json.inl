@@ -1556,9 +1556,8 @@ namespace neolib
 	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	inline const typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::json_value& basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::root() const
 	{
-		if (has_root())
-			return *iRoot;
-		throw no_root();
+		iRoot = json_value{};
+		return *iRoot;
 	}
 
 	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
@@ -1573,8 +1572,6 @@ namespace neolib
 	{
 		if (has_root())
 			root().visit(std::forward<Visitor>(aVisitor));
-		else
-			throw no_root();
 	}
 
 	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
@@ -1583,8 +1580,6 @@ namespace neolib
 	{
 		if (has_root())
 			root().visit(std::forward<Visitor>(aVisitor));
-		else
-			throw no_root();
 	}
 
 	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
@@ -1671,9 +1666,8 @@ namespace neolib
 				return newObject;
 			}
 		default:
-			iRoot = json_value{};
-			*iRoot = std::forward<T>(aValue);
-			return &*iRoot;
+			root() = std::forward<T>(aValue);
+			return &root();
 		}
 	}
 
