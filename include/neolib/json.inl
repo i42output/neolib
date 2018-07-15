@@ -439,12 +439,12 @@ namespace neolib
 			}
 		}
 
-		template <typename StringViewType>
 		struct hash_first_character
 		{
-			std::size_t operator()(const StringViewType& aString) const noexcept
+			template <typename String>
+			std::size_t operator()(const String& aString) const noexcept
 			{
-				return std::hash<typename StringViewType::value_type>{}(aString[0]);
+				return std::hash<typename String::value_type>{}(aString[0]);
 			}
 		};
 	}
@@ -1097,7 +1097,7 @@ namespace neolib
 						break;
 					case element::Keyword:
 						{
-							static const std::unordered_map<typename json_string::string_view_type, json_detail::keyword, json_detail::hash_first_character<typename json_string::string_view_type>> sJsonKeywords =
+							static const std::unordered_map<typename json_string::string_view_type, json_detail::keyword, json_detail::hash_first_character> sJsonKeywords =
 							{
 								{ "true", json_detail::keyword::True },
 								{ "false", json_detail::keyword::False },
