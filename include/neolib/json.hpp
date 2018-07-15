@@ -169,10 +169,6 @@ namespace neolib
 					destruct_child(iLastChild);
 			}
 		public:
-			json_value* buy_child(json_value& aParent)
-			{
-				return construct_child(allocate_child(), aParent);
-			}
 			json_value* buy_child(json_value& aParent, const value_type& aValue)
 			{
 				return construct_child(allocate_child(), aParent, aValue);
@@ -249,9 +245,9 @@ namespace neolib
 				allocator().deallocate(aAddress, 1);
 			}
 			template <typename... Args>
-			json_value* construct_child(json_value* aAddress, Args&&... aArguments)
+			json_value* construct_child(json_value* aAddress, json_value& aParent, Args&&... aArguments)
 			{
-				allocator().construct(aAddress, std::forward<Args>(aArguments)...);
+				allocator().construct(aAddress, aParent, std::forward<Args>(aArguments)...);
 				json_value& child = *aAddress;
 				if (iLastChild == nullptr)
 				{
@@ -325,7 +321,7 @@ namespace neolib
 			auto iter = cache().find(aKey);
 			if (iter != cache().end())
 				return *iter->second;
-			auto& newChild = owner().emplace_back();
+			auto& newChild = owner().emplace_back(value_type{});
 			newChild.set_name(aKey.as_string());
 			cache().emplace(newChild.name(), &newChild);
 			return newChild;
@@ -498,6 +494,9 @@ namespace neolib
 		{
 		}
 	public:
+		basic_json_value(const basic_json_value&) = delete;
+		basic_json_value(basic_json_value&&) = delete;
+	public:
 		template <typename T>
 		const T& as() const
 		{
@@ -519,11 +518,13 @@ namespace neolib
 		reference operator=(const value_type& aValue)
 		{
 			iValue = aValue;
+			update_owner();
 			return *this;
 		}
 		reference operator=(value_type&& aValue)
 		{
 			iValue = std::move(aValue);
+			update_owner();
 			return *this;
 		}
 	public:
@@ -712,6 +713,13 @@ namespace neolib
 		pointer buy_child(Args&&... aArguments)
 		{
 			return iNode.buy_child(*this, std::forward<Args>(aArguments)...);
+		}
+		void update_owner()
+		{
+			if (type() == json_type::Object)
+				std::get<json_object>(iValue).set_owner(*this);
+			else if (type() == json_type::Array)
+				std::get<json_array>(iValue).set_owner(*this);
 		}
 	private:
 		node_type iNode;

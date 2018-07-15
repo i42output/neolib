@@ -1580,7 +1580,8 @@ namespace neolib
 	template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 	inline const typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::json_value& basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::root() const
 	{
-		iRoot = json_value{};
+		if (iRoot == std::nullopt)
+			iRoot.emplace();
 		return *iRoot;
 	}
 
