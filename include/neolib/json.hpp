@@ -59,6 +59,7 @@ namespace neolib
 	enum class json_syntax
 	{
 		Standard,
+		StandardNoKeywords,
 		Relaxed
 	};
 
@@ -460,6 +461,8 @@ namespace neolib
 		typedef basic_json_null<self_type> json_null;
 		typedef basic_json_keyword<self_type> json_keyword;
 	public:
+		typedef neolib::variant<json_string, json_keyword> name_t;
+	public:
 		typedef std::optional<json_string> optional_json_string;
 	public:
 		typedef variant<json_object, json_array, json_double, json_int64, json_uint64, json_int, json_uint, json_string, json_bool, json_null, json_keyword> value_type;
@@ -526,13 +529,24 @@ namespace neolib
 		}
 		bool has_name() const
 		{
-			return iName != std::nullopt;
+			return iName != none;
+		}
+		bool name_is_keyword() const
+		{
+			return std::holds_alternative<json_keyword>(iName);
 		}
 		const json_string& name() const
 		{
-			return *iName;
+			if (!name_is_keyword())
+				return std::get<json_string>(iName);
+			else
+				return std::get<json_keyword>(iName).text;
 		}
 		void set_name(const json_string& aName)
+		{
+			iName = aName;
+		}
+		void set_name(const json_keyword& aName)
 		{
 			iName = aName;
 		}
@@ -657,7 +671,7 @@ namespace neolib
 		}
 	private:
 		node_type iNode;
-		std::optional<json_string> iName;
+		name_t iName;
 		value_type iValue;
 	};
 
@@ -716,7 +730,7 @@ namespace neolib
 			type_e auxType;
 			character_type* start;
 			character_type* auxStart;
-			std::optional<json_string> name;
+			typename json_value::name_t name;
 		};
 	public:
 		basic_json();

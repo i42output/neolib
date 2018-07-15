@@ -143,26 +143,32 @@ int main(int argc, char** argv)
 			std::cout << "---------------------------" << std::endl;
 		}
 
+		// TODO: Relaxed JSON comments
+
 		const std::string RJSON_test =
 		{
-			"// This is a sample RJSON file\n"
+			"{\n"
+//			"// This is a sample RJSON file\n"
 			"\n"
 			"buy: [milk eggs butter 'dog bones']\n"
 			"tasks : [{name:exercise completed : false} {name:eat completed : true}]\n"
 			"\n"
 			"'another key' : 'another value'\n"
 			"\n"
-			"/*  It is very easy\n"
-			"to read and write RJSON\n"
-			"without quotes or commas!\n"
-			"*/\n"
+	//		"/*  It is very easy\n"
+		//	"to read and write RJSON\n"
+			//"without quotes or commas!\n"
+			//"*/\n"
+			"}\n"
 		};
-		/* todo: RJSON
+		std::cout << "----RJSON-input---------------------" << std::endl;
+		std::cout << RJSON_test;
+		std::cout << "----RJSON-output---------------------" << std::endl;
 		std::istringstream rjsonStream(RJSON_test);
 		neolib::rjson rjson{ rjsonStream };
 		rjson.write(std::cout);
 		std::cout << std::endl; 
-		*/
+		std::cout << "----RJSON ends-----------------------" << std::endl;
 
 		std::string input;
 		if (argc < 2)

@@ -60,7 +60,7 @@ namespace neolib
 			Null
 		};
 
-		enum class token
+		enum class token : uint8_t
 		{
 			Invalid,
 			OpenObject,
@@ -264,12 +264,12 @@ namespace neolib
 			// state::Object
 			std::array<state, TOKEN_COUNT>
 			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
-				SXXX, SOBJ, SCLO, SXXX, SXXX, SXXX, SNOV, SNAM, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
+				SXXX, SOBJ, SCLO, SXXX, SXXX, SXXX, SNOV, SNAM, SKEY, SXXX, SKEY, SKEY, SXXX, SXXX, SXXX, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
 			}},
 			// state::Array
 			std::array<state, TOKEN_COUNT>
 			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
-				SXXX, SOBJ, SXXX, SARR, SCLO, SXXX, SXXX, SSTR, SKEY, SXXX, SXXX, SXXX, SXXX, SNU1, SNU2, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
+				SXXX, SOBJ, SXXX, SARR, SCLO, SXXX, SXXX, SSTR, SKEY, SXXX, SKEY, SKEY, SXXX, SNU1, SNU2, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
 			}},
 			// state::Close
 			std::array<state, TOKEN_COUNT>
@@ -279,7 +279,7 @@ namespace neolib
 			// state::Value
 			std::array<state, TOKEN_COUNT>
 			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
-				SXXX, SOBJ, SCLO, SARR, SCLO, SXXX, SXXX, SSTR, SKEY, SXXX, SXXX, SKEY, SXXX, SNU1, SNU2, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SZZZ
+				SXXX, SOBJ, SCLO, SARR, SCLO, SXXX, SXXX, SSTR, SKEY, SXXX, SKEY, SKEY, SXXX, SNU1, SNU2, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SZZZ
 			}},
 			// state::NeedValueSeparator
 			std::array<state, TOKEN_COUNT>
@@ -289,7 +289,7 @@ namespace neolib
 			// state::NeedValue
 			std::array<state, TOKEN_COUNT>
 			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
-				SXXX, SOBJ, SXXX, SARR, SXXX, SXXX, SXXX, SSTR, SKEY, SXXX, SXXX, SKEY, SXXX, SNU1, SNU2, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
+				SXXX, SOBJ, SXXX, SARR, SXXX, SXXX, SXXX, SSTR, SKEY, SXXX, SKEY, SKEY, SXXX, SNU1, SNU2, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
 			}},
 			// state::NeedObjectValueSeparator
 			std::array<state, TOKEN_COUNT>
@@ -299,7 +299,7 @@ namespace neolib
 			// state::NeedObjectValue
 			std::array<state, TOKEN_COUNT>
 			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
-				SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SNAM, SKEY, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
+				SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SNAM, SKEY, SXXX, SKEY, SKEY, SXXX, SXXX, SXXX, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
 			}},
 			// state::Keyword
 			std::array<state, TOKEN_COUNT>
@@ -324,7 +324,7 @@ namespace neolib
 			// state::StringEnd
 			std::array<state, TOKEN_COUNT>
 			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
-				SXXX, SXXX, SCLO, SXXX, SCLO, SXXX, SELE, SXXX, SKEY, SXXX, SXXX, SXXX, SXXX, SXXX, SKEY, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SELE, SELE, SXXX
+				SXXX, SXXX, SCLO, SXXX, SCLO, SXXX, SELE, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SELE, SELE, SXXX
 			}},
 			// state::NumberIntNeedDigit
 			std::array<state, TOKEN_COUNT>
@@ -378,7 +378,7 @@ namespace neolib
 			}}
 		};
 
-		constexpr std::array<token, 256> sTokenTable =
+		constexpr std::array<token, 256> sStandardTokenTable =
 		{ 
 			{//	0x0   0x1   0x2   0x3   0x4   0x5   0x6   0x7   0x8   0x9   0xA   0xB   0xC   0xD   0xE   0xF
 			    TZZZ, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TWSP, TWSP, TXXX, TXXX, TWSP, TXXX, TXXX, // 0x0
@@ -400,11 +400,43 @@ namespace neolib
 			},
 		};
 
+		constexpr std::array<token, 256> sRelaxedTokenTable =
+		{
+			{//	0x0   0x1   0x2   0x3   0x4   0x5   0x6   0x7   0x8   0x9   0xA   0xB   0xC   0xD   0xE   0xF
+				TZZZ, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TWSP, TWSP, TXXX, TXXX, TWSP, TXXX, TXXX, // 0x0
+				TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, // 0x1
+				TSPA, TSYM, TQOT, TSYM, TCHA, TSYM, TSYM, TQOT, TSYM, TSYM, TAST, TPLU, TCOM, TMIN, TDEC, TFWD, // 0x2
+				TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TCOL, TSYM, TSYM, TSYM, TSYM, TSYM, // 0x3
+				TSYM, THEX, THEX, THEX, THEX, TEXP, THEX, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0x4
+				TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TARR, TESC, TCLA, TSYM, TSYM, // 0x5
+				TQOT, THEX, TEHX, THEX, THEX, TEXP, TEHX, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TECH, TCHA, // 0x6
+				TCHA, TCHA, TECH, TCHA, TECH, TESU, TCHA, TCHA, TCHA, TCHA, TCHA, TOBJ, TSYM, TCLO, TSYM, TSYM, // 0x7
+				TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0x8
+				TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0x9
+				TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xA
+				TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xB
+				TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xC
+				TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xD
+				TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xE
+				TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xF
+			},
+		};
+
+		template <typename json_syntax Syntax>
 		inline state next_state(state aCurrentState, char aToken)
 		{
-			auto stateIndex = static_cast<std::size_t>(aCurrentState);
-			auto token = sTokenTable[static_cast<std::size_t>(aToken)];
-			return sStateTables[stateIndex][static_cast<std::size_t>(token)];
+			if constexpr (Syntax == json_syntax::Standard)
+			{
+				auto stateIndex = static_cast<std::size_t>(aCurrentState);
+				auto token = sStandardTokenTable[static_cast<std::size_t>(aToken)];
+				return sStateTables[stateIndex][static_cast<std::size_t>(token)];
+			}
+			else
+			{
+				auto stateIndex = static_cast<std::size_t>(aCurrentState);
+				auto token = sRelaxedTokenTable[static_cast<std::size_t>(aToken)];
+				return sStateTables[stateIndex][static_cast<std::size_t>(token)];
+			}
 		}
 
 		template <typename StringViewType>
@@ -929,7 +961,7 @@ namespace neolib
 			return false;
 		}
 
-		if (json_detail::next_state(json_detail::state::Value, document().back()) != json_detail::state::Ignore)
+		if (json_detail::next_state<syntax>(json_detail::state::Value, document().back()) != json_detail::state::Ignore)
 			document().push_back(character_type{ '\n' });
 		document().push_back(character_type{ '\0' });
 
@@ -963,11 +995,12 @@ namespace neolib
 #endif
 			try
 			{
-				nextState = json_detail::next_state(currentState, *nextInputCh);
+				nextState = json_detail::next_state<syntax>(currentState, *nextInputCh);
 				switch (nextState)
 				{
 				case json_detail::state::Ignore:
-					break;
+					++nextInputCh;
+					continue;
 				case json_detail::state::Error:
 					create_parse_error(nextInputCh);
 					return false;
@@ -979,298 +1012,357 @@ namespace neolib
 					}
 					return true;
 				default:
+					if (currentState == nextState)
 					{
-						if (currentState == nextState)
+						switch (currentState)
 						{
-							switch (currentState)
-							{
-							case json_detail::state::String:
-							case json_detail::state::Keyword:
-							case json_detail::state::Name:
-								if (currentElement.start != nextOutputCh)
-									*nextOutputCh++ = *nextInputCh;
-								// fall through
-							default:
-								++nextInputCh;
-								continue;
-							case json_detail::state::Object:
-							case json_detail::state::Array:
-								break;
-							}
+						case json_detail::state::String:
+						case json_detail::state::Keyword:
+						case json_detail::state::Name:
+							if (currentElement.start != nextOutputCh)
+								*nextOutputCh++ = *nextInputCh;
+							// fall through
+						default:
+							++nextInputCh;
+							continue;
+						case json_detail::state::Object:
+						case json_detail::state::Array:
+							break;
 						}
+					}
+				}
 #ifdef DEBUG_JSON
-						bool changedState = false;
-						std::cout << "(" << to_string(currentState) << " -> " << to_string(nextState) << ")";
+				bool changedState = false;
+				std::cout << "(" << to_string(currentState) << " -> " << to_string(nextState) << ")";
 #endif
 
-						switch (nextState)
+				switch (nextState)
+				{
+				case json_detail::state::Close:
+				case json_detail::state::Element:
+					switch (currentElement.type)
+					{
+					case element::Unknown:
+						break;
+					case element::String:
 						{
-						case json_detail::state::Close:
-						case json_detail::state::Element:
-							switch (currentElement.type)
+							json_string newString{ currentElement.start, currentElement.start == nextOutputCh ? nextInputCh - 1 : nextOutputCh };
+							buy_value(currentElement, newString);
+						}
+						break;
+					case element::Name:
+						if (context() == json_type::Object && currentElement.name == none)
+						{
+							json_string newString{ currentElement.start, currentElement.start == nextOutputCh ? nextInputCh - 1 : nextOutputCh };
+							currentElement.name = newString;
+						}
+						break;
+					case element::Number:
+						{
+							json_string newNumber{ currentElement.start, currentElement.start == nextOutputCh ? nextInputCh : nextOutputCh };
+							if (currentState == json_detail::state::NumberInt)
 							{
-							case element::Unknown:
-								break;
-							case element::String:
-							case element::Name:
+								std::visit([this, &currentElement](auto&& arg)
 								{
-									json_string newString{ currentElement.start, currentElement.start == nextOutputCh ? nextInputCh - 1 : nextOutputCh };
-									if (context() == json_type::Object && currentElement.name == std::nullopt)
-										currentElement.name = newString;
-									else
-										buy_value(currentElement, newString);
-								}
-								break;
-							case element::Number:
-								{
-									json_string newNumber{ currentElement.start, currentElement.start == nextOutputCh ? nextInputCh : nextOutputCh };
-									if (currentState == json_detail::state::NumberInt)
-									{
-										std::visit([this, &currentElement](auto&& arg)
-										{ 
-											buy_value(currentElement, std::forward<decltype(arg)>(arg));
-										}, string_to_number(newNumber.as_view()));
-									}
-									else
-										buy_value(currentElement, neolib::string_to_double(newNumber.as_view()));
-								}
-								break;
-							case element::Keyword:
-								{
-									static const std::unordered_map<typename json_string::string_view_type, json_detail::keyword, json_detail::hash_first_character<typename json_string::string_view_type>> sJsonKeywords =
-									{
-										{ "true", json_detail::keyword::True },
-										{ "false", json_detail::keyword::False },
-										{ "null",  json_detail::keyword::Null },
-									};
-									auto keywordText = json_string{ currentElement.start, currentElement.start == nextOutputCh ? nextInputCh : nextOutputCh };
-									auto keyword = sJsonKeywords.find(keywordText);
-									if (keyword != sJsonKeywords.end())
-									{
-										switch (keyword->second)
-										{
-										case json_detail::keyword::True:
-											buy_value(currentElement, json_bool{ true });
-											break;
-										case json_detail::keyword::False:
-											buy_value(currentElement, json_bool{ false });
-											break;
-										case json_detail::keyword::Null:
-											buy_value(currentElement, json_null{});
-											break;
-										}
-									}
-									else
-										buy_value(currentElement, json_keyword{ keywordText }); // todo: make custom keywords optional and raise parser error if not enabled
-								}
-								break;
+									buy_value(currentElement, std::forward<decltype(arg)>(arg));
+								}, string_to_number(newNumber.as_view()));
 							}
-							if (nextState == json_detail::state::Close)
-								iCompositeValueStack.pop_back();
-							switch (context())
+							else
+								buy_value(currentElement, neolib::string_to_double(newNumber.as_view()));
+						}
+						break;
+					case element::Keyword:
+						{
+							static const std::unordered_map<typename json_string::string_view_type, json_detail::keyword, json_detail::hash_first_character<typename json_string::string_view_type>> sJsonKeywords =
 							{
-							case json_type::Object:
-								if (currentElement.type == element::Name)
-									nextState = json_detail::state::NeedValue;
-								else if (nextState == json_detail::state::Close)
+								{ "true", json_detail::keyword::True },
+								{ "false", json_detail::keyword::False },
+								{ "null",  json_detail::keyword::Null },
+							};
+							auto keywordText = json_string{ currentElement.start, currentElement.start == nextOutputCh ? nextInputCh : nextOutputCh };
+							auto keyword = sJsonKeywords.find(keywordText);
+							if (keyword != sJsonKeywords.end())
+							{
+								if (context() == json_type::Object && currentElement.name == none)
+								{
+									create_parse_error(nextInputCh, "bad object field name");
+									return false;
+								}
+								switch (keyword->second)
+								{
+								case json_detail::keyword::True:
+									buy_value(currentElement, json_bool{ true });
+									break;
+								case json_detail::keyword::False:
+									buy_value(currentElement, json_bool{ false });
+									break;
+								case json_detail::keyword::Null:
+									buy_value(currentElement, json_null{});
+									break;
+								}
+							}
+							else
+							{
+								if constexpr (syntax == json_syntax::StandardNoKeywords)
+								{
+									create_parse_error(nextInputCh, "keywords unavailable");
+									return false;
+								}
+								if (context() == json_type::Object && currentElement.name == none)
+								{
+									currentElement.name = json_keyword{ keywordText };
+									currentElement.type = element::Name;
+								}
+								else
+									buy_value(currentElement, json_keyword{ keywordText });
+							}
+						}
+						break;
+					}
+					if (nextState == json_detail::state::Close)
+						iCompositeValueStack.pop_back();
+					switch (context())
+					{
+					case json_type::Object:
+						if constexpr (syntax == json_syntax::Standard)
+						{
+							if (currentElement.name == none)
+							{
+								if (nextState == json_detail::state::Close)
 									nextState = json_detail::state::NeedObjectValueSeparator;
 								else if (*nextInputCh == ',')
 									nextState = json_detail::state::NeedObjectValue;
 								else
 									nextState = json_detail::state::NeedObjectValueSeparator;
-#ifdef DEBUG_JSON
-								changedState = true;
-#endif
-								break;
-							case json_type::Array:
-								if (*nextInputCh == ',')
-									nextState = json_detail::state::NeedValue;
-								else
-									nextState = json_detail::state::NeedValueSeparator;
-#ifdef DEBUG_JSON
-								changedState = true;
-#endif
-								break;
-							default:
-								if (nextState == json_detail::state::Close)
-								{
-									nextState = json_detail::state::Value;
-#ifdef DEBUG_JSON
-									changedState = true;
-#endif
-								}
-								break;
 							}
-							currentElement.type = element::Unknown;
-							currentElement.start = nullptr;
-							break;
-						case json_detail::state::String:
-							currentElement.type = element::String;
-							currentElement.start = (nextOutputCh = nextInputCh + 1);
-							break;
-						case json_detail::state::Name:
-							currentElement.type = element::Name;
-							currentElement.start = (nextOutputCh = nextInputCh + 1);
-							break;
-						case json_detail::state::NumberIntNeedDigit:
-							currentElement.type = element::Number;
-							currentElement.start = nextInputCh;
-							break;
-						case json_detail::state::NumberInt:
-							if (currentElement.type != element::Number)
-							{
-								currentElement.type = element::Number;
-								currentElement.start = nextInputCh;
-							}
-							break;
-						case json_detail::state::Array:
-							{
-								json_value* newArray = buy_value(currentElement, json_array{});
-								iCompositeValueStack.push_back(newArray);
-								nextState = json_detail::state::Value;
-#ifdef DEBUG_JSON
-								changedState = true;
-#endif
-							}
-						break;
-							case json_detail::state::Object:
-							{
-								json_value* newObject = buy_value(currentElement, json_object{});
-								iCompositeValueStack.push_back(newObject);
-#ifdef DEBUG_JSON
-								changedState = true;
-#endif
-							}
-						break;
-						case json_detail::state::Keyword:
-							currentElement.type = element::Keyword;
-							currentElement.start = (nextOutputCh = nextInputCh);
-							break;
-						case json_detail::state::Escaped:
-							{
-								if (nextOutputCh == currentElement.start)
-									nextOutputCh = (currentState != json_detail::state::EscapingUnicode ? nextInputCh - 1 : nextInputCh - 2);
-								if (currentState == json_detail::state::Escaping)
-								{
-									switch (*(nextInputCh))
-									{
-									case '\"':
-										(*nextOutputCh++) = '\"';
-										break;
-									case '\\':
-										(*nextOutputCh++) = '\\';
-										break;
-									case '/':
-										(*nextOutputCh++) = '/';
-										break;
-									case 'b':
-										(*nextOutputCh++) = '\b';
-										break;
-									case 'f':
-										(*nextOutputCh++) = '\f';
-										break;
-									case 'n':
-										(*nextOutputCh++) = '\n';
-										break;
-									case 'r':
-										(*nextOutputCh++) = '\r';
-										break;
-									case 't':
-										(*nextOutputCh++) = '\t';
-										break;
-									}
-									nextState = json_detail::state::String;
-#ifdef DEBUG_JSON
-									changedState = true;
-#endif
-								}
-								else if (currentState == json_detail::state::EscapingUnicode)
-								{
-									// todo throw an error if there are invalid surrogate pairs
-									if (currentElement.auxType != element::EscapedUnicode)
-									{
-										currentElement.auxType = element::EscapedUnicode;
-										currentElement.auxStart = nextInputCh;
-									}
-									if (nextInputCh + 1 - currentElement.auxStart == 4)
-									{
-										string_type s{ currentElement.auxStart, nextInputCh + 1 };
-										char16_t u16ch = static_cast<char16_t>(std::stoul(s, nullptr, 16));
-										if (utf16::is_high_surrogate(u16ch))
-										{
-											iUtf16HighSurrogate = u16ch;
-											currentElement.auxType = element::Unknown;
-											currentElement.type = element::String;
-											nextState = json_detail::state::String;
-											break;
-										}
-										else if (utf16::is_low_surrogate(u16ch) && iUtf16HighSurrogate != std::nullopt)
-										{
-											switch (encoding())
-											{
-											case json_encoding::Utf8:
-												{
-													char16_t surrogatePair[] = { *iUtf16HighSurrogate, u16ch };
-													auto utf8 = utf16_to_utf8(std::u16string(&surrogatePair[0], 2));
-													nextOutputCh = std::copy(utf8.begin(), utf8.end(), nextOutputCh);
-												}
-												break;
-											case json_encoding::Utf16LE:
-											case json_encoding::Utf16BE:
-												(*nextOutputCh++) = static_cast<character_type>(*iUtf16HighSurrogate);
-												(*nextOutputCh++) = static_cast<character_type>(u16ch);
-												break;
-											case json_encoding::Utf32LE:
-											case json_encoding::Utf32BE:
-												{
-													char16_t surrogatePair[] = { *iUtf16HighSurrogate, u16ch };
-													(*nextOutputCh++) = static_cast<character_type>(utf8_to_utf32(utf16_to_utf8(std::u16string{ &surrogatePair[0], 2 }))[0]);
-												}
-												break;
-											}
-											iUtf16HighSurrogate = std::nullopt;
-										}
-										else
-										{
-											switch (encoding())
-											{
-												case json_encoding::Utf8:
-												{
-													auto utf8 = utf16_to_utf8(std::u16string(1, u16ch));
-													nextOutputCh = std::copy(utf8.begin(), utf8.end(), nextOutputCh);
-												}
-												break;
-											case json_encoding::Utf16LE:
-											case json_encoding::Utf16BE:
-												*(nextOutputCh++) = static_cast<character_type>(u16ch);
-												break;
-											case json_encoding::Utf32LE:
-											case json_encoding::Utf32BE:
-												*(nextOutputCh++) = static_cast<character_type>(u16ch);
-												break;
-											}
-										}
-										currentElement.auxType = element::Unknown;
-										nextState = json_detail::state::String;
-									}
-									else
-									{
-										nextState = json_detail::state::EscapingUnicode;
-									}
-#ifdef DEBUG_JSON
-									changedState = true;
-#endif
-								}
-							}
-							break;
+							else
+								nextState = json_detail::state::NeedValue;
+						}
+						else
+						{
+							if (currentElement.name == none)
+								nextState = json_detail::state::Object;
+							else
+								nextState = *nextInputCh != ':' ? json_detail::state::EndName : json_detail::state::NeedValue;
 						}
 #ifdef DEBUG_JSON
-						if (changedState)
-							std::cout << "(" << to_string(nextState) << ")";
+						changedState = true;
 #endif
-						currentState = nextState;
+						break;
+					case json_type::Array:
+						if constexpr (syntax == json_syntax::Standard)
+						{
+							if (*nextInputCh == ',')
+								nextState = json_detail::state::NeedValue;
+							else
+								nextState = json_detail::state::NeedValueSeparator;
+						}
+						else
+							nextState = json_detail::state::Value;
+#ifdef DEBUG_JSON
+						changedState = true;
+#endif
+						break;
+					default:
+						if (nextState == json_detail::state::Close)
+						{
+							nextState = json_detail::state::Value;
+#ifdef DEBUG_JSON
+							changedState = true;
+#endif
+						}
+						break;
 					}
+					currentElement.type = element::Unknown;
+					currentElement.start = nullptr;
+					break;
+				case json_detail::state::String:
+					currentElement.type = element::String;
+					currentElement.start = (nextOutputCh = nextInputCh + 1);
+					break;
+				case json_detail::state::Name:
+					currentElement.type = element::Name;
+					currentElement.start = (nextOutputCh = nextInputCh + 1);
+					break;
+				case json_detail::state::EndName:
+					if (currentElement.name == none)
+					{
+						json_string newName
+						{
+							currentElement.start,
+							currentElement.start == nextOutputCh ? nextInputCh : nextOutputCh
+						};
+						currentElement.name = newName;
+					}
+					break;
+				case json_detail::state::NumberIntNeedDigit:
+					currentElement.type = element::Number;
+					currentElement.start = nextInputCh;
+					break;
+				case json_detail::state::NumberInt:
+					if (currentElement.type != element::Number)
+					{
+						currentElement.type = element::Number;
+						currentElement.start = nextInputCh;
+					}
+					break;
+				case json_detail::state::Array:
+					{
+						json_value* newArray = buy_value(currentElement, json_array{});
+						iCompositeValueStack.push_back(newArray);
+						nextState = json_detail::state::Value;
+#ifdef DEBUG_JSON
+						changedState = true;
+#endif
+					}
+					break;
+				case json_detail::state::Object:
+					{
+						json_value* newObject = buy_value(currentElement, json_object{});
+						iCompositeValueStack.push_back(newObject);
+#ifdef DEBUG_JSON
+						changedState = true;
+#endif
+					}
+					break;
+				case json_detail::state::Keyword:
+					currentElement.type = element::Keyword;
+					currentElement.start = (nextOutputCh = nextInputCh);
+					break;
+				case json_detail::state::StringEnd:
+					if constexpr (syntax == json_syntax::Relaxed)
+					{
+						// relaxed: support for three different quote characters
+						if (*nextInputCh != *(currentElement.start - 1))
+						{
+							nextState = json_detail::state::String;
+#ifdef DEBUG_JSON
+							changedState = true;
+#endif
+						}
+					}
+					break;
+				case json_detail::state::Escaped:
+					if (nextOutputCh == currentElement.start)
+						nextOutputCh = (currentState != json_detail::state::EscapingUnicode ? nextInputCh - 1 : nextInputCh - 2);
+					if (currentState == json_detail::state::Escaping)
+					{
+						switch (*(nextInputCh))
+						{
+						case '\"':
+							(*nextOutputCh++) = '\"';
+							break;
+						case '\\':
+							(*nextOutputCh++) = '\\';
+							break;
+						case '/':
+							(*nextOutputCh++) = '/';
+							break;
+						case 'b':
+							(*nextOutputCh++) = '\b';
+							break;
+						case 'f':
+							(*nextOutputCh++) = '\f';
+							break;
+						case 'n':
+							(*nextOutputCh++) = '\n';
+							break;
+						case 'r':
+							(*nextOutputCh++) = '\r';
+							break;
+						case 't':
+							(*nextOutputCh++) = '\t';
+							break;
+						}
+						nextState = json_detail::state::String;
+#ifdef DEBUG_JSON
+						changedState = true;
+#endif
+					}
+					else if (currentState == json_detail::state::EscapingUnicode)
+					{
+						// todo throw an error if there are invalid surrogate pairs
+						if (currentElement.auxType != element::EscapedUnicode)
+						{
+							currentElement.auxType = element::EscapedUnicode;
+							currentElement.auxStart = nextInputCh;
+						}
+						if (nextInputCh + 1 - currentElement.auxStart == 4)
+						{
+							string_type s{ currentElement.auxStart, nextInputCh + 1 };
+							char16_t u16ch = static_cast<char16_t>(std::stoul(s, nullptr, 16));
+							if (utf16::is_high_surrogate(u16ch))
+							{
+								iUtf16HighSurrogate = u16ch;
+								currentElement.auxType = element::Unknown;
+								currentElement.type = element::String;
+								nextState = json_detail::state::String;
+								break;
+							}
+							else if (utf16::is_low_surrogate(u16ch) && iUtf16HighSurrogate != std::nullopt)
+							{
+								switch (encoding())
+								{
+								case json_encoding::Utf8:
+								{
+									char16_t surrogatePair[] = { *iUtf16HighSurrogate, u16ch };
+									auto utf8 = utf16_to_utf8(std::u16string(&surrogatePair[0], 2));
+									nextOutputCh = std::copy(utf8.begin(), utf8.end(), nextOutputCh);
+								}
+								break;
+								case json_encoding::Utf16LE:
+								case json_encoding::Utf16BE:
+									(*nextOutputCh++) = static_cast<character_type>(*iUtf16HighSurrogate);
+									(*nextOutputCh++) = static_cast<character_type>(u16ch);
+									break;
+								case json_encoding::Utf32LE:
+								case json_encoding::Utf32BE:
+								{
+									char16_t surrogatePair[] = { *iUtf16HighSurrogate, u16ch };
+									(*nextOutputCh++) = static_cast<character_type>(utf8_to_utf32(utf16_to_utf8(std::u16string{ &surrogatePair[0], 2 }))[0]);
+								}
+								break;
+								}
+								iUtf16HighSurrogate = std::nullopt;
+							}
+							else
+							{
+								switch (encoding())
+								{
+								case json_encoding::Utf8:
+								{
+									auto utf8 = utf16_to_utf8(std::u16string(1, u16ch));
+									nextOutputCh = std::copy(utf8.begin(), utf8.end(), nextOutputCh);
+								}
+								break;
+								case json_encoding::Utf16LE:
+								case json_encoding::Utf16BE:
+									*(nextOutputCh++) = static_cast<character_type>(u16ch);
+									break;
+								case json_encoding::Utf32LE:
+								case json_encoding::Utf32BE:
+									*(nextOutputCh++) = static_cast<character_type>(u16ch);
+									break;
+								}
+							}
+							currentElement.auxType = element::Unknown;
+							nextState = json_detail::state::String;
+						}
+						else
+						{
+							nextState = json_detail::state::EscapingUnicode;
+						}
+#ifdef DEBUG_JSON
+						changedState = true;
+#endif
+					}
+					break;
 				}
+#ifdef DEBUG_JSON
+				if (changedState)
+					std::cout << "(" << to_string(nextState) << ")";
+#endif
+				currentState = nextState;
 			}
 			catch (std::exception& e)
 			{
@@ -1308,7 +1400,12 @@ namespace neolib
 		{
 			indent();
 			if (i.value().has_name())
-				aOutput << '\"' << i.value().name() << "\": ";
+			{
+				if (!i.value().name_is_keyword())
+					aOutput << '\"' << i.value().name() << "\": ";
+				else
+					aOutput << i.value().name() << ": ";
+			}
 			switch (i.value().type())
 			{
 			case json_type::Object:
@@ -1388,6 +1485,9 @@ namespace neolib
 				break;
 			case json_type::Null:
 				aOutput << nullString;
+				break;
+			case json_type::Keyword:
+				aOutput << static_variant_cast<json_keyword>(*i).text;
 				break;
 			}
 			
@@ -1563,8 +1663,11 @@ namespace neolib
 					newObject->template as<json_array>().set_owner(*newObject);
 				else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_object>)
 					newObject->template as<json_object>().set_owner(*newObject);
-				newObject->set_name(*aCurrentElement.name);
-				aCurrentElement.name = std::nullopt;
+				if (std::holds_alternative<json_string>(aCurrentElement.name))
+					newObject->set_name(std::get<json_string>(aCurrentElement.name));
+				else
+					newObject->set_name(std::get<json_keyword>(aCurrentElement.name));
+				aCurrentElement.name = none;
 				return newObject;
 			}
 		default:
