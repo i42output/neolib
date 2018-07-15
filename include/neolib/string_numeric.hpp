@@ -37,7 +37,7 @@
 
 #include "neolib.hpp"
 #include <string>
-#include <boost/utility/string_view.hpp>
+#include <string_view>
 #include <boost/spirit/include/qi_parse.hpp>
 #include <boost/spirit/include/qi_numeric.hpp>
 #include <neolib/variant.hpp>
