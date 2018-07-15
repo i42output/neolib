@@ -298,6 +298,8 @@ namespace neolib
 	class basic_json_object
 	{
 		template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+		friend class basic_json;
+		template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 		friend class basic_json_value;
 	private:
 		typedef basic_json_object<T> self_type;
@@ -344,7 +346,7 @@ namespace neolib
 				return *iLazyDictionary;
 			iLazyDictionary = std::make_unique<dictionary_type>(); // todo: use allocator_type
 			for (auto i = owner().begin(); i != owner().end(); ++i)
-				iLazyDictionary->insert(i.value().name(), &i.value());
+				iLazyDictionary->emplace(i.value().name(), &i.value());
 			return *iLazyDictionary;
 		}
 		dictionary_type& cache()
@@ -359,6 +361,8 @@ namespace neolib
 	template <typename T>
 	class basic_json_array
 	{
+		template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+		friend class basic_json;
 		template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
 		friend class basic_json_value;
 	private:

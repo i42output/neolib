@@ -587,8 +587,14 @@ namespace neolib
 			return previous;
 		}
 	public:
-		using base_type::operator==;
-		using base_type::operator!=;
+		bool operator==(const iterator& aRhs) const
+		{
+			return base_type::operator==(aRhs);
+		}
+		bool operator!=(const iterator& aRhs) const
+		{
+			return base_type::operator!=(aRhs);
+		}
 	public:
 		using base_type::value;
 	};
@@ -648,8 +654,14 @@ namespace neolib
 			return previous;
 		}
 	public:
-		using base_type::operator==;
-		using base_type::operator!=;
+		bool operator==(const const_iterator& aRhs) const
+		{
+			return base_type::operator==(aRhs);
+		}
+		bool operator!=(const const_iterator& aRhs) const
+		{
+			return base_type::operator!=(aRhs);
+		}
 	public:
 		using base_type::value;
 	};
@@ -786,8 +798,14 @@ namespace neolib
 			return previous;
 		}
 	public:
-		using base_type::operator==;
-		using base_type::operator!=;
+		bool operator==(const iterator& aRhs) const
+		{
+			return base_type::operator==(aRhs);
+		}
+		bool operator!=(const iterator& aRhs) const
+		{
+			return base_type::operator!=(aRhs);
+		}
 	public:
 		using base_type::value;
 	};
@@ -847,8 +865,14 @@ namespace neolib
 			return previous;
 		}
 	public:
-		using base_type::operator==;
-		using base_type::operator!=;
+		bool operator==(const const_iterator& aRhs) const
+		{
+			return base_type::operator==(aRhs);
+		}
+		bool operator!=(const const_iterator& aRhs) const
+		{
+			return base_type::operator!=(aRhs);
+		}
 	public:
 		using base_type::value;
 	};
