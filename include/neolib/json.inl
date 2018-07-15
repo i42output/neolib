@@ -422,7 +422,7 @@ namespace neolib
 			},
 		};
 
-		template <typename json_syntax Syntax>
+		template <json_syntax Syntax>
 		inline state next_state(state aCurrentState, char aToken)
 		{
 			if constexpr (Syntax == json_syntax::Standard)
