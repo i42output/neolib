@@ -1097,7 +1097,7 @@ namespace neolib
 						break;
 					case element::Keyword:
 						{
-							static const std::unordered_map<typename json_string::string_view_type, json_detail::keyword, json_detail::hash_first_character> sJsonKeywords =
+							static const std::unordered_map<std::string_view, json_detail::keyword, json_detail::hash_first_character> sJsonKeywords =
 							{
 								{ "true", json_detail::keyword::True },
 								{ "false", json_detail::keyword::False },
