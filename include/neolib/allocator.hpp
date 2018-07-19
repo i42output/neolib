@@ -38,10 +38,14 @@
 #include "neolib.hpp"
 #include <memory>
 #include <type_traits>
+#include <boost/pool/pool_alloc.hpp>
 #include <neolib/memory.hpp>
 
 namespace neolib
 {
+	template <typename T>
+	using fast_pool_allocator = boost::fast_pool_allocator<T, boost::default_user_allocator_new_delete, boost::details::pool::null_mutex>;
+
 	// WARNING: Omega allocator doesn't free chunks and doesn't call element destructors on deallocation; use only when pathological performance is required.
 	template <typename T, std::size_t ChunkSize = 1 * 1024 * 1024>
 	using omega_pool_allocator = pool_allocator<T, ChunkSize, true>;

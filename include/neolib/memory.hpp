@@ -118,6 +118,8 @@ namespace neolib
 					iHead = reinterpret_cast<link*>(reinterpret_cast<char*>(p) + element_size());
 				else
 					iHead = p->iNext;
+				if (p == nullptr)
+					_asm int 3;
 				return p;
 			}
 			void deallocate(void* aObject)

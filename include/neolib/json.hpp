@@ -847,7 +847,7 @@ namespace neolib
 	typedef json::json_null json_null;
 	typedef json::json_keyword json_keyword;
 
-	typedef basic_json<json_syntax::Standard, neolib::pool_allocator<json_type>> fast_json;
+	typedef basic_json<json_syntax::Standard, neolib::fast_pool_allocator<json_type>> fast_json;
 	typedef fast_json::json_value fast_json_value;
 	typedef fast_json::json_object fast_json_object;
 	typedef fast_json::json_array fast_json_array;
@@ -875,7 +875,7 @@ namespace neolib
 	typedef rjson::json_null rjson_null;
 	typedef rjson::json_keyword rjson_keyword;
 
-	typedef basic_json<json_syntax::Relaxed, neolib::pool_allocator<json_type>> fast_rjson;
+	typedef basic_json<json_syntax::Relaxed, neolib::fast_pool_allocator<json_type>> fast_rjson;
 	typedef fast_rjson::json_value fast_rjson_value;
 	typedef fast_rjson::json_object fast_rjson_object;
 	typedef fast_rjson::json_array fast_rjson_array;
