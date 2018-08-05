@@ -43,7 +43,7 @@ namespace neolib
 	template <typename T>
 	class i_set : public i_container<T, i_const_iterator<T>, i_iterator<T> >
 	{
-	private:
+	protected:
 		typedef i_container<T, i_const_iterator<T>, i_iterator<T> > base;
 	public:
 		typedef T abstract_key_type;
@@ -51,6 +51,9 @@ namespace neolib
 	protected:
 		typedef typename base::abstract_const_iterator abstract_const_iterator;
 		typedef typename base::abstract_iterator abstract_iterator;
+	public:
+		typedef typename base::const_iterator const_iterator;
+		typedef typename base::iterator iterator;
 	public:
 		iterator insert(const abstract_value_type& aValue) { return do_insert(aValue); }
 		const_iterator find(const abstract_key_type& aKey) const { return do_find(aKey); }
@@ -64,7 +67,7 @@ namespace neolib
 	template <typename T>
 	class i_multiset : public i_container<T, i_const_iterator<T>, i_iterator<T> >
 	{
-	private:
+	protected:
 		typedef i_container<T, i_const_iterator<T>, i_iterator<T> > base;
 	public:
 		typedef T abstract_key_type;
@@ -72,6 +75,9 @@ namespace neolib
 	protected:
 		typedef typename base::abstract_const_iterator abstract_const_iterator;
 		typedef typename base::abstract_iterator abstract_iterator;
+	public:
+		typedef typename base::const_iterator const_iterator;
+		typedef typename base::iterator iterator;
 	public:
 		iterator insert(const abstract_value_type& aValue) { return do_insert(aValue); }
 		const_iterator find(const abstract_key_type& aKey) const { return do_find(aKey); }

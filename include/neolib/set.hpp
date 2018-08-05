@@ -42,7 +42,7 @@
 
 namespace neolib
 {
-	template <typename T, typename ConcreteType = T, typename Pred = std::less<typename ConcreteType::key_type> >
+	template <typename T, typename ConcreteType = T, typename Pred = std::less<typename crack_key<ConcreteType>::key_type>, typename Alloc = std::allocator<ConcreteType>>
 	class set : public reference_counted <i_set<T> >
 	{
 		// types
@@ -52,9 +52,11 @@ namespace neolib
 		typedef ConcreteType concrete_key_type;
 		typedef ConcreteType concrete_value_type;
 		typedef Pred compare_type;
-		typedef mutable_set<concrete_key_type, compare_type> container_type;
+		typedef Alloc allocator_type;
+		typedef mutable_set<concrete_key_type, compare_type, allocator_type> container_type;
 	private:
 		typedef i_set<T> abstract_base;
+		typedef typename abstract_base::base abstract_container;
 	public:
 		typedef typename abstract_base::size_type size_type;
 		typedef container::const_iterator<abstract_value_type, typename container_type::const_iterator> container_const_iterator;
@@ -62,18 +64,26 @@ namespace neolib
 	protected:
 		typedef typename abstract_base::abstract_const_iterator abstract_const_iterator;
 		typedef typename abstract_base::abstract_iterator abstract_iterator;
+	public:
+		typedef typename abstract_base::const_iterator const_iterator;
+		typedef typename abstract_base::iterator iterator;
 		// construction
 	public:
 		set() :
 			iEndConstIterator(new container_const_iterator(iSet.cend())),
 			iEndIterator(new container_iterator(iSet.end()))
 		{}
-		set(const i_container& aOther) :
+		set(const abstract_container& aOther) :
 			iEndConstIterator(new container_const_iterator(iSet.cend())),
 			iEndIterator(new container_iterator(iSet.end()))
 		{
 			assign(aOther);
 		}
+		set(std::initializer_list<concrete_value_type> aElements) :
+			iSet(aElements),
+			iEndConstIterator(new container_const_iterator(iSet.cend())),
+			iEndIterator(new container_iterator(iSet.end()))
+		{}
 		template <typename InputIter>
 		set(InputIter aFirst, InputIter aLast) :
 			iSet(aFirst, aLast),
@@ -90,7 +100,7 @@ namespace neolib
 		virtual size_type size() const { return iSet.size(); }
 		virtual size_type max_size() const { return iSet.max_size(); }
 		virtual void clear() { iSet.clear(); }
-		virtual void assign(const i_container& aOther)
+		virtual void assign(const abstract_container& aOther)
 		{
 			if (&aOther == this) 
 				return;
@@ -108,7 +118,7 @@ namespace neolib
 		virtual abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
 	public:
 		// from i_set
-		virtual abstract_iterator* do_insert(const abstract_value_type& aValue) { return new container_iterator(iSet.insert(concrete_value_type(aValue)).first); }
+		virtual abstract_iterator* do_insert(const abstract_value_type& aValue) { return new container_iterator(iSet.insert(concrete_value_type(aValue))); }
 		virtual abstract_const_iterator* do_find(const abstract_key_type& aKey) const { return new container_const_iterator(iSet.find(concrete_key_type(aKey))); }
 		virtual abstract_iterator* do_find(const abstract_key_type& aKey) { return new container_iterator(iSet.find(concrete_key_type(aKey))); }
 	private:
@@ -117,7 +127,7 @@ namespace neolib
 		iterator iEndIterator;
 	};
 
-	template <typename T, typename ConcreteType = T, typename Pred = std::less<typename ConcreteType::key_type> >
+	template <typename T, typename ConcreteType = T, typename Pred = std::less<typename crack_key<ConcreteType>::key_type>, typename Alloc = std::allocator<ConcreteType>>
 	class multiset : public reference_counted <i_multiset<T> >
 	{
 		// types
@@ -127,9 +137,11 @@ namespace neolib
 		typedef ConcreteType concrete_key_type;
 		typedef ConcreteType concrete_value_type;
 		typedef Pred compare_type;
-		typedef mutable_multiset<concrete_key_type, compare_type> container_type;
+		typedef Alloc allocator_type;
+		typedef mutable_multiset<concrete_key_type, compare_type, allocator_type> container_type;
 	private:
 		typedef i_multiset<T> abstract_base;
+		typedef typename abstract_base::base abstract_container;
 	public:
 		typedef typename abstract_base::size_type size_type;
 		typedef container::const_iterator<abstract_value_type, typename container_type::const_iterator> container_const_iterator;
@@ -137,18 +149,26 @@ namespace neolib
 	protected:
 		typedef typename abstract_base::abstract_const_iterator abstract_const_iterator;
 		typedef typename abstract_base::abstract_iterator abstract_iterator;
+	public:
+		typedef typename abstract_base::const_iterator const_iterator;
+		typedef typename abstract_base::iterator iterator;
 		// construction
 	public:
 		multiset() :
 			iEndConstIterator(new container_const_iterator(iSet.cend())),
 			iEndIterator(new container_iterator(iSet.end()))
 		{}
-		multiset(const i_container& aOther) :
+		multiset(const abstract_container& aOther) :
 			iEndConstIterator(new container_const_iterator(iSet.cend())),
 			iEndIterator(new container_iterator(iSet.end()))
 		{
 			assign(aOther);
 		}
+		multiset(std::initializer_list<concrete_value_type> aElements) :
+			iSet(aElements),
+			iEndConstIterator(new container_const_iterator(iSet.cend())),
+			iEndIterator(new container_iterator(iSet.end()))
+		{}
 		template <typename InputIter>
 		multiset(InputIter aFirst, InputIter aLast) :
 			iSet(aFirst, aLast),
@@ -165,7 +185,7 @@ namespace neolib
 		virtual size_type size() const { return iSet.size(); }
 		virtual size_type max_size() const { return iSet.max_size(); }
 		virtual void clear() { iSet.clear(); }
-		virtual void assign(const i_container& aOther)
+		virtual void assign(const abstract_container& aOther)
 		{
 			if (&aOther == this)
 				return;
