@@ -317,6 +317,7 @@
     <ClInclude Include="..\..\..\include\neolib\xml.hpp" />
     <ClInclude Include="..\..\..\include\neolib\xml.inl" />
     <ClInclude Include="..\..\..\include\neolib\zip.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\zip_iterator.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\include\neolib\json.inl" />
