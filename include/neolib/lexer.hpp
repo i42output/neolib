@@ -543,8 +543,8 @@ namespace neolib
 					{
 						auto functionToken = iterFunction->first.first;
 						auto functions = iterFunction->first.second;
-						bool not = (std::find(functions.begin(), functions.end(), lexer_atom_function::Not) != functions.end());
-						if ((functionToken == token && !not) || (functionToken != token && not))
+						bool not_ = (std::find(functions.begin(), functions.end(), lexer_atom_function::Not) != functions.end());
+						if ((functionToken == token && !not_) || (functionToken != token && not_))
 							return iterFunction->second;
 					}
 					return optional_next_type{};
