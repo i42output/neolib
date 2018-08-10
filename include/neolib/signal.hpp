@@ -38,7 +38,7 @@
 #include "neolib.hpp"
 #include <stdexcept>
 #include <memory>
-#include <map>
+#include <unordered_map>
 #include <deque>
 #include <vector>
 #include <functional>
@@ -165,7 +165,7 @@ namespace neolib
 	protected:
 		typedef const slot_interface* slot_pointer;
 		typedef std::function<Function> function_type;
-		typedef std::map<slot_pointer, function_type> slot_list;
+		typedef std::unordered_map<slot_pointer, function_type> slot_list;
 		typedef std::unique_ptr<slot_list> slot_list_pointer;
 		typedef std::vector<typename slot_list::const_iterator> notification_list;
 		typedef std::deque<std::pair<bool*, notification_list> > notification_list_list;
@@ -233,8 +233,7 @@ namespace neolib
 			typename LockingPolicy::scope_lock sl(*this);
 			if (iSlots == nullptr)
 			{
-				slot_list_pointer newSlotList(new slot_list);
-				iSlots = newSlotList;
+				 iSlots = std::make_unique<slot_list>();
 			}
 			return *iSlots;
 		}
@@ -677,7 +676,7 @@ namespace neolib
 	protected:
 		typedef const slot_interface* slot_pointer;
 		typedef std::function<Function> function_type;
-		typedef std::map<std::pair<Key, slot_pointer>, function_type> slot_list;
+		typedef std::unordered_map<std::pair<Key, slot_pointer>, function_type> slot_list;
 		typedef std::unique_ptr<slot_list> slot_list_pointer;
 		typedef std::vector<typename slot_list::const_iterator> notification_list;
 		typedef std::deque<std::pair<bool*, notification_list> > notification_list_list;

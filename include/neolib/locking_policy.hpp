@@ -36,7 +36,7 @@
 #pragma once
 
 #include "neolib.hpp"
-#include <boost/thread/recursive_mutex.hpp>
+#include <mutex>
 
 namespace neolib
 {
@@ -87,7 +87,7 @@ namespace neolib
 			iMutex.unlock();
 		}
 	private:
-		mutable boost::recursive_mutex iMutex;
+		mutable std::recursive_mutex iMutex;
 	};
 
 	namespace detail
@@ -95,11 +95,11 @@ namespace neolib
 		template <typename T>
 		struct shared_mutex
 		{
-			static boost::recursive_mutex sMutex;
+			static std::recursive_mutex sMutex;
 		};
 
 		template <typename T>
-		boost::recursive_mutex shared_mutex<T>::sMutex;
+		std::recursive_mutex shared_mutex<T>::sMutex;
 	}
 
 	class locking_policy_shared_mutex

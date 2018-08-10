@@ -36,7 +36,7 @@
 #pragma once
 
 #include "neolib.hpp"
-#include <set>
+#include <unordered_set>
 #include <deque>
 #include <functional>
 #include "locking_policy.hpp"
@@ -54,7 +54,7 @@ namespace neolib
 		friend class signal_with_key_base;
 		// types
 	private:
-		typedef std::set<const signal_interface*> signal_list;
+		typedef std::unordered_set<const signal_interface*> signal_list;
 		// construction
 	public:
 		has_slots() {}
