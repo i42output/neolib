@@ -45,7 +45,7 @@
 
 namespace neolib
 {
-	template <typename LockingPolicy = locking_policy_shared_mutex>
+	template <typename LockingPolicy = locking_policy_none>
 	class has_slots : public slot_interface, private LockingPolicy
 	{
 		template <typename Function, std::size_t ParameterCount, typename LockingPolicy2>

@@ -156,7 +156,7 @@ namespace neolib
 		};
 	}
 
-	template <typename Function, std::size_t ParameterCount, typename LockingPolicy = locking_policy_shared_mutex>
+	template <typename Function, std::size_t ParameterCount, typename LockingPolicy = locking_policy_none>
 	class signal_base : public signal_interface, protected LockingPolicy
 	{
 		// types
@@ -268,7 +268,7 @@ namespace neolib
 		mutable notification_list_list iNotificationListList;
 	};
 
-	template <typename Function, typename LockingPolicy = locking_policy_shared_mutex>
+	template <typename Function, typename LockingPolicy = locking_policy_none>
 	class signal;
 
 	template <typename LockingPolicy>
@@ -667,7 +667,7 @@ namespace neolib
 		}
 	};
 
-	template <typename Key, typename Function, std::size_t ParameterCount, typename LockingPolicy = locking_policy_shared_mutex>
+	template <typename Key, typename Function, std::size_t ParameterCount, typename LockingPolicy = locking_policy_none>
 	class signal_with_key_base : public signal_interface, protected LockingPolicy
 	{
 		// types
@@ -797,7 +797,7 @@ namespace neolib
 		mutable notification_list_list iNotificationListList;
 	};
 
-	template <typename Key, typename Function, typename LockingPolicy = locking_policy_shared_mutex>
+	template <typename Key, typename Function, typename LockingPolicy = locking_policy_none>
 	class signal_with_key;
 
 	template <typename Key, typename LockingPolicy>
