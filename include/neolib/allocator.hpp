@@ -44,6 +44,8 @@
 namespace neolib
 {
 	template <typename T>
+	using thread_safe_fast_pool_allocator = boost::fast_pool_allocator<T, boost::default_user_allocator_new_delete>;
+	template <typename T>
 	using fast_pool_allocator = boost::fast_pool_allocator<T, boost::default_user_allocator_new_delete, boost::details::pool::null_mutex>;
 
 	// WARNING: Omega allocator doesn't free chunks and doesn't call element destructors on deallocation; use only when pathological performance is required.

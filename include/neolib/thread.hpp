@@ -42,7 +42,7 @@
 #include "noncopyable.hpp"
 #include "lockable.hpp"
 #include "waitable.hpp"
-#include "event.hpp"
+#include "waitable_event.hpp"
 #include "i_thread.hpp"
 
 namespace neolib
@@ -77,9 +77,9 @@ namespace neolib
 		void cancel();
 		void abort(bool aWait = true);
 		void wait() const;
-		wait_result wait(const event_list& aEventList) const;
+		wait_result wait(const waitable_event_list& aEventList) const;
 		bool msg_wait(const message_queue& aMessageQueue) const;
-		wait_result msg_wait(const message_queue& aMessageQueue, const event_list& aEventList) const;
+		wait_result msg_wait(const message_queue& aMessageQueue, const waitable_event_list& aEventList) const;
 		void block();
 		void unblock();
 		bool started() const;

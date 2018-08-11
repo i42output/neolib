@@ -168,7 +168,7 @@ namespace neolib
 			thread_object().join();
 	}
 
-	wait_result thread::wait(const event_list& aEventList) const
+	wait_result thread::wait(const waitable_event_list& aEventList) const
 	{
 		if (!started())
 			throw thread_not_started();
@@ -193,7 +193,7 @@ namespace neolib
 		}
 	}
 
-	wait_result thread::msg_wait(const message_queue& aMessageQueue, const event_list& aEventList) const
+	wait_result thread::msg_wait(const message_queue& aMessageQueue, const waitable_event_list& aEventList) const
 	{
 		if (!started())
 			throw thread_not_started();

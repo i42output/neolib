@@ -92,14 +92,14 @@ namespace neolib
 
 	namespace detail
 	{
-		template <typename T>
 		struct shared_mutex
 		{
-			static std::recursive_mutex sMutex;
+			static std::recursive_mutex& instance()
+			{
+				static std::recursive_mutex sMutex;
+				return sMutex;
+			}
 		};
-
-		template <typename T>
-		std::recursive_mutex shared_mutex<T>::sMutex;
 	}
 
 	class locking_policy_shared_mutex
@@ -123,11 +123,11 @@ namespace neolib
 	public:
 		void lock() const
 		{
-			detail::shared_mutex<locking_policy_shared_mutex>::sMutex.lock();
+			detail::shared_mutex::instance().lock();
 		}
 		void unlock() const
 		{
-			detail::shared_mutex<locking_policy_shared_mutex>::sMutex.unlock();
+			detail::shared_mutex::instance().unlock();
 		}
 	};
 }

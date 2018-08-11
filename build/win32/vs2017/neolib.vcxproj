@@ -156,6 +156,7 @@
     <ClCompile Include="..\..\..\src\application_info.cpp" />
     <ClCompile Include="..\..\..\src\crc.cpp" />
     <ClCompile Include="..\..\..\src\event.cpp" />
+    <ClCompile Include="..\..\..\src\waitable_event.cpp" />
     <ClCompile Include="..\..\..\src\file.cpp" />
     <ClCompile Include="..\..\..\src\gunzip.cpp" />
     <ClCompile Include="..\..\..\src\http.cpp" />
@@ -198,6 +199,7 @@
     <ClInclude Include="..\..\..\include\neolib\data_packet.hpp" />
     <ClInclude Include="..\..\..\include\neolib\detail_memory.hpp" />
     <ClInclude Include="..\..\..\include\neolib\event.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\waitable_event.hpp" />
     <ClInclude Include="..\..\..\include\neolib\fast_hash.hpp" />
     <ClInclude Include="..\..\..\include\neolib\file.hpp" />
     <ClInclude Include="..\..\..\include\neolib\functional.hpp" />
@@ -273,11 +275,9 @@
     <ClInclude Include="..\..\..\include\neolib\setting.hpp" />
     <ClInclude Include="..\..\..\include\neolib\settings.hpp" />
     <ClInclude Include="..\..\..\include\neolib\signal.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\signal_interface.hpp" />
     <ClInclude Include="..\..\..\include\neolib\simple_variant.hpp" />
     <ClInclude Include="..\..\..\include\neolib\singleton.hpp" />
     <ClInclude Include="..\..\..\include\neolib\slot.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\slot_interface.hpp" />
     <ClInclude Include="..\..\..\include\neolib\stdint.hpp" />
     <ClInclude Include="..\..\..\include\neolib\string.hpp" />
     <ClInclude Include="..\..\..\include\neolib\string_ci.hpp" />

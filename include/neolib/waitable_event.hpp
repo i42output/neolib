@@ -1,4 +1,4 @@
-// async_task.hpp v1.0
+// waitable_event.hpp
 /*
  *  Copyright (c) 2007 Leigh Johnston.
  *
@@ -31,78 +31,86 @@
  *  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+*/
 
 #pragma once
 
 #include "neolib.hpp"
-#include <boost/asio.hpp>
-#include "i_thread.hpp"
-#include "task.hpp"
+#include <stdexcept>
+#include <thread>
+#include <mutex>
 #include "message_queue.hpp"
+#include "waitable.hpp"
+#include "variant.hpp"
 
 namespace neolib
 {
-	class async_task;
-
-	class io_service
+	class waitable_event
 	{
-		// types
+		// constants
 	public:
-		typedef boost::asio::io_service native_io_service_type;
-	public:
-		io_service(async_task& aTask) : iTask(aTask) {}
-		// operations
-	public:
-		bool do_io(bool aProcessEvents = true);
-		native_io_service_type& native_object() { return iNativeIoService; }
-		// attributes
-	private:
-		async_task& iTask;
-		native_io_service_type iNativeIoService;
-	};
-
-	enum class yield_type
-	{
-		NoYield,
-		Yield,
-		Sleep
-	};
-
-	class async_task : public task
-	{
+		static const uint32_t ShortTimeout_ms = 20;
 		// types
 	private:
-		typedef std::unique_ptr<neolib::message_queue> message_queue_pointer;
-		// exceptions
-	public:
-		struct no_message_queue : std::logic_error { no_message_queue() : std::logic_error("neolib::async_task::no_message_queue") {} };
+		enum signal_type
+		{
+			SignalOne,
+			SignalAll
+		};
 		// construction
 	public:
-		async_task(i_thread& aThread, const std::string& aName = std::string{});
+		waitable_event();
 		// operations
 	public:
-		i_thread& thread() const;
-		bool do_io(yield_type aYieldIfNoWork = yield_type::NoYield);
-		io_service& timer_io_service() { return iTimerIoService; }
-		io_service& networking_io_service() { return iNetworkingIoService; }
-		bool have_message_queue() const;
-		bool have_messages() const;
-		neolib::message_queue& create_message_queue(std::function<bool()> aIdleFunction = std::function<bool()>());
-		const neolib::message_queue& message_queue() const;
-		neolib::message_queue& message_queue();
-		bool pump_messages();
-		bool halted() const;
-		void halt();
-		// implementation
+		void signal_one() const;
+		void signal_all() const;
+		void wait() const;
+		bool wait(uint32_t aTimeout_ms) const;
+		bool msg_wait(const message_queue& aMessageQueue) const;
+		bool msg_wait(const message_queue& aMessageQueue, uint32_t aTimeout_ms) const;
+		void reset() const;
+	private:
+		mutable std::mutex iMutex;
+		mutable std::condition_variable iCondVar;
+		mutable bool iReady;
+		mutable std::size_t iTotalWaiting;
+		mutable signal_type iSignalType;
+	};
+
+	struct wait_result_event { wait_result_event(const waitable_event& aEvent) : iEvent(aEvent) {} const waitable_event& iEvent; };
+	struct wait_result_message {};
+	struct wait_result_waitable {};
+	typedef variant<wait_result_event, wait_result_message, wait_result_waitable> wait_result;
+
+	class waitable_event_list
+	{
+		// types
+	private:
+		typedef const waitable_event* event_pointer;
+		typedef std::vector<event_pointer> list_type;
+
+		// construction
 	public:
-		void run() override;
+		waitable_event_list(const waitable_event& aEvent)
+		{
+			iEvents.push_back(&aEvent);
+		}
+		template <typename InputIterator>
+		waitable_event_list(InputIterator aFirst, InputIterator aLast)
+		{
+			while(aFirst != aLast)
+				iEvents.push_back(&*aFirst++);
+		}
+
+		// operations
+	public:
+		wait_result wait() const;
+		wait_result wait(const waitable& aWaitable) const;
+		wait_result msg_wait(const message_queue& aMessageQueue) const;
+		wait_result msg_wait(const message_queue& aMessageQueue, const waitable& aWaitable) const;
+
 		// attributes
 	private:
-		i_thread& iThread;
-		io_service iTimerIoService;
-		io_service iNetworkingIoService;
-		message_queue_pointer iMessageQueue;
-		bool iHalted;
+		mutable list_type iEvents;
 	};
 }

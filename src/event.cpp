@@ -1,171 +1,141 @@
-// event.cpp - v2.0
+// event.cpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
- *
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions are
- *  met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *
- *     * Neither the name of Leigh Johnston nor the names of any
- *       other contributors to this software may be used to endorse or
- *       promote products derived from this software without specific prior
- *       written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
- *  IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- *  THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- *  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- *  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- *  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- *  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  Transplanted from neogfx C++ GUI Library
+  Copyright (c) 2015-2018 Leigh Johnston.  All Rights Reserved.
+  
+  This program is free software: you can redistribute it and / or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <neolib/neolib.hpp>
-#include <chrono>
+#include <neolib/timer.hpp>
 #include <neolib/event.hpp>
-#include <neolib/thread.hpp>
 
 namespace neolib
-{
-	event::event() : iReady(false), iTotalWaiting(0)
-	{
-	}
-
-	void event::signal_one() const
-	{
-		std::lock_guard<std::mutex> lock(iMutex);
-		iReady = true;
-		iSignalType = SignalOne;
-		iCondVar.notify_one();
-	}
-
-	void event::signal_all() const
-	{
-		std::lock_guard<std::mutex> lock(iMutex);
-		iReady = true;
-		iSignalType = SignalAll;
-		iCondVar.notify_all();
-	}
-
-	void event::wait() const
-	{
-		std::unique_lock<std::mutex> lock(iMutex);
-		++iTotalWaiting;
-		while (!iReady)
-			iCondVar.wait(lock);
-		--iTotalWaiting;
-		if (iSignalType == SignalOne || iTotalWaiting == 0)
-			iReady = false;
-	}
-
-	bool event::wait(uint32_t aTimeout_ms) const
-	{
-		bool result = true;
-		std::unique_lock<std::mutex> lock(iMutex);
-		++iTotalWaiting;
-		if (!iReady)
-			result = (iCondVar.wait_for(lock, std::chrono::milliseconds(aTimeout_ms)) == std::cv_status::no_timeout);
-		--iTotalWaiting;
-		if (result && iSignalType == SignalOne || iTotalWaiting == 0)
-			iReady = false;
-		return result;
-	}
-
-	bool event::msg_wait(const message_queue& aMessageQueue) const
-	{
-		for(;;)
+{ 
+	async_event_queue::async_event_queue(neolib::async_task& aIoTask) : iTimer{ aIoTask,
+		[this](neolib::callback_timer& aTimer)
 		{
-			if (wait(0))
-				return true;
-			else if (aMessageQueue.have_message())
-				return false;
-			thread::yield();
-		}
+			publish_events();
+			if (!iEvents.empty() && !aTimer.waiting())
+				aTimer.again();
+		}, 10, false },
+		iHaveThreadedCallbacks{ false },
+		iTerminated{ false }
+	{
+		if (sInstance != nullptr)
+			throw instance_exists();
+		sInstance = this;
 	}
 
-	bool event::msg_wait(const message_queue& aMessageQueue, uint32_t aTimeout_ms) const
+	async_event_queue::~async_event_queue()
 	{
-		boost::posix_time::ptime startTime = boost::posix_time::microsec_clock::local_time();
-		for(;;)
+		sInstance = nullptr;
+	}
+
+	async_event_queue* async_event_queue::sInstance;
+
+	bool async_event_queue::instantiated()
+	{
+		return sInstance != nullptr;
+	}
+
+	async_event_queue& async_event_queue::instance()
+	{
+		if (sInstance != nullptr)
+			return *sInstance;
+		throw no_instance();
+	}
+
+	bool async_event_queue::exec()
+	{
+		bool didSome = false;
+		if (iHaveThreadedCallbacks)
 		{
-			if (wait(0))
-				return true;
-			else if (aMessageQueue.have_message())
-				return false;
-			else if ((boost::posix_time::microsec_clock::local_time() - startTime).total_milliseconds() > aTimeout_ms)
-				return false;
-			thread::yield();
+			callback_list work;
+			{
+				std::lock_guard<std::recursive_mutex> guard{ iThreadedCallbacksMutex };
+				work = std::move(iThreadedCallbacks[std::this_thread::get_id()]);
+				iThreadedCallbacks.erase(iThreadedCallbacks.find(std::this_thread::get_id()));
+				iHaveThreadedCallbacks = !iThreadedCallbacks.empty();
+			}
+			for (auto& cb : work)
+			{
+				if (iTerminated)
+					return didSome;
+				cb();
+				didSome = true;
+			}
 		}
+		return didSome;
 	}
 
-	void event::reset() const
+	void async_event_queue::terminate()
 	{
-		std::lock_guard<std::mutex> lock(iMutex);
-		iReady = false;
+		std::lock_guard<std::recursive_mutex> guard{ iThreadedCallbacksMutex };
+		iTerminated = true;
+		iEvents.clear();
+		if (iTimer.waiting())
+			iTimer.cancel();
+		iThreadedCallbacks.clear();
+		iHaveThreadedCallbacks = false;
 	}
 
-	wait_result event_list::wait() const
+	void async_event_queue::enqueue_to_thread(std::thread::id aThreadId, callback aCallback)
 	{
-		for(;;)
-		{
-			for (list_type::const_iterator i = iEvents.begin(); i != iEvents.end(); ++i)
-				if ((**i).wait(0))
-					return wait_result_event(**i);
-			thread::yield();
-		}
+		if (iTerminated)
+			return;
+		std::lock_guard<std::recursive_mutex> guard{ iThreadedCallbacksMutex };
+		iThreadedCallbacks[aThreadId].push_back(aCallback);
+		iHaveThreadedCallbacks = true;
 	}
 
-	wait_result event_list::wait(const waitable& aWaitable) const
+	void async_event_queue::add(const void* aEvent, callback aCallback, neolib::lifetime::destroyed_flag aDestroyedFlag)
 	{
-		for(;;)
-		{
-			for (list_type::const_iterator i = iEvents.begin(); i != iEvents.end(); ++i)
-				if ((**i).wait(0))
-					return wait_result_event(**i);
-			if (aWaitable.waitable_ready())
-				return wait_result_waitable();
-			thread::yield();
-		}
+		if (iTerminated)
+			return;
+		iEvents.emplace(aEvent, std::make_pair(aCallback, aDestroyedFlag));
+		if (!iTimer.waiting())
+			iTimer.again();
 	}
 
-	wait_result event_list::msg_wait(const message_queue& aMessageQueue) const
+	void async_event_queue::remove(const void* aEvent)
 	{
-		for(;;)
-		{
-			for (list_type::const_iterator i = iEvents.begin(); i != iEvents.end(); ++i)
-				if ((**i).wait(0))
-					return wait_result_event(**i);
-			if (aMessageQueue.have_message())
-				return wait_result_message();
-			thread::yield();
-		}
+		if (iTerminated)
+			return;
+		auto events = iEvents.equal_range(aEvent);
+		if (events.first == events.second)
+			throw event_not_found();
+		event_list toPublish{ events.first, events.second };
+		iEvents.erase(events.first, events.second);
+		for (auto& e : toPublish)
+			if (!e.second.second)
+				e.second.first();
 	}
 
-	wait_result event_list::msg_wait(const message_queue& aMessageQueue, const waitable& aWaitable) const
+	bool async_event_queue::has(const void* aEvent) const
 	{
-		for(;;)
-		{
-			for (list_type::const_iterator i = iEvents.begin(); i != iEvents.end(); ++i)
-				if ((**i).wait(0))
-					return wait_result_event(**i);
-			if (aMessageQueue.have_message())
-				return wait_result_message();
-			if (aWaitable.waitable_ready())
-				return wait_result_waitable();
-			thread::yield();
-		}
+		return iEvents.find(aEvent) != iEvents.end();
 	}
-} // namespace neolib
+
+	void async_event_queue::publish_events()
+	{
+		if (iTerminated)
+			return;
+		event_list toPublish;
+		toPublish.swap(iEvents);
+		for (auto& e : toPublish)
+			if (!e.second.second)
+				e.second.first();
+	}
+}
