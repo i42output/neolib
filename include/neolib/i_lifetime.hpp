@@ -74,7 +74,7 @@ namespace neolib
 	public:
 		virtual ~i_lifetime() {}
 	public:
-		virtual enum class lifetime_state lifetime_state() const = 0;
+		virtual lifetime_state object_state() const = 0;
 		virtual bool is_creating() const = 0;
 		virtual bool is_alive() const = 0;
 		virtual bool is_destroying() const = 0;
