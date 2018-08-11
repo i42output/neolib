@@ -36,9 +36,6 @@
 #pragma once
 
 #include "neolib.hpp"
-#include <unordered_set>
-#include <deque>
-#include <functional>
 #include "event.hpp"
 
 namespace neolib
