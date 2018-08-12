@@ -187,7 +187,7 @@ namespace neolib
 			{
 				iInReady = true;
 				neolib::lifetime::destroyed_flag destroyed{ *this };
-				if (!std::uncaught_exception())
+				if (std::uncaught_exceptions() == 0)
 					ready();
 				else
 					again();
