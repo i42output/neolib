@@ -156,7 +156,7 @@ namespace neolib
 	void async_task::run()
 	{
 		while(!iThread.finished())
-			do_io(yield_type::NoYield);
+			do_io(yield_type::Sleep);
 	}
 
 } // namespace neolib
