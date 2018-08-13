@@ -86,6 +86,8 @@ namespace neolib
 		~async_event_queue();
 		static bool instantiated();
 		static async_event_queue& instance();
+		static async_event_queue& local_instance();
+		static async_event_queue& any_instance();
 	public:
 		template<typename... Arguments>
 		void add(const event<Arguments...>& aEvent, callback aCallback)
@@ -113,6 +115,7 @@ namespace neolib
 	private:
 		static async_event_queue* sInstance;
 		neolib::callback_timer iTimer;
+		mutable std::recursive_mutex iEventsMutex;
 		event_list iEvents;
 		std::recursive_mutex iThreadedCallbacksMutex;
 		std::atomic<bool> iHaveThreadedCallbacks;
@@ -125,6 +128,35 @@ namespace neolib
 		Default,
 		Synchronous,
 		Asynchronous
+	};
+
+	class event_system
+	{
+	public:
+		static bool single_threaded()
+		{
+			return !instance().iMultiThreaded;
+		}
+		static bool multi_threaded()
+		{
+			return instance().iMultiThreaded;
+		}
+		static void set_single_threaded()
+		{
+			instance().iMultiThreaded = false;
+		}
+		static void set_multi_threaded()
+		{
+			instance().iMultiThreaded = true;
+		}
+	private:
+		static event_system& instance()
+		{
+			static event_system sInstance;
+			return sInstance;
+		}
+	private:
+		bool iMultiThreaded = true;
 	};
 
 	template <typename... Arguments>
@@ -152,6 +184,27 @@ namespace neolib
 			event_trigger_type triggerType;
 			bool accepted;
 			notification_list notifications;
+			struct maybe_mutex
+			{
+				std::recursive_mutex realMutex;
+				void lock() 
+				{
+					if (event_system::multi_threaded())
+						realMutex.lock();
+				}
+				void unlock() noexcept 
+				{
+					if (event_system::multi_threaded())
+						realMutex.unlock();
+				}
+				bool try_lock() 
+				{ 
+					if (event_system::multi_threaded())
+						return realMutex.try_lock();
+					else
+						return true;
+				}
+			} mutex;
 		};
 		typedef thread_safe_fast_pool_allocator<instance_data> instance_allocator;
 	public:
@@ -186,6 +239,7 @@ namespace neolib
 		{
 			if (!has_instance()) // no instance means no subscribers so no point triggering.
 				return true;
+			std::lock_guard<instance_data::maybe_mutex> guard{ instance().mutex };
 			switch (instance().triggerType)
 			{
 			case event_trigger_type::Default:
@@ -202,6 +256,7 @@ namespace neolib
 		{
 			if (!has_instance()) // no instance means no subscribers so no point triggering.
 				return true;
+			std::lock_guard<instance_data::maybe_mutex> guard{ instance().mutex };
 			destroyed_flag destroyed{ *this };
 			for (auto i = instance().handlers.begin(); i != instance().handlers.end(); ++i)
 				instance().notifications.push_back(i);
@@ -229,7 +284,8 @@ namespace neolib
 		{
 			if (!has_instance()) // no instance means no subscribers so no point triggering.
 				return;
-			async_event_queue::instance().add(*this, [this, &aArguments...]() { sync_trigger(std::forward<Ts>(aArguments)...); });
+			std::lock_guard<instance_data::maybe_mutex> guard{ instance().mutex };
+			async_event_queue::any_instance().add(*this, [this, &aArguments...]() { sync_trigger(std::forward<Ts>(aArguments)...); });
 		}
 		void accept() const
 		{
@@ -242,6 +298,7 @@ namespace neolib
 	public:
 		handle subscribe(const handler_callback& aHandlerCallback, const void* aUniqueId = 0) const
 		{
+			std::lock_guard<instance_data::maybe_mutex> guard{ instance().mutex };
 			if (aUniqueId == 0)
 				return handle{ instance().instancePtr, instance().handlers.insert(instance().handlers.end(), handler_list_item{ std::this_thread::get_id(), aUniqueId, aHandlerCallback, 0 }) };
 			auto existing = instance().uniqueIdMap.find(aUniqueId);
@@ -277,6 +334,7 @@ namespace neolib
 		}
 		void unsubscribe(const void* aUniqueId) const
 		{
+			std::lock_guard<instance_data::maybe_mutex> guard{ instance().mutex };
 			auto existing = instance().uniqueIdMap.find(aUniqueId);
 			if (existing != instance().uniqueIdMap.end())
 				unsubscribe(handle{ instance().instancePtr, existing->second });
@@ -296,16 +354,21 @@ namespace neolib
 		void enqueue_to_thread(const handler_list_item& aItem, Ts&&... aArguments) const
 		{
 			auto& callback = aItem.iHandlerCallback;
-			async_event_queue::instance().enqueue_to_thread(*aItem.iThreadId, [callback, &aArguments...](){ callback(std::forward<Ts>(aArguments)...); });
+			async_event_queue::any_instance().enqueue_to_thread(*aItem.iThreadId, [callback, &aArguments...](){ callback(std::forward<Ts>(aArguments)...); });
 		}
 		void clear()
 		{
-			if (async_event_queue::instantiated() && async_event_queue::instance().has(*this))
-				async_event_queue::instance().remove(*this);
-			iInstanceData.reset();
+			if (async_event_queue::any_instance().has(*this))
+				async_event_queue::any_instance().remove(*this);
+			decltype(iInstanceData) temp;
+			{
+				std::lock_guard<instance_data::maybe_mutex> guard{ instance().mutex };
+				temp = std::move(iInstanceData);
+			}
 		}
 		void unsubscribe(handle aHandle) const
 		{
+			std::lock_guard<instance_data::maybe_mutex> guard{ instance().mutex };
 			instance().notifications.erase(std::remove(instance().notifications.begin(), instance().notifications.end(), aHandle.iHandler), instance().notifications.end());
 			if (aHandle.iHandler->iUniqueId != 0)
 			{
@@ -326,7 +389,8 @@ namespace neolib
 				auto newInstance = allocator().allocate();
 				try
 				{
-					allocator().construct(newInstance, instance_data{ std::make_shared<ptr>(this) });
+					allocator().construct(newInstance);
+					newInstance->instancePtr = std::make_shared<ptr>(this);
 				}
 				catch (...)
 				{

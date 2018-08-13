@@ -18,6 +18,8 @@
 */
 
 #include <neolib/neolib.hpp>
+#include <neolib/async_thread.hpp>
+#include <neolib/async_task.hpp>
 #include <neolib/timer.hpp>
 #include <neolib/event.hpp>
 
@@ -55,6 +57,22 @@ namespace neolib
 		if (sInstance != nullptr)
 			return *sInstance;
 		throw no_instance();
+	}
+
+	async_event_queue& async_event_queue::local_instance()
+	{
+		static neolib::async_thread sThread{};
+		static async_event_queue sLocalInstance{ sThread };
+		if (!sThread.started())
+			sThread.start();
+		return sLocalInstance;
+	}
+
+	async_event_queue& async_event_queue::any_instance()
+	{
+		if (instantiated())
+			return instance();
+		return local_instance();
 	}
 
 	bool async_event_queue::exec()
@@ -104,6 +122,7 @@ namespace neolib
 	{
 		if (iTerminated)
 			return;
+		std::lock_guard<std::recursive_mutex> guard{ iEventsMutex };
 		iEvents.emplace(aEvent, std::make_pair(aCallback, aDestroyedFlag));
 		if (!iTimer.waiting())
 			iTimer.again();
@@ -113,11 +132,15 @@ namespace neolib
 	{
 		if (iTerminated)
 			return;
-		auto events = iEvents.equal_range(aEvent);
-		if (events.first == events.second)
-			throw event_not_found();
-		event_list toPublish{ events.first, events.second };
-		iEvents.erase(events.first, events.second);
+		event_list toPublish;
+		{
+			std::lock_guard<std::recursive_mutex> guard{ iEventsMutex };
+			auto events = iEvents.equal_range(aEvent);
+			if (events.first == events.second)
+				throw event_not_found();
+			toPublish.insert(events.first, events.second);
+			iEvents.erase(events.first, events.second);
+		}
 		for (auto& e : toPublish)
 			if (!e.second.second)
 				e.second.first();
@@ -125,6 +148,7 @@ namespace neolib
 
 	bool async_event_queue::has(const void* aEvent) const
 	{
+		std::lock_guard<std::recursive_mutex> guard{ iEventsMutex };
 		return iEvents.find(aEvent) != iEvents.end();
 	}
 
@@ -133,7 +157,10 @@ namespace neolib
 		if (iTerminated)
 			return;
 		event_list toPublish;
-		toPublish.swap(iEvents);
+		{
+			std::lock_guard<std::recursive_mutex> guard{ iEventsMutex };
+			toPublish.swap(iEvents);
+		}
 		for (auto& e : toPublish)
 			if (!e.second.second)
 				e.second.first();

@@ -98,14 +98,14 @@ namespace neolib
 
 	bool waitable_event::msg_wait(const message_queue& aMessageQueue, uint32_t aTimeout_ms) const
 	{
-		boost::posix_time::ptime startTime = boost::posix_time::microsec_clock::local_time();
+		auto startTime = std::chrono::steady_clock::now();
 		for(;;)
 		{
 			if (wait(0))
 				return true;
 			else if (aMessageQueue.have_message())
 				return false;
-			else if ((boost::posix_time::microsec_clock::local_time() - startTime).total_milliseconds() > aTimeout_ms)
+			else if (std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startTime).count() > aTimeout_ms)
 				return false;
 			thread::yield();
 		}
