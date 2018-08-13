@@ -205,7 +205,6 @@ namespace neolib
 			unique_id_map uniqueIdMap;
 			event_trigger_type triggerType;
 			bool accepted;
-			notification_list notifications;
 			event_mutex mutex;
 		};
 		typedef thread_safe_fast_pool_allocator<instance_data> instance_allocator;
@@ -241,7 +240,6 @@ namespace neolib
 		{
 			if (!has_instance()) // no instance means no subscribers so no point triggering.
 				return true;
-			std::lock_guard<event_mutex> guard{ instance().mutex };
 			switch (instance().triggerType)
 			{
 			case event_trigger_type::Default:
@@ -258,14 +256,17 @@ namespace neolib
 		{
 			if (!has_instance()) // no instance means no subscribers so no point triggering.
 				return true;
-			std::lock_guard<event_mutex> guard{ instance().mutex };
 			destroyed_flag destroyed{ *this };
-			for (auto i = instance().handlers.begin(); i != instance().handlers.end(); ++i)
-				instance().notifications.push_back(i);
-			while (!instance().notifications.empty())
+			notification_list notifications;
 			{
-				auto i = instance().notifications.front();
-				instance().notifications.pop_front();
+				std::lock_guard<event_mutex> guard{ instance().mutex };
+				for (auto i = instance().handlers.begin(); i != instance().handlers.end(); ++i)
+					notifications.push_back(i);
+			}
+			while (!notifications.empty())
+			{
+				auto i = notifications.front();
+				notifications.pop_front();
 				if (i->iThreadId == std::nullopt || *i->iThreadId == std::this_thread::get_id())
 					i->iHandlerCallback(std::forward<Ts>(aArguments)...);
 				else
@@ -274,7 +275,6 @@ namespace neolib
 					return false;
 				if (instance().accepted)
 				{
-					instance().notifications.clear();
 					instance().accepted = false;
 					return false;
 				}
@@ -371,7 +371,6 @@ namespace neolib
 		void unsubscribe(handle aHandle) const
 		{
 			std::lock_guard<event_mutex> guard{ instance().mutex };
-			instance().notifications.erase(std::remove(instance().notifications.begin(), instance().notifications.end(), aHandle.iHandler), instance().notifications.end());
 			if (aHandle.iHandler->iUniqueId != 0)
 			{
 				auto existing = instance().uniqueIdMap.find(aHandle.iHandler->iUniqueId);
