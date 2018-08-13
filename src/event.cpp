@@ -82,7 +82,7 @@ namespace neolib
 		{
 			callback_list work;
 			{
-				std::lock_guard<event_mutex> guard{ iThreadedCallbacksMutex };
+				destroyable_mutex_lock_guard<event_mutex> guard{ iThreadedCallbacksMutex };
 				work = std::move(iThreadedCallbacks[std::this_thread::get_id()]);
 				iThreadedCallbacks.erase(iThreadedCallbacks.find(std::this_thread::get_id()));
 				iHaveThreadedCallbacks = !iThreadedCallbacks.empty();
@@ -100,7 +100,7 @@ namespace neolib
 
 	void async_event_queue::terminate()
 	{
-		std::lock_guard<event_mutex> guard{ iThreadedCallbacksMutex };
+		destroyable_mutex_lock_guard<event_mutex> guard{ iThreadedCallbacksMutex };
 		iTerminated = true;
 		iEvents.clear();
 		if (iTimer.waiting())
@@ -113,7 +113,7 @@ namespace neolib
 	{
 		if (iTerminated)
 			return;
-		std::lock_guard<event_mutex> guard{ iThreadedCallbacksMutex };
+		destroyable_mutex_lock_guard<event_mutex> guard{ iThreadedCallbacksMutex };
 		iThreadedCallbacks[aThreadId].push_back(aCallback);
 		iHaveThreadedCallbacks = true;
 	}
@@ -122,7 +122,7 @@ namespace neolib
 	{
 		if (iTerminated)
 			return;
-		std::lock_guard<event_mutex> guard{ iEventsMutex };
+		destroyable_mutex_lock_guard<event_mutex> guard{ iEventsMutex };
 		iEvents.emplace(aEvent, std::make_pair(aCallback, aDestroyedFlag));
 		if (!iTimer.waiting())
 			iTimer.again();
@@ -134,7 +134,7 @@ namespace neolib
 			return;
 		event_list toPublish;
 		{
-			std::lock_guard<event_mutex> guard{ iEventsMutex };
+			destroyable_mutex_lock_guard<event_mutex> guard{ iEventsMutex };
 			auto events = iEvents.equal_range(aEvent);
 			if (events.first == events.second)
 				throw event_not_found();
@@ -148,7 +148,7 @@ namespace neolib
 
 	bool async_event_queue::has(const void* aEvent) const
 	{
-		std::lock_guard<event_mutex> guard{ iEventsMutex };
+		destroyable_mutex_lock_guard<event_mutex> guard{ iEventsMutex };
 		return iEvents.find(aEvent) != iEvents.end();
 	}
 
@@ -158,7 +158,7 @@ namespace neolib
 			return;
 		event_list toPublish;
 		{
-			std::lock_guard<event_mutex> guard{ iEventsMutex };
+			destroyable_mutex_lock_guard<event_mutex> guard{ iEventsMutex };
 			toPublish.swap(iEvents);
 		}
 		for (auto& e : toPublish)

@@ -42,7 +42,6 @@
 #include <mutex>
 #include <neolib/allocator.hpp>
 #include <optional>
-#include "mutex.hpp"
 #include "i_lifetime.hpp"
 
 namespace neolib
@@ -142,7 +141,12 @@ namespace neolib
 	class own_flag_list
 	{
 	public:
-		typedef null_mutex mutex_type;
+		typedef struct null_mutex
+		{
+			void lock() {}
+			void unlock() noexcept {}
+			bool try_lock() { return true; }
+		} mutex_type;
 		typedef std::unordered_set<i_lifetime_flag*, std::hash<i_lifetime_flag*>, std::equal_to<i_lifetime_flag*>, pool_allocator<i_lifetime_flag*>> flag_list;
 	public:
 		static mutex_type& mutex()
