@@ -33,36 +33,6 @@
 
 namespace neolib
 {
-	typedef destroyable_mutex<std::recursive_mutex> event_mutex;
-
-	class sink;
-
-	template <typename... Arguments>
-	class event;
-		
-	template <typename... Arguments>
-	class event_handle
-	{
-	public:
-		typedef const event<Arguments...>* event_ptr;
-		typedef std::shared_ptr<event_ptr> event_instance_ptr;
-		typedef std::weak_ptr<event_ptr> event_instance_weak_ptr;
-		typedef const void* unique_id_type;
-		typedef std::function<void(Arguments...)> handler_callback;
-		typedef uint32_t sink_reference_count;
-		struct handler_list_item { std::optional<std::thread::id> iThreadId; unique_id_type iUniqueId; handler_callback iHandlerCallback; sink_reference_count iSinkReferenceCount; };
-		typedef std::list<handler_list_item, thread_safe_fast_pool_allocator<handler_list_item>> handler_list;
-	public:
-		event_instance_weak_ptr iEvent;
-		typename handler_list::iterator iHandler;
-	public:
-		event_handle& operator~()
-		{
-			iHandler->iThreadId = std::nullopt;
-			return *this;
-		}
-	};
-
 	class event_system
 	{
 	public:
@@ -90,6 +60,80 @@ namespace neolib
 		}
 	private:
 		bool iMultiThreaded = true;
+	};
+
+	class event_mutex : public lifetime
+	{
+	public:
+		event_mutex() :
+			iLockCount(0)
+		{
+		}
+		~event_mutex()
+		{
+			while (iLockCount)
+				unlock();
+		}
+	public:
+		void lock()
+		{
+			if (event_system::multi_threaded())
+			{
+				++iLockCount;
+				iRealMutex.lock();
+			}
+		}
+		void unlock() noexcept
+		{
+			if (iLockCount > 0)
+			{
+				--iLockCount;
+				iRealMutex.unlock();
+			}
+		}
+		bool try_lock()
+		{
+			if (event_system::multi_threaded())
+			{
+				bool locked = iRealMutex.try_lock();
+				if (locked)
+					++iLockCount;
+				return locked;
+			}
+			else
+				return true;
+		}
+	private:
+		std::atomic<uint32_t> iLockCount;
+		std::recursive_mutex iRealMutex;
+	};
+
+	class sink;
+
+	template <typename... Arguments>
+	class event;
+		
+	template <typename... Arguments>
+	class event_handle
+	{
+	public:
+		typedef const event<Arguments...>* event_ptr;
+		typedef std::shared_ptr<event_ptr> event_instance_ptr;
+		typedef std::weak_ptr<event_ptr> event_instance_weak_ptr;
+		typedef const void* unique_id_type;
+		typedef std::function<void(Arguments...)> handler_callback;
+		typedef uint32_t sink_reference_count;
+		struct handler_list_item { std::optional<std::thread::id> iThreadId; unique_id_type iUniqueId; handler_callback iHandlerCallback; sink_reference_count iSinkReferenceCount; };
+		typedef std::list<handler_list_item, thread_safe_fast_pool_allocator<handler_list_item>> handler_list;
+	public:
+		event_instance_weak_ptr iEvent;
+		typename handler_list::iterator iHandler;
+	public:
+		event_handle& operator~()
+		{
+			iHandler->iThreadId = std::nullopt;
+			return *this;
+		}
 	};
 
 	class async_event_queue

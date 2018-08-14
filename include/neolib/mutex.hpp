@@ -48,53 +48,6 @@ namespace neolib
 		bool try_lock() { return true; }
 	};
 
-	template <typename Mutex>
-	class destroyable_mutex : public lifetime
-	{
-	public:
-		destroyable_mutex() :
-			iLockCount(0)
-		{
-		}
-		~destroyable_mutex()
-		{
-			while (iLockCount)
-				unlock();
-		}
-	public:
-		void lock()
-		{
-			if (event_system::multi_threaded())
-			{
-				++iLockCount;
-				iRealMutex.lock();
-			}
-		}
-		void unlock() noexcept
-		{
-			if (iLockCount > 0)
-			{
-				--iLockCount;
-				iRealMutex.unlock();
-			}
-		}
-		bool try_lock()
-		{
-			if (event_system::multi_threaded())
-			{
-				bool locked = iRealMutex.try_lock();
-				if (locked)
-					++iLockCount;
-				return locked;
-			}
-			else
-				return true;
-		}
-	private:
-		std::atomic<uint32_t> iLockCount;
-		Mutex iRealMutex;
-	};
-
 	template<class Mutex>
 	class destroyable_mutex_lock_guard
 	{
