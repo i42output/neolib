@@ -145,6 +145,11 @@ namespace neolib
 		struct instance_exists : std::logic_error { instance_exists() : std::logic_error("neogfx::async_event_queue::instance_exists") {} };
 		struct event_not_found : std::logic_error { event_not_found() : std::logic_error("neogfx::async_event_queue::event_not_found") {} };
 	private:
+		struct instance_pointers
+		{
+			async_event_queue* aliased;
+			std::weak_ptr<async_event_queue> counted;
+		};
 		typedef std::unordered_multimap<
 			const void*, 
 			std::pair<callback, neolib::lifetime::destroyed_flag>, 
@@ -159,12 +164,10 @@ namespace neolib
 			std::equal_to<std::thread::id>, 
 			thread_safe_fast_pool_allocator<std::pair<const std::thread::id, callback_list>>> threaded_callbacks;
 	public:
-		async_event_queue(neolib::async_task& aIoTask);
+		async_event_queue();
+		async_event_queue(neolib::async_task& aTask);
 		~async_event_queue();
-		static bool instantiated();
-		static async_event_queue& instance();
-		static async_event_queue& local_instance();
-		static async_event_queue& any_instance();
+		static std::shared_ptr<async_event_queue> instance();
 	public:
 		template<typename... Arguments>
 		void add(const event<Arguments...>& aEvent, callback aCallback)
@@ -185,12 +188,15 @@ namespace neolib
 		void enqueue_to_thread(std::thread::id aThreadId, callback aCallback);
 		void terminate();
 	private:
+		async_event_queue(std::shared_ptr<async_task> aTask);
+		static std::recursive_mutex& instance_mutex();
+		static instance_pointers& instance_ptrs();
 		void add(const void* aEvent, callback aCallback, neolib::lifetime::destroyed_flag aDestroyedFlag);
 		void remove(const void* aEvent);
 		bool has(const void* aEvent) const;
 		void publish_events();
 	private:
-		static async_event_queue* sInstance;
+		std::shared_ptr<async_task> iTask;
 		neolib::callback_timer iTimer;
 		mutable event_mutex iEventsMutex;
 		event_list iEvents;
@@ -227,6 +233,7 @@ namespace neolib
 		struct instance_data
 		{
 			instance_ptr instancePtr;
+			std::shared_ptr<async_event_queue> asyncEventQueue;
 			handler_list handlers;
 			unique_id_map uniqueIdMap;
 			event_trigger_type triggerType;
@@ -313,7 +320,7 @@ namespace neolib
 			if (!has_instance()) // no instance means no subscribers so no point triggering.
 				return;
 			destroyable_mutex_lock_guard<event_mutex> guard{ instance().mutex };
-			async_event_queue::any_instance().add(*this, [this, &aArguments...]() { sync_trigger(std::forward<Ts>(aArguments)...); });
+			instance().asyncEventQueue->add(*this, [this, &aArguments...]() { sync_trigger(std::forward<Ts>(aArguments)...); });
 		}
 		void accept() const
 		{
@@ -382,16 +389,19 @@ namespace neolib
 		void enqueue_to_thread(const handler_list_item& aItem, Ts&&... aArguments) const
 		{
 			auto& callback = aItem.iHandlerCallback;
-			async_event_queue::any_instance().enqueue_to_thread(*aItem.iThreadId, [callback, &aArguments...](){ callback(std::forward<Ts>(aArguments)...); });
+			instance().asyncEventQueue->enqueue_to_thread(*aItem.iThreadId, [callback, &aArguments...](){ callback(std::forward<Ts>(aArguments)...); });
 		}
 		void clear()
 		{
-			if (async_event_queue::any_instance().has(*this))
-				async_event_queue::any_instance().remove(*this);
+			if (instance().asyncEventQueue->has(*this))
+				instance().asyncEventQueue->remove(*this);
 			decltype(iInstanceData) temp;
 			{
 				destroyable_mutex_lock_guard<event_mutex> guard{ instance().mutex };
 				temp = std::move(iInstanceData);
+				auto queue = temp->asyncEventQueue;
+				if (queue.use_count() == 2)
+					std::thread{ [queue]() { std::this_thread::sleep_for(std::chrono::milliseconds(1000)); } }.detach();
 			}
 		}
 		void unsubscribe(handle aHandle) const
@@ -419,6 +429,7 @@ namespace neolib
 				{
 					allocator().construct(newInstance);
 					newInstance->instancePtr = std::make_shared<ptr>(this);
+					newInstance->asyncEventQueue = async_event_queue::instance();
 				}
 				catch (...)
 				{
