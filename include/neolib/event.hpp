@@ -400,7 +400,7 @@ namespace neolib
 				destroyable_mutex_lock_guard<event_mutex> guard{ instance().mutex };
 				temp = std::move(iInstanceData);
 				auto queue = temp->asyncEventQueue;
-				if (queue.use_count() == 2)
+				if (queue.use_count() == 2) // keep event queue around (cached) for a second 
 					std::thread{ [queue]() { std::this_thread::sleep_for(std::chrono::milliseconds(1000)); } }.detach();
 			}
 		}
