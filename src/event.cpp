@@ -47,6 +47,8 @@ namespace neolib
 				publish_events();
 				if (!iEvents.empty() && !aTimer.waiting())
 					aTimer.again();
+				if (iCache.first && std::chrono::steady_clock::now() > iCache.second)
+					iCache.first.reset();
 			}, 10, false
 		},
 		iHaveThreadedCallbacks{ false },
@@ -117,6 +119,12 @@ namespace neolib
 			iTimer.cancel();
 		iThreadedCallbacks.clear();
 		iHaveThreadedCallbacks = false;
+	}
+
+	void async_event_queue::persist(std::shared_ptr<async_event_queue> aPtr, uint32_t aDuration_ms)
+	{
+		iCache.first = aPtr;
+		iCache.second = std::chrono::steady_clock::now() + std::chrono::milliseconds(aDuration_ms);
 	}
 
 	void async_event_queue::enqueue_to_thread(std::thread::id aThreadId, callback aCallback)

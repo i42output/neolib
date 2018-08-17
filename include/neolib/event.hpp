@@ -187,6 +187,7 @@ namespace neolib
 		bool exec();
 		void enqueue_to_thread(std::thread::id aThreadId, callback aCallback);
 		void terminate();
+		void persist(std::shared_ptr<async_event_queue> aPtr, uint32_t aDuration_ms = 1000u);
 	private:
 		async_event_queue(std::shared_ptr<async_task> aTask);
 		static std::recursive_mutex& instance_mutex();
@@ -204,6 +205,7 @@ namespace neolib
 		std::atomic<bool> iHaveThreadedCallbacks;
 		threaded_callbacks iThreadedCallbacks;
 		std::atomic<bool> iTerminated;
+		std::pair<std::shared_ptr<async_event_queue>, std::chrono::time_point<std::chrono::steady_clock>> iCache;
 	};
 
 	enum class event_trigger_type
@@ -400,8 +402,8 @@ namespace neolib
 				destroyable_mutex_lock_guard<event_mutex> guard{ instance().mutex };
 				temp = std::move(iInstanceData);
 				auto queue = temp->asyncEventQueue;
-				if (queue.use_count() == 2) // keep event queue around (cached) for a second 
-					std::thread{ [queue]() { std::this_thread::sleep_for(std::chrono::milliseconds(1000)); } }.detach();
+				if (queue.use_count() == 2)
+					queue->persist(queue); // keeps event queue around (cached) for a second 
 			}
 		}
 		void unsubscribe(handle aHandle) const
