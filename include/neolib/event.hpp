@@ -232,7 +232,7 @@ namespace neolib
 		typedef typename handle::handler_list handler_list;
 		typedef std::map<unique_id_type, typename handler_list::iterator> unique_id_map;
 		typedef std::deque<typename handler_list::const_iterator> notification_list;
-		struct instance_data
+		struct state
 		{
 			instance_ptr instancePtr;
 			std::shared_ptr<async_event_queue> asyncEventQueue;
@@ -241,14 +241,13 @@ namespace neolib
 			event_trigger_type triggerType;
 			bool accepted;
 			notification_list notifications;
-			event_mutex mutex;
 		};
-		typedef thread_safe_fast_pool_allocator<instance_data> instance_allocator;
+		typedef thread_safe_fast_pool_allocator<state> state_allocator;
 	public:
-		event()
+		event() : iInstanceData{ nullptr }
 		{
 		}
-		event(const event&)
+		event(const event&) : iInstanceData{ nullptr }
 		{
 			// do nothing.
 		}
@@ -265,19 +264,18 @@ namespace neolib
 	public:
 		event_trigger_type trigger_type() const
 		{
-			return instance().triggerType;
+			return instance_data().triggerType;
 		}
 		void set_trigger_type(event_trigger_type aTriggerType)
 		{
-			instance().triggerType = aTriggerType;
+			instance_data().triggerType = aTriggerType;
 		}
 		template<class... Ts>
 		bool trigger(Ts&&... aArguments) const
 		{
-			if (!has_instance()) // no instance means no subscribers so no point triggering.
+			if (!has_instance_data()) // no instance date means no subscribers so no point triggering.
 				return true;
-			destroyable_mutex_lock_guard<event_mutex> guard{ instance().mutex };
-			switch (instance().triggerType)
+			switch (instance_data().triggerType)
 			{
 			case event_trigger_type::Default:
 			case event_trigger_type::Synchronous:
@@ -291,26 +289,27 @@ namespace neolib
 		template<class... Ts>
 		bool sync_trigger(Ts&&... aArguments) const
 		{
-			if (!has_instance()) // no instance means no subscribers so no point triggering.
+			if (!has_instance_data()) // no instance date means no subscribers so no point triggering.
 				return true;
-			destroyable_mutex_lock_guard<event_mutex> guard{ instance().mutex };
+			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
 			destroyed_flag destroyed{ *this };
-			for (auto i = instance().handlers.begin(); i != instance().handlers.end(); ++i)
-				instance().notifications.push_back(i);
-			while (!instance().notifications.empty())
+			auto& instanceData = instance_data();
+			for (auto i = instanceData.handlers.begin(); i != instanceData.handlers.end(); ++i)
+				instanceData.notifications.push_back(i);
+			while (!instanceData.notifications.empty())
 			{
-				auto i = instance().notifications.front();
-				instance().notifications.pop_front();
+				auto i = instanceData.notifications.front();
+				instanceData.notifications.pop_front();
 				if (i->iThreadId == std::nullopt || *i->iThreadId == std::this_thread::get_id())
 					i->iHandlerCallback(std::forward<Ts>(aArguments)...);
 				else
 					enqueue_to_thread(*i, std::forward<Ts>(aArguments)...);
 				if (destroyed)
 					return false;
-				if (instance().accepted)
+				if (instanceData.accepted)
 				{
-					instance().notifications.clear();
-					instance().accepted = false;
+					instanceData.notifications.clear();
+					instanceData.accepted = false;
 					return false;
 				}
 			}
@@ -319,31 +318,32 @@ namespace neolib
 		template<class... Ts>
 		void async_trigger(Ts&&... aArguments) const
 		{
-			if (!has_instance()) // no instance means no subscribers so no point triggering.
+			if (!has_instance_data()) // no instance means no subscribers so no point triggering.
 				return;
-			destroyable_mutex_lock_guard<event_mutex> guard{ instance().mutex };
-			instance().asyncEventQueue->add(*this, [this, &aArguments...]() { sync_trigger(std::forward<Ts>(aArguments)...); });
+			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
+			instance_data().asyncEventQueue->add(*this, [this, &aArguments...]() { sync_trigger(std::forward<Ts>(aArguments)...); });
 		}
 		void accept() const
 		{
-			instance().accepted = true;
+			instance_data().accepted = true;
 		}
 		void ignore() const
 		{
-			instance().accepted = false;
+			instance_data().accepted = false;
 		}
 	public:
 		handle subscribe(const handler_callback& aHandlerCallback, const void* aUniqueId = 0) const
 		{
-			destroyable_mutex_lock_guard<event_mutex> guard{ instance().mutex };
+			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
+			auto& instanceData = instance_data();
 			if (aUniqueId == 0)
-				return handle{ instance().instancePtr, instance().handlers.insert(instance().handlers.end(), handler_list_item{ std::this_thread::get_id(), aUniqueId, aHandlerCallback, 0 }) };
-			auto existing = instance().uniqueIdMap.find(aUniqueId);
-			if (existing == instance().uniqueIdMap.end())
-				existing = instance().uniqueIdMap.insert(std::make_pair(aUniqueId, instance().handlers.insert(instance().handlers.end(), handler_list_item{ std::this_thread::get_id(), aUniqueId, aHandlerCallback, 0 }))).first;
+				return handle{ instanceData.instancePtr, instanceData.handlers.insert(instanceData.handlers.end(), handler_list_item{ std::this_thread::get_id(), aUniqueId, aHandlerCallback, 0 }) };
+			auto existing = instanceData.uniqueIdMap.find(aUniqueId);
+			if (existing == instanceData.uniqueIdMap.end())
+				existing = instanceData.uniqueIdMap.insert(std::make_pair(aUniqueId, instanceData.handlers.insert(instanceData.handlers.end(), handler_list_item{ std::this_thread::get_id(), aUniqueId, aHandlerCallback, 0 }))).first;
 			else
 				existing->second->iHandlerCallback = aHandlerCallback;
-			return handle{ instance().instancePtr, existing->second };
+			return handle{ instanceData.instancePtr, existing->second };
 		}
 		handle operator()(const handler_callback& aHandlerCallback, const void* aUniqueId = 0) const
 		{
@@ -371,10 +371,11 @@ namespace neolib
 		}
 		void unsubscribe(const void* aUniqueId) const
 		{
-			destroyable_mutex_lock_guard<event_mutex> guard{ instance().mutex };
-			auto existing = instance().uniqueIdMap.find(aUniqueId);
-			if (existing != instance().uniqueIdMap.end())
-				unsubscribe(handle{ instance().instancePtr, existing->second });
+			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
+			auto& instanceData = instance_data();
+			auto existing = instanceData.uniqueIdMap.find(aUniqueId);
+			if (existing != instanceData.uniqueIdMap.end())
+				unsubscribe(handle{ instanceData.instancePtr, existing->second });
 		}
 		template <typename T>
 		void unsubscribe(const T* aUniqueIdObject) const
@@ -391,39 +392,50 @@ namespace neolib
 		void enqueue_to_thread(const handler_list_item& aItem, Ts&&... aArguments) const
 		{
 			auto& callback = aItem.iHandlerCallback;
-			instance().asyncEventQueue->enqueue_to_thread(*aItem.iThreadId, [callback, &aArguments...](){ callback(std::forward<Ts>(aArguments)...); });
+			instance_data().asyncEventQueue->enqueue_to_thread(*aItem.iThreadId, [callback, &aArguments...](){ callback(std::forward<Ts>(aArguments)...); });
 		}
 		void clear()
 		{
-			if (instance().asyncEventQueue->has(*this))
-				instance().asyncEventQueue->remove(*this);
-			decltype(iInstanceData) temp;
+			if (!has_instance_data())
+				return;
+			auto& instanceData = instance_data();
+			if (instanceData.asyncEventQueue->has(*this))
+				instanceData.asyncEventQueue->remove(*this);
+			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
+			struct destroy_state
 			{
-				destroyable_mutex_lock_guard<event_mutex> guard{ instance().mutex };
-				temp = std::move(iInstanceData);
-				auto queue = temp->asyncEventQueue;
-				if (queue.use_count() == 2)
-					queue->persist(queue); // keeps event queue around (cached) for a second 
-			}
+				state* instanceData;
+				~destroy_state()
+				{
+					allocator().destroy(instanceData);
+					allocator().deallocate(instanceData);
+				}
+			} destroyer{ iInstanceData };
+			iInstanceData = nullptr;
+			auto queue = instanceData.asyncEventQueue;
+			if (queue.use_count() == 2)
+				queue->persist(queue); // keeps event queue around (cached) for a second 
 		}
 		void unsubscribe(handle aHandle) const
 		{
-			destroyable_mutex_lock_guard<event_mutex> guard{ instance().mutex };
-			instance().notifications.erase(std::remove(instance().notifications.begin(), instance().notifications.end(), aHandle.iHandler), instance().notifications.end());
+			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
+			auto& instanceData = instance_data();
+			instanceData.notifications.erase(std::remove(instanceData.notifications.begin(), instanceData.notifications.end(), aHandle.iHandler), instanceData.notifications.end());
 			if (aHandle.iHandler->iUniqueId != 0)
 			{
-				auto existing = instance().uniqueIdMap.find(aHandle.iHandler->iUniqueId);
-				if (existing != instance().uniqueIdMap.end())
-					instance().uniqueIdMap.erase(existing);
+				auto existing = instanceData.uniqueIdMap.find(aHandle.iHandler->iUniqueId);
+				if (existing != instanceData.uniqueIdMap.end())
+					instanceData.uniqueIdMap.erase(existing);
 			}
-			instance().handlers.erase(aHandle.iHandler);
+			instanceData.handlers.erase(aHandle.iHandler);
 		}
-		bool has_instance() const
+		bool has_instance_data() const
 		{
 			return iInstanceData != nullptr;
 		}
-		instance_data& instance() const
+		state& instance_data() const
 		{
+			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
 			if (iInstanceData == nullptr)
 			{
 				auto newInstance = allocator().allocate();
@@ -438,23 +450,18 @@ namespace neolib
 					allocator().deallocate(newInstance);
 					throw;
 				}
-				iInstanceData = decltype(iInstanceData){
-					newInstance,
-					[](instance_data* aInstance)
-					{
-						allocator().destroy(aInstance);
-						allocator().deallocate(aInstance);
-					}};
+				iInstanceData = newInstance;
 			}
 			return *iInstanceData;
 		}
-		static instance_allocator& allocator()
+		static state_allocator& allocator()
 		{
-			static instance_allocator sAllocator;
+			static state_allocator sAllocator;
 			return sAllocator;
 		}
 	private:
-		mutable std::unique_ptr<instance_data, std::function<void(instance_data*)>> iInstanceData;
+		mutable 	event_mutex iMutex;
+		mutable std::atomic<state*> iInstanceData;
 	};
 
 	class sink
