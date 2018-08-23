@@ -53,6 +53,14 @@ namespace neolib
 		{
 			instance().iMultiThreaded = true;
 		}
+		static std::chrono::milliseconds assume_deadlock_after()
+		{
+			return instance().iAssumeDeadlockAfter;
+		}
+		static void assume_deadlock_after(std::chrono::milliseconds aDuration)
+		{
+			instance().iAssumeDeadlockAfter = aDuration;
+		}
 	private:
 		static event_system& instance()
 		{
@@ -61,6 +69,7 @@ namespace neolib
 		}
 	private:
 		bool iMultiThreaded = true;
+		std::chrono::milliseconds iAssumeDeadlockAfter = {};
 	};
 
 	class event_mutex : public lifetime
@@ -299,7 +308,7 @@ namespace neolib
 		{
 			if (!has_instance_data()) // no instance date means no subscribers so no point triggering.
 				return true;
-			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex, std::chrono::milliseconds(10), iInSync ? 100u : 0u };
+			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex, iInSync ? event_system::assume_deadlock_after() : std::chrono::milliseconds{} };
 			scoped_atomic_flag saf{ iInSync };
 			destroyed_flag destroyed{ *this };
 			auto& instanceData = instance_data();

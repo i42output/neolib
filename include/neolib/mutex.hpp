@@ -52,7 +52,7 @@ namespace neolib
 	class destroyable_mutex_lock_guard
 	{
 	public:
-		struct lock_failure : std::logic_error { lock_failure() : std::logic_error("neolib::destroyable_mutex_lock_guard::lock_failure") {} };
+		struct deadlock : std::logic_error { deadlock() : std::logic_error("neolib::destroyable_mutex_lock_guard::deadlock") {} };
 	public:
 		typedef Mutex mutex_type;
 	public:
@@ -61,17 +61,22 @@ namespace neolib
 		{
 			iMutex.lock();
 		}
-		template <typename RetryDuration>
-		destroyable_mutex_lock_guard(Mutex& aMutex, const RetryDuration& aRetryDuration, uint32_t aMaxRetries) :
+		destroyable_mutex_lock_guard(Mutex& aMutex, const std::chrono::milliseconds& aAssumeDeadlockAfter) :
 			iMutex{ aMutex }, iMutexDestroyed{ aMutex }
 		{
-			uint32_t attempt = 0;
+			if (aAssumeDeadlockAfter == std::chrono::milliseconds{})
+			{
+				iMutex.lock();
+				return;
+			}
+			if (iMutex.try_lock())
+				return;
+			auto start = std::chrono::steady_clock::now();
 			while (!iMutex.try_lock())
 			{
-				if (aMaxRetries == 0 || ++attempt < aMaxRetries)
-					std::this_thread::sleep_for(aRetryDuration);
-				else
-					throw lock_failure();
+				std::this_thread::sleep_for(std::chrono::milliseconds{10});
+				if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start) > aAssumeDeadlockAfter)
+					throw deadlock();
 			}
 		}
 		destroyable_mutex_lock_guard(Mutex& aMutex, std::adopt_lock_t) :
