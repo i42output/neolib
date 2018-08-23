@@ -1,20 +1,20 @@
 // event.hpp
 /*
-  Transplanted from neogfx C++ GUI Library
-  Copyright (c) 2015-2018 Leigh Johnston.  All Rights Reserved.
-  
-  This program is free software: you can redistribute it and / or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-  
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+Transplanted from neogfx C++ GUI Library
+Copyright (c) 2015-2018 Leigh Johnston.  All Rights Reserved.
+
+This program is free software: you can redistribute it and / or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #pragma once
@@ -30,6 +30,7 @@
 #include "lifetime.hpp"
 #include "async_task.hpp"
 #include "timer.hpp"
+#include "raii.hpp"
 
 namespace neolib
 {
@@ -112,7 +113,7 @@ namespace neolib
 
 	template <typename... Arguments>
 	class event;
-		
+
 	template <typename... Arguments>
 	class event_handle
 	{
@@ -129,7 +130,7 @@ namespace neolib
 		event_instance_weak_ptr iEvent;
 		typename handler_list::iterator iHandler;
 	public:
-		event_handle& operator~()
+		event_handle & operator~()
 		{
 			iHandler->iThreadId = std::nullopt;
 			return *this;
@@ -151,17 +152,17 @@ namespace neolib
 			std::weak_ptr<async_event_queue> counted;
 		};
 		typedef std::unordered_multimap<
-			const void*, 
-			std::pair<callback, neolib::lifetime::destroyed_flag>, 
-			std::hash<const void*>, 
+			const void*,
+			std::pair<callback, neolib::lifetime::destroyed_flag>,
+			std::hash<const void*>,
 			std::equal_to<const void*>,
 			thread_safe_fast_pool_allocator<std::pair<const void* const, std::pair<callback, neolib::lifetime::destroyed_flag>>>> event_list;
 		typedef std::vector<callback> callback_list;
 		typedef std::unordered_map<
-			std::thread::id, 
-			callback_list, 
-			std::hash<std::thread::id>, 
-			std::equal_to<std::thread::id>, 
+			std::thread::id,
+			callback_list,
+			std::hash<std::thread::id>,
+			std::equal_to<std::thread::id>,
 			thread_safe_fast_pool_allocator<std::pair<const std::thread::id, callback_list>>> threaded_callbacks;
 	public:
 		async_event_queue();
@@ -231,7 +232,7 @@ namespace neolib
 		typedef typename handle::handler_list_item handler_list_item;
 		typedef typename handle::handler_list handler_list;
 		typedef std::map<unique_id_type, typename handler_list::iterator> unique_id_map;
-		typedef std::deque<typename handler_list::const_iterator> notification_list;
+		typedef std::vector<typename handler_list::const_iterator> notification_list;
 		struct state
 		{
 			instance_ptr instancePtr;
@@ -239,8 +240,15 @@ namespace neolib
 			handler_list handlers;
 			unique_id_map uniqueIdMap;
 			event_trigger_type triggerType;
-			bool accepted;
-			notification_list notifications;
+			struct context
+			{
+				bool accepted;
+				notification_list notifications;
+				std::optional<typename notification_list::iterator> iterCurrent;
+				std::optional<typename notification_list::iterator> iterNew;
+			};
+			typedef std::list<context, thread_safe_fast_pool_allocator<context>> context_list;
+			context_list contexts;
 		};
 		typedef thread_safe_fast_pool_allocator<state> state_allocator;
 	public:
@@ -256,7 +264,7 @@ namespace neolib
 			clear();
 		}
 	public:
-		event& operator=(const event&)
+		event & operator=(const event&)
 		{
 			clear();
 			return *this;
@@ -291,26 +299,47 @@ namespace neolib
 		{
 			if (!has_instance_data()) // no instance date means no subscribers so no point triggering.
 				return true;
-			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
+			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex, std::chrono::milliseconds(10), iInSync ? 100u : 0u };
+			scoped_atomic_flag saf{ iInSync };
 			destroyed_flag destroyed{ *this };
 			auto& instanceData = instance_data();
-			for (auto i = instanceData.handlers.begin(); i != instanceData.handlers.end(); ++i)
-				instanceData.notifications.push_back(i);
-			while (!instanceData.notifications.empty())
+			auto iterContext = instanceData.contexts.insert(instanceData.contexts.end(), typename state::context{});
+			struct context_remover
 			{
-				auto i = instanceData.notifications.front();
-				instanceData.notifications.pop_front();
-				if (i->iThreadId == std::nullopt || *i->iThreadId == std::this_thread::get_id())
-					i->iHandlerCallback(std::forward<Ts>(aArguments)...);
+				destroyed_flag destroyed;
+				event_mutex& iMutex;
+				typename state::context_list& contexts;
+				typename state::context_list::const_iterator iterContext;
+				~context_remover()
+				{
+					if (!destroyed)
+					{
+						destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
+						contexts.erase(iterContext);
+					}
+				}
+			} cr{ *this, iMutex, instanceData.contexts, iterContext };
+			auto& context = *iterContext;
+			context.notifications.reserve(instanceData.handlers.size());
+			for (auto iterHandler = instanceData.handlers.begin(); iterHandler != instanceData.handlers.end(); ++iterHandler)
+				context.notifications.push_back(iterHandler);
+			for (context.iterCurrent = context.notifications.begin(); *context.iterCurrent != context.notifications.end();)
+			{
+				auto iterHandler = **context.iterCurrent;
+				if (iterHandler->iThreadId == std::nullopt || *iterHandler->iThreadId == std::this_thread::get_id())
+					iterHandler->iHandlerCallback(std::forward<Ts>(aArguments)...);
 				else
-					enqueue_to_thread(*i, std::forward<Ts>(aArguments)...);
+					enqueue_to_thread(*iterHandler, std::forward<Ts>(aArguments)...);
 				if (destroyed)
 					return false;
-				if (instanceData.accepted)
-				{
-					instanceData.notifications.clear();
-					instanceData.accepted = false;
+				if (context.accepted)
 					return false;
+				if (context.iterCurrent != std::nullopt)
+					++*context.iterCurrent;
+				else
+				{
+					context.iterCurrent = context.iterNew;
+					context.iterNew = std::nullopt;
 				}
 			}
 			return true;
@@ -420,7 +449,24 @@ namespace neolib
 		{
 			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
 			auto& instanceData = instance_data();
-			instanceData.notifications.erase(std::remove(instanceData.notifications.begin(), instanceData.notifications.end(), aHandle.iHandler), instanceData.notifications.end());
+			for (auto& context : instanceData.contexts)
+				for (auto iterNotification = context.notifications.begin(); iterNotification != context.notifications.end();)
+				{
+					if (*iterNotification == aHandle.iHandler)
+					{
+						if (*context.iterCurrent < iterNotification)
+							iterNotification = context.notifications.erase(iterNotification);
+						else
+						{
+							auto d = std::distance(iterNotification, *context.iterCurrent);
+							iterNotification = context.notifications.erase(iterNotification);
+							context.iterCurrent = std::nullopt;
+							context.iterNew = iterNotification + d;
+						}
+					}
+					else
+						++iterNotification;
+				}
 			if (aHandle.iHandler->iUniqueId != 0)
 			{
 				auto existing = instanceData.uniqueIdMap.find(aHandle.iHandler->iUniqueId);
@@ -435,6 +481,8 @@ namespace neolib
 		}
 		state& instance_data() const
 		{
+			if (has_instance_data())
+				return *iInstanceData;
 			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
 			if (iInstanceData == nullptr)
 			{
@@ -460,7 +508,8 @@ namespace neolib
 			return sAllocator;
 		}
 	private:
-		mutable 	event_mutex iMutex;
+		mutable std::atomic<bool> iInSync;
+		mutable event_mutex iMutex;
 		mutable std::atomic<state*> iInstanceData;
 	};
 
@@ -478,27 +527,27 @@ namespace neolib
 		}
 		template <typename... Arguments>
 		sink(event_handle<Arguments...> aHandle) :
-			iControllers{[aHandle](controller_op_e aOperation)
-				{ 
-					if (!aHandle.iEvent.expired())
-					{
-						switch (aOperation)
-						{
-						case AddRef:
-							++aHandle.iHandler->iSinkReferenceCount;
-							break;
-						case Release:
-							if (--aHandle.iHandler->iSinkReferenceCount == 0 && !aHandle.iEvent.expired())
-								(**aHandle.iEvent.lock()).unsubscribe(aHandle);
-							break;
-						}
-					}
-				}}
+			iControllers{ [aHandle](controller_op_e aOperation)
+		{
+			if (!aHandle.iEvent.expired())
+			{
+				switch (aOperation)
+				{
+				case AddRef:
+					++aHandle.iHandler->iSinkReferenceCount;
+					break;
+				case Release:
+					if (--aHandle.iHandler->iSinkReferenceCount == 0 && !aHandle.iEvent.expired())
+						(**aHandle.iEvent.lock()).unsubscribe(aHandle);
+					break;
+				}
+			}
+		} }
 		{
 			add_ref();
 		}
-		sink(const sink& aSink) : 
-			iControllers{aSink.iControllers}
+		sink(const sink& aSink) :
+			iControllers{ aSink.iControllers }
 		{
 			add_ref();
 		}
@@ -514,12 +563,12 @@ namespace neolib
 		template <typename... Arguments>
 		sink& operator=(event_handle<Arguments...> aHandle)
 		{
-			return *this = sink{aHandle};
+			return *this = sink{ aHandle };
 		}
 		template <typename... Arguments>
 		sink& operator+=(event_handle<Arguments...> aHandle)
 		{
-			sink s{aHandle};
+			sink s{ aHandle };
 			s.add_ref();
 			iControllers.insert(iControllers.end(), s.iControllers.begin(), s.iControllers.end());
 			return *this;

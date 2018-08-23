@@ -52,12 +52,27 @@ namespace neolib
 	class destroyable_mutex_lock_guard
 	{
 	public:
+		struct lock_failure : std::logic_error { lock_failure() : std::logic_error("neolib::destroyable_mutex_lock_guard::lock_failure") {} };
+	public:
 		typedef Mutex mutex_type;
 	public:
 		explicit destroyable_mutex_lock_guard(Mutex& aMutex) :
 			iMutex{ aMutex }, iMutexDestroyed{ aMutex }
 		{
 			iMutex.lock();
+		}
+		template <typename RetryDuration>
+		destroyable_mutex_lock_guard(Mutex& aMutex, const RetryDuration& aRetryDuration, uint32_t aMaxRetries) :
+			iMutex{ aMutex }, iMutexDestroyed{ aMutex }
+		{
+			uint32_t attempt = 0;
+			while (!iMutex.try_lock())
+			{
+				if (aMaxRetries == 0 || ++attempt < aMaxRetries)
+					std::this_thread::sleep_for(aRetryDuration);
+				else
+					throw lock_failure();
+			}
 		}
 		destroyable_mutex_lock_guard(Mutex& aMutex, std::adopt_lock_t) :
 			iMutex{ aMutex }, iMutexDestroyed{ aMutex }
