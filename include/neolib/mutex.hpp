@@ -37,6 +37,7 @@
 
 #include "neolib.hpp"
 #include <mutex>
+#include <memory>
 #include "lifetime.hpp"
 
 namespace neolib
@@ -52,46 +53,47 @@ namespace neolib
 	class destroyable_mutex_lock_guard
 	{
 	public:
-		struct deadlock : std::logic_error { deadlock() : std::logic_error("neolib::destroyable_mutex_lock_guard::deadlock") {} };
-	public:
 		typedef Mutex mutex_type;
+		typedef std::shared_ptr<mutex_type> shared_mutex_type;
 	public:
-		explicit destroyable_mutex_lock_guard(Mutex& aMutex) :
-			iMutex{ aMutex }, iMutexDestroyed{ aMutex }
+		explicit destroyable_mutex_lock_guard(mutex_type& aMutex) :
+			iMutex{ aMutex }, iMutexDestroyed{ aMutex }, iLocked{ false }
 		{
 			iMutex.lock();
+			iLocked = true;
 		}
-		destroyable_mutex_lock_guard(Mutex& aMutex, const std::chrono::milliseconds& aAssumeDeadlockAfter) :
-			iMutex{ aMutex }, iMutexDestroyed{ aMutex }
+		explicit destroyable_mutex_lock_guard(shared_mutex_type& aMutex) :
+			iMutex{ *aMutex }, iMutexDestroyed{ *aMutex }, iLocked{ false }
 		{
-			if (aAssumeDeadlockAfter == std::chrono::milliseconds{})
-			{
-				iMutex.lock();
-				return;
-			}
-			if (iMutex.try_lock())
-				return;
-			auto start = std::chrono::steady_clock::now();
-			while (!iMutex.try_lock())
-			{
-				std::this_thread::sleep_for(std::chrono::milliseconds{10});
-				if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start) > aAssumeDeadlockAfter)
-					throw deadlock();
-			}
+			iMutex.lock();
+			iLocked = true;
 		}
-		destroyable_mutex_lock_guard(Mutex& aMutex, std::adopt_lock_t) :
-			iMutex{ aMutex }, iMutexDestroyed{ aMutex }
+		destroyable_mutex_lock_guard(mutex_type& aMutex, std::adopt_lock_t) :
+			iMutex{ aMutex }, iMutexDestroyed{ aMutex }, iLocked{ true }
+		{
+		}
+		destroyable_mutex_lock_guard(shared_mutex_type& aMutex, std::adopt_lock_t) :
+			iMutex{ *aMutex }, iMutexDestroyed{ *aMutex }, iLocked{ true }
 		{
 		}
 		~destroyable_mutex_lock_guard() noexcept
 		{
-			if (!iMutexDestroyed)
-				iMutex.unlock();
+			unlock();
 		}
 		destroyable_mutex_lock_guard(const destroyable_mutex_lock_guard&) = delete;
 		destroyable_mutex_lock_guard& operator=(const destroyable_mutex_lock_guard&) = delete;
+	public:
+		void unlock()
+		{
+			if (iLocked && !iMutexDestroyed)
+			{
+				iMutex.unlock();
+				iLocked = false;
+			}
+		}
 	private:
 		mutex_type& iMutex;
 		destroyed_flag iMutexDestroyed;
+		bool iLocked;
 	};
 }

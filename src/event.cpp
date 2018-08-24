@@ -25,8 +25,20 @@
 
 namespace neolib
 { 
+	class async_event_queue::local_thread : public async_thread
+	{
+	public:
+		local_thread(async_event_queue& aOwner) :
+			async_thread{ "neolib::async_event_queue::local_thread" },
+			iOwner{ aOwner }
+		{
+		}
+	private:
+		async_event_queue& iOwner;
+	};
+
 	async_event_queue::async_event_queue() :
-		async_event_queue{ std::make_shared<async_thread>() }
+		async_event_queue{ std::make_shared<local_thread>(*this) }
 	{
 		static_cast<async_thread&>(*iTask).start();
 	}
@@ -58,6 +70,9 @@ namespace neolib
 
 	async_event_queue::~async_event_queue()
 	{
+		exec();
+		while (iHaveThreadedCallbacks)
+			std::this_thread::sleep_for(std::chrono::milliseconds{ 1 });
 		std::lock_guard lg{ instance_mutex() };
 		if (instance_ptrs().aliased == this)
 			instance_ptrs().aliased = nullptr;
@@ -97,7 +112,6 @@ namespace neolib
 				destroyable_mutex_lock_guard<event_mutex> guard{ iThreadedCallbacksMutex };
 				work = std::move(iThreadedCallbacks[std::this_thread::get_id()]);
 				iThreadedCallbacks.erase(iThreadedCallbacks.find(std::this_thread::get_id()));
-				iHaveThreadedCallbacks = !iThreadedCallbacks.empty();
 			}
 			for (auto& cb : work)
 			{
@@ -106,6 +120,7 @@ namespace neolib
 				cb();
 				didSome = true;
 			}
+			iHaveThreadedCallbacks = !iThreadedCallbacks.empty();
 		}
 		return didSome;
 	}
