@@ -309,19 +309,20 @@ namespace neolib
 			auto iterContext = instanceData.contexts.insert(instanceData.contexts.end(), std::make_shared<typename state::context>());
 			struct context_remover
 			{
+				destroyed_flag instanceDestroyed;
 				destroyed_flag instanceDataDestroyed;
 				event_mutex& mutex;
 				typename state::context_list& contexts;
 				typename state::context_list::const_iterator iterContext;
 				~context_remover()
 				{
-					if (!instanceDataDestroyed)
+					if (!instanceDestroyed && !instanceDataDestroyed)
 					{
 						destroyable_mutex_lock_guard<event_mutex> guard{ mutex };
 						contexts.erase(iterContext);
 					}
 				}
-			} cr{ instanceData, iMutex, instanceData.contexts, iterContext };
+			} cr{ *this, instanceData, iMutex, instanceData.contexts, iterContext };
 			auto contextPtr = *iterContext; // need smart pointer copy here to extend possible lifetime of context...
 			auto& context = *contextPtr;
 			context.notifications.reserve(instanceData.handlers.size());
