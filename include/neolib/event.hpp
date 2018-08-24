@@ -235,9 +235,9 @@ namespace neolib
 		typedef typename handle::handler_list_item handler_list_item;
 		typedef typename handle::handler_list handler_list;
 		typedef std::map<unique_id_type, typename handler_list::iterator> unique_id_map;
-		typedef std::pair<std::atomic<bool>, typename handler_list::const_iterator> notification;
+		typedef std::tuple<std::atomic<bool>, handler_callback, typename handler_list::const_iterator> notification;
 		typedef boost::container::stable_vector<notification, thread_safe_fast_pool_allocator<notification>> notification_list;
-		struct state
+		struct state : lifetime
 		{
 			instance_ptr instancePtr;
 			std::shared_ptr<async_event_queue> asyncEventQueue;
@@ -249,15 +249,16 @@ namespace neolib
 				bool accepted;
 				notification_list notifications;
 			};
-			typedef std::list<context, thread_safe_fast_pool_allocator<context>> context_list;
+			typedef std::shared_ptr<context> context_ptr;
+			typedef std::list<context_ptr, thread_safe_fast_pool_allocator<context_ptr>> context_list;
 			context_list contexts;
 		};
 		typedef thread_safe_fast_pool_allocator<state> state_allocator;
 	public:
-		event() : iInstanceData{ nullptr }
+		event() : iInstanceData{ nullptr }, iInSync{ false }
 		{
 		}
-		event(const event&) : iInstanceData{ nullptr }
+		event(const event&) : iInstanceData{ nullptr }, iInSync{ false }
 		{
 			// do nothing.
 		}
@@ -301,39 +302,40 @@ namespace neolib
 		{
 			if (!has_instance_data()) // no instance date means no subscribers so no point triggering.
 				return true;
+			scoped_atomic_flag saf{ iInSync };
 			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
 			destroyed_flag destroyed{ *this };
 			auto& instanceData = instance_data();
-			auto iterContext = instanceData.contexts.emplace(instanceData.contexts.end());
+			auto iterContext = instanceData.contexts.insert(instanceData.contexts.end(), std::make_shared<typename state::context>());
 			struct context_remover
 			{
-				destroyed_flag destroyed;
-				event_mutex& iMutex;
+				destroyed_flag instanceDataDestroyed;
+				event_mutex& mutex;
 				typename state::context_list& contexts;
 				typename state::context_list::const_iterator iterContext;
 				~context_remover()
 				{
-					if (!destroyed)
+					if (!instanceDataDestroyed)
 					{
-						destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
+						destroyable_mutex_lock_guard<event_mutex> guard{ mutex };
 						contexts.erase(iterContext);
 					}
 				}
-			} cr{ *this, iMutex, instanceData.contexts, iterContext };
-			auto& context = *iterContext;
+			} cr{ instanceData, iMutex, instanceData.contexts, iterContext };
+			auto contextPtr = *iterContext; // need smart pointer copy here to extend possible lifetime of context...
+			auto& context = *contextPtr;
 			context.notifications.reserve(instanceData.handlers.size());
 			for (auto iterHandler = instanceData.handlers.begin(); iterHandler != instanceData.handlers.end(); ++iterHandler)
-				context.notifications.emplace_back(true, iterHandler);
+				if (iterHandler->iThreadId == std::nullopt || *iterHandler->iThreadId == std::this_thread::get_id())
+					context.notifications.emplace_back(true, iterHandler->iHandlerCallback, iterHandler);
+				else
+					enqueue_to_thread(*iterHandler, std::forward<Ts>(aArguments)...);
 			guard.unlock();
 			for (auto& notification : context.notifications)
 			{
-				if (!notification.first)
+				if (!std::get<0>(notification))
 					continue;
-				auto iterHandler = notification.second;
-				if (iterHandler->iThreadId == std::nullopt || *iterHandler->iThreadId == std::this_thread::get_id())
-					iterHandler->iHandlerCallback(std::forward<Ts>(aArguments)...);
-				else
-					enqueue_to_thread(*iterHandler, std::forward<Ts>(aArguments)...);
+				std::get<1>(notification)(std::forward<Ts>(aArguments)...);
 				if (destroyed)
 					return false;
 				if (context.accepted)
@@ -448,10 +450,10 @@ namespace neolib
 			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
 			auto& instanceData = instance_data();
 			for (auto& context : instanceData.contexts)
-				for (auto& notification : context.notifications)
+				for (auto& notification : context->notifications)
 				{
-					if (notification.second == aHandle.iHandler)
-						notification.first = false;
+					if (std::get<2>(notification) == aHandle.iHandler)
+						std::get<0>(notification) = false;
 				}
 			if (aHandle.iHandler->iUniqueId != 0)
 			{
@@ -496,6 +498,7 @@ namespace neolib
 	private:
 		mutable event_mutex iMutex;
 		mutable std::atomic<state*> iInstanceData;
+		mutable std::atomic<bool> iInSync;
 	};
 
 	class sink

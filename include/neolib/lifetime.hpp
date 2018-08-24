@@ -40,6 +40,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <mutex>
+#include <atomic>
 #include <neolib/allocator.hpp>
 #include <optional>
 #include "i_lifetime.hpp"
@@ -131,7 +132,7 @@ namespace neolib
 	private:
 		subject_pointer iSubject;
 		owner_pointer iOwner;
-		lifetime_state iState;
+		std::atomic<lifetime_state> iState;
 		bool iDebug;
 	};
 
@@ -307,7 +308,7 @@ namespace neolib
 			return iFlagListRep.flags(aLifetime);
 		}
 	private:
-		lifetime_state iState;
+		std::atomic<lifetime_state> iState;
 		mutable flag_list_representation_type iFlagListRep;
 	};
 
