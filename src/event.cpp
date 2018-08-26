@@ -112,6 +112,7 @@ namespace neolib
 				destroyable_mutex_lock_guard<event_mutex> guard{ iThreadedCallbacksMutex };
 				work = std::move(iThreadedCallbacks[std::this_thread::get_id()]);
 				iThreadedCallbacks.erase(iThreadedCallbacks.find(std::this_thread::get_id()));
+				iHaveThreadedCallbacks = !iThreadedCallbacks.empty();
 			}
 			for (auto& cb : work)
 			{
@@ -120,7 +121,6 @@ namespace neolib
 				cb();
 				didSome = true;
 			}
-			iHaveThreadedCallbacks = !iThreadedCallbacks.empty();
 		}
 		return didSome;
 	}
