@@ -48,20 +48,20 @@ namespace neolib
 			auto hi = std::prev(last);
 			auto mid = lo + std::distance(lo, hi) / 2;
 			if (*mid < *lo)
-				swapper(*lo, *mid);
+				swapper(lo, mid);
 			if (*hi < *lo)
-				swapper(*lo, *hi);
+				swapper(lo, hi);
 			if (*mid < *hi)
-				swapper(*mid, *hi);
+				swapper(mid, hi);
 			auto& pivot = *hi;
 			auto i = lo;
 			for (auto j = lo; j != hi; ++j)
 				if (comp(*j, pivot))
 				{
-					swapper(*i, *j);
+					swapper(i, j);
 					++i;
 				}
-			swapper(*i, *hi);
+			swapper(i, hi);
 			return i;
 		}
 
@@ -98,7 +98,7 @@ namespace neolib
 					swap = child;
 				if (swap == root)
 					return;
-				swapper(*root, *swap);
+				swapper(root, swap);
 				root = swap;
 			}
 		}
@@ -123,7 +123,7 @@ namespace neolib
 			auto end = std::prev(last);
 			while (end > first)
 			{
-				swapper(*end, *first);
+				swapper(end, first);
 				siftDown(first, last, first, end, swapper, comp);
 				--end;
 			}
