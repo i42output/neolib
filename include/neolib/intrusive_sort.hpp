@@ -47,11 +47,11 @@ namespace neolib
 			auto lo = first;
 			auto hi = std::prev(last);
 			auto mid = lo + std::distance(lo, hi) / 2;
-			if (*mid < *lo)
+			if (comp(*mid, *lo))
 				swapper(lo, mid);
-			if (*hi < *lo)
+			if (comp(*hi, *lo))
 				swapper(lo, hi);
-			if (*mid < *hi)
+			if (comp(*mid, *hi))
 				swapper(mid, hi);
 			auto& pivot = *hi;
 			auto i = lo;
@@ -84,7 +84,7 @@ namespace neolib
 		}
 
 		template <typename RandomIt, typename Swapper, typename Compare>
-		inline void siftDown(RandomIt first, RandomIt last, RandomIt start, RandomIt end, Swapper swapper, Compare comp)
+		inline void siftDown(RandomIt first, RandomIt start, RandomIt end, Swapper swapper, Compare comp)
 		{
 			auto root = start;
 			while (heap_left_child(first, root) < end)
@@ -111,7 +111,7 @@ namespace neolib
 			while (start > first)
 			{
 				--start;
-				siftDown(first, last, start, end, swapper, comp);
+				siftDown(first, start, end, swapper, comp);
 			}
 		}
 			
@@ -124,7 +124,7 @@ namespace neolib
 			while (end > first)
 			{
 				swapper(end, first);
-				siftDown(first, last, first, end, swapper, comp);
+				siftDown(first, first, end, swapper, comp);
 				--end;
 			}
 		}
