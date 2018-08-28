@@ -103,8 +103,8 @@ namespace neolib
 	public:
 		class iterator : public std::iterator<std::random_access_iterator_tag, value_type, difference_type, pointer, reference>
 		{
-			friend tag_array;
-			friend class const_iterator;
+			friend class tag_array;
+			friend class tag_array::const_iterator;
 		private:
 			typedef std::iterator<std::random_access_iterator_tag, value_type, difference_type, pointer, reference> base;
 
@@ -214,7 +214,7 @@ namespace neolib
 		};
 		class const_iterator : public std::iterator<std::random_access_iterator_tag, value_type, difference_type, const_pointer, const_reference>
 		{
-			friend tag_array;
+			friend class tag_array;
 		private:
 			typedef std::iterator<std::random_access_iterator_tag, value_type, difference_type, const_pointer, const_reference> base;
 
