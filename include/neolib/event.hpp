@@ -398,6 +398,24 @@ namespace neolib
 		{
 			return subscribe(aHandlerCallback, static_cast<const void*>(&aUniqueIdObject));
 		}
+		void unsubscribe(handle aHandle) const
+		{
+			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
+			auto& instanceData = instance_data();
+			for (auto& context : instanceData.contexts)
+				for (auto& notification : context->notifications)
+				{
+					if (std::get<2>(notification) == aHandle.iHandler)
+						std::get<0>(notification) = false;
+				}
+			if (aHandle.iHandler->iUniqueId != 0)
+			{
+				auto existing = instanceData.uniqueIdMap.find(aHandle.iHandler->iUniqueId);
+				if (existing != instanceData.uniqueIdMap.end())
+					instanceData.uniqueIdMap.erase(existing);
+			}
+			instanceData.handlers.erase(aHandle.iHandler);
+		}
 		void unsubscribe(const void* aUniqueId) const
 		{
 			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
@@ -445,24 +463,6 @@ namespace neolib
 			auto queue = instanceData.asyncEventQueue;
 			if (queue.use_count() == 2)
 				queue->persist(queue); // keeps event queue around (cached) for a second 
-		}
-		void unsubscribe(handle aHandle) const
-		{
-			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
-			auto& instanceData = instance_data();
-			for (auto& context : instanceData.contexts)
-				for (auto& notification : context->notifications)
-				{
-					if (std::get<2>(notification) == aHandle.iHandler)
-						std::get<0>(notification) = false;
-				}
-			if (aHandle.iHandler->iUniqueId != 0)
-			{
-				auto existing = instanceData.uniqueIdMap.find(aHandle.iHandler->iUniqueId);
-				if (existing != instanceData.uniqueIdMap.end())
-					instanceData.uniqueIdMap.erase(existing);
-			}
-			instanceData.handlers.erase(aHandle.iHandler);
 		}
 		bool has_instance_data() const
 		{
