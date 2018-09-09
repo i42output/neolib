@@ -354,11 +354,13 @@ namespace neolib
 		}
 		void accept() const
 		{
-			instance_data().accepted = true;
+			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
+			instance_data().contexts.back()->accepted = true;
 		}
 		void ignore() const
 		{
-			instance_data().accepted = false;
+			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
+			instance_data().contexts.back()->accepted = false;
 		}
 	public:
 		handle subscribe(const handler_callback& aHandlerCallback, const void* aUniqueId = 0) const
