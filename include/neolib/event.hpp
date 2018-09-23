@@ -20,11 +20,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "neolib.hpp"
+#include <vector>
 #include <list>
 #include <unordered_map>
 #include <optional>
 #include <mutex>
-#include <boost/container/stable_vector.hpp>
 #include "allocator.hpp"
 #include "mutex.hpp"
 #include "lifetime.hpp"
@@ -124,7 +124,13 @@ namespace neolib
 		typedef const void* unique_id_type;
 		typedef std::function<void(Arguments...)> handler_callback;
 		typedef uint32_t sink_reference_count;
-		struct handler_list_item { std::optional<std::thread::id> iThreadId; unique_id_type iUniqueId; handler_callback iHandlerCallback; sink_reference_count iSinkReferenceCount; };
+		struct handler_list_item 
+		{ 
+			std::optional<std::thread::id> iThreadId; 
+			unique_id_type iUniqueId; 
+			handler_callback iHandlerCallback; 
+			sink_reference_count iSinkReferenceCount = 0; 
+		};
 		typedef std::list<handler_list_item, thread_safe_fast_pool_allocator<handler_list_item>> handler_list;
 	public:
 		event_instance_weak_ptr iEvent;
@@ -234,9 +240,16 @@ namespace neolib
 		typedef typename handle::sink_reference_count sink_reference_count;
 		typedef typename handle::handler_list_item handler_list_item;
 		typedef typename handle::handler_list handler_list;
-		typedef std::map<unique_id_type, typename handler_list::iterator> unique_id_map;
+		typedef std::unordered_map<
+			unique_id_type, 
+			typename handler_list::iterator,
+			std::hash<unique_id_type>, 
+			std::equal_to<unique_id_type>, 
+			thread_safe_fast_pool_allocator<std::pair<const unique_id_type, typename handler_list::iterator>>> unique_id_map;
 		typedef std::tuple<std::atomic<bool>, handler_callback, typename handler_list::const_iterator> notification;
-		typedef boost::container::stable_vector<notification, thread_safe_fast_pool_allocator<notification>> notification_list;
+		typedef std::vector<notification> notification_list;
+		typedef std::shared_ptr<notification_list> notification_list_ptr;
+		typedef std::vector<notification_list_ptr> notification_list_pool;
 		struct state : lifetime
 		{
 			instance_ptr instancePtr;
@@ -247,11 +260,12 @@ namespace neolib
 			struct context
 			{
 				bool accepted;
-				notification_list notifications;
+				notification_list_ptr notifications;
 			};
 			typedef std::shared_ptr<context> context_ptr;
 			typedef std::list<context_ptr, thread_safe_fast_pool_allocator<context_ptr>> context_list;
 			context_list contexts;
+			notification_list_pool notificationListPool;
 		};
 		typedef thread_safe_fast_pool_allocator<state> state_allocator;
 	public:
@@ -286,7 +300,8 @@ namespace neolib
 		{
 			if (!has_instance_data()) // no instance date means no subscribers so no point triggering.
 				return true;
-			switch (instance_data().triggerType)
+			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
+			switch (trigger_type())
 			{
 			case event_trigger_type::Default:
 			case event_trigger_type::Synchronous:
@@ -306,33 +321,58 @@ namespace neolib
 			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
 			destroyed_flag destroyed{ *this };
 			auto& instanceData = instance_data();
-			auto iterContext = instanceData.contexts.insert(instanceData.contexts.end(), std::make_shared<typename state::context>());
-			struct context_remover
+			class scoped_context
 			{
-				destroyed_flag instanceDestroyed;
-				destroyed_flag instanceDataDestroyed;
-				event_mutex& mutex;
-				typename state::context_list& contexts;
-				typename state::context_list::const_iterator iterContext;
-				~context_remover()
+			public:
+				scoped_context(const self_type& aOwner) : 
+					iInstanceDestroyed{ aOwner }, 
+					iInstanceDataDestroyed{ aOwner.instance_data() },
+					iMutex{ aOwner.iMutex },
+					iContexts{ aOwner.instance_data().contexts },
+					iIterContext{ iContexts.insert(aOwner.instance_data().contexts.end(), std::make_shared<typename state::context>()) },
+					iContextPtr{ *iIterContext },
+					iNotificationListPool{ aOwner.instance_data().notificationListPool }
 				{
-					if (!instanceDestroyed && !instanceDataDestroyed)
+					if (iNotificationListPool.empty())
+						context().notifications = std::make_shared<notification_list>();
+					else
 					{
-						destroyable_mutex_lock_guard<event_mutex> guard{ mutex };
-						contexts.erase(iterContext);
+						context().notifications = iNotificationListPool.back();
+						iNotificationListPool.pop_back();
 					}
 				}
-			} cr{ *this, instanceData, iMutex, instanceData.contexts, iterContext };
-			auto contextPtr = *iterContext; // need smart pointer copy here to extend possible lifetime of context...
-			auto& context = *contextPtr;
-			context.notifications.reserve(instanceData.handlers.size());
+				~scoped_context()
+				{
+					if (!iInstanceDestroyed && !iInstanceDataDestroyed)
+					{
+						destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
+						iNotificationListPool.push_back(context().notifications);
+						iContexts.erase(iIterContext);
+					}
+				}
+			public:
+				state::context& context() const
+				{
+					return *iContextPtr;
+				}
+			private:
+				destroyed_flag iInstanceDestroyed;
+				destroyed_flag iInstanceDataDestroyed;
+				event_mutex& iMutex;
+				typename state::context_list iContexts;
+				typename state::context_list::const_iterator iIterContext;
+				typename state::context_ptr iContextPtr; // need smart pointer copy here to extend possible lifetime of context...
+				notification_list_pool& iNotificationListPool;
+			} sc { *this };
+			auto& context = sc.context();
+			context.notifications->reserve(instanceData.handlers.size());
 			for (auto iterHandler = instanceData.handlers.begin(); iterHandler != instanceData.handlers.end(); ++iterHandler)
 				if (iterHandler->iThreadId == std::nullopt || *iterHandler->iThreadId == std::this_thread::get_id())
-					context.notifications.emplace_back(true, iterHandler->iHandlerCallback, iterHandler);
+					context.notifications->emplace_back(true, iterHandler->iHandlerCallback, iterHandler);
 				else
 					enqueue_to_thread(*iterHandler, std::forward<Ts>(aArguments)...);
 			guard.unlock();
-			for (auto& notification : context.notifications)
+			for (auto& notification : *context.notifications)
 			{
 				if (!std::get<0>(notification))
 					continue;
@@ -363,20 +403,20 @@ namespace neolib
 			instance_data().contexts.back()->accepted = false;
 		}
 	public:
-		handle subscribe(const handler_callback& aHandlerCallback, const void* aUniqueId = 0) const
+		handle subscribe(const handler_callback& aHandlerCallback, const void* aUniqueId = nullptr) const
 		{
 			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
 			auto& instanceData = instance_data();
-			if (aUniqueId == 0)
-				return handle{ instanceData.instancePtr, instanceData.handlers.insert(instanceData.handlers.end(), handler_list_item{ std::this_thread::get_id(), aUniqueId, aHandlerCallback, 0 }) };
+			if (aUniqueId == nullptr)
+				return handle{ instanceData.instancePtr, instanceData.handlers.insert(instanceData.handlers.end(), handler_list_item{ std::this_thread::get_id(), aUniqueId, aHandlerCallback }) };
 			auto existing = instanceData.uniqueIdMap.find(aUniqueId);
 			if (existing == instanceData.uniqueIdMap.end())
-				existing = instanceData.uniqueIdMap.insert(std::make_pair(aUniqueId, instanceData.handlers.insert(instanceData.handlers.end(), handler_list_item{ std::this_thread::get_id(), aUniqueId, aHandlerCallback, 0 }))).first;
+				existing = instanceData.uniqueIdMap.insert(std::make_pair(aUniqueId, instanceData.handlers.insert(instanceData.handlers.end(), handler_list_item{ std::this_thread::get_id(), aUniqueId, aHandlerCallback }))).first;
 			else
 				existing->second->iHandlerCallback = aHandlerCallback;
 			return handle{ instanceData.instancePtr, existing->second };
 		}
-		handle operator()(const handler_callback& aHandlerCallback, const void* aUniqueId = 0) const
+		handle operator()(const handler_callback& aHandlerCallback, const void* aUniqueId = nullptr) const
 		{
 			return subscribe(aHandlerCallback, aUniqueId);
 		}
@@ -405,12 +445,12 @@ namespace neolib
 			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
 			auto& instanceData = instance_data();
 			for (auto& context : instanceData.contexts)
-				for (auto& notification : context->notifications)
+				for (auto& notification : *(*context).notifications)
 				{
 					if (std::get<2>(notification) == aHandle.iHandler)
 						std::get<0>(notification) = false;
 				}
-			if (aHandle.iHandler->iUniqueId != 0)
+			if (aHandle.iHandler->iUniqueId != nullptr)
 			{
 				auto existing = instanceData.uniqueIdMap.find(aHandle.iHandler->iUniqueId);
 				if (existing != instanceData.uniqueIdMap.end())
@@ -448,10 +488,10 @@ namespace neolib
 		{
 			if (!has_instance_data())
 				return;
+			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
 			auto& instanceData = instance_data();
 			if (instanceData.asyncEventQueue->has(*this))
 				instanceData.asyncEventQueue->remove(*this);
-			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
 			struct destroy_state
 			{
 				state* instanceData;
