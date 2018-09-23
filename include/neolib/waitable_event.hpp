@@ -40,6 +40,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <vector>
 #include "message_queue.hpp"
 #include "waitable.hpp"
 #include "variant.hpp"
