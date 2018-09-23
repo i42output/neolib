@@ -33,8 +33,8 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "../include/neolib/neolib.hpp"
-#include "../include/neolib/async_thread.hpp"
+#include <neolib/neolib.hpp>
+#include <neolib/async_thread.hpp>
 
 namespace neolib
 {
