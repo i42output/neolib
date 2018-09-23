@@ -39,6 +39,7 @@
 #include <stdexcept>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 #include "message_queue.hpp"
 #include "waitable.hpp"
 #include "variant.hpp"
