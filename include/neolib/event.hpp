@@ -338,7 +338,7 @@ namespace neolib
 					iInstanceDataDestroyed{ aOwner.instance_data() },
 					iMutex{ aOwner.iMutex },
 					iContexts{ aOwner.instance_data().contexts },
-					iIterContext{ iContexts.insert(aOwner.instance_data().contexts.end(), std::make_shared<typename state::context>()) },
+					iIterContext{ iContexts.insert(iContexts.end(), std::make_shared<typename state::context>()) },
 					iContextPtr{ *iIterContext },
 					iNotificationListPool{ aOwner.instance_data().notificationListPool }
 				{
@@ -355,6 +355,7 @@ namespace neolib
 					if (!iInstanceDestroyed && !iInstanceDataDestroyed)
 					{
 						destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
+						context().notifications->clear();
 						iNotificationListPool.push_back(context().notifications);
 						iContexts.erase(iIterContext);
 					}
@@ -368,7 +369,7 @@ namespace neolib
 				destroyed_flag iInstanceDestroyed;
 				destroyed_flag iInstanceDataDestroyed;
 				event_mutex& iMutex;
-				typename state::context_list iContexts;
+				typename state::context_list& iContexts;
 				typename state::context_list::const_iterator iIterContext;
 				typename state::context_ptr iContextPtr; // need smart pointer copy here to extend possible lifetime of context...
 				notification_list_pool& iNotificationListPool;
