@@ -33,13 +33,13 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <neolib/neolib.hpp>
-#include <neolib/async_thread.hpp>
+#include "../include/neolib/neolib.hpp"
+#include "../include/neolib/async_thread.hpp"
 
 namespace neolib
 {
 	async_thread::async_thread(const std::string& aName, bool aAttachToCurrentThread) : 
-		thread{ aName, aAttachToCurrentThread }, async_task{ static_cast<i_thread&>(*this) }
+		neolib::thread{ aName, aAttachToCurrentThread }, async_task{ static_cast<i_thread&>(*this) }
 	{
 	}
 
