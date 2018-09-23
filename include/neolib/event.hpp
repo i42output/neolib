@@ -351,7 +351,7 @@ namespace neolib
 					}
 				}
 			public:
-				state::context& context() const
+				typename state::context& context() const
 				{
 					return *iContextPtr;
 				}
