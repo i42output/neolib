@@ -246,7 +246,16 @@ namespace neolib
 			std::hash<unique_id_type>, 
 			std::equal_to<unique_id_type>, 
 			thread_safe_fast_pool_allocator<std::pair<const unique_id_type, typename handler_list::iterator>>> unique_id_map;
-		typedef std::tuple<std::atomic<bool>, handler_callback, typename handler_list::const_iterator> notification;
+		class copyable_atomic_bool : public std::atomic<bool>
+		{
+		public:
+			copyable_atomic_bool() : std::atomic<bool>{} {}
+			copyable_atomic_bool(const std::atomic<bool>& a) : std::atomic<bool>{ a.load() } {}
+			copyable_atomic_bool(const copyable_atomic_bool& other) : std::atomic<bool>{ other.load() } {}
+			copyable_atomic_bool& operator=(const copyable_atomic_bool& other) { store(other.load()); return *this; }
+			copyable_atomic_bool& operator=(bool value) { store(value); return *this; }
+		};
+		typedef std::tuple<copyable_atomic_bool, handler_callback, typename handler_list::const_iterator> notification;
 		typedef std::vector<notification> notification_list;
 		typedef std::shared_ptr<notification_list> notification_list_ptr;
 		typedef std::vector<notification_list_ptr> notification_list_pool;
