@@ -41,7 +41,9 @@
 #include <unordered_map>
 #include <mutex>
 #include <atomic>
-#include <neolib/allocator.hpp>
+#include "vecarray.hpp"
+#include "null_mutex.hpp"
+#include "allocator.hpp"
 #include <optional>
 #include "i_lifetime.hpp"
 
@@ -138,16 +140,12 @@ namespace neolib
 	typedef lifetime_flag<lifetime_state::Destroyed> destroyed_flag;
 	typedef std::optional<destroyed_flag> optional_destroyed_flag;
 
+	template <typename MutexType = std::recursive_mutex, std::size_t FlagListArraySize = 8>
 	class own_flag_list
 	{
 	public:
-		typedef struct null_mutex
-		{
-			void lock() {}
-			void unlock() noexcept {}
-			bool try_lock() { return true; }
-		} mutex_type;
-		typedef std::vector<i_lifetime_flag*> flag_list;
+		typedef MutexType mutex_type;
+		typedef vecarray<i_lifetime_flag*, FlagListArraySize, -1, nocheck> flag_list;
 	public:
 		static mutex_type& mutex()
 		{
@@ -165,13 +163,14 @@ namespace neolib
 		flag_list iFlags;
 	};
 
+	template <typename MutexType = std::recursive_mutex, std::size_t FlagListArraySize = 8>
 	class shared_flag_list
 	{
 	public:
-		typedef std::recursive_mutex mutex_type;
-		typedef std::vector<i_lifetime_flag*> flag_list;
+		typedef MutexType mutex_type;
+		typedef vecarray<i_lifetime_flag*, FlagListArraySize, -1, nocheck> flag_list;
 	private:
-		typedef std::unordered_map<const i_lifetime*, flag_list, std::hash<const i_lifetime*>, std::equal_to<const i_lifetime*>, fast_pool_allocator<std::pair<const i_lifetime* const, flag_list>>> flag_map;
+		typedef std::unordered_map<const i_lifetime*, flag_list, std::hash<const i_lifetime*>, std::equal_to<const i_lifetime*>, thread_safe_fast_pool_allocator<std::pair<const i_lifetime* const, flag_list>>> flag_map;
 	public:
 		static mutex_type& mutex()
 		{
@@ -312,8 +311,8 @@ namespace neolib
 		mutable flag_list_representation_type iFlagListRep;
 	};
 
-	typedef basic_lifetime<own_flag_list> single_threaded_lifetime;
-	typedef basic_lifetime<shared_flag_list> multi_threaded_lifetime;
+	typedef basic_lifetime<own_flag_list<null_mutex>> single_threaded_lifetime;
+	typedef basic_lifetime<own_flag_list<std::recursive_mutex>> multi_threaded_lifetime;
 
 	typedef multi_threaded_lifetime lifetime;
 }

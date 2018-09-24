@@ -36,97 +36,210 @@
 #pragma once
 
 #include "neolib.hpp"
+#include <any>
 #include <stdexcept>
 #include <typeinfo>
 
 namespace neolib
 {
-	class any
+	class any : private std::any
 	{
-		// types
+		template<class T>
+		friend T any_cast(const any& operand);
+		template<class T>
+		friend T any_cast(any& operand);
+		template<class T>
+		friend T any_cast(any&& operand);
+		template<class T>
+		friend const T* any_cast(const any* operand) noexcept;
+		template<class T>
+		friend T* any_cast(any* operand) noexcept;
+		template<class T>
+		friend T unsafe_any_cast(const any& operand) noexcept;
+		template<class T>
+		friend T unsafe_any_cast(any& operand) noexcept;
 	public:
-		struct bad_cast : public std::logic_error { bad_cast() : std::logic_error("neolib::any::bad_cast") {} };
-	private:
-		class holder_base
+		any() : 
+			cptr{ nullptr }, 
+			ptr{ nullptr }
 		{
-			// construction
-		public:
-			virtual ~holder_base() {}
-			// operations
-		public:
-			template <typename T>
-			operator const T&() const
-			{
-				if (typeid(T) != type()) 
-					throw bad_cast();
-				return *static_cast<const T*>(ptr());
-			}
-			template <typename T>
-			operator T&()
-			{
-				if (typeid(T) != type()) 
-					throw bad_cast();
-				return *static_cast<T*>(ptr());
-			}
-			template <typename T>
-			bool is() const { return typeid(T) == type(); }
-			virtual holder_base* clone() const = 0;
-			// implementation
-		private:
-			virtual const std::type_info& type() const = 0;
-			virtual const void* ptr() const = 0;
-			virtual void* ptr() = 0;
-		};
-		template <typename T>
-		class holder : public holder_base
+		}
+		any(const any& aOther) : 
+			std::any{ aOther.as_std_any() }, 
+			cptr{ aOther.cptr }, 
+			ptr{ aOther.ptr }
 		{
-			// construction
-		public:
-			holder(const T& aObject) : iObject(aObject) {}
-			// implementation
-		private:
-			virtual holder_base* clone() const { return new holder(iObject); }
-			virtual const std::type_info& type() const { return typeid(T); }
-			virtual const void* ptr() const { return &iObject; }
-			virtual void* ptr() { return &iObject; }
-			// attributes
-		private:
-			T iObject;
-		};
-		// construction
+		}
+		any(any&& aOther) :
+			std::any{ std::move(aOther.as_std_any()) }, 
+			cptr{ aOther.cptr },
+			ptr{ aOther.ptr }
+		{
+			aOther.cptr = nullptr;
+			aOther.ptr = nullptr;
+		}
+		template <typename ValueType, typename SFINAE = void>
+		any(ValueType&& aValue, typename std::enable_if<!std::is_same<std::decay_t<ValueType>, any>::value, SFINAE>::type* = nullptr) :
+			std::any{ std::decay_t<ValueType>{aValue} },
+			cptr{ &any::do_cptr<std::decay_t<ValueType>> },
+			ptr{ &any::do_ptr<std::decay_t<ValueType>> }
+		{
+		}
 	public:
-		any() : iHolder(nullptr) {}
-		template <typename T>
-		any(const T& aObject) : iHolder(new holder<T>(aObject)) {}
-		any(const any& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone() : nullptr) {}
-		~any() { destroy(); }
-		any& operator=(const any& aOther) 
-		{ 
-			destroy(); 
-			if (aOther.iHolder) 
-				iHolder = aOther.iHolder->clone(); 
+		any& operator=(const any& aRhs)
+		{
+			std::any::operator=(aRhs.as_std_any());
+			cptr = aRhs.cptr;
+			ptr = aRhs.ptr;
 			return *this;
 		}
-		// operations
+		any& operator=(any&& aRhs)
+		{
+			std::any::operator=(std::move(aRhs.as_std_any()));
+			cptr = aRhs.cptr;
+			ptr = aRhs.ptr;
+			aRhs.cptr = nullptr;
+			aRhs.ptr = nullptr;
+			return *this;
+		}
+		template<typename ValueType>
+		any& operator=(ValueType&& aRhs)
+		{
+			std::any::operator=(std::decay_t<ValueType>{aRhs});
+			cptr = &any::do_cptr<std::decay_t<ValueType>>;
+			ptr = &any::do_ptr<std::decay_t<ValueType>>;
+			return *this;
+		}
 	public:
-		template <typename T>
-		operator const T&() const { if (empty()) throw bad_cast(); return *iHolder; }
-		template <typename T>
-		operator T&() { if (empty()) throw bad_cast(); return *iHolder; }
-		template <typename T>
-		bool is() const { return iHolder && iHolder->is<T>(); }
-		bool something() const { return iHolder != nullptr; }
-		bool empty() const { return !something(); }
-		void reset() { destroy(); }
-		// implementation
+		template<class ValueType, class... Args >
+		std::decay_t<ValueType>& emplace(Args&&... args)
+		{
+			auto& result = std::any::emplace<ValueType>(std::forward<Args...>(args...));
+			cptr = &any::do_cptr<std::decay_t<ValueType>>;
+			ptr = &any::do_ptr<std::decay_t<ValueType>>;
+			return result;
+		}
+		template<class ValueType, class U, class... Args >
+		std::decay_t<ValueType>& emplace(std::initializer_list<U> il, Args&&... args)
+		{
+			auto& result = std::any::emplace<ValueType>(il, std::forward<Args...>(args...));
+			cptr = &any::do_cptr<std::decay_t<ValueType>>;
+			ptr = &any::do_ptr<std::decay_t<ValueType>>;
+			return result;
+		}
+		void reset()
+		{
+			std::any::reset();
+			cptr = nullptr;
+			ptr = nullptr;
+		}
+		void swap(any& aOther)
+		{
+			std::any::swap(aOther.as_std_any());
+			std::swap(cptr, aOther.cptr);
+			std::swap(ptr, aOther.ptr);
+		}
+	public:
+		using std::any::has_value;
+		using std::any::type;
+	public:
+		bool operator==(const any& aOther) const
+		{
+			if (cptr != nullptr && aOther.cptr != nullptr)
+				return cptr(*this) == aOther.cptr(aOther);
+			else
+				return cptr == aOther.cptr;
+		}
+		bool operator!=(const any& aOther) const
+		{
+			if (cptr != nullptr && aOther.cptr != nullptr)
+				return cptr(*this) != aOther.cptr(aOther);
+			else
+				return cptr != aOther.cptr;
+		}
+		bool operator<(const any& aOther) const
+		{
+			if (cptr != nullptr && aOther.cptr != nullptr)
+				return cptr(*this) < aOther.cptr(aOther);
+			else
+				return cptr < aOther.cptr;
+		}
 	private:
-		void destroy() { delete iHolder; iHolder = nullptr; }
-		// attributes
+		const std::any& as_std_any() const
+		{
+			return *this;
+		}
+		std::any& as_std_any()
+		{
+			return *this;
+		}
+		const void* unsafe_ptr() const
+		{
+			if (cptr != nullptr)
+				return cptr(*this);
+			else
+				return nullptr;
+		}
+		void* unsafe_ptr()
+		{
+			if (cptr != nullptr)
+				return ptr(*this);
+			else
+				return nullptr;
+		}
+		template <typename T>
+		static const void* do_cptr(const any& aArg)
+		{
+			return &std::any_cast<const T&>(aArg.as_std_any());
+		}
+		template <typename T>
+		static void* do_ptr(any& aArg)
+		{
+			return &std::any_cast<T&>(aArg.as_std_any());
+		}
 	private:
-		holder_base* iHolder;
+		const void*(*cptr)(const any&);
+		void*(*ptr)(any&);
 	};
-}
 
-#include "any_ref.hpp"
-#include "any_predicate.hpp"
-#include "any_iterator.hpp"
+	inline void swap(any& aLhs, any& aRhs)
+	{
+		aLhs.swap(aRhs);
+	}
+
+	template<class T>
+	inline T any_cast(const any& operand)
+	{
+		return std::any_cast<T>(operand.as_std_any());
+	}
+	template<class T>
+	inline T any_cast(any& operand)
+	{
+		return std::any_cast<T>(operand.as_std_any());
+	}
+	template<class T>
+	inline T any_cast(any&& operand)
+	{
+		return std::any_cast<T>(std::move(operand.as_std_any()));
+	}
+	template<class T>
+	inline const T* any_cast(const any* operand) noexcept
+	{
+		return std::any_cast<const T*>(&operand->as_std_any());
+	}
+	template<class T>
+	inline T* any_cast(any* operand) noexcept
+	{
+		return std::any_cast<T*>(&operand->as_std_any());
+	}
+	template<class T>
+	inline T unsafe_any_cast(const any& operand) noexcept
+	{
+		return *static_cast<const std::decay_t<T>*>(operand.unsafe_ptr());
+	}
+	template<class T>
+	inline T unsafe_any_cast(any& operand) noexcept
+	{
+		return *static_cast<std::decay_t<T>*>(operand.unsafe_ptr());
+	}
+}

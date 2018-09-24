@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <unordered_map>
 #include <optional>
 #include <mutex>
+#include "any.hpp"
 #include "allocator.hpp"
 #include "mutex.hpp"
 #include "lifetime.hpp"
@@ -63,7 +64,7 @@ namespace neolib
 		bool iMultiThreaded = true;
 	};
 
-	class event_mutex : public lifetime
+	class event_mutex : public basic_lifetime<own_flag_list<event_mutex>>
 	{
 	public:
 		event_mutex() :
@@ -109,13 +110,22 @@ namespace neolib
 		std::recursive_mutex iRealMutex;
 	};
 
+	typedef basic_lifetime<own_flag_list<event_mutex>> event_lifetime;
+
 	class sink;
 
 	template <typename... Arguments>
 	class event;
 
+	class i_event_handle
+	{
+	public:
+		virtual void add_ref() const = 0;
+		virtual void release() const = 0;
+	};
+
 	template <typename... Arguments>
-	class event_handle
+	class event_handle : public i_event_handle
 	{
 	public:
 		typedef const event<Arguments...>* event_ptr;
@@ -133,14 +143,34 @@ namespace neolib
 		};
 		typedef std::list<handler_list_item, thread_safe_fast_pool_allocator<handler_list_item>> handler_list;
 	public:
-		event_instance_weak_ptr iEvent;
-		typename handler_list::iterator iHandler;
+		event_handle(event_instance_weak_ptr aEvent, typename handler_list::iterator aHandler) : 
+			iEvent{ aEvent }, iHandler{ aHandler }
+		{
+		}
 	public:
-		event_handle & operator~()
+		event_handle& operator~()
 		{
 			iHandler->iThreadId = std::nullopt;
 			return *this;
 		}
+	public:
+		typename handler_list::iterator handler() const
+		{
+			return iHandler;
+		}
+		void add_ref() const override
+		{
+			if (!iEvent.expired())
+				++iHandler->iSinkReferenceCount;
+		}
+		void release() const override
+		{
+			if (!iEvent.expired() && --iHandler->iSinkReferenceCount == 0 && !iEvent.expired())		
+				(**iEvent.lock()).unsubscribe(*this);
+		}
+	private:
+		event_instance_weak_ptr iEvent;
+		typename handler_list::iterator iHandler;
 	};
 
 	class async_event_queue
@@ -161,10 +191,10 @@ namespace neolib
 		};
 		typedef std::unordered_multimap<
 			const void*,
-			std::pair<callback, neolib::lifetime::destroyed_flag>,
+			std::pair<callback, event_lifetime::destroyed_flag>,
 			std::hash<const void*>,
 			std::equal_to<const void*>,
-			thread_safe_fast_pool_allocator<std::pair<const void* const, std::pair<callback, neolib::lifetime::destroyed_flag>>>> event_list;
+			thread_safe_fast_pool_allocator<std::pair<const void* const, std::pair<callback, event_lifetime::destroyed_flag>>>> event_list;
 		typedef std::vector<callback> callback_list;
 		typedef std::unordered_map<
 			std::thread::id,
@@ -181,7 +211,7 @@ namespace neolib
 		template<typename... Arguments>
 		void add(const event<Arguments...>& aEvent, callback aCallback)
 		{
-			add(static_cast<const void*>(&aEvent), aCallback, neolib::lifetime::destroyed_flag(aEvent));
+			add(static_cast<const void*>(&aEvent), aCallback, event_lifetime::destroyed_flag(aEvent));
 		}
 		template<typename... Arguments>
 		void remove(const event<Arguments...>& aEvent)
@@ -201,7 +231,7 @@ namespace neolib
 		async_event_queue(std::shared_ptr<async_task> aTask);
 		static std::recursive_mutex& instance_mutex();
 		static instance_pointers& instance_ptrs();
-		void add(const void* aEvent, callback aCallback, neolib::lifetime::destroyed_flag aDestroyedFlag);
+		void add(const void* aEvent, callback aCallback, event_lifetime::destroyed_flag aDestroyedFlag);
 		void remove(const void* aEvent);
 		bool has(const void* aEvent) const;
 		void publish_events();
@@ -225,7 +255,7 @@ namespace neolib
 	};
 
 	template <typename... Arguments>
-	class event : protected lifetime
+	class event : protected event_lifetime
 	{
 		friend class sink;
 		friend class async_event_queue;
@@ -259,7 +289,7 @@ namespace neolib
 		typedef std::vector<notification> notification_list;
 		typedef std::shared_ptr<notification_list> notification_list_ptr;
 		typedef std::vector<notification_list_ptr> notification_list_pool;
-		struct state : lifetime
+		struct state : event_lifetime
 		{
 			instance_ptr instancePtr;
 			std::shared_ptr<async_event_queue> asyncEventQueue;
@@ -278,7 +308,7 @@ namespace neolib
 		};
 		typedef thread_safe_fast_pool_allocator<state> state_allocator;
 	public:
-		event() : iInstanceData{ nullptr }, iInSync{ false }
+		event() : iInstanceData { nullptr }, iInSync{ false }
 		{
 		}
 		event(const event&) : iInstanceData{ nullptr }, iInSync{ false }
@@ -457,16 +487,16 @@ namespace neolib
 			for (auto& context : instanceData.contexts)
 				for (auto& notification : *(*context).notifications)
 				{
-					if (std::get<2>(notification) == aHandle.iHandler)
+					if (std::get<2>(notification) == aHandle.handler())
 						std::get<0>(notification) = false;
 				}
-			if (aHandle.iHandler->iUniqueId != nullptr)
+			if (aHandle.handler()->iUniqueId != nullptr)
 			{
-				auto existing = instanceData.uniqueIdMap.find(aHandle.iHandler->iUniqueId);
+				auto existing = instanceData.uniqueIdMap.find(aHandle.handler()->iUniqueId);
 				if (existing != instanceData.uniqueIdMap.end())
 					instanceData.uniqueIdMap.erase(existing);
 			}
-			instanceData.handlers.erase(aHandle.iHandler);
+			instanceData.handlers.erase(aHandle.handler());
 		}
 		void unsubscribe(const void* aUniqueId) const
 		{
@@ -556,39 +586,18 @@ namespace neolib
 
 	class sink
 	{
-	private:
-		enum controller_op_e
-		{
-			AddRef,
-			Release
-		};
 	public:
 		sink()
 		{
 		}
 		template <typename... Arguments>
-		sink(event_handle<Arguments...> aHandle) :
-			iControllers{ [aHandle](controller_op_e aOperation)
+		sink(event_handle<Arguments...> aHandle)
 		{
-			if (!aHandle.iEvent.expired())
-			{
-				switch (aOperation)
-				{
-				case AddRef:
-					++aHandle.iHandler->iSinkReferenceCount;
-					break;
-				case Release:
-					if (--aHandle.iHandler->iSinkReferenceCount == 0 && !aHandle.iEvent.expired())
-						(**aHandle.iEvent.lock()).unsubscribe(aHandle);
-					break;
-				}
-			}
-		} }
-		{
+			iHandlers.emplace_back(aHandle);
 			add_ref();
 		}
 		sink(const sink& aSink) :
-			iControllers{ aSink.iControllers }
+			iHandlers{ aSink.iHandlers }
 		{
 			add_ref();
 		}
@@ -597,7 +606,7 @@ namespace neolib
 			if (this == &aSink)
 				return *this;
 			release();
-			iControllers = aSink.iControllers;
+			iHandlers = aSink.iHandlers;
 			add_ref();
 			return *this;
 		}
@@ -611,7 +620,7 @@ namespace neolib
 		{
 			sink s{ aHandle };
 			s.add_ref();
-			iControllers.insert(iControllers.end(), s.iControllers.begin(), s.iControllers.end());
+			iHandlers.insert(iHandlers.end(), s.iHandlers.begin(), s.iHandlers.end());
 			return *this;
 		}
 		~sink()
@@ -621,15 +630,15 @@ namespace neolib
 	private:
 		void add_ref() const
 		{
-			for (auto c : iControllers)
-				c(AddRef);
+			for (auto& h : iHandlers)
+				unsafe_any_cast<const i_event_handle&>(h).add_ref();
 		}
 		void release() const
 		{
-			for (auto c : iControllers)
-				c(Release);
+			for (auto& h : iHandlers)
+				unsafe_any_cast<const i_event_handle&>(h).release();
 		}
 	private:
-		std::vector<std::function<void(controller_op_e)>> iControllers;
+		mutable std::vector<any> iHandlers;
 	};
 }

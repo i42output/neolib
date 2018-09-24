@@ -38,17 +38,11 @@
 #include "neolib.hpp"
 #include <mutex>
 #include <memory>
+#include "null_mutex.hpp"
 #include "lifetime.hpp"
 
 namespace neolib
 {
-	struct null_mutex
-	{
-		void lock() {}
-		void unlock() noexcept {}
-		bool try_lock() { return true; }
-	};
-
 	template<class Mutex>
 	class destroyable_mutex_lock_guard
 	{
