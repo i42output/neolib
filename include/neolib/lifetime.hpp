@@ -152,49 +152,12 @@ namespace neolib
 			static mutex_type sMutex;
 			return sMutex;
 		}
-		flag_list& flags(const i_lifetime*)
+		flag_list& flags()
 		{
 			return iFlags;
 		}
-		void destroy(const i_lifetime*)
-		{
-		}
 	private:
 		flag_list iFlags;
-	};
-
-	template <typename MutexType = std::recursive_mutex, std::size_t FlagListArraySize = 8>
-	class shared_flag_list
-	{
-	public:
-		typedef MutexType mutex_type;
-		typedef vecarray<i_lifetime_flag*, FlagListArraySize, -1, nocheck> flag_list;
-	private:
-		typedef std::unordered_map<const i_lifetime*, flag_list, std::hash<const i_lifetime*>, std::equal_to<const i_lifetime*>, thread_safe_fast_pool_allocator<std::pair<const i_lifetime* const, flag_list>>> flag_map;
-	public:
-		static mutex_type& mutex()
-		{
-			static mutex_type sMutex;
-			return sMutex;
-		}
-		flag_list& flags(const i_lifetime* aLifetime)
-		{
-			std::lock_guard<mutex_type> lk(mutex());
-			return map()[aLifetime];
-		}
-		void destroy(const i_lifetime* aLifetime)
-		{
-			std::lock_guard<mutex_type> lk(mutex());
-			auto iterMap = map().find(aLifetime);
-			if (iterMap != map().end())
-				map().erase(iterMap);
-		}
-	private:
-		static flag_map& map()
-		{
-			static flag_map sFlagMap;
-			return sFlagMap;
-		}
 	};
 
 	template <typename FlagListRepresentation>
@@ -219,7 +182,6 @@ namespace neolib
 				set_destroying();
 				set_destroyed();
 			}
-			iFlagListRep.destroy(this);
 		}
 	public:
 		lifetime_state object_state() const final
@@ -248,7 +210,7 @@ namespace neolib
 			if (!is_creating())
 				throw not_creating();
 			iState = lifetime_state::Alive;
-			for (auto i = flags(this).begin(); i != flags(this).end();)
+			for (auto i = flags().begin(); i != flags().end();)
 				(*i++)->set_alive();
 		}
 		void set_destroying() override
@@ -259,7 +221,7 @@ namespace neolib
 				if (is_destroyed())
 					throw already_destroyed();
 				iState = lifetime_state::Destroying;
-				for (auto i = flags(this).begin(); i != flags(this).end();)
+				for (auto i = flags().begin(); i != flags().end();)
 					(*i++)->set_destroying();
 			}
 		}
@@ -271,7 +233,7 @@ namespace neolib
 				if (iState == lifetime_state::Creating || iState == lifetime_state::Alive)
 					set_destroying();
 				iState = lifetime_state::Destroyed;
-				for (auto i = flags(this).begin(); i != flags(this).end();)
+				for (auto i = flags().begin(); i != flags().end();)
 					(*i++)->set_destroyed();
 			}
 		}
@@ -279,7 +241,7 @@ namespace neolib
 		void add_flag(i_lifetime_flag* aFlag) const final
 		{
 			std::lock_guard<mutex_type> lk(iFlagListRep.mutex());
-			flags(this).push_back(aFlag);
+			flags().push_back(aFlag);
 			switch (iState)
 			{
 			case lifetime_state::Creating:
@@ -298,13 +260,13 @@ namespace neolib
 		void remove_flag(i_lifetime_flag* aFlag) const final
 		{
 			std::lock_guard<mutex_type> lk(iFlagListRep.mutex());
-			std::swap(*std::find(flags(this).begin(), flags(this).end(), aFlag), *std::prev(flags(this).end()));
-			flags(this).pop_back();
+			std::swap(*std::find(flags().begin(), flags().end(), aFlag), *std::prev(flags().end()));
+			flags().pop_back();
 		}
 	private:
-		flag_list& flags(const i_lifetime* aLifetime) const
+		flag_list& flags() const
 		{
-			return iFlagListRep.flags(aLifetime);
+			return iFlagListRep.flags();
 		}
 	private:
 		std::atomic<lifetime_state> iState;
