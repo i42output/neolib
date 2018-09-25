@@ -120,6 +120,11 @@ namespace neolib
 	class i_event_handle
 	{
 	public:
+		virtual ~i_event_handle() {}
+	public:
+		virtual void copy(void* aSmallBuffer) const = 0;
+		virtual void move(void* aSmallBuffer) = 0;
+	public:
 		virtual void add_ref() const = 0;
 		virtual void release() const = 0;
 	};
@@ -152,6 +157,15 @@ namespace neolib
 		{
 			iHandler->iThreadId = std::nullopt;
 			return *this;
+		}
+	public:
+		void copy(void* aSmallBuffer) const override
+		{
+			new(aSmallBuffer) std::decay_t<decltype(*this)>{*this};
+		}
+		void move(void* aSmallBuffer) override
+		{
+			copy(aSmallBuffer);
 		}
 	public:
 		typename handler_list::iterator handler() const
@@ -586,6 +600,52 @@ namespace neolib
 
 	class sink
 	{
+	private:
+		class alignas(event_handle<void>) handle_container
+		{
+		public:
+			template <typename... Arguments>
+			handle_container(const event_handle<Arguments...>& aHandle)
+			{
+				new (&iSmallBuffer[0]) event_handle<Arguments...>{aHandle};
+			}
+			handle_container(const handle_container& aOther)
+			{
+				aOther.handle().copy(&iSmallBuffer[0]);
+			}
+			handle_container(handle_container&& aOther)
+			{
+				aOther.handle().move(&iSmallBuffer[0]);
+			}
+			~handle_container()
+			{
+				handle().~i_event_handle();
+			}
+		public:
+			handle_container& operator=(const handle_container& aRhs)
+			{
+				handle().~i_event_handle();
+				aRhs.handle().copy(&iSmallBuffer[0]);
+				return *this;
+			}
+			handle_container& operator=(handle_container&& aRhs)
+			{
+				handle().~i_event_handle();
+				aRhs.handle().move(&iSmallBuffer[0]);
+				return *this;
+			}
+		public:
+			const i_event_handle& handle() const
+			{
+				return *reinterpret_cast<const i_event_handle*>(&iSmallBuffer[0]);
+			}
+			i_event_handle& handle()
+			{
+				return *reinterpret_cast<i_event_handle*>(&iSmallBuffer[0]);
+			}
+		private:
+			char iSmallBuffer[sizeof(event_handle<void>)];
+		};
 	public:
 		sink()
 		{
@@ -593,11 +653,11 @@ namespace neolib
 		template <typename... Arguments>
 		sink(event_handle<Arguments...> aHandle)
 		{
-			iHandlers.emplace_back(aHandle);
+			iHandles.emplace_back(aHandle);
 			add_ref();
 		}
 		sink(const sink& aSink) :
-			iHandlers{ aSink.iHandlers }
+			iHandles{ aSink.iHandles }
 		{
 			add_ref();
 		}
@@ -606,7 +666,7 @@ namespace neolib
 			if (this == &aSink)
 				return *this;
 			release();
-			iHandlers = aSink.iHandlers;
+			iHandles = aSink.iHandles;
 			add_ref();
 			return *this;
 		}
@@ -620,7 +680,7 @@ namespace neolib
 		{
 			sink s{ aHandle };
 			s.add_ref();
-			iHandlers.insert(iHandlers.end(), s.iHandlers.begin(), s.iHandlers.end());
+			iHandles.insert(iHandles.end(), s.iHandles.begin(), s.iHandles.end());
 			return *this;
 		}
 		~sink()
@@ -630,15 +690,15 @@ namespace neolib
 	private:
 		void add_ref() const
 		{
-			for (auto& h : iHandlers)
-				unsafe_any_cast<const i_event_handle&>(h).add_ref();
+			for (auto& h : iHandles)
+				h.handle().add_ref();
 		}
 		void release() const
 		{
-			for (auto& h : iHandlers)
-				unsafe_any_cast<const i_event_handle&>(h).release();
+			for (auto& h : iHandles)
+				h.handle().release();
 		}
 	private:
-		mutable std::vector<any> iHandlers;
+		mutable std::vector<handle_container> iHandles;
 	};
 }
