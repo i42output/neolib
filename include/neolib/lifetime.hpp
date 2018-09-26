@@ -158,11 +158,12 @@ namespace neolib
 		typedef std::vector<i_lifetime_flag*> flags_t;
 		typedef typename flags_t::iterator iterator;
 	private:
-		typedef std::vector<flags_t::size_type> reverse_index_t;
+		typedef flags_t::size_type reverse_index_t;
+		typedef std::vector<reverse_index_t> reverse_indices_t;
 		typedef std::vector<cookie_type> free_cookies_t;
 	private:
 		static constexpr cookie_type INVALID_COOKIE = cookie_type{ ~0ul };
-		static constexpr flags_t::size_type INVALID_REVERSE_INDEX = flags_t::size_type{ ~0ul };
+		static constexpr reverse_index_t INVALID_REVERSE_INDEX = reverse_index_t{ ~0ul };
 	public:
 		lifetime_flag_list() : iNextAvailableCookie{ 0ul }
 		{
@@ -186,9 +187,9 @@ namespace neolib
 		i_lifetime_flag& flag(cookie_type aCookie)
 		{
 			std::lock_guard<mutex_type> lg{ mutex() };
-			if (aCookie >= reverse_index().size())
+			if (aCookie >= reverse_indices().size())
 				throw invalid_cookie();
-			auto flagIndex = reverse_index()[aCookie];
+			auto flagIndex = reverse_indices()[aCookie];
 			if (flagIndex == INVALID_REVERSE_INDEX)
 				throw invalid_cookie();
 			return *flags()[flagIndex].first;
@@ -198,25 +199,25 @@ namespace neolib
 			std::lock_guard<mutex_type> lg{ mutex() };
 			auto flagCookie = aFlag.cookie();
 			flags().push_back(&aFlag);
-			if (reverse_index().size() < flagCookie + 1)
-				reverse_index().resize(flagCookie + 1, INVALID_REVERSE_INDEX);
-			reverse_index()[flagCookie] = iFlags.size() - 1;
+			if (reverse_indices().size() < flagCookie + 1)
+				reverse_indices().resize(flagCookie + 1, INVALID_REVERSE_INDEX);
+			reverse_indices()[flagCookie] = iFlags.size() - 1;
 
 		}
 		void remove_flag(i_lifetime_flag& aFlag)
 		{
 			std::lock_guard<mutex_type> lg{ mutex() };
 			auto cookie = aFlag.cookie();
-			auto flagIndex = reverse_index()[cookie];
+			auto flagIndex = reverse_indices()[cookie];
 			if (flagIndex == INVALID_REVERSE_INDEX)
 				throw invalid_cookie();
 			if (flagIndex < flags().size() - 1)
 			{
-				auto& reverseIndex = reverse_index()[cookie];
+				auto& reverseIndex = reverse_indices()[cookie];
 				auto& index = flags()[flagIndex];
 				reverseIndex = INVALID_REVERSE_INDEX;
 				std::swap(index, flags().back());
-				reverse_index()[index->cookie()] = flagIndex;
+				reverse_indices()[index->cookie()] = flagIndex;
 			}
 			flags().pop_back();
 			free_cookies().push_back(cookie);
@@ -239,9 +240,9 @@ namespace neolib
 		{
 			return iFlags;
 		}
-		reverse_index_t& reverse_index()
+		reverse_indices_t& reverse_indices()
 		{
-			return iReverseIndex;
+			return iReverseIndices;
 		}
 		free_cookies_t& free_cookies()
 		{
@@ -252,7 +253,7 @@ namespace neolib
 		mutable std::atomic<cookie_type> iNextAvailableCookie;
 		mutable free_cookies_t iFreeCookies;
 		flags_t iFlags;
-		reverse_index_t iReverseIndex;
+		reverse_indices_t iReverseIndices;
 	};
 
 	template <typename FlagList>
