@@ -64,7 +64,9 @@ namespace neolib
 		bool iMultiThreaded = true;
 	};
 
-	class event_mutex : public basic_lifetime<own_flag_list<event_mutex>>
+	typedef multi_threaded_lifetime event_lifetime;
+
+	class event_mutex : public event_lifetime
 	{
 	public:
 		event_mutex() :
@@ -109,8 +111,6 @@ namespace neolib
 		std::atomic<uint32_t> iLockCount;
 		std::recursive_mutex iRealMutex;
 	};
-
-	typedef basic_lifetime<own_flag_list<event_mutex>> event_lifetime;
 
 	class sink;
 

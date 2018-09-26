@@ -58,11 +58,11 @@ namespace neolib
 		typedef const i_lifetime* subject_pointer;
 		typedef Owner* owner_pointer;
 	public:
-		lifetime_flag(const i_lifetime& aSubject, owner_pointer aOwner = nullptr) : iSubject{ &aSubject }, iOwner{ aOwner }, iState { aSubject.object_state() }, iDebug{ false }
+		lifetime_flag(const i_lifetime& aSubject, owner_pointer aOwner = nullptr) : iCookie{ aSubject.next_cookie() }, iSubject { &aSubject }, iOwner{ aOwner }, iState{ aSubject.object_state() }, iDebug{ false }
 		{
 			subject().add_flag(this);
 		}
-		lifetime_flag(const lifetime_flag& aOther) : iSubject{ aOther.iSubject }, iOwner{ aOther.iOwner }, iState { aOther.iSubject->object_state() }, iDebug{ false }
+		lifetime_flag(const lifetime_flag& aOther) : iCookie{ aOther.iSubject->next_cookie() }, iSubject{ aOther.iSubject }, iOwner{ aOther.iOwner }, iState { aOther.iSubject->object_state() }, iDebug{ false }
 		{
 			subject().add_flag(this);
 		}
@@ -70,6 +70,11 @@ namespace neolib
 		{
 			if (!is_destroyed())
 				subject().remove_flag(this);
+		}
+	public:
+		cookie_type cookie() const
+		{
+			return iCookie;
 		}
 	public:
 		bool is_creating() const final
@@ -131,6 +136,7 @@ namespace neolib
 			return *iSubject;
 		}
 	private:
+		cookie_type iCookie;
 		subject_pointer iSubject;
 		owner_pointer iOwner;
 		std::atomic<lifetime_state> iState;
@@ -140,43 +146,132 @@ namespace neolib
 	typedef lifetime_flag<lifetime_state::Destroyed> destroyed_flag;
 	typedef std::optional<destroyed_flag> optional_destroyed_flag;
 
-	template <typename MutexType = std::recursive_mutex, std::size_t FlagListArraySize = 8>
-	class own_flag_list
+	template <typename MutexType = std::recursive_mutex>
+	class lifetime_flag_list
 	{
 	public:
-		typedef MutexType mutex_type;
-		typedef vecarray<i_lifetime_flag*, FlagListArraySize, -1, nocheck> flag_list;
+		struct invalid_cookie : std::logic_error { invalid_cookie() : std::logic_error("neolib::lifetime_flag_list::invalid_cookie") {} };
+		struct cookies_exhausted : std::logic_error { cookies_exhausted() : std::logic_error("neolib::lifetime_flag_list::cookies_exhausted") {} };
 	public:
-		static mutex_type& mutex()
+		typedef MutexType mutex_type;
+		typedef i_lifetime_flag::cookie_type cookie_type;
+		typedef std::vector<i_lifetime_flag*> flags_t;
+		typedef typename flags_t::iterator iterator;
+	private:
+		typedef std::vector<flags_t::size_type> reverse_index_t;
+		typedef std::vector<cookie_type> free_cookies_t;
+	private:
+		static constexpr cookie_type INVALID_COOKIE = cookie_type{ ~0ul };
+		static constexpr flags_t::size_type INVALID_REVERSE_INDEX = flags_t::size_type{ ~0ul };
+	public:
+		lifetime_flag_list() : iNextAvailableCookie{ 0ul }
 		{
-			static mutex_type sMutex;
-			return sMutex;
 		}
-		flag_list& flags()
+	public:
+		cookie_type next_cookie()
+		{
+			std::lock_guard<mutex_type> lg{ mutex() };
+			if (!free_cookies().empty())
+			{
+				auto nextCookie = free_cookies().back();
+				free_cookies().pop_back();
+				return nextCookie;
+			}
+			auto nextCookie = ++iNextAvailableCookie;
+			if (nextCookie == INVALID_COOKIE)
+				throw cookies_exhausted();
+			return nextCookie;
+		}
+	public:
+		i_lifetime_flag& flag(cookie_type aCookie)
+		{
+			std::lock_guard<mutex_type> lg{ mutex() };
+			if (aCookie >= reverse_index().size())
+				throw invalid_cookie();
+			auto flagIndex = reverse_index()[aCookie];
+			if (flagIndex == INVALID_REVERSE_INDEX)
+				throw invalid_cookie();
+			return *flags()[flagIndex].first;
+		}
+		void add_flag(i_lifetime_flag& aFlag)
+		{
+			std::lock_guard<mutex_type> lg{ mutex() };
+			auto flagCookie = aFlag.cookie();
+			flags().push_back(&aFlag);
+			if (reverse_index().size() < flagCookie + 1)
+				reverse_index().resize(flagCookie + 1, INVALID_REVERSE_INDEX);
+			reverse_index()[flagCookie] = iFlags.size() - 1;
+
+		}
+		void remove_flag(i_lifetime_flag& aFlag)
+		{
+			std::lock_guard<mutex_type> lg{ mutex() };
+			auto cookie = aFlag.cookie();
+			auto flagIndex = reverse_index()[cookie];
+			if (flagIndex == INVALID_REVERSE_INDEX)
+				throw invalid_cookie();
+			if (flagIndex < flags().size() - 1)
+			{
+				auto& reverseIndex = reverse_index()[cookie];
+				auto& index = flags()[flagIndex];
+				reverseIndex = INVALID_REVERSE_INDEX;
+				std::swap(index, flags().back());
+				reverse_index()[index->cookie()] = flagIndex;
+			}
+			flags().pop_back();
+			free_cookies().push_back(cookie);
+		}
+	public:
+		mutex_type& mutex() const
+		{
+			return iMutex;
+		}
+		iterator begin()
+		{
+			return iFlags.begin();
+		}
+		iterator end()
+		{
+			return iFlags.end();
+		}
+	private:
+		flags_t& flags()
 		{
 			return iFlags;
 		}
+		reverse_index_t& reverse_index()
+		{
+			return iReverseIndex;
+		}
+		free_cookies_t& free_cookies()
+		{
+			return iFreeCookies;
+		}
 	private:
-		flag_list iFlags;
+		mutable mutex_type iMutex;
+		mutable std::atomic<cookie_type> iNextAvailableCookie;
+		mutable free_cookies_t iFreeCookies;
+		flags_t iFlags;
+		reverse_index_t iReverseIndex;
 	};
 
-	template <typename FlagListRepresentation>
+	template <typename FlagList>
 	class basic_lifetime : public i_lifetime
 	{
 	private:
-		typedef FlagListRepresentation flag_list_representation_type;
+		typedef FlagList flag_list_type;
 	public:
 		typedef neolib::destroyed_flag destroyed_flag;
-		typedef typename flag_list_representation_type::flag_list flag_list;
+		typedef typename flag_list_type::flags_t flags_t;
 	private:
-		typedef typename flag_list_representation_type::mutex_type mutex_type;
+		typedef typename flag_list_type::mutex_type mutex_type;
 	public:
 		basic_lifetime(lifetime_state aState = lifetime_state::Alive) : iState{ aState }
 		{
 		}
 		virtual ~basic_lifetime()
 		{
-			std::lock_guard<mutex_type> lk(iFlagListRep.mutex());
+			std::lock_guard<mutex_type> lk(iFlagList.mutex());
 			if (!is_destroyed())
 			{
 				set_destroying();
@@ -206,7 +301,7 @@ namespace neolib
 		}
 		void set_alive() override
 		{
-			std::lock_guard<mutex_type> lk(iFlagListRep.mutex());
+			std::lock_guard<mutex_type> lk(iFlagList.mutex());
 			if (!is_creating())
 				throw not_creating();
 			iState = lifetime_state::Alive;
@@ -215,7 +310,7 @@ namespace neolib
 		}
 		void set_destroying() override
 		{
-			std::lock_guard<mutex_type> lk(iFlagListRep.mutex());
+			std::lock_guard<mutex_type> lk(iFlagList.mutex());
 			if (!is_destroying())
 			{
 				if (is_destroyed())
@@ -227,7 +322,7 @@ namespace neolib
 		}
 		void set_destroyed() override
 		{
-			std::lock_guard<mutex_type> lk(iFlagListRep.mutex());
+			std::lock_guard<mutex_type> lk(iFlagList.mutex());
 			if (!is_destroyed())
 			{
 				if (iState == lifetime_state::Creating || iState == lifetime_state::Alive)
@@ -238,10 +333,15 @@ namespace neolib
 			}
 		}
 	public:
+		cookie_type next_cookie() const final
+		{
+			std::lock_guard<mutex_type> lk(flags().mutex());
+			return flags().next_cookie();
+		}
 		void add_flag(i_lifetime_flag* aFlag) const final
 		{
-			std::lock_guard<mutex_type> lk(iFlagListRep.mutex());
-			flags().push_back(aFlag);
+			std::lock_guard<mutex_type> lk(flags().mutex());
+			flags().add_flag(*aFlag);
 			switch (iState)
 			{
 			case lifetime_state::Creating:
@@ -259,22 +359,21 @@ namespace neolib
 		}
 		void remove_flag(i_lifetime_flag* aFlag) const final
 		{
-			std::lock_guard<mutex_type> lk(iFlagListRep.mutex());
-			std::swap(*std::find(flags().begin(), flags().end(), aFlag), *std::prev(flags().end()));
-			flags().pop_back();
+			std::lock_guard<mutex_type> lk(flags().mutex());
+			flags().remove_flag(*aFlag);
 		}
 	private:
-		flag_list& flags() const
+		flag_list_type& flags() const
 		{
-			return iFlagListRep.flags();
+			return iFlagList;
 		}
 	private:
 		std::atomic<lifetime_state> iState;
-		mutable flag_list_representation_type iFlagListRep;
+		mutable flag_list_type iFlagList;
 	};
 
-	typedef basic_lifetime<own_flag_list<null_mutex>> single_threaded_lifetime;
-	typedef basic_lifetime<own_flag_list<std::recursive_mutex>> multi_threaded_lifetime;
+	typedef basic_lifetime<lifetime_flag_list<null_mutex>> single_threaded_lifetime;
+	typedef basic_lifetime<lifetime_flag_list<std::recursive_mutex>> multi_threaded_lifetime;
 
 	typedef multi_threaded_lifetime lifetime;
 }
