@@ -36,17 +36,16 @@
 #pragma once
 
 #include "neolib.hpp"
+#include "cookie_jar.hpp"
 
 namespace neolib
 {
-	class i_lifetime_flag
+	class i_lifetime_flag : public i_cookie_jar_item
 	{
 	public:
 		typedef uint32_t cookie_type;
 	public:
 		virtual ~i_lifetime_flag() {}
-	public:
-		virtual cookie_type cookie() const = 0;
 	public:
 		virtual bool is_creating() const = 0;
 		virtual bool is_alive() const = 0;
