@@ -63,7 +63,7 @@ namespace neolib
 			value_type{ static_cast<value_type&&>(std::move(aOther)) }
 		{
 		}
-		template <typename T>
+		template <typename T, std::enable_if_t<!std::is_same_v<std::decay_t<T>, variant>, int> = 0>
 		variant(T&& aArgument) : 
 			value_type{ std::forward<T>(aArgument) }
 		{
@@ -79,7 +79,7 @@ namespace neolib
 			value_type::operator=(static_cast<value_type&&>(std::move(aOther)));
 			return *this;
 		}
-		template <typename T>
+		template <typename T, std::enable_if_t<!std::is_same_v<std::decay_t<T>, variant>, int> = 0>
 		variant& operator=(T&& aArgument)
 		{
 			value_type::operator=(std::forward<T>(aArgument));
