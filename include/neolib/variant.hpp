@@ -51,7 +51,40 @@ namespace neolib
 	public:
 		typedef std::variant<none_t, Types...> value_type;
 	public:
-		using value_type::value_type;
+		variant() :
+			value_type()
+		{
+		}
+		variant(const variant& aOther) :
+			value_type{ static_cast<const value_type&>(aOther) }
+		{
+		}
+		variant(variant&& aOther) :
+			value_type{ static_cast<const value_type&&>(std::move(aOther)) }
+		{
+		}
+		template <typename T>
+		variant(T&& aArgument) : 
+			value_type{ std::forward<T>(aArgument) }
+		{
+		}
+	public:
+		variant& operator=(const variant& aOther)
+		{
+			value_type::operator=(static_cast<const value_type&>(aOther));
+			return *this;
+		}
+		variant& operator=(variant&& aOther)
+		{
+			value_type::operator=(static_cast<const value_type&&>(std::move(aOther)));
+			return *this;
+		}
+		template <typename T>
+		variant& operator=(T&& aArgument)
+		{
+			value_type::operator=(std::forward<T>(aArgument));
+			return *this;
+		}
 	public:
 		const value_type& for_visitor() const
 		{
