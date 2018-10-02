@@ -60,7 +60,7 @@ namespace neolib
 		{
 		}
 		variant(variant&& aOther) :
-			value_type{ static_cast<const value_type&&>(std::move(aOther)) }
+			value_type{ static_cast<value_type&&>(std::move(aOther)) }
 		{
 		}
 		template <typename T>
@@ -76,7 +76,7 @@ namespace neolib
 		}
 		variant& operator=(variant&& aOther)
 		{
-			value_type::operator=(static_cast<const value_type&&>(std::move(aOther)));
+			value_type::operator=(static_cast<value_type&&>(std::move(aOther)));
 			return *this;
 		}
 		template <typename T>
