@@ -71,6 +71,7 @@ namespace neolib
 	public:
 		typedef T value_type;
 		typedef std::vector<value_type> jar_t;
+		typedef typename jar_t::const_iterator const_iterator;
 		typedef typename jar_t::iterator iterator;
 		typedef MutexType mutex_type;
 	private:
@@ -99,33 +100,36 @@ namespace neolib
 		{
 			return const_cast<value_type&>(const_cast<const decltype(*this)>(*this).operator[](aCookie));
 		}
-		void add(const value_type& aItem)
+		iterator add(const value_type& aItem)
 		{
 			std::lock_guard<mutex_type> lg{ mutex() };
 			auto cookie = item_cookie(aItem);
-			jar().push_back(aItem);
+			auto result = jar().insert(jar().end(), aItem);
 			if (reverse_indices().size() < cookie + 1)
 				reverse_indices().resize(cookie + 1, INVALID_REVERSE_INDEX);
 			reverse_indices()[cookie] = iJar.size() - 1;
-
+			return result;
 		}
-		void remove(const value_type& aItem)
+		iterator remove(const value_type& aItem)
 		{
 			std::lock_guard<mutex_type> lg{ mutex() };
 			auto cookie = item_cookie(aItem);
 			auto cookieIndex = reverse_indices()[cookie];
 			if (cookieIndex == INVALID_REVERSE_INDEX)
 				throw invalid_cookie();
+			iterator result = jar().end();
 			if (cookieIndex < jar().size() - 1)
 			{
 				auto& reverseIndex = reverse_indices()[cookie];
 				auto& item = jar()[reverseIndex];
+				result = std::next(jar().begin(), reverseIndex);
 				std::swap(item, jar().back());
 				reverseIndex = INVALID_REVERSE_INDEX;
-				reverse_indices()[item->cookie()] = cookieIndex;
+				reverse_indices()[item_cookie(item)] = cookieIndex;
 			}
 			jar().pop_back();
-			free_cookies().push_back(cookie);
+			return_cookie(cookie);
+			return result;
 		}
 	public:
 		neolib::cookie next_cookie()
@@ -142,18 +146,48 @@ namespace neolib
 				throw cookies_exhausted();
 			return nextCookie;
 		}
+		void return_cookie(neolib::cookie aCookie)
+		{
+			std::lock_guard<mutex_type> lg{ mutex() };
+			free_cookies().push_back(aCookie);
+		}
 	public:
 		mutex_type& mutex() const
 		{
 			return iMutex;
 		}
+		const_iterator cbegin() const
+		{
+			return iJar.begin();
+		}
+		const_iterator begin() const
+		{
+			return cbegin();
+		}
 		iterator begin()
 		{
 			return iJar.begin();
 		}
+		const_iterator cend() const
+		{
+			return iJar.end();
+		}
+		const_iterator end() const
+		{
+			return cend();
+		}
 		iterator end()
 		{
 			return iJar.end();
+		}
+	public:
+		void clear()
+		{
+			std::lock_guard<mutex_type> lg{ mutex() };
+			iNextAvailableCookie = 0ul;
+			iFreeCookies.clear();
+			iJar.clear();
+			iReverseIndices.clear();
 		}
 	private:
 		jar_t& jar()
