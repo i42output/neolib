@@ -94,11 +94,11 @@ namespace neolib
 			auto index = reverse_indices()[aCookie];
 			if (index == INVALID_REVERSE_INDEX)
 				throw invalid_cookie();
-			return *jar()[index].first;
+			return jar()[index];
 		}
 		value_type& operator[](neolib::cookie aCookie)
 		{
-			return const_cast<value_type&>(const_cast<const decltype(*this)>(*this).operator[](aCookie));
+			return const_cast<value_type&>(const_cast<const cookie_jar&>(*this)[aCookie]);
 		}
 		iterator add(const value_type& aItem)
 		{
@@ -107,7 +107,7 @@ namespace neolib
 			auto result = jar().insert(jar().end(), aItem);
 			if (reverse_indices().size() < cookie + 1)
 				reverse_indices().resize(cookie + 1, INVALID_REVERSE_INDEX);
-			reverse_indices()[cookie] = iJar.size() - 1;
+			reverse_indices()[cookie] = jar().size() - 1;
 			return result;
 		}
 		iterator remove(const value_type& aItem)
@@ -158,7 +158,7 @@ namespace neolib
 		}
 		const_iterator cbegin() const
 		{
-			return iJar.begin();
+			return jar().begin();
 		}
 		const_iterator begin() const
 		{
@@ -166,11 +166,11 @@ namespace neolib
 		}
 		iterator begin()
 		{
-			return iJar.begin();
+			return jar().begin();
 		}
 		const_iterator cend() const
 		{
-			return iJar.end();
+			return jar().end();
 		}
 		const_iterator end() const
 		{
@@ -178,25 +178,37 @@ namespace neolib
 		}
 		iterator end()
 		{
-			return iJar.end();
+			return jar().end();
 		}
 	public:
 		void clear()
 		{
 			std::lock_guard<mutex_type> lg{ mutex() };
 			iNextAvailableCookie = 0ul;
-			iFreeCookies.clear();
-			iJar.clear();
-			iReverseIndices.clear();
+			free_cookies().clear();
+			jar().clear();
+			reverse_indices().clear();
 		}
 	private:
+		const jar_t& jar() const
+		{
+			return iJar;
+		}
 		jar_t& jar()
 		{
 			return iJar;
 		}
+		const reverse_indices_t& reverse_indices() const
+		{
+			return iReverseIndices;
+		}
 		reverse_indices_t& reverse_indices()
 		{
 			return iReverseIndices;
+		}
+		const free_cookies_t& free_cookies() const
+		{
+			return iFreeCookies;
 		}
 		free_cookies_t& free_cookies()
 		{
