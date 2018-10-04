@@ -113,14 +113,18 @@ namespace neolib
 		iterator remove(const value_type& aItem)
 		{
 			std::lock_guard<mutex_type> lg{ mutex() };
-			auto cookie = item_cookie(aItem);
-			auto cookieIndex = reverse_indices()[cookie];
+			return remove(item_cookie(aItem));
+		}
+		iterator remove(neolib::cookie aCookie)
+		{
+			std::lock_guard<mutex_type> lg{ mutex() };
+			auto cookieIndex = reverse_indices()[aCookie];
 			if (cookieIndex == INVALID_REVERSE_INDEX)
 				throw invalid_cookie();
 			iterator result = jar().end();
 			if (cookieIndex < jar().size() - 1)
 			{
-				auto& reverseIndex = reverse_indices()[cookie];
+				auto& reverseIndex = reverse_indices()[aCookie];
 				auto& item = jar()[reverseIndex];
 				result = std::next(jar().begin(), reverseIndex);
 				std::swap(item, jar().back());
@@ -128,7 +132,7 @@ namespace neolib
 				reverse_indices()[item_cookie(item)] = cookieIndex;
 			}
 			jar().pop_back();
-			return_cookie(cookie);
+			return_cookie(aCookie);
 			return result;
 		}
 	public:
