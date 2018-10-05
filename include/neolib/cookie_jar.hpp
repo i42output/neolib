@@ -43,6 +43,7 @@
 namespace neolib
 {
 	typedef uint32_t cookie;
+	constexpr cookie no_cookie = cookie{};
 
 	class i_cookie_jar_item
 	{
@@ -61,6 +62,130 @@ namespace neolib
 	{
 		return aItem->cookie();
 	}
+
+	class i_cookie_consumer
+	{
+	public:
+		struct invalid_release : std::logic_error { invalid_release() : std::logic_error("neolib::i_cookie_consumer::invalid_release") {} };
+	public:
+		virtual ~i_cookie_consumer() {}
+	public:
+		virtual void add_ref(cookie aCookie) = 0;
+		virtual void release(cookie aCookie, bool& aFinalRelease) = 0;
+	};
+
+	class cookie_auto_ref
+	{
+	public:
+		cookie_auto_ref() :
+			iConsumer{ nullptr },
+			iCookie{ no_cookie }
+		{
+		}
+		cookie_auto_ref(i_cookie_consumer& aConsumer, neolib::cookie aCookie) :
+			iConsumer{ &aConsumer },
+			iCookie{ aCookie }
+		{
+			add_ref();
+		}
+		~cookie_auto_ref()
+		{
+			release();
+		}
+		cookie_auto_ref(const cookie_auto_ref& aOther) :
+			iConsumer{ aOther.iConsumer },
+			iCookie{ aOther.iCookie }
+		{
+			add_ref();
+		}
+		cookie_auto_ref(cookie_auto_ref&& aOther) :
+			iConsumer{ aOther.iConsumer },
+			iCookie{ aOther.iCookie }
+		{
+			add_ref();
+			aOther.release();
+		}
+	public:
+		cookie_auto_ref& operator=(const cookie_auto_ref& aOther)
+		{
+			if (&aOther == this)
+				return *this;
+			cookie_auto_ref temp{ std::move(*this) };
+			iConsumer = aOther.iConsumer;
+			iCookie = aOther.iCookie;
+			add_ref();
+			return *this;
+		}
+		cookie_auto_ref& operator=(cookie_auto_ref&& aOther)
+		{
+			if (&aOther == this)
+				return *this;
+			cookie_auto_ref temp{ std::move(*this) };
+			iConsumer = aOther.iConsumer;
+			iCookie = aOther.iCookie;
+			add_ref();
+			aOther.release();
+			return *this;
+		}
+	public:
+		bool operator==(const cookie_auto_ref& aRhs) const
+		{
+			return iConsumer == aRhs.iConsumer && iCookie == aRhs.iCookie;
+		}
+		bool operator!=(const cookie_auto_ref& aRhs) const
+		{
+			return !(*this == aRhs);
+		}
+		bool operator<(const cookie_auto_ref& aRhs) const
+		{
+			return std::tie(iConsumer, iCookie) < std::tie(aRhs.iConsumer, aRhs.iCookie);
+		}
+	public:
+		bool valid() const
+		{
+			return have_consumer() && have_cookie();
+		}
+		bool expired() const
+		{
+			return !valid();
+		}
+		neolib::cookie cookie() const
+		{
+			return iCookie;
+		}
+	private:
+		void add_ref() const
+		{
+			if (valid())
+				consumer().add_ref(cookie());
+		}
+		void release() const
+		{
+			bool finalRelease = false;
+			if (valid())
+				consumer().release(cookie(), finalRelease);
+			if (finalRelease)
+			{
+				iConsumer = nullptr;
+				iCookie = no_cookie;
+			}
+		}
+		bool have_consumer() const
+		{
+			return iConsumer != nullptr;
+		}
+		i_cookie_consumer& consumer() const
+		{
+			return *iConsumer;
+		}
+		bool have_cookie() const
+		{
+			return iCookie != no_cookie;
+		}
+	private:
+		mutable i_cookie_consumer* iConsumer;
+		mutable neolib::cookie iCookie;
+	};
 
 	template <typename T, typename MutexType = std::recursive_mutex>
 	class cookie_jar
