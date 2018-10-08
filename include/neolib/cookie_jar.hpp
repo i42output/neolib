@@ -227,7 +227,7 @@ namespace neolib
 			std::lock_guard<mutex_type> lg{ mutex() };
 			auto cookie = item_cookie(aItem);
 			auto result = jar().insert(jar().end(), aItem);
-			if (reverse_indices().size() < cookie + 1)
+			if (reverse_indices().size() <= cookie)
 				reverse_indices().resize(cookie + 1, INVALID_REVERSE_INDEX);
 			reverse_indices()[cookie] = jar().size() - 1;
 			return result;
