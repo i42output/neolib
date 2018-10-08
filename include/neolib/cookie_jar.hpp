@@ -71,7 +71,8 @@ namespace neolib
 		virtual ~i_cookie_consumer() {}
 	public:
 		virtual void add_ref(cookie aCookie) = 0;
-		virtual void release(cookie aCookie, bool& aFinalRelease) = 0;
+		virtual void release(cookie aCookie) = 0;
+		virtual long use_count(cookie aCookie) const = 0;
 	};
 
 	class cookie_auto_ref
@@ -161,14 +162,10 @@ namespace neolib
 		}
 		void release() const
 		{
-			bool finalRelease = false;
 			if (valid())
-				consumer().release(cookie(), finalRelease);
-			if (finalRelease)
-			{
-				iConsumer = nullptr;
-				iCookie = no_cookie;
-			}
+				consumer().release(cookie());
+			iConsumer = nullptr;
+			iCookie = no_cookie;
 		}
 		bool have_consumer() const
 		{
