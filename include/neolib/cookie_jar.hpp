@@ -213,10 +213,10 @@ namespace neolib
 			std::lock_guard<mutex_type> lg{ mutex() };
 			if (aCookie >= reverse_indices().size())
 				throw invalid_cookie();
-			auto index = reverse_indices()[aCookie];
-			if (index == INVALID_REVERSE_INDEX)
+			auto reverseIndex = reverse_indices()[aCookie];
+			if (reverseIndex == INVALID_REVERSE_INDEX)
 				throw invalid_cookie();
-			return jar()[index];
+			return jar()[reverseIndex];
 		}
 		value_type& operator[](neolib::cookie aCookie)
 		{
@@ -240,20 +240,18 @@ namespace neolib
 		iterator remove(neolib::cookie aCookie)
 		{
 			std::lock_guard<mutex_type> lg{ mutex() };
-			auto cookieIndex = reverse_indices()[aCookie];
-			if (cookieIndex == INVALID_REVERSE_INDEX)
+			auto& reverseIndex = reverse_indices()[aCookie];
+			if (reverseIndex == INVALID_REVERSE_INDEX)
 				throw invalid_cookie();
-			iterator result = jar().end();
-			if (cookieIndex < jar().size() - 1)
+			if (reverseIndex < jar().size() - 1)
 			{
-				auto& reverseIndex = reverse_indices()[aCookie];
 				auto& item = jar()[reverseIndex];
-				result = std::next(jar().begin(), reverseIndex);
 				std::swap(item, jar().back());
-				reverseIndex = INVALID_REVERSE_INDEX;
-				reverse_indices()[item_cookie(item)] = cookieIndex;
+				reverse_indices()[item_cookie(item)] = reverseIndex;
 			}
 			jar().pop_back();
+			iterator result = std::next(jar().begin(), reverseIndex);
+			reverseIndex = INVALID_REVERSE_INDEX;
 			return_cookie(aCookie);
 			return result;
 		}
