@@ -39,6 +39,7 @@
 #include <vector>
 #include <mutex>
 #include <atomic>
+#include <boost/stacktrace.hpp>
 
 namespace neolib
 {
@@ -77,16 +78,23 @@ namespace neolib
 
 	class cookie_auto_ref
 	{
+		std::string stackTrace;
 	public:
 		cookie_auto_ref() :
 			iConsumer{ nullptr },
 			iCookie{ no_cookie }
 		{
+		/*	std::ostringstream oss;
+			oss << boost::stacktrace::stacktrace();
+			stackTrace = oss.str(); */
 		}
 		cookie_auto_ref(i_cookie_consumer& aConsumer, neolib::cookie aCookie) :
 			iConsumer{ &aConsumer },
 			iCookie{ aCookie }
 		{
+			/*	std::ostringstream oss;
+				oss << boost::stacktrace::stacktrace();
+				stackTrace = oss.str(); */
 			add_ref();
 		}
 		~cookie_auto_ref()
@@ -97,12 +105,18 @@ namespace neolib
 			iConsumer{ aOther.iConsumer },
 			iCookie{ aOther.iCookie }
 		{
+			/*	std::ostringstream oss;
+				oss << boost::stacktrace::stacktrace();
+				stackTrace = oss.str(); */
 			add_ref();
 		}
 		cookie_auto_ref(cookie_auto_ref&& aOther) :
 			iConsumer{ aOther.iConsumer },
 			iCookie{ aOther.iCookie }
 		{
+			/*	std::ostringstream oss;
+				oss << boost::stacktrace::stacktrace();
+				stackTrace = oss.str(); */
 			add_ref();
 			aOther.release();
 		}
@@ -157,13 +171,15 @@ namespace neolib
 	private:
 		void add_ref() const
 		{
-			if (valid())
-				consumer().add_ref(cookie());
+			if (!valid())
+				return;
+			consumer().add_ref(cookie());
 		}
 		void release() const
 		{
-			if (valid())
-				consumer().release(cookie());
+			if (!valid())
+				return;
+			consumer().release(cookie());
 			iConsumer = nullptr;
 			iCookie = no_cookie;
 		}

@@ -47,9 +47,6 @@
 
 namespace neolib
 {
-	typedef std::true_type true_type;
-	typedef std::false_type false_type;
-	
 	struct vecarray_overflow : public std::exception
 	{
 		virtual const char* what() const throw() { return "neolib::vecarray_overflow"; }
@@ -76,78 +73,23 @@ namespace neolib
 
 	namespace detail
 	{
-		template <typename T, typename IsScalar>
-		struct vecarray_scalar_trait_impl
-		{ 
-			typedef T* pointer;
-			typedef const T* const_pointer;
-			typedef IsScalar type;
-			typedef const T& parameter_type; 
-			inline static void construct(pointer object, parameter_type value)
+		template <typename InputIter1, typename InputIter2, typename ForwardIter1, typename ForwardIter2>
+		inline static void uninitialized_copy2(InputIter1 first1, InputIter1 last1, ForwardIter1 dest1, InputIter2 first2, InputIter2 last2, ForwardIter2 dest2)
+		{
+			std::uninitialized_copy(first1, last1, dest1);
+			try
 			{
-				new (static_cast<void*>(object)) T(value);
-			}
-			inline static void destruct(pointer object)
-			{
-				object->~T();
-			}
-			inline static void destruct(pointer first, pointer last)
-			{
-				while(first != last)
-				{
-					first->~T();
-					++first;
-				}
-			}
-			template <typename InputIter, typename ForwardIter>
-			inline static void uninitialized_copy(InputIter first, InputIter last, ForwardIter dest)
-			{
-				std::uninitialized_copy(first, last, dest);
-			}
-			template <typename InputIter1, typename InputIter2, typename ForwardIter1, typename ForwardIter2>
-			inline static void uninitialized_copy2(InputIter1 first1, InputIter1 last1, ForwardIter1 dest1, InputIter2 first2, InputIter2 last2, ForwardIter2 dest2)
-			{
-				std::uninitialized_copy(first1, last1, dest1);
-				try
-				{
-					std::uninitialized_copy(first2, last2, dest2);
-				}
-				catch(...)
-				{
-					destruct(dest1, dest1 + (last1 - first1));
-					throw;
-				}
-			}
-		};
-		template <typename T>
-		struct vecarray_scalar_trait_impl<T, true_type>
-		{ 
-			typedef T* pointer;
-			typedef const T* const_pointer;
-			typedef true_type type;
-			typedef T parameter_type; 
-			inline static void construct(pointer object, parameter_type value)
-			{
-				*object = value;
-			}
-			inline static void destruct(pointer)
-			{
-			}
-			inline static void destruct(pointer, pointer)
-			{
-			}
-			template <typename InputIter, typename ForwardIter>
-			inline static void uninitialized_copy(InputIter first, InputIter last, ForwardIter dest)
-			{
-				std::uninitialized_copy(first, last, dest);
-			}
-			template <typename InputIter1, typename InputIter2, typename ForwardIter1, typename ForwardIter2>
-			inline static void uninitialized_copy2(InputIter1 first1, InputIter1 last1, ForwardIter1 dest1, InputIter2 first2, InputIter2 last2, ForwardIter2 dest2)
-			{
-				std::uninitialized_copy(first1, last1, dest1);
 				std::uninitialized_copy(first2, last2, dest2);
 			}
-		};
+			catch(...)
+			{
+				auto last = dest1 + (last1 - first1);
+				typedef std::iterator_traits<ForwardIter1>::value_type value_type;
+				for (auto i = dest1; i != last; ++i)
+					(*i).~value_type();
+				throw;
+			}
+		}
 	}
 
 	template<typename T, std::size_t ArraySize, std::size_t MaxVectorSize = ArraySize, typename CheckPolicy = check<vecarray_overflow>, typename Alloc = std::allocator<T> >
@@ -403,52 +345,55 @@ namespace neolib
 		};
 		typedef std::reverse_iterator<iterator> reverse_iterator;
 		typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-	private:
-		typedef detail::vecarray_scalar_trait_impl<T, typename std::is_scalar<T>::type> scalar_trait;
 	public:
-		typedef typename scalar_trait::parameter_type parameter_type;
 		template <std::size_t ArraySize, std::size_t MaxVectorSize>
 		struct is_fixed_size
 		{
 			constexpr bool value() const { return ArraySize == MaxVectorSize; }
 		};
-	private:
-		union
-		{
-			alignas(T) char iData[sizeof(T) * ArraySize];
-			char iVector[sizeof(vector_type)];
-		} iAlignedBuffer;
-		size_type iSize;
-		static const size_type USING_VECTOR = static_cast<size_type>(-1);
-	
+
 	public:
 		// construction
-		vecarray() : iSize(0)
+		vecarray() : iSize{ 0 }
 		{
 		}
-		vecarray(const vecarray& rhs) : iSize(0)
+		vecarray(const vecarray& rhs) : iSize{ 0 }
 		{
 			insert(begin(), rhs.begin(), rhs.end());
+		}
+		vecarray(vecarray&& rhs) : iSize{0}
+		{
+			if (using_vector())
+			{
+				vector() = std::move(rhs.vector());
+				iSize = rhs.iSize;
+			}
+			else
+			{
+				for (auto&& element : rhs)
+					push_back(std::move(element));
+				rhs.clear();
+			}
 		}
 		template <typename T2, std::size_t N2>
-		vecarray(const vecarray<T2, N2>& rhs) : iSize(0)
+		vecarray(const vecarray<T2, N2>& rhs) : iSize{ 0 }
 		{
 			insert(begin(), rhs.begin(), rhs.end());
 		}
-		vecarray(size_type n) : iSize(0)
+		vecarray(size_type n) : iSize{ 0 }
 		{
 			insert(begin(), n, value_type());
 		}
-		vecarray(size_type n, parameter_type value) : iSize(0)
+		vecarray(size_type n, value_type value) : iSize{ 0 }
 		{
 			insert(begin(), n, value);
 		}
 		template<typename InputIterator>
-		vecarray(InputIterator first, InputIterator last) : iSize(0)
+		vecarray(InputIterator first, InputIterator last) : iSize{ 0 }
 		{
 			insert(begin(), first, last);
 		}
-		vecarray(std::initializer_list<T> init) : iSize(0)
+		vecarray(std::initializer_list<T> init) : iSize{ 0 }
 		{
 			insert(begin(), init.begin(), init.end());
 		}
@@ -459,10 +404,12 @@ namespace neolib
 				vector().~vector_type();
 		}
 		// traversals
+		const_iterator cbegin() const { return using_array() ? const_iterator(reinterpret_cast<const_pointer>(iAlignedBuffer.iData)) : const_iterator(vector().begin()); }
+		const_iterator begin() const { return cbegin(); }
 		iterator begin() { return using_array() ? iterator(reinterpret_cast<pointer>(iAlignedBuffer.iData)) : iterator(vector().begin()); }
-		const_iterator begin() const { return using_array() ? const_iterator(reinterpret_cast<const_pointer>(iAlignedBuffer.iData)) : const_iterator(vector().begin()); }
+		const_iterator cend() const { return using_array() ? const_iterator(reinterpret_cast<const_pointer>(iAlignedBuffer.iData) + iSize) : const_iterator(vector().end()); }
+		const_iterator end() const { return cend(); }
 		iterator end() { return using_array() ? iterator(reinterpret_cast<pointer>(iAlignedBuffer.iData) + iSize) : iterator(vector().end()); }
-		const_iterator end() const { return using_array() ? const_iterator(reinterpret_cast<const_pointer>(iAlignedBuffer.iData) + iSize) : const_iterator(vector().end()); }
 		reverse_iterator rbegin() { return reverse_iterator(end()); }
 		const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
 		reverse_iterator rend() { return reverse_iterator(begin()); }
@@ -503,7 +450,7 @@ namespace neolib
 			clear();
 			insert(begin(), first, last);
 		}
-		void assign(size_type n, parameter_type value)
+		void assign(size_type n, value_type value)
 		{
 			clear();
 			insert(begin(), n, value);
@@ -514,7 +461,7 @@ namespace neolib
 		{
 			do_insert(position, first, last);
 		}
-		iterator insert(const_iterator position, parameter_type value)
+		iterator insert(const_iterator position, value_type value)
 		{
 			need(1, position);
 			size_type index = position - const_iterator(vector().begin());
@@ -541,41 +488,80 @@ namespace neolib
 			if (using_array())
 			{
 				assert(iSize > 0);
-				iterator last = end(); --last;
-				std::copy(position + 1, const_iterator(end()), const_cast<pointer>(position.array_ptr()));
-				scalar_trait::destruct(last.array_ptr());
+				iterator dest = std::next(begin(), std::distance(cbegin(), position));
+				auto garbage = std::copy(std::make_move_iterator(std::next(dest)), std::make_move_iterator(end()), dest);
+				(*garbage).~value_type();
 				--iSize;
-				return const_cast<pointer>(position.array_ptr());
+				return dest;
 			}
 			else
 				return vector().erase(position.vector_iter());
 		}
-		iterator erase(const_iterator first, const_iterator last) 
+		iterator erase(const_iterator first, const_iterator last)
 		{ 
+			if (first == last)
+				return std::next(begin(), std::distance(cbegin(), first));
 			if (using_array())
 			{
-				if (last != end())
-					std::copy(last, const_iterator(end()), const_cast<pointer>(first.array_ptr()));
-				scalar_trait::destruct(end().array_ptr() - (last - first), end().array_ptr());
+				assert(iSize > 0);
+				iterator first2 = std::next(begin(), std::distance(cbegin(), first));
+				iterator last2 = std::next(begin(), std::distance(cbegin(), last));
+				auto garbage = std::copy(std::make_move_iterator(last2), std::make_move_iterator(end()), first2);
+				for (auto i = garbage; i != end(); ++i)
+					(*i).~value_type();
 				iSize -= (last - first);
-				return const_cast<pointer>(first.array_ptr());
+				return first2;
 			}
 			else
 				return vector().erase(first.vector_iter(), last.vector_iter());
 		}
 		void clear()
 		{
-			erase(begin(), end());
+			erase(cbegin(), cend());
 		}
-		void push_back(parameter_type value)
+		template< class... Args >
+		reference emplace_back(Args&&... args)
 		{
-			do_push_back(value, typename scalar_trait::type());
+			CheckPolicy::test(size() < MaxVectorSize);
+			need(1);
+			if (using_array())
+			{
+				new (end().array_ptr()) value_type{ std::forward<Args>(args)... };
+				++iSize;
+				return back();
+			}
+			else
+				return vector().emplace_back(std::forward<Args>(args)...);
+		}
+		void push_back(const value_type& value)
+		{
+			CheckPolicy::test(size() < MaxVectorSize);
+			need(1);
+			if (using_array())
+			{
+				new (end().array_ptr()) value_type{ value };
+				++iSize;
+			}
+			else
+				vector().push_back(value);
+		}
+		void push_back(value_type&& value)
+		{
+			CheckPolicy::test(size() < MaxVectorSize);
+			need(1);
+			if (using_array())
+			{
+				new (end().array_ptr()) value_type{ std::move(value) };
+				++iSize;
+			}
+			else
+				vector().push_back(std::move(value));
 		}
 		void pop_back()
 		{
 			erase(end() - 1);
 		}
-		void remove(parameter_type value, bool multiple = true)
+		void remove(value_type value, bool multiple = true)
 		{
 			for (iterator i = begin(); i != end(); )
 			{
@@ -601,7 +587,7 @@ namespace neolib
 			else
 				vector().resize(n);
 		}
-		void resize(size_type n, parameter_type value)
+		void resize(size_type n, value_type value)
 		{
 			if (using_array())
 			{
@@ -682,7 +668,7 @@ namespace neolib
 			{
 				vector_type copy;
 				copy.reserve(ArraySize * 2);
-				copy.insert(copy.begin(), begin(), end());
+				copy.insert(copy.begin(), std::make_move_iterator(begin()), std::make_move_iterator(end()));
 				clear();
 				new (iAlignedBuffer.iVector) vector_type{ std::move(copy) };
 				iSize = USING_VECTOR;
@@ -703,27 +689,27 @@ namespace neolib
 				{
 					if (t > n)
 					{
-						scalar_trait::uninitialized_copy(theEnd - n, theEnd, const_cast<pointer>(theEnd.array_ptr()));
+						std::uninitialized_copy(theEnd - n, theEnd, const_cast<pointer>(theEnd.array_ptr()));
 						iSize += n;
 						std::copy_backward(position, theEnd - n, const_cast<pointer>(theEnd.array_ptr()));
 						std::copy(first, last, const_cast<pointer>(position.array_ptr()));
 					}
 					else
 					{
-						scalar_trait::uninitialized_copy2(theEnd - t, theEnd, const_cast<pointer>((theEnd + (n - t)).array_ptr()), first + t, last, const_cast<pointer>(theEnd.array_ptr()));
+						detail::uninitialized_copy2(theEnd - t, theEnd, const_cast<pointer>((theEnd + (n - t)).array_ptr()), first + t, last, const_cast<pointer>(theEnd.array_ptr()));
 						iSize += n;
 						std::copy(first, first + t, const_cast<pointer>(position.array_ptr()));
 					}
 				}
 				else
 				{
-					scalar_trait::uninitialized_copy(first, last, const_cast<pointer>(theEnd.array_ptr()));
+					std::uninitialized_copy(first, last, const_cast<pointer>(theEnd.array_ptr()));
 					iSize += n;
 				}
 			}
 			else
 			{
-				vector().insert(remove_const(position.vector_iter()), first, last);
+				vector().insert(position.vector_iter(), first, last);
 			}
 		}
 		template <class InputIterator>
@@ -737,33 +723,14 @@ namespace neolib
 			}
 			const_cast<pointer>(position);
 		}
-		void do_push_back(parameter_type value, false_type)
+
+	private:
+		union
 		{
-			CheckPolicy::test(size() < MaxVectorSize);
-			need(1);
-			if (using_array())
-			{
-				scalar_trait::construct(end().array_ptr(), value);
-				++iSize;
-			}
-			else
-				vector().push_back(value);
-		}
-		void do_push_back(parameter_type value, true_type)
-		{
-			CheckPolicy::test(size() < MaxVectorSize);
-			need(1);
-			if (using_array())
-			{
-				*end() = value;
-				++iSize;
-			}
-			else
-				vector().push_back(value);
-		}
-		typename vector_type::iterator remove_const(typename vector_type::const_iterator aIter)
-		{
-			return vector().begin() + (aIter - typename vector_type::const_iterator(vector().begin()));
-		}
+			alignas(T) char iData[sizeof(T) * ArraySize];
+			char iVector[sizeof(vector_type)];
+		} iAlignedBuffer;
+		size_type iSize;
+		static const size_type USING_VECTOR = static_cast<size_type>(-1);
 	};
 }
