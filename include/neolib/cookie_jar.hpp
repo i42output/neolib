@@ -215,6 +215,11 @@ namespace neolib
 		{
 		}
 	public:
+		bool contains(neolib::cookie aCookie) const
+		{
+			std::lock_guard<mutex_type> lg{ mutex() };
+			return aCookie < reverse_indices().size() && reverse_indices()[aCookie] != INVALID_REVERSE_INDEX;
+		}
 		const value_type& operator[](neolib::cookie aCookie) const
 		{
 			std::lock_guard<mutex_type> lg{ mutex() };
