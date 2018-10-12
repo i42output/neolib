@@ -74,8 +74,8 @@ namespace neolib
 	public:
 		virtual ~i_cookie_consumer() {}
 	public:
-		virtual void add_ref(cookie aCookie, const cookie_auto_ref* wrapper) = 0;
-		virtual void release(cookie aCookie, const cookie_auto_ref* wrapper) = 0;
+		virtual void add_ref(cookie aCookie) = 0;
+		virtual void release(cookie aCookie) = 0;
 		virtual long use_count(cookie aCookie) const = 0;
 	};
 
