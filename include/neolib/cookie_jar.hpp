@@ -37,6 +37,7 @@
 
 #include "neolib.hpp"
 #include <vector>
+#include <set>
 #include <mutex>
 #include <atomic>
 #include <boost/stacktrace.hpp>
@@ -64,6 +65,8 @@ namespace neolib
 		return aItem->cookie();
 	}
 
+	class cookie_auto_ref;
+
 	class i_cookie_consumer
 	{
 	public:
@@ -71,30 +74,23 @@ namespace neolib
 	public:
 		virtual ~i_cookie_consumer() {}
 	public:
-		virtual void add_ref(cookie aCookie) = 0;
-		virtual void release(cookie aCookie) = 0;
+		virtual void add_ref(cookie aCookie, const cookie_auto_ref* wrapper) = 0;
+		virtual void release(cookie aCookie, const cookie_auto_ref* wrapper) = 0;
 		virtual long use_count(cookie aCookie) const = 0;
 	};
 
 	class cookie_auto_ref
 	{
-		std::string stackTrace;
 	public:
 		cookie_auto_ref() :
 			iConsumer{ nullptr },
 			iCookie{ no_cookie }
 		{
-		/*	std::ostringstream oss;
-			oss << boost::stacktrace::stacktrace();
-			stackTrace = oss.str(); */
 		}
 		cookie_auto_ref(i_cookie_consumer& aConsumer, neolib::cookie aCookie) :
 			iConsumer{ &aConsumer },
 			iCookie{ aCookie }
 		{
-			/*	std::ostringstream oss;
-				oss << boost::stacktrace::stacktrace();
-				stackTrace = oss.str(); */
 			add_ref();
 		}
 		~cookie_auto_ref()
@@ -105,18 +101,12 @@ namespace neolib
 			iConsumer{ aOther.iConsumer },
 			iCookie{ aOther.iCookie }
 		{
-			/*	std::ostringstream oss;
-				oss << boost::stacktrace::stacktrace();
-				stackTrace = oss.str(); */
 			add_ref();
 		}
 		cookie_auto_ref(cookie_auto_ref&& aOther) :
 			iConsumer{ aOther.iConsumer },
 			iCookie{ aOther.iCookie }
 		{
-			/*	std::ostringstream oss;
-				oss << boost::stacktrace::stacktrace();
-				stackTrace = oss.str(); */
 			add_ref();
 			aOther.release();
 		}
@@ -205,6 +195,7 @@ namespace neolib
 	{
 	public:
 		struct invalid_cookie : std::logic_error { invalid_cookie() : std::logic_error("neolib::cookie_jar::invalid_cookie") {} };
+		struct cookie_already_added : std::logic_error { cookie_already_added() : std::logic_error("neolib::cookie_jar::cookie_already_added") {} };
 		struct cookies_exhausted : std::logic_error { cookies_exhausted() : std::logic_error("neolib::cookie_jar::cookies_exhausted") {} };
 	public:
 		typedef T value_type;
@@ -242,9 +233,11 @@ namespace neolib
 		{
 			std::lock_guard<mutex_type> lg{ mutex() };
 			auto cookie = item_cookie(aItem);
-			auto result = jar().insert(jar().end(), aItem);
 			if (reverse_indices().size() <= cookie)
 				reverse_indices().resize(cookie + 1, INVALID_REVERSE_INDEX);
+			if (reverse_indices()[cookie] != INVALID_REVERSE_INDEX)
+				throw cookie_already_added();
+			auto result = jar().insert(jar().end(), aItem);
 			reverse_indices()[cookie] = jar().size() - 1;
 			return result;
 		}
