@@ -132,9 +132,7 @@ namespace neolib
 		template <typename RandomIt, typename Swapper, typename Compare>
 		inline void introsort(RandomIt first, RandomIt last, Swapper swapper, Compare comp, uint32_t depth)
 		{
-			auto lo = first;
-			auto hi = std::prev(last);
-			if (lo < hi)
+			if (std::distance(first, last) > 1)
 			{
 				if (depth == 0)
 					heapsort(first, last, swapper, comp);

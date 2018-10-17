@@ -61,7 +61,7 @@ namespace neolib
 					aTimer.again();
 				if (iCache.first && std::chrono::steady_clock::now() > iCache.second)
 					iCache.first.reset();
-			}, 10, false
+			}, 1, false
 		},
 		iHaveThreadedCallbacks{ false },
 		iTerminated{ false }
