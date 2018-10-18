@@ -69,26 +69,19 @@ namespace neolib
 		typedef typename abstract_base::iterator iterator;
 		// construction
 	public:
-		set() :
-			iEndConstIterator(new container_const_iterator(iSet.cend())),
-			iEndIterator(new container_iterator(iSet.end()))
-		{}
-		set(const abstract_container& aOther) :
-			iEndConstIterator(new container_const_iterator(iSet.cend())),
-			iEndIterator(new container_iterator(iSet.end()))
+		set()
+		{
+		}
+		set(const abstract_container& aOther)
 		{
 			assign(aOther);
 		}
 		set(std::initializer_list<concrete_value_type> aElements) :
-			iSet(aElements),
-			iEndConstIterator(new container_const_iterator(iSet.cend())),
-			iEndIterator(new container_iterator(iSet.end()))
+			iSet(aElements)
 		{}
 		template <typename InputIter>
 		set(InputIter aFirst, InputIter aLast) :
-			iSet(aFirst, aLast),
-			iEndConstIterator(new container_const_iterator(iSet.cend())),
-			iEndIterator(new container_iterator(iSet.end()))
+			iSet(aFirst, aLast)
 		{}
 		// operations
 	public:
@@ -111,9 +104,9 @@ namespace neolib
 	private:
 		// from i_container
 		virtual abstract_const_iterator* do_begin() const { return new container_const_iterator(iSet.begin()); }
-		virtual abstract_const_iterator* do_end() const { return iEndConstIterator.wrapped_iterator(); }
+		virtual abstract_const_iterator* do_end() const { return new container_const_iterator(iSet.end()); }
 		virtual abstract_iterator* do_begin() { return new container_iterator(iSet.begin()); }
-		virtual abstract_iterator* do_end() { return iEndIterator.wrapped_iterator(); }
+		virtual abstract_iterator* do_end() { return new container_iterator(iSet.end()); }
 		virtual abstract_iterator* do_erase(const abstract_const_iterator& aPosition) { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aPosition))); }
 		virtual abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
 	public:
@@ -123,8 +116,6 @@ namespace neolib
 		virtual abstract_iterator* do_find(const abstract_key_type& aKey) { return new container_iterator(iSet.find(concrete_key_type(aKey))); }
 	private:
 		container_type iSet;
-		const_iterator iEndConstIterator;
-		iterator iEndIterator;
 	};
 
 	template <typename T, typename ConcreteType = T, typename Pred = std::less<typename crack_key<ConcreteType>::key_type>, typename Alloc = std::allocator<ConcreteType>>
@@ -154,26 +145,18 @@ namespace neolib
 		typedef typename abstract_base::iterator iterator;
 		// construction
 	public:
-		multiset() :
-			iEndConstIterator(new container_const_iterator(iSet.cend())),
-			iEndIterator(new container_iterator(iSet.end()))
+		multiset()
 		{}
-		multiset(const abstract_container& aOther) :
-			iEndConstIterator(new container_const_iterator(iSet.cend())),
-			iEndIterator(new container_iterator(iSet.end()))
+		multiset(const abstract_container& aOther)
 		{
 			assign(aOther);
 		}
 		multiset(std::initializer_list<concrete_value_type> aElements) :
-			iSet(aElements),
-			iEndConstIterator(new container_const_iterator(iSet.cend())),
-			iEndIterator(new container_iterator(iSet.end()))
+			iSet(aElements)
 		{}
 		template <typename InputIter>
 		multiset(InputIter aFirst, InputIter aLast) :
-			iSet(aFirst, aLast),
-			iEndConstIterator(new container_const_iterator(iSet.cend())),
-			iEndIterator(new container_iterator(iSet.end()))
+			iSet(aFirst, aLast)
 		{}
 		// operations
 	public:
@@ -196,9 +179,9 @@ namespace neolib
 	private:
 		// from i_container
 		virtual abstract_const_iterator* do_begin() const { return new container_const_iterator(iSet.begin()); }
-		virtual abstract_const_iterator* do_end() const { return iEndConstIterator.wrapped_iterator(); }
+		virtual abstract_const_iterator* do_end() const { return new container_const_iterator(iSet.end()); }
 		virtual abstract_iterator* do_begin() { return new container_iterator(iSet.begin()); }
-		virtual abstract_iterator* do_end() { return iEndIterator.wrapped_iterator(); }
+		virtual abstract_iterator* do_end() { return container_iterator(iSet.end()); }
 		virtual abstract_iterator* do_erase(const abstract_const_iterator& aPosition) { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aPosition))); }
 		virtual abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
 	public:
@@ -208,7 +191,5 @@ namespace neolib
 		virtual abstract_iterator* do_find(const abstract_key_type& aKey) { return new container_iterator(iSet.find(concrete_key_type(aKey))); }
 	private:
 		container_type iSet;
-		const_iterator iEndConstIterator;
-		iterator iEndIterator;
 	};
 }
