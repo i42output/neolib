@@ -107,19 +107,22 @@ namespace neolib
 		bool didSome = false;
 		if (iHaveThreadedCallbacks)
 		{
-			callback_list work;
+			event_callback_list work;
 			{
 				destroyable_mutex_lock_guard<event_mutex> guard{ iThreadedCallbacksMutex };
 				work = std::move(iThreadedCallbacks[std::this_thread::get_id()]);
 				iThreadedCallbacks.erase(iThreadedCallbacks.find(std::this_thread::get_id()));
 				iHaveThreadedCallbacks = !iThreadedCallbacks.empty();
 			}
-			for (auto& cb : work)
+			for (auto& cl : work)
 			{
-				if (iTerminated)
-					return didSome;
-				cb();
-				didSome = true;
+				for (auto& cb : cl.second)
+				{
+					if (iTerminated)
+						return didSome;
+					cb();
+					didSome = true;
+				}
 			}
 		}
 		return didSome;
@@ -142,13 +145,24 @@ namespace neolib
 		iCache.second = std::chrono::steady_clock::now() + std::chrono::milliseconds(aDuration_ms);
 	}
 
-	void async_event_queue::enqueue_to_thread(std::thread::id aThreadId, callback aCallback)
+	void async_event_queue::enqueue_to_thread(const void* aEvent, std::thread::id aThreadId, callback aCallback)
 	{
 		if (iTerminated)
 			return;
 		destroyable_mutex_lock_guard<event_mutex> guard{ iThreadedCallbacksMutex };
-		iThreadedCallbacks[aThreadId].push_back(aCallback);
+		iThreadedCallbacks[aThreadId][aEvent].push_back(aCallback);
 		iHaveThreadedCallbacks = true;
+	}
+
+	void async_event_queue::enqueue_to_thread_once(const void* aEvent, std::thread::id aThreadId, callback aCallback)
+	{
+		if (iTerminated)
+			return;
+		destroyable_mutex_lock_guard<event_mutex> guard{ iThreadedCallbacksMutex };
+		auto existing = iThreadedCallbacks[aThreadId].find(aEvent);
+		if (existing != iThreadedCallbacks[aThreadId].end())
+			iThreadedCallbacks[aThreadId].erase(existing);
+		enqueue_to_thread(aEvent, aThreadId, aCallback);
 	}
 
 	void async_event_queue::add(const void* aEvent, callback aCallback, neolib::lifetime::destroyed_flag aDestroyedFlag)
@@ -159,6 +173,16 @@ namespace neolib
 		iEvents.emplace(aEvent, std::make_pair(aCallback, aDestroyedFlag));
 		if (!iTimer.waiting())
 			iTimer.again();
+	}
+
+	void async_event_queue::add_one(const void* aEvent, callback aCallback, event_lifetime::destroyed_flag aDestroyedFlag)
+	{
+		if (iTerminated)
+			return;
+		destroyable_mutex_lock_guard<event_mutex> guard{ iEventsMutex };
+		auto existing = iEvents.equal_range(aEvent);
+		iEvents.erase(existing.first, existing.second);
+		add(aEvent, aCallback, aDestroyedFlag);
 	}
 
 	void async_event_queue::remove(const void* aEvent)
