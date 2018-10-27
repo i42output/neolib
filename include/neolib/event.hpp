@@ -431,7 +431,7 @@ namespace neolib
 			auto& context = sc.context();
 			context.notifications->reserve(instanceData.handlers.size());
 			if (trigger_type() == event_trigger_type::SynchronousDontQueue && trigger_type() == event_trigger_type::AsynchronousDontQueue)
-				unqueue_from_thread();
+				unqueue();
 			for (auto iterHandler = instanceData.handlers.begin(); iterHandler != instanceData.handlers.end(); ++iterHandler)
 				if (iterHandler->iThreadId == std::nullopt || *iterHandler->iThreadId == std::this_thread::get_id())
 					context.notifications->emplace_back(true, iterHandler->iHandlerCallback, iterHandler);
@@ -550,7 +550,7 @@ namespace neolib
 			std::tuple<Ts...> arguments{ std::forward<Ts>(aArguments)... };
 			instance_data().asyncEventQueue->enqueue_to_thread(this, *aItem.iThreadId, [callback, arguments](){ std::apply(callback, arguments); });
 		}
-		void unqueue_from_thread() const
+		void unqueue() const
 		{
 			instance_data().asyncEventQueue->unqueue(this);
 		}
