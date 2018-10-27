@@ -154,15 +154,12 @@ namespace neolib
 		iHaveThreadedCallbacks = true;
 	}
 
-	void async_event_queue::enqueue_to_thread_once(const void* aEvent, std::thread::id aThreadId, callback aCallback)
+	void async_event_queue::unqueue(const void* aEvent)
 	{
 		if (iTerminated)
 			return;
 		destroyable_mutex_lock_guard<event_mutex> guard{ iThreadedCallbacksMutex };
-		auto existing = iThreadedCallbacks[aThreadId].find(aEvent);
-		if (existing != iThreadedCallbacks[aThreadId].end())
-			iThreadedCallbacks[aThreadId].erase(existing);
-		enqueue_to_thread(aEvent, aThreadId, aCallback);
+		remove(aEvent);
 	}
 
 	void async_event_queue::add(const void* aEvent, callback aCallback, neolib::lifetime::destroyed_flag aDestroyedFlag)
@@ -173,16 +170,6 @@ namespace neolib
 		iEvents.emplace(aEvent, std::make_pair(aCallback, aDestroyedFlag));
 		if (!iTimer.waiting())
 			iTimer.again();
-	}
-
-	void async_event_queue::add_one(const void* aEvent, callback aCallback, event_lifetime::destroyed_flag aDestroyedFlag)
-	{
-		if (iTerminated)
-			return;
-		destroyable_mutex_lock_guard<event_mutex> guard{ iEventsMutex };
-		auto existing = iEvents.equal_range(aEvent);
-		iEvents.erase(existing.first, existing.second);
-		add(aEvent, aCallback, aDestroyedFlag);
 	}
 
 	void async_event_queue::remove(const void* aEvent)

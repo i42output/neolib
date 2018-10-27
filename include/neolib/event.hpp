@@ -233,11 +233,6 @@ namespace neolib
 			add(static_cast<const void*>(&aEvent), aCallback, event_lifetime::destroyed_flag(aEvent));
 		}
 		template<typename... Arguments>
-		void add_one(const event<Arguments...>& aEvent, callback aCallback)
-		{
-			add_one(static_cast<const void*>(&aEvent), aCallback, event_lifetime::destroyed_flag(aEvent));
-		}
-		template<typename... Arguments>
 		void remove(const event<Arguments...>& aEvent)
 		{
 			remove(static_cast<const void*>(&aEvent));
@@ -249,7 +244,7 @@ namespace neolib
 		}
 		bool exec();
 		void enqueue_to_thread(const void* aEvent, std::thread::id aThreadId, callback aCallback);
-		void enqueue_to_thread_once(const void* aEvent, std::thread::id aThreadId, callback aCallback);
+		void unqueue(const void* aEvent);
 		void terminate();
 		void persist(std::shared_ptr<async_event_queue> aPtr, uint32_t aDuration_ms = 1000u);
 	private:
@@ -257,7 +252,6 @@ namespace neolib
 		static std::recursive_mutex& instance_mutex();
 		static instance_pointers& instance_ptrs();
 		void add(const void* aEvent, callback aCallback, event_lifetime::destroyed_flag aDestroyedFlag);
-		void add_one(const void* aEvent, callback aCallback, event_lifetime::destroyed_flag aDestroyedFlag);
 		void remove(const void* aEvent);
 		bool has(const void* aEvent) const;
 		void publish_events();
@@ -436,6 +430,8 @@ namespace neolib
 			} sc { *this };
 			auto& context = sc.context();
 			context.notifications->reserve(instanceData.handlers.size());
+			if (trigger_type() == event_trigger_type::SynchronousDontQueue && trigger_type() == event_trigger_type::AsynchronousDontQueue)
+				unqueue_from_thread();
 			for (auto iterHandler = instanceData.handlers.begin(); iterHandler != instanceData.handlers.end(); ++iterHandler)
 				if (iterHandler->iThreadId == std::nullopt || *iterHandler->iThreadId == std::this_thread::get_id())
 					context.notifications->emplace_back(true, iterHandler->iHandlerCallback, iterHandler);
@@ -460,10 +456,7 @@ namespace neolib
 			if (!has_instance_data()) // no instance means no subscribers so no point triggering.
 				return;
 			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
-			if (trigger_type() != event_trigger_type::AsynchronousDontQueue)
-				instance_data().asyncEventQueue->add(*this, [this, &aArguments...]() { sync_trigger(std::forward<Ts>(aArguments)...); });
-			else
-				instance_data().asyncEventQueue->add_one(*this, [this, &aArguments...]() { sync_trigger(std::forward<Ts>(aArguments)...); });
+			instance_data().asyncEventQueue->add(*this, [this, &aArguments...]() { sync_trigger(std::forward<Ts>(aArguments)...); });
 		}
 		void accept() const
 		{
@@ -555,10 +548,11 @@ namespace neolib
 		{
 			auto callback = aItem.iHandlerCallback;
 			std::tuple<Ts...> arguments{ std::forward<Ts>(aArguments)... };
-			if (trigger_type() != event_trigger_type::SynchronousDontQueue && trigger_type() != event_trigger_type::AsynchronousDontQueue)
-				instance_data().asyncEventQueue->enqueue_to_thread(this, *aItem.iThreadId, [callback, arguments](){ std::apply(callback, arguments); });
-			else
-				instance_data().asyncEventQueue->enqueue_to_thread_once(this, *aItem.iThreadId, [callback, arguments]() { std::apply(callback, arguments); });
+			instance_data().asyncEventQueue->enqueue_to_thread(this, *aItem.iThreadId, [callback, arguments](){ std::apply(callback, arguments); });
+		}
+		void unqueue_from_thread() const
+		{
+			instance_data().asyncEventQueue->unqueue(this);
 		}
 		void clear()
 		{
