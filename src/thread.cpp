@@ -297,18 +297,38 @@ namespace neolib
 
 	uint64_t thread::elapsed_ms()
 	{
-		using namespace boost::chrono;
-		return duration_cast<milliseconds>(thread_clock::time_point(thread_clock::now()).time_since_epoch()).count();
+		return elapsed_us() / 1000;
 	}
 
-	namespace
+	uint64_t thread::elapsed_us()
 	{
-		uint64_t sProgramStartTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::time_point(std::chrono::steady_clock::now()).time_since_epoch()).count();
+		return elapsed_ns() / 1000;
+	}
+
+	uint64_t thread::elapsed_ns()
+	{
+		using namespace boost::chrono;
+		return duration_cast<nanoseconds>(thread_clock::time_point(thread_clock::now()).time_since_epoch()).count();
 	}
 
 	uint64_t thread::program_elapsed_ms()
 	{
-		return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::time_point(std::chrono::steady_clock::now()).time_since_epoch()).count() - sProgramStartTime;
+		return program_elapsed_us() / 1000;
+	}
+
+	uint64_t thread::program_elapsed_us()
+	{
+		return program_elapsed_ns() / 1000;
+	}
+
+	namespace
+	{
+		uint64_t sProgramStartTime_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::time_point(std::chrono::high_resolution_clock::now()).time_since_epoch()).count();
+	}
+
+	uint64_t thread::program_elapsed_ns()
+	{
+		return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::time_point(std::chrono::high_resolution_clock::now()).time_since_epoch()).count() - sProgramStartTime_ns;
 	}
 
 	bool thread::waitable_ready() const

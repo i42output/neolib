@@ -97,7 +97,11 @@ namespace neolib
 		static void sleep(uint32_t aDelayInMilleseconds);
 		static void yield();
 		static uint64_t elapsed_ms();
+		static uint64_t elapsed_us();
+		static uint64_t elapsed_ns();
 		static uint64_t program_elapsed_ms();
+		static uint64_t program_elapsed_us();
+		static uint64_t program_elapsed_ns();
 		// implementation
 	private:
 		// from waitable
