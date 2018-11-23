@@ -329,6 +329,58 @@ namespace neolib
 			notification_list_pool notificationListPool;
 		};
 		typedef thread_safe_fast_pool_allocator<state> state_allocator;
+		class scoped_context
+		{
+		public:
+			scoped_context(const self_type& aOwner) :
+				iInstanceDestroyed{ aOwner },
+				iInstanceDataDestroyed{ aOwner.instance_data() },
+				iMutex{ aOwner.iMutex },
+				iContexts{ aOwner.instance_data().contexts },
+				iIterContext{ iContexts.insert(iContexts.end(), std::make_shared<typename state::context>()) },
+				iContextPtr{ *iIterContext },
+				iNotificationListPool{ aOwner.instance_data().notificationListPool }
+			{
+				if (iNotificationListPool.empty())
+					context().notifications = std::make_shared<notification_list>();
+				else
+				{
+					context().notifications = iNotificationListPool.back();
+					iNotificationListPool.pop_back();
+				}
+			}
+			~scoped_context()
+			{
+				if (!instance_destroyed() && !instance_data_destroyed())
+				{
+					destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
+					context().notifications->clear();
+					iNotificationListPool.push_back(context().notifications);
+					iContexts.erase(iIterContext);
+				}
+			}
+		public:
+			bool instance_destroyed() const
+			{
+				return iInstanceDestroyed;
+			}
+			bool instance_data_destroyed() const
+			{
+				return iInstanceDataDestroyed;
+			}
+			typename state::context& context() const
+			{
+				return *iContextPtr;
+			}
+		private:
+			destroyed_flag iInstanceDestroyed;
+			destroyed_flag iInstanceDataDestroyed;
+			event_mutex& iMutex;
+			typename state::context_list& iContexts;
+			typename state::context_list::const_iterator iIterContext;
+			typename state::context_ptr iContextPtr; // need smart pointer copy here to extend possible lifetime of context...
+			notification_list_pool& iNotificationListPool;
+		};
 	public:
 		event() : iInstanceData { nullptr }, iInSync{ false }
 		{
@@ -382,52 +434,8 @@ namespace neolib
 				return true;
 			scoped_atomic_flag saf{ iInSync };
 			destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
-			destroyed_flag destroyed{ *this };
 			auto& instanceData = instance_data();
-			class scoped_context
-			{
-			public:
-				scoped_context(const self_type& aOwner) : 
-					iInstanceDestroyed{ aOwner }, 
-					iInstanceDataDestroyed{ aOwner.instance_data() },
-					iMutex{ aOwner.iMutex },
-					iContexts{ aOwner.instance_data().contexts },
-					iIterContext{ iContexts.insert(iContexts.end(), std::make_shared<typename state::context>()) },
-					iContextPtr{ *iIterContext },
-					iNotificationListPool{ aOwner.instance_data().notificationListPool }
-				{
-					if (iNotificationListPool.empty())
-						context().notifications = std::make_shared<notification_list>();
-					else
-					{
-						context().notifications = iNotificationListPool.back();
-						iNotificationListPool.pop_back();
-					}
-				}
-				~scoped_context()
-				{
-					if (!iInstanceDestroyed && !iInstanceDataDestroyed)
-					{
-						destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
-						context().notifications->clear();
-						iNotificationListPool.push_back(context().notifications);
-						iContexts.erase(iIterContext);
-					}
-				}
-			public:
-				typename state::context& context() const
-				{
-					return *iContextPtr;
-				}
-			private:
-				destroyed_flag iInstanceDestroyed;
-				destroyed_flag iInstanceDataDestroyed;
-				event_mutex& iMutex;
-				typename state::context_list& iContexts;
-				typename state::context_list::const_iterator iIterContext;
-				typename state::context_ptr iContextPtr; // need smart pointer copy here to extend possible lifetime of context...
-				notification_list_pool& iNotificationListPool;
-			} sc { *this };
+			scoped_context sc{ *this };
 			auto& context = sc.context();
 			context.notifications->reserve(instanceData.handlers.size());
 			if (trigger_type() == event_trigger_type::SynchronousDontQueue && trigger_type() == event_trigger_type::AsynchronousDontQueue)
@@ -443,7 +451,7 @@ namespace neolib
 				if (!std::get<0>(notification))
 					continue;
 				std::get<1>(notification)(std::forward<Ts>(aArguments)...);
-				if (destroyed)
+				if (sc.instance_destroyed())
 					return false;
 				if (context.accepted)
 					return false;
