@@ -65,6 +65,12 @@ namespace neolib
 		return aItem->cookie();
 	}
 
+	template <typename T>
+	inline cookie item_cookie(const std::unique_ptr<T>& aPtr)
+	{
+		return item_cookie(*aPtr);
+	}
+
 	class cookie_auto_ref;
 
 	class i_cookie_consumer
@@ -234,7 +240,8 @@ namespace neolib
 		{
 			return const_cast<value_type&>(const_cast<const cookie_jar&>(*this)[aCookie]);
 		}
-		iterator add(const value_type& aItem)
+		template <typename T>
+		iterator add(T&& aItem)
 		{
 			std::lock_guard<mutex_type> lg{ mutex() };
 			auto cookie = item_cookie(aItem);
@@ -242,7 +249,7 @@ namespace neolib
 				reverse_indices().resize(cookie + 1, INVALID_REVERSE_INDEX);
 			if (reverse_indices()[cookie] != INVALID_REVERSE_INDEX)
 				throw cookie_already_added();
-			auto result = jar().insert(jar().end(), aItem);
+			auto result = jar().insert(jar().end(), std::forward<T>(aItem));
 			reverse_indices()[cookie] = jar().size() - 1;
 			return result;
 		}
