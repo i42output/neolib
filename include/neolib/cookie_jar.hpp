@@ -222,14 +222,14 @@ namespace neolib
 		typedef std::vector<reverse_index_t> reverse_indices_t;
 		typedef std::vector<cookie_type> free_cookies_t;
 	private:
-		static constexpr cookie_type INVALID_COOKIE = cookie_type{ ~0ul };
-		static constexpr reverse_index_t INVALID_REVERSE_INDEX = reverse_index_t{ ~0ul };
+		static constexpr cookie_type INVALID_COOKIE = static_cast<cookie_type>(~cookie_type{});
+		static constexpr reverse_index_t INVALID_REVERSE_INDEX = static_cast<reverse_index_t>(~reverse_index_t{});
 	public:
 		struct invalid_cookie : std::logic_error { invalid_cookie() : std::logic_error("neolib::basic_cookie_jar::invalid_cookie") {} };
 		struct cookie_already_added : std::logic_error { cookie_already_added() : std::logic_error("neolib::basic_cookie_jar::cookie_already_added") {} };
 		struct cookies_exhausted : std::logic_error { cookies_exhausted() : std::logic_error("neolib::basic_cookie_jar::cookies_exhausted") {} };
 	public:
-		basic_cookie_jar() : iNextAvailableCookie{ 0ul }
+		basic_cookie_jar() : iNextAvailableCookie{}
 		{
 		}
 	public:
