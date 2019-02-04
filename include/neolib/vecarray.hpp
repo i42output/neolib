@@ -84,7 +84,7 @@ namespace neolib
 			catch(...)
 			{
 				auto last = dest1 + (last1 - first1);
-				typedef std::iterator_traits<ForwardIter1>::value_type value_type;
+				typedef typename std::iterator_traits<ForwardIter1>::value_type value_type;
 				for (auto i = dest1; i != last; ++i)
 					(*i).~value_type();
 				throw;
@@ -346,10 +346,10 @@ namespace neolib
 		typedef std::reverse_iterator<iterator> reverse_iterator;
 		typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 	public:
-		template <std::size_t ArraySize, std::size_t MaxVectorSize>
+		template <std::size_t ArraySize2 = ArraySize, std::size_t MaxVectorSize2 = MaxVectorSize>
 		struct is_fixed_size
 		{
-			constexpr bool value() const { return ArraySize == MaxVectorSize; }
+			constexpr bool value() const { return ArraySize2 == MaxVectorSize2; }
 		};
 
 	public:
