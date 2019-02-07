@@ -147,6 +147,8 @@ namespace neolib
 			}
 			didWork = true;
 		}
+		if (have_message_queue())
+			message_queue().idle();
 		return didWork;
 	}
 

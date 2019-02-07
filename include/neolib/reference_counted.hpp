@@ -46,6 +46,9 @@ namespace neolib
 	class reference_counted : public Base
 	{
 	public:
+		using Base::release_during_destruction;
+		using Base::too_many_references;
+	public:
 		typedef Base base_type;
 		typedef typename base_type::i_object_destruction_watcher i_object_destruction_watcher;
 	public:

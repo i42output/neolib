@@ -36,6 +36,7 @@
 #pragma once
 
 #include "neolib.hpp"
+#include <ostream>
 #include "vecarray.hpp"
 #include "string_utils.hpp"
 #include "string.hpp"
@@ -55,7 +56,7 @@ namespace neolib
 			iMajor(0), iMinor(0), iMaintenance(0), iBuild(0), iName("")
 		{
 			neolib::vecarray<std::string, 5> bits;
-			neolib::tokens(aVersionString, std::string("."), bits, 4);
+			neolib::tokens(aVersionString, std::string(". "), bits, 4);
 			if (bits.size() > 0)
 				iMajor = neolib::string_to_uint32(bits[0]);
 			if (bits.size() > 1)
@@ -116,4 +117,14 @@ namespace neolib
 		uint32_t iBuild;
 		string iName;
 	};
+
+	template <typename Elem, typename Traits>
+	inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const version& aVersion)
+	{
+		aStream << aVersion.major() << "." << aVersion.minor() << "." << aVersion.maintenance() << "." << aVersion.build();
+		if (!aVersion.name().empty())
+			aStream << " " << aVersion.name();
+		return aStream;
+	}
+
 }
