@@ -127,14 +127,14 @@ namespace neolib
 			random_access_iterator(const random_access_iterator& aOther) : base(aOther) {}
 			random_access_iterator& operator=(const random_access_iterator& aOther) { base::operator=(aOther); return *this; }
 		public:
-			virtual abstract_iterator& operator+=(difference_type aDifference) { iContainerIterator += aDifference; return *this; }
-			virtual abstract_iterator& operator-=(difference_type aDifference) { iContainerIterator -= aDifference; return *this; }
-			virtual reference operator[](difference_type aDifference) const { return iContainerIterator[aDifference]; }
-			virtual difference_type operator-(const abstract_iterator& aOther) const { return iContainerIterator - static_cast<const random_access_iterator&>(aOther).iContainerIterator; }
-			virtual bool operator<(const abstract_iterator& aOther) const { return iContainerIterator < static_cast<const random_access_iterator&>(aOther).iContainerIterator; }
+			virtual abstract_iterator& operator+=(difference_type aDifference) { base::iContainerIterator += aDifference; return *this; }
+			virtual abstract_iterator& operator-=(difference_type aDifference) { base::iContainerIterator -= aDifference; return *this; }
+			virtual reference operator[](difference_type aDifference) const { return base::iContainerIterator[aDifference]; }
+			virtual difference_type operator-(const abstract_iterator& aOther) const { return base::iContainerIterator - static_cast<const random_access_iterator&>(aOther).iContainerIterator; }
+			virtual bool operator<(const abstract_iterator& aOther) const { return base::iContainerIterator < static_cast<const random_access_iterator&>(aOther).iContainerIterator; }
 		private:
-			virtual abstract_iterator* do_add(difference_type aDifference) const { return new random_access_iterator(iContainerIterator + aDifference); }
-			virtual abstract_iterator* do_subtract(difference_type aDifference) const { return new random_access_iterator(iContainerIterator - aDifference); }
+			virtual abstract_iterator* do_add(difference_type aDifference) const { return new random_access_iterator(base::iContainerIterator + aDifference); }
+			virtual abstract_iterator* do_subtract(difference_type aDifference) const { return new random_access_iterator(base::iContainerIterator - aDifference); }
 		};
 
 		template <typename T, typename ContainerIterator,
@@ -201,16 +201,16 @@ namespace neolib
 			random_access_const_iterator(const random_access_iterator<T, ContainerIterator2, ContainerIterator>& aOther) : base(aOther.iContainerIterator) {}
 			random_access_const_iterator& operator=(const random_access_const_iterator& aOther) { base::operator=(aOther); return *this; }
 		public:
-			operator container_iterator() const { return iContainerIterator; }
+			operator container_iterator() const { return base::iContainerIterator; }
 		public:
-			virtual abstract_iterator& operator+=(difference_type aDifference) { iContainerIterator += aDifference; return *this; }
-			virtual abstract_iterator& operator-=(difference_type aDifference) { iContainerIterator -= aDifference; return *this; }
-			virtual reference operator[](difference_type aDifference) const { return iContainerIterator[aDifference]; }
-			virtual difference_type operator-(const abstract_iterator& aOther) const { return iContainerIterator - static_cast<const random_access_const_iterator&>(aOther).iContainerIterator; }
-			virtual bool operator<(const abstract_iterator& aOther) const { return iContainerIterator < static_cast<const random_access_const_iterator&>(aOther).iContainerIterator; }
+			virtual abstract_iterator& operator+=(difference_type aDifference) { base::iContainerIterator += aDifference; return *this; }
+			virtual abstract_iterator& operator-=(difference_type aDifference) { base::iContainerIterator -= aDifference; return *this; }
+			virtual reference operator[](difference_type aDifference) const { return base::iContainerIterator[aDifference]; }
+			virtual difference_type operator-(const abstract_iterator& aOther) const { return base::iContainerIterator - static_cast<const random_access_const_iterator&>(aOther).iContainerIterator; }
+			virtual bool operator<(const abstract_iterator& aOther) const { return base::iContainerIterator < static_cast<const random_access_const_iterator&>(aOther).iContainerIterator; }
 		private:
-			virtual abstract_iterator* do_add(difference_type aDifference) const { return new random_access_const_iterator(iContainerIterator + aDifference); }
-			virtual abstract_iterator* do_subtract(difference_type aDifference) const { return new random_access_const_iterator(iContainerIterator - aDifference); }
+			virtual abstract_iterator* do_add(difference_type aDifference) const { return new random_access_const_iterator(base::iContainerIterator + aDifference); }
+			virtual abstract_iterator* do_subtract(difference_type aDifference) const { return new random_access_const_iterator(base::iContainerIterator - aDifference); }
 		};
 
 		template <typename T, typename ContainerIterator, typename ContainerConstIterator, typename AbstractIterator, typename AbstractConstIterator, typename ConcreteIteratorType>

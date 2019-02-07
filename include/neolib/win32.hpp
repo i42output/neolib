@@ -18,6 +18,8 @@
 #pragma warning (disable: 4459 ) // declaration of 'attr' hides global declaration
 #pragma warning (disable: 4100 ) // unreferenced formal parameter
 
+#define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
+
 #if _MSC_VER < 1900
 #pragma execution_character_set("utf-8")
 #define u8

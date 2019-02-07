@@ -37,8 +37,8 @@ namespace neolib
 		ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
 
 		osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-
-		if (!(bOsVersionInfoEx = GetVersionEx((OSVERSIONINFO *)&osvi)))
+		bOsVersionInfoEx = GetVersionEx((OSVERSIONINFO *)&osvi);
+		if (!bOsVersionInfoEx)
 		{
 			return "Microsoft Windows";
 		}

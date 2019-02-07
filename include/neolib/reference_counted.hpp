@@ -48,6 +48,8 @@ namespace neolib
 	public:
 		using Base::release_during_destruction;
 		using Base::too_many_references;
+		using Base::destruction_watcher_already_subscribed;
+		using Base::destruction_watcher_not_found;
 	public:
 		typedef Base base_type;
 		typedef typename base_type::i_object_destruction_watcher i_object_destruction_watcher;
@@ -260,7 +262,7 @@ namespace neolib
 			if (valid())
 				iObject->subcribe_destruction_watcher(*this);
 		}
-		weak_auto_ref(const i_auto_ref& aOther) :
+		weak_auto_ref(const i_auto_ref<Interface>& aOther) :
 			iObject(aOther.ptr())
 		{
 			if (valid())

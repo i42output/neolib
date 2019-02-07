@@ -53,7 +53,7 @@ namespace neolib
 		typedef std::pair<ConcreteType1, ConcreteType2> concrete_base;
 	public:
 		pair() : concrete_base(first_concrete_type(), second_concrete_type()) {}
-		pair(const i_pair& aPair) : concrete_base(aPair.first(), aPair.second()) {}
+		pair(const i_pair<T1, T2>& aPair) : concrete_base(aPair.first(), aPair.second()) {}
 		pair(const concrete_base& aPair) : concrete_base(aPair) {}
 		pair(const first_abstract_type& aFirst, const second_abstract_type& aSecond) : concrete_base(aFirst, aSecond) {}
 	public:
