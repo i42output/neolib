@@ -316,11 +316,18 @@ namespace neolib
 		{
 		}
 	public:
+		json_value& at(const json_string& aKey)
+		{
+			auto existing = cache().find(aKey);
+			if (existing != cache().end())
+				return *existing->second;
+			throw std::out_of_range("neolib::basic_json_object::at: key not found");
+		}
 		json_value& operator[](const json_string& aKey)
 		{
-			auto iter = cache().find(aKey);
-			if (iter != cache().end())
-				return *iter->second;
+			auto existing = cache().find(aKey);
+			if (existing != cache().end())
+				return *existing->second;
 			auto& newChild = owner().emplace_back(value_type{});
 			newChild.set_name(aKey.as_string());
 			cache().emplace(newChild.name(), &newChild);
@@ -380,6 +387,17 @@ namespace neolib
 		{
 		}
 	public:
+		json_value& push_back(const value_type& aValue)
+		{
+			auto& newChild = owner().emplace_back(aValue);
+			cache().emplace_back(&newChild);
+			return newChild;
+		}
+		json_value& operator[](std::size_t aIndex)
+		{
+			return *cache().at(aIndex);
+		}
+	public:
 		json_value& owner() const
 		{
 			return *iOwner;
@@ -394,7 +412,8 @@ namespace neolib
 			if (iLazyArray != nullptr)
 				return *iLazyArray;
 			iLazyArray = std::make_unique<array_type>(); // todo: use allocator_type
-			// todo: populate array using owner
+			for (auto & e : owner())
+				cache().emplace_back(&e);
 			return *iLazyArray;
 		}
 		array_type& cache()

@@ -304,7 +304,7 @@ namespace neolib
 			// state::Keyword
 			std::array<state, TOKEN_COUNT>
 			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
-				SXXX, SXXX, SCLO, SXXX, SCLO, SELE, SELE, SXXX, SKEY, SXXX, SKEY, SKEY, SXXX, SXXX, SKEY, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SELE, SELE, SXXX
+				SXXX, SXXX, SCLO, SXXX, SCLO, SELE, SELE, SXXX, SKEY, SXXX, SKEY, SKEY, SXXX, SXXX, SKEY, SKEY, SKEY, SKEY, SKEY, SXXX, SXXX, SXXX, SELE, SELE, SXXX
 			}},
 			// state::Name
 			std::array<state, TOKEN_COUNT>
@@ -364,7 +364,7 @@ namespace neolib
 			// state::Escaping
 			std::array<state, TOKEN_COUNT>
 			{{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
-				SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SEUN, SESD, SXXX, SXXX, SXXX, SXXX, SESD, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
+				SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SESD, SXXX, SESD, SEUN, SESD, SXXX, SXXX, SXXX, SXXX, SESD, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
 			}},
 			// state::Escaped
 			std::array<state, TOKEN_COUNT>
@@ -386,7 +386,7 @@ namespace neolib
 			    TSPA, TSYM, TQOT, TSYM, TCHA, TSYM, TSYM, TSYM, TSYM, TSYM, TAST, TPLU, TCOM, TMIN, TDEC, TFWD, // 0x2
 			    TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TCOL, TSYM, TSYM, TSYM, TSYM, TSYM, // 0x3
 				TSYM, THEX, THEX, THEX, THEX, TEXP, THEX, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0x4
-			    TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TARR, TESC, TCLA, TSYM, TSYM, // 0x5
+			    TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TARR, TESC, TCLA, TSYM, TCHA, // 0x5
 				TSYM, THEX, TEHX, THEX, THEX, TEXP, TEHX, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TECH, TCHA, // 0x6
 			    TCHA, TCHA, TECH, TCHA, TECH, TESU, TCHA, TCHA, TCHA, TCHA, TCHA, TOBJ, TSYM, TCLO, TSYM, TSYM, // 0x7
 			    TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0x8
@@ -408,7 +408,7 @@ namespace neolib
 				TSPA, TSYM, TQOT, TSYM, TCHA, TSYM, TSYM, TQOT, TSYM, TSYM, TAST, TPLU, TCOM, TMIN, TDEC, TFWD, // 0x2
 				TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TCOL, TSYM, TSYM, TSYM, TSYM, TSYM, // 0x3
 				TSYM, THEX, THEX, THEX, THEX, TEXP, THEX, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0x4
-				TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TARR, TESC, TCLA, TSYM, TSYM, // 0x5
+				TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TARR, TESC, TCLA, TSYM, TCHA, // 0x5
 				TQOT, THEX, TEHX, THEX, THEX, TEXP, TEHX, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TECH, TCHA, // 0x6
 				TCHA, TCHA, TECH, TCHA, TECH, TESU, TCHA, TCHA, TCHA, TCHA, TCHA, TOBJ, TSYM, TCLO, TSYM, TSYM, // 0x7
 				TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0x8
@@ -910,14 +910,14 @@ namespace neolib
 		std::ifstream input{ aPath, std::ios::binary };
 		if (!input)
 		{
-			iErrorText = "failed to open JSON file '" + aPath + "'";
+			iErrorText = "failed to open " + std::string{Syntax != json_syntax::Relaxed ? "JSON" : "RJSON" } + " file '" + aPath + "'";
 			return false;
 		}
 		bool ok = do_read(input, aValidateUtf);
 		if (ok)
 			ok = do_parse();
 		if (!ok)
-			iErrorText = "failed to parse JSON file '" + aPath + "', " + iErrorText;
+			iErrorText = "failed to parse " + std::string{Syntax != json_syntax::Relaxed ? "JSON" : "RJSON" } + " file '" + aPath + "', " + iErrorText;
 		return ok;
 	}
 
@@ -927,14 +927,14 @@ namespace neolib
 	{
 		if (!aInput)
 		{
-			iErrorText = "failed to read JSON text";
+			iErrorText = "failed to read " + std::string{Syntax != json_syntax::Relaxed ? "JSON" : "RJSON" } + " text";
 			return false;
 		}
 		bool ok = do_read(aInput, aValidateUtf);
 		if (ok)
 			ok = do_parse();
 		if (!ok)
-			iErrorText = "failed to parse JSON text, " + iErrorText;
+			iErrorText = "failed to parse " + std::string{Syntax != json_syntax::Relaxed ? "JSON" : "RJSON" } + " text, " + iErrorText;
 		return ok;
 	}
 
@@ -1298,7 +1298,7 @@ namespace neolib
 							(*nextOutputCh++) = '\t';
 							break;
 						}
-						nextState = json_detail::state::String;
+                        nextState = currentElement.type == element::String ? json_detail::state::String : json_detail::state::Name;
 #ifdef DEBUG_JSON
 						changedState = true;
 #endif
