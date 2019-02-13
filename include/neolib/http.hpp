@@ -99,8 +99,8 @@ namespace neolib
 		void request(const std::string& aUrl, type_e aType = Get, const headers_t& aRequestHeaders = headers_t(), const variant<body_t, std::string>& aRequestBody = std::string());
 		void request(const std::string& aHost, const std::string& aResource, type_e aType = Get, unsigned short aPort = 80, bool aSecure = false, const headers_t& aRequestHeaders = headers_t(), const variant<body_t, std::string>& aRequestBody = std::string());
 		bool ok() const { return iOk; }
-		unsigned int status_code() const { return iStatusCode; }
-		unsigned long body_length() const { return iBodyLength ? *iBodyLength : iBody.size(); }
+		uint32_t status_code() const { return iStatusCode; }
+		uint64_t body_length() const { return iBodyLength ? *iBodyLength : iBody.size(); }
 		const std::string& response_status() const { return iResponseStatus; }
 		const headers_t& response_headers() const { return iResponseHeaders; }
 		const body_t& body() const { return iBody; }
@@ -128,7 +128,7 @@ namespace neolib
 		async_task& iIoTask;
 		http_stream iPacketStream;
 		std::string iHost;
-		unsigned short iPort;
+		uint16_t iPort;
 		bool iSecure;
 		type_e iType;
 		std::string iResource;
@@ -139,8 +139,8 @@ namespace neolib
 		headers_t iResponseHeaders;
 		headers_t::iterator iLastResponseHeader;
 		bool iOk;
-		unsigned int iStatusCode;
-		optional<unsigned long> iBodyLength;
+		uint32_t iStatusCode;
+		optional<uint64_t> iBodyLength;
 		body_t iBody;
 		enum state { ResponseStatus, ResponseHeaders, Body, Finished } iState;
 		bool iPreviousWasCRLF;

@@ -98,7 +98,7 @@ namespace neolib
 		if (aGzipData.end() - i < 8)
 				return;
 		const char* compressedData = &*i;
-		unsigned long compressedSize = aGzipData.end() - i - 8;
+		std::size_t compressedSize = aGzipData.end() - i - 8;
 		i += compressedSize; 
 		unsigned long crc32 = static_cast<unsigned char>(*i++);
 		crc32 += (static_cast<unsigned char>(*i++) << 8);
@@ -114,7 +114,7 @@ namespace neolib
 		stream.avail_in = static_cast<uInt>(compressedSize);
 		iUncompressedData.resize(uncompressedSize);
 		stream.next_out = reinterpret_cast<Bytef*>(&iUncompressedData[0]);
-		stream.avail_out = iUncompressedData.size();
+		stream.avail_out = static_cast<uInt>(iUncompressedData.size());
 		stream.zalloc = static_cast<alloc_func>(0);
 		stream.zfree = static_cast<free_func>(0);
 		int result = inflateInit2(&stream, -MAX_WBITS);
