@@ -455,8 +455,7 @@ namespace neolib
 		struct iterator_traits
 		{
 			typedef neolib::basic_json<Syntax, Alloc, CharT, Traits, CharAlloc> document_type;
-			typedef neolib::basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc> node_value_type;
-			typedef typename node_value_type::value_type value_type;
+			typedef neolib::basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc> value_type;
 			typedef std::iterator<std::bidirectional_iterator_tag, value_type, std::ptrdiff_t, value_type*, value_type&> iterator;
 			typedef std::iterator<std::bidirectional_iterator_tag, value_type, std::ptrdiff_t, const value_type*, const value_type&> const_iterator;
 		};
@@ -475,8 +474,8 @@ namespace neolib
 		using typename traits::pointer;
 		using typename traits::reference;
 	protected:
-		typedef typename const_selector_from_pointer<const node_value_type*, node_value_type*, pointer>::type value_pointer;
-		typedef typename const_selector_from_pointer<const node_value_type&, node_value_type&, pointer>::type value_reference;
+		typedef typename const_selector_from_pointer<const value_type*, value_type*, pointer>::type value_pointer;
+		typedef typename const_selector_from_pointer<const value_type&, value_type&, pointer>::type value_reference;
 	protected:
 		iterator_base() : iValue{ nullptr }
 		{
@@ -491,11 +490,11 @@ namespace neolib
 	protected:
 		pointer operator->() const
 		{
-			return &**iValue;
+			return &*iValue;
 		}
 		reference operator*() const
 		{
-			return **iValue;
+			return *iValue;
 		}
 	protected:
 		void operator++()
@@ -678,11 +677,9 @@ namespace neolib
 		using typename traits::difference_type;
 		using typename traits::pointer;
 		using typename traits::reference;
-	private:
-		typedef json_value node_value_type; // from outer class
 	protected:
-		typedef typename const_selector_from_pointer<const node_value_type*, node_value_type*, pointer>::type value_pointer;
-		typedef typename const_selector_from_pointer<const node_value_type&, node_value_type&, pointer>::type value_reference;
+		typedef typename const_selector_from_pointer<const value_type*, value_type*, pointer>::type value_pointer;
+		typedef typename const_selector_from_pointer<const value_type&, value_type&, pointer>::type value_reference;
 	protected:
 		iterator_base() : iValue{ nullptr }
 		{
@@ -697,11 +694,11 @@ namespace neolib
 	protected:
 		pointer operator->() const
 		{
-			return &**iValue;
+			return &*iValue;
 		}
 		reference operator*() const
 		{
-			return **iValue;
+			return *iValue;
 		}
 	protected:
 		void operator++()
@@ -1422,6 +1419,7 @@ namespace neolib
 		};
 		for (auto i = cbegin(); i != end; ++i)
 		{
+            auto const& v = **i;
 			indent();
 			if (i.value().has_name())
 			{
@@ -1453,23 +1451,23 @@ namespace neolib
 					aOutput << ']';
 				break;
 			case json_type::Double:
-				aOutput << static_variant_cast<json_double>(*i);
+				aOutput << static_variant_cast<json_double>(v);
 				break;
 			case json_type::Int64:
-				aOutput << static_variant_cast<json_int64>(*i);
+				aOutput << static_variant_cast<json_int64>(v);
 				break;
 			case json_type::Uint64:
-				aOutput << static_variant_cast<json_uint64>(*i);
+				aOutput << static_variant_cast<json_uint64>(v);
 				break;
 			case json_type::Int:
-				aOutput << static_variant_cast<json_int>(*i);
+				aOutput << static_variant_cast<json_int>(v);
 				break;
 			case json_type::Uint:
-				aOutput << static_variant_cast<json_uint>(*i);
+				aOutput << static_variant_cast<json_uint>(v);
 				break;
 			case json_type::String:
 				aOutput << '\"';
-				for (auto const& ch : static_variant_cast<const json_string&>(*i))
+				for (auto const& ch : static_variant_cast<const json_string&>(v))
 					switch (ch)
 					{
 					case '\"':
@@ -1505,13 +1503,13 @@ namespace neolib
 				aOutput << '\"';
 				break;
 			case json_type::Bool:
-				aOutput << (static_variant_cast<json_bool>(*i) ? trueString : falseString);
+				aOutput << (static_variant_cast<json_bool>(v) ? trueString : falseString);
 				break;
 			case json_type::Null:
 				aOutput << nullString;
 				break;
 			case json_type::Keyword:
-				aOutput << static_variant_cast<json_keyword>(*i).text;
+				aOutput << static_variant_cast<json_keyword>(v).text;
 				break;
 			}
 			

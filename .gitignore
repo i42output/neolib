@@ -25,3 +25,5 @@
 /unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/Release
 /unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/*.psess
 /unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/*.vspx
+/build/win32/vs2017/.vs
+
