@@ -316,12 +316,16 @@ namespace neolib
 		{
 		}
 	public:
-		json_value& at(const json_string& aKey)
+        const json_value& at(const json_string& aKey) const
+        {
+            auto existing = cache().find(aKey);
+            if (existing != cache().end())
+                return *existing->second;
+            throw std::out_of_range("neolib::basic_json_object::at: key not found");
+        }
+        json_value& at(const json_string& aKey)
 		{
-			auto existing = cache().find(aKey);
-			if (existing != cache().end())
-				return *existing->second;
-			throw std::out_of_range("neolib::basic_json_object::at: key not found");
+            return const_cast<json_value&>(const_cast<const self_type*>(this)->at(aKey));
 		}
 		json_value& operator[](const json_string& aKey)
 		{
