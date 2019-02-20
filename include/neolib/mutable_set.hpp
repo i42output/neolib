@@ -80,11 +80,44 @@ namespace neolib
             pointer operator->() const { return &container_type::const_iterator::operator*().second; }
             reference operator*() const { return container_type::const_iterator::operator*().second; }
         };
+        class reverse_iterator : public container_type::reverse_iterator
+        {
+        public:
+            typedef typename mutable_base::value_type value_type;
+            typedef value_type* pointer;
+            typedef value_type& reference;
+        public:
+            reverse_iterator() {}
+            reverse_iterator(typename container_type::reverse_iterator aIterator) : container_type::reverse_iterator(aIterator) {}
+            pointer operator->() const { return &container_type::reverse_iterator::operator*().second; }
+            reference operator*() const { return container_type::reverse_iterator::operator*().second; }
+        };
+        class const_reverse_iterator : public container_type::const_reverse_iterator
+        {
+        public:
+            typedef typename mutable_base::value_type value_type;
+            typedef const value_type* pointer;
+            typedef const value_type& reference;
+        public:
+            const_reverse_iterator() {}
+            const_reverse_iterator(typename container_type::const_reverse_iterator aIterator) : container_type::const_reverse_iterator(aIterator) {}
+            const_reverse_iterator(typename container_type::reverse_iterator aIterator) : container_type::const_reverse_iterator(aIterator) {}
+            pointer operator->() const { return &container_type::const_reverse_iterator::operator*().second; }
+            reference operator*() const { return container_type::const_reverse_iterator::operator*().second; }
+        };
     public:
-        iterator begin() { return container_type::begin(); }
+        const_iterator cbegin() const { return container_type::cbegin(); }
         const_iterator begin() const { return container_type::begin(); }
-        iterator end() { return container_type::end(); }
+        iterator begin() { return container_type::begin(); }
+        const_iterator cend() const { return container_type::cend(); }
         const_iterator end() const { return container_type::end(); }
+        iterator end() { return container_type::end(); }
+        const_reverse_iterator crbegin() const { return container_type::crbegin(); }
+        const_reverse_iterator rbegin() const { return container_type::rbegin(); }
+        reverse_iterator rbegin() { return container_type::rbegin(); }
+        const_reverse_iterator crend() const { return container_type::crend(); }
+        const_reverse_iterator rend() const { return container_type::rend(); }
+        reverse_iterator rend() { return container_type::rend(); }
         iterator find(const key_type& aKey) { return container_type::find(aKey); }
         const_iterator find(const key_type& aKey) const { return container_type::find(aKey); }
     };
