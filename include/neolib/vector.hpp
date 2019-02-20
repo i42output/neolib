@@ -43,89 +43,89 @@
 
 namespace neolib
 {
-	template <typename T, typename ConcreteType = T>
-	class vector : public reference_counted<i_vector<T> >
-	{
-		// types
-	private:
-		typedef reference_counted<i_vector<T> > base;
-	public:
-		typedef T value_type;
-		typedef ConcreteType concrete_type;
-		typedef std::vector<concrete_type> container_type;
-		typedef typename i_vector<T>::size_type size_type;
-		typedef typename i_vector<T>::const_iterator const_iterator;
-		typedef typename i_vector<T>::iterator iterator;
-		typedef typename i_vector<T>::generic_container_type generic_container_type;
-	protected:
-		typedef typename i_vector<T>::abstract_const_iterator abstract_const_iterator;
-		typedef typename i_vector<T>::abstract_iterator abstract_iterator;
-	protected:
-		typedef container::random_access_const_iterator<T, typename container_type::const_iterator> container_const_iterator;
-		typedef container::random_access_iterator<T, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
-		// construction
-	public:
-		vector() : iEndConstIterator(), iEndIterator() {}
-		vector(const vector& aOther) : iVector(aOther.begin(), aOther.end()), iEndConstIterator(), iEndIterator() {}
-		vector(const i_vector<T>& aOther) : iVector(aOther.begin(), aOther.end()), iEndConstIterator(), iEndIterator() {}
-		vector(const container_type& aOtherContainer) : iVector(aOtherContainer), iEndConstIterator(), iEndIterator() {}
-		template <typename InputIter>
-		vector(InputIter aFirst, InputIter aLast) : iVector(aFirst, aLast), iEndConstIterator(), iEndIterator() {}
-		vector& operator=(const vector& aOther) { assign(aOther); return *this; }
-		vector& operator=(const i_vector<T>& aOther) { assign(aOther); return *this; }
-		// operations
-	public:
-		container_type& container() { return iVector; }
-		const container_type& container() const { return iVector; }
-		// implementation
-	public:
-		// from i_container
-		virtual size_type size() const { return iVector.size(); }
-		virtual size_type max_size() const { return iVector.max_size(); }
-		virtual void clear() { reset_cache(); iVector.clear(); }
-		virtual void assign(const generic_container_type& aOther) { if (&aOther == this) return; reset_cache(); iVector.assign(aOther.begin(), aOther.end()); }
-	private:
-		// from i_container
-		virtual abstract_const_iterator* do_begin() const { populate_cache(); return new container_const_iterator(iVector.begin()); }
-		virtual abstract_const_iterator* do_end() const { populate_cache(); return iEndConstIterator.wrapped_iterator(); }
-		virtual abstract_iterator* do_begin() { populate_cache(); return new container_iterator(iVector.begin()); }
-		virtual abstract_iterator* do_end() { populate_cache(); return iEndIterator.wrapped_iterator(); }
-		virtual abstract_iterator* do_erase(const abstract_const_iterator& aPosition) { reset_cache();  return new container_iterator(iVector.erase(static_cast<const container_const_iterator&>(aPosition))); }
-		virtual abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { reset_cache(); return new container_iterator(iVector.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
-	public:
-		// from i_sequence_container
-		virtual size_type capacity() const { return iVector.size(); }
-		virtual void reserve(size_type aCapacity) { reset_cache(); iVector.reserve(aCapacity); }
-		virtual void resize(size_type aSize, const value_type& aValue) { reset_cache(); iVector.resize(aSize, aValue); }
-		virtual void push_back(const value_type& aValue) { reset_cache(); iVector.push_back(aValue); }
-		virtual void pop_back() { reset_cache(); iVector.pop_back(); }
-		virtual const value_type& back() const { return iVector.back(); }
-		virtual value_type& back() { return iVector.back(); }
-	private:
-		// from i_sequence_container
-		virtual abstract_iterator* do_insert(const abstract_const_iterator& aPosition, const value_type& aValue) { reset_cache(); return new container_iterator(iVector.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
-	public:
-		// from i_vector
-		virtual const value_type& operator[](size_type aIndex) const { return iVector[aIndex]; }
-		virtual value_type& operator[](size_type aIndex) { return iVector[aIndex]; }
-	private:
-		void reset_cache() const { iEndConstIterator = const_iterator(); iEndIterator = iterator(); }
-		void populate_cache() const 
-		{ 
-			if (iEndConstIterator.wrapped_iterator() == nullptr)
-				iEndConstIterator = const_iterator(new container_const_iterator(iVector.end())); 
-		}
-		void populate_cache()
-		{
-			if (iEndConstIterator.wrapped_iterator() == nullptr)
-				iEndConstIterator = const_iterator(new container_const_iterator(iVector.end()));
-			if (iEndIterator.wrapped_iterator() == nullptr)
-				iEndIterator = iterator(new container_iterator(iVector.end()));
-		}
-		// attributes
-	private:
-		std::vector<ConcreteType> iVector;
-		mutable const_iterator iEndConstIterator;
-		mutable iterator iEndIterator;
-	};
+    template <typename T, typename ConcreteType = T>
+    class vector : public reference_counted<i_vector<T> >
+    {
+        // types
+    private:
+        typedef reference_counted<i_vector<T> > base;
+    public:
+        typedef T value_type;
+        typedef ConcreteType concrete_type;
+        typedef std::vector<concrete_type> container_type;
+        typedef typename i_vector<T>::size_type size_type;
+        typedef typename i_vector<T>::const_iterator const_iterator;
+        typedef typename i_vector<T>::iterator iterator;
+        typedef typename i_vector<T>::generic_container_type generic_container_type;
+    protected:
+        typedef typename i_vector<T>::abstract_const_iterator abstract_const_iterator;
+        typedef typename i_vector<T>::abstract_iterator abstract_iterator;
+    protected:
+        typedef container::random_access_const_iterator<T, typename container_type::const_iterator> container_const_iterator;
+        typedef container::random_access_iterator<T, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
+        // construction
+    public:
+        vector() : iEndConstIterator(), iEndIterator() {}
+        vector(const vector& aOther) : iVector(aOther.begin(), aOther.end()), iEndConstIterator(), iEndIterator() {}
+        vector(const i_vector<T>& aOther) : iVector(aOther.begin(), aOther.end()), iEndConstIterator(), iEndIterator() {}
+        vector(const container_type& aOtherContainer) : iVector(aOtherContainer), iEndConstIterator(), iEndIterator() {}
+        template <typename InputIter>
+        vector(InputIter aFirst, InputIter aLast) : iVector(aFirst, aLast), iEndConstIterator(), iEndIterator() {}
+        vector& operator=(const vector& aOther) { assign(aOther); return *this; }
+        vector& operator=(const i_vector<T>& aOther) { assign(aOther); return *this; }
+        // operations
+    public:
+        container_type& container() { return iVector; }
+        const container_type& container() const { return iVector; }
+        // implementation
+    public:
+        // from i_container
+        virtual size_type size() const { return iVector.size(); }
+        virtual size_type max_size() const { return iVector.max_size(); }
+        virtual void clear() { reset_cache(); iVector.clear(); }
+        virtual void assign(const generic_container_type& aOther) { if (&aOther == this) return; reset_cache(); iVector.assign(aOther.begin(), aOther.end()); }
+    private:
+        // from i_container
+        virtual abstract_const_iterator* do_begin() const { populate_cache(); return new container_const_iterator(iVector.begin()); }
+        virtual abstract_const_iterator* do_end() const { populate_cache(); return iEndConstIterator.wrapped_iterator(); }
+        virtual abstract_iterator* do_begin() { populate_cache(); return new container_iterator(iVector.begin()); }
+        virtual abstract_iterator* do_end() { populate_cache(); return iEndIterator.wrapped_iterator(); }
+        virtual abstract_iterator* do_erase(const abstract_const_iterator& aPosition) { reset_cache();  return new container_iterator(iVector.erase(static_cast<const container_const_iterator&>(aPosition))); }
+        virtual abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { reset_cache(); return new container_iterator(iVector.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
+    public:
+        // from i_sequence_container
+        virtual size_type capacity() const { return iVector.size(); }
+        virtual void reserve(size_type aCapacity) { reset_cache(); iVector.reserve(aCapacity); }
+        virtual void resize(size_type aSize, const value_type& aValue) { reset_cache(); iVector.resize(aSize, aValue); }
+        virtual void push_back(const value_type& aValue) { reset_cache(); iVector.push_back(aValue); }
+        virtual void pop_back() { reset_cache(); iVector.pop_back(); }
+        virtual const value_type& back() const { return iVector.back(); }
+        virtual value_type& back() { return iVector.back(); }
+    private:
+        // from i_sequence_container
+        virtual abstract_iterator* do_insert(const abstract_const_iterator& aPosition, const value_type& aValue) { reset_cache(); return new container_iterator(iVector.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
+    public:
+        // from i_vector
+        virtual const value_type& operator[](size_type aIndex) const { return iVector[aIndex]; }
+        virtual value_type& operator[](size_type aIndex) { return iVector[aIndex]; }
+    private:
+        void reset_cache() const { iEndConstIterator = const_iterator(); iEndIterator = iterator(); }
+        void populate_cache() const 
+        { 
+            if (iEndConstIterator.wrapped_iterator() == nullptr)
+                iEndConstIterator = const_iterator(new container_const_iterator(iVector.end())); 
+        }
+        void populate_cache()
+        {
+            if (iEndConstIterator.wrapped_iterator() == nullptr)
+                iEndConstIterator = const_iterator(new container_const_iterator(iVector.end()));
+            if (iEndIterator.wrapped_iterator() == nullptr)
+                iEndIterator = iterator(new container_iterator(iVector.end()));
+        }
+        // attributes
+    private:
+        std::vector<ConcreteType> iVector;
+        mutable const_iterator iEndConstIterator;
+        mutable iterator iEndIterator;
+    };
 }

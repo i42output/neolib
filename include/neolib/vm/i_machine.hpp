@@ -41,15 +41,15 @@
 
 namespace neolib
 {
-	namespace vm
-	{
-		class i_machine
-		{
-		public:
-			virtual const i_cpu& cpu() const = 0;
-			virtual i_cpu& cpu() = 0;
-			virtual const i_scheduler& scheduler() const = 0;
-			virtual i_scheduler& scheduler() = 0;
-		};
-	};
+    namespace vm
+    {
+        class i_machine
+        {
+        public:
+            virtual const i_cpu& cpu() const = 0;
+            virtual i_cpu& cpu() = 0;
+            virtual const i_scheduler& scheduler() const = 0;
+            virtual i_scheduler& scheduler() = 0;
+        };
+    };
 }

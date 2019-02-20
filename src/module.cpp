@@ -39,48 +39,48 @@
 
 namespace neolib
 {
-	module::module()
-	{
-	}
+    module::module()
+    {
+    }
 
-	module::module(const module& aOther) : iPath(aOther.iPath), iOsModule(aOther.loaded() ? new os_module(iPath) : 0)
-	{
-	}
-	
-	module::module(const std::string& aPath) : iPath(aPath), iOsModule(new os_module(iPath))
-	{
-	}
+    module::module(const module& aOther) : iPath(aOther.iPath), iOsModule(aOther.loaded() ? new os_module(iPath) : 0)
+    {
+    }
+    
+    module::module(const std::string& aPath) : iPath(aPath), iOsModule(new os_module(iPath))
+    {
+    }
 
-	module::~module()
-	{
-	}
+    module::~module()
+    {
+    }
 
-	bool module::load()
-	{
-		iOsModule.reset();
-		if (iPath.empty())
-			return false;
-		os_module_ptr osModule = std::make_unique<os_module>(iPath);
-		if (!osModule->loaded())
-			return false;
-		iOsModule = std::move(osModule);
-		return true;
-	}
+    bool module::load()
+    {
+        iOsModule.reset();
+        if (iPath.empty())
+            return false;
+        os_module_ptr osModule = std::make_unique<os_module>(iPath);
+        if (!osModule->loaded())
+            return false;
+        iOsModule = std::move(osModule);
+        return true;
+    }
 
-	void module::unload()
-	{
-		iOsModule.reset();
-	}
+    void module::unload()
+    {
+        iOsModule.reset();
+    }
 
-	bool module::loaded() const
-	{
-		return iOsModule != nullptr;
-	}
+    bool module::loaded() const
+    {
+        return iOsModule != nullptr;
+    }
 
-	void* module::procedure_address(const std::string& aProcedureName)
-	{
-		if (!loaded())
-			return 0;
-		return iOsModule->procedure_address(aProcedureName);
-	}
+    void* module::procedure_address(const std::string& aProcedureName)
+    {
+        if (!loaded())
+            return 0;
+        return iOsModule->procedure_address(aProcedureName);
+    }
 }

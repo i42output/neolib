@@ -43,10 +43,10 @@
 
 namespace neolib
 {
-	class i_application : public i_discoverable
-	{
-	public:
-		virtual const i_application_info& info() const = 0;
-		virtual i_plugin_manager& plugin_manager() = 0;
-	};
+    class i_application : public i_discoverable
+    {
+    public:
+        virtual const i_application_info& info() const = 0;
+        virtual i_plugin_manager& plugin_manager() = 0;
+    };
 }

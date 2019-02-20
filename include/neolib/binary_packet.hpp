@@ -41,102 +41,102 @@
 
 namespace neolib
 {
-	template <typename CharType>
-	class basic_binary_packet : public i_basic_packet<CharType>
-	{
-		// types
-	public:
-		typedef i_basic_packet<CharType> base_type;
-		typedef typename base_type::character_type character_type;
-		typedef typename base_type::const_pointer const_pointer;
-		typedef typename base_type::pointer pointer;
-		typedef typename base_type::size_type size_type;
-		typedef typename base_type::clone_pointer clone_pointer;
-		typedef std::vector<CharType> contents_type;
-		// construction
-	public:
-		basic_binary_packet(const contents_type& aContents = contents_type()) : 
-			iContents(aContents) 
-		{
-		}
-		basic_binary_packet(const void* aPointer, size_type aLength) : 
-			iContents(static_cast<const_pointer>(aPointer), static_cast<const_pointer>(aPointer) + aLength) 
-		{
-		}
-		basic_binary_packet(const basic_binary_packet& aOther) :
-			iContents(aOther.iContents)
-		{
-		}
-		basic_binary_packet& operator=(const basic_binary_packet& aOther)
-		{
-			if (this != &aOther)
-				iContents = aOther.iContents;
-			return *this;
-		}
-		// operations
-	public:
-		// from i_basic_packet
-		virtual const_pointer data() const 
-		{ 
-			if (base_type::empty())
-				throw typename base_type::packet_empty();
-			return &iContents[0]; 
-		}
-		virtual pointer data()
-		{ 
-			if (base_type::empty())
-				throw typename base_type::packet_empty();
-			return &iContents[0]; 
-		}
-		virtual size_type length() const
-		{
-			return iContents.size();
-		}
-		virtual bool has_max_length() const
-		{
-			return false;
-		}
-		virtual size_type max_length() const
-		{
-			return iContents.max_size();
-		}
-		virtual void clear()
-		{
-			iContents.clear();
-		}
-		virtual bool take_some(const_pointer& aFirst, const_pointer aLast)
-		{
-			if (aFirst == aLast)
-				return false;
-			if (has_max_length() && length() + (aLast - aFirst) > max_length())
-				throw typename base_type::packet_too_big();
-			iContents.insert(iContents.end(), aFirst, aLast);
-			aFirst = aLast;
-			return true;
-		}
-		virtual clone_pointer clone() const
-		{
-			return clone_pointer(new basic_binary_packet(*this));
-		}
-		virtual void copy_from(const i_basic_packet<CharType>& aSource)
-		{
-			iContents.clear();
-			if (aSource.length() != 0)
-				iContents.assign(aSource.data(), aSource.data() + aSource.length());
-		}
-		// own
-		const contents_type& contents() const
-		{
-			return iContents;
-		}
-		contents_type& contents()
-		{
-			return iContents;
-		}
-		// attributes
-	private:
-		contents_type iContents;
-	};
+    template <typename CharType>
+    class basic_binary_packet : public i_basic_packet<CharType>
+    {
+        // types
+    public:
+        typedef i_basic_packet<CharType> base_type;
+        typedef typename base_type::character_type character_type;
+        typedef typename base_type::const_pointer const_pointer;
+        typedef typename base_type::pointer pointer;
+        typedef typename base_type::size_type size_type;
+        typedef typename base_type::clone_pointer clone_pointer;
+        typedef std::vector<CharType> contents_type;
+        // construction
+    public:
+        basic_binary_packet(const contents_type& aContents = contents_type()) : 
+            iContents(aContents) 
+        {
+        }
+        basic_binary_packet(const void* aPointer, size_type aLength) : 
+            iContents(static_cast<const_pointer>(aPointer), static_cast<const_pointer>(aPointer) + aLength) 
+        {
+        }
+        basic_binary_packet(const basic_binary_packet& aOther) :
+            iContents(aOther.iContents)
+        {
+        }
+        basic_binary_packet& operator=(const basic_binary_packet& aOther)
+        {
+            if (this != &aOther)
+                iContents = aOther.iContents;
+            return *this;
+        }
+        // operations
+    public:
+        // from i_basic_packet
+        virtual const_pointer data() const 
+        { 
+            if (base_type::empty())
+                throw typename base_type::packet_empty();
+            return &iContents[0]; 
+        }
+        virtual pointer data()
+        { 
+            if (base_type::empty())
+                throw typename base_type::packet_empty();
+            return &iContents[0]; 
+        }
+        virtual size_type length() const
+        {
+            return iContents.size();
+        }
+        virtual bool has_max_length() const
+        {
+            return false;
+        }
+        virtual size_type max_length() const
+        {
+            return iContents.max_size();
+        }
+        virtual void clear()
+        {
+            iContents.clear();
+        }
+        virtual bool take_some(const_pointer& aFirst, const_pointer aLast)
+        {
+            if (aFirst == aLast)
+                return false;
+            if (has_max_length() && length() + (aLast - aFirst) > max_length())
+                throw typename base_type::packet_too_big();
+            iContents.insert(iContents.end(), aFirst, aLast);
+            aFirst = aLast;
+            return true;
+        }
+        virtual clone_pointer clone() const
+        {
+            return clone_pointer(new basic_binary_packet(*this));
+        }
+        virtual void copy_from(const i_basic_packet<CharType>& aSource)
+        {
+            iContents.clear();
+            if (aSource.length() != 0)
+                iContents.assign(aSource.data(), aSource.data() + aSource.length());
+        }
+        // own
+        const contents_type& contents() const
+        {
+            return iContents;
+        }
+        contents_type& contents()
+        {
+            return iContents;
+        }
+        // attributes
+    private:
+        contents_type iContents;
+    };
 
-	typedef basic_binary_packet<char> binary_packet;
+    typedef basic_binary_packet<char> binary_packet;
 }

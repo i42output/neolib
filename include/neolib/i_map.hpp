@@ -41,24 +41,24 @@
 
 namespace neolib
 {
-	template <typename Key, typename T>
-	class i_map : public i_container<i_pair<const Key, T>, i_const_iterator<i_pair<const Key, T> >, i_iterator<i_pair<const Key, T> > >
-	{
-	private:
-		typedef i_container<i_pair<const Key, T>, i_const_iterator<i_pair<const Key, T> >, i_iterator<i_pair<const Key, T> > > base;
-	public:
-		typedef Key abstract_key_type;
-		typedef T abstract_mapped_type;
-		typedef i_pair<const abstract_key_type, abstract_mapped_type> abstract_value_type;
-	protected:
-		typedef typename base::abstract_const_iterator abstract_const_iterator;
-		typedef typename base::abstract_iterator abstract_iterator;
-	public:
-		virtual abstract_mapped_type& operator[](const abstract_key_type& aKey) = 0;
-		const_iterator<i_pair<const Key, T>> find(const abstract_key_type& aKey) const { return do_find(aKey); }
-		iterator<i_pair<const Key, T>> find(const abstract_key_type& aKey) { return do_find(aKey); }
-	private:
-		virtual abstract_const_iterator* do_find(const abstract_key_type& aKey) const = 0;
-		virtual abstract_iterator* do_find(const abstract_key_type& aKey) = 0;
-	};
+    template <typename Key, typename T>
+    class i_map : public i_container<i_pair<const Key, T>, i_const_iterator<i_pair<const Key, T> >, i_iterator<i_pair<const Key, T> > >
+    {
+    private:
+        typedef i_container<i_pair<const Key, T>, i_const_iterator<i_pair<const Key, T> >, i_iterator<i_pair<const Key, T> > > base;
+    public:
+        typedef Key abstract_key_type;
+        typedef T abstract_mapped_type;
+        typedef i_pair<const abstract_key_type, abstract_mapped_type> abstract_value_type;
+    protected:
+        typedef typename base::abstract_const_iterator abstract_const_iterator;
+        typedef typename base::abstract_iterator abstract_iterator;
+    public:
+        virtual abstract_mapped_type& operator[](const abstract_key_type& aKey) = 0;
+        const_iterator<i_pair<const Key, T>> find(const abstract_key_type& aKey) const { return do_find(aKey); }
+        iterator<i_pair<const Key, T>> find(const abstract_key_type& aKey) { return do_find(aKey); }
+    private:
+        virtual abstract_const_iterator* do_find(const abstract_key_type& aKey) const = 0;
+        virtual abstract_iterator* do_find(const abstract_key_type& aKey) = 0;
+    };
 }

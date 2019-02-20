@@ -42,119 +42,119 @@
 
 namespace neolib 
 {
-	template <typename T, size_t N, typename A = std::allocator<T> >
-	class segmented_tree
-	{
-	public:
-		typedef T value_type;
-		typedef A allocator_type;
-		typedef value_type* pointer;
-		typedef const value_type* const_pointer;
-		typedef value_type& reference;
-		typedef const value_type& const_reference;
-		class node;
-		typedef node* node_pointer;
-		typedef const node* const_node_pointer;
-		typedef typename A:: template rebind<node_pointer>::other node_pointer_allocator;
-		typedef segmented_array<node_pointer, N, node_pointer_allocator> node_children;
-		typedef typename node_children::iterator iterator;
-		typedef typename node_children::const_iterator const_iterator;
-	public:
-		class node
-		{
-		public:
-			value_type iValue;
-			node_children iChildren;
-		private: 
-			node() {} 
-		public:
-			node(const value_type& value) : iValue(value), iChildren() {}
-			node(const node& rhs) : iValue(rhs.iValue), iChildren(rhs.iChildren) {}
-			value_type& value() { return iValue; }
-			node_children& children() { return iChildren; }
-			bool empty() const { return iChildren.empty(); }
-		};
-		typedef typename A:: template rebind<node>::other node_allocator;
+    template <typename T, size_t N, typename A = std::allocator<T> >
+    class segmented_tree
+    {
+    public:
+        typedef T value_type;
+        typedef A allocator_type;
+        typedef value_type* pointer;
+        typedef const value_type* const_pointer;
+        typedef value_type& reference;
+        typedef const value_type& const_reference;
+        class node;
+        typedef node* node_pointer;
+        typedef const node* const_node_pointer;
+        typedef typename A:: template rebind<node_pointer>::other node_pointer_allocator;
+        typedef segmented_array<node_pointer, N, node_pointer_allocator> node_children;
+        typedef typename node_children::iterator iterator;
+        typedef typename node_children::const_iterator const_iterator;
+    public:
+        class node
+        {
+        public:
+            value_type iValue;
+            node_children iChildren;
+        private: 
+            node() {} 
+        public:
+            node(const value_type& value) : iValue(value), iChildren() {}
+            node(const node& rhs) : iValue(rhs.iValue), iChildren(rhs.iChildren) {}
+            value_type& value() { return iValue; }
+            node_children& children() { return iChildren; }
+            bool empty() const { return iChildren.empty(); }
+        };
+        typedef typename A:: template rebind<node>::other node_allocator;
 
-	private:
-		node_pointer iRoot;
-		node_allocator iAllocator;
+    private:
+        node_pointer iRoot;
+        node_allocator iAllocator;
 
-	public:
-		// construction
-		segmented_tree() : iRoot(nullptr) {}
-		~segmented_tree() 
-		{
-			if (iRoot != nullptr)
-				erase(iRoot); 
-		}
+    public:
+        // construction
+        segmented_tree() : iRoot(nullptr) {}
+        ~segmented_tree() 
+        {
+            if (iRoot != nullptr)
+                erase(iRoot); 
+        }
 
-		// traversals
-		node_pointer root() { if (iRoot == nullptr) new_root(nullptr); return iRoot; }
-		const_node_pointer root() const { return iRoot; }
-		bool empty() const { return iRoot == nullptr || iRoot->iChildren.size() == nullptr; }
-		// modifiers
-		void new_root(node_pointer node)
-		{
-			if (iRoot != nullptr)
-				erase(iRoot);
-			if (node == nullptr)
-				node = buy_node(value_type());
-			iRoot = node;
-		}
-		void push_back(node_pointer parent, const value_type& value) 
-		{			
-			if (parent == nullptr)
-			{
-				if (iRoot == nullptr)
-					new_root(nullptr);
-				parent = iRoot;
-			}
-			node_pointer new_node = buy_node(value);
-			parent->iChildren.push_back(new_node);
-		}
-		void push_front(node_pointer parent, const value_type& value) 
-		{			
-			if (parent == nullptr)
-			{
-				if (iRoot == nullptr)
-					iRoot = buy_node(value_type());
-				parent = iRoot;
-			}
-			node_pointer new_node = buy_node(value);
-			parent->iChildren.insert(parent->iChildren.begin(), new_node);
-		} 
-		void erase(node_pointer position, node_pointer parent = nullptr) 
-		{ 
-			if (position == nullptr)
-				return;
+        // traversals
+        node_pointer root() { if (iRoot == nullptr) new_root(nullptr); return iRoot; }
+        const_node_pointer root() const { return iRoot; }
+        bool empty() const { return iRoot == nullptr || iRoot->iChildren.size() == nullptr; }
+        // modifiers
+        void new_root(node_pointer node)
+        {
+            if (iRoot != nullptr)
+                erase(iRoot);
+            if (node == nullptr)
+                node = buy_node(value_type());
+            iRoot = node;
+        }
+        void push_back(node_pointer parent, const value_type& value) 
+        {            
+            if (parent == nullptr)
+            {
+                if (iRoot == nullptr)
+                    new_root(nullptr);
+                parent = iRoot;
+            }
+            node_pointer new_node = buy_node(value);
+            parent->iChildren.push_back(new_node);
+        }
+        void push_front(node_pointer parent, const value_type& value) 
+        {            
+            if (parent == nullptr)
+            {
+                if (iRoot == nullptr)
+                    iRoot = buy_node(value_type());
+                parent = iRoot;
+            }
+            node_pointer new_node = buy_node(value);
+            parent->iChildren.insert(parent->iChildren.begin(), new_node);
+        } 
+        void erase(node_pointer position, node_pointer parent = nullptr) 
+        { 
+            if (position == nullptr)
+                return;
 
-			if (position == iRoot)
-				iRoot = nullptr;
+            if (position == iRoot)
+                iRoot = nullptr;
 
-			while(!position->iChildren.empty())
-				erase(static_cast<node_pointer>(*position->iChildren.begin()), position);
+            while(!position->iChildren.empty())
+                erase(static_cast<node_pointer>(*position->iChildren.begin()), position);
 
-			iAllocator.destroy(position);
-			iAllocator.deallocate(reinterpret_cast<node_allocator::pointer>(position), 1);
-			if (parent != nullptr)
-				parent->children().remove(position, false);
-		}
-		void erase_children(node_pointer position)
-		{
-			if (position == nullptr)
-				return;
-			while(!position->children().empty())
-				erase(static_cast<node_pointer>(*position->children().begin()), position);
-			position->children().clear();
-		}
-	private:
-		// implementation
-		node_pointer buy_node(const value_type& value)
-		{
-			node_pointer new_node  = reinterpret_cast<node_pointer>(iAllocator.allocate(1));
-			iAllocator.construct(new_node, node(value));
-			return new_node;
-		}
-	};
+            iAllocator.destroy(position);
+            iAllocator.deallocate(reinterpret_cast<node_allocator::pointer>(position), 1);
+            if (parent != nullptr)
+                parent->children().remove(position, false);
+        }
+        void erase_children(node_pointer position)
+        {
+            if (position == nullptr)
+                return;
+            while(!position->children().empty())
+                erase(static_cast<node_pointer>(*position->children().begin()), position);
+            position->children().clear();
+        }
+    private:
+        // implementation
+        node_pointer buy_node(const value_type& value)
+        {
+            node_pointer new_node  = reinterpret_cast<node_pointer>(iAllocator.allocate(1));
+            iAllocator.construct(new_node, node(value));
+            return new_node;
+        }
+    };
 }

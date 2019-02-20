@@ -42,104 +42,104 @@
 
 namespace neolib
 {
-	template <typename IdType, std::size_t MaxPacketSize = 1024, typename CharType = char, typename PacketTraits = DefaultPacketTraits>
-	class basic_tld_packet : basic_binary_data_packet<CharType, PacketTraits>
-	{
-		// types
-	public:
-		typedef tld_packet<IdType, CharType, PacketTraits> our_type;
-		typedef basic_binary_data_packet<CharType> base_type;
-		typedef base_type::character_type character_type;
-		typedef base_type::const_pointer const_pointer;
-		typedef base_type::pointer pointer;
-		typedef base_type::size_type size_type;
-		typedef base_type::const_iterator const_iterator;
-		typedef base_type::iterator iterator;
-		typedef base_type::string_type string_type;
-	private:
-		typedef std::vector<CharType> contents_type;
-		typedef typename contents_type::size_type contents_offset_type;
-		// construction
-		basic_tld_packet()
-		{
-			allocate(0);
-		}
-		// interface
-	public:
-		virtual const_pointer data() const
-		{
-			return &iContents[0];
-		}
-		virtual pointer data()
-		{
-			return &iContents[0];
-		}
-		virtual size_type length() const
-		{
-			return iContents.size();
-		}
-		virtual bool has_max_length() const
-		{
-			return MaxPacketSize != 0;
-		}
-		virtual size_type max_length() const
-		{
-			return MaxPacketSize;
-		}
-		virtual void clear()
-		{
-			iContents.clear();
-			allocate(0);
-			iWritePosition = iContents.size();
-			iReadPosition = PacketTraits::HeaderSize;
-		}
-		virtual bool take_some(const_pointer& aFirst, const_pointer aLast)
-		{
-		}
-		virtual clone_pointer clone() const
-		{
-			return clone_pointer(new our_type(*this));
-		}
-		virtual void copy_from(const basic_packet<CharType>& aSource)
-		{
-			iContents = aSource.iContents;
-			allocate(0);
-			iWritePosition = iContents.size();
-			iReadPosition = PacketTraits::HeaderSize;
-		}
-		void encode(IdType Id)
-		{
-			contents_offset_type oldPosition = iWritePosition;
-			iWritePosition = PacketTraits::IdOffset;
-			encode(static_cast<uint32_t>(Id));
-			iWritePosition = oldPosition;
-		}
-		IdType id() const
-		{
-			contents_offset_type oldPosition = iReadPosition;
-			iReadPosition = PacketTraits::IdOffset;
-			IdType result = static_cast<IdType>(decode<uint32_t>());
-			iReadPosition = oldPosition;
-			return result;
-		}
-		// implementation
-	private:
-		virtual void write(const void* aData, std::size_t aLength)
-		{
-		}
-		virtual void read(void* aData, std::size_t aLength) const
-		{
-		}
-		void allocate(std::size_t aLength)
-		{
-			iContents.resize(std::max(iContents.size() + aLength, PacketTraits::HeaderSize));
-		}
-		// attributes
-	private:
-		contents_type iContents;
-		contents_offset_type iWritePosition;
-		mutable contents_offset_type iReadPosition;
-	};
+    template <typename IdType, std::size_t MaxPacketSize = 1024, typename CharType = char, typename PacketTraits = DefaultPacketTraits>
+    class basic_tld_packet : basic_binary_data_packet<CharType, PacketTraits>
+    {
+        // types
+    public:
+        typedef tld_packet<IdType, CharType, PacketTraits> our_type;
+        typedef basic_binary_data_packet<CharType> base_type;
+        typedef base_type::character_type character_type;
+        typedef base_type::const_pointer const_pointer;
+        typedef base_type::pointer pointer;
+        typedef base_type::size_type size_type;
+        typedef base_type::const_iterator const_iterator;
+        typedef base_type::iterator iterator;
+        typedef base_type::string_type string_type;
+    private:
+        typedef std::vector<CharType> contents_type;
+        typedef typename contents_type::size_type contents_offset_type;
+        // construction
+        basic_tld_packet()
+        {
+            allocate(0);
+        }
+        // interface
+    public:
+        virtual const_pointer data() const
+        {
+            return &iContents[0];
+        }
+        virtual pointer data()
+        {
+            return &iContents[0];
+        }
+        virtual size_type length() const
+        {
+            return iContents.size();
+        }
+        virtual bool has_max_length() const
+        {
+            return MaxPacketSize != 0;
+        }
+        virtual size_type max_length() const
+        {
+            return MaxPacketSize;
+        }
+        virtual void clear()
+        {
+            iContents.clear();
+            allocate(0);
+            iWritePosition = iContents.size();
+            iReadPosition = PacketTraits::HeaderSize;
+        }
+        virtual bool take_some(const_pointer& aFirst, const_pointer aLast)
+        {
+        }
+        virtual clone_pointer clone() const
+        {
+            return clone_pointer(new our_type(*this));
+        }
+        virtual void copy_from(const basic_packet<CharType>& aSource)
+        {
+            iContents = aSource.iContents;
+            allocate(0);
+            iWritePosition = iContents.size();
+            iReadPosition = PacketTraits::HeaderSize;
+        }
+        void encode(IdType Id)
+        {
+            contents_offset_type oldPosition = iWritePosition;
+            iWritePosition = PacketTraits::IdOffset;
+            encode(static_cast<uint32_t>(Id));
+            iWritePosition = oldPosition;
+        }
+        IdType id() const
+        {
+            contents_offset_type oldPosition = iReadPosition;
+            iReadPosition = PacketTraits::IdOffset;
+            IdType result = static_cast<IdType>(decode<uint32_t>());
+            iReadPosition = oldPosition;
+            return result;
+        }
+        // implementation
+    private:
+        virtual void write(const void* aData, std::size_t aLength)
+        {
+        }
+        virtual void read(void* aData, std::size_t aLength) const
+        {
+        }
+        void allocate(std::size_t aLength)
+        {
+            iContents.resize(std::max(iContents.size() + aLength, PacketTraits::HeaderSize));
+        }
+        // attributes
+    private:
+        contents_type iContents;
+        contents_offset_type iWritePosition;
+        mutable contents_offset_type iReadPosition;
+    };
 
-	typedef basic_data_packet<char> data_packet;
+    typedef basic_data_packet<char> data_packet;
 }

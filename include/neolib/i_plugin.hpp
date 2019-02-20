@@ -43,17 +43,17 @@
 
 namespace neolib
 {
-	class i_plugin : public i_discoverable
-	{
-	public:
-		virtual const uuid& id() const = 0;
-		virtual const i_string& name() const = 0;
-		virtual const i_string& description() const = 0;
-		virtual const i_version& version() const = 0;
-		virtual const i_string& copyright() const = 0;
-		virtual bool load() = 0;
-		virtual bool unload() = 0;
-		virtual bool loaded() const = 0;
-		virtual bool open_uri(const i_string& aUri) = 0;
-	};
+    class i_plugin : public i_discoverable
+    {
+    public:
+        virtual const uuid& id() const = 0;
+        virtual const i_string& name() const = 0;
+        virtual const i_string& description() const = 0;
+        virtual const i_version& version() const = 0;
+        virtual const i_string& copyright() const = 0;
+        virtual bool load() = 0;
+        virtual bool unload() = 0;
+        virtual bool loaded() const = 0;
+        virtual bool open_uri(const i_string& aUri) = 0;
+    };
 }

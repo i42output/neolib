@@ -39,9 +39,9 @@
 
 namespace neolib
 {
-	class waitable
-	{
-	public:
-		virtual bool waitable_ready() const = 0;
-	};
+    class waitable
+    {
+    public:
+        virtual bool waitable_ready() const = 0;
+    };
 }

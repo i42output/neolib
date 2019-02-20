@@ -57,51 +57,51 @@
 
 namespace neolib
 {
-	class lockable
-	{
-		// construction
-	public:
-		lockable() {}
-		lockable(const lockable&) {}
-		virtual ~lockable() {}
-		lockable& operator=(const lockable&) { return *this; }
-		// operations
-	public:
-		void lock() const { iMutex.lock(); }
-		void unlock() const { iMutex.unlock(); }
-		// attributes
-	private:
-		mutable std::recursive_mutex iMutex;
-	};
+    class lockable
+    {
+        // construction
+    public:
+        lockable() {}
+        lockable(const lockable&) {}
+        virtual ~lockable() {}
+        lockable& operator=(const lockable&) { return *this; }
+        // operations
+    public:
+        void lock() const { iMutex.lock(); }
+        void unlock() const { iMutex.unlock(); }
+        // attributes
+    private:
+        mutable std::recursive_mutex iMutex;
+    };
 
-	class lock : noncopyable
-	{
-		// construction
-	public:
-		lock(const lockable& aLockable) : iLockable(aLockable) { iLockable.lock(); }
-		~lock() { iLockable.unlock(); }
-		// attributes
-	private:
-		const lockable& iLockable;
-	};
+    class lock : noncopyable
+    {
+        // construction
+    public:
+        lock(const lockable& aLockable) : iLockable(aLockable) { iLockable.lock(); }
+        ~lock() { iLockable.unlock(); }
+        // attributes
+    private:
+        const lockable& iLockable;
+    };
 
-	inline void memory_barrier_acquire()
-	{
-		MEMORY_BARRIER_ACQUIRE
-	}
+    inline void memory_barrier_acquire()
+    {
+        MEMORY_BARRIER_ACQUIRE
+    }
 
-	inline void memory_barrier_acquire_dependant()
-	{
-		MEMORY_BARRIER_ACQUIRE
-	}
+    inline void memory_barrier_acquire_dependant()
+    {
+        MEMORY_BARRIER_ACQUIRE
+    }
 
-	inline void memory_barrier_release()
-	{
-		MEMORY_BARRIER_RELEASE
-	}
+    inline void memory_barrier_release()
+    {
+        MEMORY_BARRIER_RELEASE
+    }
 
-	inline void memory_barrier()
-	{
-		MEMORY_BARRIER
-	}
+    inline void memory_barrier()
+    {
+        MEMORY_BARRIER
+    }
 }

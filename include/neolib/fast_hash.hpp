@@ -39,50 +39,50 @@
 
 namespace neolib
 {
-	namespace detail
-	{
-		template <typename T>
-		inline T fast_hash(const void* aInput, std::size_t aLength);
+    namespace detail
+    {
+        template <typename T>
+        inline T fast_hash(const void* aInput, std::size_t aLength);
 
-		// https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
+        // https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
 
-		template <>
-		inline uint32_t fast_hash<uint32_t>(const void* aInput, std::size_t aLength)
-		{
-			uint32_t hash = 2166136261u;
-			const uint8_t* octet = static_cast<const uint8_t*>(aInput);
-			auto endOctet = octet + aLength;
-			while (octet != endOctet)
-			{
-				hash = hash ^ *octet++;
-				hash = hash * 16777619u;
-			}
-			return hash;
-		}
+        template <>
+        inline uint32_t fast_hash<uint32_t>(const void* aInput, std::size_t aLength)
+        {
+            uint32_t hash = 2166136261u;
+            const uint8_t* octet = static_cast<const uint8_t*>(aInput);
+            auto endOctet = octet + aLength;
+            while (octet != endOctet)
+            {
+                hash = hash ^ *octet++;
+                hash = hash * 16777619u;
+            }
+            return hash;
+        }
 
-		template <>
-		inline uint64_t fast_hash<uint64_t>(const void* aInput, std::size_t aLength)
-		{
-			uint64_t hash = 14695981039346656037ull;
-			const uint8_t* octet = static_cast<const uint8_t*>(aInput);
-			auto endOctet = octet + aLength;
-			while (octet != endOctet)
-			{
-				hash = hash ^ *octet++;
-				hash = hash * 1099511628211ull;
-			}
-			return hash;
-		}
-	}
+        template <>
+        inline uint64_t fast_hash<uint64_t>(const void* aInput, std::size_t aLength)
+        {
+            uint64_t hash = 14695981039346656037ull;
+            const uint8_t* octet = static_cast<const uint8_t*>(aInput);
+            auto endOctet = octet + aLength;
+            while (octet != endOctet)
+            {
+                hash = hash ^ *octet++;
+                hash = hash * 1099511628211ull;
+            }
+            return hash;
+        }
+    }
 
-	template <typename T>
-	inline T fast_hash(const void* aInput, std::size_t aLength)
-	{
-		return detail::fast_hash<T>(aInput, aLength);
-	}
+    template <typename T>
+    inline T fast_hash(const void* aInput, std::size_t aLength)
+    {
+        return detail::fast_hash<T>(aInput, aLength);
+    }
 
-	inline uint32_t fast_hash(const void* aInput, std::size_t aLength)
-	{
-		return fast_hash<uint32_t>(aInput, aLength);
-	}
+    inline uint32_t fast_hash(const void* aInput, std::size_t aLength)
+    {
+        return fast_hash<uint32_t>(aInput, aLength);
+    }
 }

@@ -42,38 +42,38 @@
 
 namespace neolib
 {
-	namespace vm
-	{
-		class scheduler : public i_scheduler
-		{
-		public:
-			scheduler(i_cpu& aCpu) : 
-				iCpu(aCpu)
-			{
-			}
-		public:
-			virtual const uint8_t* load(std::istream& aProgram)
-			{
-				i_cpu::page* text = iCpu.allocate_text_page();
-				uint8_t byte;
-				while (aProgram >> byte)
-					text->push_back(byte);
-				return &text->front();
-			}
-			virtual i_thread& create_thread(const uint8_t* aEntryPoint)
-			{
-				iThreads.push_back(std::make_unique<std::thread>([this]()
-				{
-					iCpu.execute(aEntryPoint);
-				}));
-			}
-			virtual void destroy_thread(i_thread& aThread)
-			{
-			}
-		private:
-			i_cpu& iCpu;
-			typedef std::unique_ptr<std::thread> thread_pointer;
-			std::vector<thread_pointer> iThreads;
-		};
-	};
+    namespace vm
+    {
+        class scheduler : public i_scheduler
+        {
+        public:
+            scheduler(i_cpu& aCpu) : 
+                iCpu(aCpu)
+            {
+            }
+        public:
+            virtual const uint8_t* load(std::istream& aProgram)
+            {
+                i_cpu::page* text = iCpu.allocate_text_page();
+                uint8_t byte;
+                while (aProgram >> byte)
+                    text->push_back(byte);
+                return &text->front();
+            }
+            virtual i_thread& create_thread(const uint8_t* aEntryPoint)
+            {
+                iThreads.push_back(std::make_unique<std::thread>([this]()
+                {
+                    iCpu.execute(aEntryPoint);
+                }));
+            }
+            virtual void destroy_thread(i_thread& aThread)
+            {
+            }
+        private:
+            i_cpu& iCpu;
+            typedef std::unique_ptr<std::thread> thread_pointer;
+            std::vector<thread_pointer> iThreads;
+        };
+    };
 }

@@ -40,18 +40,18 @@
 
 namespace neolib
 {
-	class openssl
-	{
-	private:
-		static const std::size_t SEED_BUFFER_SIZE = 8;
-	public:
-		openssl();
-		~openssl();
-		static openssl& instance();
-	public:
-		bool generate_key(uint8_t* aKeyBuffer, std::size_t aKeySize);
-	private:
-		bool need_entropy() const;
-		void generate_entropy();
-	};
+    class openssl
+    {
+    private:
+        static const std::size_t SEED_BUFFER_SIZE = 8;
+    public:
+        openssl();
+        ~openssl();
+        static openssl& instance();
+    public:
+        bool generate_key(uint8_t* aKeyBuffer, std::size_t aKeySize);
+    private:
+        bool need_entropy() const;
+        void generate_entropy();
+    };
 }

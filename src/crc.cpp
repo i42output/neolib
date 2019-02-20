@@ -40,8 +40,8 @@
 
 namespace neolib
 {
-	uint32_t crc32(const uint8_t *aData, uint32_t aDataLength)
-	{
-		return ::crc32(::crc32(0, NULL, 0), aData, aDataLength);
-	}
+    uint32_t crc32(const uint8_t *aData, uint32_t aDataLength)
+    {
+        return ::crc32(::crc32(0, NULL, 0), aData, aDataLength);
+    }
 }

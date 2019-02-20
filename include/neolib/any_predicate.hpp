@@ -41,99 +41,99 @@
 
 namespace neolib
 {
-	template <typename T>
-	class any_predicate
-	{
-		// types
-	public:
-		typedef T value_type;
-		struct bad_cast : public std::logic_error { bad_cast() : std::logic_error("neolib::any_predicate::bad_cast") {} };
-		struct no_predicate : public std::logic_error { no_predicate() : std::logic_error("neolib::any_predicate::no_predicate") {} };
-	private:
-		class holder_base
-		{
-			// construction
-		public:
-			virtual ~holder_base() {}
-			// operations
-		public:
-			virtual bool operator()(const value_type& aLeft, const value_type& aRight) const = 0;
-			template <typename T>
-			operator const T&() const
-			{
-				if (typeid(T) != type()) 
-					throw bad_cast();
-				return *static_cast<const T*>(ptr());
-			}
-			template <typename T>
-			operator T&()
-			{
-				if (typeid(T) != type()) 
-					throw bad_cast();
-				return *static_cast<T*>(ptr());
-			}
-			template <typename T>
-			bool is() const { return typeid(T) == type(); }
-			virtual holder_base* clone() const = 0;
-			// implementation
-		private:
-			virtual const std::type_info& type() const = 0;
-			virtual const void* ptr() const = 0;
-			virtual void* ptr() = 0;
-		};
-		template <typename T>
-		class holder : public holder_base
-		{
-			// construction
-		public:
-			holder(const T& aObject) : iObject(aObject) {}
-			// implementation
-		private:
-			virtual bool operator()(const value_type& aLeft, const value_type& aRight) const { return iObject(aLeft, aRight); }
-			virtual holder_base* clone() const { return new holder(iObject); }
-			virtual const std::type_info& type() const { return typeid(T); }
-			virtual const void* ptr() const { return &iObject; }
-			virtual void* ptr() { return &iObject; }
-			// attributes
-		private:
-			T iObject;
-		};
-		// construction
-	public:
-		any_predicate() : iHolder(nullptr) {}
-		template <typename T>
-		any_predicate(const T& aObject) : iHolder(new holder<T>(aObject)) {}
-		any_predicate(const any_predicate& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone() : nullptr) {}
-		~any_predicate() { destroy(); }
-		any_predicate& operator=(const any_predicate& aOther) 
-		{ 
-			destroy(); 
-			if (aOther.iHolder) 
-				iHolder = aOther.iHolder->clone(); 
-			return *this;
-		}
-		// operations
-	public:
-		bool operator()(const value_type& aLeft, const value_type& aRight) const 
-		{
-			if (empty())
-				throw no_predicate();
-			return (*iHolder)(aLeft, aRight);
-		}
-		template <typename T>
-		operator const T&() const { if (empty()) throw bad_cast(); return *iHolder; }
-		template <typename T>
-		operator T&() { if (empty()) throw bad_cast(); return *iHolder; }
-		template <typename T>
-		bool is() const { return iHolder && iHolder->is<T>(); }
-		bool something() const { return iHolder != nullptr; }
-		bool empty() const { return !something(); }
-		void reset() { destroy(); }
-		// implementation
-	private:
-		void destroy() { delete iHolder; iHolder = nullptr; }
-		// attributes
-	private:
-		holder_base* iHolder;
-	};
+    template <typename T>
+    class any_predicate
+    {
+        // types
+    public:
+        typedef T value_type;
+        struct bad_cast : public std::logic_error { bad_cast() : std::logic_error("neolib::any_predicate::bad_cast") {} };
+        struct no_predicate : public std::logic_error { no_predicate() : std::logic_error("neolib::any_predicate::no_predicate") {} };
+    private:
+        class holder_base
+        {
+            // construction
+        public:
+            virtual ~holder_base() {}
+            // operations
+        public:
+            virtual bool operator()(const value_type& aLeft, const value_type& aRight) const = 0;
+            template <typename T>
+            operator const T&() const
+            {
+                if (typeid(T) != type()) 
+                    throw bad_cast();
+                return *static_cast<const T*>(ptr());
+            }
+            template <typename T>
+            operator T&()
+            {
+                if (typeid(T) != type()) 
+                    throw bad_cast();
+                return *static_cast<T*>(ptr());
+            }
+            template <typename T>
+            bool is() const { return typeid(T) == type(); }
+            virtual holder_base* clone() const = 0;
+            // implementation
+        private:
+            virtual const std::type_info& type() const = 0;
+            virtual const void* ptr() const = 0;
+            virtual void* ptr() = 0;
+        };
+        template <typename T>
+        class holder : public holder_base
+        {
+            // construction
+        public:
+            holder(const T& aObject) : iObject(aObject) {}
+            // implementation
+        private:
+            virtual bool operator()(const value_type& aLeft, const value_type& aRight) const { return iObject(aLeft, aRight); }
+            virtual holder_base* clone() const { return new holder(iObject); }
+            virtual const std::type_info& type() const { return typeid(T); }
+            virtual const void* ptr() const { return &iObject; }
+            virtual void* ptr() { return &iObject; }
+            // attributes
+        private:
+            T iObject;
+        };
+        // construction
+    public:
+        any_predicate() : iHolder(nullptr) {}
+        template <typename T>
+        any_predicate(const T& aObject) : iHolder(new holder<T>(aObject)) {}
+        any_predicate(const any_predicate& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone() : nullptr) {}
+        ~any_predicate() { destroy(); }
+        any_predicate& operator=(const any_predicate& aOther) 
+        { 
+            destroy(); 
+            if (aOther.iHolder) 
+                iHolder = aOther.iHolder->clone(); 
+            return *this;
+        }
+        // operations
+    public:
+        bool operator()(const value_type& aLeft, const value_type& aRight) const 
+        {
+            if (empty())
+                throw no_predicate();
+            return (*iHolder)(aLeft, aRight);
+        }
+        template <typename T>
+        operator const T&() const { if (empty()) throw bad_cast(); return *iHolder; }
+        template <typename T>
+        operator T&() { if (empty()) throw bad_cast(); return *iHolder; }
+        template <typename T>
+        bool is() const { return iHolder && iHolder->is<T>(); }
+        bool something() const { return iHolder != nullptr; }
+        bool empty() const { return !something(); }
+        void reset() { destroy(); }
+        // implementation
+    private:
+        void destroy() { delete iHolder; iHolder = nullptr; }
+        // attributes
+    private:
+        holder_base* iHolder;
+    };
 }

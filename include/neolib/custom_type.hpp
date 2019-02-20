@@ -46,73 +46,73 @@
 
 namespace neolib
 {
-	namespace detail
-	{
-		template <bool>
-		struct to_string
-		{
-			template <typename T>
-			i_string* operator()(const T& aValue)
-			{
-				std::ostringstream oss;
-				oss << aValue;
-				return new string(oss.str());
-			}
-		};
-		template <>
-		struct to_string<false>
-		{
-			template <typename T>
-			i_string* operator()(const T& aValue)
-			{
-				return new string();
-			}
-		};
-	}
+    namespace detail
+    {
+        template <bool>
+        struct to_string
+        {
+            template <typename T>
+            i_string* operator()(const T& aValue)
+            {
+                std::ostringstream oss;
+                oss << aValue;
+                return new string(oss.str());
+            }
+        };
+        template <>
+        struct to_string<false>
+        {
+            template <typename T>
+            i_string* operator()(const T& aValue)
+            {
+                return new string();
+            }
+        };
+    }
 
-	template <typename AbstractType, typename ConcreteType>
-	class custom_type : public reference_counted<i_custom_type>
-	{
-	public:
-		struct type_mismatch : std::logic_error { type_mismatch() : std::logic_error("neolib::custom_type::type_mismatch") {} };
-	private:
-		typedef std::optional<ConcreteType> container_type;
-	public:
-		custom_type(const string& aName) :
-			iName(aName) {}
-		custom_type(const string& aName, const AbstractType& aInstance) :
-			iName(aName), iInstance(aInstance) {}
-		custom_type(const i_custom_type& aOther) :
-			iName(aOther.name()), iInstance(aOther.instance_ptr() ? container_type(aOther.instance_as<AbstractType>()), container_type()) {}
-		~custom_type() {}
-	public:
-		virtual const i_string& name() const { return iName; }
-		virtual i_string& name() { return iName; }
-		virtual i_string* to_string() const { if (!!iInstance) return detail::to_string<type_traits::has_saving_support<AbstractType>::value>()(*iInstance); else return new string(); }
-		virtual i_custom_type* clone() const { return new custom_type(*this); }
-		virtual i_custom_type& assign(const i_custom_type& aRhs)
-		{
-			if (aRhs.name() != name())
-				throw type_mismatch();
-			if (iInstance == std::nullopt)
-				iInstance = ConcreteType(aRhs.instance_as<AbstractType>());
-			else
-				*iInstance = aRhs.instance_as<AbstractType>();
-			return *this;
-		}
-		virtual bool operator==(const i_custom_type& aRhs) const
-		{
-			return instance_ptr() == aRhs.instance_ptr() || (instance_ptr() != nullptr && aRhs.instance_ptr() != nullptr && instance_as<AbstractType>() == aRhs.instance_as<AbstractType>());
-		}
-		virtual bool operator<(const i_custom_type& aRhs) const
-		{
-			return (instance_ptr() != nullptr && aRhs.instance_ptr() != nullptr && instance_as<AbstractType>() < aRhs.instance_as<AbstractType>()) || (instance_ptr() < aRhs.instance_ptr());
-		}
-	public:
-		virtual const void* instance_ptr() const { return iInstance != std::nullopt ? static_cast<const AbstractType*>(&*iInstance) : static_cast<const AbstractType*>(nullptr); }
-		virtual void* instance_ptr() { return iInstance != std::nullopt ? static_cast<AbstractType*>(&*iInstance) : static_cast<AbstractType*>(nullptr); }
-	private:
-		string iName;
-		container_type iInstance;
-	};
+    template <typename AbstractType, typename ConcreteType>
+    class custom_type : public reference_counted<i_custom_type>
+    {
+    public:
+        struct type_mismatch : std::logic_error { type_mismatch() : std::logic_error("neolib::custom_type::type_mismatch") {} };
+    private:
+        typedef std::optional<ConcreteType> container_type;
+    public:
+        custom_type(const string& aName) :
+            iName(aName) {}
+        custom_type(const string& aName, const AbstractType& aInstance) :
+            iName(aName), iInstance(aInstance) {}
+        custom_type(const i_custom_type& aOther) :
+            iName(aOther.name()), iInstance(aOther.instance_ptr() ? container_type(aOther.instance_as<AbstractType>()), container_type()) {}
+        ~custom_type() {}
+    public:
+        virtual const i_string& name() const { return iName; }
+        virtual i_string& name() { return iName; }
+        virtual i_string* to_string() const { if (!!iInstance) return detail::to_string<type_traits::has_saving_support<AbstractType>::value>()(*iInstance); else return new string(); }
+        virtual i_custom_type* clone() const { return new custom_type(*this); }
+        virtual i_custom_type& assign(const i_custom_type& aRhs)
+        {
+            if (aRhs.name() != name())
+                throw type_mismatch();
+            if (iInstance == std::nullopt)
+                iInstance = ConcreteType(aRhs.instance_as<AbstractType>());
+            else
+                *iInstance = aRhs.instance_as<AbstractType>();
+            return *this;
+        }
+        virtual bool operator==(const i_custom_type& aRhs) const
+        {
+            return instance_ptr() == aRhs.instance_ptr() || (instance_ptr() != nullptr && aRhs.instance_ptr() != nullptr && instance_as<AbstractType>() == aRhs.instance_as<AbstractType>());
+        }
+        virtual bool operator<(const i_custom_type& aRhs) const
+        {
+            return (instance_ptr() != nullptr && aRhs.instance_ptr() != nullptr && instance_as<AbstractType>() < aRhs.instance_as<AbstractType>()) || (instance_ptr() < aRhs.instance_ptr());
+        }
+    public:
+        virtual const void* instance_ptr() const { return iInstance != std::nullopt ? static_cast<const AbstractType*>(&*iInstance) : static_cast<const AbstractType*>(nullptr); }
+        virtual void* instance_ptr() { return iInstance != std::nullopt ? static_cast<AbstractType*>(&*iInstance) : static_cast<AbstractType*>(nullptr); }
+    private:
+        string iName;
+        container_type iInstance;
+    };
 }

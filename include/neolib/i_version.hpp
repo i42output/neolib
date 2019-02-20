@@ -43,30 +43,30 @@
 
 namespace neolib
 {
-	class i_version
-	{
-	public:
-		virtual uint32_t major() const = 0;
-		virtual uint32_t minor() const = 0;
-		virtual uint32_t maintenance() const = 0;
-		virtual uint32_t build() const = 0;
-		virtual const i_string& name() const = 0;
-	};
+    class i_version
+    {
+    public:
+        virtual uint32_t major() const = 0;
+        virtual uint32_t minor() const = 0;
+        virtual uint32_t maintenance() const = 0;
+        virtual uint32_t build() const = 0;
+        virtual const i_string& name() const = 0;
+    };
 
-	inline std::ostream& operator<<(std::ostream& aStream, const i_version& aVersion)
-	{
-		aStream << aVersion.major() << "." << aVersion.minor() << "." << aVersion.maintenance();
-		if (aVersion.build() != 0)
-			aStream << "." << aVersion.build();
-		if (!aVersion.name().empty())
-			aStream << " " << aVersion.name();
-		return aStream;
-	}
+    inline std::ostream& operator<<(std::ostream& aStream, const i_version& aVersion)
+    {
+        aStream << aVersion.major() << "." << aVersion.minor() << "." << aVersion.maintenance();
+        if (aVersion.build() != 0)
+            aStream << "." << aVersion.build();
+        if (!aVersion.name().empty())
+            aStream << " " << aVersion.name();
+        return aStream;
+    }
 
-	inline std::string to_string(const i_version& aVersion)
-	{
-		std::stringstream oss;
-		oss << aVersion;
-		return oss.str();
-	}
+    inline std::string to_string(const i_version& aVersion)
+    {
+        std::stringstream oss;
+        oss << aVersion;
+        return oss.str();
+    }
 }

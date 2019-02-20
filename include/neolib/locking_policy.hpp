@@ -40,94 +40,94 @@
 
 namespace neolib
 {
-	class locking_policy_none
-	{
-	public:
-		class scope_lock
-		{
-		public:
-			scope_lock(const locking_policy_none& aParent)
-			{
-			};
-		};
-	public:
-		void lock() {}
-		void unlock() {}
-	};
+    class locking_policy_none
+    {
+    public:
+        class scope_lock
+        {
+        public:
+            scope_lock(const locking_policy_none& aParent)
+            {
+            };
+        };
+    public:
+        void lock() {}
+        void unlock() {}
+    };
 
-	class locking_policy_mutex
-	{
-	public:
-		locking_policy_mutex() {}
-	private:
-		locking_policy_mutex(const locking_policy_mutex&);
-	public:
-		class scope_lock
-		{
-		public:
-			scope_lock(const locking_policy_mutex& aParent) :
-				iParent(aParent)
-			{
-				iParent.lock();
-			};
-			~scope_lock()
-			{
-				iParent.unlock();
-			}
-		private:
-			const locking_policy_mutex& iParent;
-		};
-	public:
-		void lock() const
-		{
-			iMutex.lock();
-		}
-		void unlock() const
-		{
-			iMutex.unlock();
-		}
-	private:
-		mutable std::recursive_mutex iMutex;
-	};
+    class locking_policy_mutex
+    {
+    public:
+        locking_policy_mutex() {}
+    private:
+        locking_policy_mutex(const locking_policy_mutex&);
+    public:
+        class scope_lock
+        {
+        public:
+            scope_lock(const locking_policy_mutex& aParent) :
+                iParent(aParent)
+            {
+                iParent.lock();
+            };
+            ~scope_lock()
+            {
+                iParent.unlock();
+            }
+        private:
+            const locking_policy_mutex& iParent;
+        };
+    public:
+        void lock() const
+        {
+            iMutex.lock();
+        }
+        void unlock() const
+        {
+            iMutex.unlock();
+        }
+    private:
+        mutable std::recursive_mutex iMutex;
+    };
 
-	namespace detail
-	{
-		struct shared_mutex
-		{
-			static std::recursive_mutex& instance()
-			{
-				static std::recursive_mutex sMutex;
-				return sMutex;
-			}
-		};
-	}
+    namespace detail
+    {
+        struct shared_mutex
+        {
+            static std::recursive_mutex& instance()
+            {
+                static std::recursive_mutex sMutex;
+                return sMutex;
+            }
+        };
+    }
 
-	class locking_policy_shared_mutex
-	{
-	public:
-		class scope_lock
-		{
-		public:
-			scope_lock(const locking_policy_shared_mutex& aParent) :
-				iParent(aParent)
-			{
-				iParent.lock();
-			};
-			~scope_lock()
-			{
-				iParent.unlock();
-			}
-		private:
-			const locking_policy_shared_mutex& iParent;
-		};
-	public:
-		void lock() const
-		{
-			detail::shared_mutex::instance().lock();
-		}
-		void unlock() const
-		{
-			detail::shared_mutex::instance().unlock();
-		}
-	};
+    class locking_policy_shared_mutex
+    {
+    public:
+        class scope_lock
+        {
+        public:
+            scope_lock(const locking_policy_shared_mutex& aParent) :
+                iParent(aParent)
+            {
+                iParent.lock();
+            };
+            ~scope_lock()
+            {
+                iParent.unlock();
+            }
+        private:
+            const locking_policy_shared_mutex& iParent;
+        };
+    public:
+        void lock() const
+        {
+            detail::shared_mutex::instance().lock();
+        }
+        void unlock() const
+        {
+            detail::shared_mutex::instance().unlock();
+        }
+    };
 }

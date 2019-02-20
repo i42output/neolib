@@ -41,34 +41,34 @@
 
 namespace neolib 
 {
-	namespace detail
-	{
-		template <typename T> inline
-		void construct(void* mem, const T& object)
-		{
-			new (mem) T(object);
-		}
+    namespace detail
+    {
+        template <typename T> inline
+        void construct(void* mem, const T& object)
+        {
+            new (mem) T(object);
+        }
 
-		template <typename InIter, typename OutIter> inline
-		OutIter uninitialized_copy_dispatch(InIter first, InIter last, OutIter result, std::false_type)
-		{
-			while (first != last)
-				detail::construct(static_cast<void*>(&*result++), *first++);
-			return result;
-		}
+        template <typename InIter, typename OutIter> inline
+        OutIter uninitialized_copy_dispatch(InIter first, InIter last, OutIter result, std::false_type)
+        {
+            while (first != last)
+                detail::construct(static_cast<void*>(&*result++), *first++);
+            return result;
+        }
 
-		template <typename T> inline
-		T* uninitialized_copy_dispatch(const T* first, const T* last, T* result, std::true_type)
-		{
-			memcpy(result, first, (last-first) * sizeof(T));
-			result += (last-first);
-			return result;
-		}
+        template <typename T> inline
+        T* uninitialized_copy_dispatch(const T* first, const T* last, T* result, std::true_type)
+        {
+            memcpy(result, first, (last-first) * sizeof(T));
+            result += (last-first);
+            return result;
+        }
 
-		template <typename InIter, typename OutIter, typename T> inline
-		OutIter uninitialized_copy(InIter first, InIter last, OutIter result, const T&)
-		{
-			return uninitialized_copy_dispatch(first, last, result, std::is_scalar<T>::type());
-		}
-	}
+        template <typename InIter, typename OutIter, typename T> inline
+        OutIter uninitialized_copy(InIter first, InIter last, OutIter result, const T&)
+        {
+            return uninitialized_copy_dispatch(first, last, result, std::is_scalar<T>::type());
+        }
+    }
 }

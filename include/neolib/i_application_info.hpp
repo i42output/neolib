@@ -42,16 +42,16 @@
 
 namespace neolib
 {
-	class i_application_info
-	{
-	public:
-		virtual const i_vector<i_string>& arguments() const = 0;
-		virtual const i_string& name() const = 0;
-		virtual const i_string& company() const = 0;
-		virtual const i_version& version() const = 0;
-		virtual const i_string& copyright() const = 0;
-		virtual const i_string& application_folder() const = 0;
-		virtual const i_string& settings_folder() const = 0;
-		virtual const i_string& data_folder() const = 0;
-	};
+    class i_application_info
+    {
+    public:
+        virtual const i_vector<i_string>& arguments() const = 0;
+        virtual const i_string& name() const = 0;
+        virtual const i_string& company() const = 0;
+        virtual const i_version& version() const = 0;
+        virtual const i_string& copyright() const = 0;
+        virtual const i_string& application_folder() const = 0;
+        virtual const i_string& settings_folder() const = 0;
+        virtual const i_string& data_folder() const = 0;
+    };
 }

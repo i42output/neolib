@@ -39,153 +39,153 @@
 
 namespace neolib 
 {
-	template <typename T>
-	class bresenham_counter
-	{
-		/* operator T() returns x[0..N-1] = 0 .. R, i.e. x[n] = (R / (N-1)) * n, without
-		using floating point or multiplication/division each iteration */
-	public:
-		bresenham_counter() {}
-		bresenham_counter(T range, T number) : 
-			dx(number-1), 
-			dy(dx > 0 ? range % dx : 0), 
-			d(2*dy - dx), incrE(2*dy), incrNE(2*(dy-dx)), 
-			incrCounter(dx > 0 ? range / dx : 0), 
-			incrCounterPlus1(dx > 0 ? incrCounter+1 : 0),
-			counter(0) {}
-		bresenham_counter(T rangeStart, T rangeEnd, T number) : 
-			dx(number-1), 
-			dy(dx > 0 ? rangeEnd > rangeStart ? 
-				(rangeEnd - rangeStart) % dx : (rangeStart - rangeEnd) % dx : 0), 
-			d(2*dy - dx), incrE(2*dy), incrNE(2*(dy-dx)), 
-			incrCounter(dx > 0 ? (rangeEnd - rangeStart) / dx : 0), 
-			incrCounterPlus1(dx > 0 ? rangeEnd > rangeStart ? 
-				incrCounter+1 : incrCounter-1 : 0),
-			counter(rangeStart) {}
-		void init(T range, T number)
-		{
-			dx = number-1; 
-			dy = dx > 0 ? range % dx : 0; 
-			d = 2*dy - dx;
-			incrE = 2*dy;
-			incrNE = 2*(dy-dx); 
-			incrCounter = dx > 0 ? range / dx : 0; 
-			incrCounterPlus1 = dx > 0 ? incrCounter+1 : 0;
-			counter = 0;
-		}
-		void init(T rangeStart, T rangeEnd, T number)
-		{
-			dx = number-1;
-			dy = dx > 0 ? rangeEnd > rangeStart ? 
-				(rangeEnd - rangeStart) % dx : (rangeStart - rangeEnd) % dx : 0;
-			d = 2*dy - dx;
-			incrE = 2*dy;
-			incrNE = 2*(dy-dx);
-			incrCounter = dx > 0 ? (rangeEnd - rangeStart) / dx : 0;
-			incrCounterPlus1 = dx > 0 ? rangeEnd > rangeStart ? 
-				incrCounter+1 : incrCounter-1 : 0;
-			counter = rangeStart;
-		}
-		operator T()
-		{
-			if (d <= 0)
-			{
-				d += incrE;
-				T v = counter;
-				counter += incrCounter;
-				return v;
-			}
-			else
-			{
-				d += incrNE;
-				T v = counter;
-				counter += incrCounterPlus1;
-				return v;
-			}
-		}
-		T operator()()
-		{
-			return operator T();
-		}
-	private:
-		T dx, dy, d, incrE, incrNE;
-		T incrCounter;
-		T incrCounterPlus1;
-		T counter;
-	};
+    template <typename T>
+    class bresenham_counter
+    {
+        /* operator T() returns x[0..N-1] = 0 .. R, i.e. x[n] = (R / (N-1)) * n, without
+        using floating point or multiplication/division each iteration */
+    public:
+        bresenham_counter() {}
+        bresenham_counter(T range, T number) : 
+            dx(number-1), 
+            dy(dx > 0 ? range % dx : 0), 
+            d(2*dy - dx), incrE(2*dy), incrNE(2*(dy-dx)), 
+            incrCounter(dx > 0 ? range / dx : 0), 
+            incrCounterPlus1(dx > 0 ? incrCounter+1 : 0),
+            counter(0) {}
+        bresenham_counter(T rangeStart, T rangeEnd, T number) : 
+            dx(number-1), 
+            dy(dx > 0 ? rangeEnd > rangeStart ? 
+                (rangeEnd - rangeStart) % dx : (rangeStart - rangeEnd) % dx : 0), 
+            d(2*dy - dx), incrE(2*dy), incrNE(2*(dy-dx)), 
+            incrCounter(dx > 0 ? (rangeEnd - rangeStart) / dx : 0), 
+            incrCounterPlus1(dx > 0 ? rangeEnd > rangeStart ? 
+                incrCounter+1 : incrCounter-1 : 0),
+            counter(rangeStart) {}
+        void init(T range, T number)
+        {
+            dx = number-1; 
+            dy = dx > 0 ? range % dx : 0; 
+            d = 2*dy - dx;
+            incrE = 2*dy;
+            incrNE = 2*(dy-dx); 
+            incrCounter = dx > 0 ? range / dx : 0; 
+            incrCounterPlus1 = dx > 0 ? incrCounter+1 : 0;
+            counter = 0;
+        }
+        void init(T rangeStart, T rangeEnd, T number)
+        {
+            dx = number-1;
+            dy = dx > 0 ? rangeEnd > rangeStart ? 
+                (rangeEnd - rangeStart) % dx : (rangeStart - rangeEnd) % dx : 0;
+            d = 2*dy - dx;
+            incrE = 2*dy;
+            incrNE = 2*(dy-dx);
+            incrCounter = dx > 0 ? (rangeEnd - rangeStart) / dx : 0;
+            incrCounterPlus1 = dx > 0 ? rangeEnd > rangeStart ? 
+                incrCounter+1 : incrCounter-1 : 0;
+            counter = rangeStart;
+        }
+        operator T()
+        {
+            if (d <= 0)
+            {
+                d += incrE;
+                T v = counter;
+                counter += incrCounter;
+                return v;
+            }
+            else
+            {
+                d += incrNE;
+                T v = counter;
+                counter += incrCounterPlus1;
+                return v;
+            }
+        }
+        T operator()()
+        {
+            return operator T();
+        }
+    private:
+        T dx, dy, d, incrE, incrNE;
+        T incrCounter;
+        T incrCounterPlus1;
+        T counter;
+    };
 
-	template <typename T>
-	class bresenham_counter_alt
-	{
-		/* operator T() returns x[0..N-1] = 0 .. R, i.e. x[n] = (R / (N-1)) * n, without
-		using floating point or multiplication/division each iteration */
-	public:
-		bresenham_counter_alt() {}
-		bresenham_counter_alt(T range, T number) : 
-			n(number-1),
-			partInt(n > 0 ? range / n : 0),
-			partFract(n > 0 ? range % n : 0), 
-			e(0),
-			incrCounter(partInt),
-			incrCounterPlus1(n > 0 ? incrCounter+1 : 0),
-			counter(0) {}
-		bresenham_counter_alt(T rangeStart, T rangeEnd, T number) : 
-			n(number-1),
-			partInt(n > 0 ? rangeEnd > rangeStart ? 
-				(rangeEnd - rangeStart) / n : (rangeStart - rangeEnd) / n : 0),
-			partFract(n > 0 ? rangeEnd > rangeStart ?
-				(rangeEnd - rangeStart) % n : (rangeStart - rangeEnd) % n: 0), 
-			e(0),
-			incrCounter(rangeEnd > rangeStart ? partInt : -partInt),
-			incrCounterPlus1(n > 0 ? rangeEnd > rangeStart ? incrCounter+1 : incrCounter-1 : 0),
-			counter(rangeStart) {}
-		void init(T range, T number)
-		{
-			n = number-1;
-			partInt = n > 0 ? range / n : 0;
-			partFract = n > 0 ? range % n : 0;
-			e = 0;
-			incrCounter = partInt;
-			incrCounterPlus1 = n > 0 ? incrCounter+1 : 0;
-			counter = 0;
-		}
-		void init(T rangeStart, T rangeEnd, T number)
-		{
-			n = number-1;
-			partInt = n > 0 ? rangeEnd > rangeStart ? 
-				(rangeEnd - rangeStart) / n : (rangeStart - rangeEnd) / n : 0;
-			partFract = n > 0 ? rangeEnd > rangeStart ?
-				(rangeEnd - rangeStart) % n : (rangeStart - rangeEnd) % n: 0;
-			e = 0;
-			incrCounter = rangeEnd > rangeStart ? partInt : -partInt;
-			incrCounterPlus1 = n > 0 ? rangeEnd > rangeStart ? incrCounter+1 : incrCounter-1 : 0;
-			counter = rangeStart;
-		}
-		operator T()
-		{
-			e += partFract;
-			if (e < n)
-			{
-				T v = counter;
-				counter += incrCounter;
-				return v;
-			}
-			else
-			{
-				e -= n;
-				T v = counter;
-				counter += incrCounterPlus1;
-				return v;
-			}
-		}
-		T operator()()
-		{
-			return operator T();
-		}
-	private:
-		T n, partInt, partFract, e;
-		T incrCounter;
-		T incrCounterPlus1;
-		T counter;
-	};
+    template <typename T>
+    class bresenham_counter_alt
+    {
+        /* operator T() returns x[0..N-1] = 0 .. R, i.e. x[n] = (R / (N-1)) * n, without
+        using floating point or multiplication/division each iteration */
+    public:
+        bresenham_counter_alt() {}
+        bresenham_counter_alt(T range, T number) : 
+            n(number-1),
+            partInt(n > 0 ? range / n : 0),
+            partFract(n > 0 ? range % n : 0), 
+            e(0),
+            incrCounter(partInt),
+            incrCounterPlus1(n > 0 ? incrCounter+1 : 0),
+            counter(0) {}
+        bresenham_counter_alt(T rangeStart, T rangeEnd, T number) : 
+            n(number-1),
+            partInt(n > 0 ? rangeEnd > rangeStart ? 
+                (rangeEnd - rangeStart) / n : (rangeStart - rangeEnd) / n : 0),
+            partFract(n > 0 ? rangeEnd > rangeStart ?
+                (rangeEnd - rangeStart) % n : (rangeStart - rangeEnd) % n: 0), 
+            e(0),
+            incrCounter(rangeEnd > rangeStart ? partInt : -partInt),
+            incrCounterPlus1(n > 0 ? rangeEnd > rangeStart ? incrCounter+1 : incrCounter-1 : 0),
+            counter(rangeStart) {}
+        void init(T range, T number)
+        {
+            n = number-1;
+            partInt = n > 0 ? range / n : 0;
+            partFract = n > 0 ? range % n : 0;
+            e = 0;
+            incrCounter = partInt;
+            incrCounterPlus1 = n > 0 ? incrCounter+1 : 0;
+            counter = 0;
+        }
+        void init(T rangeStart, T rangeEnd, T number)
+        {
+            n = number-1;
+            partInt = n > 0 ? rangeEnd > rangeStart ? 
+                (rangeEnd - rangeStart) / n : (rangeStart - rangeEnd) / n : 0;
+            partFract = n > 0 ? rangeEnd > rangeStart ?
+                (rangeEnd - rangeStart) % n : (rangeStart - rangeEnd) % n: 0;
+            e = 0;
+            incrCounter = rangeEnd > rangeStart ? partInt : -partInt;
+            incrCounterPlus1 = n > 0 ? rangeEnd > rangeStart ? incrCounter+1 : incrCounter-1 : 0;
+            counter = rangeStart;
+        }
+        operator T()
+        {
+            e += partFract;
+            if (e < n)
+            {
+                T v = counter;
+                counter += incrCounter;
+                return v;
+            }
+            else
+            {
+                e -= n;
+                T v = counter;
+                counter += incrCounterPlus1;
+                return v;
+            }
+        }
+        T operator()()
+        {
+            return operator T();
+        }
+    private:
+        T n, partInt, partFract, e;
+        T incrCounter;
+        T incrCounterPlus1;
+        T counter;
+    };
 }

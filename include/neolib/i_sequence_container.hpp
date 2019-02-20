@@ -40,29 +40,29 @@
 
 namespace neolib
 {
-	template <typename T, typename ConstIteratorType, typename IteratorType, bool DefaultComparisonOperators = true>
-	class i_sequence_container : public i_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators>
-	{
-	private:
-		typedef i_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators> generic_container_type;
-	public:
-		typedef typename generic_container_type::value_type value_type;
-		typedef typename generic_container_type::size_type size_type;
-		typedef typename generic_container_type::const_iterator const_iterator;
-		typedef typename generic_container_type::iterator iterator;
-		typedef typename generic_container_type::abstract_const_iterator abstract_const_iterator;
-		typedef typename generic_container_type::abstract_iterator abstract_iterator;
-	public:
-		virtual size_type capacity() const = 0;
-		virtual void reserve(size_type aCapacity) = 0;
-		virtual void resize(size_type aSize, const value_type& aValue) = 0;
-		iterator insert(const abstract_iterator& aPosition, const value_type& aValue) { return do_insert(const_iterator(aPosition), aValue); }
-		iterator insert(const abstract_const_iterator& aPosition, const value_type& aValue) { return do_insert(aPosition, aValue); }
-		virtual void push_back(const value_type& aValue) = 0;
-		virtual void pop_back() = 0;
-		virtual const value_type& back() const = 0;
-		virtual value_type& back() = 0;
-	private:
-		virtual abstract_iterator* do_insert(const abstract_const_iterator& aPosition, const value_type& aValue) = 0;
-	};
+    template <typename T, typename ConstIteratorType, typename IteratorType, bool DefaultComparisonOperators = true>
+    class i_sequence_container : public i_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators>
+    {
+    private:
+        typedef i_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators> generic_container_type;
+    public:
+        typedef typename generic_container_type::value_type value_type;
+        typedef typename generic_container_type::size_type size_type;
+        typedef typename generic_container_type::const_iterator const_iterator;
+        typedef typename generic_container_type::iterator iterator;
+        typedef typename generic_container_type::abstract_const_iterator abstract_const_iterator;
+        typedef typename generic_container_type::abstract_iterator abstract_iterator;
+    public:
+        virtual size_type capacity() const = 0;
+        virtual void reserve(size_type aCapacity) = 0;
+        virtual void resize(size_type aSize, const value_type& aValue) = 0;
+        iterator insert(const abstract_iterator& aPosition, const value_type& aValue) { return do_insert(const_iterator(aPosition), aValue); }
+        iterator insert(const abstract_const_iterator& aPosition, const value_type& aValue) { return do_insert(aPosition, aValue); }
+        virtual void push_back(const value_type& aValue) = 0;
+        virtual void pop_back() = 0;
+        virtual const value_type& back() const = 0;
+        virtual value_type& back() = 0;
+    private:
+        virtual abstract_iterator* do_insert(const abstract_const_iterator& aPosition, const value_type& aValue) = 0;
+    };
 }

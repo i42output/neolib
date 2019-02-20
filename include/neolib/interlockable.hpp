@@ -42,82 +42,82 @@
 
 namespace neolib
 {
-	class interlockable : protected lockable
-	{
-		// types
-	public:
-		struct deadlock_error : std::logic_error 
-		{ 
-			deadlock_error() : std::logic_error("neolib::interlockable::deadlock_error") {} 
-		};
-	private:
-		class interlock : private lockable
-		{
-			// construction
-		public:
-			interlock() : iAtom(false) {}
-			// operations
-		public:
-			bool acquire() const
-			{ 
-				neolib::lock lock(*this); 
-				if (!iAtom)
-				{
-					iAtom = true;
-					return true;
-				}
-				return false;
-			}
-			void release() const
-			{ 
-				neolib::lock lock(*this); 
-				iAtom = false; 
-			}
-			// attributes
-		private:
-			mutable bool iAtom;
-		};
-		typedef std::shared_ptr<interlock> interlock_ptr;
-		typedef std::map<const interlockable*, interlock_ptr> interlocks;
-		// operations
-	public:
-		void interlock_add(interlockable& aOther)
-		{
-			neolib::lock lock(*this); 
-			aOther.iInterlocks[this] = iInterlocks[&aOther] = interlock_ptr(new interlock);
-		}
-		void interlock_remove(interlockable& aOther)
-		{
-			neolib::lock lock(*this); 
-			iInterlocks.erase(&aOther);
-			aOther.iInterlocks.erase(this);
-		}
-	protected:
-		void interlock_acquire(const interlockable& aOther)
-		{
-			neolib::lock lock(*this); 
-			interlocks::iterator theInterlock = iInterlocks.find(&aOther);
-			if (theInterlock == iInterlocks.end())
-				return;
-			while(!theInterlock->second->acquire())
-			{
-				if (!purge(aOther))
-					throw deadlock_error();
-			}
-		}
-		void interlock_release(const interlockable& aOther)
-		{
-			neolib::lock lock(*this); 
-			interlocks::iterator theInterlock = iInterlocks.find(&aOther);
-			if (theInterlock == iInterlocks.end())
-				return;
-			theInterlock->second->release();
-		}
-		// implementation
-	private:
-		virtual bool purge(const interlockable& aOther) = 0;
-		// attributes
-	private:
-		interlocks iInterlocks;
-	};
+    class interlockable : protected lockable
+    {
+        // types
+    public:
+        struct deadlock_error : std::logic_error 
+        { 
+            deadlock_error() : std::logic_error("neolib::interlockable::deadlock_error") {} 
+        };
+    private:
+        class interlock : private lockable
+        {
+            // construction
+        public:
+            interlock() : iAtom(false) {}
+            // operations
+        public:
+            bool acquire() const
+            { 
+                neolib::lock lock(*this); 
+                if (!iAtom)
+                {
+                    iAtom = true;
+                    return true;
+                }
+                return false;
+            }
+            void release() const
+            { 
+                neolib::lock lock(*this); 
+                iAtom = false; 
+            }
+            // attributes
+        private:
+            mutable bool iAtom;
+        };
+        typedef std::shared_ptr<interlock> interlock_ptr;
+        typedef std::map<const interlockable*, interlock_ptr> interlocks;
+        // operations
+    public:
+        void interlock_add(interlockable& aOther)
+        {
+            neolib::lock lock(*this); 
+            aOther.iInterlocks[this] = iInterlocks[&aOther] = interlock_ptr(new interlock);
+        }
+        void interlock_remove(interlockable& aOther)
+        {
+            neolib::lock lock(*this); 
+            iInterlocks.erase(&aOther);
+            aOther.iInterlocks.erase(this);
+        }
+    protected:
+        void interlock_acquire(const interlockable& aOther)
+        {
+            neolib::lock lock(*this); 
+            interlocks::iterator theInterlock = iInterlocks.find(&aOther);
+            if (theInterlock == iInterlocks.end())
+                return;
+            while(!theInterlock->second->acquire())
+            {
+                if (!purge(aOther))
+                    throw deadlock_error();
+            }
+        }
+        void interlock_release(const interlockable& aOther)
+        {
+            neolib::lock lock(*this); 
+            interlocks::iterator theInterlock = iInterlocks.find(&aOther);
+            if (theInterlock == iInterlocks.end())
+                return;
+            theInterlock->second->release();
+        }
+        // implementation
+    private:
+        virtual bool purge(const interlockable& aOther) = 0;
+        // attributes
+    private:
+        interlocks iInterlocks;
+    };
 }

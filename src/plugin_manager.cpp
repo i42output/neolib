@@ -40,151 +40,151 @@
 
 namespace neolib
 {
-	typedef void(*entry_point)(i_application&, const i_string&, i_plugin*&);
+    typedef void(*entry_point)(i_application&, const i_string&, i_plugin*&);
 
-	plugin_manager::plugin_manager(i_application& aApplication, const std::string& aPluginFolder) :
-		iApplication(aApplication), iPluginFolder(aPluginFolder)
-	{
-	}
+    plugin_manager::plugin_manager(i_application& aApplication, const std::string& aPluginFolder) :
+        iApplication(aApplication), iPluginFolder(aPluginFolder)
+    {
+    }
 
-	plugin_manager::~plugin_manager()
-	{
-		unload_plugins();
-	}
+    plugin_manager::~plugin_manager()
+    {
+        unload_plugins();
+    }
 
-	bool plugin_manager::discover(const uuid&, void*&)
-	{
-		return false;
-	}
+    bool plugin_manager::discover(const uuid&, void*&)
+    {
+        return false;
+    }
 
-	bool plugin_manager::load_plugins()
-	{
-		if (!boost::filesystem::is_directory(iPluginFolder.to_std_string()))
-			return false;
-		for (boost::filesystem::recursive_directory_iterator i(iPluginFolder.to_std_string()); i != boost::filesystem::recursive_directory_iterator(); ++i)
-		{
-			if (i->path().extension() != ".plg")
-				continue;
-			create_plugin(string(i->path().generic_string()));
-		}
-		for (plugin_list::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
-			if (!(*i)->loaded())
-				if ((*i)->load())
-					notify_observers(i_subscriber::NotifyPluginLoaded, **i);
-		return true;
-	}
+    bool plugin_manager::load_plugins()
+    {
+        if (!boost::filesystem::is_directory(iPluginFolder.to_std_string()))
+            return false;
+        for (boost::filesystem::recursive_directory_iterator i(iPluginFolder.to_std_string()); i != boost::filesystem::recursive_directory_iterator(); ++i)
+        {
+            if (i->path().extension() != ".plg")
+                continue;
+            create_plugin(string(i->path().generic_string()));
+        }
+        for (plugin_list::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
+            if (!(*i)->loaded())
+                if ((*i)->load())
+                    notify_observers(i_subscriber::NotifyPluginLoaded, **i);
+        return true;
+    }
 
-	bool plugin_manager::load_plugin(const i_string& aPluginPath)
-	{
-		bool loaded = false;
-		i_plugin* newPlugin = create_plugin(aPluginPath);
-		if (newPlugin != nullptr)
-			loaded = newPlugin->load();
-		if (loaded)
-			notify_observers(i_subscriber::NotifyPluginLoaded, *newPlugin);
-		return loaded;
-	}
+    bool plugin_manager::load_plugin(const i_string& aPluginPath)
+    {
+        bool loaded = false;
+        i_plugin* newPlugin = create_plugin(aPluginPath);
+        if (newPlugin != nullptr)
+            loaded = newPlugin->load();
+        if (loaded)
+            notify_observers(i_subscriber::NotifyPluginLoaded, *newPlugin);
+        return loaded;
+    }
 
-	void plugin_manager::enable_plugin(i_plugin& aPlugin, bool aEnable)
-	{
-		/* todo */
-		(void)aPlugin;
-		(void)aEnable;
-	}
+    void plugin_manager::enable_plugin(i_plugin& aPlugin, bool aEnable)
+    {
+        /* todo */
+        (void)aPlugin;
+        (void)aEnable;
+    }
 
-	bool plugin_manager::plugin_enabled(const i_plugin& aPlugin) const
-	{
-		/* todo */
-		(void)aPlugin;
-		return true;
-	}
+    bool plugin_manager::plugin_enabled(const i_plugin& aPlugin) const
+    {
+        /* todo */
+        (void)aPlugin;
+        return true;
+    }
 
-	void plugin_manager::unload_plugins()
-	{
-		for (plugin_list::iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
-			(*i)->release();
-		for (module_list::iterator i = iModules.begin(); i != iModules.end(); ++i)
-		{
-			(*i).second->unload();
-			notify_observers(i_subscriber::NotifyPluginUnloaded, *(*i).second);
-			(*i).second.reset();
-		}
-		iPlugins.clear();
-		iModules.clear();
-	}
+    void plugin_manager::unload_plugins()
+    {
+        for (plugin_list::iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
+            (*i)->release();
+        for (module_list::iterator i = iModules.begin(); i != iModules.end(); ++i)
+        {
+            (*i).second->unload();
+            notify_observers(i_subscriber::NotifyPluginUnloaded, *(*i).second);
+            (*i).second.reset();
+        }
+        iPlugins.clear();
+        iModules.clear();
+    }
 
-	const i_vector<i_plugin*>& plugin_manager::plugins() const
-	{
-		return iPlugins;
-	}
-	
-	i_plugin* plugin_manager::find_plugin(const uuid& aId) const
-	{
-		for (plugin_list::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
-			if ((*i)->id() == aId)
-				return (*i);
-		return nullptr;
-	}
+    const i_vector<i_plugin*>& plugin_manager::plugins() const
+    {
+        return iPlugins;
+    }
+    
+    i_plugin* plugin_manager::find_plugin(const uuid& aId) const
+    {
+        for (plugin_list::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
+            if ((*i)->id() == aId)
+                return (*i);
+        return nullptr;
+    }
 
-	bool plugin_manager::open_uri(const i_string& aUri)
-	{
-		for (plugin_list::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
-			if ((*i)->open_uri(aUri))
-				return true;
-		return false;
-	}
+    bool plugin_manager::open_uri(const i_string& aUri)
+    {
+        for (plugin_list::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
+            if ((*i)->open_uri(aUri))
+                return true;
+        return false;
+    }
 
-	void plugin_manager::subscribe(i_subscriber& aObserver)
-	{
-		add_observer(aObserver);
-		for (plugin_list::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
-			if ((*i)->loaded())
-				aObserver.plugin_loaded(**i);
-	}
+    void plugin_manager::subscribe(i_subscriber& aObserver)
+    {
+        add_observer(aObserver);
+        for (plugin_list::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
+            if ((*i)->loaded())
+                aObserver.plugin_loaded(**i);
+    }
 
-	void plugin_manager::unsubscribe(i_subscriber& aObserver)
-	{
-		remove_observer(aObserver);
-	}
+    void plugin_manager::unsubscribe(i_subscriber& aObserver)
+    {
+        remove_observer(aObserver);
+    }
 
-	void plugin_manager::notify_observer(observer_type& aObserver, notify_type aType, const void* aParameter, const void*)
-	{
-		switch (aType)
-		{
-		case i_subscriber::NotifyPluginLoaded:
-			aObserver.plugin_loaded(*static_cast<i_plugin*>(const_cast<void*>(aParameter)));
-			break;
-		case i_subscriber::NotifyPluginUnloaded:
-			aObserver.plugin_unloaded(*static_cast<i_plugin*>(const_cast<void*>(aParameter)));
-			break;
-		}
-	}
+    void plugin_manager::notify_observer(observer_type& aObserver, notify_type aType, const void* aParameter, const void*)
+    {
+        switch (aType)
+        {
+        case i_subscriber::NotifyPluginLoaded:
+            aObserver.plugin_loaded(*static_cast<i_plugin*>(const_cast<void*>(aParameter)));
+            break;
+        case i_subscriber::NotifyPluginUnloaded:
+            aObserver.plugin_unloaded(*static_cast<i_plugin*>(const_cast<void*>(aParameter)));
+            break;
+        }
+    }
 
-	i_plugin* plugin_manager::create_plugin(const i_string& aPluginPath)
-	{
-		auto pm = std::make_unique<module>(aPluginPath.to_std_string());
-		i_plugin* newPlugin = nullptr;
-		try
-		{
-			if (!pm->load())
-				return nullptr;
-			entry_point entryPoint = pm->procedure<entry_point>("entry_point");
-			if (entryPoint == nullptr)
-				return nullptr;
-			entryPoint(iApplication, string(boost::filesystem::path(aPluginPath.to_std_string()).parent_path().generic_string()), newPlugin);
-			if (newPlugin == nullptr)
-				return nullptr;
-			iPlugins.push_back(newPlugin);
-			iModules[newPlugin->id()] = std::move(pm);
-		}
-		catch (const std::exception& e)
-		{
-			throw plugin_exception<std::runtime_error>(e.what());
-		}
-		catch (...)
-		{
-			throw plugin_exception<std::runtime_error>("Unknown exception");
-		}
-		return newPlugin;
-	}
+    i_plugin* plugin_manager::create_plugin(const i_string& aPluginPath)
+    {
+        auto pm = std::make_unique<module>(aPluginPath.to_std_string());
+        i_plugin* newPlugin = nullptr;
+        try
+        {
+            if (!pm->load())
+                return nullptr;
+            entry_point entryPoint = pm->procedure<entry_point>("entry_point");
+            if (entryPoint == nullptr)
+                return nullptr;
+            entryPoint(iApplication, string(boost::filesystem::path(aPluginPath.to_std_string()).parent_path().generic_string()), newPlugin);
+            if (newPlugin == nullptr)
+                return nullptr;
+            iPlugins.push_back(newPlugin);
+            iModules[newPlugin->id()] = std::move(pm);
+        }
+        catch (const std::exception& e)
+        {
+            throw plugin_exception<std::runtime_error>(e.what());
+        }
+        catch (...)
+        {
+            throw plugin_exception<std::runtime_error>("Unknown exception");
+        }
+        return newPlugin;
+    }
 }

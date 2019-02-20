@@ -39,5 +39,5 @@
 
 namespace neolib
 {
-	uint32_t crc32(const uint8_t *aData, uint32_t aDataLength);
+    uint32_t crc32(const uint8_t *aData, uint32_t aDataLength);
 }

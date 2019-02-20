@@ -42,26 +42,26 @@
 
 namespace neolib
 {
-	class i_settings;
+    class i_settings;
 
-	class i_setting : public i_reference_counted
-	{
-		friend class settings;
-	public:
-		typedef uint32_t id_type;
-	public:
-		virtual i_settings& manager() const = 0;
-		virtual const id_type id() const = 0;
-		virtual const i_string& category() const = 0;
-		virtual const i_string& name() const = 0;
-		virtual simple_variant_type type() const = 0;
-		virtual const i_simple_variant& value() const = 0;
-		virtual void set(const i_simple_variant& aNewValue) = 0;
-		virtual const i_simple_variant& new_value() const = 0;
-		virtual bool dirty() const = 0;
-		virtual bool hidden() const = 0;
-	private:
-		virtual bool apply_change() = 0;
-		virtual bool discard_change() = 0;
-	};
+    class i_setting : public i_reference_counted
+    {
+        friend class settings;
+    public:
+        typedef uint32_t id_type;
+    public:
+        virtual i_settings& manager() const = 0;
+        virtual const id_type id() const = 0;
+        virtual const i_string& category() const = 0;
+        virtual const i_string& name() const = 0;
+        virtual simple_variant_type type() const = 0;
+        virtual const i_simple_variant& value() const = 0;
+        virtual void set(const i_simple_variant& aNewValue) = 0;
+        virtual const i_simple_variant& new_value() const = 0;
+        virtual bool dirty() const = 0;
+        virtual bool hidden() const = 0;
+    private:
+        virtual bool apply_change() = 0;
+        virtual bool discard_change() = 0;
+    };
 }

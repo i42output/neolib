@@ -41,82 +41,82 @@
 
 namespace neolib
 {
-	class uri_authority
-	{
-	public:
-		typedef std::string user_information_type;
-		typedef std::string host_type;
-		typedef uint16_t port_type;
-		typedef std::optional<user_information_type> optional_user_information;
-		typedef std::optional<host_type> optional_host;
-		typedef std::optional<port_type> optional_port;
-	public:
-		uri_authority();
-		uri_authority(const std::string& aAuthority);
-	public:
-		const optional_user_information& user_information() const;
-		const optional_host& host() const;
-		const optional_port& port() const;
-	private:
-		optional_user_information iUserInformation;
-		optional_host iHost;
-		optional_port iPort;
-	};
+    class uri_authority
+    {
+    public:
+        typedef std::string user_information_type;
+        typedef std::string host_type;
+        typedef uint16_t port_type;
+        typedef std::optional<user_information_type> optional_user_information;
+        typedef std::optional<host_type> optional_host;
+        typedef std::optional<port_type> optional_port;
+    public:
+        uri_authority();
+        uri_authority(const std::string& aAuthority);
+    public:
+        const optional_user_information& user_information() const;
+        const optional_host& host() const;
+        const optional_port& port() const;
+    private:
+        optional_user_information iUserInformation;
+        optional_host iHost;
+        optional_port iPort;
+    };
 
-	class uri
-	{
-	public:
-		uri();
-		uri(const std::string& aUri);
-	public:
-		std::string to_string() const;
-		const std::string& scheme() const;
-		const uri_authority& authority() const;
-		const std::string& path() const;
-		const std::string& query() const;
-		const std::string& fragment() const;
-		void set_scheme(const std::string& aScheme);
-		void set_authority(const uri_authority& aAuthority);
-		void set_path(const std::string& aPath);
-		void set_query(const std::string& aQuery);
-		void set_fragment(const std::string& aFragment);
-	public:
-		static std::string escaped(const std::string& aString);
-		static std::string unescaped(const std::string& String);
-	private:
-		void parse_authority(const std::string& aRest);
-		std::string parse_path(const std::string& aRest);
-		std::string parse_query(const std::string& aRest);
-		std::string parse_fragment(const std::string& aRest);
-		std::string parse_scheme(const std::string& aRest);
-	private:
-		std::string iScheme;
-		uri_authority iAuthority;
-		std::string iPath;
-		std::string iQuery;
-		std::string iFragment;
-	};
+    class uri
+    {
+    public:
+        uri();
+        uri(const std::string& aUri);
+    public:
+        std::string to_string() const;
+        const std::string& scheme() const;
+        const uri_authority& authority() const;
+        const std::string& path() const;
+        const std::string& query() const;
+        const std::string& fragment() const;
+        void set_scheme(const std::string& aScheme);
+        void set_authority(const uri_authority& aAuthority);
+        void set_path(const std::string& aPath);
+        void set_query(const std::string& aQuery);
+        void set_fragment(const std::string& aFragment);
+    public:
+        static std::string escaped(const std::string& aString);
+        static std::string unescaped(const std::string& String);
+    private:
+        void parse_authority(const std::string& aRest);
+        std::string parse_path(const std::string& aRest);
+        std::string parse_query(const std::string& aRest);
+        std::string parse_fragment(const std::string& aRest);
+        std::string parse_scheme(const std::string& aRest);
+    private:
+        std::string iScheme;
+        uri_authority iAuthority;
+        std::string iPath;
+        std::string iQuery;
+        std::string iFragment;
+    };
 
-	template <typename Elem, typename Traits>
-	inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const uri_authority& aUriAuthority)
-	{
-		if (aUriAuthority.user_information() != std::nullopt)
-			aStream << uri::escaped(*aUriAuthority.user_information()) << "@";
-		if (aUriAuthority.host() != std::nullopt)
-			aStream << uri::escaped(*aUriAuthority.host());
-		if (aUriAuthority.port() != std::nullopt)
-			aStream << ":" << *aUriAuthority.port();
-		return aStream;
-	}
+    template <typename Elem, typename Traits>
+    inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const uri_authority& aUriAuthority)
+    {
+        if (aUriAuthority.user_information() != std::nullopt)
+            aStream << uri::escaped(*aUriAuthority.user_information()) << "@";
+        if (aUriAuthority.host() != std::nullopt)
+            aStream << uri::escaped(*aUriAuthority.host());
+        if (aUriAuthority.port() != std::nullopt)
+            aStream << ":" << *aUriAuthority.port();
+        return aStream;
+    }
 
-	template <typename Elem, typename Traits>
-	inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const uri& aUri)
-	{
-		aStream << uri::escaped(aUri.scheme()) << "://" << aUri.authority() << "/" << uri::escaped(aUri.path());
-		if (!aUri.query().empty())
-			aStream << "?" << uri::escaped(aUri.query());
-		if (!aUri.fragment().empty())
-			aStream << "#" << uri::escaped(aUri.fragment());
-		return aStream;
-	}
+    template <typename Elem, typename Traits>
+    inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const uri& aUri)
+    {
+        aStream << uri::escaped(aUri.scheme()) << "://" << aUri.authority() << "/" << uri::escaped(aUri.path());
+        if (!aUri.query().empty())
+            aStream << "?" << uri::escaped(aUri.query());
+        if (!aUri.fragment().empty())
+            aStream << "#" << uri::escaped(aUri.fragment());
+        return aStream;
+    }
 }

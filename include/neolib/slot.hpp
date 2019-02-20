@@ -40,9 +40,9 @@
 
 namespace neolib
 {
-	// deprecated; use new event system directly
-	template <typename T = void>
-	struct has_slots : sink
-	{
-	};
+    // deprecated; use new event system directly
+    template <typename T = void>
+    struct has_slots : sink
+    {
+    };
 }

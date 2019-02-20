@@ -42,154 +42,154 @@
 
 namespace neolib
 {
-	template <typename T, typename ConcreteType = T, typename Pred = std::less<typename crack_key<ConcreteType>::key_type>, typename Alloc = std::allocator<ConcreteType>>
-	class set : public reference_counted <i_set<T> >
-	{
-		// types
-	public:
-		typedef T abstract_key_type;
-		typedef T abstract_value_type;
-		typedef ConcreteType concrete_key_type;
-		typedef ConcreteType concrete_value_type;
-		typedef Pred compare_type;
-		typedef Alloc allocator_type;
-		typedef mutable_set<concrete_key_type, compare_type, allocator_type> container_type;
-	private:
-		typedef i_set<T> abstract_base;
-		typedef typename abstract_base::base abstract_container;
-	public:
-		typedef typename abstract_base::size_type size_type;
-		typedef container::const_iterator<abstract_value_type, typename container_type::const_iterator> container_const_iterator;
-		typedef container::iterator<abstract_value_type, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
-	protected:
-		typedef typename abstract_base::abstract_const_iterator abstract_const_iterator;
-		typedef typename abstract_base::abstract_iterator abstract_iterator;
-	public:
-		typedef typename abstract_base::const_iterator const_iterator;
-		typedef typename abstract_base::iterator iterator;
-		// construction
-	public:
-		set()
-		{
-		}
-		set(const abstract_container& aOther)
-		{
-			assign(aOther);
-		}
-		set(std::initializer_list<concrete_value_type> aElements) :
-			iSet(aElements)
-		{}
-		template <typename InputIter>
-		set(InputIter aFirst, InputIter aLast) :
-			iSet(aFirst, aLast)
-		{}
-		// operations
-	public:
-		const container_type& container() const { return iSet; }
-		container_type& container() { return iSet; }
-		// implementation
-	public:
-		// from i_container
-		virtual size_type size() const { return iSet.size(); }
-		virtual size_type max_size() const { return iSet.max_size(); }
-		virtual void clear() { iSet.clear(); }
-		virtual void assign(const abstract_container& aOther)
-		{
-			if (&aOther == this) 
-				return;
-			clear();
-			for (const_iterator i = aOther.begin(); i != aOther.end(); ++i)
-				iSet.insert(typename container_type::value_type(concrete_key_type(*i)));
-		}
-	private:
-		// from i_container
-		virtual abstract_const_iterator* do_begin() const { return new container_const_iterator(iSet.begin()); }
-		virtual abstract_const_iterator* do_end() const { return new container_const_iterator(iSet.end()); }
-		virtual abstract_iterator* do_begin() { return new container_iterator(iSet.begin()); }
-		virtual abstract_iterator* do_end() { return new container_iterator(iSet.end()); }
-		virtual abstract_iterator* do_erase(const abstract_const_iterator& aPosition) { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aPosition))); }
-		virtual abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
-	public:
-		// from i_set
-		virtual abstract_iterator* do_insert(const abstract_value_type& aValue) { return new container_iterator(iSet.insert(concrete_value_type(aValue))); }
-		virtual abstract_const_iterator* do_find(const abstract_key_type& aKey) const { return new container_const_iterator(iSet.find(concrete_key_type(aKey))); }
-		virtual abstract_iterator* do_find(const abstract_key_type& aKey) { return new container_iterator(iSet.find(concrete_key_type(aKey))); }
-	private:
-		container_type iSet;
-	};
+    template <typename T, typename ConcreteType = T, typename Pred = std::less<typename crack_key<ConcreteType>::key_type>, typename Alloc = std::allocator<ConcreteType>>
+    class set : public reference_counted <i_set<T> >
+    {
+        // types
+    public:
+        typedef T abstract_key_type;
+        typedef T abstract_value_type;
+        typedef ConcreteType concrete_key_type;
+        typedef ConcreteType concrete_value_type;
+        typedef Pred compare_type;
+        typedef Alloc allocator_type;
+        typedef mutable_set<concrete_key_type, compare_type, allocator_type> container_type;
+    private:
+        typedef i_set<T> abstract_base;
+        typedef typename abstract_base::base abstract_container;
+    public:
+        typedef typename abstract_base::size_type size_type;
+        typedef container::const_iterator<abstract_value_type, typename container_type::const_iterator> container_const_iterator;
+        typedef container::iterator<abstract_value_type, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
+    protected:
+        typedef typename abstract_base::abstract_const_iterator abstract_const_iterator;
+        typedef typename abstract_base::abstract_iterator abstract_iterator;
+    public:
+        typedef typename abstract_base::const_iterator const_iterator;
+        typedef typename abstract_base::iterator iterator;
+        // construction
+    public:
+        set()
+        {
+        }
+        set(const abstract_container& aOther)
+        {
+            assign(aOther);
+        }
+        set(std::initializer_list<concrete_value_type> aElements) :
+            iSet(aElements)
+        {}
+        template <typename InputIter>
+        set(InputIter aFirst, InputIter aLast) :
+            iSet(aFirst, aLast)
+        {}
+        // operations
+    public:
+        const container_type& container() const { return iSet; }
+        container_type& container() { return iSet; }
+        // implementation
+    public:
+        // from i_container
+        virtual size_type size() const { return iSet.size(); }
+        virtual size_type max_size() const { return iSet.max_size(); }
+        virtual void clear() { iSet.clear(); }
+        virtual void assign(const abstract_container& aOther)
+        {
+            if (&aOther == this) 
+                return;
+            clear();
+            for (const_iterator i = aOther.begin(); i != aOther.end(); ++i)
+                iSet.insert(typename container_type::value_type(concrete_key_type(*i)));
+        }
+    private:
+        // from i_container
+        virtual abstract_const_iterator* do_begin() const { return new container_const_iterator(iSet.begin()); }
+        virtual abstract_const_iterator* do_end() const { return new container_const_iterator(iSet.end()); }
+        virtual abstract_iterator* do_begin() { return new container_iterator(iSet.begin()); }
+        virtual abstract_iterator* do_end() { return new container_iterator(iSet.end()); }
+        virtual abstract_iterator* do_erase(const abstract_const_iterator& aPosition) { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aPosition))); }
+        virtual abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
+    public:
+        // from i_set
+        virtual abstract_iterator* do_insert(const abstract_value_type& aValue) { return new container_iterator(iSet.insert(concrete_value_type(aValue))); }
+        virtual abstract_const_iterator* do_find(const abstract_key_type& aKey) const { return new container_const_iterator(iSet.find(concrete_key_type(aKey))); }
+        virtual abstract_iterator* do_find(const abstract_key_type& aKey) { return new container_iterator(iSet.find(concrete_key_type(aKey))); }
+    private:
+        container_type iSet;
+    };
 
-	template <typename T, typename ConcreteType = T, typename Pred = std::less<typename crack_key<ConcreteType>::key_type>, typename Alloc = std::allocator<ConcreteType>>
-	class multiset : public reference_counted <i_multiset<T> >
-	{
-		// types
-	public:
-		typedef T abstract_key_type;
-		typedef T abstract_value_type;
-		typedef ConcreteType concrete_key_type;
-		typedef ConcreteType concrete_value_type;
-		typedef Pred compare_type;
-		typedef Alloc allocator_type;
-		typedef mutable_multiset<concrete_key_type, compare_type, allocator_type> container_type;
-	private:
-		typedef i_multiset<T> abstract_base;
-		typedef typename abstract_base::base abstract_container;
-	public:
-		typedef typename abstract_base::size_type size_type;
-		typedef container::const_iterator<abstract_value_type, typename container_type::const_iterator> container_const_iterator;
-		typedef container::iterator<abstract_value_type, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
-	protected:
-		typedef typename abstract_base::abstract_const_iterator abstract_const_iterator;
-		typedef typename abstract_base::abstract_iterator abstract_iterator;
-	public:
-		typedef typename abstract_base::const_iterator const_iterator;
-		typedef typename abstract_base::iterator iterator;
-		// construction
-	public:
-		multiset()
-		{}
-		multiset(const abstract_container& aOther)
-		{
-			assign(aOther);
-		}
-		multiset(std::initializer_list<concrete_value_type> aElements) :
-			iSet(aElements)
-		{}
-		template <typename InputIter>
-		multiset(InputIter aFirst, InputIter aLast) :
-			iSet(aFirst, aLast)
-		{}
-		// operations
-	public:
-		const container_type& container() const { return iSet; }
-		container_type& container() { return iSet; }
-		// implementation
-	public:
-		// from i_container
-		virtual size_type size() const { return iSet.size(); }
-		virtual size_type max_size() const { return iSet.max_size(); }
-		virtual void clear() { iSet.clear(); }
-		virtual void assign(const abstract_container& aOther)
-		{
-			if (&aOther == this)
-				return;
-			clear();
-			for (const_iterator i = aOther.begin(); i != aOther.end(); ++i)
-				iSet.insert(typename container_type::value_type(concrete_key_type(*i)));
-		}
-	private:
-		// from i_container
-		virtual abstract_const_iterator* do_begin() const { return new container_const_iterator(iSet.begin()); }
-		virtual abstract_const_iterator* do_end() const { return new container_const_iterator(iSet.end()); }
-		virtual abstract_iterator* do_begin() { return new container_iterator(iSet.begin()); }
-		virtual abstract_iterator* do_end() { return container_iterator(iSet.end()); }
-		virtual abstract_iterator* do_erase(const abstract_const_iterator& aPosition) { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aPosition))); }
-		virtual abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
-	public:
-		// from i_multiset
-		virtual abstract_iterator* do_insert(const abstract_value_type& aValue) { return new container_iterator(iSet.insert(concrete_value_type(aValue))); }
-		virtual abstract_const_iterator* do_find(const abstract_key_type& aKey) const { return new container_const_iterator(iSet.find(concrete_key_type(aKey))); }
-		virtual abstract_iterator* do_find(const abstract_key_type& aKey) { return new container_iterator(iSet.find(concrete_key_type(aKey))); }
-	private:
-		container_type iSet;
-	};
+    template <typename T, typename ConcreteType = T, typename Pred = std::less<typename crack_key<ConcreteType>::key_type>, typename Alloc = std::allocator<ConcreteType>>
+    class multiset : public reference_counted <i_multiset<T> >
+    {
+        // types
+    public:
+        typedef T abstract_key_type;
+        typedef T abstract_value_type;
+        typedef ConcreteType concrete_key_type;
+        typedef ConcreteType concrete_value_type;
+        typedef Pred compare_type;
+        typedef Alloc allocator_type;
+        typedef mutable_multiset<concrete_key_type, compare_type, allocator_type> container_type;
+    private:
+        typedef i_multiset<T> abstract_base;
+        typedef typename abstract_base::base abstract_container;
+    public:
+        typedef typename abstract_base::size_type size_type;
+        typedef container::const_iterator<abstract_value_type, typename container_type::const_iterator> container_const_iterator;
+        typedef container::iterator<abstract_value_type, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
+    protected:
+        typedef typename abstract_base::abstract_const_iterator abstract_const_iterator;
+        typedef typename abstract_base::abstract_iterator abstract_iterator;
+    public:
+        typedef typename abstract_base::const_iterator const_iterator;
+        typedef typename abstract_base::iterator iterator;
+        // construction
+    public:
+        multiset()
+        {}
+        multiset(const abstract_container& aOther)
+        {
+            assign(aOther);
+        }
+        multiset(std::initializer_list<concrete_value_type> aElements) :
+            iSet(aElements)
+        {}
+        template <typename InputIter>
+        multiset(InputIter aFirst, InputIter aLast) :
+            iSet(aFirst, aLast)
+        {}
+        // operations
+    public:
+        const container_type& container() const { return iSet; }
+        container_type& container() { return iSet; }
+        // implementation
+    public:
+        // from i_container
+        virtual size_type size() const { return iSet.size(); }
+        virtual size_type max_size() const { return iSet.max_size(); }
+        virtual void clear() { iSet.clear(); }
+        virtual void assign(const abstract_container& aOther)
+        {
+            if (&aOther == this)
+                return;
+            clear();
+            for (const_iterator i = aOther.begin(); i != aOther.end(); ++i)
+                iSet.insert(typename container_type::value_type(concrete_key_type(*i)));
+        }
+    private:
+        // from i_container
+        virtual abstract_const_iterator* do_begin() const { return new container_const_iterator(iSet.begin()); }
+        virtual abstract_const_iterator* do_end() const { return new container_const_iterator(iSet.end()); }
+        virtual abstract_iterator* do_begin() { return new container_iterator(iSet.begin()); }
+        virtual abstract_iterator* do_end() { return container_iterator(iSet.end()); }
+        virtual abstract_iterator* do_erase(const abstract_const_iterator& aPosition) { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aPosition))); }
+        virtual abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
+    public:
+        // from i_multiset
+        virtual abstract_iterator* do_insert(const abstract_value_type& aValue) { return new container_iterator(iSet.insert(concrete_value_type(aValue))); }
+        virtual abstract_const_iterator* do_find(const abstract_key_type& aKey) const { return new container_const_iterator(iSet.find(concrete_key_type(aKey))); }
+        virtual abstract_iterator* do_find(const abstract_key_type& aKey) { return new container_iterator(iSet.find(concrete_key_type(aKey))); }
+    private:
+        container_type iSet;
+    };
 }

@@ -40,14 +40,14 @@
 
 namespace neolib
 {
-	namespace vm
-	{
-		class i_scheduler
-		{
-		public:
-			virtual const uint8_t* load(std::istream& aProgram) = 0;
-			virtual i_thread& create_thread(const uint8_t* aEntryPoint) = 0;
-			virtual void destroy_thread(i_thread& aThread) = 0;
-		};
-	};
+    namespace vm
+    {
+        class i_scheduler
+        {
+        public:
+            virtual const uint8_t* load(std::istream& aProgram) = 0;
+            virtual i_thread& create_thread(const uint8_t* aEntryPoint) = 0;
+            virtual void destroy_thread(i_thread& aThread) = 0;
+        };
+    };
 }

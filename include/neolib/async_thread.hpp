@@ -41,13 +41,13 @@
 
 namespace neolib
 {
-	class async_thread : public thread, public async_task
-	{
-		// construction
-	public:
-		async_thread(const std::string& aName = "", bool aAttachToCurrentThread = false);
-		// implemenation
-	protected:
-		void exec() override;
-	};
+    class async_thread : public thread, public async_task
+    {
+        // construction
+    public:
+        async_thread(const std::string& aName = "", bool aAttachToCurrentThread = false);
+        // implemenation
+    protected:
+        void exec() override;
+    };
 }

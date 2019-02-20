@@ -41,50 +41,50 @@
 
 namespace neolib
 {
-	template <typename Manager, typename ManagerObserver, typename T>
-	class manager_of
-	{
-		// types
-	public:
-		typedef T value_type;
-		typedef std::shared_ptr<T> value_ptr;
-		typedef typename ManagerObserver::notify_type notify_type;
-		typedef typename observable<ManagerObserver> observable_type;
-		// construction
-	public:
-		manager_of(Manager& aManager, notify_type aCreatedNotification, notify_type aDestroyedNotification) : 
-			iManager(aManager), iCreatedNotification(aCreatedNotification), iDestroyedNotification(aDestroyedNotification) {}
-		// operations
-	public:
-		virtual void object_created(value_type& aObject) 
-		{
-			static_cast<observable_type&>(iManager).notify_observers(iCreatedNotification, aObject);
-		}
-		virtual void object_destroyed(value_type& aObject)
-		{ 
-			static_cast<observable_type&>(iManager).notify_observers(iDestroyedNotification, aObject);
-		}
-	protected:
-		template <typename C>
-		void erase_object(C& aContainer, typename C::iterator aIter)
-		{
-			if (aContainer.empty())
-				return;
-			// smart pointers are used to ensure manager object count does not include the 
-			// object being erased
-			value_ptr tmp(Manager::value(aIter));
-			aContainer.erase(aIter);
-		}
-		template <typename C>
-		void erase_objects(C& aContainer, typename C::iterator aFirst, typename C::iterator aLast)
-		{
-			for (typename C::iterator i = aFirst; i != aLast;)
-				erase_object(aContainer, i++);
-		}
-		// attributes
-	private:
-		Manager& iManager;
-		notify_type iCreatedNotification;
-		notify_type iDestroyedNotification;
-	};
+    template <typename Manager, typename ManagerObserver, typename T>
+    class manager_of
+    {
+        // types
+    public:
+        typedef T value_type;
+        typedef std::shared_ptr<T> value_ptr;
+        typedef typename ManagerObserver::notify_type notify_type;
+        typedef typename observable<ManagerObserver> observable_type;
+        // construction
+    public:
+        manager_of(Manager& aManager, notify_type aCreatedNotification, notify_type aDestroyedNotification) : 
+            iManager(aManager), iCreatedNotification(aCreatedNotification), iDestroyedNotification(aDestroyedNotification) {}
+        // operations
+    public:
+        virtual void object_created(value_type& aObject) 
+        {
+            static_cast<observable_type&>(iManager).notify_observers(iCreatedNotification, aObject);
+        }
+        virtual void object_destroyed(value_type& aObject)
+        { 
+            static_cast<observable_type&>(iManager).notify_observers(iDestroyedNotification, aObject);
+        }
+    protected:
+        template <typename C>
+        void erase_object(C& aContainer, typename C::iterator aIter)
+        {
+            if (aContainer.empty())
+                return;
+            // smart pointers are used to ensure manager object count does not include the 
+            // object being erased
+            value_ptr tmp(Manager::value(aIter));
+            aContainer.erase(aIter);
+        }
+        template <typename C>
+        void erase_objects(C& aContainer, typename C::iterator aFirst, typename C::iterator aLast)
+        {
+            for (typename C::iterator i = aFirst; i != aLast;)
+                erase_object(aContainer, i++);
+        }
+        // attributes
+    private:
+        Manager& iManager;
+        notify_type iCreatedNotification;
+        notify_type iDestroyedNotification;
+    };
 }

@@ -41,177 +41,177 @@
 
 namespace neolib
 {
-	struct any_const_ref_bad_cast : public std::logic_error 
-	{ 
-		any_const_ref_bad_cast() : std::logic_error("neolib::any_const_ref_bad_cast") 
-		{
-		} 
-	};
+    struct any_const_ref_bad_cast : public std::logic_error 
+    { 
+        any_const_ref_bad_cast() : std::logic_error("neolib::any_const_ref_bad_cast") 
+        {
+        } 
+    };
 
-	class any_const_ref_holder_base
-	{
-		// construction
-	public:
-		virtual ~any_const_ref_holder_base() {}
-		// operations
-	public:
-		template <typename T>
-		operator const T&() const
-		{
-			if (typeid(T) != type()) 
-				throw any_const_ref_bad_cast();
-			return *static_cast<const T*>(ptr());
-		}
-		template <typename T>
-		bool is() const { return typeid(T) == type(); }
-		virtual any_const_ref_holder_base* clone(void* aWhere) const = 0;
-		// implementation
-	private:
-		virtual const std::type_info& type() const = 0;
-		virtual const void* ptr() const = 0;
-	};
+    class any_const_ref_holder_base
+    {
+        // construction
+    public:
+        virtual ~any_const_ref_holder_base() {}
+        // operations
+    public:
+        template <typename T>
+        operator const T&() const
+        {
+            if (typeid(T) != type()) 
+                throw any_const_ref_bad_cast();
+            return *static_cast<const T*>(ptr());
+        }
+        template <typename T>
+        bool is() const { return typeid(T) == type(); }
+        virtual any_const_ref_holder_base* clone(void* aWhere) const = 0;
+        // implementation
+    private:
+        virtual const std::type_info& type() const = 0;
+        virtual const void* ptr() const = 0;
+    };
 
-	template <typename T>
-	class any_const_ref_holder : public any_const_ref_holder_base
-	{
-		// construction
-	public:
-		any_const_ref_holder(const T& aRef) : iRef(aRef) {}
-		// implementation
-	private:
-		virtual any_const_ref_holder_base* clone(void* aWhere) const { return new (aWhere) any_const_ref_holder(iRef); }
-		virtual const std::type_info& type() const { return typeid(T); }
-		virtual const void* ptr() const { return &iRef; }
-		// attributes
-	private:
-		const T& iRef;
-	};
+    template <typename T>
+    class any_const_ref_holder : public any_const_ref_holder_base
+    {
+        // construction
+    public:
+        any_const_ref_holder(const T& aRef) : iRef(aRef) {}
+        // implementation
+    private:
+        virtual any_const_ref_holder_base* clone(void* aWhere) const { return new (aWhere) any_const_ref_holder(iRef); }
+        virtual const std::type_info& type() const { return typeid(T); }
+        virtual const void* ptr() const { return &iRef; }
+        // attributes
+    private:
+        const T& iRef;
+    };
 
-	struct any_ref_bad_cast : public std::logic_error 
-	{ 
-		any_ref_bad_cast() : std::logic_error("neolib::any_ref_bad_cast") 
-		{
-		} 
-	};
+    struct any_ref_bad_cast : public std::logic_error 
+    { 
+        any_ref_bad_cast() : std::logic_error("neolib::any_ref_bad_cast") 
+        {
+        } 
+    };
 
-	class any_ref_holder_base
-	{
-		// construction
-	public:
-		virtual ~any_ref_holder_base() {}
-		// operations
-	public:
-		template <typename T>
-		operator T&() const
-		{
-			if (typeid(T) != type()) 
-				throw any_ref_bad_cast();
-			return *static_cast<T*>(ptr());
-		}
-		template <typename T>
-		bool is() const { return typeid(T) == type(); }
-		virtual any_ref_holder_base* clone(void* aWhere) const = 0;
-		virtual any_const_ref_holder_base* const_clone(void* aWhere) const = 0;
-		// implementation
-	private:
-		virtual const std::type_info& type() const = 0;
-		virtual void* ptr() const = 0;
-	};
+    class any_ref_holder_base
+    {
+        // construction
+    public:
+        virtual ~any_ref_holder_base() {}
+        // operations
+    public:
+        template <typename T>
+        operator T&() const
+        {
+            if (typeid(T) != type()) 
+                throw any_ref_bad_cast();
+            return *static_cast<T*>(ptr());
+        }
+        template <typename T>
+        bool is() const { return typeid(T) == type(); }
+        virtual any_ref_holder_base* clone(void* aWhere) const = 0;
+        virtual any_const_ref_holder_base* const_clone(void* aWhere) const = 0;
+        // implementation
+    private:
+        virtual const std::type_info& type() const = 0;
+        virtual void* ptr() const = 0;
+    };
 
-	template <typename T>
-	class any_ref_holder : public any_ref_holder_base
-	{
-		// construction
-	public:
-		any_ref_holder(T& aRef) : iRef(aRef) {}
-		// implementation
-	private:
-		virtual any_ref_holder_base* clone(void* aWhere) const { return new (aWhere) any_ref_holder(iRef); }
-		virtual any_const_ref_holder_base* const_clone(void* aWhere) const { return new (aWhere) any_const_ref_holder<T>(const_cast<const T&>(iRef)); }
-		virtual const std::type_info& type() const { return typeid(T); }
-		virtual void* ptr() const { return &iRef; }
-		// attributes
-	private:
-		T& iRef;
-	};
+    template <typename T>
+    class any_ref_holder : public any_ref_holder_base
+    {
+        // construction
+    public:
+        any_ref_holder(T& aRef) : iRef(aRef) {}
+        // implementation
+    private:
+        virtual any_ref_holder_base* clone(void* aWhere) const { return new (aWhere) any_ref_holder(iRef); }
+        virtual any_const_ref_holder_base* const_clone(void* aWhere) const { return new (aWhere) any_const_ref_holder<T>(const_cast<const T&>(iRef)); }
+        virtual const std::type_info& type() const { return typeid(T); }
+        virtual void* ptr() const { return &iRef; }
+        // attributes
+    private:
+        T& iRef;
+    };
 
-	class any_ref
-	{
-		friend class any_const_ref;
-		// construction
-	public:
-		any_ref() : iHolder(nullptr) {}
-		template <typename T>
-		any_ref(T& aObject) : iHolder(new (iSpace.iBytes) any_ref_holder<T>(aObject)) {}
-		any_ref(const any_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(iSpace.iBytes) : nullptr) {}
-		any_ref(any_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(iSpace.iBytes) : nullptr) {}
-		~any_ref() { destroy(); }
-		any_ref& operator=(const any_ref& aOther) 
-		{ 
-			destroy(); 
-			if (aOther.iHolder) 
-				iHolder = aOther.iHolder->clone(iSpace.iBytes); 
-			return *this;
-		}
-		// operations
-	public:
-		template <typename T>
-		operator T&() const { if (empty()) throw any_ref_bad_cast(); return *iHolder; }
-		template <typename T>
-		bool is() const { return iHolder && iHolder->is<T>(); }
-		bool something() const { return iHolder != nullptr; }
-		bool empty() const { return !something(); }
-		void reset() { destroy(); }
-		// implementation
-	private:
-		void destroy() { if (iHolder != nullptr) iHolder->~any_ref_holder_base(); iHolder = nullptr; }
-		// attributes
-	private:
-		union
-		{
-			std::max_align_t alignTo;
-			char iBytes[sizeof(any_ref_holder<char>)];
-		} iSpace;
-		any_ref_holder_base* iHolder;
-	};
+    class any_ref
+    {
+        friend class any_const_ref;
+        // construction
+    public:
+        any_ref() : iHolder(nullptr) {}
+        template <typename T>
+        any_ref(T& aObject) : iHolder(new (iSpace.iBytes) any_ref_holder<T>(aObject)) {}
+        any_ref(const any_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(iSpace.iBytes) : nullptr) {}
+        any_ref(any_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(iSpace.iBytes) : nullptr) {}
+        ~any_ref() { destroy(); }
+        any_ref& operator=(const any_ref& aOther) 
+        { 
+            destroy(); 
+            if (aOther.iHolder) 
+                iHolder = aOther.iHolder->clone(iSpace.iBytes); 
+            return *this;
+        }
+        // operations
+    public:
+        template <typename T>
+        operator T&() const { if (empty()) throw any_ref_bad_cast(); return *iHolder; }
+        template <typename T>
+        bool is() const { return iHolder && iHolder->is<T>(); }
+        bool something() const { return iHolder != nullptr; }
+        bool empty() const { return !something(); }
+        void reset() { destroy(); }
+        // implementation
+    private:
+        void destroy() { if (iHolder != nullptr) iHolder->~any_ref_holder_base(); iHolder = nullptr; }
+        // attributes
+    private:
+        union
+        {
+            std::max_align_t alignTo;
+            char iBytes[sizeof(any_ref_holder<char>)];
+        } iSpace;
+        any_ref_holder_base* iHolder;
+    };
 
-	class any_const_ref
-	{
-		// construction
-	public:
-		any_const_ref() : iHolder(nullptr) {}
-		template <typename T>
-		any_const_ref(const T& aObject) : iHolder(new (iSpace.iBytes) any_const_ref_holder<T>(aObject)) {}
-		any_const_ref(const any_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->const_clone(iSpace.iBytes) : nullptr) {}
-		any_const_ref(const any_const_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(iSpace.iBytes) : nullptr) {}
-		any_const_ref(any_const_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(iSpace.iBytes) : nullptr) {}
-		~any_const_ref() { destroy(); }
-		any_const_ref& operator=(const any_const_ref& aOther) 
-		{ 
-			destroy(); 
-			if (aOther.iHolder) 
-				iHolder = aOther.iHolder->clone(iSpace.iBytes); 
-			return *this;
-		}
-		// operations
-	public:
-		template <typename T>
-		operator const T&() const { if (empty()) throw any_const_ref_bad_cast(); return *iHolder; }
-		template <typename T>
-		bool is() const { return iHolder && iHolder->is<T>(); }
-		bool something() const { return iHolder != nullptr; }
-		bool empty() const { return !something(); }
-		void reset() { destroy(); }
-		// implementation
-	private:
-		void destroy() { if (iHolder != nullptr) iHolder->~any_const_ref_holder_base(); iHolder = nullptr; }
-		// attributes
-	private:
-		union
-		{
-			std::max_align_t alignTo;
-			char iBytes[sizeof(any_const_ref_holder<char>)];
-		} iSpace;
-		any_const_ref_holder_base* iHolder;
-	};
+    class any_const_ref
+    {
+        // construction
+    public:
+        any_const_ref() : iHolder(nullptr) {}
+        template <typename T>
+        any_const_ref(const T& aObject) : iHolder(new (iSpace.iBytes) any_const_ref_holder<T>(aObject)) {}
+        any_const_ref(const any_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->const_clone(iSpace.iBytes) : nullptr) {}
+        any_const_ref(const any_const_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(iSpace.iBytes) : nullptr) {}
+        any_const_ref(any_const_ref& aOther) : iHolder(aOther.iHolder ? aOther.iHolder->clone(iSpace.iBytes) : nullptr) {}
+        ~any_const_ref() { destroy(); }
+        any_const_ref& operator=(const any_const_ref& aOther) 
+        { 
+            destroy(); 
+            if (aOther.iHolder) 
+                iHolder = aOther.iHolder->clone(iSpace.iBytes); 
+            return *this;
+        }
+        // operations
+    public:
+        template <typename T>
+        operator const T&() const { if (empty()) throw any_const_ref_bad_cast(); return *iHolder; }
+        template <typename T>
+        bool is() const { return iHolder && iHolder->is<T>(); }
+        bool something() const { return iHolder != nullptr; }
+        bool empty() const { return !something(); }
+        void reset() { destroy(); }
+        // implementation
+    private:
+        void destroy() { if (iHolder != nullptr) iHolder->~any_const_ref_holder_base(); iHolder = nullptr; }
+        // attributes
+    private:
+        union
+        {
+            std::max_align_t alignTo;
+            char iBytes[sizeof(any_const_ref_holder<char>)];
+        } iSpace;
+        any_const_ref_holder_base* iHolder;
+    };
 }

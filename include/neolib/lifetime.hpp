@@ -49,222 +49,222 @@
 
 namespace neolib
 {
-	template <lifetime_state RequiredState, typename Owner = void>
-	class lifetime_flag : public i_lifetime_flag
-	{
-		template <typename Mutex>
-		friend class basic_lifetime;
-	private:
-		typedef const i_lifetime* subject_pointer;
-		typedef Owner* owner_pointer;
-	public:
-		lifetime_flag(const i_lifetime& aSubject, owner_pointer aOwner = nullptr) : iCookie{ aSubject.next_cookie() }, iSubject { &aSubject }, iOwner{ aOwner }, iState{ aSubject.object_state() }, iDebug{ false }
-		{
-			subject().add_flag(this);
-		}
-		lifetime_flag(const lifetime_flag& aOther) : iCookie{ aOther.iSubject->next_cookie() }, iSubject{ aOther.iSubject }, iOwner{ aOther.iOwner }, iState { aOther.iSubject->object_state() }, iDebug{ false }
-		{
-			subject().add_flag(this);
-		}
-		~lifetime_flag()
-		{
-			if (!is_destroyed())
-				subject().remove_flag(this);
-		}
-	public:
-		neolib::cookie cookie() const
-		{
-			return iCookie;
-		}
-	public:
-		bool is_creating() const final
-		{
-			return iState == lifetime_state::Creating;
-		}
-		bool is_alive() const final
-		{
-			return iState == lifetime_state::Alive;
-		}
-		bool is_destroying() const final
-		{
-			return iState == lifetime_state::Destroying;
-		}
-		bool is_destroyed() const final
-		{
-			return iState == lifetime_state::Destroyed;
-		}
-		operator bool() const final
-		{
-			return iState == RequiredState;
-		}
-		void set_alive() final
-		{
-			if (iState == lifetime_state::Alive)
-				return;
-			if (debug())
-				std::cerr << "lifetime_flag::set_alive()" << std::endl;
-			iState = lifetime_state::Alive;
-		}
-		void set_destroying() final
-		{
-			if (iState == lifetime_state::Destroying)
-				return;
-			if (debug())
-				std::cerr << "lifetime_flag::set_destroying()" << std::endl;
-			iState = lifetime_state::Destroying;
-		}
-		void set_destroyed() final
-		{
-			if (iState == lifetime_state::Destroyed)
-				return;
-			if (debug())
-				std::cerr << "lifetime_flag::set_destroyed()" << std::endl;
-			iState = lifetime_state::Destroyed;
-		}
-	public:
-		bool debug() const override
-		{
-			return iDebug;
-		}
-		void set_debug(bool aDebug = true) override
-		{
-			iDebug = aDebug;
-		}
-	private:
-		const i_lifetime& subject() const
-		{
-			return *iSubject;
-		}
-	private:
-		neolib::cookie iCookie;
-		subject_pointer iSubject;
-		owner_pointer iOwner;
-		std::atomic<lifetime_state> iState;
-		bool iDebug;
-	};
+    template <lifetime_state RequiredState, typename Owner = void>
+    class lifetime_flag : public i_lifetime_flag
+    {
+        template <typename Mutex>
+        friend class basic_lifetime;
+    private:
+        typedef const i_lifetime* subject_pointer;
+        typedef Owner* owner_pointer;
+    public:
+        lifetime_flag(const i_lifetime& aSubject, owner_pointer aOwner = nullptr) : iCookie{ aSubject.next_cookie() }, iSubject { &aSubject }, iOwner{ aOwner }, iState{ aSubject.object_state() }, iDebug{ false }
+        {
+            subject().add_flag(this);
+        }
+        lifetime_flag(const lifetime_flag& aOther) : iCookie{ aOther.iSubject->next_cookie() }, iSubject{ aOther.iSubject }, iOwner{ aOther.iOwner }, iState { aOther.iSubject->object_state() }, iDebug{ false }
+        {
+            subject().add_flag(this);
+        }
+        ~lifetime_flag()
+        {
+            if (!is_destroyed())
+                subject().remove_flag(this);
+        }
+    public:
+        neolib::cookie cookie() const
+        {
+            return iCookie;
+        }
+    public:
+        bool is_creating() const final
+        {
+            return iState == lifetime_state::Creating;
+        }
+        bool is_alive() const final
+        {
+            return iState == lifetime_state::Alive;
+        }
+        bool is_destroying() const final
+        {
+            return iState == lifetime_state::Destroying;
+        }
+        bool is_destroyed() const final
+        {
+            return iState == lifetime_state::Destroyed;
+        }
+        operator bool() const final
+        {
+            return iState == RequiredState;
+        }
+        void set_alive() final
+        {
+            if (iState == lifetime_state::Alive)
+                return;
+            if (debug())
+                std::cerr << "lifetime_flag::set_alive()" << std::endl;
+            iState = lifetime_state::Alive;
+        }
+        void set_destroying() final
+        {
+            if (iState == lifetime_state::Destroying)
+                return;
+            if (debug())
+                std::cerr << "lifetime_flag::set_destroying()" << std::endl;
+            iState = lifetime_state::Destroying;
+        }
+        void set_destroyed() final
+        {
+            if (iState == lifetime_state::Destroyed)
+                return;
+            if (debug())
+                std::cerr << "lifetime_flag::set_destroyed()" << std::endl;
+            iState = lifetime_state::Destroyed;
+        }
+    public:
+        bool debug() const override
+        {
+            return iDebug;
+        }
+        void set_debug(bool aDebug = true) override
+        {
+            iDebug = aDebug;
+        }
+    private:
+        const i_lifetime& subject() const
+        {
+            return *iSubject;
+        }
+    private:
+        neolib::cookie iCookie;
+        subject_pointer iSubject;
+        owner_pointer iOwner;
+        std::atomic<lifetime_state> iState;
+        bool iDebug;
+    };
 
-	typedef lifetime_flag<lifetime_state::Destroyed> destroyed_flag;
-	typedef std::optional<destroyed_flag> optional_destroyed_flag;
+    typedef lifetime_flag<lifetime_state::Destroyed> destroyed_flag;
+    typedef std::optional<destroyed_flag> optional_destroyed_flag;
 
-	template <typename FlagList>
-	class basic_lifetime : public i_lifetime
-	{
-	private:
-		typedef FlagList flag_list_type;
-	public:
-		typedef neolib::destroyed_flag destroyed_flag;
-		typedef typename flag_list_type::jar_t flags_t;
-	private:
-		typedef typename flag_list_type::mutex_type mutex_type;
-	public:
-		basic_lifetime(lifetime_state aState = lifetime_state::Alive) : iState{ aState }
-		{
-		}
-		virtual ~basic_lifetime()
-		{
-			std::lock_guard<mutex_type> lk(iFlagList.mutex());
-			if (!is_destroyed())
-			{
-				set_destroying();
-				set_destroyed();
-			}
-		}
-	public:
-		lifetime_state object_state() const final
-		{
-			return iState;
-		}
-		bool is_creating() const final
-		{
-			return iState == lifetime_state::Creating;
-		}
-		bool is_alive() const final
-		{
-			return iState == lifetime_state::Alive;
-		}
-		bool is_destroying() const final
-		{
-			return iState == lifetime_state::Destroying;
-		}
-		bool is_destroyed() const final
-		{
-			return iState == lifetime_state::Destroyed;
-		}
-		void set_alive() override
-		{
-			std::lock_guard<mutex_type> lk(iFlagList.mutex());
-			if (!is_creating())
-				throw not_creating();
-			iState = lifetime_state::Alive;
-			for (auto i = flags().begin(); i != flags().end();)
-				(*i++)->set_alive();
-		}
-		void set_destroying() override
-		{
-			std::lock_guard<mutex_type> lk(iFlagList.mutex());
-			if (!is_destroying())
-			{
-				if (is_destroyed())
-					throw already_destroyed();
-				iState = lifetime_state::Destroying;
-				for (auto i = flags().begin(); i != flags().end();)
-					(*i++)->set_destroying();
-			}
-		}
-		void set_destroyed() override
-		{
-			std::lock_guard<mutex_type> lk(iFlagList.mutex());
-			if (!is_destroyed())
-			{
-				if (iState == lifetime_state::Creating || iState == lifetime_state::Alive)
-					set_destroying();
-				iState = lifetime_state::Destroyed;
-				for (auto i = flags().begin(); i != flags().end();)
-					(*i++)->set_destroyed();
-			}
-		}
-	public:
-		neolib::cookie next_cookie() const final
-		{
-			std::lock_guard<mutex_type> lk(flags().mutex());
-			return flags().next_cookie();
-		}
-		void add_flag(i_lifetime_flag* aFlag) const final
-		{
-			std::lock_guard<mutex_type> lk(flags().mutex());
-			flags().add(aFlag);
-			switch (iState)
-			{
-			case lifetime_state::Creating:
-			case lifetime_state::Alive:
-				break;
-			case lifetime_state::Destroying:
-				aFlag->set_destroying();
-				break;
-			case lifetime_state::Destroyed:
-			default:
-				aFlag->set_destroying();
-				aFlag->set_destroyed();
-				break;
-			}
-		}
-		void remove_flag(i_lifetime_flag* aFlag) const final
-		{
-			std::lock_guard<mutex_type> lk(flags().mutex());
-			flags().remove(aFlag);
-		}
-	private:
-		flag_list_type& flags() const
-		{
-			return iFlagList;
-		}
-	private:
-		std::atomic<lifetime_state> iState;
-		mutable flag_list_type iFlagList;
-	};
+    template <typename FlagList>
+    class basic_lifetime : public i_lifetime
+    {
+    private:
+        typedef FlagList flag_list_type;
+    public:
+        typedef neolib::destroyed_flag destroyed_flag;
+        typedef typename flag_list_type::jar_t flags_t;
+    private:
+        typedef typename flag_list_type::mutex_type mutex_type;
+    public:
+        basic_lifetime(lifetime_state aState = lifetime_state::Alive) : iState{ aState }
+        {
+        }
+        virtual ~basic_lifetime()
+        {
+            std::lock_guard<mutex_type> lk(iFlagList.mutex());
+            if (!is_destroyed())
+            {
+                set_destroying();
+                set_destroyed();
+            }
+        }
+    public:
+        lifetime_state object_state() const final
+        {
+            return iState;
+        }
+        bool is_creating() const final
+        {
+            return iState == lifetime_state::Creating;
+        }
+        bool is_alive() const final
+        {
+            return iState == lifetime_state::Alive;
+        }
+        bool is_destroying() const final
+        {
+            return iState == lifetime_state::Destroying;
+        }
+        bool is_destroyed() const final
+        {
+            return iState == lifetime_state::Destroyed;
+        }
+        void set_alive() override
+        {
+            std::lock_guard<mutex_type> lk(iFlagList.mutex());
+            if (!is_creating())
+                throw not_creating();
+            iState = lifetime_state::Alive;
+            for (auto i = flags().begin(); i != flags().end();)
+                (*i++)->set_alive();
+        }
+        void set_destroying() override
+        {
+            std::lock_guard<mutex_type> lk(iFlagList.mutex());
+            if (!is_destroying())
+            {
+                if (is_destroyed())
+                    throw already_destroyed();
+                iState = lifetime_state::Destroying;
+                for (auto i = flags().begin(); i != flags().end();)
+                    (*i++)->set_destroying();
+            }
+        }
+        void set_destroyed() override
+        {
+            std::lock_guard<mutex_type> lk(iFlagList.mutex());
+            if (!is_destroyed())
+            {
+                if (iState == lifetime_state::Creating || iState == lifetime_state::Alive)
+                    set_destroying();
+                iState = lifetime_state::Destroyed;
+                for (auto i = flags().begin(); i != flags().end();)
+                    (*i++)->set_destroyed();
+            }
+        }
+    public:
+        neolib::cookie next_cookie() const final
+        {
+            std::lock_guard<mutex_type> lk(flags().mutex());
+            return flags().next_cookie();
+        }
+        void add_flag(i_lifetime_flag* aFlag) const final
+        {
+            std::lock_guard<mutex_type> lk(flags().mutex());
+            flags().add(aFlag);
+            switch (iState)
+            {
+            case lifetime_state::Creating:
+            case lifetime_state::Alive:
+                break;
+            case lifetime_state::Destroying:
+                aFlag->set_destroying();
+                break;
+            case lifetime_state::Destroyed:
+            default:
+                aFlag->set_destroying();
+                aFlag->set_destroyed();
+                break;
+            }
+        }
+        void remove_flag(i_lifetime_flag* aFlag) const final
+        {
+            std::lock_guard<mutex_type> lk(flags().mutex());
+            flags().remove(aFlag);
+        }
+    private:
+        flag_list_type& flags() const
+        {
+            return iFlagList;
+        }
+    private:
+        std::atomic<lifetime_state> iState;
+        mutable flag_list_type iFlagList;
+    };
 
-	typedef basic_lifetime<cookie_jar<i_lifetime_flag*, null_mutex>> single_threaded_lifetime;
-	typedef basic_lifetime<cookie_jar<i_lifetime_flag*, std::recursive_mutex>> multi_threaded_lifetime;
+    typedef basic_lifetime<cookie_jar<i_lifetime_flag*, null_mutex>> single_threaded_lifetime;
+    typedef basic_lifetime<cookie_jar<i_lifetime_flag*, std::recursive_mutex>> multi_threaded_lifetime;
 
-	typedef multi_threaded_lifetime lifetime;
+    typedef multi_threaded_lifetime lifetime;
 }

@@ -40,17 +40,17 @@
 
 namespace neolib
 {
-	template <typename T>
-	class i_list : public i_sequence_container<T, i_const_iterator<T>, i_iterator<T> >
-	{
-	private:
-		typedef i_sequence_container<T, i_const_iterator<T>, i_iterator<T> > base;
-	public:
-		typedef base::size_type size_type;
-	public:
-		virtual void push_front(const T& aValue) = 0;
-		virtual void pop_front() = 0;
-		virtual const T& front() const = 0;
-		virtual T& front() = 0;
-	};
+    template <typename T>
+    class i_list : public i_sequence_container<T, i_const_iterator<T>, i_iterator<T> >
+    {
+    private:
+        typedef i_sequence_container<T, i_const_iterator<T>, i_iterator<T> > base;
+    public:
+        typedef base::size_type size_type;
+    public:
+        virtual void push_front(const T& aValue) = 0;
+        virtual void pop_front() = 0;
+        virtual const T& front() const = 0;
+        virtual T& front() = 0;
+    };
 }

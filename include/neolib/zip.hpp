@@ -41,42 +41,42 @@
 
 namespace neolib
 {
-	class zip
-	{
-	public:
-		typedef std::vector<uint8_t> buffer_type;
-	public:
-		struct zip_file_too_big : std::runtime_error { zip_file_too_big() : std::runtime_error("neolib::zip::zip_file_too_big") {} };
-		struct file_not_found : std::runtime_error { file_not_found() : std::runtime_error("neolib::zip::file_not_found") {} };
-	public:
-		zip(const std::string& aZipFilePath);
-		zip(const buffer_type& aZipFile);
-		zip(buffer_type&& aZipFile);
-		zip(const void* aZipFileData, std::size_t aZipFileDataLength);
-	public:
-		size_t file_count() const { return iFiles.size(); }
-		std::size_t index_of(const std::string& aFile) const;
-		bool extract(size_t aIndex, const std::string& aTargetDirectory);
-		bool extract_to(size_t aIndex, buffer_type& aBuffer);
-		std::string extract_to_string(size_t aIndex);
-		const std::string& file_path(size_t aIndex) const;
-		bool ok() const { return !iError; }
-	private:
-		bool parse();
-		const uint8_t* data_front();
-		const uint8_t* data_back();
-	private:
-		buffer_type iZipFile;
-		const uint8_t* iZipFileData;
-		std::size_t iZipFileDataLength;
-		bool iError;
-		struct dir_header;
-		struct dir_file_header;
-		struct local_header;
-		typedef unsigned long dword;
-		typedef unsigned short word;
-		typedef unsigned char byte;
-		std::vector<const dir_file_header*> iDirEntries;
-		std::vector<std::string> iFiles;
-	};
+    class zip
+    {
+    public:
+        typedef std::vector<uint8_t> buffer_type;
+    public:
+        struct zip_file_too_big : std::runtime_error { zip_file_too_big() : std::runtime_error("neolib::zip::zip_file_too_big") {} };
+        struct file_not_found : std::runtime_error { file_not_found() : std::runtime_error("neolib::zip::file_not_found") {} };
+    public:
+        zip(const std::string& aZipFilePath);
+        zip(const buffer_type& aZipFile);
+        zip(buffer_type&& aZipFile);
+        zip(const void* aZipFileData, std::size_t aZipFileDataLength);
+    public:
+        size_t file_count() const { return iFiles.size(); }
+        std::size_t index_of(const std::string& aFile) const;
+        bool extract(size_t aIndex, const std::string& aTargetDirectory);
+        bool extract_to(size_t aIndex, buffer_type& aBuffer);
+        std::string extract_to_string(size_t aIndex);
+        const std::string& file_path(size_t aIndex) const;
+        bool ok() const { return !iError; }
+    private:
+        bool parse();
+        const uint8_t* data_front();
+        const uint8_t* data_back();
+    private:
+        buffer_type iZipFile;
+        const uint8_t* iZipFileData;
+        std::size_t iZipFileDataLength;
+        bool iError;
+        struct dir_header;
+        struct dir_file_header;
+        struct local_header;
+        typedef unsigned long dword;
+        typedef unsigned short word;
+        typedef unsigned char byte;
+        std::vector<const dir_file_header*> iDirEntries;
+        std::vector<std::string> iFiles;
+    };
 }

@@ -43,10 +43,10 @@
 
 namespace neolib
 {
-	class i_custom_type_factory : public i_reference_counted
-	{
-	public:
-		virtual i_custom_type* create(const i_string& aType, const i_string& aValue) const = 0;
-	};
+    class i_custom_type_factory : public i_reference_counted
+    {
+    public:
+        virtual i_custom_type* create(const i_string& aType, const i_string& aValue) const = 0;
+    };
 
 }

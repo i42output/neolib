@@ -40,55 +40,55 @@
 
 namespace neolib
 {
-	class i_lifetime_flag : public i_cookie_jar_item
-	{
-	public:
-		typedef uint32_t cookie_type;
-	public:
-		virtual ~i_lifetime_flag() {}
-	public:
-		virtual bool is_creating() const = 0;
-		virtual bool is_alive() const = 0;
-		virtual bool is_destroying() const = 0;
-		virtual bool is_destroyed() const = 0;
-		virtual operator bool() const = 0;
-		virtual void set_alive() = 0;
-		virtual void set_destroying() = 0;
-		virtual void set_destroyed() = 0;
-	public:
-		virtual bool debug() const = 0;
-		virtual void set_debug(bool aDebug = true) = 0;
-	};
+    class i_lifetime_flag : public i_cookie_jar_item
+    {
+    public:
+        typedef uint32_t cookie_type;
+    public:
+        virtual ~i_lifetime_flag() {}
+    public:
+        virtual bool is_creating() const = 0;
+        virtual bool is_alive() const = 0;
+        virtual bool is_destroying() const = 0;
+        virtual bool is_destroyed() const = 0;
+        virtual operator bool() const = 0;
+        virtual void set_alive() = 0;
+        virtual void set_destroying() = 0;
+        virtual void set_destroyed() = 0;
+    public:
+        virtual bool debug() const = 0;
+        virtual void set_debug(bool aDebug = true) = 0;
+    };
 
-	enum class lifetime_state
-	{
-		Creating,
-		Alive,
-		Destroying,
-		Destroyed
-	};
+    enum class lifetime_state
+    {
+        Creating,
+        Alive,
+        Destroying,
+        Destroyed
+    };
 
-	class i_lifetime
-	{
-	public:
-		struct not_creating : std::logic_error { not_creating() : std::logic_error("neolib::i_lifetime::not_creating") {} };
-		struct already_destroyed : std::logic_error { already_destroyed() : std::logic_error("neolib::i_lifetime::already_destroyed") {} };
-	public:
-		typedef i_lifetime_flag::cookie_type cookie_type;
-	public:
-		virtual ~i_lifetime() {}
-	public:
-		virtual lifetime_state object_state() const = 0;
-		virtual bool is_creating() const = 0;
-		virtual bool is_alive() const = 0;
-		virtual bool is_destroying() const = 0;
-		virtual bool is_destroyed() const = 0;
-		virtual void set_alive() = 0;
-		virtual void set_destroying() = 0;
-		virtual void set_destroyed() = 0;
-	public:
-		virtual cookie_type next_cookie() const = 0;
-		virtual void add_flag(i_lifetime_flag* aFlag) const = 0;
-		virtual void remove_flag(i_lifetime_flag* aFlag) const = 0;
-	};
+    class i_lifetime
+    {
+    public:
+        struct not_creating : std::logic_error { not_creating() : std::logic_error("neolib::i_lifetime::not_creating") {} };
+        struct already_destroyed : std::logic_error { already_destroyed() : std::logic_error("neolib::i_lifetime::already_destroyed") {} };
+    public:
+        typedef i_lifetime_flag::cookie_type cookie_type;
+    public:
+        virtual ~i_lifetime() {}
+    public:
+        virtual lifetime_state object_state() const = 0;
+        virtual bool is_creating() const = 0;
+        virtual bool is_alive() const = 0;
+        virtual bool is_destroying() const = 0;
+        virtual bool is_destroyed() const = 0;
+        virtual void set_alive() = 0;
+        virtual void set_destroying() = 0;
+        virtual void set_destroyed() = 0;
+    public:
+        virtual cookie_type next_cookie() const = 0;
+        virtual void add_flag(i_lifetime_flag* aFlag) const = 0;
+        virtual void remove_flag(i_lifetime_flag* aFlag) const = 0;
+    };
 }

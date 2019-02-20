@@ -44,38 +44,38 @@ static_assert(false, "OpenSSL version too old");
 
 namespace neolib
 {
-	openssl::openssl()
-	{
-	}
+    openssl::openssl()
+    {
+    }
 
-	openssl::~openssl()
-	{
-	}
+    openssl::~openssl()
+    {
+    }
 
-	openssl& openssl::instance()
-	{
-		static openssl sInstance;
-		return sInstance;
-	}
+    openssl& openssl::instance()
+    {
+        static openssl sInstance;
+        return sInstance;
+    }
 
-	bool openssl::generate_key(uint8_t* aKeyBuffer, std::size_t aKeySize)
-	{
-		while (need_entropy())
-			generate_entropy();
-		return RAND_bytes(aKeyBuffer, static_cast<int>(aKeySize)) == 1;
-	}
+    bool openssl::generate_key(uint8_t* aKeyBuffer, std::size_t aKeySize)
+    {
+        while (need_entropy())
+            generate_entropy();
+        return RAND_bytes(aKeyBuffer, static_cast<int>(aKeySize)) == 1;
+    }
 
-	bool openssl::need_entropy() const
-	{
-		return RAND_status() == 0;
-	}
+    bool openssl::need_entropy() const
+    {
+        return RAND_status() == 0;
+    }
 
-	void openssl::generate_entropy()
-	{
-		thread_local std::random_device tRandomDevice;
-		thread_local std::random_device::result_type tSeedBuffer[SEED_BUFFER_SIZE];
-		for (std::size_t n = 0; n < SEED_BUFFER_SIZE; ++n)
-			tSeedBuffer[n] = tRandomDevice();
-		RAND_seed(tSeedBuffer, sizeof(tSeedBuffer));
-	}
+    void openssl::generate_entropy()
+    {
+        thread_local std::random_device tRandomDevice;
+        thread_local std::random_device::result_type tSeedBuffer[SEED_BUFFER_SIZE];
+        for (std::size_t n = 0; n < SEED_BUFFER_SIZE; ++n)
+            tSeedBuffer[n] = tRandomDevice();
+        RAND_seed(tSeedBuffer, sizeof(tSeedBuffer));
+    }
 }

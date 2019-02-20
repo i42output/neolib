@@ -44,83 +44,83 @@
 
 namespace neolib
 {
-	class timer : private noncopyable, public lifetime
-	{
-		// types
-	public:
-		struct already_waiting : std::logic_error { already_waiting() : std::logic_error("neolib::timer::already_waiting") {} };
-		struct already_enabled : std::logic_error { already_enabled() : std::logic_error("neolib::timer::already_enabled") {} };
-		struct already_disabled : std::logic_error { already_disabled() : std::logic_error("neolib::timer::already_disabled") {} };
-		struct timer_destroyed : std::logic_error { timer_destroyed() : std::logic_error("neolib::timer::timer_destroyed") {} };
-	private:
-		class handler_proxy
-		{
-		public:
-			handler_proxy(timer& aParent) : iParent(aParent), iOrphaned(false)
-			{
-			}
-		public:
-			void operator()(const boost::system::error_code& aError)
-			{
-				if (!iOrphaned)
-					iParent.handler(aError);
-			}
-			void orphan(bool aCreateNewHandlerProxy = true)
-			{
-				iOrphaned = true;
-				if (aCreateNewHandlerProxy)
-					iParent.iHandlerProxy = std::make_shared<handler_proxy>(iParent);
-				else
-					iParent.iHandlerProxy.reset();
-			}
-		private:
-			timer& iParent;
-			bool iOrphaned;
-		};
-		// construction
-	public:
-		timer(async_task& aIoTask, uint32_t aDuration_ms, bool aInitialWait = true);
-		timer(const timer& aOther);
-		timer& operator=(const timer& aOther);
-		virtual ~timer();
-		// operations
-	public:
-		async_task& owner_task() const;
-		void enable(bool aWait = true);
-		void disable();
-		bool enabled() const;
-		bool disabled() const;
-		void again();
-		void again_if();
-		void cancel();
-		void reset();
-		bool waiting() const;
-		uint32_t duration() const;
-		void set_duration(uint32_t aDuration_ms, bool aEffectiveImmediately = false);
-		uint32_t duration_ms() const;
-		// implementation
-	private:
-		void handler(const boost::system::error_code& aError);
-		virtual void ready() = 0;
-		// attributes
-	private:
-		async_task& iIoTask;
-		std::shared_ptr<handler_proxy> iHandlerProxy;
-		boost::asio::deadline_timer iTimerObject;
-		uint32_t iDuration_ms;
-		bool iEnabled;
-		bool iWaiting;
-		bool iInReady;
-	};
+    class timer : private noncopyable, public lifetime
+    {
+        // types
+    public:
+        struct already_waiting : std::logic_error { already_waiting() : std::logic_error("neolib::timer::already_waiting") {} };
+        struct already_enabled : std::logic_error { already_enabled() : std::logic_error("neolib::timer::already_enabled") {} };
+        struct already_disabled : std::logic_error { already_disabled() : std::logic_error("neolib::timer::already_disabled") {} };
+        struct timer_destroyed : std::logic_error { timer_destroyed() : std::logic_error("neolib::timer::timer_destroyed") {} };
+    private:
+        class handler_proxy
+        {
+        public:
+            handler_proxy(timer& aParent) : iParent(aParent), iOrphaned(false)
+            {
+            }
+        public:
+            void operator()(const boost::system::error_code& aError)
+            {
+                if (!iOrphaned)
+                    iParent.handler(aError);
+            }
+            void orphan(bool aCreateNewHandlerProxy = true)
+            {
+                iOrphaned = true;
+                if (aCreateNewHandlerProxy)
+                    iParent.iHandlerProxy = std::make_shared<handler_proxy>(iParent);
+                else
+                    iParent.iHandlerProxy.reset();
+            }
+        private:
+            timer& iParent;
+            bool iOrphaned;
+        };
+        // construction
+    public:
+        timer(async_task& aIoTask, uint32_t aDuration_ms, bool aInitialWait = true);
+        timer(const timer& aOther);
+        timer& operator=(const timer& aOther);
+        virtual ~timer();
+        // operations
+    public:
+        async_task& owner_task() const;
+        void enable(bool aWait = true);
+        void disable();
+        bool enabled() const;
+        bool disabled() const;
+        void again();
+        void again_if();
+        void cancel();
+        void reset();
+        bool waiting() const;
+        uint32_t duration() const;
+        void set_duration(uint32_t aDuration_ms, bool aEffectiveImmediately = false);
+        uint32_t duration_ms() const;
+        // implementation
+    private:
+        void handler(const boost::system::error_code& aError);
+        virtual void ready() = 0;
+        // attributes
+    private:
+        async_task& iIoTask;
+        std::shared_ptr<handler_proxy> iHandlerProxy;
+        boost::asio::deadline_timer iTimerObject;
+        uint32_t iDuration_ms;
+        bool iEnabled;
+        bool iWaiting;
+        bool iInReady;
+    };
 
-	class callback_timer : public timer
-	{
-	public:
-		callback_timer(async_task& aIoTask, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true);
-		~callback_timer();
-	private:
-		virtual void ready();
-	private:
-		std::function<void(callback_timer&)> iCallback;
-	};
+    class callback_timer : public timer
+    {
+    public:
+        callback_timer(async_task& aIoTask, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true);
+        ~callback_timer();
+    private:
+        virtual void ready();
+    private:
+        std::function<void(callback_timer&)> iCallback;
+    };
 }

@@ -28,19 +28,19 @@
 #ifdef NDEBUG
 
 #ifndef _SCL_SECURE_NO_WARNINGS
-	#define _SCL_SECURE_NO_WARNINGS
+    #define _SCL_SECURE_NO_WARNINGS
 #endif
 
 #ifndef _CRT_SECURE_NO_WARNINGS
-	#define _CRT_SECURE_NO_WARNINGS
+    #define _CRT_SECURE_NO_WARNINGS
 #endif
 
 #ifdef _SECURE_SCL
-	#undef _SECURE_SCL
+    #undef _SECURE_SCL
 #endif
 #define _SECURE_SCL 0
 #ifdef _HAS_ITERATOR_DEBUGGING
-	#undef _HAS_ITERATOR_DEBUGGING
+    #undef _HAS_ITERATOR_DEBUGGING
 #endif
 #define _HAS_ITERATOR_DEBUGGING 0
 
@@ -49,7 +49,7 @@
 #include "targetver.hpp"
 
 #ifndef WIN32_LEAN_AND_MEAN
-	#undef WIN32_LEAN_AND_MEAN
+    #undef WIN32_LEAN_AND_MEAN
 #endif
 
 #ifdef USING_BOOST
@@ -67,20 +67,20 @@ using std::max;
 
 namespace neolib
 {
-	inline std::string win32_get_last_error_as_string()
-	{
-		DWORD errorMessageID = ::GetLastError();
-		if (errorMessageID == 0)
-			return std::string();
+    inline std::string win32_get_last_error_as_string()
+    {
+        DWORD errorMessageID = ::GetLastError();
+        if (errorMessageID == 0)
+            return std::string();
 
-		LPSTR messageBuffer = nullptr;
-		size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-			NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+        LPSTR messageBuffer = nullptr;
+        size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
 
-		std::string message(messageBuffer, size);
+        std::string message(messageBuffer, size);
 
-		LocalFree(messageBuffer);
+        LocalFree(messageBuffer);
 
-		return message;
-	}
+        return message;
+    }
 }

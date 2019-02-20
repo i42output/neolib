@@ -39,11 +39,11 @@
 
 namespace neolib
 {
-	namespace vm
-	{
-		class i_thread
-		{
-		public:
-		};
-	};
+    namespace vm
+    {
+        class i_thread
+        {
+        public:
+        };
+    };
 }

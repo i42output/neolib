@@ -41,19 +41,19 @@
 
 namespace neolib
 {
-	class i_discoverable : public i_reference_counted
-	{
-	public:
-		template <typename Interface>
-		bool discover(i_auto_ref<Interface>& aObject)
-		{
-			void* result = nullptr;
-			if (discover(Interface::id(), result))
-			{
-				aObject.reset(static_cast<Interface*>(result));
-			}
-			return result != nullptr;
-		}
-		virtual bool discover(const uuid& aId, void*& aObject) = 0;
-	};
+    class i_discoverable : public i_reference_counted
+    {
+    public:
+        template <typename Interface>
+        bool discover(i_auto_ref<Interface>& aObject)
+        {
+            void* result = nullptr;
+            if (discover(Interface::id(), result))
+            {
+                aObject.reset(static_cast<Interface*>(result));
+            }
+            return result != nullptr;
+        }
+        virtual bool discover(const uuid& aId, void*& aObject) = 0;
+    };
 }

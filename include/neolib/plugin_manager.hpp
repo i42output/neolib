@@ -48,45 +48,45 @@
 
 namespace neolib
 {
-	class plugin_manager : public reference_counted<i_plugin_manager>, private observable<i_plugin_manager::i_subscriber>
-	{
-		// types
-	private:
-		typedef std::map<uuid, std::unique_ptr<module>> module_list;
-		typedef vector<i_plugin*> plugin_list;
-		// construction
-	public:
-		plugin_manager(i_application& aApplication, const std::string& aPluginFolder);
-		~plugin_manager();
-		// implementation
-	public:
-		// from i_discoverable
-		virtual bool discover(const uuid& aId, void*& aObject);
-		// from i_plugin_manager
-		virtual bool load_plugins();
-		virtual bool load_plugin(const i_string& aPluginPath);
-		virtual void enable_plugin(i_plugin& aPlugin, bool aEnable);
-		virtual bool plugin_enabled(const i_plugin& aPlugin) const;
-		virtual void unload_plugins();
-		virtual const i_vector<i_plugin*>& plugins() const;
-		virtual i_plugin* find_plugin(const uuid& aId) const;
-		virtual bool open_uri(const i_string& aUri);
-	public:
-		virtual void subscribe(i_subscriber& aObserver);
-		virtual void unsubscribe(i_subscriber& aObserver);
-		// implementation
-		// from observable<i_plugin_manager::i_subscriber>
-	private:
-		virtual void notify_observer(observer_type& aObserver, notify_type aType, const void* aParameter, const void* aParameter2);
-		// own
-	private:
-		i_plugin* create_plugin(const i_string& aPluginPath);
-		// attributes
-	private:
-		i_application& iApplication;
-		string iPluginFolder;
-		module_list iModules;
-		plugin_list iPlugins;
-		bool iInitializing;
-	};
+    class plugin_manager : public reference_counted<i_plugin_manager>, private observable<i_plugin_manager::i_subscriber>
+    {
+        // types
+    private:
+        typedef std::map<uuid, std::unique_ptr<module>> module_list;
+        typedef vector<i_plugin*> plugin_list;
+        // construction
+    public:
+        plugin_manager(i_application& aApplication, const std::string& aPluginFolder);
+        ~plugin_manager();
+        // implementation
+    public:
+        // from i_discoverable
+        virtual bool discover(const uuid& aId, void*& aObject);
+        // from i_plugin_manager
+        virtual bool load_plugins();
+        virtual bool load_plugin(const i_string& aPluginPath);
+        virtual void enable_plugin(i_plugin& aPlugin, bool aEnable);
+        virtual bool plugin_enabled(const i_plugin& aPlugin) const;
+        virtual void unload_plugins();
+        virtual const i_vector<i_plugin*>& plugins() const;
+        virtual i_plugin* find_plugin(const uuid& aId) const;
+        virtual bool open_uri(const i_string& aUri);
+    public:
+        virtual void subscribe(i_subscriber& aObserver);
+        virtual void unsubscribe(i_subscriber& aObserver);
+        // implementation
+        // from observable<i_plugin_manager::i_subscriber>
+    private:
+        virtual void notify_observer(observer_type& aObserver, notify_type aType, const void* aParameter, const void* aParameter2);
+        // own
+    private:
+        i_plugin* create_plugin(const i_string& aPluginPath);
+        // attributes
+    private:
+        i_application& iApplication;
+        string iPluginFolder;
+        module_list iModules;
+        plugin_list iPlugins;
+        bool iInitializing;
+    };
 }

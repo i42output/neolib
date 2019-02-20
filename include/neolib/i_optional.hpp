@@ -41,59 +41,59 @@
 
 namespace neolib
 {
-	template<typename T>
-	class i_optional : public i_reference_counted
-	{
-		// types
-	public:
-		typedef T* pointer;
-		typedef const T* const_pointer;
-		typedef T& reference;
-		typedef const T& const_reference;
-		struct not_valid : std::logic_error { not_valid() : std::logic_error("neolib::i_optional::not_valid") {} };
-		// state
-	public:
-		virtual bool valid() const = 0;
-		virtual bool invalid() const = 0;
-		virtual operator bool() const = 0;
-		// element access
-	public:
-		virtual reference get() = 0;
-		virtual const_reference get() const = 0;
-		virtual reference operator*() = 0;
-		virtual const_reference operator*() const = 0;
-		virtual pointer operator->() = 0;
-		virtual const_pointer operator->() const = 0;
-		// modifiers
-	public:
-		virtual void reset() = 0;
-		virtual i_optional<T>& operator=(const i_optional<T>& rhs) = 0;
-		virtual i_optional<T>& operator=(const T& value) = 0;
-	};
+    template<typename T>
+    class i_optional : public i_reference_counted
+    {
+        // types
+    public:
+        typedef T* pointer;
+        typedef const T* const_pointer;
+        typedef T& reference;
+        typedef const T& const_reference;
+        struct not_valid : std::logic_error { not_valid() : std::logic_error("neolib::i_optional::not_valid") {} };
+        // state
+    public:
+        virtual bool valid() const = 0;
+        virtual bool invalid() const = 0;
+        virtual operator bool() const = 0;
+        // element access
+    public:
+        virtual reference get() = 0;
+        virtual const_reference get() const = 0;
+        virtual reference operator*() = 0;
+        virtual const_reference operator*() const = 0;
+        virtual pointer operator->() = 0;
+        virtual const_pointer operator->() const = 0;
+        // modifiers
+    public:
+        virtual void reset() = 0;
+        virtual i_optional<T>& operator=(const i_optional<T>& rhs) = 0;
+        virtual i_optional<T>& operator=(const T& value) = 0;
+    };
 
-	template <typename T>
-	inline bool operator==(const i_optional<T>& lhs, const i_optional<T>& rhs)
-	{
-		if (lhs.valid() != rhs.valid())
-			return false;
-		if (!lhs.valid())
-			return true;
-		return lhs.get() == rhs.get();
-	}
+    template <typename T>
+    inline bool operator==(const i_optional<T>& lhs, const i_optional<T>& rhs)
+    {
+        if (lhs.valid() != rhs.valid())
+            return false;
+        if (!lhs.valid())
+            return true;
+        return lhs.get() == rhs.get();
+    }
 
-	template <typename T>
-	inline bool operator!=(const i_optional<T>& lhs, const i_optional<T>& rhs)
-	{
-		return !(lhs == rhs);
-	}
+    template <typename T>
+    inline bool operator!=(const i_optional<T>& lhs, const i_optional<T>& rhs)
+    {
+        return !(lhs == rhs);
+    }
 
-	template <typename T>
-	inline bool operator<(const i_optional<T>& lhs, const i_optional<T>& rhs)
-	{
-		if (lhs.valid() != rhs.valid())
-			return lhs.valid() < rhs.valid();
-		if (!lhs.valid())
-			return false;
-		return lhs.get() < rhs.get();
-	}
+    template <typename T>
+    inline bool operator<(const i_optional<T>& lhs, const i_optional<T>& rhs)
+    {
+        if (lhs.valid() != rhs.valid())
+            return lhs.valid() < rhs.valid();
+        if (!lhs.valid())
+            return false;
+        return lhs.get() < rhs.get();
+    }
 }

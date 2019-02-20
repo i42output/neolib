@@ -40,25 +40,25 @@
 
 namespace neolib
 {
-	class gunzip
-	{
-		// types
-	public:
-		typedef std::vector<char> compressed_data_t;
-		typedef std::vector<char> uncompressed_data_t;
+    class gunzip
+    {
+        // types
+    public:
+        typedef std::vector<char> compressed_data_t;
+        typedef std::vector<char> uncompressed_data_t;
 
-		// construction
-	public:
-		gunzip(const compressed_data_t& aGzipData);
+        // construction
+    public:
+        gunzip(const compressed_data_t& aGzipData);
 
-		// operations
-	public:
-		bool ok() const { return iOk; }
-		const uncompressed_data_t& uncompressed_data() const { return iUncompressedData; }
+        // operations
+    public:
+        bool ok() const { return iOk; }
+        const uncompressed_data_t& uncompressed_data() const { return iUncompressedData; }
 
-		// attributes
-	private:
-		bool iOk;
-		uncompressed_data_t iUncompressedData;
-	};
+        // attributes
+    private:
+        bool iOk;
+        uncompressed_data_t iUncompressedData;
+    };
 }

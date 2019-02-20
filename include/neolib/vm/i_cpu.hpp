@@ -39,23 +39,23 @@
 
 namespace neolib
 {
-	namespace vm
-	{
-		class i_cpu
-		{
-		public:
-			typedef std::vector<uint8_t> page;
-			typedef std::vector<page> pages;
-		public:
-			struct stack_fault : std::runtime_error { stack_fault() : std::runtime_error("neolib::vm::i_cpu::stack_fault") {} };
-		public:
-			virtual uint32_t cores() const = 0;
-			virtual uint32_t threads() const = 0;
-		public:
-			virtual page* allocate_text_page(uint32_t aSize = 64*1024) = 0;
-			virtual page* allocate_stack_page(uint32_t aSize = 1024*1024) = 0;
-		public:
-			virtual void execute(const uint8_t* aEntryPoint) = 0;
-		};
-	};
+    namespace vm
+    {
+        class i_cpu
+        {
+        public:
+            typedef std::vector<uint8_t> page;
+            typedef std::vector<page> pages;
+        public:
+            struct stack_fault : std::runtime_error { stack_fault() : std::runtime_error("neolib::vm::i_cpu::stack_fault") {} };
+        public:
+            virtual uint32_t cores() const = 0;
+            virtual uint32_t threads() const = 0;
+        public:
+            virtual page* allocate_text_page(uint32_t aSize = 64*1024) = 0;
+            virtual page* allocate_stack_page(uint32_t aSize = 1024*1024) = 0;
+        public:
+            virtual void execute(const uint8_t* aEntryPoint) = 0;
+        };
+    };
 }

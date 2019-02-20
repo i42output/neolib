@@ -40,47 +40,47 @@
 
 namespace neolib
 {
-	namespace stdint_suffix
-	{
-		constexpr std::int8_t operator "" _i8(unsigned long long v)
-		{
-			return static_cast<std::int8_t>(v);
-		}
+    namespace stdint_suffix
+    {
+        constexpr std::int8_t operator "" _i8(unsigned long long v)
+        {
+            return static_cast<std::int8_t>(v);
+        }
 
-		constexpr std::uint8_t operator "" _u8(unsigned long long v)
-		{
-			return static_cast<std::uint8_t>(v);
-		}
+        constexpr std::uint8_t operator "" _u8(unsigned long long v)
+        {
+            return static_cast<std::uint8_t>(v);
+        }
 
-		constexpr std::int16_t operator "" _i16(unsigned long long v)
-		{
-			return static_cast<std::int16_t>(v);
-		}
+        constexpr std::int16_t operator "" _i16(unsigned long long v)
+        {
+            return static_cast<std::int16_t>(v);
+        }
 
-		constexpr std::uint16_t operator "" _u16(unsigned long long v)
-		{
-			return static_cast<std::uint16_t>(v);
-		}
+        constexpr std::uint16_t operator "" _u16(unsigned long long v)
+        {
+            return static_cast<std::uint16_t>(v);
+        }
 
-		constexpr std::int32_t operator "" _i32(unsigned long long v)
-		{
-			return static_cast<std::int32_t>(v);
-		}
+        constexpr std::int32_t operator "" _i32(unsigned long long v)
+        {
+            return static_cast<std::int32_t>(v);
+        }
 
-		constexpr std::uint32_t operator "" _u32(unsigned long long v)
-		{
-			return static_cast<std::uint32_t>(v);
-		}
+        constexpr std::uint32_t operator "" _u32(unsigned long long v)
+        {
+            return static_cast<std::uint32_t>(v);
+        }
 
-		constexpr std::int64_t operator "" _i64(unsigned long long v)
-		{
-			return static_cast<std::int64_t>(v);
-		}
+        constexpr std::int64_t operator "" _i64(unsigned long long v)
+        {
+            return static_cast<std::int64_t>(v);
+        }
 
-		constexpr std::uint64_t operator "" _u64(unsigned long long v)
-		{
-			return static_cast<std::uint64_t>(v);
-		}
+        constexpr std::uint64_t operator "" _u64(unsigned long long v)
+        {
+            return static_cast<std::uint64_t>(v);
+        }
 
 }
 }

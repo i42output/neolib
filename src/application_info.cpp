@@ -46,25 +46,25 @@
 
 namespace neolib
 {
-	std::string settings_folder(const std::string& aApplicationName, const std::string& aCompanyName)
-	{
-		std::string settingsFolder;
+    std::string settings_folder(const std::string& aApplicationName, const std::string& aCompanyName)
+    {
+        std::string settingsFolder;
 #ifdef _WIN32
-		char szPath[MAX_PATH];
-		if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, szPath)))
-		{
-			settingsFolder =  tidy_path(std::string(szPath)) + "/" + aCompanyName + "/" + aApplicationName;
-		}
-		else
-		{
-			throw std::runtime_error("neolib::settings_folder: Cannot get CSIDL_APPDATA folder path");
-		}
+        char szPath[MAX_PATH];
+        if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, szPath)))
+        {
+            settingsFolder =  tidy_path(std::string(szPath)) + "/" + aCompanyName + "/" + aApplicationName;
+        }
+        else
+        {
+            throw std::runtime_error("neolib::settings_folder: Cannot get CSIDL_APPDATA folder path");
+        }
 #else
-		struct passwd *pw = getpwuid(getuid());
-		const char *homedir = pw->pw_dir;
-		settingsFolder = std::string(homedir) + "/." + aApplicationName;
+        struct passwd *pw = getpwuid(getuid());
+        const char *homedir = pw->pw_dir;
+        settingsFolder = std::string(homedir) + "/." + aApplicationName;
 #endif
-		create_path(settingsFolder);
-		return settingsFolder;
-	}
+        create_path(settingsFolder);
+        return settingsFolder;
+    }
 }

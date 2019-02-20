@@ -37,22 +37,22 @@
 
 namespace neolib
 {
-	class win32_module
-	{
-		// construction
-	public:
-		win32_module(const std::string& aPath);
-		~win32_module();
-		// operations
-	public:
-		bool load(const std::string& aPath);
-		void unload();
-		bool loaded() const;
-		void* procedure_address(const std::string& aProcedureName);
-		// attributes
-	private:
-		HMODULE iHandle;
-	};
+    class win32_module
+    {
+        // construction
+    public:
+        win32_module(const std::string& aPath);
+        ~win32_module();
+        // operations
+    public:
+        bool load(const std::string& aPath);
+        void unload();
+        bool loaded() const;
+        void* procedure_address(const std::string& aProcedureName);
+        // attributes
+    private:
+        HMODULE iHandle;
+    };
 
-	typedef win32_module os_module;
+    typedef win32_module os_module;
 }

@@ -38,13 +38,13 @@
 
 namespace neolib
 {
-	async_thread::async_thread(const std::string& aName, bool aAttachToCurrentThread) : 
-		neolib::thread{ aName, aAttachToCurrentThread }, async_task{ static_cast<i_thread&>(*this) }
-	{
-	}
+    async_thread::async_thread(const std::string& aName, bool aAttachToCurrentThread) : 
+        neolib::thread{ aName, aAttachToCurrentThread }, async_task{ static_cast<i_thread&>(*this) }
+    {
+    }
 
-	void async_thread::exec()
-	{
-		run();
-	}
+    void async_thread::exec()
+    {
+        run();
+    }
 }

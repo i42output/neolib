@@ -39,48 +39,48 @@
 
 namespace neolib
 {
-	template <unsigned int N>
-	struct unused_visitee {};
+    template <unsigned int N>
+    struct unused_visitee {};
 
-	template<typename T1, typename T2 = unused_visitee<2>, typename T3 = unused_visitee<3>, typename T4 = unused_visitee<4>,
-		typename T5 = unused_visitee<5>, typename T6 = unused_visitee<6>, typename T7 = unused_visitee<7>, 
-		typename T8 = unused_visitee<8>, typename T9 = unused_visitee<9>, typename T10 = unused_visitee<10> >
-	class visitor
-	{
-	public:
-		virtual ~visitor() {}
-	public:
-		virtual void visit(const T1& aVisitee) const {}
-		virtual void visit(T1& aVisitee) { visit(const_cast<const T1&>(aVisitee)); }
-		virtual void visit(const T2& aVisitee) const {}
-		virtual void visit(T2& aVisitee) { visit(const_cast<const T2&>(aVisitee)); }
-		virtual void visit(const T3& aVisitee) const {}
-		virtual void visit(T3& aVisitee) { visit(const_cast<const T3&>(aVisitee)); }
-		virtual void visit(const T4& aVisitee) const {}
-		virtual void visit(T4& aVisitee) { visit(const_cast<const T4&>(aVisitee)); }
-		virtual void visit(const T5& aVisitee) const {}
-		virtual void visit(T5& aVisitee) { visit(const_cast<const T5&>(aVisitee)); }
-		virtual void visit(const T6& aVisitee) const {}
-		virtual void visit(T6& aVisitee) { visit(const_cast<const T6&>(aVisitee)); }
-		virtual void visit(const T7& aVisitee) const {}
-		virtual void visit(T7& aVisitee) { visit(const_cast<const T7&>(aVisitee)); }
-		virtual void visit(const T8& aVisitee) const {}
-		virtual void visit(T8& aVisitee) { visit(const_cast<const T8&>(aVisitee)); }
-		virtual void visit(const T9& aVisitee) const {}
-		virtual void visit(T9& aVisitee) { visit(const_cast<const T9&>(aVisitee)); }
-		virtual void visit(const T10& aVisitee) const {}
-		virtual void visit(T10& aVisitee) { visit(const_cast<const T10&>(aVisitee)); }
-	};
+    template<typename T1, typename T2 = unused_visitee<2>, typename T3 = unused_visitee<3>, typename T4 = unused_visitee<4>,
+        typename T5 = unused_visitee<5>, typename T6 = unused_visitee<6>, typename T7 = unused_visitee<7>, 
+        typename T8 = unused_visitee<8>, typename T9 = unused_visitee<9>, typename T10 = unused_visitee<10> >
+    class visitor
+    {
+    public:
+        virtual ~visitor() {}
+    public:
+        virtual void visit(const T1& aVisitee) const {}
+        virtual void visit(T1& aVisitee) { visit(const_cast<const T1&>(aVisitee)); }
+        virtual void visit(const T2& aVisitee) const {}
+        virtual void visit(T2& aVisitee) { visit(const_cast<const T2&>(aVisitee)); }
+        virtual void visit(const T3& aVisitee) const {}
+        virtual void visit(T3& aVisitee) { visit(const_cast<const T3&>(aVisitee)); }
+        virtual void visit(const T4& aVisitee) const {}
+        virtual void visit(T4& aVisitee) { visit(const_cast<const T4&>(aVisitee)); }
+        virtual void visit(const T5& aVisitee) const {}
+        virtual void visit(T5& aVisitee) { visit(const_cast<const T5&>(aVisitee)); }
+        virtual void visit(const T6& aVisitee) const {}
+        virtual void visit(T6& aVisitee) { visit(const_cast<const T6&>(aVisitee)); }
+        virtual void visit(const T7& aVisitee) const {}
+        virtual void visit(T7& aVisitee) { visit(const_cast<const T7&>(aVisitee)); }
+        virtual void visit(const T8& aVisitee) const {}
+        virtual void visit(T8& aVisitee) { visit(const_cast<const T8&>(aVisitee)); }
+        virtual void visit(const T9& aVisitee) const {}
+        virtual void visit(T9& aVisitee) { visit(const_cast<const T9&>(aVisitee)); }
+        virtual void visit(const T10& aVisitee) const {}
+        virtual void visit(T10& aVisitee) { visit(const_cast<const T10&>(aVisitee)); }
+    };
 
-	template<typename T1, typename T2 = unused_visitee<2>, typename T3 = unused_visitee<3>, typename T4 = unused_visitee<4>,
-		typename T5 = unused_visitee<5>, typename T6 = unused_visitee<6>, typename T7 = unused_visitee<7>, 
-		typename T8 = unused_visitee<8>, typename T9 = unused_visitee<9>, typename T10 = unused_visitee<10> >
-	class visitee
-	{
-	public:
-		typedef visitor<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> visitor_type;
-	public:
-		virtual void accept(const visitor_type& aVisitor) const = 0;
-		virtual void accept(visitor_type& aVisitor) { accept(const_cast<const visitor_type&>(aVisitor)); }
-	};
+    template<typename T1, typename T2 = unused_visitee<2>, typename T3 = unused_visitee<3>, typename T4 = unused_visitee<4>,
+        typename T5 = unused_visitee<5>, typename T6 = unused_visitee<6>, typename T7 = unused_visitee<7>, 
+        typename T8 = unused_visitee<8>, typename T9 = unused_visitee<9>, typename T10 = unused_visitee<10> >
+    class visitee
+    {
+    public:
+        typedef visitor<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> visitor_type;
+    public:
+        virtual void accept(const visitor_type& aVisitor) const = 0;
+        virtual void accept(visitor_type& aVisitor) { accept(const_cast<const visitor_type&>(aVisitor)); }
+    };
 }

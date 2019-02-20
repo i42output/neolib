@@ -38,45 +38,45 @@
 
 namespace neolib
 {
-	void setting::set(const i_simple_variant& aNewValue)
-	{
-		if (iValue != aNewValue)
-		{
-			if (iValue.empty())
-				iValue = aNewValue;
-			else if (iNewValue != aNewValue)
-			{
-				iNewValue = aNewValue;
-				iManager.setting_changed(*this);
-			}
-		}
-		else if (!iNewValue.empty())
-		{
-			iNewValue = none;
-			iManager.setting_changed(*this);
-		}
-	}
+    void setting::set(const i_simple_variant& aNewValue)
+    {
+        if (iValue != aNewValue)
+        {
+            if (iValue.empty())
+                iValue = aNewValue;
+            else if (iNewValue != aNewValue)
+            {
+                iNewValue = aNewValue;
+                iManager.setting_changed(*this);
+            }
+        }
+        else if (!iNewValue.empty())
+        {
+            iNewValue = none;
+            iManager.setting_changed(*this);
+        }
+    }
 
-	bool setting::apply_change() 
-	{ 
-		if (!iNewValue.empty())
-		{
-			iValue = iNewValue;
-			iNewValue = none;
-			iManager.setting_changed(*this);
-			return true;
-		}
-		return false;
-	}
-	
-	bool setting::discard_change() 
-	{ 
-		if (!iNewValue.empty())
-		{
-			iNewValue = none;
-			iManager.setting_changed(*this);
-			return true;
-		}
-		return false;
-	}
+    bool setting::apply_change() 
+    { 
+        if (!iNewValue.empty())
+        {
+            iValue = iNewValue;
+            iNewValue = none;
+            iManager.setting_changed(*this);
+            return true;
+        }
+        return false;
+    }
+    
+    bool setting::discard_change() 
+    { 
+        if (!iNewValue.empty())
+        {
+            iNewValue = none;
+            iManager.setting_changed(*this);
+            return true;
+        }
+        return false;
+    }
 }

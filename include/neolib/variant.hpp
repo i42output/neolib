@@ -42,103 +42,103 @@
 
 namespace neolib
 {
-	typedef std::monostate none_t;
-	const none_t none;
+    typedef std::monostate none_t;
+    const none_t none;
 
-	template <typename... Types>
-	class variant : public std::variant<none_t, Types...>
-	{
-	public:
-		typedef std::variant<none_t, Types...> value_type;
-	public:
-		variant() :
-			value_type()
-		{
-		}
-		variant(const variant& aOther) :
-			value_type{ static_cast<const value_type&>(aOther) }
-		{
-		}
-		variant(variant&& aOther) :
-			value_type{ static_cast<value_type&&>(std::move(aOther)) }
-		{
-		}
-		template <typename T, std::enable_if_t<!std::is_same_v<std::decay_t<T>, variant>, int> = 0>
-		variant(T&& aArgument) : 
-			value_type{ std::forward<T>(aArgument) }
-		{
-		}
-	public:
-		variant& operator=(const variant& aOther)
-		{
-			value_type::operator=(static_cast<const value_type&>(aOther));
-			return *this;
-		}
-		variant& operator=(variant&& aOther)
-		{
-			value_type::operator=(static_cast<value_type&&>(std::move(aOther)));
-			return *this;
-		}
-		template <typename T, std::enable_if_t<!std::is_same_v<std::decay_t<T>, variant>, int> = 0>
-		variant& operator=(T&& aArgument)
-		{
-			value_type::operator=(std::forward<T>(aArgument));
-			return *this;
-		}
-	public:
-		const value_type& for_visitor() const
-		{
-			return *this;
-		}
-		value_type& for_visitor()
-		{
-			return *this;
-		}
-	public:
-		bool operator==(const none_t) const
-		{
-			return std::holds_alternative<std::monostate>(*this);
-		}
-		bool operator!=(const none_t) const
-		{
-			return !std::holds_alternative<std::monostate>(*this);
-		}
-	};
+    template <typename... Types>
+    class variant : public std::variant<none_t, Types...>
+    {
+    public:
+        typedef std::variant<none_t, Types...> value_type;
+    public:
+        variant() :
+            value_type()
+        {
+        }
+        variant(const variant& aOther) :
+            value_type{ static_cast<const value_type&>(aOther) }
+        {
+        }
+        variant(variant&& aOther) :
+            value_type{ static_cast<value_type&&>(std::move(aOther)) }
+        {
+        }
+        template <typename T, std::enable_if_t<!std::is_same_v<std::decay_t<T>, variant>, int> = 0>
+        variant(T&& aArgument) : 
+            value_type{ std::forward<T>(aArgument) }
+        {
+        }
+    public:
+        variant& operator=(const variant& aOther)
+        {
+            value_type::operator=(static_cast<const value_type&>(aOther));
+            return *this;
+        }
+        variant& operator=(variant&& aOther)
+        {
+            value_type::operator=(static_cast<value_type&&>(std::move(aOther)));
+            return *this;
+        }
+        template <typename T, std::enable_if_t<!std::is_same_v<std::decay_t<T>, variant>, int> = 0>
+        variant& operator=(T&& aArgument)
+        {
+            value_type::operator=(std::forward<T>(aArgument));
+            return *this;
+        }
+    public:
+        const value_type& for_visitor() const
+        {
+            return *this;
+        }
+        value_type& for_visitor()
+        {
+            return *this;
+        }
+    public:
+        bool operator==(const none_t) const
+        {
+            return std::holds_alternative<std::monostate>(*this);
+        }
+        bool operator!=(const none_t) const
+        {
+            return !std::holds_alternative<std::monostate>(*this);
+        }
+    };
 
-	// Deprecated, use std::get.
-	template <typename T, typename Variant>
-	inline T static_variant_cast(const Variant& aVariant)
-	{
-		typedef T result_type;
-		typedef typename std::remove_cv<typename std::remove_reference<result_type>::type>::type alternative_type;
-		auto& result = std::get<alternative_type>(aVariant);
-		return static_cast<result_type>(result);
-	}
+    // Deprecated, use std::get.
+    template <typename T, typename Variant>
+    inline T static_variant_cast(const Variant& aVariant)
+    {
+        typedef T result_type;
+        typedef typename std::remove_cv<typename std::remove_reference<result_type>::type>::type alternative_type;
+        auto& result = std::get<alternative_type>(aVariant);
+        return static_cast<result_type>(result);
+    }
 
-	// Deprecated, use std::get.
-	template <typename T, typename Variant>
-	inline T static_variant_cast(Variant& aVariant)
-	{ 
-		typedef T result_type;
-		typedef typename std::remove_cv<typename std::remove_reference<result_type>::type>::type alternative_type;
-		auto& result = std::get<alternative_type>(aVariant);
-		return static_cast<result_type>(result);
-	}
+    // Deprecated, use std::get.
+    template <typename T, typename Variant>
+    inline T static_variant_cast(Variant& aVariant)
+    { 
+        typedef T result_type;
+        typedef typename std::remove_cv<typename std::remove_reference<result_type>::type>::type alternative_type;
+        auto& result = std::get<alternative_type>(aVariant);
+        return static_cast<result_type>(result);
+    }
 }
 
 namespace std
 {
-	template <typename Visitor, typename... Types>
-	auto visit(Visitor&& vis, const neolib::variant<Types...>& var)
-	{
-		return std::visit(std::forward<Visitor>(vis), var.for_visitor());
-	}
+    template <typename Visitor, typename... Types>
+    auto visit(Visitor&& vis, const neolib::variant<Types...>& var)
+    {
+        return std::visit(std::forward<Visitor>(vis), var.for_visitor());
+    }
 
-	template <typename Visitor, typename... Types>
-	auto visit(Visitor&& vis, neolib::variant<Types...>& var)
-	{
-		return std::visit(std::forward<Visitor>(vis), var.for_visitor());
-	}
+    template <typename Visitor, typename... Types>
+    auto visit(Visitor&& vis, neolib::variant<Types...>& var)
+    {
+        return std::visit(std::forward<Visitor>(vis), var.for_visitor());
+    }
 }
 
 // Deprecated, use std::get.

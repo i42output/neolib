@@ -44,349 +44,349 @@
 
 namespace neolib
 {
-	typedef uint32_t cookie;
-	typedef uint16_t small_cookie;
+    typedef uint32_t cookie;
+    typedef uint16_t small_cookie;
 
-	template <typename CookieType = cookie>
-	class i_basic_cookie_jar_item
-	{
-	public:
-		typedef CookieType cookie_type;
-	public:
-		virtual ~i_basic_cookie_jar_item() {}
-	public:
-		virtual cookie_type cookie() const = 0;
-	};
+    template <typename CookieType = cookie>
+    class i_basic_cookie_jar_item
+    {
+    public:
+        typedef CookieType cookie_type;
+    public:
+        virtual ~i_basic_cookie_jar_item() {}
+    public:
+        virtual cookie_type cookie() const = 0;
+    };
 
-	template <typename CookieType>
-	inline CookieType item_cookie(const i_basic_cookie_jar_item<CookieType>& aItem)
-	{
-		return aItem.cookie();
-	}
+    template <typename CookieType>
+    inline CookieType item_cookie(const i_basic_cookie_jar_item<CookieType>& aItem)
+    {
+        return aItem.cookie();
+    }
 
-	template <typename CookieType>
-	inline CookieType item_cookie(const i_basic_cookie_jar_item<CookieType>* aItem)
-	{
-		return aItem->cookie();
-	}
+    template <typename CookieType>
+    inline CookieType item_cookie(const i_basic_cookie_jar_item<CookieType>* aItem)
+    {
+        return aItem->cookie();
+    }
 
-	template <typename T>
-	inline auto item_cookie(const std::unique_ptr<T>& aPtr) -> decltype(item_cookie(*aPtr))
-	{
-		return item_cookie(*aPtr);
-	}
+    template <typename T>
+    inline auto item_cookie(const std::unique_ptr<T>& aPtr) -> decltype(item_cookie(*aPtr))
+    {
+        return item_cookie(*aPtr);
+    }
 
-	template <typename CookieType>
-	class i_basic_cookie_consumer
-	{
-	public:
-		typedef CookieType cookie_type;
-	public:
-		struct invalid_release : std::logic_error { invalid_release() : std::logic_error("neolib::i_basic_cookie_consumer::invalid_release") {} };
-	public:
-		virtual ~i_basic_cookie_consumer() {}
-	public:
-		virtual void add_ref(cookie_type aCookie) = 0;
-		virtual void release(cookie_type aCookie) = 0;
-		virtual long use_count(cookie_type aCookie) const = 0;
-	};
+    template <typename CookieType>
+    class i_basic_cookie_consumer
+    {
+    public:
+        typedef CookieType cookie_type;
+    public:
+        struct invalid_release : std::logic_error { invalid_release() : std::logic_error("neolib::i_basic_cookie_consumer::invalid_release") {} };
+    public:
+        virtual ~i_basic_cookie_consumer() {}
+    public:
+        virtual void add_ref(cookie_type aCookie) = 0;
+        virtual void release(cookie_type aCookie) = 0;
+        virtual long use_count(cookie_type aCookie) const = 0;
+    };
 
-	template <typename CookieType>
-	class basic_cookie_auto_ref
-	{
-	public:
-		typedef CookieType cookie_type;
-		static constexpr cookie_type no_cookie = cookie_type{};
-	public:
-		basic_cookie_auto_ref() :
-			iConsumer{ nullptr },
-			iCookie{ no_cookie }
-		{
-		}
-		basic_cookie_auto_ref(i_basic_cookie_consumer<cookie_type>& aConsumer, cookie_type aCookie) :
-			iConsumer{ &aConsumer },
-			iCookie{ aCookie }
-		{
-			add_ref();
-		}
-		~basic_cookie_auto_ref()
-		{
-			release();
-		}
-		basic_cookie_auto_ref(const basic_cookie_auto_ref& aOther) :
-			iConsumer{ aOther.iConsumer },
-			iCookie{ aOther.iCookie }
-		{
-			add_ref();
-		}
-		basic_cookie_auto_ref(basic_cookie_auto_ref&& aOther) :
-			iConsumer{ aOther.iConsumer },
-			iCookie{ aOther.iCookie }
-		{
-			add_ref();
-			aOther.release();
-		}
-	public:
-		basic_cookie_auto_ref& operator=(const basic_cookie_auto_ref& aOther)
-		{
-			if (&aOther == this)
-				return *this;
-			basic_cookie_auto_ref temp{ std::move(*this) };
-			iConsumer = aOther.iConsumer;
-			iCookie = aOther.iCookie;
-			add_ref();
-			return *this;
-		}
-		basic_cookie_auto_ref& operator=(basic_cookie_auto_ref&& aOther)
-		{
-			if (&aOther == this)
-				return *this;
-			basic_cookie_auto_ref temp{ std::move(*this) };
-			iConsumer = aOther.iConsumer;
-			iCookie = aOther.iCookie;
-			add_ref();
-			aOther.release();
-			return *this;
-		}
-	public:
-		bool operator==(const basic_cookie_auto_ref& aRhs) const
-		{
-			return iConsumer == aRhs.iConsumer && iCookie == aRhs.iCookie;
-		}
-		bool operator!=(const basic_cookie_auto_ref& aRhs) const
-		{
-			return !(*this == aRhs);
-		}
-		bool operator<(const basic_cookie_auto_ref& aRhs) const
-		{
-			return std::tie(iConsumer, iCookie) < std::tie(aRhs.iConsumer, aRhs.iCookie);
-		}
-	public:
-		bool valid() const
-		{
-			return have_consumer() && have_cookie();
-		}
-		bool expired() const
-		{
-			return !valid();
-		}
-		cookie_type cookie() const
-		{
-			return iCookie;
-		}
-	private:
-		void add_ref() const
-		{
-			if (!valid())
-				return;
-			consumer().add_ref(cookie());
-		}
-		void release() const
-		{
-			if (!valid())
-				return;
-			consumer().release(cookie());
-			iConsumer = nullptr;
-			iCookie = no_cookie;
-		}
-		bool have_consumer() const
-		{
-			return iConsumer != nullptr;
-		}
-		i_basic_cookie_consumer<cookie_type>& consumer() const
-		{
-			return *iConsumer;
-		}
-		bool have_cookie() const
-		{
-			return iCookie != no_cookie;
-		}
-	private:
-		mutable i_basic_cookie_consumer<cookie_type>* iConsumer;
-		mutable cookie_type iCookie;
-	};
+    template <typename CookieType>
+    class basic_cookie_auto_ref
+    {
+    public:
+        typedef CookieType cookie_type;
+        static constexpr cookie_type no_cookie = cookie_type{};
+    public:
+        basic_cookie_auto_ref() :
+            iConsumer{ nullptr },
+            iCookie{ no_cookie }
+        {
+        }
+        basic_cookie_auto_ref(i_basic_cookie_consumer<cookie_type>& aConsumer, cookie_type aCookie) :
+            iConsumer{ &aConsumer },
+            iCookie{ aCookie }
+        {
+            add_ref();
+        }
+        ~basic_cookie_auto_ref()
+        {
+            release();
+        }
+        basic_cookie_auto_ref(const basic_cookie_auto_ref& aOther) :
+            iConsumer{ aOther.iConsumer },
+            iCookie{ aOther.iCookie }
+        {
+            add_ref();
+        }
+        basic_cookie_auto_ref(basic_cookie_auto_ref&& aOther) :
+            iConsumer{ aOther.iConsumer },
+            iCookie{ aOther.iCookie }
+        {
+            add_ref();
+            aOther.release();
+        }
+    public:
+        basic_cookie_auto_ref& operator=(const basic_cookie_auto_ref& aOther)
+        {
+            if (&aOther == this)
+                return *this;
+            basic_cookie_auto_ref temp{ std::move(*this) };
+            iConsumer = aOther.iConsumer;
+            iCookie = aOther.iCookie;
+            add_ref();
+            return *this;
+        }
+        basic_cookie_auto_ref& operator=(basic_cookie_auto_ref&& aOther)
+        {
+            if (&aOther == this)
+                return *this;
+            basic_cookie_auto_ref temp{ std::move(*this) };
+            iConsumer = aOther.iConsumer;
+            iCookie = aOther.iCookie;
+            add_ref();
+            aOther.release();
+            return *this;
+        }
+    public:
+        bool operator==(const basic_cookie_auto_ref& aRhs) const
+        {
+            return iConsumer == aRhs.iConsumer && iCookie == aRhs.iCookie;
+        }
+        bool operator!=(const basic_cookie_auto_ref& aRhs) const
+        {
+            return !(*this == aRhs);
+        }
+        bool operator<(const basic_cookie_auto_ref& aRhs) const
+        {
+            return std::tie(iConsumer, iCookie) < std::tie(aRhs.iConsumer, aRhs.iCookie);
+        }
+    public:
+        bool valid() const
+        {
+            return have_consumer() && have_cookie();
+        }
+        bool expired() const
+        {
+            return !valid();
+        }
+        cookie_type cookie() const
+        {
+            return iCookie;
+        }
+    private:
+        void add_ref() const
+        {
+            if (!valid())
+                return;
+            consumer().add_ref(cookie());
+        }
+        void release() const
+        {
+            if (!valid())
+                return;
+            consumer().release(cookie());
+            iConsumer = nullptr;
+            iCookie = no_cookie;
+        }
+        bool have_consumer() const
+        {
+            return iConsumer != nullptr;
+        }
+        i_basic_cookie_consumer<cookie_type>& consumer() const
+        {
+            return *iConsumer;
+        }
+        bool have_cookie() const
+        {
+            return iCookie != no_cookie;
+        }
+    private:
+        mutable i_basic_cookie_consumer<cookie_type>* iConsumer;
+        mutable cookie_type iCookie;
+    };
 
-	template <typename T, typename CookieType = cookie, typename MutexType = std::recursive_mutex>
-	class basic_cookie_jar
-	{
-	public:
-		typedef CookieType cookie_type;
-	public:
-		typedef T value_type;
-		typedef std::vector<value_type> jar_t;
-		typedef typename jar_t::const_iterator const_iterator;
-		typedef typename jar_t::iterator iterator;
-		typedef MutexType mutex_type;
-	private:
-		typedef typename jar_t::size_type reverse_index_t;
-		typedef std::vector<reverse_index_t> reverse_indices_t;
-		typedef std::vector<cookie_type> free_cookies_t;
-	private:
-		static constexpr cookie_type INVALID_COOKIE = static_cast<cookie_type>(~cookie_type{});
-		static constexpr reverse_index_t INVALID_REVERSE_INDEX = static_cast<reverse_index_t>(~reverse_index_t{});
-	public:
-		struct invalid_cookie : std::logic_error { invalid_cookie() : std::logic_error("neolib::basic_cookie_jar::invalid_cookie") {} };
-		struct cookie_already_added : std::logic_error { cookie_already_added() : std::logic_error("neolib::basic_cookie_jar::cookie_already_added") {} };
-		struct cookies_exhausted : std::logic_error { cookies_exhausted() : std::logic_error("neolib::basic_cookie_jar::cookies_exhausted") {} };
-	public:
-		basic_cookie_jar() : iNextAvailableCookie{}
-		{
-		}
-	public:
-		bool contains(cookie_type aCookie) const
-		{
-			std::lock_guard<mutex_type> lg{ mutex() };
-			return aCookie < reverse_indices().size() && reverse_indices()[aCookie] != INVALID_REVERSE_INDEX;
-		}
-		const value_type& operator[](cookie_type aCookie) const
-		{
-			std::lock_guard<mutex_type> lg{ mutex() };
-			if (aCookie >= reverse_indices().size())
-				throw invalid_cookie();
-			auto reverseIndex = reverse_indices()[aCookie];
-			if (reverseIndex == INVALID_REVERSE_INDEX)
-				throw invalid_cookie();
-			return jar()[reverseIndex];
-		}
-		value_type& operator[](cookie_type aCookie)
-		{
-			return const_cast<value_type&>(const_cast<const basic_cookie_jar&>(*this)[aCookie]);
-		}
-		template <typename T>
-		iterator add(T&& aItem)
-		{
-			std::lock_guard<mutex_type> lg{ mutex() };
-			auto cookie = item_cookie(aItem);
-			if (reverse_indices().size() <= cookie)
-				reverse_indices().resize(cookie + 1, INVALID_REVERSE_INDEX);
-			if (reverse_indices()[cookie] != INVALID_REVERSE_INDEX)
-				throw cookie_already_added();
-			auto result = jar().insert(jar().end(), std::forward<T>(aItem));
-			reverse_indices()[cookie] = jar().size() - 1;
-			return result;
-		}
-		iterator remove(const value_type& aItem)
-		{
-			std::lock_guard<mutex_type> lg{ mutex() };
-			return remove(item_cookie(aItem));
-		}
-		iterator remove(cookie_type aCookie)
-		{
-			std::lock_guard<mutex_type> lg{ mutex() };
-			auto& reverseIndex = reverse_indices()[aCookie];
-			if (reverseIndex == INVALID_REVERSE_INDEX)
-				throw invalid_cookie();
-			if (reverseIndex < jar().size() - 1)
-			{
-				auto& item = jar()[reverseIndex];
-				std::swap(item, jar().back());
-				reverse_indices()[item_cookie(item)] = reverseIndex;
-			}
-			jar().pop_back();
-			iterator result = std::next(jar().begin(), reverseIndex);
-			reverseIndex = INVALID_REVERSE_INDEX;
-			return_cookie(aCookie);
-			return result;
-		}
-	public:
-		cookie_type next_cookie()
-		{
-			std::lock_guard<mutex_type> lg{ mutex() };
-			if (!free_cookies().empty())
-			{
-				auto nextCookie = free_cookies().back();
-				free_cookies().pop_back();
-				return nextCookie;
-			}
-			auto nextCookie = ++iNextAvailableCookie;
-			if (nextCookie == INVALID_COOKIE)
-				throw cookies_exhausted();
-			return nextCookie;
-		}
-		void return_cookie(cookie_type aCookie)
-		{
-			std::lock_guard<mutex_type> lg{ mutex() };
-			free_cookies().push_back(aCookie);
-		}
-	public:
-		mutex_type& mutex() const
-		{
-			return iMutex;
-		}
-		const_iterator cbegin() const
-		{
-			return jar().begin();
-		}
-		const_iterator begin() const
-		{
-			return cbegin();
-		}
-		iterator begin()
-		{
-			return jar().begin();
-		}
-		const_iterator cend() const
-		{
-			return jar().end();
-		}
-		const_iterator end() const
-		{
-			return cend();
-		}
-		iterator end()
-		{
-			return jar().end();
-		}
-	public:
-		void clear()
-		{
-			std::lock_guard<mutex_type> lg{ mutex() };
-			iNextAvailableCookie = 0ul;
-			free_cookies().clear();
-			jar().clear();
-			reverse_indices().clear();
-		}
-	private:
-		const jar_t& jar() const
-		{
-			return iJar;
-		}
-		jar_t& jar()
-		{
-			return iJar;
-		}
-		const reverse_indices_t& reverse_indices() const
-		{
-			return iReverseIndices;
-		}
-		reverse_indices_t& reverse_indices()
-		{
-			return iReverseIndices;
-		}
-		const free_cookies_t& free_cookies() const
-		{
-			return iFreeCookies;
-		}
-		free_cookies_t& free_cookies()
-		{
-			return iFreeCookies;
-		}
-	private:
-		mutable mutex_type iMutex;
-		mutable std::atomic<cookie_type> iNextAvailableCookie;
-		mutable free_cookies_t iFreeCookies;
-		jar_t iJar;
-		reverse_indices_t iReverseIndices;
-	};
+    template <typename T, typename CookieType = cookie, typename MutexType = std::recursive_mutex>
+    class basic_cookie_jar
+    {
+    public:
+        typedef CookieType cookie_type;
+    public:
+        typedef T value_type;
+        typedef std::vector<value_type> jar_t;
+        typedef typename jar_t::const_iterator const_iterator;
+        typedef typename jar_t::iterator iterator;
+        typedef MutexType mutex_type;
+    private:
+        typedef typename jar_t::size_type reverse_index_t;
+        typedef std::vector<reverse_index_t> reverse_indices_t;
+        typedef std::vector<cookie_type> free_cookies_t;
+    private:
+        static constexpr cookie_type INVALID_COOKIE = static_cast<cookie_type>(~cookie_type{});
+        static constexpr reverse_index_t INVALID_REVERSE_INDEX = static_cast<reverse_index_t>(~reverse_index_t{});
+    public:
+        struct invalid_cookie : std::logic_error { invalid_cookie() : std::logic_error("neolib::basic_cookie_jar::invalid_cookie") {} };
+        struct cookie_already_added : std::logic_error { cookie_already_added() : std::logic_error("neolib::basic_cookie_jar::cookie_already_added") {} };
+        struct cookies_exhausted : std::logic_error { cookies_exhausted() : std::logic_error("neolib::basic_cookie_jar::cookies_exhausted") {} };
+    public:
+        basic_cookie_jar() : iNextAvailableCookie{}
+        {
+        }
+    public:
+        bool contains(cookie_type aCookie) const
+        {
+            std::lock_guard<mutex_type> lg{ mutex() };
+            return aCookie < reverse_indices().size() && reverse_indices()[aCookie] != INVALID_REVERSE_INDEX;
+        }
+        const value_type& operator[](cookie_type aCookie) const
+        {
+            std::lock_guard<mutex_type> lg{ mutex() };
+            if (aCookie >= reverse_indices().size())
+                throw invalid_cookie();
+            auto reverseIndex = reverse_indices()[aCookie];
+            if (reverseIndex == INVALID_REVERSE_INDEX)
+                throw invalid_cookie();
+            return jar()[reverseIndex];
+        }
+        value_type& operator[](cookie_type aCookie)
+        {
+            return const_cast<value_type&>(const_cast<const basic_cookie_jar&>(*this)[aCookie]);
+        }
+        template <typename T>
+        iterator add(T&& aItem)
+        {
+            std::lock_guard<mutex_type> lg{ mutex() };
+            auto cookie = item_cookie(aItem);
+            if (reverse_indices().size() <= cookie)
+                reverse_indices().resize(cookie + 1, INVALID_REVERSE_INDEX);
+            if (reverse_indices()[cookie] != INVALID_REVERSE_INDEX)
+                throw cookie_already_added();
+            auto result = jar().insert(jar().end(), std::forward<T>(aItem));
+            reverse_indices()[cookie] = jar().size() - 1;
+            return result;
+        }
+        iterator remove(const value_type& aItem)
+        {
+            std::lock_guard<mutex_type> lg{ mutex() };
+            return remove(item_cookie(aItem));
+        }
+        iterator remove(cookie_type aCookie)
+        {
+            std::lock_guard<mutex_type> lg{ mutex() };
+            auto& reverseIndex = reverse_indices()[aCookie];
+            if (reverseIndex == INVALID_REVERSE_INDEX)
+                throw invalid_cookie();
+            if (reverseIndex < jar().size() - 1)
+            {
+                auto& item = jar()[reverseIndex];
+                std::swap(item, jar().back());
+                reverse_indices()[item_cookie(item)] = reverseIndex;
+            }
+            jar().pop_back();
+            iterator result = std::next(jar().begin(), reverseIndex);
+            reverseIndex = INVALID_REVERSE_INDEX;
+            return_cookie(aCookie);
+            return result;
+        }
+    public:
+        cookie_type next_cookie()
+        {
+            std::lock_guard<mutex_type> lg{ mutex() };
+            if (!free_cookies().empty())
+            {
+                auto nextCookie = free_cookies().back();
+                free_cookies().pop_back();
+                return nextCookie;
+            }
+            auto nextCookie = ++iNextAvailableCookie;
+            if (nextCookie == INVALID_COOKIE)
+                throw cookies_exhausted();
+            return nextCookie;
+        }
+        void return_cookie(cookie_type aCookie)
+        {
+            std::lock_guard<mutex_type> lg{ mutex() };
+            free_cookies().push_back(aCookie);
+        }
+    public:
+        mutex_type& mutex() const
+        {
+            return iMutex;
+        }
+        const_iterator cbegin() const
+        {
+            return jar().begin();
+        }
+        const_iterator begin() const
+        {
+            return cbegin();
+        }
+        iterator begin()
+        {
+            return jar().begin();
+        }
+        const_iterator cend() const
+        {
+            return jar().end();
+        }
+        const_iterator end() const
+        {
+            return cend();
+        }
+        iterator end()
+        {
+            return jar().end();
+        }
+    public:
+        void clear()
+        {
+            std::lock_guard<mutex_type> lg{ mutex() };
+            iNextAvailableCookie = 0ul;
+            free_cookies().clear();
+            jar().clear();
+            reverse_indices().clear();
+        }
+    private:
+        const jar_t& jar() const
+        {
+            return iJar;
+        }
+        jar_t& jar()
+        {
+            return iJar;
+        }
+        const reverse_indices_t& reverse_indices() const
+        {
+            return iReverseIndices;
+        }
+        reverse_indices_t& reverse_indices()
+        {
+            return iReverseIndices;
+        }
+        const free_cookies_t& free_cookies() const
+        {
+            return iFreeCookies;
+        }
+        free_cookies_t& free_cookies()
+        {
+            return iFreeCookies;
+        }
+    private:
+        mutable mutex_type iMutex;
+        mutable std::atomic<cookie_type> iNextAvailableCookie;
+        mutable free_cookies_t iFreeCookies;
+        jar_t iJar;
+        reverse_indices_t iReverseIndices;
+    };
 
-	typedef i_basic_cookie_consumer<cookie> i_cookie_consumer;
-	typedef i_basic_cookie_consumer<small_cookie> i_small_cookie_consumer;
-	typedef i_basic_cookie_jar_item<cookie> i_cookie_jar_item;
-	typedef i_basic_cookie_jar_item<small_cookie> i_small_cookie_jar_item;
-	typedef basic_cookie_auto_ref<cookie> cookie_auto_ref;
-	typedef basic_cookie_auto_ref<small_cookie> small_cookie_auto_ref;
-	template <typename T, typename MutexType = std::recursive_mutex>
-	using cookie_jar = basic_cookie_jar<T, cookie, MutexType>;
-	template <typename T, typename MutexType = std::recursive_mutex>
-	using small_cookie_jar = basic_cookie_jar<T, small_cookie, MutexType>;
+    typedef i_basic_cookie_consumer<cookie> i_cookie_consumer;
+    typedef i_basic_cookie_consumer<small_cookie> i_small_cookie_consumer;
+    typedef i_basic_cookie_jar_item<cookie> i_cookie_jar_item;
+    typedef i_basic_cookie_jar_item<small_cookie> i_small_cookie_jar_item;
+    typedef basic_cookie_auto_ref<cookie> cookie_auto_ref;
+    typedef basic_cookie_auto_ref<small_cookie> small_cookie_auto_ref;
+    template <typename T, typename MutexType = std::recursive_mutex>
+    using cookie_jar = basic_cookie_jar<T, cookie, MutexType>;
+    template <typename T, typename MutexType = std::recursive_mutex>
+    using small_cookie_jar = basic_cookie_jar<T, small_cookie, MutexType>;
 }

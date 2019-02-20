@@ -41,74 +41,74 @@
 
 namespace neolib
 {
-	class DefaultPacketTraits
-	{
-	public:
-		static const bool NetworkByteOrder = true;
-	};
+    class DefaultPacketTraits
+    {
+    public:
+        static const bool NetworkByteOrder = true;
+    };
 
-	template <typename CharType, typename PacketTraits = DefaultPacketTraits>
-	class basic_binary_data_packet : basic_data_packet<CharType>
-	{
-		// types
-	public:
-		typedef basic_binary_data_packet<CharType, PacketTraits> our_type;
-		typedef basic_data_packet<CharType> base_type;
-		typedef base_type::character_type character_type;
-		typedef base_type::const_pointer const_pointer;
-		typedef base_type::pointer pointer;
-		typedef base_type::size_type size_type;
-		typedef base_type::const_iterator const_iterator;
-		typedef base_type::iterator iterator;
-		typedef base_type::string_type string_type;
-		// interface
-	public:
-		virtual void encode(uint64_t aValue, std::size_t aLength)
-		{
-			uint8_t buffer[8];
-			for (std::size_t i = 0; i < aLength; ++i)
-			{
-				buffer[PacketTraits::NetworkByteOrder ? aLength - 1 - i : i] = result & 0xFF;
-				result >>= 8; 
-			}
-			write(&buffer[0], aLength);
-		}
-		virtual void encode(bool aValue)
-		{
-			encode(static_cast<uint8_t>(aValue));
-		}
-		virtual void encode(const string_type& aValue)
-		{
-			encode(static_cast<uint32_t>(aValue.size()));
-			write(&aValue[0], aValue.size());
-		}
-		virtual uint64_t decode_integer(std::size_t aLength) const
-		{
-			uint8_t buffer[8];
-			read(&buffer[0], aLength);
-			uint64_t result = 0;
-			for (std::size_t i = 0; i < aLength; ++i)
-			{
-				result <<= 8;
-				result += buffer[PacketTraits::NetworkByteOrder ? i : aLength - 1 - i];
-			}
-			return result;
-		}
-		virtual bool decode_bool() const
-		{
-			return static_cast<bool>(decode<uint8_t>());
-		}
-		virtual string_type decode_string() const
-		{
-			uint32_t length = decode<uint32_t>();
-			string_type result(length);
-			read(&result[0], length);
-		}
-		// implementation
-	private:
-		virtual void write(const void* aData, std::size_t aLength) = 0;
-		virtual void read(void* aData, std::size_t aLength) const = 0;
-	};
+    template <typename CharType, typename PacketTraits = DefaultPacketTraits>
+    class basic_binary_data_packet : basic_data_packet<CharType>
+    {
+        // types
+    public:
+        typedef basic_binary_data_packet<CharType, PacketTraits> our_type;
+        typedef basic_data_packet<CharType> base_type;
+        typedef base_type::character_type character_type;
+        typedef base_type::const_pointer const_pointer;
+        typedef base_type::pointer pointer;
+        typedef base_type::size_type size_type;
+        typedef base_type::const_iterator const_iterator;
+        typedef base_type::iterator iterator;
+        typedef base_type::string_type string_type;
+        // interface
+    public:
+        virtual void encode(uint64_t aValue, std::size_t aLength)
+        {
+            uint8_t buffer[8];
+            for (std::size_t i = 0; i < aLength; ++i)
+            {
+                buffer[PacketTraits::NetworkByteOrder ? aLength - 1 - i : i] = result & 0xFF;
+                result >>= 8; 
+            }
+            write(&buffer[0], aLength);
+        }
+        virtual void encode(bool aValue)
+        {
+            encode(static_cast<uint8_t>(aValue));
+        }
+        virtual void encode(const string_type& aValue)
+        {
+            encode(static_cast<uint32_t>(aValue.size()));
+            write(&aValue[0], aValue.size());
+        }
+        virtual uint64_t decode_integer(std::size_t aLength) const
+        {
+            uint8_t buffer[8];
+            read(&buffer[0], aLength);
+            uint64_t result = 0;
+            for (std::size_t i = 0; i < aLength; ++i)
+            {
+                result <<= 8;
+                result += buffer[PacketTraits::NetworkByteOrder ? i : aLength - 1 - i];
+            }
+            return result;
+        }
+        virtual bool decode_bool() const
+        {
+            return static_cast<bool>(decode<uint8_t>());
+        }
+        virtual string_type decode_string() const
+        {
+            uint32_t length = decode<uint32_t>();
+            string_type result(length);
+            read(&result[0], length);
+        }
+        // implementation
+    private:
+        virtual void write(const void* aData, std::size_t aLength) = 0;
+        virtual void read(void* aData, std::size_t aLength) const = 0;
+    };
 
-	typedef basic_binary_data_packet<char> binary_data_packet;
+    typedef basic_binary_data_packet<char> binary_data_packet;
 }

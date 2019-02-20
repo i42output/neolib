@@ -42,110 +42,110 @@
 
 namespace neolib 
 {
-	template<typename T, typename U = void>
-	struct crack_key { typedef T key_type; };
-	template<typename T>
-	struct crack_key<T, typename std::void_t<typename T::key_type>> { typedef typename T::key_type key_type; };
+    template<typename T, typename U = void>
+    struct crack_key { typedef T key_type; };
+    template<typename T>
+    struct crack_key<T, typename std::void_t<typename T::key_type>> { typedef typename T::key_type key_type; };
 
-	template <typename Container>
-	class mutable_base : public Container
-	{
-	public:
-		typedef Container container_type;
-		typedef typename container_type::key_type key_type;
-		typedef typename container_type::mapped_type value_type;
-	public:
-		class iterator : public container_type::iterator
-		{
-		public:
-			typedef typename mutable_base::value_type value_type;
-			typedef value_type* pointer;
-			typedef value_type& reference;
-		public:
-			iterator() {}
-			iterator(typename container_type::iterator aIterator) : container_type::iterator(aIterator) {}
-			pointer operator->() const { return &container_type::iterator::operator*().second; }
-			reference operator*() const { return container_type::iterator::operator*().second; }
-		};
-		class const_iterator : public container_type::const_iterator
-		{
-		public:
-			typedef typename mutable_base::value_type value_type;
-			typedef const value_type* pointer;
-			typedef const value_type& reference;
-		public:
-			const_iterator() {}
-			const_iterator(typename container_type::const_iterator aIterator) : container_type::const_iterator(aIterator) {}
-			const_iterator(typename container_type::iterator aIterator) : container_type::const_iterator(aIterator) {}
-			pointer operator->() const { return &container_type::const_iterator::operator*().second; }
-			reference operator*() const { return container_type::const_iterator::operator*().second; }
-		};
-	public:
-		iterator begin() { return container_type::begin(); }
-		const_iterator begin() const { return container_type::begin(); }
-		iterator end() { return container_type::end(); }
-		const_iterator end() const { return container_type::end(); }
-		iterator find(const key_type& aKey) { return container_type::find(aKey); }
-		const_iterator find(const key_type& aKey) const { return container_type::find(aKey); }
-	};
+    template <typename Container>
+    class mutable_base : public Container
+    {
+    public:
+        typedef Container container_type;
+        typedef typename container_type::key_type key_type;
+        typedef typename container_type::mapped_type value_type;
+    public:
+        class iterator : public container_type::iterator
+        {
+        public:
+            typedef typename mutable_base::value_type value_type;
+            typedef value_type* pointer;
+            typedef value_type& reference;
+        public:
+            iterator() {}
+            iterator(typename container_type::iterator aIterator) : container_type::iterator(aIterator) {}
+            pointer operator->() const { return &container_type::iterator::operator*().second; }
+            reference operator*() const { return container_type::iterator::operator*().second; }
+        };
+        class const_iterator : public container_type::const_iterator
+        {
+        public:
+            typedef typename mutable_base::value_type value_type;
+            typedef const value_type* pointer;
+            typedef const value_type& reference;
+        public:
+            const_iterator() {}
+            const_iterator(typename container_type::const_iterator aIterator) : container_type::const_iterator(aIterator) {}
+            const_iterator(typename container_type::iterator aIterator) : container_type::const_iterator(aIterator) {}
+            pointer operator->() const { return &container_type::const_iterator::operator*().second; }
+            reference operator*() const { return container_type::const_iterator::operator*().second; }
+        };
+    public:
+        iterator begin() { return container_type::begin(); }
+        const_iterator begin() const { return container_type::begin(); }
+        iterator end() { return container_type::end(); }
+        const_iterator end() const { return container_type::end(); }
+        iterator find(const key_type& aKey) { return container_type::find(aKey); }
+        const_iterator find(const key_type& aKey) const { return container_type::find(aKey); }
+    };
 
-	template <typename T, typename Pr = std::less<typename crack_key<T>::key_type>, typename Alloc = std::allocator<std::pair<typename crack_key<T>::key_type const, T> > >
-	class mutable_set : public mutable_base<std::map<typename crack_key<T>::key_type, T, Pr, typename Alloc::template rebind<std::pair<typename crack_key<T>::key_type const, T>>::other>>
-	{
-		typedef typename crack_key<T>::key_type key_type;
-		typedef mutable_base<std::map<key_type, T, Pr, typename Alloc::template rebind<std::pair<key_type const, T>>::other>> base_type;
-	public:
-		mutable_set()
-		{
-		}
-		mutable_set(std::initializer_list<T> aElements)
-		{
-			for (auto& e : aElements)
-				insert(e);
-		}
-	public:
-		typename base_type::iterator insert(const typename base_type::value_type& aValue)
-		{
-			return typename base_type::iterator(base_type::insert(std::make_pair(static_cast<key_type>(aValue), aValue)).first);
-		}
-		using base_type::find;
-		typename base_type::iterator find(const typename base_type::value_type& aValue)
-		{
-			return typename base_type::iterator(base_type::find(static_cast<key_type>(aValue)));
-		}
-		typename base_type::const_iterator find(const typename base_type::value_type& aValue) const
-		{
-			return typename base_type::const_iterator(base_type::find(static_cast<key_type>(aValue)));
-		}
-	};
+    template <typename T, typename Pr = std::less<typename crack_key<T>::key_type>, typename Alloc = std::allocator<std::pair<typename crack_key<T>::key_type const, T> > >
+    class mutable_set : public mutable_base<std::map<typename crack_key<T>::key_type, T, Pr, typename Alloc::template rebind<std::pair<typename crack_key<T>::key_type const, T>>::other>>
+    {
+        typedef typename crack_key<T>::key_type key_type;
+        typedef mutable_base<std::map<key_type, T, Pr, typename Alloc::template rebind<std::pair<key_type const, T>>::other>> base_type;
+    public:
+        mutable_set()
+        {
+        }
+        mutable_set(std::initializer_list<T> aElements)
+        {
+            for (auto& e : aElements)
+                insert(e);
+        }
+    public:
+        typename base_type::iterator insert(const typename base_type::value_type& aValue)
+        {
+            return typename base_type::iterator(base_type::insert(std::make_pair(static_cast<key_type>(aValue), aValue)).first);
+        }
+        using base_type::find;
+        typename base_type::iterator find(const typename base_type::value_type& aValue)
+        {
+            return typename base_type::iterator(base_type::find(static_cast<key_type>(aValue)));
+        }
+        typename base_type::const_iterator find(const typename base_type::value_type& aValue) const
+        {
+            return typename base_type::const_iterator(base_type::find(static_cast<key_type>(aValue)));
+        }
+    };
 
-	template <typename T, typename Pr = std::less<typename crack_key<T>::key_type>, typename Alloc = std::allocator<std::pair<typename crack_key<T>::key_type const, T> > >
-	class mutable_multiset : public mutable_base<std::multimap<typename crack_key<T>::key_type, T, Pr, typename Alloc::template rebind<std::pair<typename crack_key<T>::key_type const, T>>::other>>
-	{
-		typedef typename crack_key<T>::key_type key_type;
-		typedef mutable_base<std::multimap<key_type, T, Pr, typename Alloc::template rebind<std::pair<key_type const, T>>::other>> base_type;
-	public:
-		mutable_multiset()
-		{
-		}
-		mutable_multiset(std::initializer_list<T> aElements)
-		{
-			for (auto& e : aElements)
-				insert(e);
-		}
-	public:
-		typename base_type::iterator insert(const typename base_type::value_type& aValue)
-		{
-			return typename base_type::iterator(base_type::insert(std::make_pair(static_cast<key_type>(aValue), aValue)));
-		}
-		using base_type::find;
-		typename base_type::iterator find(const typename base_type::value_type& aValue)
-		{
-			return typename base_type::iterator(base_type::find(static_cast<key_type>(aValue)));
-		}
-		typename base_type::const_iterator find(const typename base_type::value_type& aValue) const
-		{
-			return typename base_type::const_iterator(base_type::find(static_cast<key_type>(aValue)));
-		}
-	};
+    template <typename T, typename Pr = std::less<typename crack_key<T>::key_type>, typename Alloc = std::allocator<std::pair<typename crack_key<T>::key_type const, T> > >
+    class mutable_multiset : public mutable_base<std::multimap<typename crack_key<T>::key_type, T, Pr, typename Alloc::template rebind<std::pair<typename crack_key<T>::key_type const, T>>::other>>
+    {
+        typedef typename crack_key<T>::key_type key_type;
+        typedef mutable_base<std::multimap<key_type, T, Pr, typename Alloc::template rebind<std::pair<key_type const, T>>::other>> base_type;
+    public:
+        mutable_multiset()
+        {
+        }
+        mutable_multiset(std::initializer_list<T> aElements)
+        {
+            for (auto& e : aElements)
+                insert(e);
+        }
+    public:
+        typename base_type::iterator insert(const typename base_type::value_type& aValue)
+        {
+            return typename base_type::iterator(base_type::insert(std::make_pair(static_cast<key_type>(aValue), aValue)));
+        }
+        using base_type::find;
+        typename base_type::iterator find(const typename base_type::value_type& aValue)
+        {
+            return typename base_type::iterator(base_type::find(static_cast<key_type>(aValue)));
+        }
+        typename base_type::const_iterator find(const typename base_type::value_type& aValue) const
+        {
+            return typename base_type::const_iterator(base_type::find(static_cast<key_type>(aValue)));
+        }
+    };
 }

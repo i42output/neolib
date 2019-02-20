@@ -44,39 +44,39 @@
 
 namespace neolib
 {
-	class i_plugin_manager : public i_discoverable
-	{
-		// types
-	public:
-		typedef i_vector<i_plugin*> plugin_list;
-		class i_subscriber
-		{
-		public:
-			virtual void plugin_loaded(i_plugin& aPlugin) = 0;
-			virtual void plugin_unloaded(i_plugin& aPlugin) = 0;
-		public:
-			enum notify_type
-			{
-				NotifyPluginLoaded,
-				NotifyPluginUnloaded
-			};
-		};
-		// exceptions
-	public:
-		template <typename Base>
-		struct plugin_exception : Base { plugin_exception(const char* aMessage) : Base(aMessage) {} };
-		// operations
-	public:
-		virtual bool load_plugins() = 0;
-		virtual bool load_plugin(const i_string& aPluginPath) = 0;
-		virtual void enable_plugin(i_plugin& aPlugin, bool aEnable) = 0;
-		virtual bool plugin_enabled(const i_plugin& aPlugin) const = 0;
-		virtual void unload_plugins() = 0;
-		virtual const plugin_list& plugins() const = 0;
-		virtual i_plugin* find_plugin(const uuid& aId) const = 0;
-		virtual bool open_uri(const i_string& aUri) = 0;
-	public:
-		virtual void subscribe(i_subscriber& aObserver) = 0;
-		virtual void unsubscribe(i_subscriber& aObserver) = 0;
-	};
+    class i_plugin_manager : public i_discoverable
+    {
+        // types
+    public:
+        typedef i_vector<i_plugin*> plugin_list;
+        class i_subscriber
+        {
+        public:
+            virtual void plugin_loaded(i_plugin& aPlugin) = 0;
+            virtual void plugin_unloaded(i_plugin& aPlugin) = 0;
+        public:
+            enum notify_type
+            {
+                NotifyPluginLoaded,
+                NotifyPluginUnloaded
+            };
+        };
+        // exceptions
+    public:
+        template <typename Base>
+        struct plugin_exception : Base { plugin_exception(const char* aMessage) : Base(aMessage) {} };
+        // operations
+    public:
+        virtual bool load_plugins() = 0;
+        virtual bool load_plugin(const i_string& aPluginPath) = 0;
+        virtual void enable_plugin(i_plugin& aPlugin, bool aEnable) = 0;
+        virtual bool plugin_enabled(const i_plugin& aPlugin) const = 0;
+        virtual void unload_plugins() = 0;
+        virtual const plugin_list& plugins() const = 0;
+        virtual i_plugin* find_plugin(const uuid& aId) const = 0;
+        virtual bool open_uri(const i_string& aUri) = 0;
+    public:
+        virtual void subscribe(i_subscriber& aObserver) = 0;
+        virtual void unsubscribe(i_subscriber& aObserver) = 0;
+    };
 }

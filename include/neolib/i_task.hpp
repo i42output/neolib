@@ -40,18 +40,18 @@
 
 namespace neolib
 {
-	class i_task
-	{
-		// construction
-	public:
-		virtual ~i_task() {}
-		// operations
-	public:
-		virtual const std::string& name() const = 0;
-		// implementation
-	public:
-		virtual void run() = 0;
-		virtual void cancel() = 0;
-		virtual bool cancelled() const = 0;
-	};
+    class i_task
+    {
+        // construction
+    public:
+        virtual ~i_task() {}
+        // operations
+    public:
+        virtual const std::string& name() const = 0;
+        // implementation
+    public:
+        virtual void run() = 0;
+        virtual void cancel() = 0;
+        virtual bool cancelled() const = 0;
+    };
 }

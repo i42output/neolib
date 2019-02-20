@@ -42,58 +42,58 @@
 
 namespace neolib
 {
-	template <typename T, typename ConstIteratorType, typename IteratorType, bool DefaultComparisonOperators = true>
-	class i_container : public i_reference_counted
-	{
-	public:
-		typedef T value_type;
-		typedef size_t size_type;
-		typedef typename ConstIteratorType abstract_const_iterator;
-		typedef typename IteratorType abstract_iterator;
-	public:
-		typedef typename abstract_const_iterator::iterator_wrapper const_iterator;
-		typedef typename abstract_iterator::iterator_wrapper iterator;
-	public:
-		virtual size_type size() const = 0;
-		virtual size_type max_size() const = 0;
-		bool empty() const { return size() == 0; }
-		const_iterator begin() const { return do_begin(); }
-		const_iterator end() const { return do_end(); }
-		iterator begin() { return do_begin(); }
-		iterator end() { return do_end(); }
-		iterator erase(const abstract_iterator& aPosition) { return do_erase(const_iterator(aPosition)); }
-		iterator erase(const abstract_const_iterator& aPosition) { return do_erase(aPosition); }
-		iterator erase(const abstract_iterator& aFirst, const abstract_iterator& aLast) { return do_erase(const_iterator(aFirst), const_iterator(aLast)); }
-		iterator erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { return do_erase(aFirst, aLast); }
-		virtual void clear() = 0;
-		virtual void assign(const i_container& aRhs) = 0;
-	public:
-		i_container& operator=(const i_container& aRhs)
-		{
-			assign(aRhs);
-			return *this;
-		}
-		template<bool Enable = DefaultComparisonOperators, typename T = bool>
-		typename std::enable_if<Enable, T>::type operator==(const i_container& aRhs) const
-		{
-			return size() == aRhs.size() && std::equal(begin(), end(), aRhs.begin());
-		}
-		template<bool Enable = DefaultComparisonOperators, typename T = bool>
-		typename std::enable_if<Enable, T>::type operator!=(const i_container& aRhs) const
-		{
-			return size() != aRhs.size() && !std::equal(begin(), end(), aRhs.begin());
-		}
-		template<bool Enable = DefaultComparisonOperators, typename T = bool>
-		typename std::enable_if<Enable, T>::type operator<(const i_container& aRhs) const
-		{
-			return std::lexicographical_compare(begin(), end(), aRhs.begin(), aRhs.end());
-		}
-	private:
-		virtual abstract_const_iterator* do_begin() const = 0;
-		virtual abstract_const_iterator* do_end() const = 0;
-		virtual abstract_iterator* do_begin() = 0;
-		virtual abstract_iterator* do_end() = 0;
-		virtual abstract_iterator* do_erase(const abstract_const_iterator& aPosition) = 0;
-		virtual abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) = 0;
-	};
+    template <typename T, typename ConstIteratorType, typename IteratorType, bool DefaultComparisonOperators = true>
+    class i_container : public i_reference_counted
+    {
+    public:
+        typedef T value_type;
+        typedef size_t size_type;
+        typedef typename ConstIteratorType abstract_const_iterator;
+        typedef typename IteratorType abstract_iterator;
+    public:
+        typedef typename abstract_const_iterator::iterator_wrapper const_iterator;
+        typedef typename abstract_iterator::iterator_wrapper iterator;
+    public:
+        virtual size_type size() const = 0;
+        virtual size_type max_size() const = 0;
+        bool empty() const { return size() == 0; }
+        const_iterator begin() const { return do_begin(); }
+        const_iterator end() const { return do_end(); }
+        iterator begin() { return do_begin(); }
+        iterator end() { return do_end(); }
+        iterator erase(const abstract_iterator& aPosition) { return do_erase(const_iterator(aPosition)); }
+        iterator erase(const abstract_const_iterator& aPosition) { return do_erase(aPosition); }
+        iterator erase(const abstract_iterator& aFirst, const abstract_iterator& aLast) { return do_erase(const_iterator(aFirst), const_iterator(aLast)); }
+        iterator erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { return do_erase(aFirst, aLast); }
+        virtual void clear() = 0;
+        virtual void assign(const i_container& aRhs) = 0;
+    public:
+        i_container& operator=(const i_container& aRhs)
+        {
+            assign(aRhs);
+            return *this;
+        }
+        template<bool Enable = DefaultComparisonOperators, typename T = bool>
+        typename std::enable_if<Enable, T>::type operator==(const i_container& aRhs) const
+        {
+            return size() == aRhs.size() && std::equal(begin(), end(), aRhs.begin());
+        }
+        template<bool Enable = DefaultComparisonOperators, typename T = bool>
+        typename std::enable_if<Enable, T>::type operator!=(const i_container& aRhs) const
+        {
+            return size() != aRhs.size() && !std::equal(begin(), end(), aRhs.begin());
+        }
+        template<bool Enable = DefaultComparisonOperators, typename T = bool>
+        typename std::enable_if<Enable, T>::type operator<(const i_container& aRhs) const
+        {
+            return std::lexicographical_compare(begin(), end(), aRhs.begin(), aRhs.end());
+        }
+    private:
+        virtual abstract_const_iterator* do_begin() const = 0;
+        virtual abstract_const_iterator* do_end() const = 0;
+        virtual abstract_iterator* do_begin() = 0;
+        virtual abstract_iterator* do_end() = 0;
+        virtual abstract_iterator* do_erase(const abstract_const_iterator& aPosition) = 0;
+        virtual abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) = 0;
+    };
 }

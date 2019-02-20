@@ -46,160 +46,160 @@
 
 namespace neolib
 {
-	class simple_variant : public reference_counted<i_simple_variant>, public variant<bool, int64_t, double, string, auto_ref<i_custom_type>>
-	{
-		// types
-	private:
-		typedef neolib::variant<bool, int64_t, double, string, auto_ref<i_custom_type>> variant_type;
+    class simple_variant : public reference_counted<i_simple_variant>, public variant<bool, int64_t, double, string, auto_ref<i_custom_type>>
+    {
+        // types
+    private:
+        typedef neolib::variant<bool, int64_t, double, string, auto_ref<i_custom_type>> variant_type;
 
-		// construction
-	public:
-		simple_variant() {}
-		simple_variant(bool aValue) : variant_type{ aValue } {}
-		simple_variant(int32_t aValue) : variant_type{ static_cast<int64_t>(aValue) } {}
-		simple_variant(int64_t aValue) : variant_type{ aValue } {}
-		simple_variant(double aValue) : variant_type{ aValue } {}
-		simple_variant(const char* const aValue) : variant_type{ string(aValue) } {}
-		simple_variant(const i_string& aValue) : variant_type{ string(aValue) } {}
-		simple_variant(const auto_ref<i_custom_type>& aValue) : variant_type{ aValue } {}
-		simple_variant(i_custom_type& aValue) : variant_type{ auto_ref<i_custom_type>(aValue) } {}
-		simple_variant(const simple_variant& aVariant) : variant_type{ static_cast<const variant_type&>(aVariant) }
-		{
-		}
-		simple_variant(simple_variant&& aVariant) : variant_type{ static_cast<variant_type&&>(aVariant) }
-		{
-		}
-		template <typename T>
-		simple_variant(T&& aValue, typename std::enable_if<!std::is_same<typename std::remove_cv<typename std::remove_reference<T>::type>::type, simple_variant>::value, simple_variant>::type* = nullptr) : variant_type{ std::forward<T>(aValue) }
-		{
-		}
-		simple_variant(const i_simple_variant& aVariant)
-		{
-			*this = aVariant;
-		}
+        // construction
+    public:
+        simple_variant() {}
+        simple_variant(bool aValue) : variant_type{ aValue } {}
+        simple_variant(int32_t aValue) : variant_type{ static_cast<int64_t>(aValue) } {}
+        simple_variant(int64_t aValue) : variant_type{ aValue } {}
+        simple_variant(double aValue) : variant_type{ aValue } {}
+        simple_variant(const char* const aValue) : variant_type{ string(aValue) } {}
+        simple_variant(const i_string& aValue) : variant_type{ string(aValue) } {}
+        simple_variant(const auto_ref<i_custom_type>& aValue) : variant_type{ aValue } {}
+        simple_variant(i_custom_type& aValue) : variant_type{ auto_ref<i_custom_type>(aValue) } {}
+        simple_variant(const simple_variant& aVariant) : variant_type{ static_cast<const variant_type&>(aVariant) }
+        {
+        }
+        simple_variant(simple_variant&& aVariant) : variant_type{ static_cast<variant_type&&>(aVariant) }
+        {
+        }
+        template <typename T>
+        simple_variant(T&& aValue, typename std::enable_if<!std::is_same<typename std::remove_cv<typename std::remove_reference<T>::type>::type, simple_variant>::value, simple_variant>::type* = nullptr) : variant_type{ std::forward<T>(aValue) }
+        {
+        }
+        simple_variant(const i_simple_variant& aVariant)
+        {
+            *this = aVariant;
+        }
 
-		// assignment
-	public:
-		simple_variant& operator=(const simple_variant& aVariant)
-		{
-			variant_type::operator=(static_cast<const variant_type&>(aVariant));
-			return *this;
-		}
-		simple_variant& operator=(simple_variant&& aVariant)
-		{
-			variant_type::operator=(static_cast<variant_type&&>(aVariant));
-			return *this;
-		}
-		template <typename T>
-		typename std::enable_if<!std::is_same<typename std::remove_cv<typename std::remove_reference<T>::type>::type, simple_variant>::value, simple_variant>::type& operator=(T&& aValue)
-		{
-			variant_type::operator=(std::forward<T>(aValue));
-			return *this;
-		}
-		simple_variant& operator=(const i_simple_variant& aVariant)
-		{
-			switch (aVariant.type())
-			{
-			case simple_variant_type::Empty:
-				// nothing to copy
-				break;
-			case simple_variant_type::Boolean:
-				static_cast<variant_type&>(*this) = get<bool>(aVariant);
-				break;
-			case simple_variant_type::Integer:
-				static_cast<variant_type&>(*this) = get<int64_t>(aVariant);
-				break;
-			case simple_variant_type::Real:
-				static_cast<variant_type&>(*this) = get<double>(aVariant);
-				break;
-			case simple_variant_type::String:
-				static_cast<variant_type&>(*this) = string(get<i_string>(aVariant));
-				break;
-			case simple_variant_type::CustomType:
-				if (type() != simple_variant_type::CustomType || value_as_custom_type().name() != aVariant.value_as_custom_type().name())
-					static_cast<variant_type&>(*this) = auto_ref<i_custom_type>(get<i_custom_type>(aVariant).clone());
-				else
-					value_as_custom_type() = aVariant.value_as_custom_type();
-				break;
-			default:
-				throw unknown_type();
-			}
-			return *this;
-		}
+        // assignment
+    public:
+        simple_variant& operator=(const simple_variant& aVariant)
+        {
+            variant_type::operator=(static_cast<const variant_type&>(aVariant));
+            return *this;
+        }
+        simple_variant& operator=(simple_variant&& aVariant)
+        {
+            variant_type::operator=(static_cast<variant_type&&>(aVariant));
+            return *this;
+        }
+        template <typename T>
+        typename std::enable_if<!std::is_same<typename std::remove_cv<typename std::remove_reference<T>::type>::type, simple_variant>::value, simple_variant>::type& operator=(T&& aValue)
+        {
+            variant_type::operator=(std::forward<T>(aValue));
+            return *this;
+        }
+        simple_variant& operator=(const i_simple_variant& aVariant)
+        {
+            switch (aVariant.type())
+            {
+            case simple_variant_type::Empty:
+                // nothing to copy
+                break;
+            case simple_variant_type::Boolean:
+                static_cast<variant_type&>(*this) = get<bool>(aVariant);
+                break;
+            case simple_variant_type::Integer:
+                static_cast<variant_type&>(*this) = get<int64_t>(aVariant);
+                break;
+            case simple_variant_type::Real:
+                static_cast<variant_type&>(*this) = get<double>(aVariant);
+                break;
+            case simple_variant_type::String:
+                static_cast<variant_type&>(*this) = string(get<i_string>(aVariant));
+                break;
+            case simple_variant_type::CustomType:
+                if (type() != simple_variant_type::CustomType || value_as_custom_type().name() != aVariant.value_as_custom_type().name())
+                    static_cast<variant_type&>(*this) = auto_ref<i_custom_type>(get<i_custom_type>(aVariant).clone());
+                else
+                    value_as_custom_type() = aVariant.value_as_custom_type();
+                break;
+            default:
+                throw unknown_type();
+            }
+            return *this;
+        }
 
-		// operations
-	public:
-		virtual simple_variant_type type() const
-		{
-			auto result = static_cast<simple_variant_type>(variant_type::index());
-			if (result < simple_variant_type::COUNT)
-				return result;
-			throw unknown_type();
-		}
-		using i_simple_variant::empty;
-	public:
-		virtual const bool& value_as_boolean() const
-		{
-			return static_variant_cast<const bool&>(*this);
-		}
-		virtual bool& value_as_boolean()
-		{
-			return static_variant_cast<bool&>(*this);
-		}
-		virtual const int64_t& value_as_integer() const
-		{
-			return static_variant_cast<const int64_t&>(*this);
-		}
-		virtual int64_t& value_as_integer()
-		{
-			return static_variant_cast<int64_t&>(*this);
-		}
-		virtual const double& value_as_real() const
-		{
-			return static_variant_cast<const double&>(*this);
-		}
-		virtual double& value_as_real()
-		{
-			return static_variant_cast<double&>(*this);
-		}
-		virtual const i_string& value_as_string() const
-		{
-			return static_variant_cast<const string&>(*this);
-		}
-		virtual i_string& value_as_string()
-		{
-			return static_variant_cast<string&>(*this);
-		}
-		virtual const i_custom_type& value_as_custom_type() const
-		{
-			return *static_variant_cast<const auto_ref<i_custom_type>&>(*this);
-		}
-		virtual i_custom_type& value_as_custom_type()
-		{
-			return *static_variant_cast<auto_ref<i_custom_type>&>(*this);
-		}
-	};
+        // operations
+    public:
+        virtual simple_variant_type type() const
+        {
+            auto result = static_cast<simple_variant_type>(variant_type::index());
+            if (result < simple_variant_type::COUNT)
+                return result;
+            throw unknown_type();
+        }
+        using i_simple_variant::empty;
+    public:
+        virtual const bool& value_as_boolean() const
+        {
+            return static_variant_cast<const bool&>(*this);
+        }
+        virtual bool& value_as_boolean()
+        {
+            return static_variant_cast<bool&>(*this);
+        }
+        virtual const int64_t& value_as_integer() const
+        {
+            return static_variant_cast<const int64_t&>(*this);
+        }
+        virtual int64_t& value_as_integer()
+        {
+            return static_variant_cast<int64_t&>(*this);
+        }
+        virtual const double& value_as_real() const
+        {
+            return static_variant_cast<const double&>(*this);
+        }
+        virtual double& value_as_real()
+        {
+            return static_variant_cast<double&>(*this);
+        }
+        virtual const i_string& value_as_string() const
+        {
+            return static_variant_cast<const string&>(*this);
+        }
+        virtual i_string& value_as_string()
+        {
+            return static_variant_cast<string&>(*this);
+        }
+        virtual const i_custom_type& value_as_custom_type() const
+        {
+            return *static_variant_cast<const auto_ref<i_custom_type>&>(*this);
+        }
+        virtual i_custom_type& value_as_custom_type()
+        {
+            return *static_variant_cast<auto_ref<i_custom_type>&>(*this);
+        }
+    };
 
-	inline simple_variant from_string(const std::string& aValue, simple_variant_type aType)
-	{
-		switch (aType)
-		{
-		case simple_variant_type::Boolean:
-			return boost::lexical_cast<bool>(aValue);
-		case simple_variant_type::Integer:
-			return boost::lexical_cast<int64_t>(aValue);
-		case simple_variant_type::Real:
-			return boost::lexical_cast<double>(aValue);
-		case simple_variant_type::String:
-			return neolib::string(aValue);
-		case simple_variant_type::CustomType:
-		default:
-			throw i_simple_variant::unsupported_operation("can't create from string");
-		}
-	}
+    inline simple_variant from_string(const std::string& aValue, simple_variant_type aType)
+    {
+        switch (aType)
+        {
+        case simple_variant_type::Boolean:
+            return boost::lexical_cast<bool>(aValue);
+        case simple_variant_type::Integer:
+            return boost::lexical_cast<int64_t>(aValue);
+        case simple_variant_type::Real:
+            return boost::lexical_cast<double>(aValue);
+        case simple_variant_type::String:
+            return neolib::string(aValue);
+        case simple_variant_type::CustomType:
+        default:
+            throw i_simple_variant::unsupported_operation("can't create from string");
+        }
+    }
 
-	inline simple_variant from_string(const i_string& aValue, simple_variant_type aType)
-	{
-		return from_string(aValue.c_str(), aType);
-	}
+    inline simple_variant from_string(const i_string& aValue, simple_variant_type aType)
+    {
+        return from_string(aValue.c_str(), aType);
+    }
 }

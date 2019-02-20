@@ -44,33 +44,33 @@
 
 namespace neolib
 {
-	class application : public reference_counted<i_application>
-	{
-	public:
-		application(const i_application_info& aApplicationInfo) :
-			iApplicationInfo(aApplicationInfo),
-			iPluginManager(*this, aApplicationInfo.application_folder().to_std_string())
-		{
-		}
+    class application : public reference_counted<i_application>
+    {
+    public:
+        application(const i_application_info& aApplicationInfo) :
+            iApplicationInfo(aApplicationInfo),
+            iPluginManager(*this, aApplicationInfo.application_folder().to_std_string())
+        {
+        }
 
-	public:
-		// from i_discoverable
-		virtual bool discover(const uuid& aId, void*& aObject)
-		{
-			return iPluginManager.discover(aId, aObject);
-		}
-		// from i_application
-		virtual const i_application_info& info() const
-		{
-			return iApplicationInfo;
-		}
-		virtual i_plugin_manager& plugin_manager()
-		{
-			return iPluginManager;
-		}
+    public:
+        // from i_discoverable
+        virtual bool discover(const uuid& aId, void*& aObject)
+        {
+            return iPluginManager.discover(aId, aObject);
+        }
+        // from i_application
+        virtual const i_application_info& info() const
+        {
+            return iApplicationInfo;
+        }
+        virtual i_plugin_manager& plugin_manager()
+        {
+            return iPluginManager;
+        }
 
-	private:
-		application_info iApplicationInfo;
-		neolib::plugin_manager iPluginManager;
-	};
+    private:
+        application_info iApplicationInfo;
+        neolib::plugin_manager iPluginManager;
+    };
 }

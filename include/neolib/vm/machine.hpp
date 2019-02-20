@@ -40,10 +40,10 @@
 
 namespace neolib
 {
-	namespace vm
-	{
-		class machine : public i_machine
-		{
-		};
-	};
+    namespace vm
+    {
+        class machine : public i_machine
+        {
+        };
+    };
 }

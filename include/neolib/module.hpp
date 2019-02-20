@@ -44,32 +44,32 @@
 
 namespace neolib
 {
-	class module
-	{
-		// types
-	private:
-		typedef std::unique_ptr<os_module> os_module_ptr;
-		// construction
-	public:
-		module();
-		module(const module& aOther);
-		module(const std::string& aPath);
-		~module();
-		// operations
-	public:
-		const std::string& path() const { return iPath; }
-		bool load();
-		void unload();
-		bool loaded() const;
-		void* procedure_address(const std::string& aProcedureName);
-		template <typename FunctionType>
-		FunctionType& procedure(const std::string& aProcedureName)
-		{
-			return *reinterpret_cast<FunctionType*>(procedure_address(aProcedureName));
-		}
-		// attributes
-	private:
-		std::string iPath;
-		os_module_ptr iOsModule;
-	};
+    class module
+    {
+        // types
+    private:
+        typedef std::unique_ptr<os_module> os_module_ptr;
+        // construction
+    public:
+        module();
+        module(const module& aOther);
+        module(const std::string& aPath);
+        ~module();
+        // operations
+    public:
+        const std::string& path() const { return iPath; }
+        bool load();
+        void unload();
+        bool loaded() const;
+        void* procedure_address(const std::string& aProcedureName);
+        template <typename FunctionType>
+        FunctionType& procedure(const std::string& aProcedureName)
+        {
+            return *reinterpret_cast<FunctionType*>(procedure_address(aProcedureName));
+        }
+        // attributes
+    private:
+        std::string iPath;
+        os_module_ptr iOsModule;
+    };
 }

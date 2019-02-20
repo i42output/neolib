@@ -42,36 +42,36 @@
 
 namespace neolib
 {
-	class i_custom_type : public i_reference_counted
-	{
-	public:
-		struct no_instance : std::logic_error { no_instance() : std::logic_error("neolib::i_custom_type::no_instance") {} };
-	public:
-		virtual const i_string& name() const = 0;
-		virtual i_string& name() = 0;
-		virtual i_string* to_string() const = 0;
-		std::string to_std_string() const { auto_ref<i_string> string(to_string()); return string->to_std_string(); }
-		virtual i_custom_type* clone() const = 0;
-		virtual i_custom_type& assign(const i_custom_type& aRhs) = 0;
-		i_custom_type& operator=(const i_custom_type& aRhs)
-		{
-			assign(aRhs);
-			return *this;
-		}
-		virtual bool operator==(const i_custom_type&) const = 0;
-		virtual bool operator<(const i_custom_type&) const = 0;
-	public:
-		bool has_instance() const { return instance_ptr() != nullptr; }
-		template <typename T>
-		const T& instance_as() const { if (!has_instance()) throw no_instance();  return *static_cast<const T*>(instance_ptr()); }
-		template <typename T>
-		T& instance_as() { if (!has_instance()) throw no_instance(); return *static_cast<T*>(instance_ptr()); }
-		virtual const void* instance_ptr() const = 0;
-		virtual void* instance_ptr() = 0;
-	};
+    class i_custom_type : public i_reference_counted
+    {
+    public:
+        struct no_instance : std::logic_error { no_instance() : std::logic_error("neolib::i_custom_type::no_instance") {} };
+    public:
+        virtual const i_string& name() const = 0;
+        virtual i_string& name() = 0;
+        virtual i_string* to_string() const = 0;
+        std::string to_std_string() const { auto_ref<i_string> string(to_string()); return string->to_std_string(); }
+        virtual i_custom_type* clone() const = 0;
+        virtual i_custom_type& assign(const i_custom_type& aRhs) = 0;
+        i_custom_type& operator=(const i_custom_type& aRhs)
+        {
+            assign(aRhs);
+            return *this;
+        }
+        virtual bool operator==(const i_custom_type&) const = 0;
+        virtual bool operator<(const i_custom_type&) const = 0;
+    public:
+        bool has_instance() const { return instance_ptr() != nullptr; }
+        template <typename T>
+        const T& instance_as() const { if (!has_instance()) throw no_instance();  return *static_cast<const T*>(instance_ptr()); }
+        template <typename T>
+        T& instance_as() { if (!has_instance()) throw no_instance(); return *static_cast<T*>(instance_ptr()); }
+        virtual const void* instance_ptr() const = 0;
+        virtual void* instance_ptr() = 0;
+    };
 
-	inline bool operator!=(const i_custom_type& lhs, const i_custom_type& rhs)
-	{
-		return !(lhs == rhs);
-	}
+    inline bool operator!=(const i_custom_type& lhs, const i_custom_type& rhs)
+    {
+        return !(lhs == rhs);
+    }
 }

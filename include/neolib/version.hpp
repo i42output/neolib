@@ -44,87 +44,87 @@
 
 namespace neolib
 {
-	class version : public i_version
-	{
-		// construction
-	public:
-		version(uint32_t aMajor, uint32_t aMinor, uint32_t aMaintenance, uint32_t aBuild = 0, const std::string& aName = "") :
-			iMajor(aMajor), iMinor(aMinor), iMaintenance(aMaintenance), iBuild(aBuild), iName(aName)
-		{
-		}
-		version(const std::string& aVersionString = "") :
-			iMajor(0), iMinor(0), iMaintenance(0), iBuild(0), iName("")
-		{
-			neolib::vecarray<std::string, 5> bits;
-			neolib::tokens(aVersionString, std::string(". "), bits, 4);
-			if (bits.size() > 0)
-				iMajor = neolib::string_to_uint32(bits[0]);
-			if (bits.size() > 1)
-				iMinor = neolib::string_to_uint32(bits[1]);
-			if (bits.size() > 2)
-				iMaintenance = neolib::string_to_uint32(bits[2]);
-			if (bits.size() > 3)
-				iBuild = neolib::string_to_uint32(bits[3]);
-			if (bits.size() > 4)
-				iName = bits[3];
-		}
-		version(const i_version& aOther) :
-			iMajor(aOther.major()), iMinor(aOther.minor()), iMaintenance(aOther.maintenance()), iBuild(aOther.build()), iName(aOther.name())
-		{
-		}
+    class version : public i_version
+    {
+        // construction
+    public:
+        version(uint32_t aMajor, uint32_t aMinor, uint32_t aMaintenance, uint32_t aBuild = 0, const std::string& aName = "") :
+            iMajor(aMajor), iMinor(aMinor), iMaintenance(aMaintenance), iBuild(aBuild), iName(aName)
+        {
+        }
+        version(const std::string& aVersionString = "") :
+            iMajor(0), iMinor(0), iMaintenance(0), iBuild(0), iName("")
+        {
+            neolib::vecarray<std::string, 5> bits;
+            neolib::tokens(aVersionString, std::string(". "), bits, 4);
+            if (bits.size() > 0)
+                iMajor = neolib::string_to_uint32(bits[0]);
+            if (bits.size() > 1)
+                iMinor = neolib::string_to_uint32(bits[1]);
+            if (bits.size() > 2)
+                iMaintenance = neolib::string_to_uint32(bits[2]);
+            if (bits.size() > 3)
+                iBuild = neolib::string_to_uint32(bits[3]);
+            if (bits.size() > 4)
+                iName = bits[3];
+        }
+        version(const i_version& aOther) :
+            iMajor(aOther.major()), iMinor(aOther.minor()), iMaintenance(aOther.maintenance()), iBuild(aOther.build()), iName(aOther.name())
+        {
+        }
 
-		// operations
-	public:
-		bool operator<(const version& aOther) const
-		{
-			return std::make_tuple(iMajor, iMinor, iMaintenance, iBuild) < std::make_tuple(aOther.iMajor, aOther.iMinor, iMaintenance, aOther.iBuild);
-		}
-		bool operator>(const version& aOther) const
-		{
-			return aOther < *this;
-		}
-		bool operator==(const version& aOther) const
-		{
-			return iMajor == aOther.iMajor && iMinor == aOther.iMinor && iMaintenance == aOther.iMaintenance && iBuild == aOther.iBuild;
-		}
-		// implementation
-	public:
-		// from i_version
-		uint32_t major() const
-		{
-			return iMajor;
-		}
-		uint32_t minor() const
-		{
-			return iMinor;
-		}
-		uint32_t maintenance() const
-		{
-			return iMaintenance;
-		}
-		uint32_t build() const
-		{
-			return iBuild;
-		}
-		const i_string& name() const
-		{
-			return iName;
-		}
-	private:
-		uint32_t iMajor;
-		uint32_t iMinor;
-		uint32_t iMaintenance;
-		uint32_t iBuild;
-		string iName;
-	};
+        // operations
+    public:
+        bool operator<(const version& aOther) const
+        {
+            return std::make_tuple(iMajor, iMinor, iMaintenance, iBuild) < std::make_tuple(aOther.iMajor, aOther.iMinor, iMaintenance, aOther.iBuild);
+        }
+        bool operator>(const version& aOther) const
+        {
+            return aOther < *this;
+        }
+        bool operator==(const version& aOther) const
+        {
+            return iMajor == aOther.iMajor && iMinor == aOther.iMinor && iMaintenance == aOther.iMaintenance && iBuild == aOther.iBuild;
+        }
+        // implementation
+    public:
+        // from i_version
+        uint32_t major() const
+        {
+            return iMajor;
+        }
+        uint32_t minor() const
+        {
+            return iMinor;
+        }
+        uint32_t maintenance() const
+        {
+            return iMaintenance;
+        }
+        uint32_t build() const
+        {
+            return iBuild;
+        }
+        const i_string& name() const
+        {
+            return iName;
+        }
+    private:
+        uint32_t iMajor;
+        uint32_t iMinor;
+        uint32_t iMaintenance;
+        uint32_t iBuild;
+        string iName;
+    };
 
-	template <typename Elem, typename Traits>
-	inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const version& aVersion)
-	{
-		aStream << aVersion.major() << "." << aVersion.minor() << "." << aVersion.maintenance() << "." << aVersion.build();
-		if (!aVersion.name().empty())
-			aStream << " " << aVersion.name();
-		return aStream;
-	}
+    template <typename Elem, typename Traits>
+    inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const version& aVersion)
+    {
+        aStream << aVersion.major() << "." << aVersion.minor() << "." << aVersion.maintenance() << "." << aVersion.build();
+        if (!aVersion.name().empty())
+            aStream << " " << aVersion.name();
+        return aStream;
+    }
 
 }

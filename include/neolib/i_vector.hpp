@@ -40,16 +40,16 @@
 
 namespace neolib
 {
-	template <typename T>
-	class i_vector : public i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T>, true>
-	{
-	private:
-		typedef i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T> > base;
-	public:
-		typedef typename base::generic_container_type generic_container_type;
-		typedef typename base::size_type size_type;
-	public:
-		virtual const T& operator[](size_type aIndex) const = 0;
-		virtual T& operator[](size_type aIndex) = 0;
-	};
+    template <typename T>
+    class i_vector : public i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T>, true>
+    {
+    private:
+        typedef i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T> > base;
+    public:
+        typedef typename base::generic_container_type generic_container_type;
+        typedef typename base::size_type size_type;
+    public:
+        virtual const T& operator[](size_type aIndex) const = 0;
+        virtual T& operator[](size_type aIndex) = 0;
+    };
 }

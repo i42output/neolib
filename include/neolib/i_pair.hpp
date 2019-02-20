@@ -39,16 +39,16 @@
 
 namespace neolib
 {
-	template <typename T1, typename T2>
-	class i_pair
-	{
-	public:
-		typedef T1 first_type;
-		typedef T2 second_type;
-	public:
-		virtual const first_type& first() const = 0;
-		virtual first_type& first() = 0;
-		virtual const second_type& second() const = 0;
-		virtual second_type& second() = 0;
-	};
+    template <typename T1, typename T2>
+    class i_pair
+    {
+    public:
+        typedef T1 first_type;
+        typedef T2 second_type;
+    public:
+        virtual const first_type& first() const = 0;
+        virtual first_type& first() = 0;
+        virtual const second_type& second() const = 0;
+        virtual second_type& second() = 0;
+    };
 }

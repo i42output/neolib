@@ -42,51 +42,51 @@
 
 namespace neolib
 {
-	class i_string : public i_sequence_container<char, i_random_access_const_iterator<char>, i_random_access_iterator<char>, false>
-	{
-	private:
-		typedef i_sequence_container<char, i_random_access_const_iterator<char>, i_random_access_iterator<char> > base;
-	public:
-		typedef base::size_type size_type;
-	public:
-		virtual i_string& operator=(const i_string& aOther) = 0;
-		i_string& operator=(const std::string& aOther) { assign(aOther); return *this; }
-	public:
-		size_type length() const { return size(); }
-		virtual const char* c_str() const = 0;
-		virtual const char& operator[](size_type aIndex) const = 0;
-		virtual char& operator[](size_type aIndex) = 0;
-		void assign(const std::string& aSource) { assign(aSource.c_str(), aSource.size()); }
-		virtual void assign(const char* aSource, size_type aSourceLength) = 0;
-		std::string to_std_string() const { return std::string(c_str(), size()); }
-	};
+    class i_string : public i_sequence_container<char, i_random_access_const_iterator<char>, i_random_access_iterator<char>, false>
+    {
+    private:
+        typedef i_sequence_container<char, i_random_access_const_iterator<char>, i_random_access_iterator<char> > base;
+    public:
+        typedef base::size_type size_type;
+    public:
+        virtual i_string& operator=(const i_string& aOther) = 0;
+        i_string& operator=(const std::string& aOther) { assign(aOther); return *this; }
+    public:
+        size_type length() const { return size(); }
+        virtual const char* c_str() const = 0;
+        virtual const char& operator[](size_type aIndex) const = 0;
+        virtual char& operator[](size_type aIndex) = 0;
+        void assign(const std::string& aSource) { assign(aSource.c_str(), aSource.size()); }
+        virtual void assign(const char* aSource, size_type aSourceLength) = 0;
+        std::string to_std_string() const { return std::string(c_str(), size()); }
+    };
 
-	inline std::ostream& operator<<(std::ostream& aStream, const i_string& aString)
-	{
-		aStream << aString.to_std_string();
-		return aStream;
-	}
+    inline std::ostream& operator<<(std::ostream& aStream, const i_string& aString)
+    {
+        aStream << aString.to_std_string();
+        return aStream;
+    }
 
-	inline std::istream& operator>>(std::istream& aStream, i_string& aString)
-	{
-		std::string temp;
-		aStream >> temp;
-		aString.assign(temp.c_str(), temp.size());
-		return aStream;
-	}
+    inline std::istream& operator>>(std::istream& aStream, i_string& aString)
+    {
+        std::string temp;
+        aStream >> temp;
+        aString.assign(temp.c_str(), temp.size());
+        return aStream;
+    }
 
-	inline bool operator==(const i_string& lhs, const i_string& rhs)
-	{
-		return lhs.size() == rhs.size() && std::strcmp(lhs.c_str(), rhs.c_str()) == 0;
-	}
+    inline bool operator==(const i_string& lhs, const i_string& rhs)
+    {
+        return lhs.size() == rhs.size() && std::strcmp(lhs.c_str(), rhs.c_str()) == 0;
+    }
 
-	inline bool operator!=(const i_string& lhs, const i_string& rhs)
-	{
-		return lhs.size() != rhs.size() || std::strcmp(lhs.c_str(), rhs.c_str()) != 0;
-	}
+    inline bool operator!=(const i_string& lhs, const i_string& rhs)
+    {
+        return lhs.size() != rhs.size() || std::strcmp(lhs.c_str(), rhs.c_str()) != 0;
+    }
 
-	inline bool operator<(const i_string& lhs, const i_string& rhs)
-	{
-		return std::strcmp(lhs.c_str(), rhs.c_str()) < 0;
-	}
+    inline bool operator<(const i_string& lhs, const i_string& rhs)
+    {
+        return std::strcmp(lhs.c_str(), rhs.c_str()) < 0;
+    }
 }

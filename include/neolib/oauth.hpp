@@ -47,48 +47,48 @@
 
 namespace neolib
 {
-	class oauth_observer
-	{
-		friend class oauth;
-	private:
-		virtual void oauth_request_started(oauth& aRequest) = 0;
-		virtual void oauth_request_completed(oauth& aRequest) = 0;
-		virtual void oauth_request_failure(oauth& aRequest) = 0;
-	public:
-		enum notify_type { NotifyStarted, NotifyCompleted, NotifyFailure };
-	};
+    class oauth_observer
+    {
+        friend class oauth;
+    private:
+        virtual void oauth_request_started(oauth& aRequest) = 0;
+        virtual void oauth_request_completed(oauth& aRequest) = 0;
+        virtual void oauth_request_failure(oauth& aRequest) = 0;
+    public:
+        enum notify_type { NotifyStarted, NotifyCompleted, NotifyFailure };
+    };
 
-	class oauth : public observable<oauth_observer>, private i_http_observer
-	{
-		// types
-	public:
-		typedef std::pair<http::type_e, std::string> operation;
+    class oauth : public observable<oauth_observer>, private i_http_observer
+    {
+        // types
+    public:
+        typedef std::pair<http::type_e, std::string> operation;
 
-		// construction
-	public:
-		oauth(async_task& IoTask, const std::string& aConsumerKey, const std::string& aConsumerSecret, const operation& aRequestTokenOp, const operation& aUserAuthorizationOp, const operation& aAccessTokenOp);
-		virtual ~oauth();
+        // construction
+    public:
+        oauth(async_task& IoTask, const std::string& aConsumerKey, const std::string& aConsumerSecret, const operation& aRequestTokenOp, const operation& aUserAuthorizationOp, const operation& aAccessTokenOp);
+        virtual ~oauth();
 
-		// operations
-	public:
-		void request();
+        // operations
+    public:
+        void request();
 
-		// implementation
-	private:
-		// from observable<oauth_observer>
-		virtual void notify_observer(oauth_observer& aObserver, oauth_observer::notify_type aType, const void* aParameter, const void* aParameter2);
-		// from i_http_observer
-		virtual void http_request_started(http& aRequest);
-		virtual void http_request_completed(http& aRequest);
-		virtual void http_request_failure(http& aRequest);
+        // implementation
+    private:
+        // from observable<oauth_observer>
+        virtual void notify_observer(oauth_observer& aObserver, oauth_observer::notify_type aType, const void* aParameter, const void* aParameter2);
+        // from i_http_observer
+        virtual void http_request_started(http& aRequest);
+        virtual void http_request_completed(http& aRequest);
+        virtual void http_request_failure(http& aRequest);
 
-		// attributes
-	private:
-		http iHttpRequester;
-		std::string iConsumerKey;
-		std::string iConsumerSecret;
-		operation iRequestTokenOp;
-		operation iUserAuthorizationOp;
-		operation iAccessTokenOp;
-	};
+        // attributes
+    private:
+        http iHttpRequester;
+        std::string iConsumerKey;
+        std::string iConsumerSecret;
+        operation iRequestTokenOp;
+        operation iUserAuthorizationOp;
+        operation iAccessTokenOp;
+    };
 }

@@ -39,46 +39,46 @@
 
 namespace neolib
 {
-	win32_module::win32_module(const std::string& aPath) : 
-		iHandle(NULL) 
-	{ 
-		load(aPath); 
-	}
+    win32_module::win32_module(const std::string& aPath) : 
+        iHandle(NULL) 
+    { 
+        load(aPath); 
+    }
 
-	win32_module::~win32_module() 
-	{ 
-		unload(); 
-	}
+    win32_module::~win32_module() 
+    { 
+        unload(); 
+    }
 
-	bool win32_module::load(const std::string& aPath)
-	{ 
-		try
-		{
-			iHandle = ::LoadLibrary(neolib::convert_path(aPath).c_str());
-		}
-		catch (const std::exception& e)
-		{
-			throw std::runtime_error("neolib::win32_module: Failed to load module '" + aPath + "', reason: " + e.what());
-		}
-		catch (...)
-		{
-			throw std::runtime_error("neolib::win32_module: Failed to load module '" + aPath + "', unknown reason");
-		}
-		return loaded(); 
-	}
+    bool win32_module::load(const std::string& aPath)
+    { 
+        try
+        {
+            iHandle = ::LoadLibrary(neolib::convert_path(aPath).c_str());
+        }
+        catch (const std::exception& e)
+        {
+            throw std::runtime_error("neolib::win32_module: Failed to load module '" + aPath + "', reason: " + e.what());
+        }
+        catch (...)
+        {
+            throw std::runtime_error("neolib::win32_module: Failed to load module '" + aPath + "', unknown reason");
+        }
+        return loaded(); 
+    }
 
-	void win32_module::unload() 
-	{ 
-		::FreeLibrary(iHandle); iHandle = NULL; 
-	}
+    void win32_module::unload() 
+    { 
+        ::FreeLibrary(iHandle); iHandle = NULL; 
+    }
 
-	bool win32_module::loaded() const 
-	{ 
-		return iHandle != NULL; 
-	}
+    bool win32_module::loaded() const 
+    { 
+        return iHandle != NULL; 
+    }
 
-	void* win32_module::procedure_address(const std::string& aProcedureName)
-	{ 
-		return ::GetProcAddress(iHandle, aProcedureName.c_str()); 
-	}
+    void* win32_module::procedure_address(const std::string& aProcedureName)
+    { 
+        return ::GetProcAddress(iHandle, aProcedureName.c_str()); 
+    }
 }

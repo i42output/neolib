@@ -41,42 +41,42 @@
 
 namespace neolib
 {
-	template <typename CharType>
-	class i_basic_packet
-	{
-		// types
-	public:
-		typedef CharType character_type;
-		typedef const character_type* const_pointer;
-		typedef character_type* pointer;
-		typedef std::size_t size_type;
-		typedef const_pointer const_iterator;
-		typedef pointer iterator;
-		typedef std::unique_ptr<i_basic_packet> clone_pointer;
-		// exceptions
-	public:
-		struct packet_empty : std::logic_error { packet_empty() : std::logic_error("neolib::i_basic_packet::packet_empty") {} };
-		struct packet_too_big : std::runtime_error { packet_too_big() : std::runtime_error("neolib::i_basic_packet::packet_too_big") {} };
-		// construction
-	public:
-		virtual ~i_basic_packet() {}
-		// interface
-	public:
-		virtual const_pointer data() const = 0;
-		virtual pointer data() = 0;
-		virtual size_type length() const = 0;
-		virtual bool has_max_length() const = 0;
-		virtual size_type max_length() const = 0;
-		bool empty() const { return length() == 0; }
-		virtual void clear() = 0;
-		const_iterator begin() const { return !empty() ? data() : 0; }
-		const_iterator end() const { return !empty() ? data()  + length(): 0; }
-		iterator begin() { return !empty() ? data() : 0; }
-		iterator end() { return !empty() ? data()  + length(): 0; }
-		virtual bool take_some(const_pointer& aFirst, const_pointer aLast) = 0;
-		virtual clone_pointer clone() const = 0;
-		virtual void copy_from(const i_basic_packet<CharType>& aSource) = 0;
-	};
+    template <typename CharType>
+    class i_basic_packet
+    {
+        // types
+    public:
+        typedef CharType character_type;
+        typedef const character_type* const_pointer;
+        typedef character_type* pointer;
+        typedef std::size_t size_type;
+        typedef const_pointer const_iterator;
+        typedef pointer iterator;
+        typedef std::unique_ptr<i_basic_packet> clone_pointer;
+        // exceptions
+    public:
+        struct packet_empty : std::logic_error { packet_empty() : std::logic_error("neolib::i_basic_packet::packet_empty") {} };
+        struct packet_too_big : std::runtime_error { packet_too_big() : std::runtime_error("neolib::i_basic_packet::packet_too_big") {} };
+        // construction
+    public:
+        virtual ~i_basic_packet() {}
+        // interface
+    public:
+        virtual const_pointer data() const = 0;
+        virtual pointer data() = 0;
+        virtual size_type length() const = 0;
+        virtual bool has_max_length() const = 0;
+        virtual size_type max_length() const = 0;
+        bool empty() const { return length() == 0; }
+        virtual void clear() = 0;
+        const_iterator begin() const { return !empty() ? data() : 0; }
+        const_iterator end() const { return !empty() ? data()  + length(): 0; }
+        iterator begin() { return !empty() ? data() : 0; }
+        iterator end() { return !empty() ? data()  + length(): 0; }
+        virtual bool take_some(const_pointer& aFirst, const_pointer aLast) = 0;
+        virtual clone_pointer clone() const = 0;
+        virtual void copy_from(const i_basic_packet<CharType>& aSource) = 0;
+    };
 
-	typedef i_basic_packet<char> i_packet;
+    typedef i_basic_packet<char> i_packet;
 }

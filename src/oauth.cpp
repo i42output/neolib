@@ -38,49 +38,49 @@
 
 namespace neolib
 {
-	oauth::oauth(async_task& IoTask, const std::string& aConsumerKey, const std::string& aConsumerSecret, 
-		const operation& aRequestTokenOp, const operation& aUserAuthorizationOp, const operation& aAccessTokenOp) : 
-		iHttpRequester(IoTask), iConsumerKey(aConsumerKey), iConsumerSecret(aConsumerSecret), 
-			iRequestTokenOp(aRequestTokenOp), iUserAuthorizationOp(aUserAuthorizationOp), iAccessTokenOp(aAccessTokenOp)
-	{
-		iHttpRequester.add_observer(*this);
-	}
+    oauth::oauth(async_task& IoTask, const std::string& aConsumerKey, const std::string& aConsumerSecret, 
+        const operation& aRequestTokenOp, const operation& aUserAuthorizationOp, const operation& aAccessTokenOp) : 
+        iHttpRequester(IoTask), iConsumerKey(aConsumerKey), iConsumerSecret(aConsumerSecret), 
+            iRequestTokenOp(aRequestTokenOp), iUserAuthorizationOp(aUserAuthorizationOp), iAccessTokenOp(aAccessTokenOp)
+    {
+        iHttpRequester.add_observer(*this);
+    }
 
-	oauth::~oauth()
-	{
-		iHttpRequester.remove_observer(*this);
-	}
+    oauth::~oauth()
+    {
+        iHttpRequester.remove_observer(*this);
+    }
 
-	void oauth::request()
-	{
-		// TODO
-	}
+    void oauth::request()
+    {
+        // TODO
+    }
 
-	void oauth::notify_observer(oauth_observer& aObserver, oauth_observer::notify_type aType, const void*, const void*)
-	{
-		switch(aType)
-		{
-		case oauth_observer::NotifyStarted:
-			aObserver.oauth_request_started(*this);
-			break;
-		case oauth_observer::NotifyCompleted:
-			aObserver.oauth_request_completed(*this);
-			break;
-		case oauth_observer::NotifyFailure:
-			aObserver.oauth_request_failure(*this);
-			break;
-		}
-	}
+    void oauth::notify_observer(oauth_observer& aObserver, oauth_observer::notify_type aType, const void*, const void*)
+    {
+        switch(aType)
+        {
+        case oauth_observer::NotifyStarted:
+            aObserver.oauth_request_started(*this);
+            break;
+        case oauth_observer::NotifyCompleted:
+            aObserver.oauth_request_completed(*this);
+            break;
+        case oauth_observer::NotifyFailure:
+            aObserver.oauth_request_failure(*this);
+            break;
+        }
+    }
 
-	void oauth::http_request_started(http&)
-	{
-	}
+    void oauth::http_request_started(http&)
+    {
+    }
 
-	void oauth::http_request_completed(http&)
-	{
-	}
+    void oauth::http_request_completed(http&)
+    {
+    }
 
-	void oauth::http_request_failure(http&)
-	{
-	}
+    void oauth::http_request_failure(http&)
+    {
+    }
 }

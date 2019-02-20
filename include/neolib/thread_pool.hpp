@@ -46,58 +46,58 @@
 
 namespace neolib
 {
-	class thread_pool_thread;
+    class thread_pool_thread;
 
-	class thread_pool
-	{
-		friend class thread_pool_thread;
-	public:
-		typedef std::shared_ptr<i_task> task_pointer;
-	public:
-		struct no_threads : std::logic_error { no_threads() : std::logic_error("neolib::thread_pool::no_threads") {} };
-		struct task_not_found : std::logic_error { task_not_found() : std::logic_error("neolib::thread_pool::task_not_found") {} };
-	private:
-		typedef std::vector<std::unique_ptr<i_thread>> thread_list;
-	public:
-		thread_pool();
-		~thread_pool();
-	public:
-		void reserve(std::size_t aMaxThreads);
-		std::size_t active_threads() const;
-		std::size_t available_threads() const;
-		std::size_t total_threads() const;
-		std::size_t max_threads() const;
-	public:
-		void start(i_task& aTask, int32_t aPriority = 0);
-		void start(task_pointer aTask, int32_t aPriority = 0);
-		bool try_start(i_task& aTask, int32_t aPriority = 0);
-		bool try_start(task_pointer aTask, int32_t aPriority = 0);
-		std::pair<std::future<void>, task_pointer> run(std::function<void()> aFunction, int32_t aPriority = 0);
-		template <typename T>
-		std::pair<std::future<T>, task_pointer> run(std::function<T()> aFunction, int32_t aPriority = 0);
-	public:
-		bool idle() const;
-		bool busy() const;
-		void wait() const;
-	public:
-		static thread_pool& default_thread_pool();
-		std::recursive_mutex& mutex() const;
-	private:
-		void steal_work(thread_pool_thread& aIdleThread);
-		void thread_gone_idle();
-	private:
-		mutable std::recursive_mutex iMutex;
-		std::size_t iMaxThreads;
-		thread_list iThreads;
-		mutable std::mutex iWaitMutex;
-		mutable std::condition_variable iWaitConditionVariable;
-	};
+    class thread_pool
+    {
+        friend class thread_pool_thread;
+    public:
+        typedef std::shared_ptr<i_task> task_pointer;
+    public:
+        struct no_threads : std::logic_error { no_threads() : std::logic_error("neolib::thread_pool::no_threads") {} };
+        struct task_not_found : std::logic_error { task_not_found() : std::logic_error("neolib::thread_pool::task_not_found") {} };
+    private:
+        typedef std::vector<std::unique_ptr<i_thread>> thread_list;
+    public:
+        thread_pool();
+        ~thread_pool();
+    public:
+        void reserve(std::size_t aMaxThreads);
+        std::size_t active_threads() const;
+        std::size_t available_threads() const;
+        std::size_t total_threads() const;
+        std::size_t max_threads() const;
+    public:
+        void start(i_task& aTask, int32_t aPriority = 0);
+        void start(task_pointer aTask, int32_t aPriority = 0);
+        bool try_start(i_task& aTask, int32_t aPriority = 0);
+        bool try_start(task_pointer aTask, int32_t aPriority = 0);
+        std::pair<std::future<void>, task_pointer> run(std::function<void()> aFunction, int32_t aPriority = 0);
+        template <typename T>
+        std::pair<std::future<T>, task_pointer> run(std::function<T()> aFunction, int32_t aPriority = 0);
+    public:
+        bool idle() const;
+        bool busy() const;
+        void wait() const;
+    public:
+        static thread_pool& default_thread_pool();
+        std::recursive_mutex& mutex() const;
+    private:
+        void steal_work(thread_pool_thread& aIdleThread);
+        void thread_gone_idle();
+    private:
+        mutable std::recursive_mutex iMutex;
+        std::size_t iMaxThreads;
+        thread_list iThreads;
+        mutable std::mutex iWaitMutex;
+        mutable std::condition_variable iWaitConditionVariable;
+    };
 
-	template <typename T>
-	inline std::pair<std::future<T>, thread_pool::task_pointer> thread_pool::run(std::function<T()> aFunction, int32_t aPriority)
-	{
-		auto newTask = std::make_shared<function_task<T>>(aFunction);
-		start(newTask, aPriority);
-		return std::make_pair(newTask->get_future(), newTask);
-	}
+    template <typename T>
+    inline std::pair<std::future<T>, thread_pool::task_pointer> thread_pool::run(std::function<T()> aFunction, int32_t aPriority)
+    {
+        auto newTask = std::make_shared<function_task<T>>(aFunction);
+        start(newTask, aPriority);
+        return std::make_pair(newTask->get_future(), newTask);
+    }
 }

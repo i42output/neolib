@@ -39,30 +39,30 @@
 
 namespace neolib
 {
-	class message_queue
-	{
-	public:
-		struct scoped_context
-		{
-			message_queue& iMessageQueue;
-			scoped_context(message_queue& aMessageQueue) : 
-				iMessageQueue(aMessageQueue)
-			{
-				iMessageQueue.push_context();
-			}
-			~scoped_context()
-			{
-				iMessageQueue.pop_context();
-			}
-		};
-	public:
-		virtual ~message_queue() {}
-	public:
-		virtual void push_context() = 0;
-		virtual void pop_context() = 0;
-		virtual bool have_message() const = 0;
-		virtual int get_message() const = 0;
-		virtual void bump() = 0;
-		virtual void idle() = 0;
-	};
+    class message_queue
+    {
+    public:
+        struct scoped_context
+        {
+            message_queue& iMessageQueue;
+            scoped_context(message_queue& aMessageQueue) : 
+                iMessageQueue(aMessageQueue)
+            {
+                iMessageQueue.push_context();
+            }
+            ~scoped_context()
+            {
+                iMessageQueue.pop_context();
+            }
+        };
+    public:
+        virtual ~message_queue() {}
+    public:
+        virtual void push_context() = 0;
+        virtual void pop_context() = 0;
+        virtual bool have_message() const = 0;
+        virtual int get_message() const = 0;
+        virtual void bump() = 0;
+        virtual void idle() = 0;
+    };
 }

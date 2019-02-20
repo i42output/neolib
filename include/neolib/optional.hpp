@@ -42,121 +42,121 @@
 
 namespace neolib
 {
-	template<typename T, typename ConcreteType = T>
-	class optional : public reference_counted<i_optional<T> >, public std::optional<ConcreteType>
-	{
-		// types
-	public:
-		typedef T abstract_type;
-		typedef ConcreteType value_type;
-		typedef ConcreteType* pointer;
-		typedef const ConcreteType* const_pointer;
-		typedef ConcreteType& reference;
-		typedef const ConcreteType& const_reference;
-		typedef typename i_optional<T>::not_valid not_valid;
-	private:
-		typedef i_optional<T> abstract_base;
-		typedef std::optional<ConcreteType> base;
-		// construction
-	public:
-		optional() {}
-		optional(const abstract_base& rhs) : base(rhs.get()) {}
-		optional(const_reference value) : base(value) {}
-		// state
-	public:
-		virtual bool valid() const
-		{
-			return static_cast<const base&>(*this) != std::nullopt;
-		}
-		virtual bool invalid() const
-		{
-			return !valid();
-		}
-		virtual operator bool() const 
-		{ 
-			return valid();
-		}
-		// element access
-	public:
-		virtual reference get()
-		{
-			if (valid())
-				return base::value();
-			throw not_valid();
-		}
-		virtual const_reference get() const
-		{
-			if (valid())
-				return base::value();
-			throw not_valid();
-		}
-		virtual reference operator*()
-		{ 
-			return get();
-		}
-		virtual const_reference operator*() const
-		{ 
-			return get();
-		}
-		virtual pointer operator->()
-		{ 
-			return &get(); 
-		}
-		virtual const_pointer operator->() const
-		{ 
-			return &get(); 
-		}
-		// modifiers
-	public:
-		virtual void reset()
-		{ 
-			static_cast<base&>(*this) = std::nullopt;
-		}
-		virtual optional& operator=(const std::nullopt_t&)
-		{
-			static_cast<base&>(*this) = std::nullopt;
-			return *this;
-		}
-		virtual optional& operator=(const abstract_base& rhs)
-		{ 
-			*this = rhs.get();
-			return *this;
-		}
-		virtual optional& operator=(const abstract_type& value) 
-		{
-			static_cast<base&>(*this) = value;
-			return *this;
-		}
-		void swap(optional& rhs)
-		{
-			base::swap(rhs);
-		}
-	};
+    template<typename T, typename ConcreteType = T>
+    class optional : public reference_counted<i_optional<T> >, public std::optional<ConcreteType>
+    {
+        // types
+    public:
+        typedef T abstract_type;
+        typedef ConcreteType value_type;
+        typedef ConcreteType* pointer;
+        typedef const ConcreteType* const_pointer;
+        typedef ConcreteType& reference;
+        typedef const ConcreteType& const_reference;
+        typedef typename i_optional<T>::not_valid not_valid;
+    private:
+        typedef i_optional<T> abstract_base;
+        typedef std::optional<ConcreteType> base;
+        // construction
+    public:
+        optional() {}
+        optional(const abstract_base& rhs) : base(rhs.get()) {}
+        optional(const_reference value) : base(value) {}
+        // state
+    public:
+        virtual bool valid() const
+        {
+            return static_cast<const base&>(*this) != std::nullopt;
+        }
+        virtual bool invalid() const
+        {
+            return !valid();
+        }
+        virtual operator bool() const 
+        { 
+            return valid();
+        }
+        // element access
+    public:
+        virtual reference get()
+        {
+            if (valid())
+                return base::value();
+            throw not_valid();
+        }
+        virtual const_reference get() const
+        {
+            if (valid())
+                return base::value();
+            throw not_valid();
+        }
+        virtual reference operator*()
+        { 
+            return get();
+        }
+        virtual const_reference operator*() const
+        { 
+            return get();
+        }
+        virtual pointer operator->()
+        { 
+            return &get(); 
+        }
+        virtual const_pointer operator->() const
+        { 
+            return &get(); 
+        }
+        // modifiers
+    public:
+        virtual void reset()
+        { 
+            static_cast<base&>(*this) = std::nullopt;
+        }
+        virtual optional& operator=(const std::nullopt_t&)
+        {
+            static_cast<base&>(*this) = std::nullopt;
+            return *this;
+        }
+        virtual optional& operator=(const abstract_base& rhs)
+        { 
+            *this = rhs.get();
+            return *this;
+        }
+        virtual optional& operator=(const abstract_type& value) 
+        {
+            static_cast<base&>(*this) = value;
+            return *this;
+        }
+        void swap(optional& rhs)
+        {
+            base::swap(rhs);
+        }
+    };
 
-	template <typename T, typename ConcreteType>
-	inline bool operator<(const optional<T, ConcreteType>& lhs, const optional<T, ConcreteType>& rhs)
-	{
-		if (lhs.valid() != rhs.valid())
-			return lhs.valid() < rhs.valid();
-		if (!lhs.valid())
-			return false;
-		return lhs.get() < rhs.get();
-	}
+    template <typename T, typename ConcreteType>
+    inline bool operator<(const optional<T, ConcreteType>& lhs, const optional<T, ConcreteType>& rhs)
+    {
+        if (lhs.valid() != rhs.valid())
+            return lhs.valid() < rhs.valid();
+        if (!lhs.valid())
+            return false;
+        return lhs.get() < rhs.get();
+    }
 
-	template <typename T, typename ConcreteType>
-	inline bool operator==(const optional<T, ConcreteType>& lhs, const optional<T, ConcreteType>& rhs)
-	{
-		if (lhs.valid() != rhs.valid())
-			return false;
-		if (lhs.valid())
-			return *lhs == *rhs;
-		else
-			return true;
-	}
+    template <typename T, typename ConcreteType>
+    inline bool operator==(const optional<T, ConcreteType>& lhs, const optional<T, ConcreteType>& rhs)
+    {
+        if (lhs.valid() != rhs.valid())
+            return false;
+        if (lhs.valid())
+            return *lhs == *rhs;
+        else
+            return true;
+    }
 
-	template <typename T, typename ConcreteType>
-	inline bool operator!=(const optional<T, ConcreteType>& lhs, const optional<T, ConcreteType>& rhs)
-	{
-		return !operator==(lhs, rhs);
-	}
+    template <typename T, typename ConcreteType>
+    inline bool operator!=(const optional<T, ConcreteType>& lhs, const optional<T, ConcreteType>& rhs)
+    {
+        return !operator==(lhs, rhs);
+    }
 }
