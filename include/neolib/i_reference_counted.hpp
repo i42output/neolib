@@ -67,11 +67,11 @@ namespace neolib
     };
 
     template <typename Interface>
-    class i_auto_ref
+    class i_ref_ptr
     {
     public:
-        struct no_object : std::logic_error { no_object() : std::logic_error("neolib::i_auto_ref::no_object") {} };
-        struct interface_not_found : std::logic_error { interface_not_found() : std::logic_error("neolib::i_auto_ref::interface_not_found") {} };
+        struct no_object : std::logic_error { no_object() : std::logic_error("neolib::i_ref_ptr::no_object") {} };
+        struct interface_not_found : std::logic_error { interface_not_found() : std::logic_error("neolib::i_ref_ptr::interface_not_found") {} };
     public:
         virtual bool reference_counted() const = 0;
         virtual void reset(Interface* aObject = 0, bool aReferenceCounted = true) = 0;
@@ -83,19 +83,19 @@ namespace neolib
         bool operator==(nullptr_t) const { return ptr() == nullptr; }
         bool operator!=(nullptr_t) const { return ptr() != nullptr; }
         template <typename Interface>
-        bool operator==(const i_auto_ref<Interface>& aOther) const { return ptr() == aOther.ptr(); }
+        bool operator==(const i_ref_ptr<Interface>& aOther) const { return ptr() == aOther.ptr(); }
         template <typename Interface>
-        bool operator!=(const i_auto_ref<Interface>& aOther) const { return ptr() != aOther.ptr(); }
+        bool operator!=(const i_ref_ptr<Interface>& aOther) const { return ptr() != aOther.ptr(); }
         template <typename Interface>
-        bool operator<(const i_auto_ref<Interface>& aOther) const { return ptr() < aOther.ptr(); }
+        bool operator<(const i_ref_ptr<Interface>& aOther) const { return ptr() < aOther.ptr(); }
     };
 
     template <typename Interface>
-    class i_weak_auto_ref : public i_auto_ref<Interface>, protected i_reference_counted::i_object_destruction_watcher
+    class i_weak_ref_ptr : public i_ref_ptr<Interface>, protected i_reference_counted::i_object_destruction_watcher
     {
     public:
-        struct bad_release : std::logic_error { bad_release() : std::logic_error("neolib::i_weak_auto_ref::bad_release") {} };
-        struct wrong_object : std::logic_error { wrong_object() : std::logic_error("neolib::i_weak_auto_ref::wrong_object") {} };
+        struct bad_release : std::logic_error { bad_release() : std::logic_error("neolib::i_weak_ref_ptr::bad_release") {} };
+        struct wrong_object : std::logic_error { wrong_object() : std::logic_error("neolib::i_weak_ref_ptr::wrong_object") {} };
     public:
         virtual void object_being_destroyed(i_reference_counted& aObject) = 0;
     };

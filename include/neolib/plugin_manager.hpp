@@ -55,7 +55,7 @@ namespace neolib
         typedef vector<i_string, string> plugin_file_extensions_t;
         typedef vector<i_string, string> plugin_folders_t;
         typedef std::map<uuid, std::unique_ptr<module>> modules_t;
-        typedef vector<i_auto_ref<i_plugin>, auto_ref<i_plugin>> plugins_t;
+        typedef vector<i_ref_ptr<i_plugin>, ref_ptr<i_plugin>> plugins_t;
         // construction
     public:
         plugin_manager(i_application& aApplication);
@@ -75,8 +75,8 @@ namespace neolib
         bool plugin_enabled(const i_plugin& aPlugin) const override;
         void unload_plugins() override;
         const plugins_t& plugins() const override;
-        const i_auto_ref<i_plugin>& find_plugin(const uuid& aId) const override;
-        i_auto_ref<i_plugin>& find_plugin(const uuid& aId) override;
+        const i_ref_ptr<i_plugin>& find_plugin(const uuid& aId) const override;
+        i_ref_ptr<i_plugin>& find_plugin(const uuid& aId) override;
         bool open_uri(const i_string& aUri) override;
     public:
         void subscribe(i_subscriber& aObserver) override;
@@ -87,7 +87,7 @@ namespace neolib
         void notify_observer(observer_type& aObserver, notify_type aType, const void* aParameter, const void* aParameter2) override;
         // own
     private:
-        i_auto_ref<i_plugin>& create_plugin(const i_string& aPluginPath);
+        i_ref_ptr<i_plugin>& create_plugin(const i_string& aPluginPath);
         // attributes
     private:
         i_application& iApplication;

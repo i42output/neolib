@@ -50,7 +50,7 @@ namespace neolib
     public:
         typedef i_vector<i_string> plugin_file_extensions_t;
         typedef i_vector<i_string> plugin_folders_t;
-        typedef i_vector<i_auto_ref<i_plugin>> plugins_t;
+        typedef i_vector<i_ref_ptr<i_plugin>> plugins_t;
         class i_subscriber
         {
         public:
@@ -79,8 +79,8 @@ namespace neolib
         virtual bool plugin_enabled(const i_plugin& aPlugin) const = 0;
         virtual void unload_plugins() = 0;
         virtual const plugins_t& plugins() const = 0;
-        virtual const i_auto_ref<i_plugin>& find_plugin(const uuid& aId) const = 0;
-        virtual i_auto_ref<i_plugin>& find_plugin(const uuid& aId) = 0;
+        virtual const i_ref_ptr<i_plugin>& find_plugin(const uuid& aId) const = 0;
+        virtual i_ref_ptr<i_plugin>& find_plugin(const uuid& aId) = 0;
         virtual bool open_uri(const i_string& aUri) = 0;
     public:
         virtual void subscribe(i_subscriber& aObserver) = 0;

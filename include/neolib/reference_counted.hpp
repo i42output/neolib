@@ -134,59 +134,59 @@ namespace neolib
     };
 
     template <typename Interface>
-    class auto_ref : public i_auto_ref<Interface>
+    class ref_ptr : public i_ref_ptr<Interface>
     {
     public:
-        typedef i_auto_ref<Interface> abstract_base;
+        typedef i_ref_ptr<Interface> abstract_base;
         typedef typename abstract_base::no_object no_object;
         typedef typename abstract_base::interface_not_found interface_not_found;
     public:
-        auto_ref(Interface* aObject = nullptr) :
+        ref_ptr(Interface* aObject = nullptr) :
             iObject(aObject), iReferenceCounted(true)
         {
             if (valid())
                 iObject->add_ref();
         }
-        auto_ref(Interface& aObject) :
+        ref_ptr(Interface& aObject) :
             iObject(&aObject), iReferenceCounted(false)
         {
         }
-        auto_ref(const auto_ref& aOther) :
+        ref_ptr(const ref_ptr& aOther) :
             iObject(aOther.ptr()), iReferenceCounted(aOther.reference_counted())
         {
             if (valid() && iReferenceCounted)
                 iObject->add_ref();
         }
-        auto_ref(const abstract_base& aOther) :
+        ref_ptr(const abstract_base& aOther) :
             iObject(aOther.ptr()), iReferenceCounted(aOther.reference_counted())
         {
             if (valid() && iReferenceCounted)
                 iObject->add_ref();
         }
-        auto_ref(i_discoverable& aDiscoverable) :
+        ref_ptr(i_discoverable& aDiscoverable) :
             iObject(nullptr), iReferenceCounted(true)
         {
             if (!aDiscoverable.discover(*this))
                 throw interface_not_found();
         }
-        ~auto_ref()
+        ~ref_ptr()
         {
             if (valid() && iReferenceCounted)
                 iObject->release();
         }
-        auto_ref& operator=(const auto_ref& aOther)
+        ref_ptr& operator=(const ref_ptr& aOther)
         {
             reset(aOther.ptr(), aOther.reference_counted());
             return *this;
         }
-        auto_ref& operator=(const abstract_base& aOther)
+        ref_ptr& operator=(const abstract_base& aOther)
         {
             if (&aOther == this)
                 return *this;
             reset(aOther.ptr(), aOther.reference_counted());
             return *this;
         }
-        auto_ref& operator=(nullptr_t)
+        ref_ptr& operator=(nullptr_t)
         {
             reset();
             return *this;
@@ -198,7 +198,7 @@ namespace neolib
         }
         virtual void reset(Interface* aObject = nullptr, bool aReferenceCounted = true)
         {
-            auto_ref copy(*this);
+            ref_ptr copy(*this);
             if (valid() && iReferenceCounted)
                 iObject->release();
             iObject = aObject;
@@ -240,40 +240,40 @@ namespace neolib
     };
 
     template <typename Interface>
-    class weak_auto_ref : public i_weak_auto_ref<Interface>
+    class weak_ref_ptr : public i_weak_ref_ptr<Interface>
     {
     public:
-        typedef i_weak_auto_ref<Interface> base;
+        typedef i_weak_ref_ptr<Interface> base;
         typedef typename base::no_object no_object;
         typedef typename base::interface_not_found interface_not_found;
         typedef typename base::bad_release bad_release;
         typedef typename base::wrong_object wrong_object;
     public:
-        weak_auto_ref(Interface* aObject = nullptr) :
+        weak_ref_ptr(Interface* aObject = nullptr) :
             iObject(aObject)
         {
             if (valid())
                 iObject->subcribe_destruction_watcher(*this);
         }
-        weak_auto_ref(Interface& aObject) :
+        weak_ref_ptr(Interface& aObject) :
             iObject(&aObject)
         {
             if (valid())
                 iObject->subcribe_destruction_watcher(*this);
         }
-        weak_auto_ref(const weak_auto_ref& aOther) :
+        weak_ref_ptr(const weak_ref_ptr& aOther) :
             iObject(aOther.ptr())
         {
             if (valid())
                 iObject->subcribe_destruction_watcher(*this);
         }
-        weak_auto_ref(const i_auto_ref<Interface>& aOther) :
+        weak_ref_ptr(const i_ref_ptr<Interface>& aOther) :
             iObject(aOther.ptr())
         {
             if (valid())
                 iObject->subcribe_destruction_watcher(*this);
         }
-        weak_auto_ref(i_discoverable& aDiscoverable) :
+        weak_ref_ptr(i_discoverable& aDiscoverable) :
             iObject(nullptr)
         {
             if (!aDiscoverable.discover(*this))
@@ -281,22 +281,22 @@ namespace neolib
             if (valid())
                 iObject->subcribe_destruction_watcher(*this);
         }
-        ~weak_auto_ref()
+        ~weak_ref_ptr()
         {
             if (valid())
                 iObject->unsubcribe_destruction_watcher(*this);
         }
-        weak_auto_ref& operator=(const weak_auto_ref& aOther)
+        weak_ref_ptr& operator=(const weak_ref_ptr& aOther)
         {
             reset(aOther.ptr());
             return *this;
         }
-        weak_auto_ref& operator=(const i_auto_ref<Interface>& aOther)
+        weak_ref_ptr& operator=(const i_ref_ptr<Interface>& aOther)
         {
             reset(aOther.ptr());
             return *this;
         }
-        weak_auto_ref& operator=(nullptr_t)
+        weak_ref_ptr& operator=(nullptr_t)
         {
             reset();
             return *this;
@@ -308,7 +308,7 @@ namespace neolib
         }
         virtual void reset(Interface* aObject = nullptr, bool = false)
         {
-            weak_auto_ref copy(*this);
+            weak_ref_ptr copy(*this);
             iObject = aObject;
             if (valid())
                 iObject->subcribe_destruction_watcher(*this);

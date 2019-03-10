@@ -50,7 +50,7 @@ namespace neolib
         virtual const i_string& name() const = 0;
         virtual i_string& name() = 0;
         virtual i_string* to_string() const = 0;
-        std::string to_std_string() const { auto_ref<i_string> string(to_string()); return string->to_std_string(); }
+        std::string to_std_string() const { ref_ptr<i_string> string(to_string()); return string->to_std_string(); }
         virtual i_custom_type* clone() const = 0;
         virtual i_custom_type& assign(const i_custom_type& aRhs) = 0;
         i_custom_type& operator=(const i_custom_type& aRhs)

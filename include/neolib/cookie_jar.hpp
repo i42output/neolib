@@ -92,34 +92,34 @@ namespace neolib
     };
 
     template <typename CookieType>
-    class basic_cookie_auto_ref
+    class basic_cookie_ref_ptr
     {
     public:
         typedef CookieType cookie_type;
         static constexpr cookie_type no_cookie = cookie_type{};
     public:
-        basic_cookie_auto_ref() :
+        basic_cookie_ref_ptr() :
             iConsumer{ nullptr },
             iCookie{ no_cookie }
         {
         }
-        basic_cookie_auto_ref(i_basic_cookie_consumer<cookie_type>& aConsumer, cookie_type aCookie) :
+        basic_cookie_ref_ptr(i_basic_cookie_consumer<cookie_type>& aConsumer, cookie_type aCookie) :
             iConsumer{ &aConsumer },
             iCookie{ aCookie }
         {
             add_ref();
         }
-        ~basic_cookie_auto_ref()
+        ~basic_cookie_ref_ptr()
         {
             release();
         }
-        basic_cookie_auto_ref(const basic_cookie_auto_ref& aOther) :
+        basic_cookie_ref_ptr(const basic_cookie_ref_ptr& aOther) :
             iConsumer{ aOther.iConsumer },
             iCookie{ aOther.iCookie }
         {
             add_ref();
         }
-        basic_cookie_auto_ref(basic_cookie_auto_ref&& aOther) :
+        basic_cookie_ref_ptr(basic_cookie_ref_ptr&& aOther) :
             iConsumer{ aOther.iConsumer },
             iCookie{ aOther.iCookie }
         {
@@ -127,21 +127,21 @@ namespace neolib
             aOther.release();
         }
     public:
-        basic_cookie_auto_ref& operator=(const basic_cookie_auto_ref& aOther)
+        basic_cookie_ref_ptr& operator=(const basic_cookie_ref_ptr& aOther)
         {
             if (&aOther == this)
                 return *this;
-            basic_cookie_auto_ref temp{ std::move(*this) };
+            basic_cookie_ref_ptr temp{ std::move(*this) };
             iConsumer = aOther.iConsumer;
             iCookie = aOther.iCookie;
             add_ref();
             return *this;
         }
-        basic_cookie_auto_ref& operator=(basic_cookie_auto_ref&& aOther)
+        basic_cookie_ref_ptr& operator=(basic_cookie_ref_ptr&& aOther)
         {
             if (&aOther == this)
                 return *this;
-            basic_cookie_auto_ref temp{ std::move(*this) };
+            basic_cookie_ref_ptr temp{ std::move(*this) };
             iConsumer = aOther.iConsumer;
             iCookie = aOther.iCookie;
             add_ref();
@@ -149,15 +149,15 @@ namespace neolib
             return *this;
         }
     public:
-        bool operator==(const basic_cookie_auto_ref& aRhs) const
+        bool operator==(const basic_cookie_ref_ptr& aRhs) const
         {
             return iConsumer == aRhs.iConsumer && iCookie == aRhs.iCookie;
         }
-        bool operator!=(const basic_cookie_auto_ref& aRhs) const
+        bool operator!=(const basic_cookie_ref_ptr& aRhs) const
         {
             return !(*this == aRhs);
         }
-        bool operator<(const basic_cookie_auto_ref& aRhs) const
+        bool operator<(const basic_cookie_ref_ptr& aRhs) const
         {
             return std::tie(iConsumer, iCookie) < std::tie(aRhs.iConsumer, aRhs.iCookie);
         }
@@ -383,8 +383,8 @@ namespace neolib
     typedef i_basic_cookie_consumer<small_cookie> i_small_cookie_consumer;
     typedef i_basic_cookie_jar_item<cookie> i_cookie_jar_item;
     typedef i_basic_cookie_jar_item<small_cookie> i_small_cookie_jar_item;
-    typedef basic_cookie_auto_ref<cookie> cookie_auto_ref;
-    typedef basic_cookie_auto_ref<small_cookie> small_cookie_auto_ref;
+    typedef basic_cookie_ref_ptr<cookie> cookie_ref_ptr;
+    typedef basic_cookie_ref_ptr<small_cookie> small_cookie_ref_ptr;
     template <typename T, typename MutexType = std::recursive_mutex>
     using cookie_jar = basic_cookie_jar<T, cookie, MutexType>;
     template <typename T, typename MutexType = std::recursive_mutex>

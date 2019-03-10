@@ -46,11 +46,11 @@
 
 namespace neolib
 {
-    class simple_variant : public reference_counted<i_simple_variant>, public variant<bool, int64_t, double, string, auto_ref<i_custom_type>>
+    class simple_variant : public reference_counted<i_simple_variant>, public variant<bool, int64_t, double, string, ref_ptr<i_custom_type>>
     {
         // types
     private:
-        typedef neolib::variant<bool, int64_t, double, string, auto_ref<i_custom_type>> variant_type;
+        typedef neolib::variant<bool, int64_t, double, string, ref_ptr<i_custom_type>> variant_type;
 
         // construction
     public:
@@ -61,8 +61,8 @@ namespace neolib
         simple_variant(double aValue) : variant_type{ aValue } {}
         simple_variant(const char* const aValue) : variant_type{ string(aValue) } {}
         simple_variant(const i_string& aValue) : variant_type{ string(aValue) } {}
-        simple_variant(const auto_ref<i_custom_type>& aValue) : variant_type{ aValue } {}
-        simple_variant(i_custom_type& aValue) : variant_type{ auto_ref<i_custom_type>(aValue) } {}
+        simple_variant(const ref_ptr<i_custom_type>& aValue) : variant_type{ aValue } {}
+        simple_variant(i_custom_type& aValue) : variant_type{ ref_ptr<i_custom_type>(aValue) } {}
         simple_variant(const simple_variant& aVariant) : variant_type{ static_cast<const variant_type&>(aVariant) }
         {
         }
@@ -117,7 +117,7 @@ namespace neolib
                 break;
             case simple_variant_type::CustomType:
                 if (type() != simple_variant_type::CustomType || value_as_custom_type().name() != aVariant.value_as_custom_type().name())
-                    static_cast<variant_type&>(*this) = auto_ref<i_custom_type>(get<i_custom_type>(aVariant).clone());
+                    static_cast<variant_type&>(*this) = ref_ptr<i_custom_type>(get<i_custom_type>(aVariant).clone());
                 else
                     value_as_custom_type() = aVariant.value_as_custom_type();
                 break;
@@ -172,11 +172,11 @@ namespace neolib
         }
         virtual const i_custom_type& value_as_custom_type() const
         {
-            return *static_variant_cast<const auto_ref<i_custom_type>&>(*this);
+            return *static_variant_cast<const ref_ptr<i_custom_type>&>(*this);
         }
         virtual i_custom_type& value_as_custom_type()
         {
-            return *static_variant_cast<auto_ref<i_custom_type>&>(*this);
+            return *static_variant_cast<ref_ptr<i_custom_type>&>(*this);
         }
     };
 

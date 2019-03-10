@@ -58,7 +58,7 @@ namespace neolib
         typedef mutable_set<setting> setting_list;
         typedef std::map<std::pair<string, string>, i_setting::id_type> setting_by_name_list;
     public:
-        settings(const i_string& aFileName = string("settings.xml"), auto_ref<i_custom_type_factory> aCustomSettingTypeFactory = auto_ref<i_custom_type_factory>()) :
+        settings(const i_string& aFileName = string("settings.xml"), ref_ptr<i_custom_type_factory> aCustomSettingTypeFactory = ref_ptr<i_custom_type_factory>()) :
             iFileName(aFileName), iNextSettingId(1), iCustomSettingTypeFactory(aCustomSettingTypeFactory)
         {
             load();
@@ -204,7 +204,7 @@ namespace neolib
                         {
                             string valueType = xmlIterSetting->attribute_value("type");
                             string valueData = xmlIterSetting->attribute_value("value");
-                            currentValue = simple_variant(auto_ref<i_custom_type>(iCustomSettingTypeFactory->create(valueType, valueData)));
+                            currentValue = simple_variant(ref_ptr<i_custom_type>(iCustomSettingTypeFactory->create(valueType, valueData)));
                         }
                     }
                 }
@@ -243,7 +243,7 @@ namespace neolib
     private:
         string iFileName;
         i_setting::id_type iNextSettingId;
-        auto_ref<i_custom_type_factory> iCustomSettingTypeFactory;
+        ref_ptr<i_custom_type_factory> iCustomSettingTypeFactory;
         mutable std::unique_ptr<xml> iStore;
         setting_list iSettings;
         setting_by_name_list iSettingsByName;

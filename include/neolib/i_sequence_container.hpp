@@ -43,7 +43,7 @@ namespace neolib
     template <typename T, typename ConstIteratorType, typename IteratorType, bool DefaultComparisonOperators = true>
     class i_sequence_container : public i_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators>
     {
-    private:
+    protected:
         typedef i_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators> generic_container_type;
     public:
         typedef typename generic_container_type::value_type value_type;

@@ -44,7 +44,7 @@
 namespace neolib
 {
     template <typename Key, typename T, typename ConcreteKey = Key, typename ConcreteType = T>
-    class map : public reference_counted < i_map<Key, T> >
+    class map : public reference_counted <i_map<Key, T>>
     {
         // types
     public:
@@ -58,6 +58,9 @@ namespace neolib
         typedef i_map<Key, T> abstract_base;
     public:
         typedef typename abstract_base::size_type size_type;
+        typedef typename abstract_base::const_iterator const_iterator;
+        typedef typename abstract_base::iterator iterator;
+        typedef typename abstract_base::generic_container_type generic_container_type;
     protected:
         typedef container::const_iterator<abstract_value_type, typename container_type::const_iterator> container_const_iterator;
         typedef container::iterator<abstract_value_type, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
@@ -69,7 +72,7 @@ namespace neolib
             iEndConstIterator(new container_const_iterator(iMap.cend())),
             iEndIterator(new container_iterator(iMap.end()))
         {}
-        map(const i_container& aOther) :
+        map(const generic_container_type& aOther) :
             iEndConstIterator(new container_const_iterator(iMap.cend())),
             iEndIterator(new container_iterator(iMap.end()))
         {
@@ -87,7 +90,7 @@ namespace neolib
         virtual size_type size() const { return iMap.size(); }
         virtual size_type max_size() const { return iMap.max_size(); }
         virtual void clear() { iMap.clear(); }
-        virtual void assign(const i_container& aOther)
+        virtual void assign(const generic_container_type& aOther)
         {
             if (&aOther == this) 
                 return;

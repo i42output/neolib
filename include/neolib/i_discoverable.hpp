@@ -45,7 +45,7 @@ namespace neolib
     {
     public:
         template <typename Interface>
-        bool discover(i_auto_ref<Interface>& aObject)
+        bool discover(i_ref_ptr<Interface>& aObject)
         {
             void* result = nullptr;
             if (discover(Interface::iid(), result))

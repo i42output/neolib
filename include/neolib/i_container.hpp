@@ -37,7 +37,7 @@
 
 #include "neolib.hpp"
 #include <algorithm>
-#include "i_reference_counted.hpp"
+#include "reference_counted.hpp"
 #include "i_iterator.hpp"
 
 namespace neolib
@@ -45,6 +45,8 @@ namespace neolib
     template <typename T, typename ConstIteratorType, typename IteratorType, bool DefaultComparisonOperators = true>
     class i_container : public i_reference_counted
     {
+    protected:
+        typedef i_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators> generic_container_type;
     public:
         typedef T value_type;
         typedef size_t size_type;
