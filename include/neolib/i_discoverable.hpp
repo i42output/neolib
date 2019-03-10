@@ -48,7 +48,7 @@ namespace neolib
         bool discover(i_auto_ref<Interface>& aObject)
         {
             void* result = nullptr;
-            if (discover(Interface::id(), result))
+            if (discover(Interface::iid(), result))
             {
                 aObject.reset(static_cast<Interface*>(result));
             }

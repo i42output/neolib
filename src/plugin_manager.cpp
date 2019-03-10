@@ -33,18 +33,20 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#pragma once
-
 #include <neolib/neolib.hpp>
+#include <boost/dll.hpp>
 #include <neolib/plugin_manager.hpp>
 
 namespace neolib
 {
     typedef void(*entry_point)(i_application&, const i_string&, i_plugin*&);
 
-    plugin_manager::plugin_manager(i_application& aApplication, const std::string& aPluginFolder) :
-        iApplication(aApplication), iPluginFolder(aPluginFolder)
+    plugin_manager::plugin_manager(i_application& aApplication) :
+        iApplication{ aApplication }
     {
+        iPluginFileExtensions.push_back(string{ aApplication.info().plugin_extension() });
+        iPluginFolders.push_back(string{ aApplication.info().application_folder() });
+        iPluginFolders.push_back(string{ boost::dll::program_location().parent_path().string() });
     }
 
     plugin_manager::~plugin_manager()
@@ -57,21 +59,45 @@ namespace neolib
         return false;
     }
 
+    const plugin_manager::plugin_file_extensions_t& plugin_manager::plugin_file_extensions() const
+    {
+        return iPluginFileExtensions;
+    }
+
+    plugin_manager::plugin_file_extensions_t& plugin_manager::plugin_file_extensions()
+    {
+        return iPluginFileExtensions;
+    }
+
+    const plugin_manager::plugin_folders_t& plugin_manager::plugin_folders() const
+    {
+        return iPluginFolders;
+    }
+
+    plugin_manager::plugin_folders_t& plugin_manager::plugin_folders()
+    {
+        return iPluginFolders;
+    }
+
     bool plugin_manager::load_plugins()
     {
-        if (!boost::filesystem::is_directory(iPluginFolder.to_std_string()))
-            return false;
-        for (boost::filesystem::recursive_directory_iterator i(iPluginFolder.to_std_string()); i != boost::filesystem::recursive_directory_iterator(); ++i)
+        for (auto const& folder : plugin_folders())
         {
-            if (i->path().extension() != ".plg")
+            if (!boost::filesystem::is_directory(folder.to_std_string()))
                 continue;
-            create_plugin(string(i->path().generic_string()));
+            for (boost::filesystem::recursive_directory_iterator i(folder.to_std_string()); i != boost::filesystem::recursive_directory_iterator(); ++i)
+                if (find(plugin_file_extensions().begin(), plugin_file_extensions().end(), i->path().extension().string()) != plugin_file_extensions().end())
+                    create_plugin(string(i->path().generic_string()));
         }
-        for (plugin_list::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
+        bool gotSome = false;
+        for (plugins_t::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
             if (!(*i)->loaded())
                 if ((*i)->load())
+                {
+                    gotSome = true;
                     notify_observers(i_subscriber::NotifyPluginLoaded, **i);
-        return true;
+                }
+        return gotSome;
     }
 
     bool plugin_manager::load_plugin(const i_string& aPluginPath)
@@ -101,9 +127,9 @@ namespace neolib
 
     void plugin_manager::unload_plugins()
     {
-        for (plugin_list::iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
+        for (plugins_t::iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
             (*i)->release();
-        for (module_list::iterator i = iModules.begin(); i != iModules.end(); ++i)
+        for (modules_t::iterator i = iModules.begin(); i != iModules.end(); ++i)
         {
             (*i).second->unload();
             notify_observers(i_subscriber::NotifyPluginUnloaded, *(*i).second);
@@ -113,14 +139,14 @@ namespace neolib
         iModules.clear();
     }
 
-    const i_vector<i_plugin*>& plugin_manager::plugins() const
+    const plugin_manager::plugins_t& plugin_manager::plugins() const
     {
         return iPlugins;
     }
     
     i_plugin* plugin_manager::find_plugin(const uuid& aId) const
     {
-        for (plugin_list::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
+        for (plugins_t::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
             if ((*i)->id() == aId)
                 return (*i);
         return nullptr;
@@ -128,7 +154,7 @@ namespace neolib
 
     bool plugin_manager::open_uri(const i_string& aUri)
     {
-        for (plugin_list::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
+        for (plugins_t::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
             if ((*i)->open_uri(aUri))
                 return true;
         return false;
@@ -137,7 +163,7 @@ namespace neolib
     void plugin_manager::subscribe(i_subscriber& aObserver)
     {
         add_observer(aObserver);
-        for (plugin_list::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
+        for (plugins_t::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
             if ((*i)->loaded())
                 aObserver.plugin_loaded(**i);
     }

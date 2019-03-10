@@ -49,23 +49,27 @@ namespace neolib
     class application_info : public i_application_info
     {
     public:
+        typedef vector<i_string, string> program_arguments_t;
+    public:
         application_info(
-            const i_vector<i_string>& aArguments = vector<i_string, string>(),
-            const std::string& aName = "<Program Name>", 
-            const std::string& aCompany = "<Company Name>", 
-            const neolib::version& aVersion = neolib::version(), 
+            const program_arguments_t& aArguments = program_arguments_t{},
+            const std::string& aName = "<Program Name>",
+            const std::string& aCompany = "<Company Name>",
+            const neolib::version& aVersion = neolib::version{},
             const std::string& aCopyright = "<Copyright>",
-            const std::string& aApplicationFolder = std::string(), 
-            const std::string& aSettingsFolder = std::string(),
-            const std::string& aDataFolder = std::string()) :
-            iArguments(aArguments),
-            iName(aName),
-            iCompany(aCompany),
-            iVersion(aVersion),
-            iCopyright(aCopyright),
-            iApplicationFolder(aApplicationFolder.empty() ? boost::filesystem::current_path().generic_string() : aApplicationFolder),
-            iSettingsFolder(aSettingsFolder.empty() ? neolib::settings_folder(aName, aCompany) : aSettingsFolder),
-            iDataFolder(aDataFolder)
+            const std::string& aApplicationFolder = std::string{},
+            const std::string& aSettingsFolder = std::string{},
+            const std::string& aDataFolder = std::string{},
+            const std::string& aPluginExtension = ".plg") :
+            iArguments{ aArguments },
+            iName{ aName },
+            iCompany{ aCompany },
+            iVersion{ aVersion },
+            iCopyright{ aCopyright },
+            iApplicationFolder{ aApplicationFolder.empty() ? boost::filesystem::current_path().generic_string() : aApplicationFolder },
+            iSettingsFolder{ aSettingsFolder.empty() ? neolib::settings_folder(aName, aCompany) : aSettingsFolder },
+            iDataFolder{ aDataFolder },
+            iPluginExtension{ aPluginExtension }
         {
             if (std::find(iArguments.container().begin(), iArguments.container().end(), neolib::ci_string("/pocket")) != iArguments.container().end() ||
                 std::find(iArguments.container().begin(), iArguments.container().end(), neolib::ci_string("-pocket")) != iArguments.container().end())
@@ -76,26 +80,28 @@ namespace neolib
                 iDataFolder = iSettingsFolder;
         }
         application_info(const i_application_info& aOther) :
-            iArguments(aOther.arguments()),
-            iName(aOther.name()),
-            iCompany(aOther.company()),
-            iVersion(aOther.version()),
-            iCopyright(aOther.copyright()),
-            iApplicationFolder(aOther.application_folder()),
-            iSettingsFolder(aOther.settings_folder()),
-            iDataFolder(aOther.data_folder())
+            iArguments{ aOther.arguments() },
+            iName{ aOther.name() },
+            iCompany{ aOther.company() },
+            iVersion{ aOther.version() },
+            iCopyright{ aOther.copyright() },
+            iApplicationFolder{ aOther.application_folder() },
+            iSettingsFolder{ aOther.settings_folder() },
+            iDataFolder{ aOther.data_folder() },
+            iPluginExtension{ aOther.plugin_extension() }
         {
         }
 
     public:
-        virtual const i_vector<i_string>& arguments() const { return iArguments; }
-        virtual const i_string& name() const { return iName; }
-        virtual const i_string& company() const { return iCompany; }
-        virtual const i_version& version() const { return iVersion; }
-        virtual const i_string& copyright() const { return iCopyright; }
-        virtual const i_string& application_folder() const { return iApplicationFolder; }
-        virtual const i_string& settings_folder() const { return iSettingsFolder; }
-        virtual const i_string& data_folder() const { return iDataFolder; }
+        const i_vector<i_string>& arguments() const override { return iArguments; }
+        const i_string& name() const override { return iName; }
+        const i_string& company() const override { return iCompany; }
+        const i_version& version() const override { return iVersion; }
+        const i_string& copyright() const override { return iCopyright; }
+        const i_string& application_folder() const override { return iApplicationFolder; }
+        const i_string& settings_folder() const override { return iSettingsFolder; }
+        const i_string& data_folder() const override { return iDataFolder; }
+        const i_string& plugin_extension() const override { return iPluginExtension; }
 
     private:
         vector<i_string, string> iArguments;
@@ -106,5 +112,6 @@ namespace neolib
         string iApplicationFolder;
         string iSettingsFolder;
         string iDataFolder;
+        string iPluginExtension;
     };
 }

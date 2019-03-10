@@ -52,41 +52,48 @@ namespace neolib
     {
         // types
     private:
-        typedef std::map<uuid, std::unique_ptr<module>> module_list;
-        typedef vector<i_plugin*> plugin_list;
+        typedef vector<i_string, string> plugin_file_extensions_t;
+        typedef vector<i_string, string> plugin_folders_t;
+        typedef std::map<uuid, std::unique_ptr<module>> modules_t;
+        typedef vector<i_plugin*> plugins_t;
         // construction
     public:
-        plugin_manager(i_application& aApplication, const std::string& aPluginFolder);
+        plugin_manager(i_application& aApplication);
         ~plugin_manager();
         // implementation
     public:
         // from i_discoverable
-        virtual bool discover(const uuid& aId, void*& aObject);
+        bool discover(const uuid& aId, void*& aObject) override;
         // from i_plugin_manager
-        virtual bool load_plugins();
-        virtual bool load_plugin(const i_string& aPluginPath);
-        virtual void enable_plugin(i_plugin& aPlugin, bool aEnable);
-        virtual bool plugin_enabled(const i_plugin& aPlugin) const;
-        virtual void unload_plugins();
-        virtual const i_vector<i_plugin*>& plugins() const;
-        virtual i_plugin* find_plugin(const uuid& aId) const;
-        virtual bool open_uri(const i_string& aUri);
+        const plugin_file_extensions_t& plugin_file_extensions() const override;
+        plugin_file_extensions_t& plugin_file_extensions() override;
+        const plugin_folders_t& plugin_folders() const override;
+        plugin_folders_t& plugin_folders() override;
+        bool load_plugins() override;
+        bool load_plugin(const i_string& aPluginPath) override;
+        void enable_plugin(i_plugin& aPlugin, bool aEnable) override;
+        bool plugin_enabled(const i_plugin& aPlugin) const override;
+        void unload_plugins() override;
+        const plugins_t& plugins() const override;
+        i_plugin* find_plugin(const uuid& aId) const override;
+        bool open_uri(const i_string& aUri) override;
     public:
-        virtual void subscribe(i_subscriber& aObserver);
-        virtual void unsubscribe(i_subscriber& aObserver);
+        void subscribe(i_subscriber& aObserver) override;
+        void unsubscribe(i_subscriber& aObserver) override;
         // implementation
         // from observable<i_plugin_manager::i_subscriber>
     private:
-        virtual void notify_observer(observer_type& aObserver, notify_type aType, const void* aParameter, const void* aParameter2);
+        void notify_observer(observer_type& aObserver, notify_type aType, const void* aParameter, const void* aParameter2) override;
         // own
     private:
         i_plugin* create_plugin(const i_string& aPluginPath);
         // attributes
     private:
         i_application& iApplication;
-        string iPluginFolder;
-        module_list iModules;
-        plugin_list iPlugins;
+        plugin_file_extensions_t iPluginFileExtensions;
+        plugin_folders_t iPluginFolders;
+        modules_t iModules;
+        plugins_t iPlugins;
         bool iInitializing;
     };
 }

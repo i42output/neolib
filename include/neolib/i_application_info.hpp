@@ -53,5 +53,6 @@ namespace neolib
         virtual const i_string& application_folder() const = 0;
         virtual const i_string& settings_folder() const = 0;
         virtual const i_string& data_folder() const = 0;
+        virtual const i_string& plugin_extension() const = 0;
     };
 }

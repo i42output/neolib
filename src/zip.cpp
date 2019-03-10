@@ -223,7 +223,7 @@ namespace neolib
             iError = true;
             return false;
         }
-        if (crc32(reinterpret_cast<const uint8_t*>(&aBuffer[0]), aBuffer.size()) != lh->iCrc32)
+        if (crc32(reinterpret_cast<const uint8_t*>(&aBuffer[0]), static_cast<uint32_t>(aBuffer.size())) != lh->iCrc32)
         {
             iError = true;
             return false;

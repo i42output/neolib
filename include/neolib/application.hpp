@@ -48,8 +48,8 @@ namespace neolib
     {
     public:
         application(const i_application_info& aApplicationInfo) :
-            iApplicationInfo(aApplicationInfo),
-            iPluginManager(*this, aApplicationInfo.application_folder().to_std_string())
+            iApplicationInfo{ aApplicationInfo },
+            iPluginManager{ *this }
         {
         }
 

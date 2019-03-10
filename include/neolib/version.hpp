@@ -1,4 +1,4 @@
-// i_version.hpp - v1.0
+// version.hpp - v1.0
 /*
  *  Copyright (c) 2007 Leigh Johnston.
  *

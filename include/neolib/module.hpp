@@ -63,9 +63,9 @@ namespace neolib
         bool loaded() const;
         void* procedure_address(const std::string& aProcedureName);
         template <typename FunctionType>
-        FunctionType& procedure(const std::string& aProcedureName)
+        FunctionType procedure(const std::string& aProcedureName)
         {
-            return *reinterpret_cast<FunctionType*>(procedure_address(aProcedureName));
+            return reinterpret_cast<FunctionType>(procedure_address(aProcedureName));
         }
         // attributes
     private:

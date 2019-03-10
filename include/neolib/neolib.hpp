@@ -48,4 +48,11 @@
 #include "win32.hpp"
 #endif
 
+#ifdef USING_BOOST
+#ifndef API
+#include <boost/dll.hpp>
+#define API extern "C" BOOST_SYMBOL_EXPORT
+#endif
+#endif
+
 #endif // NEOLIB_HOSTED_ENVIRONMENT
