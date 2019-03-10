@@ -80,6 +80,8 @@ namespace neolib
         virtual Interface* ptr() const = 0;
         virtual Interface* operator->() const = 0;
         virtual Interface& operator*() const = 0;
+        bool operator==(nullptr_t) const { return ptr() == nullptr; }
+        bool operator!=(nullptr_t) const { return ptr() != nullptr; }
         template <typename Interface>
         bool operator==(const i_auto_ref<Interface>& aOther) const { return ptr() == aOther.ptr(); }
         template <typename Interface>

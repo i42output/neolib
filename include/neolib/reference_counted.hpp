@@ -186,6 +186,11 @@ namespace neolib
             reset(aOther.ptr(), aOther.reference_counted());
             return *this;
         }
+        auto_ref& operator=(nullptr_t)
+        {
+            reset();
+            return *this;
+        }
     public:
         virtual bool reference_counted() const
         {
@@ -289,6 +294,11 @@ namespace neolib
         weak_auto_ref& operator=(const i_auto_ref<Interface>& aOther)
         {
             reset(aOther.ptr());
+            return *this;
+        }
+        weak_auto_ref& operator=(nullptr_t)
+        {
+            reset();
             return *this;
         }
     public:

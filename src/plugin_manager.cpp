@@ -39,7 +39,7 @@
 
 namespace neolib
 {
-    typedef void(*entry_point)(i_application&, const i_string&, i_plugin*&);
+    typedef void(*entry_point)(i_application&, const i_string&, i_auto_ref<i_plugin>&);
 
     plugin_manager::plugin_manager(i_application& aApplication) :
         iApplication{ aApplication }
@@ -103,7 +103,7 @@ namespace neolib
     bool plugin_manager::load_plugin(const i_string& aPluginPath)
     {
         bool loaded = false;
-        i_plugin* newPlugin = create_plugin(aPluginPath);
+        auto const& newPlugin = create_plugin(aPluginPath);
         if (newPlugin != nullptr)
             loaded = newPlugin->load();
         if (loaded)
@@ -127,15 +127,13 @@ namespace neolib
 
     void plugin_manager::unload_plugins()
     {
-        for (plugins_t::iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
-            (*i)->release();
+        iPlugins.clear();
         for (modules_t::iterator i = iModules.begin(); i != iModules.end(); ++i)
         {
             (*i).second->unload();
             notify_observers(i_subscriber::NotifyPluginUnloaded, *(*i).second);
             (*i).second.reset();
         }
-        iPlugins.clear();
         iModules.clear();
     }
 
@@ -144,12 +142,19 @@ namespace neolib
         return iPlugins;
     }
     
-    i_plugin* plugin_manager::find_plugin(const uuid& aId) const
+    const i_auto_ref<i_plugin>& plugin_manager::find_plugin(const uuid& aId) const
     {
         for (plugins_t::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
             if ((*i)->id() == aId)
-                return (*i);
-        return nullptr;
+                return *i;
+        thread_local auto_ref<i_plugin> nullref;
+        nullref = nullptr;
+        return nullref;
+    }
+
+    i_auto_ref<i_plugin>& plugin_manager::find_plugin(const uuid& aId)
+    {
+        return const_cast<i_auto_ref<i_plugin>&>(const_cast<const plugin_manager*>(this)->find_plugin(aId));
     }
 
     bool plugin_manager::open_uri(const i_string& aUri)
@@ -186,20 +191,22 @@ namespace neolib
         }
     }
 
-    i_plugin* plugin_manager::create_plugin(const i_string& aPluginPath)
+    i_auto_ref<i_plugin>& plugin_manager::create_plugin(const i_string& aPluginPath)
     {
         auto pm = std::make_unique<module>(aPluginPath.to_std_string());
-        i_plugin* newPlugin = nullptr;
+        auto_ref<i_plugin> newPlugin;
         try
         {
+            thread_local auto_ref<i_plugin> nullref;
+            nullref = nullptr;
             if (!pm->load())
-                return nullptr;
+                return nullref;
             entry_point entryPoint = pm->procedure<entry_point>("entry_point");
             if (entryPoint == nullptr)
-                return nullptr;
+                return nullref;
             entryPoint(iApplication, string(boost::filesystem::path(aPluginPath.to_std_string()).parent_path().generic_string()), newPlugin);
             if (newPlugin == nullptr)
-                return nullptr;
+                return nullref;
             iPlugins.push_back(newPlugin);
             iModules[newPlugin->id()] = std::move(pm);
         }
