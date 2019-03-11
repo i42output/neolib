@@ -85,12 +85,12 @@ namespace neolib
             iEndIterator(new container_iterator(iMap.end()))
         {}
         // implementation
-    public:
         // from i_container
-        virtual size_type size() const { return iMap.size(); }
-        virtual size_type max_size() const { return iMap.max_size(); }
-        virtual void clear() { iMap.clear(); }
-        virtual void assign(const generic_container_type& aOther)
+    public:
+        size_type size() const override { return iMap.size(); }
+        size_type max_size() const override { return iMap.max_size(); }
+        void clear() override { iMap.clear(); }
+        void assign(const generic_container_type& aOther) override
         {
             if (&aOther == this) 
                 return;
@@ -103,19 +103,20 @@ namespace neolib
                             concrete_key_type(i->first()),
                             concrete_mapped_type(i->second()))));
         }
-    private:
         // from i_container
-        virtual abstract_const_iterator* do_begin() const { return new container_const_iterator(iMap.begin()); }
-        virtual abstract_const_iterator* do_end() const { return iEndConstIterator.wrapped_iterator(); }
-        virtual abstract_iterator* do_begin() { return new container_iterator(iMap.begin()); }
-        virtual abstract_iterator* do_end() { return iEndIterator.wrapped_iterator(); }
-        virtual abstract_iterator* do_erase(const abstract_const_iterator& aPosition) { return new container_iterator(iMap.erase(static_cast<const container_const_iterator&>(aPosition))); }
-        virtual abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { return new container_iterator(iMap.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
-    public:
+    private:
+        container_const_iterator* do_begin() const override { return new container_const_iterator(iMap.begin()); }
+        container_const_iterator* do_end() const override { return static_cast<container_const_iterator*>(iEndConstIterator.wrapped_iterator()); }
+        container_iterator* do_begin() override { return new container_iterator(iMap.begin()); }
+        container_iterator* do_end() override { return static_cast<container_iterator*>(iEndIterator.wrapped_iterator()); }
+        container_iterator* do_erase(const abstract_const_iterator& aPosition) override { return new container_iterator(iMap.erase(static_cast<const container_const_iterator&>(aPosition))); }
+        container_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new container_iterator(iMap.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
         // from i_map
-        virtual abstract_mapped_type& operator[](const abstract_key_type& aKey) { return iMap.operator[](aKey).second(); }
-        virtual abstract_const_iterator* do_find(const abstract_key_type& aKey) const { return new container_const_iterator(iMap.find(aKey)); }
-        virtual abstract_iterator* do_find(const abstract_key_type& aKey) { return new container_iterator(iMap.find(aKey)); }
+    public:
+        concrete_mapped_type& operator[](const abstract_key_type& aKey) override { return iMap.operator[](aKey).second(); }
+    private:
+        container_const_iterator* do_find(const abstract_key_type& aKey) const override { return new container_const_iterator(iMap.find(aKey)); }
+        container_iterator* do_find(const abstract_key_type& aKey) override { return new container_iterator(iMap.find(aKey)); }
     private:
         container_type iMap;
         const_iterator iEndConstIterator;

@@ -57,9 +57,9 @@ namespace neolib
         pair(const concrete_base& aPair) : concrete_base(aPair) {}
         pair(const first_abstract_type& aFirst, const second_abstract_type& aSecond) : concrete_base(aFirst, aSecond) {}
     public:
-        virtual const first_abstract_type& first() const { return concrete_base::first; }
-        virtual first_abstract_type& first() { return concrete_base::first; }
-        virtual const second_abstract_type& second() const { return concrete_base::second; }
-        virtual second_abstract_type& second() { return concrete_base::second; }
+        const first_concrete_type& first() const override { return concrete_base::first; }
+        first_concrete_type& first() override { return concrete_base::first; }
+        const second_concrete_type& second() const override { return concrete_base::second; }
+        second_concrete_type& second() override { return concrete_base::second; }
     };
 }
