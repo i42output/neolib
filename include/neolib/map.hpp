@@ -113,7 +113,20 @@ namespace neolib
         container_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new container_iterator(iMap.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
         // from i_map
     public:
-        concrete_mapped_type& operator[](const abstract_key_type& aKey) override { return iMap.operator[](aKey).second(); }
+        concrete_mapped_type& operator[](const abstract_key_type& aKey) override 
+        { 
+            auto existing = iMap.find(aKey);
+            if (existing == iMap.end())
+            {
+                existing = iMap.insert(
+                    typename container_type::value_type(
+                        typename container_type::key_type(aKey),
+                        typename container_type::mapped_type(
+                            concrete_key_type(aKey),
+                            concrete_mapped_type{}))).first;
+            }
+            return existing->second.second(); 
+        }
     private:
         container_const_iterator* do_find(const abstract_key_type& aKey) const override { return new container_const_iterator(iMap.find(aKey)); }
         container_iterator* do_find(const abstract_key_type& aKey) override { return new container_iterator(iMap.find(aKey)); }

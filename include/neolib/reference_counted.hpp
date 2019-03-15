@@ -169,6 +169,13 @@ namespace neolib
             if (!aDiscoverable.discover(*this))
                 throw interface_not_found();
         }
+        template <typename Interface2>
+        ref_ptr(const ref_ptr<Interface2>& aOther) :
+            iObject(aOther.ptr()), iReferenceCounted(aOther.reference_counted())
+        {
+            if (valid() && iReferenceCounted)
+                iObject->add_ref();
+        }
         ~ref_ptr()
         {
             if (valid() && iReferenceCounted)
@@ -350,4 +357,10 @@ namespace neolib
     private:
         Interface* iObject;
     };
+
+    template <typename ConcreteType, typename... Args>
+    inline ref_ptr<ConcreteType> make_ref(Args&&... args)
+    {
+        return ref_ptr<ConcreteType>{ new ConcreteType{ std::forward<Args>(args)... } };
+    }
 }

@@ -55,6 +55,7 @@ namespace neolib
         typedef typename base::abstract_iterator abstract_iterator;
     public:
         virtual abstract_mapped_type& operator[](const abstract_key_type& aKey) = 0;
+    public:
         const_iterator<i_pair<const Key, T>> find(const abstract_key_type& aKey) const { return do_find(aKey); }
         iterator<i_pair<const Key, T>> find(const abstract_key_type& aKey) { return do_find(aKey); }
     private:

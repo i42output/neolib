@@ -194,21 +194,20 @@ namespace neolib
     i_ref_ptr<i_plugin>& plugin_manager::create_plugin(const i_string& aPluginPath)
     {
         auto pm = std::make_unique<module>(aPluginPath.to_std_string());
-        ref_ptr<i_plugin> newPlugin;
+        thread_local ref_ptr<i_plugin> tNewPlugin;
+        tNewPlugin = nullptr;
         try
         {
-            thread_local ref_ptr<i_plugin> nullref;
-            nullref = nullptr;
             if (!pm->load())
-                return nullref;
+                return tNewPlugin;
             entry_point entryPoint = pm->procedure<entry_point>("entry_point");
             if (entryPoint == nullptr)
-                return nullref;
-            entryPoint(iApplication, string(boost::filesystem::path(aPluginPath.to_std_string()).parent_path().generic_string()), newPlugin);
-            if (newPlugin == nullptr)
-                return nullref;
-            iPlugins.push_back(newPlugin);
-            iModules[newPlugin->id()] = std::move(pm);
+                return tNewPlugin;
+            entryPoint(iApplication, string(boost::filesystem::path(aPluginPath.to_std_string()).parent_path().generic_string()), tNewPlugin);
+            if (tNewPlugin == nullptr)
+                return tNewPlugin;
+            iPlugins.push_back(tNewPlugin);
+            iModules[tNewPlugin->id()] = std::move(pm);
         }
         catch (const std::exception& e)
         {
@@ -218,6 +217,6 @@ namespace neolib
         {
             throw plugin_exception<std::runtime_error>("Unknown exception");
         }
-        return newPlugin;
+        return tNewPlugin;
     }
 }

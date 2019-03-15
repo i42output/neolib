@@ -50,14 +50,15 @@ namespace neolib
         typedef base::size_type size_type;
     public:
         virtual i_string& operator=(const i_string& aOther) = 0;
-        i_string& operator=(const std::string& aOther) { assign(aOther); return *this; }
     public:
-        size_type length() const { return size(); }
         virtual const char* c_str() const = 0;
         virtual const char& operator[](size_type aIndex) const = 0;
         virtual char& operator[](size_type aIndex) = 0;
-        void assign(const std::string& aSource) { assign(aSource.c_str(), aSource.size()); }
         virtual void assign(const char* aSource, size_type aSourceLength) = 0;
+    public:
+        i_string& operator=(const std::string& aOther) { assign(aOther); return *this; }
+        size_type length() const { return size(); }
+        void assign(const std::string& aSource) { assign(aSource.c_str(), aSource.size()); }
         std::string to_std_string() const { return std::string(c_str(), size()); }
     };
 

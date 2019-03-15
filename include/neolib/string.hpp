@@ -58,9 +58,10 @@ namespace neolib
         // construction
     public:
         string(const char* aString) : iString(aString), iEndConstIterator(), iEndIterator() {}
-        string(const std::string& aString = "") : iString(aString), iEndConstIterator(), iEndIterator() {}
+        string(const std::string& aString = std::string{}) : iString(aString), iEndConstIterator(), iEndIterator() {}
         string(const string& aOther) : iString(aOther.to_std_string()), iEndConstIterator(), iEndIterator() {}
         string(const i_string& aOther) : iString(aOther.to_std_string()), iEndConstIterator(), iEndIterator() {}
+        ~string() {}
         string& operator=(const string& aOther) { assign(aOther); return *this; }
         virtual string& operator=(const i_string& aOther) { assign(aOther); return *this; }
         // operations
