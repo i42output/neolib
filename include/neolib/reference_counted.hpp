@@ -358,6 +358,19 @@ namespace neolib
         Interface* iObject;
     };
 
+    template <typename Interface>
+    inline bool operator<(const ref_ptr<Interface>& lhs, const ref_ptr<Interface>& rhs)
+    {
+        if (lhs == rhs)
+            return false;
+        else if (lhs == nullptr)
+            return false;
+        else if (rhs == nullptr)
+            return true;
+        else
+            return *lhs < *rhs;
+    }
+
     template <typename ConcreteType, typename... Args>
     inline ref_ptr<ConcreteType> make_ref(Args&&... args)
     {
