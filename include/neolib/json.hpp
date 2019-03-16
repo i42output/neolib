@@ -674,7 +674,7 @@ namespace neolib
         }
     public:
         template <typename Visitor>
-        void visit(Visitor&& aVisitor) const
+        void visit(Visitor&& aVisitor, bool aRecurse = true) const
         {
             std::visit([&aVisitor](auto&& arg) 
             { 
@@ -685,13 +685,14 @@ namespace neolib
             {
             case json_type::Object:
             case json_type::Array:
-                for (auto& v : *this)
-                    v.visit(std::forward<Visitor>(aVisitor));
+                if (aRecurse)
+                    for (auto& v : *this)
+                        v.visit(std::forward<Visitor>(aVisitor));
                 break;
             }
         }
         template <typename Visitor>
-        void visit(Visitor&& aVisitor)
+        void visit(Visitor&& aVisitor, bool aRecurse = true)
         {
             std::visit([&aVisitor](auto&& arg)
             {
@@ -702,8 +703,9 @@ namespace neolib
             {
             case json_type::Object:
             case json_type::Array:
-                for (auto i = begin(); i != end(); ++i)
-                    i.value().visit(std::forward<Visitor>(aVisitor));
+                if (aRecurse)
+                    for (auto i = begin(); i != end(); ++i)
+                        i.value().visit(std::forward<Visitor>(aVisitor));
                 break;
             }
         }
