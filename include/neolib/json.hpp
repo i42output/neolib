@@ -591,6 +591,10 @@ namespace neolib
             iName = aName;
         }
     public:
+        bool is_root() const
+        {
+            return !has_parent();
+        }
         bool has_parent() const
         {
             return iNode.has_parent();
