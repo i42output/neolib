@@ -51,8 +51,8 @@ namespace neolib
         typedef reference_counted<i_vector<T> > base;
     public:
         typedef T value_type;
-        typedef ConcreteType concrete_type;
-        typedef std::vector<concrete_type> container_type;
+        typedef ConcreteType concrete_value_type;
+        typedef std::vector<concrete_value_type> container_type;
         typedef typename i_vector<T>::size_type size_type;
         typedef typename i_vector<T>::const_iterator const_iterator;
         typedef typename i_vector<T>::iterator iterator;

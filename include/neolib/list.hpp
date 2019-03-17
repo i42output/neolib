@@ -52,8 +52,8 @@ namespace neolib
         typedef reference_counted<i_list<T> > base;
     public:
         typedef T value_type;
-        typedef ConcreteType concrete_type;
-        typedef std::list<concrete_type> container_type;
+        typedef ConcreteType concrete_value_type;
+        typedef std::list<concrete_value_type> container_type;
         typedef typename i_list<T>::size_type size_type;
         typedef typename i_list<T>::const_iterator const_iterator;
         typedef typename i_list<T>::iterator iterator;
@@ -94,20 +94,20 @@ namespace neolib
         // from i_sequence_container
         size_type capacity() const override { return iList.max_size(); }
         void reserve(size_type aCapacity) override { /* do nothing */ }
-        void resize(size_type aSize, const value_type& aValue) override { iList.resize(aSize, container::helper::converter<const value_type, const concrete_type>::to_concrete_type(aValue)); }
-        void push_back(const value_type& aValue) override { iList.push_back(container::helper::converter<const value_type, const concrete_type>::to_concrete_type(aValue)); }
+        void resize(size_type aSize, const value_type& aValue) override { iList.resize(aSize, container::helper::converter<const value_type, const concrete_value_type>::to_concrete_type(aValue)); }
+        void push_back(const value_type& aValue) override { iList.push_back(container::helper::converter<const value_type, const concrete_value_type>::to_concrete_type(aValue)); }
         void pop_back() override { iList.pop_back(); }
-        const value_type& back() const override { return container::helper::converter<const value_type, const concrete_type>::to_abstract_type(iList.back()); }
-        value_type& back() override { return container::helper::converter<value_type, concrete_type>::to_abstract_type(iList.back()); }
+        const value_type& back() const override { return container::helper::converter<const value_type, const concrete_value_type>::to_abstract_type(iList.back()); }
+        value_type& back() override { return container::helper::converter<value_type, concrete_value_type>::to_abstract_type(iList.back()); }
     private:
         // from i_sequence_container
-        abstract_iterator* do_insert(const abstract_const_iterator& aPosition, const value_type& aValue) override { return new container_iterator(iList.insert(static_cast<const container_const_iterator&>(aPosition), container::helper::converter<const value_type, const concrete_type>::to_concrete_type(aValue))); }
+        abstract_iterator* do_insert(const abstract_const_iterator& aPosition, const value_type& aValue) override { return new container_iterator(iList.insert(static_cast<const container_const_iterator&>(aPosition), container::helper::converter<const value_type, const concrete_value_type>::to_concrete_type(aValue))); }
     public:
         // from i_list
-        void push_front(const value_type& aValue) override { iList.push_front(container::helper::converter<const value_type, const concrete_type>::to_concrete_type(aValue)); }
+        void push_front(const value_type& aValue) override { iList.push_front(container::helper::converter<const value_type, const concrete_value_type>::to_concrete_type(aValue)); }
         void pop_front() override { iList.pop_front(); }
-        const value_type& front() const override { return container::helper::converter<const value_type, const concrete_type>::to_abstract_type(iList.front()); }
-        value_type& front() override { return container::helper::converter<value_type, concrete_type>::to_abstract_type(iList.front()); }
+        const value_type& front() const override { return container::helper::converter<const value_type, const concrete_value_type>::to_abstract_type(iList.front()); }
+        value_type& front() override { return container::helper::converter<value_type, concrete_value_type>::to_abstract_type(iList.front()); }
         // attributes
     private:
         std::list<ConcreteType> iList;
