@@ -918,7 +918,8 @@ namespace neolib
     typedef fast_rjson::json_string fast_rjson_string;
     typedef fast_rjson::json_bool fast_rjson_bool;
     typedef fast_rjson::json_null fast_rjson_null;
-    typedef fast_rjson::json_keyword fast_rjson_keyword; }
+    typedef fast_rjson::json_keyword fast_rjson_keyword; 
+}
 
 #include "json.inl"
 

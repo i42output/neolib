@@ -36,9 +36,11 @@
 #pragma once
 
 #include "neolib.hpp"
+#include <string>
 #include "reference_counted.hpp"
 #include "i_string.hpp"
 #include "container_iterator.hpp"
+#include "quick_string.hpp"
 
 namespace neolib
 {
@@ -57,10 +59,11 @@ namespace neolib
         typedef base::abstract_iterator abstract_iterator;
         // construction
     public:
-        string(const char* aString) : iString(aString), iEndConstIterator(), iEndIterator() {}
-        string(const std::string& aString = std::string{}) : iString(aString), iEndConstIterator(), iEndIterator() {}
-        string(const string& aOther) : iString(aOther.to_std_string()), iEndConstIterator(), iEndIterator() {}
-        string(const i_string& aOther) : iString(aOther.to_std_string()), iEndConstIterator(), iEndIterator() {}
+        string(const char* aString) : iString{ aString }, iEndConstIterator{}, iEndIterator{} {}
+        string(const std::string& aString = std::string{}) : iString{ aString }, iEndConstIterator{}, iEndIterator{} {}
+        string(const neolib::quick_string& aOther) : iString{ aOther }, iEndConstIterator{}, iEndIterator{} {}
+        string(const string& aOther) : iString{ aOther.to_std_string() }, iEndConstIterator{}, iEndIterator{} {}
+        string(const i_string& aOther) : iString{ aOther.to_std_string() }, iEndConstIterator{}, iEndIterator{} {}
         ~string() {}
         string& operator=(const string& aOther) { assign(aOther); return *this; }
         virtual string& operator=(const i_string& aOther) { assign(aOther); return *this; }
