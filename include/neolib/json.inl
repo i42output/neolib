@@ -1695,8 +1695,10 @@ namespace neolib
     }
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-    inline void basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::create_parse_error(const character_type* aDocumentPos, const string_type& aExtraInfo)
+    inline void basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::create_parse_error(const character_type* aDocumentPos, const string_type& aExtraInfo) const
     {
+        if (aDocumentPos < &*document().as_view().begin() || aDocumentPos > &*std::prev(document().as_view().end()))
+            throw json_error("basic_json::create_parse_error: invalid document pos");
         uint32_t line = 1;
         uint32_t col = 1;
         for (auto pos = &*document().as_view().begin(); pos != aDocumentPos; ++pos)

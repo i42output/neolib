@@ -50,6 +50,7 @@
 #include <memory>
 #include <exception>
 #include <optional>
+#include <boost/functional/hash.hpp>
 #include <neolib/allocator.hpp>
 #include <neolib/variant.hpp>
 #include <neolib/quick_string.hpp>
@@ -305,7 +306,7 @@ namespace neolib
         typedef typename json_value::json_string json_string;
     private:
         typedef typename json_value::value_allocator allocator_type;
-        typedef std::unordered_multimap<json_string, json_value*, std::hash<json_string>, std::equal_to<json_string>, typename allocator_type:: template rebind<std::pair<const json_string, json_value*>>::other> dictionary_type;
+        typedef std::unordered_multimap<json_string, json_value*, boost::hash<json_string>, std::equal_to<json_string>, typename allocator_type:: template rebind<std::pair<const json_string, json_value*>>::other> dictionary_type;
     public:
         basic_json_object() :
             iOwner{ nullptr }
@@ -852,11 +853,12 @@ namespace neolib
         json_type context() const;
         template <typename T>
         json_value* buy_value(element& aCurrentElement, T&& aValue);
-        void create_parse_error(const character_type* aDocumentPos, const string_type& aExtraInfo = {});
+    public:
+        void create_parse_error(const character_type* aDocumentPos, const string_type& aExtraInfo = {}) const;
     private:
         json_encoding iEncoding;
         json_string iDocumentText;
-        string_type iErrorText;
+        mutable string_type iErrorText;
         mutable optional_json_value iRoot;
         std::vector<json_value*> iCompositeValueStack;
         std::optional<char16_t> iUtf16HighSurrogate;
