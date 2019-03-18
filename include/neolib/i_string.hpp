@@ -54,8 +54,10 @@ namespace neolib
         virtual const char* c_str() const = 0;
         virtual const char& operator[](size_type aIndex) const = 0;
         virtual char& operator[](size_type aIndex) = 0;
+        virtual void assign(const i_string& aOther) = 0;
         virtual void assign(const char* aSource, size_type aSourceLength) = 0;
     public:
+        operator std::string() const { return to_std_string(); }
         i_string& operator=(const std::string& aOther) { assign(aOther); return *this; }
         size_type length() const { return size(); }
         void assign(const std::string& aSource) { assign(aSource.c_str(), aSource.size()); }

@@ -66,47 +66,46 @@ namespace neolib
         string(const i_string& aOther) : iString{ aOther.to_std_string() }, iEndConstIterator{}, iEndIterator{} {}
         ~string() {}
         string& operator=(const string& aOther) { assign(aOther); return *this; }
-        virtual string& operator=(const i_string& aOther) { assign(aOther); return *this; }
+        string& operator=(const i_string& aOther) override { assign(aOther); return *this; }
         // operations
     public:
-        operator const std::string&() const { return iString; }
-        container_type& container() { return iString; }
         const container_type& container() const { return iString; }
+        container_type& container() { return iString; }
         // implementation
     public:
         // from i_container
-        virtual size_type size() const { return iString.size(); }
-        virtual size_type max_size() const { return iString.max_size(); }
-        virtual void clear() { reset_cache(); iString.clear(); }
-        virtual void assign(const i_container& aOther) { if (&aOther == this) return; reset_cache(); iString.assign(aOther.begin(), aOther.end()); }
+        size_type size() const override { return iString.size(); }
+        size_type max_size() const override { return iString.max_size(); }
+        void clear() override { reset_cache(); iString.clear(); }
+        void assign(const i_container& aOther) override { if (&aOther == this) return; reset_cache(); iString.assign(aOther.begin(), aOther.end()); }
     private:
         // from i_container
-        virtual abstract_const_iterator* do_begin() const { populate_cache(); return new container_const_iterator(iString.begin()); }
-        virtual abstract_const_iterator* do_end() const { populate_cache(); return iEndConstIterator.wrapped_iterator(); }
-        virtual abstract_iterator* do_begin() { populate_cache(); return new container_iterator(iString.begin()); }
-        virtual abstract_iterator* do_end() { populate_cache(); return iEndIterator.wrapped_iterator(); }
-        virtual abstract_iterator* do_erase(const abstract_const_iterator& aPosition) { reset_cache();  return new container_iterator(iString.erase(static_cast<const container_const_iterator&>(aPosition))); }
-        virtual abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { reset_cache(); return new container_iterator(iString.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
+        abstract_const_iterator* do_begin() const override { populate_cache(); return new container_const_iterator(iString.begin()); }
+        abstract_const_iterator* do_end() const override { populate_cache(); return iEndConstIterator.wrapped_iterator(); }
+        abstract_iterator* do_begin() override { populate_cache(); return new container_iterator(iString.begin()); }
+        abstract_iterator* do_end() override { populate_cache(); return iEndIterator.wrapped_iterator(); }
+        abstract_iterator* do_erase(const abstract_const_iterator& aPosition) override { reset_cache();  return new container_iterator(iString.erase(static_cast<const container_const_iterator&>(aPosition))); }
+        abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { reset_cache(); return new container_iterator(iString.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
     public:
         // from i_sequence_container
-        virtual size_type capacity() const { return iString.size(); }
-        virtual void reserve(size_type aCapacity) { reset_cache(); iString.reserve(aCapacity); }
-        virtual void resize(size_type aSize, const value_type& aValue) { reset_cache(); iString.resize(aSize, aValue); }
-        virtual void push_back(const value_type& aValue) { reset_cache(); iString.push_back(aValue); }
-        virtual void pop_back() { reset_cache(); iString.erase(iString.end() - 1); }
-        virtual const value_type& back() const { return iString.back(); }
-        virtual value_type& back() { return iString.back(); }
+        size_type capacity() const override { return iString.size(); }
+        void reserve(size_type aCapacity) override { reset_cache(); iString.reserve(aCapacity); }
+        void resize(size_type aSize, const value_type& aValue) override { reset_cache(); iString.resize(aSize, aValue); }
+        void push_back(const value_type& aValue) override { reset_cache(); iString.push_back(aValue); }
+        void pop_back() override { reset_cache(); iString.erase(iString.end() - 1); }
+        const value_type& back() const override { return iString.back(); }
+        value_type& back() override { return iString.back(); }
     private:
         // from i_sequence_container
-        virtual abstract_iterator* do_insert(const abstract_const_iterator& aPosition, const value_type& aValue) { reset_cache(); return new container_iterator(iString.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
+        abstract_iterator* do_insert(const abstract_const_iterator& aPosition, const value_type& aValue) override { reset_cache(); return new container_iterator(iString.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
     public:
         // from i_string
-        virtual const char* c_str() const { return iString.c_str(); }
-        virtual const char& operator[](size_type aIndex) const { return iString[aIndex]; }
-        virtual char& operator[](size_type aIndex) { return iString[aIndex]; }
-        virtual void assign(const string& aOther) { iString = aOther.to_std_string(); }
-        virtual void assign(const i_string& aOther) { iString = aOther.to_std_string(); }
-        virtual void assign(const char* aSource, size_type aSourceLength) { reset_cache(); iString.assign(aSource, aSourceLength); }
+        const char* c_str() const override { return iString.c_str(); }
+        const char& operator[](size_type aIndex) const override { return iString[aIndex]; }
+        char& operator[](size_type aIndex) override { return iString[aIndex]; }
+        void assign(const string& aOther) { iString = aOther.to_std_string(); }
+        void assign(const i_string& aOther) override { iString = aOther.to_std_string(); }
+        void assign(const char* aSource, size_type aSourceLength) override { reset_cache(); iString.assign(aSource, aSourceLength); }
     private:
         void reset_cache() { iEndConstIterator = const_iterator(); iEndIterator = iterator(); }
         void populate_cache() const
