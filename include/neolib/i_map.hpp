@@ -54,11 +54,17 @@ namespace neolib
         typedef typename base::abstract_const_iterator abstract_const_iterator;
         typedef typename base::abstract_iterator abstract_iterator;
     public:
+        typedef typename base::const_iterator const_iterator;
+        typedef typename base::iterator iterator;
+    public:
         virtual abstract_mapped_type& operator[](const abstract_key_type& aKey) = 0;
     public:
-        const_iterator<i_pair<const Key, T>> find(const abstract_key_type& aKey) const { return do_find(aKey); }
-        iterator<i_pair<const Key, T>> find(const abstract_key_type& aKey) { return do_find(aKey); }
+        iterator insert(const abstract_value_type& aValue) { return do_insert(aValue.first(), aValue.second()); }
+        iterator insert(const abstract_key_type& aKey, const abstract_mapped_type& aMapped) { return do_insert(aKey, aMapped); }
+        const_iterator find(const abstract_key_type& aKey) const { return do_find(aKey); }
+        iterator find(const abstract_key_type& aKey) { return do_find(aKey); }
     private:
+        virtual abstract_iterator* do_insert(const abstract_key_type& aKey, const abstract_mapped_type& aMapped) = 0;
         virtual abstract_const_iterator* do_find(const abstract_key_type& aKey) const = 0;
         virtual abstract_iterator* do_find(const abstract_key_type& aKey) = 0;
     };

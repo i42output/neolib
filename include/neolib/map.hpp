@@ -54,6 +54,7 @@ namespace neolib
         typedef ConcreteType concrete_mapped_type;
         typedef i_pair<const abstract_key_type, abstract_mapped_type> abstract_value_type;
         typedef std::map<concrete_key_type, neolib::pair<const abstract_key_type, abstract_mapped_type, const concrete_key_type, concrete_mapped_type> > container_type;
+        typedef typename container_type::value_type concrete_value_type;
     private:
         typedef i_map<Key, T> abstract_base;
     public:
@@ -119,15 +120,24 @@ namespace neolib
             if (existing == iMap.end())
             {
                 existing = iMap.insert(
-                    typename container_type::value_type(
-                        typename container_type::key_type(aKey),
-                        typename container_type::mapped_type(
-                            concrete_key_type(aKey),
-                            concrete_mapped_type{}))).first;
+                    typename container_type::value_type{
+                        typename container_type::key_type{aKey},
+                        typename container_type::mapped_type{
+                            concrete_key_type{aKey},
+                            concrete_mapped_type{}} }).first;
             }
             return existing->second.second(); 
         }
     private:
+        abstract_iterator* do_insert(const abstract_key_type& aKey, const abstract_mapped_type& aMapped) override
+        { 
+            return new container_iterator{ iMap.insert(
+                typename container_type::value_type{
+                    typename container_type::key_type{aKey},
+                    typename container_type::mapped_type{
+                        concrete_key_type{aKey},
+                        concrete_mapped_type{aMapped}} }).first };
+        }
         container_const_iterator* do_find(const abstract_key_type& aKey) const override { return new container_const_iterator(iMap.find(aKey)); }
         container_iterator* do_find(const abstract_key_type& aKey) override { return new container_iterator(iMap.find(aKey)); }
     private:
