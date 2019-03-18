@@ -130,11 +130,11 @@ namespace neolib
         };
     public:
         generic_iterator() :
-            iInPlace(false), iWrappedIterator(0)
+            iInPlace{ false }, iWrappedIterator{ nullptr }
         {
         }
         generic_iterator(const generic_iterator& aOther) :
-            iInPlace(false), iWrappedIterator(0)
+            iInPlace{ false }, iWrappedIterator{ nullptr }
         {
             if (aOther.iInPlace)
             {
@@ -257,12 +257,12 @@ namespace neolib
         {
             if (aInPlace)
             {
-                iWrappedIterator = new(iIteratorStorage) Wrapper(aWrapper);
+                iWrappedIterator = new(iIteratorStorage) Wrapper{ aWrapper };
                 iInPlace = true;
             }
             else
             {
-                iWrappedIterator = new Wrapper(aWrapper);
+                iWrappedIterator = new Wrapper{ aWrapper };
                 iInPlace = false;
             }
         }
