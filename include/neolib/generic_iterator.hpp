@@ -75,11 +75,11 @@ namespace neolib
             {
             }
         public:
-            virtual i_wrapper* clone() const
+            i_wrapper* clone() const override
             {
                 return new wrapper(*this);
             }
-            virtual i_wrapper* clone(void* aStorage) const
+            i_wrapper* clone(void* aStorage) const override
             {
                 return new (aStorage)wrapper(*this);
             }
@@ -89,39 +89,40 @@ namespace neolib
                 return iIterator;
             }
         public:
-            virtual wrapper& operator++()
+            reference operator*() const
+            {
+                return iIterator.operator*();
+            }
+            pointer operator->() const
+            {
+                return iIterator.operator->();
+            }
+        public:
+            wrapper& operator++() override
             {
                 iIterator.operator++();
                 return *this;
             }
-            virtual wrapper& operator--()
+            wrapper& operator--() override
             {
                 iIterator.operator--();
                 return *this;
             }
-            virtual wrapper& operator+=(difference_type aDelta)
+            wrapper& operator+=(difference_type aDelta) override
             {
                 iIterator.operator+=(aDelta);
                 return *this;
             }
-            virtual wrapper& operator-=(difference_type aDelta)
+            wrapper& operator-=(difference_type aDelta) override
             {
                 iIterator.operator-=(aDelta);
                 return *this;
             }
-            virtual reference operator*() const
-            {
-                return iIterator.operator*();
-            }
-            virtual pointer operator->() const
-            {
-                return iIterator.operator->();
-            }
-            virtual bool operator==(const i_wrapper& aOther) const
+            bool operator==(const i_wrapper& aOther) const override
             {
                 return iIterator == dynamic_cast<const wrapper&>(aOther).iIterator;
             }
-            virtual bool operator!=(const i_wrapper& aOther) const
+            bool operator!=(const i_wrapper& aOther) const override
             {
                 return !(*this == aOther);
             }
@@ -130,33 +131,21 @@ namespace neolib
         };
     public:
         generic_iterator() :
-            iInPlace{ false }, iWrappedIterator{ nullptr }
+            iWrappedIterator{ nullptr }, 
+            iInPlace{ false }
         {
         }
         generic_iterator(const generic_iterator& aOther) :
-            iInPlace{ false }, iWrappedIterator{ nullptr }
+            iWrappedIterator{ aOther.iInPlace ? aOther.iWrappedIterator->clone(iIteratorStorage) : aOther.iWrappedIterator->clone() }, 
+            iInPlace{ aOther.iInPlace }
         {
-            if (aOther.iInPlace)
-            {
-                iWrappedIterator = aOther.iWrappedIterator->clone(iIteratorStorage);
-                iInPlace = true;
-            }
-            else
-            {
-                iWrappedIterator = aOther.iWrappedIterator->clone();
-                iInPlace = false;
-            }
         }
         virtual ~generic_iterator()
         {
             if (iInPlace)
-            {
                 iWrappedIterator->~i_wrapper();
-            }
             else
-            {
                 delete iWrappedIterator;
-            }
         }
     public:
         generic_iterator& operator++()
@@ -266,11 +255,11 @@ namespace neolib
                 iInPlace = false;
             }
         }
-        virtual i_wrapper& wrapped_iterator()
+        i_wrapper& wrapped_iterator()
         {
             return *iWrappedIterator;
         }
-        virtual const i_wrapper& wrapped_iterator() const
+        const i_wrapper& wrapped_iterator() const
         {
             return *iWrappedIterator;
         }
