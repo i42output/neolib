@@ -41,34 +41,28 @@
 
 namespace neolib
 {
-    template <typename Tag, std::size_t MaxDepth>
-    class limit_recursion
+    template <typename Tag, std::size_t MaxDepth = Tag::RecursionLimit>
+    class _limit_recursion_
     {
     public:
         struct too_deep : std::runtime_error { too_deep() : std::runtime_error(std::string{ "Maximum recursion depth for '" } + typeid(Tag).name() + "' exceeded") {} };
-    private:
-        typedef std::pair<std::type_index, void const*> state_key_t;
-        typedef std::unordered_map<state_key_t, std::size_t, boost::hash<state_key_t>> recursion_state_t;
     public:
-        limit_recursion(void const* aObject = nullptr) : iObject{ aObject }
+        _limit_recursion_()
         {
-            state_key_t const key = { typeid(Tag), iObject };
-            if (++recursion_state()[key] > MaxDepth)
+            if (++current_depth() > MaxDepth)
                 throw too_deep();
         }
-        ~limit_recursion()
+        ~_limit_recursion_()
         {
-            state_key_t const key = { typeid(Tag), iObject };
-            if (--recursion_state()[key] == 0u)
-                recursion_state().erase(recursion_state().find(key));
+            --current_depth();
         }
     private:
-        static recursion_state_t& recursion_state()
+        std::size_t& current_depth()
         {
-            thread_local recursion_state_t tRecursionState;
-            return tRecursionState;
+            thread_local std::size_t tDepth;
+            return tDepth;
         }
-    private:
-        void const* iObject;
     };
 }
+
+#define _limit_recursion_(a) neolib::_limit_recursion_<a> __##a##_recursion_limiter__
