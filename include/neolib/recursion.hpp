@@ -1,6 +1,6 @@
 // recursion.hpp - v1.0
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2019 Leigh Johnston.
  *
  *  All rights reserved.
  *
