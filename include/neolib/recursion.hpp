@@ -65,4 +65,4 @@ namespace neolib
     };
 }
 
-#define _limit_recursion_(a) neolib::_limit_recursion_<a> __##a##_recursion_limiter__
+#define _limit_recursion_(a) neolib::_limit_recursion_<a> _##a##_recursion_limiter_
