@@ -36,8 +36,6 @@
 #pragma once
 
 #include "neolib.hpp"
-#include <unordered_map>
-#include <boost/functional/hash.hpp>
 
 namespace neolib
 {
@@ -57,7 +55,7 @@ namespace neolib
             --current_depth();
         }
     private:
-        std::size_t& current_depth()
+        static std::size_t& current_depth()
         {
             thread_local std::size_t tDepth;
             return tDepth;
