@@ -47,15 +47,15 @@ namespace neolib
     public:
         recursion_limiter()
         {
-            if (++current_depth() > MaxDepth)
+            if (++depth() > MaxDepth)
                 throw too_deep();
         }
         ~recursion_limiter()
         {
-            --current_depth();
+            --depth();
         }
     private:
-        static std::size_t& current_depth()
+        static std::size_t& depth()
         {
             thread_local std::size_t tDepth;
             return tDepth;
