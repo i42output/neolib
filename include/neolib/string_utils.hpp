@@ -82,6 +82,12 @@ namespace neolib
         return b;
     }
     
+    template <typename FwdIter, typename CharT, typename Traits, typename Alloc, typename ResultContainer>
+    inline void tokens(FwdIter aFirst, FwdIter aLast, const std::basic_string<CharT, Traits, Alloc>& aDelimeter, ResultContainer& aTokens, std::size_t aMaxTokens = 0, bool aSkipEmptyTokens = true, bool aDelimeterIsSubsequence = false)
+    {
+        tokens(aFirst, aLast, aDelimeter.begin(), aDelimeter.end(), aTokens, aMaxTokens, aSkipEmptyTokens, aDelimeterIsSubsequence);
+    }
+
     template <typename CharT, typename Traits, typename Alloc, typename ResultContainer>
     inline void tokens(const std::basic_string<CharT, Traits, Alloc>& aLine, const std::basic_string<CharT, Traits, Alloc>& aDelimeter, ResultContainer& aTokens, std::size_t aMaxTokens = 0, bool aSkipEmptyTokens = true, bool aDelimeterIsSubsequence = false)
     {
