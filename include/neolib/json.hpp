@@ -510,7 +510,7 @@ namespace neolib
         {
         }
         basic_json_value(reference aParent, const value_type& aValue) :
-            iNode{ aParent }, iValue {    aValue }
+            iNode{ aParent }, iValue { aValue }
         {
         }
         basic_json_value(reference aParent, value_type&& aValue) :
