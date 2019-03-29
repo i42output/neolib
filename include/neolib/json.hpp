@@ -844,6 +844,8 @@ namespace neolib
         const_iterator end() const;
         iterator begin();
         iterator end();
+    public:
+        string_type to_error_text(const character_type* aDocumentPos, const string_type& aExtraInfo = {}) const;
     private:
         json_string& document();
     private:
@@ -853,7 +855,6 @@ namespace neolib
         json_type context() const;
         template <typename T>
         json_value* buy_value(element& aCurrentElement, T&& aValue);
-    public:
         void create_parse_error(const character_type* aDocumentPos, const string_type& aExtraInfo = {}) const;
     private:
         json_encoding iEncoding;
