@@ -39,20 +39,32 @@
 
 namespace neolib
 {
-    template <typename Tag, std::size_t MaxDepth = Tag::RecursionLimit>
+    template <typename Tag>
     class recursion_limiter
     {
     public:
         struct too_deep : std::runtime_error { too_deep() : std::runtime_error(std::string{ "Maximum recursion depth for '" } + typeid(Tag).name() + "' exceeded") {} };
     public:
-        recursion_limiter()
+        recursion_limiter() :
+            iMaxDepth{ Tag::RecursionLimit }
         {
-            if (++depth() > MaxDepth)
+            if (++depth() > max_depth())
+                throw too_deep();
+        }
+        recursion_limiter(std::size_t aMaxDepth) :
+            iMaxDepth{ aMaxDepth }
+        {
+            if (++depth() > max_depth())
                 throw too_deep();
         }
         ~recursion_limiter()
         {
             --depth();
+        }
+    public:
+        std::size_t max_depth() const
+        {
+            return iMaxDepth;
         }
     private:
         static std::size_t& depth()
@@ -60,7 +72,10 @@ namespace neolib
             thread_local std::size_t tDepth;
             return tDepth;
         }
+    private:
+        const std::size_t iMaxDepth;
     };
 }
 
 #define _limit_recursion_(a) neolib::recursion_limiter<a> _##a##_recursion_limiter_
+#define _limit_recursion_to_(a, b) neolib::recursion_limiter<a> _##a##_recursion_limiter_{##b##}
