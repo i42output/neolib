@@ -66,7 +66,6 @@ namespace neolib
         {
             return iMaxDepth;
         }
-    private:
         static std::size_t& depth()
         {
             thread_local std::size_t tDepth;
