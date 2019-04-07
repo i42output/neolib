@@ -62,6 +62,7 @@ namespace neolib
         size_type length() const { return size(); }
         void assign(const std::string& aSource) { assign(aSource.c_str(), aSource.size()); }
         std::string to_std_string() const { return std::string(c_str(), size()); }
+        std::string_view to_std_string_view() const { return std::string_view(c_str(), size()); }
     };
 
     inline std::ostream& operator<<(std::ostream& aStream, const i_string& aString)

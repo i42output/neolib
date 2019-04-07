@@ -103,8 +103,8 @@ namespace neolib
         const char* c_str() const override { return iString.c_str(); }
         const char& operator[](size_type aIndex) const override { return iString[aIndex]; }
         char& operator[](size_type aIndex) override { return iString[aIndex]; }
-        void assign(const string& aOther) { iString = aOther.to_std_string(); }
-        void assign(const i_string& aOther) override { iString = aOther.to_std_string(); }
+        void assign(const string& aOther) { reset_cache(); iString = aOther.to_std_string(); }
+        void assign(const i_string& aOther) override { reset_cache(); iString = aOther.to_std_string(); }
         void assign(const char* aSource, size_type aSourceLength) override { reset_cache(); iString.assign(aSource, aSourceLength); }
     private:
         void reset_cache() { iEndConstIterator = const_iterator(); iEndIterator = iterator(); }
