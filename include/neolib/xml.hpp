@@ -48,7 +48,7 @@
 #include <memory>
 #include <exception>
 #include "quick_string.hpp"
-#include "memory.hpp"
+#include "allocator.hpp"
 
 #define NEOLIB_XML_USE_POOL_ALLOCATOR
 
