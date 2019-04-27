@@ -59,14 +59,14 @@ namespace neolib
         virtual size_type size() const = 0;
         virtual size_type max_size() const = 0;
         bool empty() const { return size() == 0; }
-        const_iterator begin() const { return do_begin(); }
-        const_iterator end() const { return do_end(); }
-        iterator begin() { return do_begin(); }
-        iterator end() { return do_end(); }
-        iterator erase(const abstract_iterator& aPosition) { return do_erase(const_iterator(aPosition)); }
-        iterator erase(const abstract_const_iterator& aPosition) { return do_erase(aPosition); }
-        iterator erase(const abstract_iterator& aFirst, const abstract_iterator& aLast) { return do_erase(const_iterator(aFirst), const_iterator(aLast)); }
-        iterator erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { return do_erase(aFirst, aLast); }
+        const_iterator begin() const { const_iterator result; return do_begin(result.storage()); }
+        const_iterator end() const { const_iterator result; return do_end(result.storage()); }
+        iterator begin() { iterator result; return do_begin(result.storage()); }
+        iterator end() { iterator result; return do_end(result.storage()); }
+        iterator erase(const abstract_iterator& aPosition) { iterator result; return do_erase(result.storage(), const_iterator(aPosition)); }
+        iterator erase(const abstract_const_iterator& aPosition) { iterator result; return do_erase(result.storage(), aPosition); }
+        iterator erase(const abstract_iterator& aFirst, const abstract_iterator& aLast) { iterator result; return do_erase(result.storage(), const_iterator(aFirst), const_iterator(aLast)); }
+        iterator erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { iterator result; return do_erase(result.storage(), aFirst, aLast); }
         virtual void clear() = 0;
         virtual void assign(const i_container& aRhs) = 0;
     public:
@@ -91,11 +91,11 @@ namespace neolib
             return std::lexicographical_compare(begin(), end(), aRhs.begin(), aRhs.end());
         }
     private:
-        virtual abstract_const_iterator* do_begin() const = 0;
-        virtual abstract_const_iterator* do_end() const = 0;
-        virtual abstract_iterator* do_begin() = 0;
-        virtual abstract_iterator* do_end() = 0;
-        virtual abstract_iterator* do_erase(const abstract_const_iterator& aPosition) = 0;
-        virtual abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) = 0;
+        virtual abstract_const_iterator* do_begin(void* memory) const = 0;
+        virtual abstract_const_iterator* do_end(void* memory) const = 0;
+        virtual abstract_iterator* do_begin(void* memory) = 0;
+        virtual abstract_iterator* do_end(void* memory) = 0;
+        virtual abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) = 0;
+        virtual abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) = 0;
     };
 }

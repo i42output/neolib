@@ -66,9 +66,9 @@ namespace neolib
         typedef container::iterator<T, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
         // construction
     public:
-        list() : iEndConstIterator(new container_const_iterator(iList.end())), iEndIterator(new container_iterator(iList.end())) {}
-        list(const list& aOther) : iList(aOther.begin(), aOther.end()), iEndConstIterator(new container_const_iterator(iList.end())), iEndIterator(new container_iterator(iList.end())) {}
-        list(const i_list<T>& aOther) : iList(aOther.begin(), aOther.end()), iEndConstIterator(new container_const_iterator(iList.end())), iEndIterator(new container_iterator(iList.end())) {}
+        list() {}
+        list(const list& aOther) : iList(aOther.begin(), aOther.end()) {}
+        list(const i_list<T>& aOther) : iList(aOther.begin(), aOther.end()) {}
         list& operator=(const list& aOther) { assign(aOther); return *this; }
         list& operator=(const i_list<T>& aOther) { assign(aOther); return *this; }
         // operations
@@ -84,12 +84,12 @@ namespace neolib
         void assign(const generic_container_type& aOther) override { if (&aOther == this) return; iList.assign(aOther.begin(), aOther.end()); }
     private:
         // from i_container
-        abstract_const_iterator* do_begin() const override { return new container_const_iterator(iList.begin()); }
-        abstract_const_iterator* do_end() const override { return iEndConstIterator.wrapped_iterator(); }
-        abstract_iterator* do_begin() override { return new container_iterator(iList.begin()); }
-        abstract_iterator* do_end() override { return iEndIterator.wrapped_iterator(); }
-        abstract_iterator* do_erase(const abstract_const_iterator& aPosition) override { return new container_iterator(iList.erase(static_cast<const container_const_iterator&>(aPosition))); }
-        abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new container_iterator(iList.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
+        abstract_const_iterator* do_begin(void* memory) const override { return new(memory) container_const_iterator(iList.begin()); }
+        abstract_const_iterator* do_end(void* memory) const override { return new(memory) container_const_iterator(iList.end()); }
+        abstract_iterator* do_begin(void* memory) override { return new(memory) container_iterator(iList.begin()); }
+        abstract_iterator* do_end(void* memory) override { return new(memory) container_iterator(iList.end()); }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override { return new (memory) container_iterator(iList.erase(static_cast<const container_const_iterator&>(aPosition))); }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new (memory) container_iterator(iList.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
     public:
         // from i_sequence_container
         size_type capacity() const override { return iList.max_size(); }
@@ -101,7 +101,7 @@ namespace neolib
         value_type& back() override { return container::helper::converter<value_type, concrete_value_type>::to_abstract_type(iList.back()); }
     private:
         // from i_sequence_container
-        abstract_iterator* do_insert(const abstract_const_iterator& aPosition, const value_type& aValue) override { return new container_iterator(iList.insert(static_cast<const container_const_iterator&>(aPosition), container::helper::converter<const value_type, const concrete_value_type>::to_concrete_type(aValue))); }
+        abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const value_type& aValue) override { return new (memory) container_iterator(iList.insert(static_cast<const container_const_iterator&>(aPosition), container::helper::converter<const value_type, const concrete_value_type>::to_concrete_type(aValue))); }
     public:
         // from i_list
         void push_front(const value_type& aValue) override { iList.push_front(container::helper::converter<const value_type, const concrete_value_type>::to_concrete_type(aValue)); }
@@ -111,7 +111,5 @@ namespace neolib
         // attributes
     private:
         std::list<ConcreteType> iList;
-        const_iterator iEndConstIterator;
-        iterator iEndIterator;
     };
 }

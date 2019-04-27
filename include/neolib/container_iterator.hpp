@@ -63,7 +63,7 @@ namespace neolib
             typename AbstractIterator = i_iterator<T, typename ContainerIterator::iterator_category, std::ptrdiff_t, T*, T&>,
             typename AbstractConstIterator = i_const_iterator<T, typename ContainerConstIterator::iterator_category, std::ptrdiff_t, const T*, const T&>,
             typename ConcreteIteratorType = void>
-        class iterator : public reference_counted<AbstractIterator>
+        class iterator : public reference_counted<AbstractIterator, false>
         {
         public:
             typedef T value_type;
@@ -93,11 +93,11 @@ namespace neolib
             virtual bool operator==(const abstract_base_iterator& aOther) const { return iContainerIterator == static_cast<const iterator&>(aOther).iContainerIterator; }
             virtual bool operator!=(const abstract_base_iterator& aOther) const { return iContainerIterator != static_cast<const iterator&>(aOther).iContainerIterator; }
         public:
-            virtual abstract_base_iterator* clone() const { return new concrete_iterator_type(iContainerIterator); }
-            virtual abstract_const_base_iterator* const_clone() const;
+            virtual abstract_base_iterator* clone(void* memory) const { return new (memory) concrete_iterator_type(iContainerIterator); }
+            virtual abstract_const_base_iterator* const_clone(void* memory) const;
         private:
-            virtual abstract_base_iterator* do_post_increment() { return new concrete_iterator_type(iContainerIterator++); }
-            virtual abstract_base_iterator* do_post_decrement() { return new concrete_iterator_type(iContainerIterator++); }
+            virtual abstract_base_iterator* do_post_increment(void* memory) { return new (memory) concrete_iterator_type(iContainerIterator++); }
+            virtual abstract_base_iterator* do_post_decrement(void* memory) { return new (memory) concrete_iterator_type(iContainerIterator++); }
         protected:
             container_iterator iContainerIterator;
         };
@@ -133,14 +133,14 @@ namespace neolib
             virtual difference_type operator-(const abstract_iterator& aOther) const { return base::iContainerIterator - static_cast<const random_access_iterator&>(aOther).iContainerIterator; }
             virtual bool operator<(const abstract_iterator& aOther) const { return base::iContainerIterator < static_cast<const random_access_iterator&>(aOther).iContainerIterator; }
         private:
-            virtual abstract_iterator* do_add(difference_type aDifference) const { return new random_access_iterator(base::iContainerIterator + aDifference); }
-            virtual abstract_iterator* do_subtract(difference_type aDifference) const { return new random_access_iterator(base::iContainerIterator - aDifference); }
+            virtual abstract_iterator* do_add(void* memory, difference_type aDifference) const { return new (memory) random_access_iterator(base::iContainerIterator + aDifference); }
+            virtual abstract_iterator* do_subtract(void* memory, difference_type aDifference) const { return new (memory) random_access_iterator(base::iContainerIterator - aDifference); }
         };
 
         template <typename T, typename ContainerIterator,
             typename AbstractIterator = i_const_iterator<T, typename ContainerIterator::iterator_category, std::ptrdiff_t, const T*, const T&>,
             typename ConcreteIteratorType = void>
-        class const_iterator : public reference_counted<AbstractIterator>
+        class const_iterator : public reference_counted<AbstractIterator, false>
         {
         public:
             typedef const T value_type;
@@ -169,10 +169,10 @@ namespace neolib
             virtual bool operator==(const abstract_base_iterator& aOther) const { return iContainerIterator == static_cast<const const_iterator&>(aOther).iContainerIterator; }
             virtual bool operator!=(const abstract_base_iterator& aOther) const { return iContainerIterator != static_cast<const const_iterator&>(aOther).iContainerIterator; }
         public:
-            virtual abstract_base_iterator* clone() const { return new concrete_iterator_type(iContainerIterator); }
+            virtual abstract_base_iterator* clone(void* memory) const { return new (memory) concrete_iterator_type(iContainerIterator); }
         private:
-            virtual abstract_base_iterator* do_post_increment() { return new concrete_iterator_type(iContainerIterator++); }
-            virtual abstract_base_iterator* do_post_decrement() { return new concrete_iterator_type(iContainerIterator++); }
+            virtual abstract_base_iterator* do_post_increment(void* memory) { return new (memory) concrete_iterator_type(iContainerIterator++); }
+            virtual abstract_base_iterator* do_post_decrement(void* memory) { return new (memory) concrete_iterator_type(iContainerIterator++); }
         protected:
             container_iterator iContainerIterator;
         };
@@ -209,14 +209,14 @@ namespace neolib
             virtual difference_type operator-(const abstract_iterator& aOther) const { return base::iContainerIterator - static_cast<const random_access_const_iterator&>(aOther).iContainerIterator; }
             virtual bool operator<(const abstract_iterator& aOther) const { return base::iContainerIterator < static_cast<const random_access_const_iterator&>(aOther).iContainerIterator; }
         private:
-            virtual abstract_iterator* do_add(difference_type aDifference) const { return new random_access_const_iterator(base::iContainerIterator + aDifference); }
-            virtual abstract_iterator* do_subtract(difference_type aDifference) const { return new random_access_const_iterator(base::iContainerIterator - aDifference); }
+            virtual abstract_iterator* do_add(void* memory, difference_type aDifference) const { return new (memory) random_access_const_iterator(base::iContainerIterator + aDifference); }
+            virtual abstract_iterator* do_subtract(void* memory, difference_type aDifference) const { return new (memory) random_access_const_iterator(base::iContainerIterator - aDifference); }
         };
 
         template <typename T, typename ContainerIterator, typename ContainerConstIterator, typename AbstractIterator, typename AbstractConstIterator, typename ConcreteIteratorType>
-        inline typename AbstractConstIterator::base_iterator* iterator<T, ContainerIterator, ContainerConstIterator, AbstractIterator, AbstractConstIterator, ConcreteIteratorType>::const_clone() const
+        inline typename AbstractConstIterator::base_iterator* iterator<T, ContainerIterator, ContainerConstIterator, AbstractIterator, AbstractConstIterator, ConcreteIteratorType>::const_clone(void* memory) const
         {
-            return new typename const_iterator<T, ContainerConstIterator>::concrete_iterator_type(iContainerIterator);
+            return new (memory) typename const_iterator<T, ContainerConstIterator>::concrete_iterator_type(iContainerIterator);
         }
 
     }

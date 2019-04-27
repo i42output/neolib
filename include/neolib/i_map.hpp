@@ -59,13 +59,13 @@ namespace neolib
     public:
         virtual abstract_mapped_type& operator[](const abstract_key_type& aKey) = 0;
     public:
-        iterator insert(const abstract_value_type& aValue) { return do_insert(aValue.first(), aValue.second()); }
-        iterator insert(const abstract_key_type& aKey, const abstract_mapped_type& aMapped) { return do_insert(aKey, aMapped); }
-        const_iterator find(const abstract_key_type& aKey) const { return do_find(aKey); }
-        iterator find(const abstract_key_type& aKey) { return do_find(aKey); }
+        iterator insert(const abstract_value_type& aValue) { iterator result; return do_insert(result.storage(), aValue.first(), aValue.second()); }
+        iterator insert(const abstract_key_type& aKey, const abstract_mapped_type& aMapped) { iterator result; return do_insert(result.storage(), aKey, aMapped); }
+        const_iterator find(const abstract_key_type& aKey) const { const_iterator result; return do_find(result.storage(), aKey); }
+        iterator find(const abstract_key_type& aKey) { iterator result; return do_find(result.storage(), aKey); }
     private:
-        virtual abstract_iterator* do_insert(const abstract_key_type& aKey, const abstract_mapped_type& aMapped) = 0;
-        virtual abstract_const_iterator* do_find(const abstract_key_type& aKey) const = 0;
-        virtual abstract_iterator* do_find(const abstract_key_type& aKey) = 0;
+        virtual abstract_iterator* do_insert(void* memory, const abstract_key_type& aKey, const abstract_mapped_type& aMapped) = 0;
+        virtual abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const = 0;
+        virtual abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) = 0;
     };
 }

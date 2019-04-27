@@ -103,17 +103,17 @@ namespace neolib
         }
     private:
         // from i_container
-        abstract_const_iterator* do_begin() const override { return new container_const_iterator(iSet.begin()); }
-        abstract_const_iterator* do_end() const override { return new container_const_iterator(iSet.end()); }
-        abstract_iterator* do_begin() override { return new container_iterator(iSet.begin()); }
-        abstract_iterator* do_end() override { return new container_iterator(iSet.end()); }
-        abstract_iterator* do_erase(const abstract_const_iterator& aPosition) override { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aPosition))); }
-        abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
+        abstract_const_iterator* do_begin(void* memory) const override { return new (memory) container_const_iterator(iSet.begin()); }
+        abstract_const_iterator* do_end(void* memory) const override { return new (memory) container_const_iterator(iSet.end()); }
+        abstract_iterator* do_begin(void* memory) override { return new (memory) container_iterator(iSet.begin()); }
+        abstract_iterator* do_end(void* memory) override { return new (memory) container_iterator(iSet.end()); }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override { return new (memory) container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aPosition))); }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new (memory) container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
     public:
         // from i_set
-        abstract_iterator* do_insert(const abstract_value_type& aValue) override { return new container_iterator(iSet.insert(concrete_value_type(aValue))); }
-        abstract_const_iterator* do_find(const abstract_key_type& aKey) const override { return new container_const_iterator(iSet.find(concrete_key_type(aKey))); }
-        abstract_iterator* do_find(const abstract_key_type& aKey) override { return new container_iterator(iSet.find(concrete_key_type(aKey))); }
+        abstract_iterator* do_insert(void* memory, const abstract_value_type& aValue) override { return new (memory) container_iterator(iSet.insert(concrete_value_type(aValue))); }
+        abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator(iSet.find(concrete_key_type(aKey))); }
+        abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator(iSet.find(concrete_key_type(aKey))); }
     private:
         container_type iSet;
     };
@@ -178,17 +178,17 @@ namespace neolib
         }
     private:
         // from i_container
-        abstract_const_iterator* do_begin() const override { return new container_const_iterator(iSet.begin()); }
-        abstract_const_iterator* do_end() const override { return new container_const_iterator(iSet.end()); }
-        abstract_iterator* do_begin() override { return new container_iterator(iSet.begin()); }
-        abstract_iterator* do_end() override { return container_iterator(iSet.end()); }
-        abstract_iterator* do_erase(const abstract_const_iterator& aPosition) override { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aPosition))); }
-        abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
+        abstract_const_iterator* do_begin(void* memory) const override { return new (memory) container_const_iterator(iSet.begin()); }
+        abstract_const_iterator* do_end(void* memory) const override { return new (memory) container_const_iterator(iSet.end()); }
+        abstract_iterator* do_begin(void* memory) override { return new (memory) container_iterator(iSet.begin()); }
+        abstract_iterator* do_end(void* memory) override { return new (memory) container_iterator(iSet.end()); }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override { return new (memory) container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aPosition))); }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new (memory) container_iterator(iSet.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
     public:
         // from i_multiset
-        abstract_iterator* do_insert(const abstract_value_type& aValue) override { return new container_iterator(iSet.insert(concrete_value_type{ aValue })); }
-        abstract_const_iterator* do_find(const abstract_key_type& aKey) const override { return new container_const_iterator(iSet.find(concrete_key_type{ aKey })); }
-        abstract_iterator* do_find(const abstract_key_type& aKey) override { return new container_iterator(iSet.find(concrete_key_type{ aKey })); }
+        abstract_iterator* do_insert(void* memory, const abstract_value_type& aValue) override { return new (memory) container_iterator(iSet.insert(concrete_value_type{ aValue })); }
+        abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator(iSet.find(concrete_key_type{ aKey })); }
+        abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator(iSet.find(concrete_key_type{ aKey })); }
     private:
         container_type iSet;
     };

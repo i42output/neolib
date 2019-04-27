@@ -63,6 +63,6 @@ namespace neolib
         virtual const value_type& back() const = 0;
         virtual value_type& back() = 0;
     private:
-        virtual abstract_iterator* do_insert(const abstract_const_iterator& aPosition, const value_type& aValue) = 0;
+        virtual abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const value_type& aValue) = 0;
     };
 }

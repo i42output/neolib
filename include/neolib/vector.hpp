@@ -65,12 +65,12 @@ namespace neolib
         typedef container::random_access_iterator<T, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
         // construction
     public:
-        vector() : iEndConstIterator(), iEndIterator() {}
-        vector(const vector& aOther) : iVector(aOther.begin(), aOther.end()), iEndConstIterator(), iEndIterator() {}
-        vector(const i_vector<T>& aOther) : iVector(aOther.begin(), aOther.end()), iEndConstIterator(), iEndIterator() {}
-        vector(const container_type& aOtherContainer) : iVector(aOtherContainer), iEndConstIterator(), iEndIterator() {}
+        vector() {}
+        vector(const vector& aOther) : iVector(aOther.begin(), aOther.end()) {}
+        vector(const i_vector<T>& aOther) : iVector(aOther.begin(), aOther.end()) {}
+        vector(const container_type& aOtherContainer) : iVector(aOtherContainer) {}
         template <typename InputIter>
-        vector(InputIter aFirst, InputIter aLast) : iVector(aFirst, aLast), iEndConstIterator(), iEndIterator() {}
+        vector(InputIter aFirst, InputIter aLast) : iVector(aFirst, aLast) {}
         vector& operator=(const vector& aOther) { assign(aOther); return *this; }
         vector& operator=(const i_vector<T>& aOther) { assign(aOther); return *this; }
         // operations
@@ -82,50 +82,34 @@ namespace neolib
         // from i_container
         size_type size() const override { return iVector.size(); }
         size_type max_size() const override { return iVector.max_size(); }
-        void clear() override { reset_cache(); iVector.clear(); }
-        void assign(const generic_container_type& aOther) override { if (&aOther == this) return; reset_cache(); iVector.assign(aOther.begin(), aOther.end()); }
+        void clear() override { iVector.clear(); }
+        void assign(const generic_container_type& aOther) override { if (&aOther == this) return; iVector.assign(aOther.begin(), aOther.end()); }
     private:
         // from i_container
-        abstract_const_iterator* do_begin() const override { populate_cache(); return new container_const_iterator(iVector.begin()); }
-        abstract_const_iterator* do_end() const override { populate_cache(); return iEndConstIterator.wrapped_iterator(); }
-        abstract_iterator* do_begin() override { populate_cache(); return new container_iterator(iVector.begin()); }
-        abstract_iterator* do_end() override { populate_cache(); return iEndIterator.wrapped_iterator(); }
-        abstract_iterator* do_erase(const abstract_const_iterator& aPosition) override { reset_cache();  return new container_iterator(iVector.erase(static_cast<const container_const_iterator&>(aPosition))); }
-        abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { reset_cache(); return new container_iterator(iVector.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
+        abstract_const_iterator* do_begin(void* memory) const override { return new (memory) container_const_iterator(iVector.begin()); }
+        abstract_const_iterator* do_end(void* memory) const override { return new (memory) container_const_iterator(iVector.end()); }
+        abstract_iterator* do_begin(void* memory) override { return new (memory) container_iterator(iVector.begin()); }
+        abstract_iterator* do_end(void* memory) override { return new (memory) container_iterator(iVector.end()); }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override { return new (memory) container_iterator(iVector.erase(static_cast<const container_const_iterator&>(aPosition))); }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new (memory) container_iterator(iVector.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
     public:
         // from i_sequence_container
         size_type capacity() const override { return iVector.size(); }
-        void reserve(size_type aCapacity) override { reset_cache(); iVector.reserve(aCapacity); }
-        void resize(size_type aSize, const value_type& aValue) override { reset_cache(); iVector.resize(aSize, aValue); }
-        void push_back(const value_type& aValue) override { reset_cache(); iVector.push_back(aValue); }
-        void pop_back() override { reset_cache(); iVector.pop_back(); }
+        void reserve(size_type aCapacity) override { iVector.reserve(aCapacity); }
+        void resize(size_type aSize, const value_type& aValue) override { iVector.resize(aSize, aValue); }
+        void push_back(const value_type& aValue) override { iVector.push_back(aValue); }
+        void pop_back() override { iVector.pop_back(); }
         const value_type& back() const override { return iVector.back(); }
         value_type& back() override { return iVector.back(); }
     private:
         // from i_sequence_container
-        abstract_iterator* do_insert(const abstract_const_iterator& aPosition, const value_type& aValue) override { reset_cache(); return new container_iterator(iVector.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
+        abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const value_type& aValue) override { return new (memory) container_iterator(iVector.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
     public:
         // from i_vector
         const value_type& operator[](size_type aIndex) const override { return iVector[aIndex]; }
         value_type& operator[](size_type aIndex) override { return iVector[aIndex]; }
-    private:
-        void reset_cache() const { iEndConstIterator = const_iterator(); iEndIterator = iterator(); }
-        void populate_cache() const 
-        { 
-            if (iEndConstIterator.wrapped_iterator() == nullptr)
-                iEndConstIterator = const_iterator(new container_const_iterator(iVector.end())); 
-        }
-        void populate_cache()
-        {
-            if (iEndConstIterator.wrapped_iterator() == nullptr)
-                iEndConstIterator = const_iterator(new container_const_iterator(iVector.end()));
-            if (iEndIterator.wrapped_iterator() == nullptr)
-                iEndIterator = iterator(new container_iterator(iVector.end()));
-        }
         // attributes
     private:
         std::vector<ConcreteType> iVector;
-        mutable const_iterator iEndConstIterator;
-        mutable iterator iEndIterator;
     };
 }

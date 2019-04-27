@@ -42,7 +42,7 @@
 
 namespace neolib
 {
-    template <typename Base>
+    template <typename Base, bool DeallocateOnRelease = true>
     class reference_counted : public Base
     {
     public:
@@ -82,7 +82,7 @@ namespace neolib
             if (--iReferenceCount <= 0 && !iPinned)
             {
                 if (!iDestroying)
-                    delete this;
+                    destroy();
                 else
                     throw release_during_destruction();
             }
@@ -106,7 +106,7 @@ namespace neolib
         {
             iPinned = false;
             if (iReferenceCount <= 0)
-                delete this;
+                destroy();
         }
     public:
         virtual void subcribe_destruction_watcher(i_object_destruction_watcher& aWatcher) const
@@ -125,6 +125,14 @@ namespace neolib
                 iDestructionWatchers.erase(existingWatcher);
             else
                 *existingWatcher = 0;
+        }
+    private:
+        void destroy() const
+        {
+            if constexpr (DeallocateOnRelease)
+                delete this;
+            else
+                (*this).~reference_counted();
         }
     private:
         mutable int32_t iReferenceCount;
