@@ -237,7 +237,7 @@ namespace neolib
         random_access_iterator operator-(difference_type aDifference) const { return wrapped_iterator() - aDifference; }
         reference operator[](difference_type aDifference) const { return wrapped_iterator()[aDifference]; }
         difference_type operator-(const random_access_iterator& aOther) const { return wrapped_iterator() - (*aOther.wrapped_iterator()); }
-        bool operator<(const random_access_iterator& aOther) const { return &wrapped_iterator() < &aOther.wrapped_iterator(); }
+        bool operator<(const random_access_iterator& aOther) const { return wrapped_iterator() < aOther.wrapped_iterator(); }
     public:
         abstract_iterator& wrapped_iterator() const { return static_cast<abstract_iterator&>(base::wrapped_iterator()); }
     };
@@ -458,7 +458,7 @@ namespace neolib
         random_access_const_iterator operator-(difference_type aDifference) const { return wrapped_iterator() - aDifference; }
         reference operator[](difference_type aDifference) const { return wrapped_iterator()[aDifference]; }
         difference_type operator-(const random_access_const_iterator& aOther) const { return wrapped_iterator() - (aOther.wrapped_iterator()); }
-        bool operator<(const random_access_const_iterator& aOther) const { return &wrapped_iterator() < &aOther.wrapped_iterator(); }
+        bool operator<(const random_access_const_iterator& aOther) const { return wrapped_iterator() < aOther.wrapped_iterator(); }
     public:
         abstract_iterator& wrapped_iterator() const { return static_cast<abstract_iterator&>(base::wrapped_iterator()); }
     };
