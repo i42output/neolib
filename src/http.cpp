@@ -39,6 +39,8 @@
 
 namespace neolib
 {
+    constexpr long long DEFAULT_PROGRESS_INTERVAL_ms = 250;
+
     http::http(async_task& aIoTask) : 
         iIoTask(aIoTask), 
         iPacketStream(aIoTask), 
@@ -49,7 +51,7 @@ namespace neolib
         iOk(false), 
         iStatusCode(0)
     {
-        init();
+        reset();
         iPacketStream.add_observer(*this);
     }
 
@@ -65,7 +67,7 @@ namespace neolib
         iOk(false), 
         iStatusCode(0)
     {
-        init();
+        reset();
         iPacketStream.add_observer(*this);
     }
 
@@ -76,13 +78,13 @@ namespace neolib
 
     http& http::operator=(const http& aOther) 
     { 
-        init();
+        reset();
         iHost = aOther.iHost; 
         iResource = aOther.iResource; 
         return *this;
     }
 
-    void http::init()
+    void http::reset()
     {
         iHost.clear(); 
         iPort = 80;
@@ -101,6 +103,7 @@ namespace neolib
         iBody.clear();
         iState = ResponseStatus;
         iPreviousWasCRLF = false;
+        iLastPacketReceived = std::nullopt;
     }
 
     void http::add_response_header(const std::string& aHeaderLine)
@@ -229,7 +232,7 @@ namespace neolib
 
     void http::request(const std::string& aHost, const std::string& aResource, type_e aType, unsigned short aPort, bool aSecure, const headers_t& aRequestHeaders, const neolib::variant<body_t, std::string>& aRequestBody)
     {
-        init();
+        reset();
         iHost = aHost;
         iPort = aPort;
         iSecure = aSecure;
@@ -241,9 +244,9 @@ namespace neolib
         else if (std::holds_alternative<std::string>(aRequestBody) && !std::get<std::string>(aRequestBody).empty())
             iRequestBody.assign(std::get<std::string>(aRequestBody).begin(), std::get<std::string>(aRequestBody).end());
         if (iPacketStream.open(aHost, aPort, aSecure))
-            notify_observers(i_http_observer::NotifyStarted);
+            started.trigger();
         else
-            notify_observers(i_http_observer::NotifyFailure);
+            failure.trigger();
     }
 
     double http::percent_done() const
@@ -254,22 +257,6 @@ namespace neolib
             return 100.0;
         else
             return iBody.size() * 100.0 / *iBodyLength;
-    }
-
-    void http::notify_observer(i_http_observer& aObserver, i_http_observer::notify_type aType, const void*, const void*)
-    {
-        switch(aType)
-        {
-        case i_http_observer::NotifyStarted:
-            aObserver.http_request_started(*this);
-            break;
-        case i_http_observer::NotifyCompleted:
-            aObserver.http_request_completed(*this);
-            break;
-        case i_http_observer::NotifyFailure:
-            aObserver.http_request_failure(*this);
-            break;
-        }
     }
 
     void http::connection_established(packet_stream_type& aStream)
@@ -290,7 +277,7 @@ namespace neolib
     {
         iBodyLength.reset();
         iBody.clear();
-        notify_observers(i_http_observer::NotifyFailure);
+        failure.trigger();
         aStream.close();
     }
 
@@ -307,6 +294,12 @@ namespace neolib
             case Body:
                 iBody.insert(iBody.end(), i, aPacket.end());
                 i = aPacket.end();
+                if (iLastPacketReceived == std::nullopt ||
+                    std::chrono::duration_cast<std::chrono::milliseconds>(*iLastPacketReceived - std::chrono::steady_clock::now()).count() > DEFAULT_PROGRESS_INTERVAL_ms)
+                {
+                    iLastPacketReceived = std::chrono::steady_clock::now();
+                    progress.trigger();
+                }
                 break;
             default:
                 {
@@ -359,7 +352,7 @@ namespace neolib
     {
         iBodyLength.reset();
         iBody.clear();
-        notify_observers(i_http_observer::NotifyFailure);
+        failure.trigger();
         aStream.close();
     }
 
@@ -373,12 +366,15 @@ namespace neolib
         if (ok() && iBodyLength && *iBodyLength != iBody.size())
             iOk = false;
         if (ok())
-            notify_observers(i_http_observer::NotifyCompleted);
+        {
+            progress.trigger();
+            completed.trigger();
+        }
         else
         {
             iBodyLength.reset();
             iBody.clear();
-            notify_observers(i_http_observer::NotifyFailure);
+            failure.trigger();
         }
     }
 }

@@ -39,7 +39,7 @@
 #include <vector>
 #include <string>
 #include <utility>
-#include "observable.hpp"
+#include "event.hpp"
 #include "string_utils.hpp"
 #include "optional.hpp"
 #include "async_task.hpp"
@@ -47,19 +47,14 @@
 
 namespace neolib
 {
-    class oauth_observer
+    class oauth
     {
-        friend class oauth;
-    private:
-        virtual void oauth_request_started(oauth& aRequest) = 0;
-        virtual void oauth_request_completed(oauth& aRequest) = 0;
-        virtual void oauth_request_failure(oauth& aRequest) = 0;
+        // events
     public:
-        enum notify_type { NotifyStarted, NotifyCompleted, NotifyFailure };
-    };
+        event<> started;
+        event<> completed;
+        event<> failure;
 
-    class oauth : public observable<oauth_observer>, private i_http_observer
-    {
         // types
     public:
         typedef std::pair<http::type_e, std::string> operation;
@@ -75,12 +70,6 @@ namespace neolib
 
         // implementation
     private:
-        // from observable<oauth_observer>
-        virtual void notify_observer(oauth_observer& aObserver, oauth_observer::notify_type aType, const void* aParameter, const void* aParameter2);
-        // from i_http_observer
-        virtual void http_request_started(http& aRequest);
-        virtual void http_request_completed(http& aRequest);
-        virtual void http_request_failure(http& aRequest);
 
         // attributes
     private:

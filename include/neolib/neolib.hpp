@@ -36,6 +36,12 @@
 
 #pragma once
 
+#ifdef NDEBUG
+constexpr bool ndebug = true;
+#else
+constexpr bool ndebug = false;
+#endif
+
 #include <cstdint>
 
 #ifdef NEOLIB_HOSTED_ENVIRONMENT

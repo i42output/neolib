@@ -39,26 +39,16 @@
 #include <vector>
 #include <string>
 #include <deque>
+#include <optional>
+#include <chrono>
 #include "variant.hpp"
-#include "observable.hpp"
+#include "event.hpp"
 #include "string_utils.hpp"
-#include "optional.hpp"
 #include "packet_stream.hpp"
 #include "string_packet.hpp"
 
 namespace neolib
 {
-    class i_http_observer
-    {
-        friend class http;
-    private:
-        virtual void http_request_started(http& aRequest) = 0;
-        virtual void http_request_completed(http& aRequest) = 0;
-        virtual void http_request_failure(http& aRequest) = 0;
-    public:
-        enum notify_type { NotifyStarted, NotifyCompleted, NotifyFailure };
-    };
-
     class http_packet : public string_packet
     {
         // construction
@@ -78,8 +68,15 @@ namespace neolib
     typedef packet_stream<http_packet, tcp_protocol> http_stream;
     typedef i_packet_stream_observer<http_packet, tcp_protocol> http_stream_observer;
 
-    class http : public observable<i_http_observer>, private http_stream_observer
+    class http : private http_stream_observer
     {
+        // events
+    public:
+        event<> started;
+        event<> progress;
+        event<> completed;
+        event<> failure;
+
         // types
     public:
         typedef std::map<ci_string, std::string> headers_t;
@@ -109,12 +106,10 @@ namespace neolib
 
         // implementation
     private:
-        void init();
+        void reset();
         void add_response_header(const std::string& aHeaderLine);
         bool decode();
         bool decode_chunked();
-        // from observable<i_http_observer>
-        virtual void notify_observer(i_http_observer& aObserver, i_http_observer::notify_type aType, const void* aParameter, const void* aParameter2);
         // from http_stream_observer
         virtual void connection_established(packet_stream_type& aStream);
         virtual void connection_failure(packet_stream_type& aStream, const boost::system::error_code& aError);
@@ -140,9 +135,10 @@ namespace neolib
         headers_t::iterator iLastResponseHeader;
         bool iOk;
         uint32_t iStatusCode;
-        optional<uint64_t> iBodyLength;
+        std::optional<uint64_t> iBodyLength;
         body_t iBody;
         enum state { ResponseStatus, ResponseHeaders, Body, Finished } iState;
         bool iPreviousWasCRLF;
+        std::optional<std::chrono::time_point<std::chrono::steady_clock>> iLastPacketReceived;
     };
 }

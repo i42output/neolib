@@ -43,44 +43,18 @@ namespace neolib
         iHttpRequester(IoTask), iConsumerKey(aConsumerKey), iConsumerSecret(aConsumerSecret), 
             iRequestTokenOp(aRequestTokenOp), iUserAuthorizationOp(aUserAuthorizationOp), iAccessTokenOp(aAccessTokenOp)
     {
-        iHttpRequester.add_observer(*this);
+        // todo
+        iHttpRequester.started([](){});
+        iHttpRequester.completed([](){});
+        iHttpRequester.failure([](){});
     }
 
     oauth::~oauth()
     {
-        iHttpRequester.remove_observer(*this);
     }
 
     void oauth::request()
     {
-        // TODO
-    }
-
-    void oauth::notify_observer(oauth_observer& aObserver, oauth_observer::notify_type aType, const void*, const void*)
-    {
-        switch(aType)
-        {
-        case oauth_observer::NotifyStarted:
-            aObserver.oauth_request_started(*this);
-            break;
-        case oauth_observer::NotifyCompleted:
-            aObserver.oauth_request_completed(*this);
-            break;
-        case oauth_observer::NotifyFailure:
-            aObserver.oauth_request_failure(*this);
-            break;
-        }
-    }
-
-    void oauth::http_request_started(http&)
-    {
-    }
-
-    void oauth::http_request_completed(http&)
-    {
-    }
-
-    void oauth::http_request_failure(http&)
-    {
+        // todo
     }
 }
