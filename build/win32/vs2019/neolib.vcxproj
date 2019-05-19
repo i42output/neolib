@@ -1,0 +1,338 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup>
+    <UseNativeEnvironment>true</UseNativeEnvironment>
+  </PropertyGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{5BE004BF-A083-422F-8287-E7238B633466}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>neolib</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(ProjectDir)\..\..\..\lib\</OutDir>
+    <TargetName>$(ProjectName)d</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetName>$(ProjectName)d</TargetName>
+    <OutDir>$(ProjectDir)\..\..\..\lib\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(ProjectDir)\..\..\..\lib\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(ProjectDir)\..\..\..\lib\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;NEOLIB_HOSTED_ENVIRONMENT;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(DevDirNeolib)\include;$(DevDirBoost);$(DevDirOpenSSL)\include;$(DevDirZlib)\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalOptions>/std:c++latest %(AdditionalOptions) /std:c++latest </AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;NEOLIB_HOSTED_ENVIRONMENT;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(DevDirNeolib)\include;$(DevDirBoost);$(DevDirOpenSSL)\include;$(DevDirZlib)\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NEOLIB_HOSTED_ENVIRONMENT;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(DevDirNeolib)\include;$(DevDirBoost);$(DevDirOpenSSL)\include;$(DevDirZlib)\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalOptions>/std:c++latest %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NEOLIB_HOSTED_ENVIRONMENT;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(DevDirNeolib)\include;$(DevDirBoost);$(DevDirOpenSSL)\include;$(DevDirZlib)\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\application_info.cpp" />
+    <ClCompile Include="..\..\..\src\crc.cpp" />
+    <ClCompile Include="..\..\..\src\event.cpp" />
+    <ClCompile Include="..\..\..\src\waitable_event.cpp" />
+    <ClCompile Include="..\..\..\src\file.cpp" />
+    <ClCompile Include="..\..\..\src\gunzip.cpp" />
+    <ClCompile Include="..\..\..\src\http.cpp" />
+    <ClCompile Include="..\..\..\src\async_task.cpp" />
+    <ClCompile Include="..\..\..\src\async_thread.cpp" />
+    <ClCompile Include="..\..\..\src\module.cpp" />
+    <ClCompile Include="..\..\..\src\oauth.cpp" />
+    <ClCompile Include="..\..\..\src\openssl.cpp" />
+    <ClCompile Include="..\..\..\src\os_version.cpp" />
+    <ClCompile Include="..\..\..\src\plugin_manager.cpp" />
+    <ClCompile Include="..\..\..\src\setting.cpp" />
+    <ClCompile Include="..\..\..\src\thread.cpp" />
+    <ClCompile Include="..\..\..\src\thread_pool.cpp" />
+    <ClCompile Include="..\..\..\src\timer.cpp" />
+    <ClCompile Include="..\..\..\src\uri.cpp" />
+    <ClCompile Include="..\..\..\src\uuid.cpp" />
+    <ClCompile Include="..\..\..\src\win32\win32_message_queue.cpp" />
+    <ClCompile Include="..\..\..\src\win32\win32_module.cpp" />
+    <ClCompile Include="..\..\..\src\zip.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\include\neolib\3rdparty\flat_hash_map\flat_hash_map.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\allocator.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\bresenham_counter.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\any.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\any_iterator.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\any_predicate.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\any_ref.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\application.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\application_info.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\array_tree.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\binary_data_packet.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\binary_packet.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\container_helper.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\container_iterator.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\cookie_jar.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\crc.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\custom_type.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\data_packet.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\detail_memory.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\event.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\intrusive_sort.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\mutex.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\recursion.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\waitable_event.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\fast_hash.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\file.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\functional.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\generic_iterator.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\gunzip.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\hexdump.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\http.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\indexitor.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\index_array_tree.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\interlockable.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\async_task.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\async_thread.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_application.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_application_info.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_container.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_custom_type.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_custom_type_factory.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_lifetime.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_discoverable.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_iterator.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_list.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_map.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_optional.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_packet.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_pair.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_plugin.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_plugin_manager.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_reference_counted.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_sequence_container.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_set.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_setting.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_settings.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_simple_variant.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_string.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_task.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_thread.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_vector.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_version.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\json.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\lexer.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\lifetime.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\list.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\lockable.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\locking_policy.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\manager_of.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\map.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\memory.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\message_queue.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\module.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\mutable_set.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\neolib.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\noncopyable.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\oauth.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\observable.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\openssl.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\optional.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\os_version.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\packet_connection.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\packet_stream.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\pair.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\plugin_manager.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\queue.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\quick_string.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\raii.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\random.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\red_black_tree.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\refable.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\reference_counted.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\resolver.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\segmented_array.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\segmented_tree.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\set.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\setting.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\settings.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\signal.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\simple_variant.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\singleton.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\slot.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\stdint.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\string.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\string_ci.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\string_numeric.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\string_packet.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\string_utf.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\string_utils.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\tag_array.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\targetver.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\task.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\tcp_packet_stream_server.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\thread.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\thread_pool.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\timer.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\tld_packet.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\tree.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\type_traits.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\uri.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\utility.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\uuid.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\variant.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\vecarray.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\vector.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\version.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\visitor.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\vm\bytecode_cpu.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\vm\i_cpu.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\vm\i_machine.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\vm\i_scheduler.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\vm\i_thread.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\vm\machine.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\vm\scheduler.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\waitable.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\win32.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\win32_message_queue.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\win32_module.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\xml.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\xml.inl" />
+    <ClInclude Include="..\..\..\include\neolib\zip.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\zip_iterator.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\include\neolib\json.inl" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
