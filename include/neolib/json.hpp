@@ -133,6 +133,12 @@ namespace neolib
         }
     }
 
+    struct json_document_source_location
+    {
+        uint32_t line;
+        uint32_t column;
+    };
+
     namespace json_detail
     {
         template <typename T>
@@ -506,15 +512,15 @@ namespace neolib
         typedef json_detail::basic_json_node<basic_json_value> node_type;
     public:
         basic_json_value() :
-            iNode{}, iValue {}
+            iNode{}, iValue{}, iDocumentSourceLocation{}
         {
         }
         basic_json_value(reference aParent, const value_type& aValue) :
-            iNode{ aParent }, iValue { aValue }
+            iNode{ aParent }, iValue{ aValue }, iDocumentSourceLocation{}
         {
         }
         basic_json_value(reference aParent, value_type&& aValue) :
-            iNode{ aParent }, iValue{ std::move(aValue) }
+            iNode{ aParent }, iValue{ std::move(aValue) }, iDocumentSourceLocation{}
         {
         }
     public:
@@ -738,6 +744,15 @@ namespace neolib
         {
             iNode.destruct_child(last_child());
         }
+    public:
+        const json_document_source_location& document_source_location() const
+        {
+            return iDocumentSourceLocation;
+        }
+        void set_document_source_location(const json_document_source_location& aDocumentSourceLocation)
+        {
+            iDocumentSourceLocation = aDocumentSourceLocation;
+        }
     private:
         template <typename... Args>
         pointer buy_child(Args&&... aArguments)
@@ -755,6 +770,7 @@ namespace neolib
         node_type iNode;
         name_t iName;
         value_type iValue;
+        json_document_source_location iDocumentSourceLocation;
     };
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
@@ -845,9 +861,11 @@ namespace neolib
         iterator begin();
         iterator end();
     public:
-        string_type to_error_text(const character_type* aDocumentPos, const string_type& aExtraInfo = {}) const;
+        static string_type to_error_text(const json_document_source_location& aDocumentSourceLocation, const string_type& aExtraInfo = {});
+        static string_type to_error_text(const json_value& aNode, const string_type& aExtraInfo = {});
     private:
         json_string& document();
+        string_type to_error_text(const string_type& aExtraInfo = {}) const;
     private:
         template <typename Elem, typename ElemTraits>
         bool do_read(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf = false);
@@ -855,10 +873,11 @@ namespace neolib
         json_type context() const;
         template <typename T>
         json_value* buy_value(element& aCurrentElement, T&& aValue);
-        void create_parse_error(const character_type* aDocumentPos, const string_type& aExtraInfo = {}) const;
+        void create_parse_error(const string_type& aExtraInfo = {}) const;
     private:
         json_encoding iEncoding;
         json_string iDocumentText;
+        json_document_source_location iCursor;
         mutable string_type iErrorText;
         mutable optional_json_value iRoot;
         std::vector<json_value*> iCompositeValueStack;

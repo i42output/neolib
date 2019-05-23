@@ -875,12 +875,12 @@ namespace neolib
     };
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-    inline basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::basic_json() : iEncoding{ json_detail::default_encoding<CharT>::DEFAULT_ENCODING }
+    inline basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::basic_json() : iEncoding{ json_detail::default_encoding<CharT>::DEFAULT_ENCODING }, iCursor{}
     {
     }
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-    inline basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::basic_json(const std::string& aPath, bool aValidateUtf) : iEncoding{ json_detail::default_encoding<CharT>::DEFAULT_ENCODING }
+    inline basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::basic_json(const std::string& aPath, bool aValidateUtf) : iEncoding{ json_detail::default_encoding<CharT>::DEFAULT_ENCODING }, iCursor{}
     {
         if (!read(aPath, aValidateUtf))
             throw json_error(error_text());
@@ -888,7 +888,7 @@ namespace neolib
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
     template <typename Elem, typename ElemTraits>
-    inline basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::basic_json(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf) : iEncoding{ json_detail::default_encoding<CharT>::DEFAULT_ENCODING }
+    inline basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::basic_json(std::basic_istream<Elem, ElemTraits>& aInput, bool aValidateUtf) : iEncoding{ json_detail::default_encoding<CharT>::DEFAULT_ENCODING }, iCursor{}
     {
         if (!read(aInput, aValidateUtf))
             throw json_error(error_text());
@@ -897,6 +897,7 @@ namespace neolib
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
     inline void basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::clear()
     {
+        iCursor = decltype(iCursor){};
         document().clear();
         iUtf16HighSurrogate = std::nullopt;
     }
@@ -1002,8 +1003,22 @@ namespace neolib
         json_detail::state nextState;
         element currentElement = {};
 
+        iCursor.line = 1;
+        iCursor.column = 1;
+            
         auto nextInputCh = &*document().begin();
         auto nextOutputCh = nextInputCh;
+
+        auto increment_cursor = [&nextInputCh, this]()
+        {
+            if (*nextInputCh++ != '\n')
+                ++iCursor.column;
+            else
+            {
+                iCursor.column = 1;
+                ++iCursor.line;
+            }
+        };
 
         // Main parse loop
         for(;;)
@@ -1020,15 +1035,15 @@ namespace neolib
                 switch (nextState)
                 {
                 case json_detail::state::Ignore:
-                    ++nextInputCh;
+                    increment_cursor();
                     continue;
                 case json_detail::state::Error:
-                    create_parse_error(nextInputCh);
+                    create_parse_error();
                     return false;
                 case json_detail::state::EndOfParse:
                     if (nextInputCh != &iDocumentText.back())
                     {
-                        create_parse_error(nextInputCh);
+                        create_parse_error();
                         return false;
                     }
                     return true;
@@ -1044,7 +1059,7 @@ namespace neolib
                                 *nextOutputCh++ = *nextInputCh;
                             // fall through
                         default:
-                            ++nextInputCh;
+                            increment_cursor();
                             continue;
                         case json_detail::state::Object:
                         case json_detail::state::Array:
@@ -1106,7 +1121,7 @@ namespace neolib
                             {
                                 if (context() == json_type::Object && currentElement.name == none)
                                 {
-                                    create_parse_error(nextInputCh, "bad object field name");
+                                    create_parse_error("bad object field name");
                                     return false;
                                 }
                                 switch (keyword->second)
@@ -1126,7 +1141,7 @@ namespace neolib
                             {
                                 if constexpr (syntax == json_syntax::StandardNoKeywords)
                                 {
-                                    create_parse_error(nextInputCh, "keywords unavailable");
+                                    create_parse_error("keywords unavailable");
                                     return false;
                                 }
                                 if (context() == json_type::Object && currentElement.name == none)
@@ -1387,10 +1402,10 @@ namespace neolib
             }
             catch (std::exception& e)
             {
-                create_parse_error(nextInputCh, e.what());
+                create_parse_error(e.what());
                 return false;
             }
-            ++nextInputCh;
+            increment_cursor();
         }
 
         return true;
@@ -1646,22 +1661,8 @@ namespace neolib
     }
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-    typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::string_type basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::to_error_text(const character_type* aDocumentPos, const string_type& aExtraInfo) const
+    typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::string_type basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::to_error_text(const json_document_source_location& aDocumentSourceLocation, const string_type& aExtraInfo)
     {
-        if (aDocumentPos < &*document().as_view().begin() || aDocumentPos > &*std::prev(document().as_view().end()))
-            throw json_error("basic_json::to_error_text: invalid document pos");
-        uint32_t line = 1;
-        uint32_t col = 1;
-        for (auto pos = &*document().as_view().begin(); pos != aDocumentPos; ++pos)
-        {
-            if (*pos == '\n')
-            {
-                ++line;
-                col = 1;
-            }
-            else
-                ++col;
-        }
         string_type text;
         if (!aExtraInfo.empty())
         {
@@ -1669,10 +1670,21 @@ namespace neolib
             text += aExtraInfo;
             text += ") ";
         }
-        text += "line " + boost::lexical_cast<std::string>(line) + ", col " + boost::lexical_cast<std::string>(col);
+        text += "line " + boost::lexical_cast<string_type>(aDocumentSourceLocation.line) + ", col " + boost::lexical_cast<string_type>(aDocumentSourceLocation.column);
         return text;
     }
 
+    template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+    typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::string_type basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::to_error_text(const json_value& aNode, const string_type& aExtraInfo)
+    {
+        return to_error_text(aNode.document_source_location(), aExtraInfo);
+    }
+
+    template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+    typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::string_type basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::to_error_text(const string_type& aExtraInfo) const
+    {
+        return to_error_text(iCursor, aExtraInfo);
+    }
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
     inline typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::json_string& basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::document()
@@ -1697,6 +1709,7 @@ namespace neolib
         case json_type::Array:
             {
                 auto newObject = iCompositeValueStack.back()->buy_child(std::forward<T>(aValue));
+                newObject->set_document_source_location(iCursor);
                 if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_array>)
                     newObject->template as<json_array>().set_owner(*newObject);
                 else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_object>)
@@ -1706,6 +1719,7 @@ namespace neolib
         case json_type::Object:
             {
                 auto newObject = iCompositeValueStack.back()->buy_child(std::forward<T>(aValue));
+                newObject->set_document_source_location(iCursor);
                 if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_array>)
                     newObject->template as<json_array>().set_owner(*newObject);
                 else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_object>)
@@ -1719,14 +1733,15 @@ namespace neolib
             }
         default:
             root() = std::forward<T>(aValue);
+            root().set_document_source_location(iCursor);
             return &root();
         }
     }
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-    inline void basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::create_parse_error(const character_type* aDocumentPos, const string_type& aExtraInfo) const
+    inline void basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::create_parse_error(const string_type& aExtraInfo) const
     {
-        iErrorText = to_error_text(aDocumentPos, aExtraInfo);
+        iErrorText = to_error_text(aExtraInfo);
     }
 }
 
