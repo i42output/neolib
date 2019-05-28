@@ -116,6 +116,12 @@ namespace neolib
         return lhs.container() + rhs.container();
     }
 
+    inline string& operator+=(string& lhs, const string& rhs)
+    {
+        lhs.container() += rhs.container();
+        return lhs;
+    }
+
     inline bool operator==(const string& lhs, const string& rhs)
     {
         return lhs.size() == rhs.size() && std::strcmp(lhs.c_str(), rhs.c_str()) == 0;
