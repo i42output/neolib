@@ -72,22 +72,22 @@ namespace neolib
         const container_type& container() const { return iString; }
         container_type& container() { return iString; }
         // implementation
-    public:
         // from i_container
+    public:
         size_type size() const override { return iString.size(); }
         size_type max_size() const override { return iString.max_size(); }
         void clear() override { iString.clear(); }
         void assign(const i_container& aOther) override { if (&aOther == this) return; iString.assign(aOther.begin(), aOther.end()); }
-    private:
         // from i_container
+    private:
         abstract_const_iterator* do_begin(void* memory) const override { return new (memory) container_const_iterator(iString.begin()); }
         abstract_const_iterator* do_end(void* memory) const override { return new (memory) container_const_iterator(iString.end()); }
         abstract_iterator* do_begin(void* memory) override { return new (memory) container_iterator(iString.begin()); }
         abstract_iterator* do_end(void* memory) override { return new (memory) container_iterator(iString.end()); }
         abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override { return new (memory) container_iterator(iString.erase(static_cast<const container_const_iterator&>(aPosition))); }
         abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new (memory) container_iterator(iString.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
-    public:
         // from i_sequence_container
+    public:
         size_type capacity() const override { return iString.size(); }
         void reserve(size_type aCapacity) override { iString.reserve(aCapacity); }
         void resize(size_type aSize, const value_type& aValue) override { iString.resize(aSize, aValue); }
@@ -96,16 +96,21 @@ namespace neolib
         const value_type& back() const override { return iString.back(); }
         value_type& back() override { return iString.back(); }
     private:
-        // from i_sequence_container
         abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const value_type& aValue) override { return new (memory) container_iterator(iString.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
-    public:
         // from i_string
+    public:
+        const char* cdata() const override { return iString.data(); }
+        const char* data() const override { return iString.data(); }
+        char* data() override { return iString.data(); }
         const char* c_str() const override { return iString.c_str(); }
         const char& operator[](size_type aIndex) const override { return iString[aIndex]; }
         char& operator[](size_type aIndex) override { return iString[aIndex]; }
-        void assign(const string& aOther) { iString = aOther.to_std_string(); }
-        void assign(const i_string& aOther) override { iString = aOther.to_std_string(); }
+        void assign(const string& aOther) { iString = aOther.to_std_string_view(); }
+        void assign(const i_string& aOther) override { iString = aOther.to_std_string_view(); }
         void assign(const char* aSource, size_type aSourceLength) override { iString.assign(aSource, aSourceLength); }
+        void append(const string& aOther) { iString.append(aOther.to_std_string_view()); }
+        void append(const i_string& aOther) override { iString.append(aOther.to_std_string_view()); }
+        void append(const char* aSource, size_type aSourceLength) override { iString.append(aSource, aSourceLength); }
         // attributes
     private:
         std::string iString;

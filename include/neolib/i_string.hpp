@@ -48,14 +48,21 @@ namespace neolib
         typedef i_sequence_container<char, i_random_access_const_iterator<char>, i_random_access_iterator<char> > base;
     public:
         typedef base::size_type size_type;
+        typedef const char* const_fast_iterator;
+        typedef char* fast_iterator;
     public:
         virtual i_string& operator=(const i_string& aOther) = 0;
     public:
+        virtual const char* cdata() const = 0;
+        virtual const char* data() const = 0;
+        virtual char* data() = 0;
         virtual const char* c_str() const = 0;
         virtual const char& operator[](size_type aIndex) const = 0;
         virtual char& operator[](size_type aIndex) = 0;
         virtual void assign(const i_string& aOther) = 0;
         virtual void assign(const char* aSource, size_type aSourceLength) = 0;
+        virtual void append(const i_string& aOther) = 0;
+        virtual void append(const char* aSource, size_type aSourceLength) = 0;
     public:
         operator std::string() const { return to_std_string(); }
         i_string& operator=(const std::string& aOther) { assign(aOther); return *this; }
@@ -63,6 +70,13 @@ namespace neolib
         void assign(const std::string& aSource) { assign(aSource.c_str(), aSource.size()); }
         std::string to_std_string() const { return std::string(c_str(), size()); }
         std::string_view to_std_string_view() const { return std::string_view(c_str(), size()); }
+    public:
+        const_fast_iterator cfbegin() const { return cdata(); }
+        const_fast_iterator cfend() const { return cdata() + size(); }
+        const_fast_iterator fbegin() const { return data(); }
+        const_fast_iterator fend() const { return data() + size(); }
+        fast_iterator fbegin() { return data(); }
+        fast_iterator fend() { return data() + size(); }
     };
 
     inline std::ostream& operator<<(std::ostream& aStream, const i_string& aString)

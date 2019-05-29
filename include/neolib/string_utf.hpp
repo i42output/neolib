@@ -48,6 +48,7 @@
 #include <cwctype>
 #include <cassert>
 #include <boost/locale.hpp> 
+#include <neolib/string.hpp>
 
 namespace neolib 
 {
@@ -402,6 +403,11 @@ namespace neolib
     inline bool check_utf8(const std::basic_string<CharT, Traits, Alloc>& aString)
     {
         return check_utf8(std::basic_string_view<CharT, Traits>{ aString });
+    }
+
+    inline bool check_utf8(const neolib::i_string& aString)
+    {
+        return check_utf8(aString.to_std_string_view());
     }
 
     template <typename StringT>

@@ -132,6 +132,9 @@ namespace neolib
             virtual reference operator[](difference_type aDifference) const { return base::iContainerIterator[aDifference]; }
             virtual difference_type operator-(const abstract_iterator& aOther) const { return base::iContainerIterator - static_cast<const random_access_iterator&>(aOther).iContainerIterator; }
             virtual bool operator<(const abstract_iterator& aOther) const { return base::iContainerIterator < static_cast<const random_access_iterator&>(aOther).iContainerIterator; }
+            virtual bool operator<=(const abstract_iterator& aOther) const { return base::iContainerIterator <= static_cast<const random_access_iterator&>(aOther).iContainerIterator; }
+            virtual bool operator>(const abstract_iterator& aOther) const { return base::iContainerIterator > static_cast<const random_access_iterator&>(aOther).iContainerIterator; }
+            virtual bool operator>=(const abstract_iterator& aOther) const { return base::iContainerIterator >= static_cast<const random_access_iterator&>(aOther).iContainerIterator; }
         private:
             virtual abstract_iterator* do_add(void* memory, difference_type aDifference) const { return new (memory) random_access_iterator(base::iContainerIterator + aDifference); }
             virtual abstract_iterator* do_subtract(void* memory, difference_type aDifference) const { return new (memory) random_access_iterator(base::iContainerIterator - aDifference); }
@@ -208,6 +211,9 @@ namespace neolib
             virtual reference operator[](difference_type aDifference) const { return base::iContainerIterator[aDifference]; }
             virtual difference_type operator-(const abstract_iterator& aOther) const { return base::iContainerIterator - static_cast<const random_access_const_iterator&>(aOther).iContainerIterator; }
             virtual bool operator<(const abstract_iterator& aOther) const { return base::iContainerIterator < static_cast<const random_access_const_iterator&>(aOther).iContainerIterator; }
+            virtual bool operator<=(const abstract_iterator& aOther) const { return base::iContainerIterator <= static_cast<const random_access_const_iterator&>(aOther).iContainerIterator; }
+            virtual bool operator>(const abstract_iterator& aOther) const { return base::iContainerIterator > static_cast<const random_access_const_iterator&>(aOther).iContainerIterator; }
+            virtual bool operator>=(const abstract_iterator& aOther) const { return base::iContainerIterator >= static_cast<const random_access_const_iterator&>(aOther).iContainerIterator; }
         private:
             virtual abstract_iterator* do_add(void* memory, difference_type aDifference) const { return new (memory) random_access_const_iterator(base::iContainerIterator + aDifference); }
             virtual abstract_iterator* do_subtract(void* memory, difference_type aDifference) const { return new (memory) random_access_const_iterator(base::iContainerIterator - aDifference); }

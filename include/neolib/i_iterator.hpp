@@ -102,6 +102,9 @@ namespace neolib
         virtual reference operator[](difference_type aDifference) const = 0;
         virtual difference_type operator-(const i_random_access_iterator& aOther) const = 0;
         virtual bool operator<(const i_random_access_iterator& aOther) const = 0;
+        virtual bool operator<=(const i_random_access_iterator& aOther) const = 0;
+        virtual bool operator>(const i_random_access_iterator& aOther) const = 0;
+        virtual bool operator>=(const i_random_access_iterator& aOther) const = 0;
     private:
         virtual i_random_access_iterator* do_add(void* memory, difference_type aDifference) const = 0;
         virtual i_random_access_iterator* do_subtract(void* memory, difference_type aDifference) const = 0;
@@ -238,6 +241,9 @@ namespace neolib
         reference operator[](difference_type aDifference) const { return wrapped_iterator()[aDifference]; }
         difference_type operator-(const random_access_iterator& aOther) const { return wrapped_iterator() - (*aOther.wrapped_iterator()); }
         bool operator<(const random_access_iterator& aOther) const { return wrapped_iterator() < aOther.wrapped_iterator(); }
+        bool operator<=(const random_access_iterator& aOther) const { return wrapped_iterator() <= aOther.wrapped_iterator(); }
+        bool operator>(const random_access_iterator& aOther) const { return wrapped_iterator() > aOther.wrapped_iterator(); }
+        bool operator>=(const random_access_iterator& aOther) const { return wrapped_iterator() >= aOther.wrapped_iterator(); }
     public:
         abstract_iterator& wrapped_iterator() const { return static_cast<abstract_iterator&>(base::wrapped_iterator()); }
     };
@@ -294,6 +300,9 @@ namespace neolib
         virtual reference operator[](difference_type aDifference) const = 0;
         virtual difference_type operator-(const i_random_access_const_iterator& aOther) const = 0;
         virtual bool operator<(const i_random_access_const_iterator& aOther) const = 0;
+        virtual bool operator<=(const i_random_access_const_iterator& aOther) const = 0;
+        virtual bool operator>(const i_random_access_const_iterator& aOther) const = 0;
+        virtual bool operator>=(const i_random_access_const_iterator& aOther) const = 0;
     private:
         virtual i_random_access_const_iterator* do_add(void* memory, difference_type aDifference) const = 0;
         virtual i_random_access_const_iterator* do_subtract(void* memory, difference_type aDifference) const = 0;
@@ -459,6 +468,9 @@ namespace neolib
         reference operator[](difference_type aDifference) const { return wrapped_iterator()[aDifference]; }
         difference_type operator-(const random_access_const_iterator& aOther) const { return wrapped_iterator() - (aOther.wrapped_iterator()); }
         bool operator<(const random_access_const_iterator& aOther) const { return wrapped_iterator() < aOther.wrapped_iterator(); }
+        bool operator<=(const random_access_const_iterator& aOther) const { return wrapped_iterator() <= aOther.wrapped_iterator(); }
+        bool operator>(const random_access_const_iterator& aOther) const { return wrapped_iterator() > aOther.wrapped_iterator(); }
+        bool operator>=(const random_access_const_iterator& aOther) const { return wrapped_iterator() >= aOther.wrapped_iterator(); }
     public:
         abstract_iterator& wrapped_iterator() const { return static_cast<abstract_iterator&>(base::wrapped_iterator()); }
     };
@@ -468,16 +480,36 @@ namespace neolib
     template <typename T, typename Category, typename Difference, typename Pointer, typename Reference>
     inline const_iterator<T, Category, Difference, Pointer, Reference> i_const_iterator<T, Category, Difference, Pointer, Reference>::operator--(int) { return do_post_decrement(); }
     template <typename T, typename Category, typename Difference, typename Pointer, typename Reference>
-    inline random_access_const_iterator<T, Category, Difference, Pointer, Reference> i_random_access_const_iterator<T, Category, Difference, Pointer, Reference>::operator+(difference_type aDifference) const { return do_add(aDifference); }
+    inline random_access_const_iterator<T, Category, Difference, Pointer, Reference> i_random_access_const_iterator<T, Category, Difference, Pointer, Reference>::operator+(difference_type aDifference) const 
+    { 
+        random_access_const_iterator<T, Category, Difference, Pointer, Reference> result;
+        do_add(result.storage(), aDifference);
+        return result;
+    }
     template <typename T, typename Category, typename Difference, typename Pointer, typename Reference>
-    inline random_access_const_iterator<T, Category, Difference, Pointer, Reference> i_random_access_const_iterator<T, Category, Difference, Pointer, Reference>::operator-(difference_type aDifference) const { return do_subtract(aDifference); }
+    inline random_access_const_iterator<T, Category, Difference, Pointer, Reference> i_random_access_const_iterator<T, Category, Difference, Pointer, Reference>::operator-(difference_type aDifference) const 
+    { 
+        random_access_const_iterator<T, Category, Difference, Pointer, Reference> result;
+        do_subtract(result.storage(), aDifference);
+        return result;
+    }
 
     template <typename T, typename Category, typename Difference, typename Pointer, typename Reference>
     inline iterator<T, Category, Difference, Pointer, Reference> i_iterator<T, Category, Difference, Pointer, Reference>::operator++(int) { return do_post_increment(); }
     template <typename T, typename Category, typename Difference, typename Pointer, typename Reference>
     inline iterator<T, Category, Difference, Pointer, Reference> i_iterator<T, Category, Difference, Pointer, Reference>::operator--(int) { return do_post_decrement(); }
     template <typename T, typename Category, typename Difference, typename Pointer, typename Reference>
-    inline random_access_iterator<T, Category, Difference, Pointer, Reference> i_random_access_iterator<T, Category, Difference, Pointer, Reference>::operator+(difference_type aDifference) const { return do_add(aDifference); }
+    inline random_access_iterator<T, Category, Difference, Pointer, Reference> i_random_access_iterator<T, Category, Difference, Pointer, Reference>::operator+(difference_type aDifference) const 
+    { 
+        random_access_iterator<T, Category, Difference, Pointer, Reference> result;
+        do_add(result.storage(), aDifference);
+        return result;
+    }
     template <typename T, typename Category, typename Difference, typename Pointer, typename Reference>
-    inline random_access_iterator<T, Category, Difference, Pointer, Reference> i_random_access_iterator<T, Category, Difference, Pointer, Reference>::operator-(difference_type aDifference) const { return do_subtract(aDifference); }
+    inline random_access_iterator<T, Category, Difference, Pointer, Reference> i_random_access_iterator<T, Category, Difference, Pointer, Reference>::operator-(difference_type aDifference) const 
+    { 
+        random_access_iterator<T, Category, Difference, Pointer, Reference> result;
+        do_subtract(result.storage(), aDifference);
+        return result;
+    }
 }

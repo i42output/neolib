@@ -36,8 +36,9 @@
 #pragma once
 
 #include "neolib.hpp"
-#include "i_reference_counted.hpp"
+#include <optional>
 #include <stdexcept>
+#include "i_reference_counted.hpp"
 
 namespace neolib
 {
@@ -70,6 +71,18 @@ namespace neolib
         virtual i_optional<T>& operator=(const i_optional<T>& rhs) = 0;
         virtual i_optional<T>& operator=(const T& value) = 0;
     };
+
+    template <typename T>
+    inline bool operator==(const i_optional<T>& lhs, std::nullopt_t)
+    {
+        return !lhs.valid();
+    }
+        
+    template <typename T>
+    inline bool operator!=(const i_optional<T>& lhs, std::nullopt_t)
+    {
+        return lhs.valid();
+    }
 
     template <typename T>
     inline bool operator==(const i_optional<T>& lhs, const i_optional<T>& rhs)
