@@ -38,6 +38,7 @@
 #include "neolib.hpp"
 #include <string>
 #include <iostream>
+#include "fwd_abstract.hpp"
 #include "i_sequence_container.hpp"
 
 namespace neolib
@@ -68,6 +69,7 @@ namespace neolib
         i_string& operator=(const std::string& aOther) { assign(aOther); return *this; }
         size_type length() const { return size(); }
         void assign(const std::string& aSource) { assign(aSource.c_str(), aSource.size()); }
+        void append(const std::string& aSource) { append(aSource.c_str(), aSource.size()); }
         std::string to_std_string() const { return std::string(c_str(), size()); }
         std::string_view to_std_string_view() const { return std::string_view(c_str(), size()); }
     public:
@@ -79,18 +81,10 @@ namespace neolib
         fast_iterator fend() { return data() + size(); }
     };
 
-    inline std::ostream& operator<<(std::ostream& aStream, const i_string& aString)
+    inline i_string& operator+=(i_string& lhs, const i_string& rhs)
     {
-        aStream << aString.to_std_string();
-        return aStream;
-    }
-
-    inline std::istream& operator>>(std::istream& aStream, i_string& aString)
-    {
-        std::string temp;
-        aStream >> temp;
-        aString.assign(temp.c_str(), temp.size());
-        return aStream;
+        lhs.append(rhs);
+        return lhs;
     }
 
     inline bool operator==(const i_string& lhs, const i_string& rhs)
@@ -106,5 +100,19 @@ namespace neolib
     inline bool operator<(const i_string& lhs, const i_string& rhs)
     {
         return std::strcmp(lhs.c_str(), rhs.c_str()) < 0;
+    }
+
+    inline std::ostream& operator<<(std::ostream& aStream, const i_string& aString)
+    {
+        aStream << aString.to_std_string();
+        return aStream;
+    }
+
+    inline std::istream& operator>>(std::istream& aStream, i_string& aString)
+    {
+        std::string temp;
+        aStream >> temp;
+        aString.assign(temp.c_str(), temp.size());
+        return aStream;
     }
 }

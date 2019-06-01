@@ -64,6 +64,8 @@ namespace neolib
         string(const neolib::quick_string& aOther) : iString{ aOther } {}
         string(const string& aOther) : iString{ aOther.to_std_string() } {}
         string(const i_string& aOther) : iString{ aOther.to_std_string() } {}
+        template <typename Iter>
+        string(Iter aBegin, Iter aEnd) : iString{ aBegin, aEnd } {}
         ~string() {}
         string& operator=(const string& aOther) { assign(aOther); return *this; }
         string& operator=(const i_string& aOther) override { assign(aOther); return *this; }
@@ -121,9 +123,9 @@ namespace neolib
         return lhs.container() + rhs.container();
     }
 
-    inline string& operator+=(string& lhs, const string& rhs)
+    inline string& operator+=(string& lhs, const i_string& rhs)
     {
-        lhs.container() += rhs.container();
+        lhs.container() += rhs.to_std_string_view();
         return lhs;
     }
 
