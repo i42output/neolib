@@ -54,7 +54,7 @@ namespace neolib
     { 
         try
         {
-            iHandle = ::LoadLibrary(neolib::convert_path(aPath).c_str());
+            iHandle = ::LoadLibraryW(neolib::convert_path(aPath).c_str());
         }
         catch (const std::exception& e)
         {
