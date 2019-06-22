@@ -385,9 +385,23 @@ namespace neolib
         typedef R rebound_value_type;
     };
 
+    template <typename T, std::size_t SmallBufferSize>
+    struct small_buffer
+    {
+        typedef T value_type;
+        typedef std::aligned_storage_t<sizeof(value_type)* SmallBufferSize> buffer_storage_t;
+        buffer_storage_t storage;
+        bool allocated;
+        small_buffer() : allocated{ false } {}
+        small_buffer(const small_buffer&) : allocated{ false } {}
+        small_buffer& operator=(const small_buffer&) { return *this; }
+    };
+
     template <typename T, typename R, std::size_t SmallBufferSize>
     class basic_small_buffer_allocator<small_buffer_allocator_types<T, R>, SmallBufferSize> : public std::allocator<R>
     {
+        template <typename, std::size_t>
+        friend class basic_small_buffer_allocator;
     public:
         struct no_small_buffer : std::logic_error { no_small_buffer() : std::logic_error("neolib::basic_small_buffer_allocator::no_small_buffer") {} };
     public:
@@ -400,20 +414,14 @@ namespace neolib
         typedef R value_type;
         typedef std::allocator<value_type> default_allocator_type;
         typedef typename std::allocator_traits<default_allocator_type>::pointer pointer;
-        typedef std::aligned_storage_t<sizeof(value_type)* SmallBufferSize> buffer_storage_t;
-        struct small_buffer
-        {
-            buffer_storage_t storage;
-            bool allocated;
-            small_buffer() : allocated{ false } {}
-        };
+        typedef small_buffer<controlled_value_type, SmallBufferSize> small_buffer_type;
     public:
         basic_small_buffer_allocator() :
             default_allocator_type{},
             iBuffer{ nullptr }
         {
         }
-        basic_small_buffer_allocator(small_buffer& aBuffer) :
+        basic_small_buffer_allocator(small_buffer_type& aBuffer) :
             default_allocator_type{},
             iBuffer{ &aBuffer }
         {
@@ -431,7 +439,7 @@ namespace neolib
         template <typename U>
         basic_small_buffer_allocator(const basic_small_buffer_allocator<U, SmallBufferSize>& aOther) :
             default_allocator_type{ aOther },
-            iBuffer{ aOther.iBuffer }
+            iBuffer{ nullptr }
         {
         }
         template <typename U>
@@ -454,7 +462,7 @@ namespace neolib
         template <typename U>
         basic_small_buffer_allocator& operator=(const basic_small_buffer_allocator<U, SmallBufferSize>& aOther)
         {
-            iBuffer = aOther.iBuffer;
+            iBuffer = nullptr;
             return *this;
         }
         template <typename U>
@@ -508,18 +516,18 @@ namespace neolib
         {
             return has_buffer() && buffer().allocated;
         }
-        const small_buffer& buffer() const
+        const small_buffer_type& buffer() const
         {
             if (has_buffer())
                 return *iBuffer;
             throw no_small_buffer();
         }
-        small_buffer& buffer()
+        small_buffer_type& buffer()
         {
-            return const_cast<small_buffer&>(const_cast<const basic_small_buffer_allocator*>(this)->buffer());
+            return const_cast<small_buffer_type&>(const_cast<const basic_small_buffer_allocator*>(this)->buffer());
         }
     private:
-        small_buffer* iBuffer;
+        small_buffer_type* iBuffer;
     };
 
     template <typename T, typename U, std::size_t SmallBufferSize>
