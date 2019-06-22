@@ -206,6 +206,7 @@
     <ClInclude Include="..\..\..\include\neolib\data_packet.hpp" />
     <ClInclude Include="..\..\..\include\neolib\detail_memory.hpp" />
     <ClInclude Include="..\..\..\include\neolib\event.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\fast_vector.hpp" />
     <ClInclude Include="..\..\..\include\neolib\fwd_abstract.hpp" />
     <ClInclude Include="..\..\..\include\neolib\intrusive_sort.hpp" />
     <ClInclude Include="..\..\..\include\neolib\mutex.hpp" />
@@ -314,13 +315,6 @@
     <ClInclude Include="..\..\..\include\neolib\vector.hpp" />
     <ClInclude Include="..\..\..\include\neolib\version.hpp" />
     <ClInclude Include="..\..\..\include\neolib\visitor.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\vm\bytecode_cpu.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\vm\i_cpu.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\vm\i_machine.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\vm\i_scheduler.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\vm\i_thread.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\vm\machine.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\vm\scheduler.hpp" />
     <ClInclude Include="..\..\..\include\neolib\waitable.hpp" />
     <ClInclude Include="..\..\..\include\neolib\win32.hpp" />
     <ClInclude Include="..\..\..\include\neolib\win32_message_queue.hpp" />

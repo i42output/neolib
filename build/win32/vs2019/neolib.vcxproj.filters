@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\vm">
-      <UniqueIdentifier>{7ccdadbd-e43d-433d-95f5-acc3fa2da2b9}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\application_info.cpp">
@@ -410,27 +407,6 @@
     <ClInclude Include="..\..\..\include\neolib\lexer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\vm\machine.hpp">
-      <Filter>Header Files\vm</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\vm\i_cpu.hpp">
-      <Filter>Header Files\vm</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\vm\i_scheduler.hpp">
-      <Filter>Header Files\vm</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\vm\i_thread.hpp">
-      <Filter>Header Files\vm</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\vm\i_machine.hpp">
-      <Filter>Header Files\vm</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\vm\bytecode_cpu.hpp">
-      <Filter>Header Files\vm</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\vm\scheduler.hpp">
-      <Filter>Header Files\vm</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\i_task.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -516,6 +492,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\fwd_abstract.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\neolib\fast_vector.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
