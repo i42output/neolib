@@ -46,13 +46,14 @@ namespace neolib
     class reference_counted : public Base
     {
     public:
-        using Base::release_during_destruction;
-        using Base::too_many_references;
-        using Base::destruction_watcher_already_subscribed;
-        using Base::destruction_watcher_not_found;
-    public:
         typedef Base base_type;
-        typedef typename base_type::i_object_destruction_watcher i_object_destruction_watcher;
+    public:
+        using typename base_type::release_during_destruction;
+        using typename base_type::too_many_references;
+        using typename base_type::destruction_watcher_already_subscribed;
+        using typename base_type::destruction_watcher_not_found;
+    public:
+        using typename base_type::i_object_destruction_watcher;
     public:
         reference_counted() : iReferenceCount(0), iPinned(false), iDestroying(false)
         {

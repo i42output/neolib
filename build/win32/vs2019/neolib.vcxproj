@@ -206,8 +206,6 @@
     <ClInclude Include="..\..\..\include\neolib\data_packet.hpp" />
     <ClInclude Include="..\..\..\include\neolib\detail_memory.hpp" />
     <ClInclude Include="..\..\..\include\neolib\event.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\fast_vector.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\fwd_abstract.hpp" />
     <ClInclude Include="..\..\..\include\neolib\intrusive_sort.hpp" />
     <ClInclude Include="..\..\..\include\neolib\mutex.hpp" />
     <ClInclude Include="..\..\..\include\neolib\recursion.hpp" />

@@ -454,10 +454,25 @@ namespace neolib
         template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
         struct iterator_traits
         {
-            typedef neolib::basic_json<Syntax, Alloc, CharT, Traits, CharAlloc> document_type;
+            typedef std::bidirectional_iterator_tag iterator_category;
             typedef neolib::basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc> value_type;
-            typedef std::iterator<std::bidirectional_iterator_tag, value_type, std::ptrdiff_t, value_type*, value_type&> iterator;
-            typedef std::iterator<std::bidirectional_iterator_tag, value_type, std::ptrdiff_t, const value_type*, const value_type&> const_iterator;
+            typedef std::ptrdiff_t difference_type;
+            typedef value_type* pointer;
+            typedef value_type& reference;
+
+            typedef neolib::basic_json<Syntax, Alloc, CharT, Traits, CharAlloc> document_type;
+        };
+
+        template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+        struct const_iterator_traits
+        {
+            typedef std::bidirectional_iterator_tag iterator_category;
+            typedef neolib::basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc> value_type;
+            typedef std::ptrdiff_t difference_type;
+            typedef const value_type* pointer;
+            typedef const value_type& reference;
+
+            typedef neolib::basic_json<Syntax, Alloc, CharT, Traits, CharAlloc> document_type;
         };
     }
 
@@ -535,11 +550,11 @@ namespace neolib
     };
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-    class basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator : iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator>
+    class basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator : iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>>
     {
         friend class basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>;
     private:
-        typedef iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator> base_type;
+        typedef iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>> base_type;
     public:
         using typename base_type::iterator_category;
         using typename base_type::value_type;
@@ -599,11 +614,11 @@ namespace neolib
     };
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-    class basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator : iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator>
+    class basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator : iterator_base<typename json_detail::const_iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>>
     {
         friend class basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>;
     private:
-        typedef iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator> base_type;
+        typedef iterator_base<typename json_detail::const_iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>> base_type;
     public:
         using typename base_type::iterator_category;
         using typename base_type::value_type;
@@ -744,11 +759,11 @@ namespace neolib
     };
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-    class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator : public iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator>
+    class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator : public iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>>
     {
         friend class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>;
     private:
-        typedef iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator> base_type;
+        typedef iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>> base_type;
     public:
         using typename base_type::iterator_category;
         using typename base_type::value_type;
@@ -808,11 +823,11 @@ namespace neolib
     };
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-    class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator : public iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator>
+    class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator : public iterator_base<typename json_detail::const_iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>>
     {
         friend class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>;
     private:
-        typedef iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator> base_type;
+        typedef iterator_base<typename json_detail::const_iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>> base_type;
     public:
         using typename base_type::iterator_category;
         using typename base_type::value_type;

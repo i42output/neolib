@@ -110,9 +110,17 @@ namespace neolib
         typedef Alloc allocator_type;
         typedef std::vector<value_type, allocator_type> vector_type;
         class const_iterator;
-        class iterator : public std::iterator<std::random_access_iterator_tag, value_type, difference_type, pointer, reference>
+        class iterator
         {
             friend class const_iterator;
+
+        public:
+            typedef std::random_access_iterator_tag iterator_category;
+            typedef vecarray::value_type value_type;
+            typedef vecarray::difference_type difference_type;
+            typedef vecarray::pointer pointer;
+            typedef vecarray::reference reference;
+
         public:
             iterator() : iType(ArrayIterator), iArrayPtr(0), iVectorIter()
             {
@@ -126,6 +134,7 @@ namespace neolib
             iterator(typename vector_type::iterator aIter) : iType(VectorIterator), iArrayPtr(0), iVectorIter(aIter)
             {
             }
+
         public:
             iterator& operator++()
             {
@@ -224,8 +233,15 @@ namespace neolib
             T* iArrayPtr;
             typename vector_type::iterator iVectorIter;
         };
-        class const_iterator : public std::iterator<std::random_access_iterator_tag, value_type, difference_type, const_pointer, const_reference>
+        class const_iterator
         {
+        public:
+            typedef std::random_access_iterator_tag iterator_category;
+            typedef vecarray::value_type value_type;
+            typedef vecarray::difference_type difference_type;
+            typedef vecarray::const_pointer pointer;
+            typedef vecarray::const_reference reference;
+
         public:
             const_iterator() : iType(ArrayIterator), iArrayPtr(0), iVectorIter()
             {
@@ -245,6 +261,7 @@ namespace neolib
             const_iterator(typename vector_type::iterator aIter) : iType(VectorIterator), iArrayPtr(0), iVectorIter(aIter)
             {
             }
+
         public:
             const_iterator& operator++()
             {
@@ -323,6 +340,7 @@ namespace neolib
                 else
                     return iVectorIter < aOther.iVectorIter;
             }
+
         public:
             const T* array_ptr() const
             {
@@ -338,6 +356,7 @@ namespace neolib
                 else
                     throw iterator_invalid();
             }
+
         private:
             iterator_type_e iType;
             const T* iArrayPtr;
@@ -345,8 +364,10 @@ namespace neolib
         };
         typedef std::reverse_iterator<iterator> reverse_iterator;
         typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
     public:
         static constexpr bool is_fixed_size() { return ArraySize == MaxVectorSize; }
+
     public:
         // construction
         vecarray() : iSize{ 0 }
@@ -398,7 +419,9 @@ namespace neolib
             if (using_vector())
                 vector().~vector_type();
         }
+
         // traversals
+    public:
         const_iterator cbegin() const { return using_array() ? const_iterator(reinterpret_cast<const_pointer>(iAlignedBuffer.iData)) : const_iterator(vector().begin()); }
         const_iterator begin() const { return cbegin(); }
         iterator begin() { return using_array() ? iterator(reinterpret_cast<pointer>(iAlignedBuffer.iData)) : iterator(vector().begin()); }
@@ -416,7 +439,9 @@ namespace neolib
         size_type capacity() const { return MaxVectorSize; }
         size_type max_size() const { return MaxVectorSize; }
         size_type after(size_type position) const { return position < size() ? size() - position : 0; }
+
         // element access
+    public:
         reference operator[](size_type n) { return *(begin() + n); }
         const_reference operator[](size_type n) const { return *(begin() + n); }
         reference at(size_type n) { if (n < size()) return operator[](n); throw std::out_of_range("vecarray::at"); }
@@ -425,7 +450,9 @@ namespace neolib
         reference back() { return *(begin() + (size() - 1)); }
         const_reference front() const { return *begin(); }
         const_reference back() const { return *(begin() + (size() - 1)); }
+
         // modifiers
+    public:
         vecarray& operator=(const vecarray& rhs)
         {
             if (&rhs != this)
@@ -601,7 +628,9 @@ namespace neolib
             rhs = *this;
             *this = tmp;
         }
+
         // equality
+    public:
         template<typename T2, std::size_t ArraySize2, std::size_t MaxVectorSize2, typename CheckPolicy2, typename Alloc2>
         bool operator==(const vecarray<T2, ArraySize2, MaxVectorSize2, CheckPolicy2, Alloc2>& rhs) const
         {

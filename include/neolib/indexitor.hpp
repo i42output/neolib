@@ -93,12 +93,17 @@ namespace neolib
         };
         typedef typename allocator_type:: template rebind<node>::other node_allocator_type;
     public:
-        class iterator : public std::iterator<std::random_access_iterator_tag, value_type, difference_type, pointer, reference>
+        class iterator
         {
             friend class indexitor;
             friend class indexitor::const_iterator;
-        private:
-            typedef std::iterator<std::random_access_iterator_tag, value_type, difference_type, pointer, reference> base;
+
+        public:
+            typedef std::random_access_iterator_tag iterator_category;
+            typedef indexitor::value_type value_type;
+            typedef indexitor::difference_type difference_type;
+            typedef indexitor::pointer pointer;
+            typedef indexitor::reference reference;
 
         public:
             iterator() :
@@ -183,11 +188,16 @@ namespace neolib
             node* iNode;
             size_type iContainerPosition;
         };
-        class const_iterator : public std::iterator<std::random_access_iterator_tag, value_type, difference_type, const_pointer, const_reference>
+        class const_iterator
         {
             friend class indexitor;
-        private:
-            typedef std::iterator<std::random_access_iterator_tag, value_type, difference_type, const_pointer, const_reference> base;
+
+        public:
+            typedef std::random_access_iterator_tag iterator_category;
+            typedef indexitor::value_type value_type;
+            typedef indexitor::difference_type difference_type;
+            typedef indexitor::const_pointer pointer;
+            typedef indexitor::const_reference reference;
 
         public:
             const_iterator() :

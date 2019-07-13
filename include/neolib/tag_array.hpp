@@ -101,12 +101,17 @@ namespace neolib
         typedef typename node::segment_type segment_type;
         typedef typename allocator_type:: template rebind<node>::other node_allocator_type;
     public:
-        class iterator : public std::iterator<std::random_access_iterator_tag, value_type, difference_type, pointer, reference>
+        class iterator
         {
             friend class tag_array;
             friend class tag_array::const_iterator;
-        private:
-            typedef std::iterator<std::random_access_iterator_tag, value_type, difference_type, pointer, reference> base;
+
+        public:
+            typedef std::random_access_iterator_tag iterator_category;
+            typedef tag_array::value_type value_type;
+            typedef tag_array::difference_type difference_type;
+            typedef tag_array::pointer pointer;
+            typedef tag_array::reference reference;
 
         public:
             iterator() :
@@ -212,11 +217,16 @@ namespace neolib
             size_type iContainerPosition;
             size_type iSegmentPosition;
         };
-        class const_iterator : public std::iterator<std::random_access_iterator_tag, value_type, difference_type, const_pointer, const_reference>
+        class const_iterator
         {
             friend class tag_array;
-        private:
-            typedef std::iterator<std::random_access_iterator_tag, value_type, difference_type, const_pointer, const_reference> base;
+
+        public:
+            typedef std::random_access_iterator_tag iterator_category;
+            typedef tag_array::value_type value_type;
+            typedef tag_array::difference_type difference_type;
+            typedef tag_array::const_pointer pointer;
+            typedef tag_array::const_reference reference;
 
         public:
             const_iterator() :

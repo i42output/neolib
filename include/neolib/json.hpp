@@ -245,16 +245,16 @@ namespace neolib
         private:
             json_value* allocate_child()
             {
-                return allocator().allocate(1);
+                return std::allocator_traits<value_allocator>::allocate(allocator(), 1);
             }
             void deallocate_child(json_value* aAddress)
             {
-                allocator().deallocate(aAddress, 1);
+                std::allocator_traits<value_allocator>::deallocate(allocator(), aAddress, 1);
             }
             template <typename... Args>
             json_value* construct_child(json_value* aAddress, json_value& aParent, Args&&... aArguments)
             {
-                allocator().construct(aAddress, aParent, std::forward<Args>(aArguments)...);
+                std::allocator_traits<value_allocator>::construct(allocator(), aAddress, aParent, std::forward<Args>(aArguments)...);
                 json_value& child = *aAddress;
                 if (iLastChild == nullptr)
                 {
@@ -312,7 +312,12 @@ namespace neolib
         typedef typename json_value::json_string json_string;
     private:
         typedef typename json_value::value_allocator allocator_type;
-        typedef std::unordered_multimap<json_string, json_value*, boost::hash<json_string>, std::equal_to<json_string>, typename allocator_type:: template rebind<std::pair<const json_string, json_value*>>::other> dictionary_type;
+        typedef std::unordered_multimap<
+            json_string, 
+            json_value*, 
+            boost::hash<json_string>, 
+            std::equal_to<json_string>, 
+            typename std::allocator_traits<allocator_type>::template rebind_alloc<std::pair<const json_string, json_value*>>> dictionary_type;
     public:
         basic_json_object() :
             iOwner{ nullptr }
@@ -478,7 +483,7 @@ namespace neolib
     public:
         typedef self_type node_value_type;
     public:
-        typedef typename allocator_type::template rebind<self_type>::other value_allocator;
+        typedef typename std::allocator_traits<allocator_type>::template rebind_alloc<self_type> value_allocator;
     public:
         typedef const self_type* const_pointer;
         typedef self_type* pointer;

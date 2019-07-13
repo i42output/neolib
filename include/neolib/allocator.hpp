@@ -146,7 +146,7 @@ namespace neolib
                     char* start = n->iMem;
                     char* last = start + chunk_size();
                     if (reinterpret_cast<char*>(iHead) >= start && reinterpret_cast<char*>(iHead) < last)
-                        pct = (reinterpret_cast<char*>(iHead) - start) * 100 / (last - start);
+                        pct = static_cast<uint32_t>((reinterpret_cast<char*>(iHead) - start) * 100 / (last - start));
                 }
                 std::cout << "Number of chunks: " << total << std::endl;
                 if constexpr (Omega)

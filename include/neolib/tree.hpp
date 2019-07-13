@@ -204,25 +204,35 @@ namespace neolib
         typedef node_with_value* node_with_value_pointer;
         typedef const node_with_value* const_node_with_value_pointer;
         template <typename NodePointer, typename NodeWithValuePointer, typename Pointer, typename Reference, bool SiblingIterator>
-        class iterator_base : public std::iterator<std::bidirectional_iterator_tag, value_type, difference_type, Pointer, Reference>
+        class iterator_base
         {
             friend class tree;
             template <typename NodePointer2, typename NodeWithValuePointer2, typename Pointer2, typename Reference2, bool SiblingIterator2>
             friend class iterator_base;
+
+        public:
+            typedef std::bidirectional_iterator_tag iterator_category;
+            typedef tree::value_type value_type;
+            typedef tree::difference_type difference_type;
+            typedef Pointer pointer;
+            typedef Reference reference;
         private:
             typedef NodePointer our_node_pointer_type;
             typedef NodeWithValuePointer our_node_with_value_pointer_type;
+
         protected:
             iterator_base() : iNode(nullptr) {}
             iterator_base(our_node_pointer_type aNode) : iNode(aNode) {}
             iterator_base(const iterator_base& x) : iNode(x.iNode) {}
             template <typename NodePointer2, typename NodeWithValuePointer2, typename Pointer2, typename Reference2, bool SiblingIterator2>
             iterator_base(const iterator_base<NodePointer2, NodeWithValuePointer2, Pointer2, Reference2, SiblingIterator2>& x) : iNode(const_cast<our_node_pointer_type>(x.iNode)) {}
+
         public:
             template <typename NodePointer2, typename NodeWithValuePointer2, typename Pointer2, typename Reference2, bool SiblingIterator2>
             bool operator==(const iterator_base<NodePointer2, NodeWithValuePointer2, Pointer2, Reference2, SiblingIterator2>& rhs) const { return iNode == rhs.iNode; }
             template <typename NodePointer2, typename NodeWithValuePointer2, typename Pointer2, typename Reference2, bool SiblingIterator2>
             bool operator!=(const iterator_base<NodePointer2, NodeWithValuePointer2, Pointer2, Reference2, SiblingIterator2>& rhs) const { return iNode != rhs.iNode; }
+
         protected:
             void increment() 
             { 
