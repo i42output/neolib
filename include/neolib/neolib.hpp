@@ -61,4 +61,6 @@ constexpr bool ndebug = false;
 #endif
 #endif
 
+struct sfinae {};
+
 #endif // NEOLIB_HOSTED_ENVIRONMENT
