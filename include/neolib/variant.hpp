@@ -64,7 +64,7 @@ namespace neolib
         {
         }
         template <typename T>
-        variant(T&& aArgument, std::enable_if_t<!std::is_same_v<std::decay_t<T>, variant>, sfinae> = sfinae{}) :
+        variant(T&& aArgument, std::enable_if_t<!std::is_base_of_v<variant, std::decay_t<T>>, sfinae> = sfinae{}) :
             value_type{ std::forward<T>(aArgument) }
         {
         }
@@ -80,7 +80,7 @@ namespace neolib
             return *this;
         }
         template <typename T>
-        std::enable_if_t<!std::is_same_v<std::decay_t<T>, variant>, variant>& operator=(T&& aArgument)
+        std::enable_if_t<!std::is_base_of_v<variant, std::decay_t<T>>, variant>& operator=(T&& aArgument)
         {
             value_type::operator=(std::forward<T>(aArgument));
             return *this;
