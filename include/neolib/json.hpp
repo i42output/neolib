@@ -328,6 +328,10 @@ namespace neolib
         {
         }
     public:
+        bool has(const json_string& aKey) const
+        {
+            return cache().find(aKey) != cache().end();
+        }
         const json_value& at(const json_string& aKey) const
         {
             auto existing = cache().find(aKey);
@@ -578,6 +582,13 @@ namespace neolib
         bool is_populated_composite() const
         {
             return is_composite() && iNode.has_children();
+        }
+        const json_string& text() const
+        {
+            if (type() != json_type::Keyword)
+                return as<json_string>();
+            else
+                return as<json_keyword>().text;
         }
         bool has_name() const
         {
