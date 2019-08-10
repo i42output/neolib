@@ -150,6 +150,8 @@ namespace neolib
             Escaping,
             Escaped,
             EscapingUnicode,
+            CppStyleComment,
+            CStyleComment,
             STATE_COUNT,
         };
         constexpr std::size_t STATE_COUNT = static_cast<std::size_t>(state::STATE_COUNT);
@@ -180,6 +182,8 @@ namespace neolib
         constexpr state SESC = state::Escaping;
         constexpr state SESD = state::Escaped;
         constexpr state SEUN = state::EscapingUnicode;
+        constexpr state SCM1 = state::CppStyleComment;
+        constexpr state SCM2 = state::CStyleComment;
 
         inline std::string to_string(state aState)
         {
@@ -239,6 +243,9 @@ namespace neolib
                 return std::string{ "Escaped" };
             case state::EscapingUnicode:
                 return std::string{ "EscapingUnicode" };
+            case state::CppStyleComment:
+            case state::CStyleComment:
+                return std::string{ "Comment" };
             default:
                 return std::string{ "??" };
             }
@@ -421,10 +428,21 @@ namespace neolib
             std::array<state, TOKEN_COUNT>
             {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
                 SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SESD, SESD, SESD, SXXX, SESD, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
+            }},
+            // state::CppStyleComment
+            std::array<state, TOKEN_COUNT>
+            {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+                SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
+            }},
+            // state::CStyleComment
+            std::array<state, TOKEN_COUNT>
+            {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+                SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
             }}
         };
 
-        constexpr std::array<token, 256> sStandardTokenTable =
+        template <json_syntax Syntax>
+        constexpr std::array<token, 256> sTokenTable =
         { 
             {// 0x0   0x1   0x2   0x3   0x4   0x5   0x6   0x7   0x8   0x9   0xA   0xB   0xC   0xD   0xE   0xF
                 TZZZ, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TWSP, TWSP, TXXX, TXXX, TWSP, TXXX, TXXX, // 0x0
@@ -446,7 +464,8 @@ namespace neolib
             },
         };
 
-        constexpr std::array<token, 256> sRelaxedTokenTable =
+        template <>
+        constexpr std::array<token, 256> sTokenTable<json_syntax::Relaxed> =
         {
             {// 0x0   0x1   0x2   0x3   0x4   0x5   0x6   0x7   0x8   0x9   0xA   0xB   0xC   0xD   0xE   0xF
                 TZZZ, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TWSP, TWSP, TXXX, TXXX, TWSP, TXXX, TXXX, // 0x0
@@ -468,7 +487,8 @@ namespace neolib
             },
         };
 
-        constexpr std::array<token, 256> sFunctionalTokenTable =
+        template <>
+        constexpr std::array<token, 256> sTokenTable<json_syntax::Functional> =
         {
             {// 0x0   0x1   0x2   0x3   0x4   0x5   0x6   0x7   0x8   0x9   0xA   0xB   0xC   0xD   0xE   0xF
                 TZZZ, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TWSP, TWSP, TXXX, TXXX, TWSP, TXXX, TXXX, // 0x0
@@ -493,45 +513,49 @@ namespace neolib
         template <json_syntax Syntax>
         inline state next_state(state aCurrentState, char aToken)
         {
-            if constexpr (Syntax == json_syntax::Standard || Syntax == json_syntax::StandardNoKeywords)
-            {
-                auto stateIndex = static_cast<std::size_t>(aCurrentState);
-                auto token = sStandardTokenTable[static_cast<std::size_t>(aToken)];
-                return sStateTables<Syntax>[stateIndex][static_cast<std::size_t>(token)];
-            }
-            else if constexpr (Syntax == json_syntax::Relaxed)
-            {
-                auto stateIndex = static_cast<std::size_t>(aCurrentState);
-                auto token = sRelaxedTokenTable[static_cast<std::size_t>(aToken)];
-                return sStateTables<Syntax>[stateIndex][static_cast<std::size_t>(token)];
-            }
-            else if constexpr (Syntax == json_syntax::Functional)
-            {
-                auto stateIndex = static_cast<std::size_t>(aCurrentState);
-                auto token = sFunctionalTokenTable[static_cast<std::size_t>(aToken)];
-                return sStateTables<Syntax>[stateIndex][static_cast<std::size_t>(token)];
-            }
+            auto const token = sTokenTable<Syntax>[static_cast<std::size_t>(aToken)];
+            auto const stateIndex = static_cast<std::size_t>(aCurrentState);
+            return sStateTables<Syntax>[stateIndex][static_cast<std::size_t>(token)];
         }
 
         template <json_syntax Syntax>
         inline state next_state(state aCurrentState, state aPreviousState, char aCurrentToken, char aNextToken)
         {
             if constexpr (Syntax == json_syntax::Standard || Syntax == json_syntax::StandardNoKeywords)
+                return next_state<Syntax>(aCurrentState, aCurrentToken);
+            else
             {
-                auto stateIndex = static_cast<std::size_t>(aCurrentState);
-                auto token = sStandardTokenTable[static_cast<std::size_t>(aCurrentToken)];
-                return sStateTables<Syntax>[stateIndex][static_cast<std::size_t>(token)];
-            }
-            else if constexpr (Syntax == json_syntax::Relaxed)
-            {
-                auto stateIndex = static_cast<std::size_t>(aCurrentState);
-                auto token = sRelaxedTokenTable[static_cast<std::size_t>(aCurrentToken)];
-                return sStateTables<Syntax>[stateIndex][static_cast<std::size_t>(token)];
-            }
-            else if constexpr (Syntax == json_syntax::Functional)
-            {
-                auto stateIndex = static_cast<std::size_t>(aCurrentState);
-                auto token = sFunctionalTokenTable[static_cast<std::size_t>(aCurrentToken)];
+                auto const token = sTokenTable<Syntax>[static_cast<std::size_t>(aCurrentToken)];
+                switch (aCurrentState)
+                {
+                case state::CppStyleComment:
+                    if (aCurrentToken != '\n' && token != token::EndOfInput)
+                        return state::CppStyleComment;
+                    return next_state<Syntax>(aPreviousState, aPreviousState, aCurrentToken, aNextToken);
+                case state::CStyleComment:
+                    if (token == json_detail::token::Asterisk)
+                    {
+                        auto const nextToken = sTokenTable<Syntax>[static_cast<std::size_t>(aNextToken)];
+                        if (nextToken == json_detail::token::ForwardSlash)
+                            return state::Ignore;
+                        else if (nextToken == json_detail::token::EndOfInput)
+                            return state::Error;
+                    }
+                    else if (token == json_detail::token::EndOfInput)
+                        return state::Error;
+                    return state::CStyleComment;
+                default:
+                    if (token == json_detail::token::ForwardSlash)
+                    {
+                        auto const nextToken = sTokenTable<Syntax>[static_cast<std::size_t>(aNextToken)];
+                        if (nextToken == json_detail::token::ForwardSlash)
+                            return state::CppStyleComment;
+                        else if (nextToken == json_detail::token::Asterisk)
+                            return state::CStyleComment;
+                    }
+                    break;
+                }
+                auto const stateIndex = static_cast<std::size_t>(aCurrentState);
                 return sStateTables<Syntax>[stateIndex][static_cast<std::size_t>(token)];
             }
         }
@@ -1161,7 +1185,23 @@ namespace neolib
                 if constexpr (!usePreviousState)
                     nextState = json_detail::next_state<syntax>(currentState, *nextInputCh);
                 else
-                    nextState = json_detail::next_state<syntax>(currentState, previousState, *nextInputCh, nextInputCh != &iDocumentText.back() ? *(nextInputCh + 1) : '\0');
+                {
+                    bool skippingComment = false;
+                    auto tempState = currentState;
+                    do {
+                        nextState = json_detail::next_state<syntax>(tempState, previousState, *nextInputCh, nextInputCh != &iDocumentText.back() ? *(nextInputCh + 1) : '\0');
+                        skippingComment = (nextState == json_detail::state::CppStyleComment || nextState == json_detail::state::CStyleComment);
+                        if (skippingComment)
+                        {
+                            if (tempState != nextState && currentElement.start != nullptr && nextOutputCh == currentElement.start)
+                                nextOutputCh = nextInputCh;
+                            tempState = nextState;
+                            increment_cursor();
+                        }
+                        else if (tempState == json_detail::state::CStyleComment && nextState == json_detail::state::Ignore)
+                            increment_cursor();
+                    } while (skippingComment);
+                }
                 switch (nextState)
                 {
                 case json_detail::state::Ignore:
@@ -1493,17 +1533,11 @@ namespace neolib
                     }
                     break;
                 }
-                if constexpr (!usePreviousState)
-                    currentState = nextState;
-                else
+                if (currentState != nextState)
                 {
-                    if (currentState != nextState)
-                    {
-                        if constexpr (json_detail::debug)
-                            std::cout << "(" << to_string(nextState) << ")";
-                        previousState = currentState;
-                        currentState = nextState;
-                    }
+                    if constexpr (json_detail::debug)
+                        std::cout << "(" << to_string(nextState) << ")";
+                    currentState = nextState;
                 }
             }
             catch (std::exception& e)
