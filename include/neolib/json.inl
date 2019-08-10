@@ -53,6 +53,11 @@ namespace neolib
 {
     namespace json_detail
     {
+#ifdef DEBUG_JSON
+        constexpr bool debug = true;
+#else
+        constexpr bool debug = false;
+#endif
         enum class keyword
         {
             True,
@@ -239,6 +244,53 @@ namespace neolib
             }
         }
 
+        template <json_syntax Syntax>
+        constexpr inline std::array<state, TOKEN_COUNT> value_state()
+        {
+            if constexpr (Syntax == json_syntax::Standard || Syntax == json_syntax::StandardNoKeywords)
+            {
+                return
+                    // state::Value
+                    std::array<state, TOKEN_COUNT>
+                    {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+                        SXXX, SOBJ, SCLO, SARR, SCLO, SXXX, SXXX, SSTR, SKEY, SXXX, SKEY, SKEY, SXXX, SNU1, SNU2, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SZZZ
+                    }};
+            }
+            else
+            {
+                return
+                    // state::Value
+                    std::array<state, TOKEN_COUNT>
+                    {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+                        SXXX, SOBJ, SCLO, SARR, SCLO, SXXX, SXXX, SSTR, SKEY, SXXX, SKEY, SKEY, SKEY, SNU1, SNU2, SKEY, SKEY, SKEY, SKEY, SKEY, SKEY, SKEY, SIGN, SIGN, SZZZ
+                    }};
+            }
+        }
+
+        template <json_syntax Syntax>
+        constexpr inline std::array<state, TOKEN_COUNT> keyword_state()
+        {
+            if constexpr (Syntax == json_syntax::Standard || Syntax == json_syntax::StandardNoKeywords)
+            {
+                return
+                    // state::Keyword
+                    std::array<state, TOKEN_COUNT>
+                    {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+                        SXXX, SXXX, SCLO, SXXX, SCLO, SELE, SELE, SXXX, SKEY, SXXX, SKEY, SKEY, SXXX, SXXX, SKEY, SKEY, SKEY, SKEY, SKEY, SXXX, SXXX, SXXX, SELE, SELE, SXXX
+                    }};
+            }
+            else
+            {
+                return
+                    // state::Keyword
+                    std::array<state, TOKEN_COUNT>
+                    {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+                        SXXX, SXXX, SCLO, SXXX, SCLO, SELE, SKEY, SXXX, SKEY, SXXX, SKEY, SKEY, SKEY, SKEY, SKEY, SKEY, SKEY, SKEY, SKEY, SKEY, SKEY, SKEY, SELE, SELE, SXXX
+                    }};
+            }
+        }
+
+        template <json_syntax Syntax>
         constexpr std::array<std::array<state, TOKEN_COUNT>, STATE_COUNT> sStateTables =
         {
             // state::Error
@@ -277,10 +329,7 @@ namespace neolib
                 SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
             }},
             // state::Value
-            std::array<state, TOKEN_COUNT>
-            {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
-                SXXX, SOBJ, SCLO, SARR, SCLO, SXXX, SXXX, SSTR, SKEY, SXXX, SKEY, SKEY, SXXX, SNU1, SNU2, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SZZZ
-            }},
+            value_state<Syntax>(),
             // state::NeedValueSeparator
             std::array<state, TOKEN_COUNT>
             {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
@@ -302,10 +351,7 @@ namespace neolib
                 SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SNAM, SKEY, SXXX, SKEY, SKEY, SXXX, SXXX, SXXX, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
             }},
             // state::Keyword
-            std::array<state, TOKEN_COUNT>
-            {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
-                SXXX, SXXX, SCLO, SXXX, SCLO, SELE, SELE, SXXX, SKEY, SXXX, SKEY, SKEY, SXXX, SXXX, SKEY, SKEY, SKEY, SKEY, SKEY, SXXX, SKEY, SXXX, SELE, SELE, SXXX
-            }},
+            keyword_state<Syntax>(),
             // state::Name
             std::array<state, TOKEN_COUNT>
             {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
@@ -380,7 +426,7 @@ namespace neolib
 
         constexpr std::array<token, 256> sStandardTokenTable =
         { 
-            {//    0x0   0x1   0x2   0x3   0x4   0x5   0x6   0x7   0x8   0x9   0xA   0xB   0xC   0xD   0xE   0xF
+            {// 0x0   0x1   0x2   0x3   0x4   0x5   0x6   0x7   0x8   0x9   0xA   0xB   0xC   0xD   0xE   0xF
                 TZZZ, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TWSP, TWSP, TXXX, TXXX, TWSP, TXXX, TXXX, // 0x0
                 TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, // 0x1
                 TSPA, TSYM, TQOT, TSYM, TCHA, TSYM, TSYM, TSYM, TSYM, TSYM, TAST, TPLU, TCOM, TMIN, TDEC, TFWD, // 0x2
@@ -402,7 +448,7 @@ namespace neolib
 
         constexpr std::array<token, 256> sRelaxedTokenTable =
         {
-            {//    0x0   0x1   0x2   0x3   0x4   0x5   0x6   0x7   0x8   0x9   0xA   0xB   0xC   0xD   0xE   0xF
+            {// 0x0   0x1   0x2   0x3   0x4   0x5   0x6   0x7   0x8   0x9   0xA   0xB   0xC   0xD   0xE   0xF
                 TZZZ, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TWSP, TWSP, TXXX, TXXX, TWSP, TXXX, TXXX, // 0x0
                 TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, // 0x1
                 TSPA, TSYM, TQOT, TSYM, TCHA, TSYM, TSYM, TQOT, TSYM, TSYM, TAST, TPLU, TCOM, TMIN, TDEC, TFWD, // 0x2
@@ -422,20 +468,71 @@ namespace neolib
             },
         };
 
+        constexpr std::array<token, 256> sFunctionalTokenTable =
+        {
+            {// 0x0   0x1   0x2   0x3   0x4   0x5   0x6   0x7   0x8   0x9   0xA   0xB   0xC   0xD   0xE   0xF
+                TZZZ, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TWSP, TWSP, TXXX, TXXX, TWSP, TXXX, TXXX, // 0x0
+                TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, // 0x1
+                TSPA, TSYM, TQOT, TSYM, TCHA, TSYM, TSYM, TQOT, TSYM, TSYM, TAST, TPLU, TSYM, TMIN, TDEC, TFWD, // 0x2
+                TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TDIG, TCOL, TSYM, TSYM, TSYM, TSYM, TSYM, // 0x3
+                TSYM, THEX, THEX, THEX, THEX, TEXP, THEX, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0x4
+                TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TARR, TESC, TCLA, TSYM, TCHA, // 0x5
+                TQOT, THEX, TEHX, THEX, THEX, TEXP, TEHX, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TECH, TCHA, // 0x6
+                TCHA, TCHA, TECH, TCHA, TECH, TESU, TCHA, TCHA, TCHA, TCHA, TCHA, TOBJ, TSYM, TCLO, TSYM, TSYM, // 0x7
+                TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0x8
+                TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0x9
+                TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xA
+                TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xB
+                TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xC
+                TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xD
+                TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xE
+                TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, TCHA, // 0xF
+            },
+        };
+
         template <json_syntax Syntax>
         inline state next_state(state aCurrentState, char aToken)
         {
-            if constexpr (Syntax == json_syntax::Standard)
+            if constexpr (Syntax == json_syntax::Standard || Syntax == json_syntax::StandardNoKeywords)
             {
                 auto stateIndex = static_cast<std::size_t>(aCurrentState);
                 auto token = sStandardTokenTable[static_cast<std::size_t>(aToken)];
-                return sStateTables[stateIndex][static_cast<std::size_t>(token)];
+                return sStateTables<Syntax>[stateIndex][static_cast<std::size_t>(token)];
             }
-            else
+            else if constexpr (Syntax == json_syntax::Relaxed)
             {
                 auto stateIndex = static_cast<std::size_t>(aCurrentState);
                 auto token = sRelaxedTokenTable[static_cast<std::size_t>(aToken)];
-                return sStateTables[stateIndex][static_cast<std::size_t>(token)];
+                return sStateTables<Syntax>[stateIndex][static_cast<std::size_t>(token)];
+            }
+            else if constexpr (Syntax == json_syntax::Functional)
+            {
+                auto stateIndex = static_cast<std::size_t>(aCurrentState);
+                auto token = sFunctionalTokenTable[static_cast<std::size_t>(aToken)];
+                return sStateTables<Syntax>[stateIndex][static_cast<std::size_t>(token)];
+            }
+        }
+
+        template <json_syntax Syntax>
+        inline state next_state(state aCurrentState, state aPreviousState, char aCurrentToken, char aNextToken)
+        {
+            if constexpr (Syntax == json_syntax::Standard || Syntax == json_syntax::StandardNoKeywords)
+            {
+                auto stateIndex = static_cast<std::size_t>(aCurrentState);
+                auto token = sStandardTokenTable[static_cast<std::size_t>(aCurrentToken)];
+                return sStateTables<Syntax>[stateIndex][static_cast<std::size_t>(token)];
+            }
+            else if constexpr (Syntax == json_syntax::Relaxed)
+            {
+                auto stateIndex = static_cast<std::size_t>(aCurrentState);
+                auto token = sRelaxedTokenTable[static_cast<std::size_t>(aCurrentToken)];
+                return sStateTables<Syntax>[stateIndex][static_cast<std::size_t>(token)];
+            }
+            else if constexpr (Syntax == json_syntax::Functional)
+            {
+                auto stateIndex = static_cast<std::size_t>(aCurrentState);
+                auto token = sFunctionalTokenTable[static_cast<std::size_t>(aCurrentToken)];
+                return sStateTables<Syntax>[stateIndex][static_cast<std::size_t>(token)];
             }
         }
 
@@ -916,6 +1013,17 @@ namespace neolib
         document().clear();
         iUtf16HighSurrogate = std::nullopt;
     }
+
+    template <json_syntax Syntax>
+    inline constexpr const char* document_type()
+    {
+        if constexpr (Syntax == json_syntax::Standard || Syntax == json_syntax::StandardNoKeywords)
+            return "JSON";
+        else if constexpr (Syntax == json_syntax::Relaxed)
+            return "RJSON";
+        else if constexpr (Syntax == json_syntax::Functional)
+            return "FJSON";
+    }
         
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
     inline bool basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::read(const std::string& aPath, bool aValidateUtf)
@@ -923,14 +1031,14 @@ namespace neolib
         std::ifstream input{ aPath, std::ios::binary };
         if (!input)
         {
-            iErrorText = "failed to open " + std::string{Syntax != json_syntax::Relaxed ? "JSON" : "RJSON" } + " file '" + aPath + "'";
+            iErrorText = "failed to open " + std::string{ document_type<Syntax>() } + " file '" + aPath + "'";
             return false;
         }
         bool ok = do_read(input, aValidateUtf);
         if (ok)
             ok = do_parse();
         if (!ok)
-            iErrorText = "failed to parse " + std::string{Syntax != json_syntax::Relaxed ? "JSON" : "RJSON" } + " file '" + aPath + "', " + iErrorText;
+            iErrorText = "failed to parse " + std::string{ document_type<Syntax>() } + " file '" + aPath + "', " + iErrorText;
         return ok;
     }
 
@@ -940,14 +1048,14 @@ namespace neolib
     {
         if (!aInput)
         {
-            iErrorText = "failed to read " + std::string{Syntax != json_syntax::Relaxed ? "JSON" : "RJSON" } + " text";
+            iErrorText = "failed to read " + std::string{ document_type<Syntax>() } + " text";
             return false;
         }
         bool ok = do_read(aInput, aValidateUtf);
         if (ok)
             ok = do_parse();
         if (!ok)
-            iErrorText = "failed to parse " + std::string{Syntax != json_syntax::Relaxed ? "JSON" : "RJSON" } + " text, " + iErrorText;
+            iErrorText = "failed to parse " + std::string{ document_type<Syntax>() } + " text, " + iErrorText;
         return ok;
     }
 
@@ -1014,7 +1122,10 @@ namespace neolib
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
     inline bool basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::do_parse()
     {
+        static constexpr bool usePreviousState = (Syntax == json_syntax::Relaxed || Syntax == json_syntax::Functional || json_detail::debug);
+
         json_detail::state currentState = json_detail::state::Value;
+        json_detail::state previousState = currentState;
         json_detail::state nextState;
         element currentElement = {};
 
@@ -1036,17 +1147,21 @@ namespace neolib
         };
 
         // Main parse loop
-        for(;;)
+        for (;;)
         {
-#ifdef DEBUG_JSON
-            if (*nextInputCh != '\n')
-                std::cout << *nextInputCh;
-            else
-                std::cout << "\\n";
-#endif
+            if constexpr (json_detail::debug)
+            {
+                if (*nextInputCh != '\n')
+                    std::cout << *nextInputCh;
+                else
+                    std::cout << "\\n";
+            }
             try
             {
-                nextState = json_detail::next_state<syntax>(currentState, *nextInputCh);
+                if constexpr (!usePreviousState)
+                    nextState = json_detail::next_state<syntax>(currentState, *nextInputCh);
+                else
+                    nextState = json_detail::next_state<syntax>(currentState, previousState, *nextInputCh, nextInputCh != &iDocumentText.back() ? *(nextInputCh + 1) : '\0');
                 switch (nextState)
                 {
                 case json_detail::state::Ignore:
@@ -1082,11 +1197,8 @@ namespace neolib
                         }
                     }
                 }
-#ifdef DEBUG_JSON
-                bool changedState = false;
-                std::cout << "(" << to_string(currentState) << " -> " << to_string(nextState) << ")";
-#endif
-
+                if constexpr (json_detail::debug)
+                    std::cout << "(" << to_string(currentState) << " -> " << to_string(nextState) << ")";
                 switch (nextState)
                 {
                 case json_detail::state::Close:
@@ -1196,9 +1308,6 @@ namespace neolib
                             else
                                 nextState = *nextInputCh != ':' ? json_detail::state::EndName : json_detail::state::NeedValue;
                         }
-#ifdef DEBUG_JSON
-                        changedState = true;
-#endif
                         break;
                     case json_type::Array:
                         if constexpr (syntax == json_syntax::Standard)
@@ -1210,18 +1319,10 @@ namespace neolib
                         }
                         else
                             nextState = json_detail::state::Value;
-#ifdef DEBUG_JSON
-                        changedState = true;
-#endif
                         break;
                     default:
                         if (nextState == json_detail::state::Close)
-                        {
                             nextState = json_detail::state::Value;
-#ifdef DEBUG_JSON
-                            changedState = true;
-#endif
-                        }
                         break;
                     }
                     currentElement.type = element::Unknown;
@@ -1262,18 +1363,12 @@ namespace neolib
                         json_value* newArray = buy_value(currentElement, json_array{});
                         iCompositeValueStack.push_back(newArray);
                         nextState = json_detail::state::Value;
-#ifdef DEBUG_JSON
-                        changedState = true;
-#endif
                     }
                     break;
                 case json_detail::state::Object:
                     {
                         json_value* newObject = buy_value(currentElement, json_object{});
                         iCompositeValueStack.push_back(newObject);
-#ifdef DEBUG_JSON
-                        changedState = true;
-#endif
                     }
                     break;
                 case json_detail::state::Keyword:
@@ -1285,12 +1380,7 @@ namespace neolib
                     {
                         // relaxed: support for three different quote characters
                         if (*nextInputCh != *(currentElement.start - 1))
-                        {
                             nextState = json_detail::state::String;
-#ifdef DEBUG_JSON
-                            changedState = true;
-#endif
-                        }
                     }
                     break;
                 case json_detail::state::Escaped:
@@ -1326,9 +1416,6 @@ namespace neolib
                             break;
                         }
                         nextState = currentElement.type == element::String ? json_detail::state::String : json_detail::state::Name;
-#ifdef DEBUG_JSON
-                        changedState = true;
-#endif
                     }
                     else if (currentState == json_detail::state::EscapingUnicode)
                     {
@@ -1403,17 +1490,21 @@ namespace neolib
                         {
                             nextState = json_detail::state::EscapingUnicode;
                         }
-#ifdef DEBUG_JSON
-                        changedState = true;
-#endif
                     }
                     break;
                 }
-#ifdef DEBUG_JSON
-                if (changedState)
-                    std::cout << "(" << to_string(nextState) << ")";
-#endif
-                currentState = nextState;
+                if constexpr (!usePreviousState)
+                    currentState = nextState;
+                else
+                {
+                    if (currentState != nextState)
+                    {
+                        if constexpr (json_detail::debug)
+                            std::cout << "(" << to_string(nextState) << ")";
+                        previousState = currentState;
+                        currentState = nextState;
+                    }
+                }
             }
             catch (std::exception& e)
             {

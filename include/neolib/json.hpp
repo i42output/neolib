@@ -61,7 +61,8 @@ namespace neolib
     {
         Standard,
         StandardNoKeywords,
-        Relaxed
+        Relaxed,
+        Functional
     };
 
     enum class json_encoding
@@ -955,6 +956,34 @@ namespace neolib
     typedef fast_rjson::json_bool fast_rjson_bool;
     typedef fast_rjson::json_null fast_rjson_null;
     typedef fast_rjson::json_keyword fast_rjson_keyword; 
+
+    typedef basic_json<json_syntax::Functional> fjson;
+    typedef fjson::json_value fjson_value;
+    typedef fjson::json_object fjson_object;
+    typedef fjson::json_array fjson_array;
+    typedef fjson::json_double fjson_double;
+    typedef fjson::json_int64 fjson_int64;
+    typedef fjson::json_uint64 fjson_uint64;
+    typedef fjson::json_int fjson_int;
+    typedef fjson::json_uint fjson_uint;
+    typedef fjson::json_string fjson_string;
+    typedef fjson::json_bool fjson_bool;
+    typedef fjson::json_null fjson_null;
+    typedef fjson::json_keyword fjson_keyword;
+
+    typedef basic_json<json_syntax::Functional, neolib::fast_pool_allocator<json_type>> fast_fjson;
+    typedef fast_fjson::json_value fast_fjson_value;
+    typedef fast_fjson::json_object fast_fjson_object;
+    typedef fast_fjson::json_array fast_fjson_array;
+    typedef fast_fjson::json_double fast_fjson_double;
+    typedef fast_fjson::json_int64 fast_fjson_int64;
+    typedef fast_fjson::json_uint64 fast_fjson_uint64;
+    typedef fast_fjson::json_int fast_fjson_int;
+    typedef fast_fjson::json_uint fast_fjson_uint;
+    typedef fast_fjson::json_string fast_fjson_string;
+    typedef fast_fjson::json_bool fast_fjson_bool;
+    typedef fast_fjson::json_null fast_fjson_null;
+    typedef fast_fjson::json_keyword fast_fjson_keyword;
 }
 
 #include "json.inl"
