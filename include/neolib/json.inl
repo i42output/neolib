@@ -286,6 +286,15 @@ namespace neolib
                         SXXX, SXXX, SCLO, SXXX, SCLO, SELE, SELE, SXXX, SKEY, SXXX, SKEY, SKEY, SXXX, SXXX, SKEY, SKEY, SKEY, SKEY, SKEY, SXXX, SXXX, SXXX, SELE, SELE, SXXX
                     }};
             }
+            else if constexpr (Syntax == json_syntax::Relaxed)
+            {
+                return
+                    // state::Keyword
+                    std::array<state, TOKEN_COUNT>
+                    {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+                        SXXX, SXXX, SCLO, SXXX, SCLO, SELE, SELE, SXXX, SKEY, SXXX, SKEY, SKEY, SKEY, SKEY, SKEY, SKEY, SKEY, SKEY, SKEY, SKEY, SKEY, SKEY, SELE, SELE, SXXX
+                    }};
+            }
             else
             {
                 return
