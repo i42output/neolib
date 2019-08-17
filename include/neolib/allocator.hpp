@@ -407,6 +407,7 @@ namespace neolib
     public:
         typedef small_buffer_allocator_types<T, R> types;
         typedef basic_small_buffer_allocator<types, SmallBufferSize> self_type;
+        typedef std::false_type propagate_on_container_move_assignment;
         typedef std::false_type is_always_equal;
         template<class U> struct rebind { typedef typename basic_small_buffer_allocator<small_buffer_allocator_types<T, U>, SmallBufferSize> other; };
     public:
@@ -470,6 +471,15 @@ namespace neolib
         {
             iBuffer = nullptr;
             return *this;
+        }
+    public:
+        bool operator==(const basic_small_buffer_allocator& aOther) const
+        {
+            return false;
+        }
+        bool operator!=(const basic_small_buffer_allocator& aOther) const
+        {
+            return true;
         }
     public:
         pointer allocate(std::size_t n)
