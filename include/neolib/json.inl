@@ -1211,6 +1211,26 @@ namespace neolib
                             increment_cursor();
                     } while (skippingComment);
                 }
+                if constexpr (Syntax == json_syntax::Functional)
+                {
+                    if (nextState == json_detail::state::Error)
+                    {
+                        switch (currentState)
+                        {
+                        case json_detail::state::NumberInt:
+                        case json_detail::state::NumberFrac:
+                        case json_detail::state::NumberExpInt:
+                            if (json_detail::sTokenTable<json_syntax::Functional>[*nextInputCh] == json_detail::token::Character)
+                            {
+                                currentState = json_detail::state::Keyword;
+                                nextState = json_detail::state::Keyword;
+                            }
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+                }
                 switch (nextState)
                 {
                 case json_detail::state::Ignore:
