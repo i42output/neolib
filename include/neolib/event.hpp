@@ -152,6 +152,11 @@ namespace neolib
             iEvent{ aEvent }, iHandler{ aHandler }
         {
         }
+        event_handle(const event_handle& aOther) :
+            iEvent{ aOther.iEvent }, iHandler{ aOther.iHandler }
+        {
+        }
+        virtual ~event_handle() {}
     public:
         event_handle& operator~()
         {
@@ -389,7 +394,7 @@ namespace neolib
         {
             // do nothing.
         }
-        ~event()
+        virtual ~event()
         {
             clear();
         }
@@ -675,7 +680,7 @@ namespace neolib
         {
         }
         template <typename... Arguments>
-        sink(event_handle<Arguments...> aHandle)
+        sink(const event_handle<Arguments...>& aHandle)
         {
             iHandles.emplace_back(aHandle);
             add_ref();
@@ -685,6 +690,11 @@ namespace neolib
         {
             add_ref();
         }
+        virtual ~sink()
+        {
+            release();
+        }
+    public:
         sink& operator=(const sink& aSink)
         {
             if (this == &aSink)
@@ -694,22 +704,19 @@ namespace neolib
             add_ref();
             return *this;
         }
+    public:
         template <typename... Arguments>
-        sink& operator=(event_handle<Arguments...> aHandle)
+        sink& operator=(const event_handle<Arguments...>& aHandle)
         {
             return *this = sink{ aHandle };
         }
         template <typename... Arguments>
-        sink& operator+=(event_handle<Arguments...> aHandle)
+        sink& operator+=(const event_handle<Arguments...>& aHandle)
         {
             sink s{ aHandle };
             s.add_ref();
             iHandles.insert(iHandles.end(), s.iHandles.begin(), s.iHandles.end());
             return *this;
-        }
-        ~sink()
-        {
-            release();
         }
     private:
         void add_ref() const
