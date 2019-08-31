@@ -44,6 +44,10 @@ constexpr bool ndebug = false;
 
 #include <cstdint>
 
+struct sfinae {};
+
+#define rvalue_cast static_cast
+
 #ifdef NEOLIB_HOSTED_ENVIRONMENT
 
 #define USING_BOOST
@@ -60,9 +64,5 @@ constexpr bool ndebug = false;
 #define API extern "C" BOOST_SYMBOL_EXPORT
 #endif
 #endif
-
-struct sfinae {};
-
-#define rvalue_cast static_cast
 
 #endif // NEOLIB_HOSTED_ENVIRONMENT
