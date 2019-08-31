@@ -63,4 +63,6 @@ constexpr bool ndebug = false;
 
 struct sfinae {};
 
+#define rvalue_cast static_cast
+
 #endif // NEOLIB_HOSTED_ENVIRONMENT
