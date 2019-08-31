@@ -281,6 +281,24 @@ namespace neolib
         AsynchronousDontQueue
     };
 
+    namespace detail
+    {
+        template <typename T, bool IsRValueReference = std::is_rvalue_reference_v<T>>
+        struct deferred_sync_trigger_argument {};
+        template <typename T>
+        struct deferred_sync_trigger_argument <T, false> { typedef T type; };
+        template <typename T>
+        struct deferred_sync_trigger_argument <T, true> { typedef std::remove_reference_t<T> type; };
+        template<typename T>
+        inline typename deferred_sync_trigger_argument<T>::type forward_for_deferred_sync_trigger(typename std::remove_reference<T>::type& aArgument) { return static_cast<typename deferred_sync_trigger_argument<T>::type>(aArgument); }
+        template<typename T>
+        inline typename deferred_sync_trigger_argument<T>::type forward_for_deferred_sync_trigger(typename std::remove_reference<T>::type&& aArgument) { return static_cast<typename deferred_sync_trigger_argument<T>::type>(aArgument); }
+
+        template<int ...> struct seq {};
+        template<int N, int ...S> struct gens : gens<N - 1, N - 1, S...> { };
+        template<int ...S> struct gens<0, S...> { typedef seq<S...> type; };
+    }
+
     template <typename... Arguments>
     class event : protected event_lifetime
     {
@@ -469,7 +487,9 @@ namespace neolib
             if (!has_instance_data()) // no instance means no subscribers so no point triggering.
                 return;
             destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
-            instance_data().asyncEventQueue->add(*this, [this, &aArguments...]() { sync_trigger(std::forward<Ts>(aArguments)...); });
+            auto args = std::tuple<typename detail::deferred_sync_trigger_argument<Ts>::type...>{ detail::forward_for_deferred_sync_trigger<Ts>(std::forward<Ts>(aArguments))... };
+            auto seq = detail::gens<sizeof...(aArguments)>::type();
+            instance_data().asyncEventQueue->add(*this, [this, args, seq]() { deferred_sync_trigger(args, seq); });
         }
         void accept() const
         {
@@ -556,6 +576,11 @@ namespace neolib
             return unsubscribe(static_cast<const void*>(&aUniqueIdObject));
         }
     private:
+        template<typename Tuple, int ...S>
+        void deferred_sync_trigger(Tuple&& aTuple, detail::seq<S...>) const
+        {
+            sync_trigger(std::get<S>(aTuple)...);
+        }
         template<class... Ts>
         void enqueue_to_thread(const handler_list_item& aItem, Ts&&... aArguments) const
         {
