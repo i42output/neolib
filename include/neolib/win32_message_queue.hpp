@@ -49,12 +49,11 @@ namespace neolib
         win32_message_queue(async_task& aIoTask, std::function<bool()> aIdleFunction, bool aCreateTimer = true);
         ~win32_message_queue();
     public:
-        virtual void push_context();
-        virtual void pop_context();
-        virtual bool have_message() const;
-        virtual int get_message() const;
-        virtual void bump();
-        virtual void idle();
+        bool have_message() const override;
+        int get_message() const override;
+        void bump() override;
+		bool in_idle() const override;
+        void idle() override;
     private:
         static void CALLBACK timer_proc(HWND, UINT, UINT_PTR, DWORD);
     private:
@@ -62,6 +61,6 @@ namespace neolib
         std::function<bool()> iIdleFunction;
         static std::map<UINT_PTR, win32_message_queue*> sTimerMap;
         UINT_PTR iTimer;
-        std::deque<bool> iInIdle;
+		bool iInIdle;
     };
 }

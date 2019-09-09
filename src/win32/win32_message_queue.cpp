@@ -1,4 +1,5 @@
 #include <neolib/neolib.hpp>
+#include <neolib/raii.hpp>
 #include <neolib/win32_message_queue.hpp>
 
 namespace neolib
@@ -6,31 +7,21 @@ namespace neolib
     std::map<UINT_PTR, win32_message_queue*> win32_message_queue::sTimerMap;
 
     win32_message_queue::win32_message_queue(async_task& aIoTask, std::function<bool()> aIdleFunction, bool aCreateTimer) :
-        iIoTask(aIoTask),
-        iIdleFunction(aIdleFunction)
+		iIoTask{ aIoTask },
+		iIdleFunction{ aIdleFunction },
+		iInIdle{ false }
     {
         if (aCreateTimer)
         {
             iTimer = ::SetTimer(NULL, 0, 10, &win32_message_queue::timer_proc);
             sTimerMap[iTimer] = this;
         }
-        push_context();
     }
 
     win32_message_queue::~win32_message_queue()
     {
         for (auto& t : sTimerMap)
             ::KillTimer(NULL, t.first);
-    }
-
-    void win32_message_queue::push_context()
-    {
-        iInIdle.push_back(false);
-    }
-
-    void win32_message_queue::pop_context()
-    {
-        iInIdle.pop_back();
     }
 
     bool win32_message_queue::have_message() const
@@ -59,13 +50,17 @@ namespace neolib
         ::PostMessage(NULL, WM_NULL, 0, 0);
     }
 
+	bool win32_message_queue::in_idle() const
+	{
+		return iInIdle;
+	}
+
     void win32_message_queue::idle()
     {
-        if (!iInIdle.back() && iIdleFunction)
+        if (!in_idle() && iIdleFunction)
         {
-            iInIdle.back() = true;
+			scoped_flag sf{ iInIdle };
             iIdleFunction();
-            iInIdle.back() = false;
         }
     }
 
