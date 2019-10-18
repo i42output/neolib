@@ -522,7 +522,7 @@ namespace neolib
         template <json_syntax Syntax>
         inline state next_state(state aCurrentState, char aToken)
         {
-            auto const token = sTokenTable<Syntax>[static_cast<std::size_t>(aToken)];
+            auto const token = sTokenTable<Syntax>[static_cast<unsigned char>(aToken)];
             auto const stateIndex = static_cast<std::size_t>(aCurrentState);
             return sStateTables<Syntax>[stateIndex][static_cast<std::size_t>(token)];
         }
@@ -534,7 +534,7 @@ namespace neolib
                 return next_state<Syntax>(aCurrentState, aCurrentToken);
             else
             {
-                auto const token = sTokenTable<Syntax>[static_cast<std::size_t>(aCurrentToken)];
+                auto const token = sTokenTable<Syntax>[static_cast<unsigned char>(aCurrentToken)];
                 switch (aCurrentState)
                 {
                 case state::CppStyleComment:
@@ -544,7 +544,7 @@ namespace neolib
                 case state::CStyleComment:
                     if (token == json_detail::token::Asterisk)
                     {
-                        auto const nextToken = sTokenTable<Syntax>[static_cast<std::size_t>(aNextToken)];
+                        auto const nextToken = sTokenTable<Syntax>[static_cast<unsigned char>(aNextToken)];
                         if (nextToken == json_detail::token::ForwardSlash)
                             return state::Ignore;
                         else if (nextToken == json_detail::token::EndOfInput)
@@ -556,7 +556,7 @@ namespace neolib
                 default:
                     if (token == json_detail::token::ForwardSlash)
                     {
-                        auto const nextToken = sTokenTable<Syntax>[static_cast<std::size_t>(aNextToken)];
+                        auto const nextToken = sTokenTable<Syntax>[static_cast<unsigned char>(aNextToken)];
                         if (nextToken == json_detail::token::ForwardSlash)
                             return state::CppStyleComment;
                         else if (nextToken == json_detail::token::Asterisk)
@@ -1220,7 +1220,7 @@ namespace neolib
                         case json_detail::state::NumberInt:
                         case json_detail::state::NumberFrac:
                         case json_detail::state::NumberExpInt:
-                            if (json_detail::sTokenTable<json_syntax::Functional>[*nextInputCh] == json_detail::token::Character)
+                            if (json_detail::sTokenTable<json_syntax::Functional>[static_cast<unsigned char>(*nextInputCh)] == json_detail::token::Character)
                             {
                                 currentState = json_detail::state::Keyword;
                                 nextState = json_detail::state::Keyword;
