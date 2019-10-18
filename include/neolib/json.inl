@@ -519,32 +519,39 @@ namespace neolib
             },
         };
 
-        template <json_syntax Syntax>
-        inline state next_state(state aCurrentState, char aToken)
+        template <typename CharT>
+        inline token to_token(const std::array<token, 256>& aTokenTable, CharT aCharacter)
         {
-            auto const token = sTokenTable<Syntax>[static_cast<unsigned char>(aToken)];
+            auto const tableIndex = std::min<std::size_t>(static_cast<typename std::make_unsigned<CharT>::type>(aCharacter), 0xFFu);
+            return aTokenTable[tableIndex];
+        }
+
+        template <json_syntax Syntax, typename CharT>
+        inline state next_state(state aCurrentState, CharT aCharacter)
+        {
+            auto const token = to_token(sTokenTable<Syntax>, aCharacter);
             auto const stateIndex = static_cast<std::size_t>(aCurrentState);
             return sStateTables<Syntax>[stateIndex][static_cast<std::size_t>(token)];
         }
 
-        template <json_syntax Syntax>
-        inline state next_state(state aCurrentState, state aPreviousState, char aCurrentToken, char aNextToken)
+        template <json_syntax Syntax, typename CharT>
+        inline state next_state(state aCurrentState, state aPreviousState, CharT aCurrentCharacter, CharT aNextCharacter)
         {
             if constexpr (Syntax == json_syntax::Standard || Syntax == json_syntax::StandardNoKeywords)
-                return next_state<Syntax>(aCurrentState, aCurrentToken);
+                return next_state<Syntax>(aCurrentState, aCurrentCharacter);
             else
             {
-                auto const token = sTokenTable<Syntax>[static_cast<unsigned char>(aCurrentToken)];
+                auto const token = to_token(sTokenTable<Syntax>, aCurrentCharacter);
                 switch (aCurrentState)
                 {
                 case state::CppStyleComment:
-                    if (aCurrentToken != '\n' && token != token::EndOfInput)
+                    if (aCurrentCharacter != '\n' && token != token::EndOfInput)
                         return state::CppStyleComment;
-                    return next_state<Syntax>(aPreviousState, aPreviousState, aCurrentToken, aNextToken);
+                    return next_state<Syntax>(aPreviousState, aPreviousState, aCurrentCharacter, aNextCharacter);
                 case state::CStyleComment:
                     if (token == json_detail::token::Asterisk)
                     {
-                        auto const nextToken = sTokenTable<Syntax>[static_cast<unsigned char>(aNextToken)];
+                        auto const nextToken = to_token(sTokenTable<Syntax>, aNextCharacter);
                         if (nextToken == json_detail::token::ForwardSlash)
                             return state::Ignore;
                         else if (nextToken == json_detail::token::EndOfInput)
@@ -556,7 +563,7 @@ namespace neolib
                 default:
                     if (token == json_detail::token::ForwardSlash)
                     {
-                        auto const nextToken = sTokenTable<Syntax>[static_cast<unsigned char>(aNextToken)];
+                        auto const nextToken = to_token(sTokenTable<Syntax>, aNextCharacter);
                         if (nextToken == json_detail::token::ForwardSlash)
                             return state::CppStyleComment;
                         else if (nextToken == json_detail::token::Asterisk)
@@ -1220,7 +1227,7 @@ namespace neolib
                         case json_detail::state::NumberInt:
                         case json_detail::state::NumberFrac:
                         case json_detail::state::NumberExpInt:
-                            if (json_detail::sTokenTable<json_syntax::Functional>[static_cast<unsigned char>(*nextInputCh)] == json_detail::token::Character)
+                            if (to_token(json_detail::sTokenTable<json_syntax::Functional>, *nextInputCh) == json_detail::token::Character)
                             {
                                 currentState = json_detail::state::Keyword;
                                 nextState = json_detail::state::Keyword;
