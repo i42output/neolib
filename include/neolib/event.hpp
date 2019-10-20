@@ -192,8 +192,10 @@ namespace neolib
         typename handler_list::iterator iHandler;
     };
 
-    class async_event_queue
+    class async_event_queue : protected event_lifetime
     {
+        template <typename...>
+        friend class event;
     private:
         class local_thread;
     public:
@@ -338,6 +340,7 @@ namespace neolib
         {
             instance_ptr instancePtr;
             std::shared_ptr<async_event_queue> asyncEventQueue;
+            optional_destroyed_flag asyncEventQueueDestroyed;
             handler_list handlers;
             unique_id_map uniqueIdMap;
             event_trigger_type triggerType;
@@ -598,7 +601,8 @@ namespace neolib
                 return;
             destroyable_mutex_lock_guard<event_mutex> guard{ iMutex };
             auto& instanceData = instance_data();
-            if (instanceData.asyncEventQueue->has(*this))
+            bool const hasAsyncEventQueue = has_async_event_queue();
+            if (hasAsyncEventQueue && instanceData.asyncEventQueue->has(*this))
                 instanceData.asyncEventQueue->remove(*this);
             struct destroy_state
             {
@@ -610,13 +614,20 @@ namespace neolib
                 }
             } destroyer{ iInstanceData };
             iInstanceData = nullptr;
-            auto queue = instanceData.asyncEventQueue;
-            if (queue.use_count() == 2)
-                queue->persist(queue); // keeps event queue around (cached) for a second 
+            if (hasAsyncEventQueue)
+            {
+                auto queue = instanceData.asyncEventQueue;
+                if (queue.use_count() == 2)
+                    queue->persist(queue); // keeps event queue around (cached) for a second 
+            }
         }
         bool has_instance_data() const
         {
             return iInstanceData != nullptr;
+        }
+        bool has_async_event_queue() const
+        {
+            return has_instance_data() && !*instance_data().asyncEventQueueDestroyed;
         }
         state& instance_data() const
         {
@@ -631,6 +642,7 @@ namespace neolib
                     allocator().construct(newInstance);
                     newInstance->instancePtr = std::make_shared<ptr>(this);
                     newInstance->asyncEventQueue = async_event_queue::instance();
+                    newInstance->asyncEventQueueDestroyed.emplace(static_cast<i_lifetime&>(*newInstance->asyncEventQueue));
                 }
                 catch (...)
                 {
