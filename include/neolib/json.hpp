@@ -538,14 +538,24 @@ namespace neolib
         basic_json_value(basic_json_value&&) = delete;
     public:
         template <typename T>
-        const T& as() const
+        std::enable_if_t<!std::is_arithmetic_v<T>, const T&> as() const
         {
             return static_variant_cast<const T&>(iValue);
         }
         template <typename T>
-        T& as()
+        std::enable_if_t<!std::is_arithmetic_v<T>, T&> as()
         {
             return static_variant_cast<T&>(iValue);
+        }
+        template <typename T>
+        std::enable_if_t<std::is_arithmetic_v<T>, T> as() const
+        {
+            return static_numeric_variant_cast<T>(iValue);
+        }
+        template <typename T>
+        std::enable_if_t<std::is_arithmetic_v<T>, T&> as()
+        {
+            return static_numeric_variant_cast<T&>(iValue);
         }
         const value_type& operator*() const
         {

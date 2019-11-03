@@ -1,19 +1,16 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2036
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29418.71
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NoFussJSONTest", "NoFussJSONTest.vcxproj", "{246ADF28-962E-4CBA-9B6F-02256BBBF001}"
 	ProjectSection(ProjectDependencies) = postProject
 		{5BE004BF-A083-422F-8287-E7238B633466} = {5BE004BF-A083-422F-8287-E7238B633466}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "neolib", "..\..\..\..\..\..\build\win32\vs2017\neolib.vcxproj", "{5BE004BF-A083-422F-8287-E7238B633466}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "neolib", "..\..\..\..\..\..\build\win32\vs2019\neolib.vcxproj", "{5BE004BF-A083-422F-8287-E7238B633466}"
 EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
@@ -43,6 +40,9 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {59CA3306-6B40-4950-850A-D04970A142A1}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 	GlobalSection(Performance) = preSolution
 		HasPerformanceSessions = true

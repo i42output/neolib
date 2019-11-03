@@ -38,6 +38,7 @@
 #include <neolib/neolib.hpp>
 
 #include <type_traits>
+#include <optional>
 #include <variant>
 
 namespace neolib
@@ -105,12 +106,29 @@ namespace neolib
         }
     };
 
+    namespace variant_visitors
+    {
+        template <typename Visitor, typename... Types>
+        auto visit(Visitor&& vis, const neolib::variant<Types...>& var)
+        {
+            return std::visit(std::forward<Visitor>(vis), var.for_visitor());
+        }
+
+        template <typename Visitor, typename... Types>
+        auto visit(Visitor&& vis, neolib::variant<Types...>& var)
+        {
+            return std::visit(std::forward<Visitor>(vis), var.for_visitor());
+        }
+    }
+
+    using namespace variant_visitors;
+
     // Deprecated, use std::get.
     template <typename T, typename Variant>
     inline T static_variant_cast(const Variant& aVariant)
     {
         typedef T result_type;
-        typedef typename std::remove_cv<typename std::remove_reference<result_type>::type>::type alternative_type;
+        typedef std::remove_cv_t<std::remove_reference_t<result_type>> alternative_type;
         auto& result = std::get<alternative_type>(aVariant);
         return static_cast<result_type>(result);
     }
@@ -120,25 +138,47 @@ namespace neolib
     inline T static_variant_cast(Variant& aVariant)
     { 
         typedef T result_type;
-        typedef typename std::remove_cv<typename std::remove_reference<result_type>::type>::type alternative_type;
+        typedef std::remove_cv_t<std::remove_reference_t<result_type>> alternative_type;
         auto& result = std::get<alternative_type>(aVariant);
         return static_cast<result_type>(result);
+    }
+
+    struct bad_numeric_variant_cast : std::logic_error { bad_numeric_variant_cast() : std::logic_error{ "neolib::bad_numeric_variant_cast" } {} };
+
+    template <typename T, typename Variant>
+    inline T static_numeric_variant_cast(const Variant& aVariant)
+    {
+        typedef T result_type;
+        std::optional<result_type> result;
+        visit([&result](auto&& source) 
+        { 
+            typedef std::remove_cv_t<std::remove_reference_t<decltype(source)>> source_type;
+            if constexpr (std::is_arithmetic_v<source_type>)
+                result = static_cast<result_type>(source); 
+        }, aVariant);
+        if (result != std::nullopt)
+            return *result;
+        throw bad_numeric_variant_cast();
+    }
+
+    template <typename T, typename Variant>
+    inline T static_numeric_variant_cast(Variant& aVariant)
+    {
+        typedef T result_type;
+        typedef std::remove_cv_t<std::remove_reference_t<result_type>> alternative_type;
+        visit([&aVariant](auto&& source)
+        { 
+            typedef std::remove_cv_t<std::remove_reference_t<decltype(source)>> source_type;
+            if constexpr (std::is_arithmetic_v<source_type> && !std::is_same_v<alternative_type, source_type>)
+                aVariant = static_cast<alternative_type>(source);
+        }, aVariant);
+        return static_variant_cast<T>(aVariant);
     }
 }
 
 namespace std
 {
-    template <typename Visitor, typename... Types>
-    auto visit(Visitor&& vis, const neolib::variant<Types...>& var)
-    {
-        return std::visit(std::forward<Visitor>(vis), var.for_visitor());
-    }
-
-    template <typename Visitor, typename... Types>
-    auto visit(Visitor&& vis, neolib::variant<Types...>& var)
-    {
-        return std::visit(std::forward<Visitor>(vis), var.for_visitor());
-    }
+    using neolib::variant_visitors::visit;
 }
 
 // Deprecated, use std::get.
