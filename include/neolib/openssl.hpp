@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <random>
 
 namespace neolib

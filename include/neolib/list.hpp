@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <list>
 #include "reference_counted.hpp"
 #include "i_list.hpp"
@@ -67,9 +67,11 @@ namespace neolib
         // construction
     public:
         list() {}
-        list(const list& aOther) : iList(aOther.begin(), aOther.end()) {}
-        list(const i_list<T>& aOther) : iList(aOther.begin(), aOther.end()) {}
+        list(const list& aOther) : iList{ aOther.begin(), aOther.end() } {}
+        list(list&& aOther) : iList{ std::move(aOther.iList) } {}
+        list(const i_list<T>& aOther) : iList{ aOther.begin(), aOther.end() } {}
         list& operator=(const list& aOther) { assign(aOther); return *this; }
+        list& operator=(list&& aOther) { iList = std::move(aOther.iList); return *this; }
         list& operator=(const i_list<T>& aOther) { assign(aOther); return *this; }
         // operations
     public:

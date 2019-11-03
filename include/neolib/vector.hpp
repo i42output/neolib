@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <vector>
 #include "reference_counted.hpp"
 #include "i_vector.hpp"
@@ -66,12 +66,14 @@ namespace neolib
         // construction
     public:
         vector() {}
-        vector(const vector& aOther) : iVector(aOther.begin(), aOther.end()) {}
-        vector(const i_vector<T>& aOther) : iVector(aOther.begin(), aOther.end()) {}
-        vector(const container_type& aOtherContainer) : iVector(aOtherContainer) {}
+        vector(const vector& aOther) : iVector{ aOther.begin(), aOther.end() } {}
+        vector(vector&& aOther) : iVector{ std::move(aOther.iVector) } {}
+        vector(const i_vector<T>& aOther) : iVector{ aOther.begin(), aOther.end() } {}
+        vector(const container_type& aOtherContainer) : iVector{ aOtherContainer } {}
         template <typename InputIter>
-        vector(InputIter aFirst, InputIter aLast) : iVector(aFirst, aLast) {}
+        vector(InputIter aFirst, InputIter aLast) : iVector{ aFirst, aLast } {}
         vector& operator=(const vector& aOther) { assign(aOther); return *this; }
+        vector& operator=(vector&& aOther) { iVector = std::move(aOther.iVector); return *this; }
         vector& operator=(const i_vector<T>& aOther) { assign(aOther); return *this; }
         // operations
     public:

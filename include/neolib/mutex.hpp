@@ -35,11 +35,12 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <mutex>
 #include <memory>
-#include "null_mutex.hpp"
-#include "lifetime.hpp"
+
+#include <neolib/null_mutex.hpp>
+#include <neolib/lifetime.hpp>
 
 namespace neolib
 {

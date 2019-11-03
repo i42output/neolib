@@ -35,7 +35,7 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <string>
 #include <sstream>
 #include <algorithm>

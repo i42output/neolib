@@ -40,7 +40,7 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <new>
 #include <stdexcept>
 #include <memory>

@@ -35,34 +35,27 @@
 
 #pragma once
 
-#include "neolib.hpp"
-#include "uuid.hpp"
-#include "i_vector.hpp"
-#include "string.hpp"
-#include "i_discoverable.hpp"
-#include "i_plugin.hpp"
+#include <neolib/neolib.hpp>
+#include <neolib/uuid.hpp>
+#include <neolib/i_vector.hpp>
+#include <neolib/string.hpp>
+#include <neolib/i_discoverable.hpp>
+#include <neolib/i_plugin_event.hpp>
+#include <neolib/i_plugin.hpp>
 
 namespace neolib
 {
     class i_plugin_manager : public i_discoverable
     {
+        // events
+    public:
+        declare_event(plugin_loaded, i_plugin&)
+        declare_event(plugin_unloaded, i_plugin&)
         // types
     public:
         typedef i_vector<i_string> plugin_file_extensions_t;
         typedef i_vector<i_string> plugin_folders_t;
         typedef i_vector<i_ref_ptr<i_plugin>> plugins_t;
-        class i_subscriber
-        {
-        public:
-            virtual void plugin_loaded(i_plugin& aPlugin) = 0;
-            virtual void plugin_unloaded(i_plugin& aPlugin) = 0;
-        public:
-            enum notify_type
-            {
-                NotifyPluginLoaded,
-                NotifyPluginUnloaded
-            };
-        };
         // exceptions
     public:
         template <typename Base>
@@ -82,8 +75,5 @@ namespace neolib
         virtual const i_ref_ptr<i_plugin>& find_plugin(const uuid& aId) const = 0;
         virtual i_ref_ptr<i_plugin>& find_plugin(const uuid& aId) = 0;
         virtual bool open_uri(const i_string& aUri) = 0;
-    public:
-        virtual void subscribe(i_subscriber& aObserver) = 0;
-        virtual void unsubscribe(i_subscriber& aObserver) = 0;
     };
 }

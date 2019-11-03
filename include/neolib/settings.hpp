@@ -35,25 +35,31 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <fstream>
 #include <set>
 #include <memory>
-#include "mutable_set.hpp"
-#include "vector.hpp"
-#include "xml.hpp"
-#include "observable.hpp"
-#include "reference_counted.hpp"
-#include "string.hpp"
-#include "i_custom_type_factory.hpp"
-#include "setting.hpp"
-#include "i_settings.hpp"
+
+#include <neolib/mutable_set.hpp>
+#include <neolib/vector.hpp>
+#include <neolib/plugin_event.hpp>
+#include <neolib/xml.hpp>
+#include <neolib/reference_counted.hpp>
+#include <neolib/string.hpp>
+#include <neolib/i_custom_type_factory.hpp>
+#include <neolib/setting.hpp>
+#include <neolib/i_settings.hpp>
 
 namespace neolib
 {
-    class settings : public reference_counted<i_settings>, private observable<i_settings::i_subscriber>
+    class settings : public reference_counted<i_settings>
     {
         friend class setting;
+    public:
+        define_declared_event(SettingsChanged, settings_changed, const i_string&)
+        define_declared_event(SettingChanged, setting_changed, const i_setting&)
+        define_declared_event(SettingDeleted, setting_deleted, const i_setting&)
+        define_declared_event(InterestedInDirtySettings, interested_in_dirty_settings, bool&)
     private:
         typedef mutable_set<setting> setting_list;
         typedef std::map<std::pair<string, string>, i_setting::id_type> setting_by_name_list;
@@ -170,15 +176,6 @@ namespace neolib
                 }
                 iStore->write(output);
             }
-        }
-    public:
-        virtual void subscribe(i_subscriber& aSubscriber)
-        {
-            observable<i_subscriber>::add_observer(aSubscriber);
-        }
-        virtual void unsubscribe(i_subscriber& aSubscriber)
-        {
-            observable<i_subscriber>::remove_observer(aSubscriber);
         }
     public:
         static const uuid& id() { static uuid sId = neolib::make_uuid("E19B3C48-04F7-4207-B24A-2967A3523CE7"); return sId; }

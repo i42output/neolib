@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <memory>
 #include <type_traits>
 #include <boost/pool/pool_alloc.hpp>

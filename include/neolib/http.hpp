@@ -35,17 +35,18 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <vector>
 #include <string>
 #include <deque>
 #include <optional>
 #include <chrono>
-#include "variant.hpp"
-#include "event.hpp"
-#include "string_utils.hpp"
-#include "packet_stream.hpp"
-#include "string_packet.hpp"
+
+#include <neolib/variant.hpp>
+#include <neolib/plugin_event.hpp>
+#include <neolib/string_utils.hpp>
+#include <neolib/packet_stream.hpp>
+#include <neolib/string_packet.hpp>
 
 namespace neolib
 {
@@ -66,16 +67,15 @@ namespace neolib
     };
 
     typedef packet_stream<http_packet, tcp_protocol> http_stream;
-    typedef i_packet_stream_observer<http_packet, tcp_protocol> http_stream_observer;
 
-    class http : private http_stream_observer
+    class http
     {
         // events
     public:
-        event<> started;
-        event<> progress;
-        event<> completed;
-        event<> failure;
+        define_event(Started)
+        define_event(Progress)
+        define_event(Completed)
+        define_event(Failure)
 
         // types
     public:
@@ -106,22 +106,22 @@ namespace neolib
 
         // implementation
     private:
+        http_stream& stream();
         void reset();
         void add_response_header(const std::string& aHeaderLine);
         bool decode();
         bool decode_chunked();
-        // from http_stream_observer
-        virtual void connection_established(packet_stream_type& aStream);
-        virtual void connection_failure(packet_stream_type& aStream, const boost::system::error_code& aError);
-        virtual void packet_sent(packet_stream_type& aStream, const http_packet& aPacket);
-        virtual void packet_arrived(packet_stream_type& aStream, const http_packet& aPacket);
-        virtual void transfer_failure(packet_stream_type& aStream, const boost::system::error_code& aError);
-        virtual void connection_closed(packet_stream_type& aStream);
+        void connection_established();
+        void connection_failure(const boost::system::error_code& aError);
+        void packet_sent(const http_packet& aPacket);
+        void packet_arrived(const http_packet& aPacket);
+        void transfer_failure(const boost::system::error_code& aError);
+        void connection_closed();
 
         // attributes
     private:
         async_task& iIoTask;
-        http_stream iPacketStream;
+        std::optional<http_stream> iPacketStream;
         std::string iHost;
         uint16_t iPort;
         bool iSecure;

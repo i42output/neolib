@@ -43,7 +43,6 @@ namespace neolib
 
     http::http(async_task& aIoTask) : 
         iIoTask(aIoTask), 
-        iPacketStream(aIoTask), 
         iPort(80), 
         iSecure(false), 
         iType(Get), 
@@ -52,12 +51,10 @@ namespace neolib
         iStatusCode(0)
     {
         reset();
-        iPacketStream.add_observer(*this);
     }
 
     http::http(const http& aOther) : 
         iIoTask(aOther.iIoTask), 
-        iPacketStream(aOther.iIoTask), 
         iHost(aOther.iHost), 
         iPort(aOther.iPort), 
         iSecure(aOther.iSecure), 
@@ -68,12 +65,10 @@ namespace neolib
         iStatusCode(0)
     {
         reset();
-        iPacketStream.add_observer(*this);
     }
 
     http::~http()
     {
-        iPacketStream.remove_observer(*this);
     }
 
     http& http::operator=(const http& aOther) 
@@ -82,6 +77,11 @@ namespace neolib
         iHost = aOther.iHost; 
         iResource = aOther.iResource; 
         return *this;
+    }
+
+    http_stream& http::stream()
+    {
+        return *iPacketStream;
     }
 
     void http::reset()
@@ -104,6 +104,16 @@ namespace neolib
         iState = ResponseStatus;
         iPreviousWasCRLF = false;
         iLastPacketReceived = std::nullopt;
+
+        iPacketStream.reset();
+        iPacketStream.emplace(iIoTask);
+
+        stream().ConnectionEstablished([this]() { connection_established(); });
+        stream().ConnectionFailure([this](const boost::system::error_code& aError) { connection_failure(aError); });
+        stream().PacketSent([this](const http_packet& aPacket) { packet_sent(aPacket); });
+        stream().PacketArrived([this](const http_packet& aPacket) { packet_arrived(aPacket); });
+        stream().TransferFailure([this](const boost::system::error_code& aError) { transfer_failure(aError); });
+        stream().ConnectionClosed([this]() { connection_closed(); });
     }
 
     void http::add_response_header(const std::string& aHeaderLine)
@@ -243,10 +253,10 @@ namespace neolib
             iRequestBody = std::get<body_t>(aRequestBody);
         else if (std::holds_alternative<std::string>(aRequestBody) && !std::get<std::string>(aRequestBody).empty())
             iRequestBody.assign(std::get<std::string>(aRequestBody).begin(), std::get<std::string>(aRequestBody).end());
-        if (iPacketStream.open(aHost, aPort, aSecure))
-            started.trigger();
+        if (stream().open(aHost, aPort, aSecure))
+            Started.trigger();
         else
-            failure.trigger();
+            Failure.trigger();
     }
 
     double http::percent_done() const
@@ -259,7 +269,7 @@ namespace neolib
             return iBody.size() * 100.0 / *iBodyLength;
     }
 
-    void http::connection_established(packet_stream_type& aStream)
+    void http::connection_established()
     {
         std::string theRequest = (iType == Get ? "GET " : "POST ") + iResource + " HTTP/1.1\r\n";
         theRequest += "Host: " + iHost + "\r\n";
@@ -270,22 +280,22 @@ namespace neolib
         theRequest += "\r\n";
         if (!iRequestBody.empty())
             theRequest += std::string(iRequestBody.begin(), iRequestBody.end());
-        aStream.send_packet(http_packet(theRequest));
+        stream().send_packet(http_packet(theRequest));
     }
 
-    void http::connection_failure(packet_stream_type& aStream, const boost::system::error_code&)
+    void http::connection_failure(const boost::system::error_code&)
     {
         iBodyLength.reset();
         iBody.clear();
-        failure.trigger();
-        aStream.close();
+        Failure.trigger();
+        stream().close();
     }
 
-    void http::packet_sent(packet_stream_type&, const http_packet&)
+    void http::packet_sent(const http_packet&)
     {
     }
 
-    void http::packet_arrived(packet_stream_type&, const http_packet& aPacket)
+    void http::packet_arrived(const http_packet& aPacket)
     {
         for (http_packet::const_iterator i = aPacket.begin(); i != aPacket.end();)
         {
@@ -298,7 +308,7 @@ namespace neolib
                     std::chrono::duration_cast<std::chrono::milliseconds>(*iLastPacketReceived - std::chrono::steady_clock::now()).count() > DEFAULT_PROGRESS_INTERVAL_ms)
                 {
                     iLastPacketReceived = std::chrono::steady_clock::now();
-                    progress.trigger();
+                    Progress.trigger();
                 }
                 break;
             default:
@@ -348,18 +358,18 @@ namespace neolib
         }
     }
 
-    void http::transfer_failure(packet_stream_type& aStream, const boost::system::error_code&)
+    void http::transfer_failure(const boost::system::error_code&)
     {
         iBodyLength.reset();
         iBody.clear();
-        failure.trigger();
-        aStream.close();
+        Failure.trigger();
+        stream().close();
     }
 
-    void http::connection_closed(packet_stream_type& aStream)
+    void http::connection_closed()
     {
         iState = Finished;
-        if (ok() && aStream.has_error())
+        if (ok() && stream().has_error())
             iOk = false;
         if (ok() && !decode())
             iOk = false;
@@ -367,14 +377,14 @@ namespace neolib
             iOk = false;
         if (ok())
         {
-            progress.trigger();
-            completed.trigger();
+            Progress.trigger();
+            Completed.trigger();
         }
         else
         {
             iBodyLength.reset();
             iBody.clear();
-            failure.trigger();
+            Failure.trigger();
         }
     }
 }

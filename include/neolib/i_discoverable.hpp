@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include "uuid.hpp"
 #include "i_reference_counted.hpp"
 

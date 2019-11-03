@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <boost/filesystem.hpp>
 #include "reference_counted.hpp"
 #include "i_application.hpp"

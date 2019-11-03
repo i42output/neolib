@@ -35,8 +35,9 @@
 
 #pragma once
 
-#include "neolib.hpp"
-#include "cookie_jar.hpp"
+#include <neolib/neolib.hpp>
+
+#include <neolib/cookie_jar.hpp>
 
 namespace neolib
 {

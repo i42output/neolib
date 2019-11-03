@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <string>
 #include <iostream>
 #include "fwd_abstract.hpp"

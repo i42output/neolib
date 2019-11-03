@@ -44,9 +44,9 @@ namespace neolib
             iRequestTokenOp(aRequestTokenOp), iUserAuthorizationOp(aUserAuthorizationOp), iAccessTokenOp(aAccessTokenOp)
     {
         // todo
-        iHttpRequester.started([](){});
-        iHttpRequester.completed([](){});
-        iHttpRequester.failure([](){});
+        iHttpRequester.Started([](){});
+        iHttpRequester.Completed([](){});
+        iHttpRequester.Failure([](){});
     }
 
     oauth::~oauth()

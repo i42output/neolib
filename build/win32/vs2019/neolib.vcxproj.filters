@@ -230,9 +230,6 @@
     <ClInclude Include="..\..\..\include\neolib\locking_policy.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\manager_of.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\map.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -252,9 +249,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\oauth.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\observable.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\optional.hpp">
@@ -491,9 +485,18 @@
     <ClInclude Include="..\..\..\include\neolib\recursion.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\include\neolib\plugin_event.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\neolib\i_plugin_event.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\include\neolib\json.inl">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\..\..\include\neolib\lifetime.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>

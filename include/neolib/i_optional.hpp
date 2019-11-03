@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <optional>
 #include <stdexcept>
 #include "i_reference_counted.hpp"

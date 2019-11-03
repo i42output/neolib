@@ -95,7 +95,7 @@ namespace neolib
                 if ((*i)->load())
                 {
                     gotSome = true;
-                    notify_observers(i_subscriber::NotifyPluginLoaded, **i);
+                    PluginLoaded.trigger(**i);
                 }
         return gotSome;
     }
@@ -107,7 +107,7 @@ namespace neolib
         if (newPlugin != nullptr)
             loaded = newPlugin->load();
         if (loaded)
-            notify_observers(i_subscriber::NotifyPluginLoaded, *newPlugin);
+            PluginLoaded.trigger(*newPlugin);
         return loaded;
     }
 
@@ -127,11 +127,14 @@ namespace neolib
 
     void plugin_manager::unload_plugins()
     {
-        iPlugins.clear();
+        {
+            auto pluginsToUnload = std::move(iPlugins);
+            for (auto const& p : pluginsToUnload)
+                PluginUnloaded.trigger(*p);
+        }
         for (modules_t::iterator i = iModules.begin(); i != iModules.end(); ++i)
         {
             (*i).second->unload();
-            notify_observers(i_subscriber::NotifyPluginUnloaded, *(*i).second);
             (*i).second.reset();
         }
         iModules.clear();
@@ -163,32 +166,6 @@ namespace neolib
             if ((*i)->open_uri(aUri))
                 return true;
         return false;
-    }
-
-    void plugin_manager::subscribe(i_subscriber& aObserver)
-    {
-        add_observer(aObserver);
-        for (plugins_t::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
-            if ((*i)->loaded())
-                aObserver.plugin_loaded(**i);
-    }
-
-    void plugin_manager::unsubscribe(i_subscriber& aObserver)
-    {
-        remove_observer(aObserver);
-    }
-
-    void plugin_manager::notify_observer(observer_type& aObserver, notify_type aType, const void* aParameter, const void*)
-    {
-        switch (aType)
-        {
-        case i_subscriber::NotifyPluginLoaded:
-            aObserver.plugin_loaded(*static_cast<i_plugin*>(const_cast<void*>(aParameter)));
-            break;
-        case i_subscriber::NotifyPluginUnloaded:
-            aObserver.plugin_unloaded(*static_cast<i_plugin*>(const_cast<void*>(aParameter)));
-            break;
-        }
     }
 
     i_ref_ptr<i_plugin>& plugin_manager::create_plugin(const i_string& aPluginPath)

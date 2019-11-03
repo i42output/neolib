@@ -35,21 +35,25 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <map>
 #include <memory>
 #include <boost/filesystem.hpp>
-#include "observable.hpp"
-#include "vector.hpp"
-#include "module.hpp"
-#include "reference_counted.hpp"
-#include "i_plugin_manager.hpp"
-#include "i_application.hpp"
+#include <neolib/vector.hpp>
+#include <neolib/module.hpp>
+#include <neolib/reference_counted.hpp>
+#include <neolib/plugin_event.hpp>
+#include <neolib/i_plugin_manager.hpp>
+#include <neolib/i_application.hpp>
 
 namespace neolib
 {
-    class plugin_manager : public reference_counted<i_plugin_manager>, private observable<i_plugin_manager::i_subscriber>
+    class plugin_manager : public reference_counted<i_plugin_manager>
     {
+        // events
+    public:
+        define_declared_event(PluginLoaded, plugin_loaded, i_plugin&)
+        define_declared_event(PluginUnloaded, plugin_unloaded, i_plugin&)
         // types
     private:
         typedef vector<i_string, string> plugin_file_extensions_t;
@@ -78,15 +82,9 @@ namespace neolib
         const i_ref_ptr<i_plugin>& find_plugin(const uuid& aId) const override;
         i_ref_ptr<i_plugin>& find_plugin(const uuid& aId) override;
         bool open_uri(const i_string& aUri) override;
-    public:
-        void subscribe(i_subscriber& aObserver) override;
-        void unsubscribe(i_subscriber& aObserver) override;
         // implementation
-        // from observable<i_plugin_manager::i_subscriber>
     private:
-        void notify_observer(observer_type& aObserver, notify_type aType, const void* aParameter, const void* aParameter2) override;
         // own
-    private:
         i_ref_ptr<i_plugin>& create_plugin(const i_string& aPluginPath);
         // attributes
     private:

@@ -6,7 +6,7 @@
  * "as is" without express or implied warranty.
  */
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include "string_utils.hpp"
 #include "version.hpp"
 #include "application_info.hpp"

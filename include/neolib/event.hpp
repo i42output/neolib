@@ -19,19 +19,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <vector>
 #include <list>
 #include <unordered_map>
 #include <optional>
 #include <mutex>
-#include "any.hpp"
-#include "allocator.hpp"
-#include "mutex.hpp"
-#include "lifetime.hpp"
-#include "async_task.hpp"
-#include "timer.hpp"
-#include "raii.hpp"
+
+#include <neolib/any.hpp>
+#include <neolib/allocator.hpp>
+#include <neolib/mutex.hpp>
+#include <neolib/lifetime.hpp>
+#include <neolib/async_task.hpp>
+#include <neolib/timer.hpp>
+#include <neolib/raii.hpp>
 
 namespace neolib
 {
@@ -729,7 +730,7 @@ namespace neolib
         }
         virtual ~sink()
         {
-            release();
+            clear();
         }
     public:
         sink& operator=(const sink& aSink)
@@ -754,6 +755,12 @@ namespace neolib
             s.add_ref();
             iHandles.insert(iHandles.end(), s.iHandles.begin(), s.iHandles.end());
             return *this;
+        }
+    public:
+        void clear()
+        {
+            release();
+            iHandles.clear();
         }
     private:
         void add_ref() const

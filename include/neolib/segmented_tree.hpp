@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include "utility.hpp"
 #include "segmented_array.hpp"
 #include "memory.hpp"

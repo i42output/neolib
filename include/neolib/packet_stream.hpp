@@ -35,15 +35,16 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <stdexcept>
 #include <vector>
-#include "async_task.hpp"
-#include "observable.hpp"
-#include "i_packet.hpp"
-#include "binary_packet.hpp"
-#include "string_packet.hpp"
-#include "packet_connection.hpp"
+
+#include <neolib/async_task.hpp>
+#include <neolib/plugin_event.hpp>
+#include <neolib/i_packet.hpp>
+#include <neolib/binary_packet.hpp>
+#include <neolib/string_packet.hpp>
+#include <neolib/packet_connection.hpp>
 
 namespace neolib
 {
@@ -51,40 +52,7 @@ namespace neolib
     class packet_stream;
 
     template <typename PacketType, typename Protocol>
-    class i_packet_stream_observer
-    {
-        // types
-    public:
-        typedef PacketType packet_type;
-        typedef Protocol protocol_type;
-        typedef packet_stream<packet_type, protocol_type> packet_stream_type;
-
-        // interface
-    public:
-        virtual void connection_established(packet_stream_type& aStream) = 0;
-        virtual void connection_failure(packet_stream_type& aStream, const boost::system::error_code& aError) = 0;
-        virtual void packet_sent(packet_stream_type& aStream, const packet_type& aPacket) = 0;
-        virtual void packet_arrived(packet_stream_type& aStream, const packet_type& aPacket) = 0;
-        virtual void transfer_failure(packet_stream_type& aStream, const boost::system::error_code& aError) = 0;
-        virtual void connection_closed(packet_stream_type& aStream) = 0;
-
-        // types
-    public:
-        enum notify_type 
-        { 
-            NotifyConnectionEstablished, 
-            NotifyConnectionFailure, 
-            NotifyPacketSent,
-            NotifyPacketArrived,
-            NotifyTransferFailure,
-            NotifyConnectionClosed
-        };
-    };
-
-    template <typename PacketType, typename Protocol>
-    class packet_stream : 
-        public observable<i_packet_stream_observer<PacketType, Protocol> >,
-        private i_basic_packet_connection_owner<typename PacketType::character_type>
+    class packet_stream : private i_basic_packet_connection_owner<typename PacketType::character_type>
     {
         // types
     public:
@@ -93,12 +61,20 @@ namespace neolib
         typedef std::unique_ptr<packet_stream> pointer;
         typedef i_basic_packet<typename packet_type::character_type> generic_packet_type;
         typedef typename packet_type::clone_pointer packet_clone_pointer;
-        typedef i_packet_stream_observer<packet_type, protocol_type> observer_type;
         typedef basic_packet_connection<typename packet_type::character_type, Protocol> connection_type;
         typedef std::unique_ptr<packet_type> queue_item;
         typedef std::unique_ptr<packet_type> orphaned_queue_item;
         typedef std::vector<queue_item> send_queue;
         
+        // events
+    public:
+        define_event(ConnectionEstablished)
+        define_event(ConnectionFailure, const boost::system::error_code&)
+        define_event(PacketSent, const packet_type&)
+        define_event(PacketArrived, const packet_type&)
+        define_event(TransferFailure, const boost::system::error_code&)
+        define_event(ConnectionClosed)
+
         // construction
     public:
         packet_stream(async_task& aIoTask, bool aSecure = false, protocol_family aProtocolFamily = IPv4) : 
@@ -171,61 +147,36 @@ namespace neolib
         
         // implementation
     private:
-        // from observable<i_packet_stream_observer<PacketType, Protocol> >
-        virtual void notify_observer(observer_type& aObserver, typename observer_type::notify_type aType, const void* aParameter, const void*)
-        {
-            switch(aType)
-            {
-            case observer_type::NotifyConnectionEstablished:
-                aObserver.connection_established(*this);
-                break;
-            case observer_type::NotifyConnectionFailure:
-                aObserver.connection_failure(*this, *static_cast<const boost::system::error_code*>(aParameter));
-                break;
-            case observer_type::NotifyPacketSent:
-                aObserver.packet_sent(*this, *static_cast<const packet_type*>(aParameter));
-                break;
-            case observer_type::NotifyPacketArrived:
-                aObserver.packet_arrived(*this, *static_cast<const packet_type*>(aParameter));
-                break;
-            case observer_type::NotifyTransferFailure:
-                aObserver.transfer_failure(*this, *static_cast<const boost::system::error_code*>(aParameter));
-                break;
-            case observer_type::NotifyConnectionClosed:
-                aObserver.connection_closed(*this);
-                break;
-            }
-        }
         // from i_basic_packet_connection_owner<typename PacketType::character_type>
-        virtual packet_clone_pointer create_empty_packet() const
+        packet_clone_pointer create_empty_packet() const override
         {
             return packet_clone_pointer(new packet_type());
         }
-        virtual void connection_established()
+        void connection_established() override
         {
-            notify_observers(observer_type::NotifyConnectionEstablished);
+            ConnectionEstablished.trigger();
         }
-        virtual void connection_failure(const boost::system::error_code& aError)
+        void connection_failure(const boost::system::error_code& aError) override
         {
-            notify_observers(observer_type::NotifyConnectionFailure, aError);
+            ConnectionFailure.trigger(aError);
         }
-        virtual void packet_sent(const generic_packet_type& aPacket)
+        void packet_sent(const generic_packet_type& aPacket) override
         {
             orphaned_queue_item sentPacket = remove_packet(static_cast<const packet_type&>(aPacket));
-            notify_observers(observer_type::NotifyPacketSent, *sentPacket);
+            PacketSent.trigger(*sentPacket);
         }
-        virtual void packet_arrived(const generic_packet_type& aPacket)
+        void packet_arrived(const generic_packet_type& aPacket) override
         {
-            notify_observers(observer_type::NotifyPacketArrived, static_cast<const packet_type&>(aPacket));
+            PacketArrived.trigger(static_cast<const packet_type&>(aPacket));
         }
-        virtual void transfer_failure(const generic_packet_type& aPacket, const boost::system::error_code& aError)
+        void transfer_failure(const generic_packet_type& aPacket, const boost::system::error_code& aError) override
         {
             orphaned_queue_item failedPacket = remove_packet(static_cast<const packet_type&>(aPacket));
-            notify_observers(observer_type::NotifyTransferFailure, aError);
+            TransferFailure.trigger(aError);
         }
-        virtual void connection_closed()
+        void connection_closed() override
         {
-            notify_observers(observer_type::NotifyConnectionClosed);
+            ConnectionClosed.trigger();
         }
         orphaned_queue_item remove_packet(const packet_type& aPacket)
         {
@@ -249,8 +200,6 @@ namespace neolib
         connection_type iConnection;
     };
 
-    typedef i_packet_stream_observer<binary_packet, tcp_protocol> i_tcp_binary_packet_stream_observer;
     typedef packet_stream<binary_packet, tcp_protocol> tcp_binary_packet_stream;
-    typedef i_packet_stream_observer<string_packet, tcp_protocol> i_tcp_string_packet_stream_observer;
     typedef packet_stream<string_packet, tcp_protocol> tcp_string_packet_stream;
 }

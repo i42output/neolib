@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include "reference_counted.hpp"
 #include "i_iterator.hpp"
 #include "container_helper.hpp"

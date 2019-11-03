@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <string>
 #include <boost/lexical_cast.hpp>
 #include "reference_counted.hpp"

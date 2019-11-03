@@ -35,13 +35,14 @@
 
 #pragma once
 
-#include "neolib.hpp"
-#include "vector.hpp"
-#include "i_reference_counted.hpp"
-#include "uuid.hpp"
-#include "i_string.hpp"
-#include "simple_variant.hpp"
-#include "i_setting.hpp"
+#include <neolib/neolib.hpp>
+#include <neolib/vector.hpp>
+#include <neolib/i_reference_counted.hpp>
+#include <neolib/uuid.hpp>
+#include <neolib/i_string.hpp>
+#include <neolib/simple_variant.hpp>
+#include <neolib/i_plugin_event.hpp>
+#include <neolib/i_setting.hpp>
 
 namespace neolib
 {
@@ -49,24 +50,13 @@ namespace neolib
     {
         friend class setting;
     public:
+        declare_event(settings_changed, const i_string&)
+        declare_event(setting_changed, const i_setting&)
+        declare_event(setting_deleted, const i_setting&)
+        declare_event(interested_in_dirty_settings, bool&)
+    public:
         struct setting_already_registered : std::logic_error { setting_already_registered() : std::logic_error("neolib::i_settings::setting_already_registered") {} };
         struct setting_not_found : std::logic_error { setting_not_found() : std::logic_error("neolib::i_settings::setting_not_found") {} };
-    public:
-        class i_subscriber
-        {
-        public:
-            virtual void settings_changed(const i_string& aSettingCategory) = 0;
-            virtual void setting_changed(const i_setting& aSetting) = 0;
-            virtual void setting_deleted(const i_setting& aSetting) = 0;
-            virtual bool interested_in_dirty_settings() const { return false; }
-        public:
-            enum notify_type
-            {
-                NotifySettingsChanged,
-                NotifySettingChanged,
-                NotifySettingDeleted
-            };
-        };
     public:
         virtual i_setting::id_type register_setting(const i_string& aSettingCategory, const i_string& aSettingName, simple_variant_type aSettingType, const i_simple_variant& aDefaultValue = simple_variant(), bool aHidden = false) = 0;
         i_setting::id_type register_setting(const string& aSettingCategory, const string& aSettingName, simple_variant_type aSettingType, const simple_variant& aDefaultValue = simple_variant(), bool aHidden = false)
@@ -87,9 +77,6 @@ namespace neolib
     public:
         virtual void load() = 0;
         virtual void save() const = 0;
-    public:
-        virtual void subscribe(i_subscriber& aSubscriber) = 0;
-        virtual void unsubscribe(i_subscriber& aSubscriber) = 0;
     public:
         static const uuid& id() { static uuid sId = neolib::make_uuid("E19B3C48-04F7-4207-B24A-2967A3523CE7"); return sId; }
     private:

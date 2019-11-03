@@ -37,7 +37,7 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <cstddef>
 #include <list>
 #include <string>

@@ -33,7 +33,7 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 
 namespace neolib
 {

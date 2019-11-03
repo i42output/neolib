@@ -35,13 +35,14 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <stdexcept>
 #include <vector>
 #include <memory>
-#include "async_task.hpp"
-#include "observable.hpp"
-#include "packet_stream.hpp"
+
+#include <neolib/lifetime.hpp>
+#include <neolib/async_task.hpp>
+#include <neolib/packet_stream.hpp>
 
 namespace neolib
 {
@@ -49,34 +50,12 @@ namespace neolib
     class tcp_packet_stream_server;
 
     template <typename PacketType>
-    class i_tcp_packet_stream_server_observer
+    class tcp_packet_stream_server : protected lifetime
     {
-        // types
     public:
-        typedef PacketType packet_type;
-        typedef tcp_protocol protocol_type;
-        typedef tcp_packet_stream_server<packet_type> tcp_packet_stream_server_type;
-        typedef packet_stream<packet_type, protocol_type> packet_stream_type;
-
-        // interface
-    public:
-        virtual void packet_stream_added(tcp_packet_stream_server_type& aServer, packet_stream_type& aStream) = 0;
-        virtual void packet_stream_removed(tcp_packet_stream_server_type& aServer, packet_stream_type& aStream) = 0;
-        virtual void failed_to_accept_packet_stream(tcp_packet_stream_server_type& aServer, const boost::system::error_code& aError) = 0;
-
-        // types
-    public:
-        enum notify_type 
-        { 
-            NotifyPacketStreamAdded, 
-            NotifyPacketStreamRemoved,
-            NotifyFailedToAcceptPacketStream
-        };
-    };
-
-    template <typename PacketType>
-    class tcp_packet_stream_server : public observable<i_tcp_packet_stream_server_observer<PacketType> >, private i_packet_stream_observer<PacketType, tcp_protocol>
-    {
+        define_event(PacketStreamAdded, packet_stream_added, packet_stream_type&)
+        define_event(PacketStreamRemoved, packet_stream_removed, packet_stream_type&)
+        define_event(FailedToAcceptPacketStream, failed_to_accept_packet_stream, const boost::system::error_code&)
         // types
     public:
         typedef tcp_packet_stream_server<PacketType> our_type;
@@ -129,8 +108,7 @@ namespace neolib
             iSecure(aSecure),
             iProtocolFamily(aProtocolFamily & IPv4 ? protocol_type::v4() : protocol_type::v6()),
             iLocalEndpoint(iProtocolFamily, iLocalPort),
-            iAcceptor(aIoTask.networking_io_service().native_object(), iLocalEndpoint), 
-            iClosing(false)
+            iAcceptor(aIoTask.networking_io_service().native_object(), iLocalEndpoint)
         {
             accept_connection();
         }
@@ -142,14 +120,13 @@ namespace neolib
             iSecure(aSecure),
             iProtocolFamily(aProtocolFamily & IPv4 ? protocol_type::v4() : protocol_type::v6()),
             iLocalEndpoint(resolve(aIoTask, iLocalHostName, iLocalPort, iProtocolFamily)),
-            iAcceptor(aIoTask.networking_io_service().native_object(), iLocalEndpoint),
-            iClosing(false)
+            iAcceptor(aIoTask.networking_io_service().native_object(), iLocalEndpoint)
         {
             accept_connection();
         }
         ~tcp_packet_stream_server()
         {
-            iClosing = true;
+            set_destroying();
             for (stream_list::iterator i = iStreamList.begin(); i != iStreamList.end(); ++i)
                 delete *i;
             iStreamList.clear();
@@ -178,46 +155,7 @@ namespace neolib
         
         // implementation
     private:
-        // from observable<i_tcp_packet_stream_server_observer<PacketType> >
-        virtual void notify_observer(observer_type& aObserver, typename observer_type::notify_type aType, const void* aParameter, const void*)
-        {
-            switch(aType)
-            {
-            case observer_type::NotifyPacketStreamAdded:
-                aObserver.packet_stream_added(*this, *static_cast<packet_stream_type*>(const_cast<void*>(aParameter)));
-                break;
-            case observer_type::NotifyPacketStreamRemoved:
-                aObserver.packet_stream_removed(*this, *static_cast<packet_stream_type*>(const_cast<void*>(aParameter)));
-                break;
-            case observer_type::NotifyFailedToAcceptPacketStream:
-                aObserver.failed_to_accept_packet_stream(*this, *static_cast<const boost::system::error_code*>(aParameter));
-                break;
-            }
-        }
-        // from i_packet_stream_observer<PacketType, tcp_protocol>
-        virtual void connection_established(packet_stream_type&) {}
-        virtual void connection_failure(packet_stream_type&, const boost::system::error_code&) {}
-        virtual void packet_sent(packet_stream_type&, const packet_type&) {}
-        virtual void packet_arrived(packet_stream_type&, const packet_type&) {}
-        virtual void transfer_failure(packet_stream_type&, const boost::system::error_code&) {}
-        virtual void connection_closed(packet_stream_type& aStream)
-        {
-            if (!iClosing)
-            {
-                for (typename stream_list::iterator i = iStreamList.begin(); i != iStreamList.end(); ++i)
-                    if (&**i == &aStream)
-                    {
-                        packet_stream_pointer closingStream(*i);
-                        iStreamList.erase(i);
-                        notify_observers(observer_type::NotifyPacketStreamRemoved, *closingStream);
-                        break;
-                    }
-            }
-            else
-                notify_observers(observer_type::NotifyPacketStreamRemoved, aStream);
-        }
         // own
-    private:
         static endpoint_type resolve(async_task& aIoTask, const std::string& aHostname, unsigned short aPort, protocol_type aProtocolFamily)
         {
             resolver_type resolver(aIoTask.networking_io_service().native_object());
@@ -240,6 +178,24 @@ namespace neolib
             if (iAcceptingStream != nullptr)
                 return;
             iAcceptingStream = packet_stream_pointer(new packet_stream_type(iIoTask, iSecure, iLocalEndpoint.protocol() == protocol_type::v4() ? IPv4 : IPv6));
+            auto acceptingStream = &*iAcceptingStream;
+            iAcceptingStream->connection_closed([this, acceptingStream]
+            {
+                if (is_alive())
+                {
+                    for (typename stream_list::iterator i = iStreamList.begin(); i != iStreamList.end(); ++i)
+                        if (&**i == acceptingStream)
+                        {
+                            packet_stream_pointer keepObjectAlive(*i);
+                            iStreamList.erase(i);
+                            PacketStreamRemoved.trigger(*acceptingStream);
+                            break;
+                        }
+                }
+                else
+                    PacketStreamRemoved.trigger(*acceptingStream);
+            }
+
             iAcceptingStream->add_observer(*this);
             iAcceptingStream->connection().open(true);
             iAcceptor.async_accept(iAcceptingStream->connection().socket(), boost::bind(&handler_proxy::operator(), iHandlerProxy, boost::asio::placeholders::error));
@@ -273,9 +229,7 @@ namespace neolib
         acceptor_type iAcceptor;
         packet_stream_pointer iAcceptingStream;
         stream_list iStreamList;
-        bool iClosing;
     };
 
     typedef tcp_packet_stream_server<string_packet> tcp_string_packet_stream_server;
-    typedef i_tcp_packet_stream_server_observer<string_packet> tcp_string_packet_stream_server_observer;
 }

@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include "neolib.hpp"
+#include <neolib/neolib.hpp>
 #include <string>
 #include <string_view>
 #include <boost/spirit/include/qi_parse.hpp>

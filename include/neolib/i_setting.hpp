@@ -35,10 +35,10 @@
 
 #pragma once
 
-#include "neolib.hpp"
-#include "i_reference_counted.hpp"
-#include "i_string.hpp"
-#include "i_simple_variant.hpp"
+#include <neolib/neolib.hpp>
+#include <neolib/i_reference_counted.hpp>
+#include <neolib/i_string.hpp>
+#include <neolib/i_simple_variant.hpp>
 
 namespace neolib
 {
