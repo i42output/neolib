@@ -38,9 +38,10 @@
 #include <neolib/neolib.hpp>
 #include <stdexcept>
 #include <boost/bind.hpp>
-#include "noncopyable.hpp"
-#include "async_task.hpp"
-#include "lifetime.hpp"
+
+#include <neolib/noncopyable.hpp>
+#include <neolib/async_task.hpp>
+#include <neolib/lifetime.hpp>
 
 namespace neolib
 {
@@ -80,6 +81,7 @@ namespace neolib
         // construction
     public:
         timer(async_task& aIoTask, uint32_t aDuration_ms, bool aInitialWait = true);
+        timer(async_task& aIoTask, const i_lifetime& aContext, uint32_t aDuration_ms, bool aInitialWait = true);
         timer(const timer& aOther);
         timer& operator=(const timer& aOther);
         virtual ~timer();
@@ -105,6 +107,7 @@ namespace neolib
         // attributes
     private:
         async_task& iIoTask;
+        optional_destroyed_flag iContextDestroyed;
         std::shared_ptr<handler_proxy> iHandlerProxy;
         boost::asio::deadline_timer iTimerObject;
         uint32_t iDuration_ms;
@@ -117,6 +120,7 @@ namespace neolib
     {
     public:
         callback_timer(async_task& aIoTask, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true);
+        callback_timer(async_task& aIoTask, const i_lifetime& aContext, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true);
         ~callback_timer();
     private:
         virtual void ready();
