@@ -53,8 +53,6 @@
 #endif
 
 #ifdef USING_BOOST
-#undef _HAS_AUTO_PTR_ETC
-#define _HAS_AUTO_PTR_ETC 1
 #define BOOST_STACKTRACE_USE_WINDBG_CACHED
 #define BOOST_ASIO_NO_WIN32_LEAN_AND_MEAN
 #include <boost/asio.hpp>

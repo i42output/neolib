@@ -250,7 +250,7 @@ namespace neolib
         }
         value_type& operator[](cookie_type aCookie)
         {
-            return const_cast<value_type&>(const_cast<const basic_cookie_jar&>(*this)[aCookie]);
+            return const_cast<value_type&>(to_const(*this)[aCookie]);
         }
         template <typename T>
         iterator add(T&& aItem)

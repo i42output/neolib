@@ -1777,7 +1777,7 @@ namespace neolib
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
     inline typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::json_value& basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::root()
     {
-        return const_cast<json_value&>(const_cast<const self_type*>(this)->root());
+        return const_cast<json_value&>(to_const(*this).root());
     }
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
@@ -1887,9 +1887,9 @@ namespace neolib
                 auto newObject = iCompositeValueStack.back()->buy_child(std::forward<T>(aValue));
                 newObject->set_document_source_location(iCursor);
                 if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_array>)
-                    newObject->template as<json_array>().set_owner(*newObject);
+                    newObject->template as<json_array>().set_contents(*newObject);
                 else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_object>)
-                    newObject->template as<json_object>().set_owner(*newObject);
+                    newObject->template as<json_object>().set_contents(*newObject);
                 return newObject;
             }
         case json_type::Object:
@@ -1897,9 +1897,9 @@ namespace neolib
                 auto newObject = iCompositeValueStack.back()->buy_child(std::forward<T>(aValue));
                 newObject->set_document_source_location(iCursor);
                 if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_array>)
-                    newObject->template as<json_array>().set_owner(*newObject);
+                    newObject->template as<json_array>().set_contents(*newObject);
                 else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<T>::type>::type, json_object>)
-                    newObject->template as<json_object>().set_owner(*newObject);
+                    newObject->template as<json_object>().set_contents(*newObject);
                 if (std::holds_alternative<json_string>(aCurrentElement.name))
                     newObject->set_name(std::get<json_string>(aCurrentElement.name));
                 else

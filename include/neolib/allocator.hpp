@@ -534,7 +534,7 @@ namespace neolib
         }
         small_buffer_type& buffer()
         {
-            return const_cast<small_buffer_type&>(const_cast<const basic_small_buffer_allocator*>(this)->buffer());
+            return const_cast<small_buffer_type&>(to_const(*this).buffer());
         }
     private:
         small_buffer_type* iBuffer;

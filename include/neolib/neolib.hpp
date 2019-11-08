@@ -36,17 +36,26 @@
 
 #pragma once
 
+#include <type_traits>
+#include <cstdint>
+
 #ifdef NDEBUG
 constexpr bool ndebug = true;
 #else
 constexpr bool ndebug = false;
 #endif
 
-#include <cstdint>
-
 struct sfinae {};
 
 #define rvalue_cast static_cast
+
+template <typename T>
+using to_const_reference_t = const std::remove_reference_t<T>&;
+template <typename T>
+inline to_const_reference_t<T> to_const(T&& object)
+{
+    return const_cast<to_const_reference_t<T>>(object);
+}
 
 #ifdef NEOLIB_HOSTED_ENVIRONMENT
 

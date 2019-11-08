@@ -157,7 +157,7 @@ namespace neolib
 
     i_ref_ptr<i_plugin>& plugin_manager::find_plugin(const uuid& aId)
     {
-        return const_cast<i_ref_ptr<i_plugin>&>(const_cast<const plugin_manager*>(this)->find_plugin(aId));
+        return const_cast<i_ref_ptr<i_plugin>&>(to_const(*this).find_plugin(aId));
     }
 
     bool plugin_manager::open_uri(const i_string& aUri)

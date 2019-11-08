@@ -241,7 +241,7 @@ namespace neolib
             }
             json_value* next_parent_sibling()
             {
-                return const_cast<json_value*>(const_cast<const self_type*>(this)->next_parent_sibling());
+                return const_cast<json_value*>(to_const(*this).next_parent_sibling());
             }
         private:
             json_value* allocate_child()
@@ -321,11 +321,11 @@ namespace neolib
             typename std::allocator_traits<allocator_type>::template rebind_alloc<std::pair<const json_string, json_value*>>> dictionary_type;
     public:
         basic_json_object() :
-            iOwner{ nullptr }
+            iContents{ nullptr }
         {
         }
         basic_json_object(json_value& aOwner) :
-            iOwner{ &aOwner }
+            iContents{ &aOwner }
         {
         }
     public:
@@ -342,26 +342,26 @@ namespace neolib
         }
         json_value& at(const json_string& aKey)
         {
-            return const_cast<json_value&>(const_cast<const self_type*>(this)->at(aKey));
+            return const_cast<json_value&>(to_const(*this).at(aKey));
         }
         json_value& operator[](const json_string& aKey)
         {
             auto existing = cache().find(aKey);
             if (existing != cache().end())
                 return *existing->second;
-            auto& newChild = owner().emplace_back(value_type{});
+            auto& newChild = contents().emplace_back(value_type{});
             newChild.set_name(aKey.as_string());
             cache().emplace(newChild.name(), &newChild);
             return newChild;
         }
-    private:
-        json_value& owner() const
+    public:
+        json_value& contents() const
         {
-            return *iOwner;
+            return *iContents;
         }
-        void set_owner(json_value& aOwner)
+        void set_contents(json_value& aOwner)
         {
-            iOwner = &aOwner;
+            iContents = &aOwner;
         }
     private:
         const dictionary_type& cache() const
@@ -369,16 +369,16 @@ namespace neolib
             if (iLazyDictionary != nullptr)
                 return *iLazyDictionary;
             iLazyDictionary = std::make_unique<dictionary_type>(); // todo: use allocator_type
-            for (auto i = owner().begin(); i != owner().end(); ++i)
+            for (auto i = contents().begin(); i != contents().end(); ++i)
                 iLazyDictionary->emplace(i.value().name(), &i.value());
             return *iLazyDictionary;
         }
         dictionary_type& cache()
         {
-            return const_cast<dictionary_type&>(const_cast<const self_type*>(this)->cache());
+            return const_cast<dictionary_type&>(to_const(*this).cache());
         }
     private:
-        json_value* iOwner;
+        json_value* iContents;
         mutable std::unique_ptr<dictionary_type> iLazyDictionary;
     };
 
@@ -400,17 +400,17 @@ namespace neolib
         typedef std::vector<json_value*> array_type;
     public:
         basic_json_array() :
-            iOwner{ nullptr }
+            iContents{ nullptr }
         {
         }
         basic_json_array(json_value& aOwner) :
-            iOwner{ aOwner }
+            iContents{ aOwner }
         {
         }
     public:
         json_value& push_back(const value_type& aValue)
         {
-            auto& newChild = owner().emplace_back(aValue);
+            auto& newChild = contents().emplace_back(aValue);
             cache().emplace_back(&newChild);
             return newChild;
         }
@@ -421,11 +421,11 @@ namespace neolib
     public:
         json_value& owner() const
         {
-            return *iOwner;
+            return *iContents;
         }
-        void set_owner(json_value& aOwner)
+        void set_contents(json_value& aOwner)
         {
-            iOwner = &aOwner;
+            iContents = &aOwner;
         }
     private:
         const array_type& cache() const
@@ -433,16 +433,16 @@ namespace neolib
             if (iLazyArray != nullptr)
                 return *iLazyArray;
             iLazyArray = std::make_unique<array_type>(); // todo: use allocator_type
-            for (auto & e : owner())
+            for (auto & e : contents())
                 cache().emplace_back(&e);
             return *iLazyArray;
         }
         array_type& cache()
         {
-            return const_cast<array_type&>(const_cast<const self_type*>(this)->cache());
+            return const_cast<array_type&>(to_const(*this).cache());
         }
     private:
-        json_value* iOwner;
+        json_value* iContents;
         mutable std::unique_ptr<array_type> iLazyArray;
     };
 
@@ -568,13 +568,13 @@ namespace neolib
         reference operator=(const value_type& aValue)
         {
             iValue = aValue;
-            update_owner();
+            update_contents();
             return *this;
         }
         reference operator=(value_type&& aValue)
         {
             iValue = std::move(aValue);
-            update_owner();
+            update_contents();
             return *this;
         }
     public:
@@ -786,12 +786,12 @@ namespace neolib
         {
             return iNode.buy_child(*this, std::forward<Args>(aArguments)...);
         }
-        void update_owner()
+        void update_contents()
         {
             if (type() == json_type::Object)
-                std::get<json_object>(iValue).set_owner(*this);
+                std::get<json_object>(iValue).set_contents(*this);
             else if (type() == json_type::Array)
-                std::get<json_array>(iValue).set_owner(*this);
+                std::get<json_array>(iValue).set_contents(*this);
         }
     private:
         node_type iNode;

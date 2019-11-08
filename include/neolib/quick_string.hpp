@@ -539,7 +539,7 @@ namespace neolib
         }
         string_type& get_string()
         { 
-            return const_cast<string_type&>(const_cast<const basic_quick_string*>(this)->get_string());
+            return const_cast<string_type&>(to_const(*this).get_string());
         }
         const string_view_type& get_view_string() const
         {
@@ -549,7 +549,7 @@ namespace neolib
         }
         string_view_type& get_view_string()
         { 
-            return const_cast<string_view_type&>(const_cast<const basic_quick_string*>(this)->get_view_string());
+            return const_cast<string_view_type&>(to_const(*this).get_view_string());
         }
     private:
         mutable contents_type iContents;

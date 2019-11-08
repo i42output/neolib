@@ -97,7 +97,7 @@ namespace neolib
         }
         virtual base_type* release_and_take_ownership()
         {
-            return const_cast<base_type*>(const_cast<const reference_counted*>(this)->release_and_take_ownership());
+            return const_cast<base_type*>(to_const(*this).release_and_take_ownership());
         }
         virtual void pin() const
         {
