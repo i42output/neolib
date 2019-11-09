@@ -46,10 +46,17 @@ namespace neolib
 {
     std::string settings_folder(const std::string& aApplicationName, const std::string& aCompanyName);
 
+    typedef vector<i_string, string> program_arguments_t;
+    inline program_arguments_t to_program_arguments(int argc, char* argv[])
+    {
+        program_arguments_t result;
+        for (auto arg = 0; arg < argc; ++arg)
+            result.push_back(neolib::string{ argv[arg] });
+        return result;
+    }
+
     class application_info : public i_application_info
     {
-    public:
-        typedef vector<i_string, string> program_arguments_t;
     public:
         application_info(
             const program_arguments_t& aArguments = program_arguments_t{},
@@ -71,8 +78,8 @@ namespace neolib
             iDataFolder{ aDataFolder },
             iPluginExtension{ aPluginExtension }
         {
-            if (std::find(iArguments.container().begin(), iArguments.container().end(), neolib::ci_string("/pocket")) != iArguments.container().end() ||
-                std::find(iArguments.container().begin(), iArguments.container().end(), neolib::ci_string("-pocket")) != iArguments.container().end())
+            if (std::find(std::next(iArguments.container().begin()), iArguments.container().end(), neolib::ci_string("/pocket")) != iArguments.container().end() ||
+                std::find(std::next(iArguments.container().begin()), iArguments.container().end(), neolib::ci_string("-pocket")) != iArguments.container().end())
             {
                 iSettingsFolder = iApplicationFolder;
             }
