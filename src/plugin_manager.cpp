@@ -184,7 +184,10 @@ namespace neolib
             if (tNewPlugin == nullptr)
                 return tNewPlugin;
             iPlugins.push_back(tNewPlugin);
-            iModules[tNewPlugin->id()] = std::move(pm);
+            auto& newPlugin = iPlugins.back();
+            tNewPlugin = nullptr;
+            iModules[newPlugin->id()] = std::move(pm);
+            return newPlugin;
         }
         catch (const std::exception& e)
         {
@@ -194,6 +197,5 @@ namespace neolib
         {
             throw plugin_exception<std::runtime_error>("Unknown exception");
         }
-        return tNewPlugin;
     }
 }
