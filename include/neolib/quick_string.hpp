@@ -572,6 +572,16 @@ namespace neolib
         class Traits,
         class Alloc> inline
         std::basic_string<charT, Traits, Alloc> operator+(
+            const std::basic_string<charT, Traits, Alloc>& _Left,
+            const basic_quick_string<charT, Traits, Alloc>& _Right)
+        {    // return NTCS + basic_quick_string
+        return _Left + static_cast<std::basic_string<charT, Traits, Alloc>>(_Right);
+        }
+
+    template<class charT,
+        class Traits,
+        class Alloc> inline
+        std::basic_string<charT, Traits, Alloc> operator+(
             const charT *_Left,
             const basic_quick_string<charT, Traits, Alloc>& _Right)
         {    // return NTCS + basic_quick_string
@@ -586,6 +596,16 @@ namespace neolib
             const basic_quick_string<charT, Traits, Alloc>& _Right)
         {    // return character + basic_quick_string
         return _Left + static_cast<std::basic_string<charT, Traits, Alloc>>(_Right);
+        }
+
+    template<class charT,
+        class Traits,
+        class Alloc> inline
+        std::basic_string<charT, Traits, Alloc> operator+(
+            const basic_quick_string<charT, Traits, Alloc>& _Left,
+            const std::basic_string<charT, Traits, Alloc>& _Right)
+        {    // return basic_quick_string + NTCS
+        return static_cast<std::basic_string<charT, Traits, Alloc>>(_Left) + _Right;
         }
 
     template<class charT,
