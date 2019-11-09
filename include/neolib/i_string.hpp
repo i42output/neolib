@@ -37,6 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <string>
+#include <string_view>
 #include <iostream>
 #include "fwd_abstract.hpp"
 #include "i_sequence_container.hpp"

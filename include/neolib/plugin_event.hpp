@@ -83,7 +83,8 @@ namespace neolib
         {
         public:
             typedef neolib::event<Arguments...> base;
-            typedef i_event_handle<Arguments...> handle;
+            typedef typename i_event<Arguments...>::handle handle;
+            typedef typename i_event<Arguments...>::callback callback;
             typedef event_handle<Arguments...> concrete_handle;
         public:
             using base::base;

@@ -39,14 +39,14 @@ namespace neolib
         public:
             virtual ~i_event_callback() {}
         public:
-            std::unique_ptr<i_event_callback> clone() const
+            std::unique_ptr<i_event_callback<Arguments...>> clone() const
             {
-                return std::unique_ptr<i_event_callback>{ do_clone() };
+                return std::unique_ptr<i_event_callback<Arguments...>>{ do_clone() };
             }
         public:
             virtual void operator()(Arguments... aArguments) const = 0;
         private:
-            virtual i_event_callback* do_clone() const = 0;
+            virtual i_event_callback<Arguments...>* do_clone() const = 0;
         };
 
         template <typename... Arguments>
@@ -62,7 +62,7 @@ namespace neolib
                 base::operator()(aArguments...);
             }
         private:
-            i_event_callback* do_clone() const override
+            i_event_callback<Arguments...>* do_clone() const override
             {
                 return new event_callback{ *this };
             }
