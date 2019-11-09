@@ -208,11 +208,11 @@ namespace neolib
             return *this;
         }
     public:
-        virtual bool reference_counted() const
+        bool reference_counted() const override
         {
             return iReferenceCounted;
         }
-        virtual void reset(Interface* aObject = nullptr, bool aReferenceCounted = true)
+        void reset(Interface* aObject = nullptr, bool aReferenceCounted = true) override
         {
             ref_ptr copy(*this);
             if (valid() && iReferenceCounted)
@@ -222,7 +222,7 @@ namespace neolib
             if (valid() && iReferenceCounted)
                 iObject->add_ref();
         }
-        virtual Interface* release()
+        Interface* release() override
         {
             if (iObject == nullptr)
                 throw no_object();
@@ -230,21 +230,21 @@ namespace neolib
             iObject = nullptr;
             return releasedObject;
         }
-        virtual bool valid() const
+        bool valid() const override
         {
             return iObject != nullptr;
         }
-        virtual Interface* ptr() const
+        Interface* ptr() const override
         {
             return iObject;
         }
-        virtual Interface* operator->() const
+        Interface* operator->() const override
         {
             if (iObject == nullptr)
                 throw no_object();
             return iObject;
         }
-        virtual Interface& operator*() const
+        Interface& operator*() const override
         {
             if (iObject == nullptr)
                 throw no_object();

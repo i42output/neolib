@@ -83,9 +83,9 @@ namespace neolib
         i_ref_ptr& operator=(const i_ref_ptr& aOther) { reset(aOther.ptr(), aOther.reference_counted()); return *this; }
         template <typename Interface2>
         i_ref_ptr& operator=(const i_ref_ptr<Interface2>& aOther) { reset(aOther.ptr(), aOther.reference_counted()); return *this; }
-        operator bool() explicit const { return ptr() != nullptr; }
-        bool operator==(nullptr_t) const { return ptr() == nullptr; }
-        bool operator!=(nullptr_t) const { return ptr() != nullptr; }
+        operator bool() explicit const { return valid(); }
+        bool operator==(nullptr_t) const { return !valid(); }
+        bool operator!=(nullptr_t) const { return valid(); }
         template <typename Interface>
         bool operator==(const i_ref_ptr<Interface>& aOther) const { return ptr() == aOther.ptr(); }
         template <typename Interface>

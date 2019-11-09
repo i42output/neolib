@@ -79,16 +79,16 @@ namespace neolib
         typedef std::optional<ConcreteType> container_type;
     public:
         custom_type(const string& aName) :
-            iName(aName) {}
+            iName{ aName } {}
         custom_type(const string& aName, const AbstractType& aInstance) :
-            iName(aName), iInstance(aInstance) {}
+            iName{ aName }, iInstance{ aInstance } {}
         custom_type(const i_custom_type& aOther) :
-            iName(aOther.name()), iInstance(aOther.instance_ptr() ? container_type(aOther.instance_as<AbstractType>()), container_type()) {}
+            iName{ aOther.name() }, iInstance{ aOther.instance_ptr() ? container_type{aOther.instance_as<AbstractType>()} : container_type{} } {}
         ~custom_type() {}
     public:
         virtual const i_string& name() const { return iName; }
         virtual i_string& name() { return iName; }
-        virtual i_string* to_string() const { if (!!iInstance) return detail::to_string<type_traits::has_saving_support<AbstractType>::value>()(*iInstance); else return new string(); }
+        virtual i_string* to_string() const { if (!!iInstance) return detail::to_string<type_traits::template has_saving_support<AbstractType>::value>()(*iInstance); else return new string(); }
         virtual i_custom_type* clone() const { return new custom_type(*this); }
         virtual i_custom_type& assign(const i_custom_type& aRhs)
         {
