@@ -96,7 +96,7 @@ namespace neolib
             variant_type::operator=(std::forward<T>(aValue));
             return *this;
         }
-        simple_variant& operator=(const i_simple_variant& aVariant)
+        simple_variant& operator=(const i_simple_variant& aVariant) override
         {
             switch (aVariant.type())
             {

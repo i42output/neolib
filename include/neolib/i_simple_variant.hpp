@@ -63,6 +63,8 @@ namespace neolib
         struct type_mismatch : std::logic_error { type_mismatch() : std::logic_error("neolib::i_variant::type_mismatch") {} };
         struct unsupported_operation : std::logic_error { unsupported_operation(const std::string& aReason) : std::logic_error("neolib::simple_variant::unsupported_operation (" + aReason + ")") {} };
     public:
+        virtual i_simple_variant& operator=(const i_simple_variant& aOther) = 0;
+    public:
         virtual simple_variant_type type() const = 0;
         bool is(simple_variant_type aType) const { return type() == aType; }
         bool empty() const { return is(simple_variant_type::Empty); }
