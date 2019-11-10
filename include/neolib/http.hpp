@@ -72,10 +72,10 @@ namespace neolib
     {
         // events
     public:
-        define_event(Started)
-        define_event(Progress)
-        define_event(Completed)
-        define_event(Failure)
+        define_event(Started, started)
+        define_event(Progress, progress)
+        define_event(Completed, completed)
+        define_event(Failure, failure)
 
         // types
     public:

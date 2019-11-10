@@ -137,23 +137,59 @@ namespace neolib
             virtual void do_unsubscribe(const void* aUniqueId) const = 0;
         };
 
+        #define detail_event_subscribe( declName, ... ) \
+            std::unique_ptr<neolib::plugin_events::i_event_handle<__VA_ARGS__>> declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, const void* aUniqueId = nullptr) const { return declName()(aCallback, aUniqueId); }\
+            std::unique_ptr<neolib::plugin_events::i_event_handle<__VA_ARGS__>> declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, const void* aUniqueId = nullptr) { return declName()(aCallback, aUniqueId); }\
+            template <typename T>\
+            std::unique_ptr<neolib::plugin_events::i_event_handle<__VA_ARGS__>> declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, const T* aUniqueObject) const { return declName()(aCallback, static_cast<const void*>(aUniqueObject)); }\
+            template <typename T>\
+            std::unique_ptr<neolib::plugin_events::i_event_handle<__VA_ARGS__>> declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, const T* aUniqueObject) { return declName()(aCallback, static_cast<const void*>(aUniqueObject)); }\
+            template <typename T>\
+            std::unique_ptr<neolib::plugin_events::i_event_handle<__VA_ARGS__>> declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, T&& aUniqueObject) const { return declName()(aCallback, static_cast<const void*>(&aUniqueObject)); }\
+            template <typename T>\
+            std::unique_ptr<neolib::plugin_events::i_event_handle<__VA_ARGS__>> declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, T&& aUniqueObject) { return declName()(aCallback, static_cast<const void*>(&aUniqueObject)); }
+
         #define declare_event( declName, ... ) \
             virtual const neolib::plugin_events::i_event<__VA_ARGS__>& ev_##declName() const = 0;\
             virtual neolib::plugin_events::i_event<__VA_ARGS__>& ev_##declName() = 0;\
             const neolib::plugin_events::i_event<__VA_ARGS__>& declName() const { return ev_##declName(); }\
             neolib::plugin_events::i_event<__VA_ARGS__>& declName() { return ev_##declName(); }\
-            std::unique_ptr<neolib::plugin_events::i_event_handle<__VA_ARGS__>> declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback) const { return declName()(aCallback); }\
-            std::unique_ptr<neolib::plugin_events::i_event_handle<__VA_ARGS__>> declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback) { return declName()(aCallback); }
+            detail_event_subscribe(declName, __VA_ARGS__)
+
+        #define declare_event_2( declName, ... ) \
+            virtual const neolib::plugin_events::i_event<__VA_ARGS__>& ev_2_##declName() const = 0;\
+            virtual neolib::plugin_events::i_event<__VA_ARGS__>& ev__2##declName() = 0;\
+            const neolib::plugin_events::i_event<__VA_ARGS__>& declName() const { return ev_2_##declName(); }\
+            neolib::plugin_events::i_event<__VA_ARGS__>& declName() { return ev_2_##declName(); }\
+            detail_event_subscribe(declName, __VA_ARGS__)
 
         template <typename... Arguments>
         class event;
-
-        #define define_event( name, ... ) \
-            neolib::plugin_events::event<__VA_ARGS__> name;
 
         #define define_declared_event( name, declName, ... ) \
             neolib::plugin_events::event<__VA_ARGS__> name; \
             const neolib::plugin_events::i_event<__VA_ARGS__>& ev_##declName() const override { return name; };\
             neolib::plugin_events::i_event<__VA_ARGS__>& ev_##declName() override { return name; };
+
+        #define define_declared_event_2( name, declName, ... ) \
+            neolib::plugin_events::event<__VA_ARGS__> name; \
+            const neolib::plugin_events::i_event<__VA_ARGS__>& ev_2_##declName() const override { return name; };\
+            neolib::plugin_events::i_event<__VA_ARGS__>& ev_2_##declName() override { return name; };
+
+        #define define_event( name, declName, ... ) \
+            neolib::plugin_events::event<__VA_ARGS__> name; \
+            const neolib::plugin_events::i_event<__VA_ARGS__>& ev_##declName() const { return name; };\
+            neolib::plugin_events::i_event<__VA_ARGS__>& ev_##declName() { return name; };\
+            const neolib::plugin_events::i_event<__VA_ARGS__>& declName() const { return ev_##declName(); }\
+            neolib::plugin_events::i_event<__VA_ARGS__>& declName() { return ev_##declName(); }\
+            detail_event_subscribe(declName, __VA_ARGS__)
+
+        #define define_event_2( name, declName, ... ) \
+            neolib::plugin_events::event<__VA_ARGS__> name; \
+            const neolib::plugin_events::i_event<__VA_ARGS__>& ev_2_##declName() const { return name; };\
+            neolib::plugin_events::i_event<__VA_ARGS__>& ev_2_##declName() { return name; };\
+            const neolib::plugin_events::i_event<__VA_ARGS__>& declName() const { return ev_2_##declName(); }\
+            neolib::plugin_events::i_event<__VA_ARGS__>& declName() { return ev_2_##declName(); }\
+            detail_event_subscribe(declName, __VA_ARGS__)
    }
 }

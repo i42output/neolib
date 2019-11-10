@@ -53,9 +53,9 @@ namespace neolib
     class tcp_packet_stream_server : protected lifetime
     {
     public:
-        define_event(PacketStreamAdded, packet_stream_added, packet_stream_type&)
-        define_event(PacketStreamRemoved, packet_stream_removed, packet_stream_type&)
-        define_event(FailedToAcceptPacketStream, failed_to_accept_packet_stream, const boost::system::error_code&)
+        define_event(PacketStreamAdded, packet_stream_added, packet_stream_added, packet_stream_type&)
+        define_event(PacketStreamRemoved, packet_stream_removed, packet_stream_removed, packet_stream_type&)
+        define_event(FailedToAcceptPacketStream, failed_to_accept_packet_stream, failed_to_accept_packet_stream, const boost::system::error_code&)
         // types
     public:
         typedef tcp_packet_stream_server<PacketType> our_type;

@@ -68,12 +68,12 @@ namespace neolib
         
         // events
     public:
-        define_event(ConnectionEstablished)
-        define_event(ConnectionFailure, const boost::system::error_code&)
-        define_event(PacketSent, const packet_type&)
-        define_event(PacketArrived, const packet_type&)
-        define_event(TransferFailure, const boost::system::error_code&)
-        define_event(ConnectionClosed)
+        define_event(ConnectionEstablished, connection_established)
+        define_event(ConnectionFailure, connection_failure, const boost::system::error_code&)
+        define_event(PacketSent, packet_sent, const packet_type&)
+        define_event(PacketArrived, packet_arrived, const packet_type&)
+        define_event(TransferFailure, transfer_failure, const boost::system::error_code&)
+        define_event(ConnectionClosed, connection_closed)
 
         // construction
     public:
@@ -148,33 +148,33 @@ namespace neolib
         // implementation
     private:
         // from i_basic_packet_connection_owner<typename PacketType::character_type>
-        packet_clone_pointer create_empty_packet() const override
+        packet_clone_pointer handle_create_empty_packet() const override
         {
             return packet_clone_pointer(new packet_type());
         }
-        void connection_established() override
+        void handle_connection_established() override
         {
             ConnectionEstablished.trigger();
         }
-        void connection_failure(const boost::system::error_code& aError) override
+        void handle_connection_failure(const boost::system::error_code& aError) override
         {
             ConnectionFailure.trigger(aError);
         }
-        void packet_sent(const generic_packet_type& aPacket) override
+        void handle_packet_sent(const generic_packet_type& aPacket) override
         {
             orphaned_queue_item sentPacket = remove_packet(static_cast<const packet_type&>(aPacket));
             PacketSent.trigger(*sentPacket);
         }
-        void packet_arrived(const generic_packet_type& aPacket) override
+        void handle_packet_arrived(const generic_packet_type& aPacket) override
         {
             PacketArrived.trigger(static_cast<const packet_type&>(aPacket));
         }
-        void transfer_failure(const generic_packet_type& aPacket, const boost::system::error_code& aError) override
+        void handle_transfer_failure(const generic_packet_type& aPacket, const boost::system::error_code& aError) override
         {
             orphaned_queue_item failedPacket = remove_packet(static_cast<const packet_type&>(aPacket));
             TransferFailure.trigger(aError);
         }
-        void connection_closed() override
+        void handle_connection_closed() override
         {
             ConnectionClosed.trigger();
         }

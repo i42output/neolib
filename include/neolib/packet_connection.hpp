@@ -64,13 +64,13 @@ namespace neolib
         typedef typename packet_type::clone_pointer packet_clone_pointer;
         // interface
     public:
-        virtual packet_clone_pointer create_empty_packet() const = 0;
-        virtual void connection_established() = 0;
-        virtual void connection_failure(const boost::system::error_code& aError) = 0;
-        virtual void packet_sent(const packet_type& aPacket) = 0;
-        virtual void packet_arrived(const packet_type& aPacket) = 0;
-        virtual void transfer_failure(const packet_type& aPacket, const boost::system::error_code& aError) = 0;
-        virtual void connection_closed() = 0;
+        virtual packet_clone_pointer handle_create_empty_packet() const = 0;
+        virtual void handle_connection_established() = 0;
+        virtual void handle_connection_failure(const boost::system::error_code& aError) = 0;
+        virtual void handle_packet_sent(const packet_type& aPacket) = 0;
+        virtual void handle_packet_arrived(const packet_type& aPacket) = 0;
+        virtual void handle_transfer_failure(const packet_type& aPacket, const boost::system::error_code& aError) = 0;
+        virtual void handle_connection_closed() = 0;
     };
 
     typedef i_basic_packet_connection_owner<char> packet_connection_owner;
@@ -169,7 +169,7 @@ namespace neolib
             iConnected(false),
             iPacketBeingSent(nullptr),
             iReceiveBufferPtr(&iReceiveBuffer[0]),
-            iReceivePacket(aOwner.create_empty_packet())
+            iReceivePacket(aOwner.handle_create_empty_packet())
         {
         }
         basic_packet_connection(
@@ -193,7 +193,7 @@ namespace neolib
             iConnected(false),
             iPacketBeingSent(nullptr),
             iReceiveBufferPtr(&iReceiveBuffer[0]),
-            iReceivePacket(aOwner.create_empty_packet())
+            iReceivePacket(aOwner.handle_create_empty_packet())
         {
             open();
         }
@@ -253,7 +253,7 @@ namespace neolib
             iConnected = false;
             iReceiveBufferPtr = &iReceiveBuffer[0];
             if (wasConnected)
-                iOwner.connection_closed();
+                iOwner.handle_connection_closed();
         }
         void send_packet(const packet_type& aPacket, bool aHighPriority = false)
         {
@@ -377,7 +377,7 @@ namespace neolib
             {
                 iError = true;
                 iErrorCode = ec;
-                iOwner.connection_failure(ec);
+                iOwner.handle_connection_failure(ec);
                 return false;
             }                
         }
@@ -419,7 +419,7 @@ namespace neolib
             {
                 iError = true;
                 iErrorCode = aError;
-                iOwner.connection_failure(aError);
+                iOwner.handle_connection_failure(aError);
             }
         }
         void handle_connect(const boost::system::error_code& aError)
@@ -432,7 +432,7 @@ namespace neolib
                 if (!iSecure)
                 {
                     destroyed_flag destroyed{ *this };
-                    iOwner.connection_established();
+                    iOwner.handle_connection_established();
                     if (destroyed)
                         return;
                     send_any();
@@ -449,7 +449,7 @@ namespace neolib
             {
                 iError = true;
                 iErrorCode = aError;
-                iOwner.connection_failure(aError);
+                iOwner.handle_connection_failure(aError);
             }
         }
         void handle_handshake(const boost::system::error_code& aError)
@@ -459,7 +459,7 @@ namespace neolib
             if (!aError)
             {
                 destroyed_flag destroyed{ *this };
-                iOwner.connection_established();
+                iOwner.handle_connection_established();
                 if (destroyed)
                     return;
                 send_any();
@@ -469,7 +469,7 @@ namespace neolib
             {
                 iError = true;
                 iErrorCode = aError;
-                iOwner.connection_failure(aError);
+                iOwner.handle_connection_failure(aError);
             }
         }            
         void send_any()
@@ -540,7 +540,7 @@ namespace neolib
             iPacketBeingSent = nullptr;
             if (!aError)
             {
-                iOwner.packet_sent(*sentPacket);
+                iOwner.handle_packet_sent(*sentPacket);
                 if (destroyed)
                     return;
                 send_any();
@@ -549,7 +549,7 @@ namespace neolib
             {
                 iError = true;
                 iErrorCode = aError;
-                iOwner.transfer_failure(*sentPacket, aError);
+                iOwner.handle_transfer_failure(*sentPacket, aError);
                 if (destroyed)
                     return;
                 close();
@@ -568,7 +568,7 @@ namespace neolib
                 {
                     if (!iReceivePacket->empty())
                     {
-                        iOwner.packet_arrived(*iReceivePacket);
+                        iOwner.handle_packet_arrived(*iReceivePacket);
                         if (destroyed)
                             return;
                         iReceivePacket->clear();
@@ -588,7 +588,7 @@ namespace neolib
                     iError = true;
                     iErrorCode = aError;
                     iReceivePacket->clear();
-                    iOwner.transfer_failure(*iReceivePacket, aError);
+                    iOwner.handle_transfer_failure(*iReceivePacket, aError);
                     if (destroyed)
                         return;
                 }
