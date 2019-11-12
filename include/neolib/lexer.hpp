@@ -71,11 +71,10 @@ namespace neolib
     template <typename Token, typename CharT = char>
     class lexer_token : public std::pair<Token, std::basic_string<CharT>>
     {
+        typedef std::pair<Token, std::basic_string<CharT>> base_type;
     public:
         typedef Token token_type;
         typedef std::basic_string<CharT> value_type;
-    private:
-        typedef std::pair<Token, std::basic_string<CharT>> base_type;
     public:
         lexer_token() :
             base_type{}

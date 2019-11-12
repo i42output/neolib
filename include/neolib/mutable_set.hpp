@@ -125,8 +125,9 @@ namespace neolib
     template <typename T, typename Pr = std::less<typename crack_key<T>::key_type>, typename Alloc = std::allocator<std::pair<typename crack_key<T>::key_type const, T> > >
     class mutable_set : public mutable_base<std::map<typename crack_key<T>::key_type, T, Pr, typename Alloc::template rebind<std::pair<typename crack_key<T>::key_type const, T>>::other>>
     {
+        typedef mutable_base<std::map<typename crack_key<T>::key_type, T, Pr, typename Alloc::template rebind<std::pair<typename crack_key<T>::key_type const, T>>::other>> base_type;
+    public:
         typedef typename crack_key<T>::key_type key_type;
-        typedef mutable_base<std::map<key_type, T, Pr, typename Alloc::template rebind<std::pair<key_type const, T>>::other>> base_type;
     public:
         mutable_set()
         {
@@ -155,8 +156,9 @@ namespace neolib
     template <typename T, typename Pr = std::less<typename crack_key<T>::key_type>, typename Alloc = std::allocator<std::pair<typename crack_key<T>::key_type const, T> > >
     class mutable_multiset : public mutable_base<std::multimap<typename crack_key<T>::key_type, T, Pr, typename Alloc::template rebind<std::pair<typename crack_key<T>::key_type const, T>>::other>>
     {
+        typedef mutable_base<std::multimap<typename crack_key<T>::key_type, T, Pr, typename Alloc::template rebind<std::pair<typename crack_key<T>::key_type const, T>>::other>> base_type;
+    public:
         typedef typename crack_key<T>::key_type key_type;
-        typedef mutable_base<std::multimap<key_type, T, Pr, typename Alloc::template rebind<std::pair<key_type const, T>>::other>> base_type;
     public:
         mutable_multiset()
         {

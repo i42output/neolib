@@ -99,6 +99,10 @@ namespace neolib
                             concrete_key_type(i->first()),
                             concrete_mapped_type(i->second()))));
         }
+        // from i_map
+    public:
+        using abstract_base::insert;
+        using abstract_base::find;
         // from i_container
     private:
         container_const_iterator* do_begin(void* memory) const override { return new (memory) container_const_iterator(iMap.begin()); }

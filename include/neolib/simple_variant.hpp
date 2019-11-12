@@ -38,19 +38,20 @@
 #include <neolib/neolib.hpp>
 #include <string>
 #include <boost/lexical_cast.hpp>
-#include "reference_counted.hpp"
-#include "i_simple_variant.hpp"
-#include "string.hpp"
-#include "variant.hpp"
-#include "custom_type.hpp"
+#include <neolib/reference_counted.hpp>
+#include <neolib/i_simple_variant.hpp>
+#include <neolib/string.hpp>
+#include <neolib/enum.hpp>
+#include <neolib/variant.hpp>
+#include <neolib/custom_type.hpp>
 
 namespace neolib
 {
-    class simple_variant : public reference_counted<i_simple_variant>, public variant<bool, int64_t, double, string, ref_ptr<i_custom_type>>
+    class simple_variant : public reference_counted<i_simple_variant>, public variant<bool, int64_t, double, string, ref_ptr<i_enum>, ref_ptr<i_custom_type>>
     {
         // types
     private:
-        typedef neolib::variant<bool, int64_t, double, string, ref_ptr<i_custom_type>> variant_type;
+        typedef neolib::variant<bool, int64_t, double, string, ref_ptr<i_enum>, ref_ptr<i_custom_type>> variant_type;
 
         // construction
     public:
@@ -61,6 +62,8 @@ namespace neolib
         simple_variant(double aValue) : variant_type{ aValue } {}
         simple_variant(const char* const aValue) : variant_type{ string(aValue) } {}
         simple_variant(const i_string& aValue) : variant_type{ string(aValue) } {}
+        simple_variant(const ref_ptr<i_enum>& aValue) : variant_type{ aValue } {}
+        simple_variant(i_enum& aValue) : variant_type{ ref_ptr<i_enum>(aValue) } {}
         simple_variant(const ref_ptr<i_custom_type>& aValue) : variant_type{ aValue } {}
         simple_variant(i_custom_type& aValue) : variant_type{ ref_ptr<i_custom_type>(aValue) } {}
         simple_variant(const simple_variant& aVariant) : variant_type{ static_cast<const variant_type&>(aVariant) }
@@ -115,6 +118,12 @@ namespace neolib
             case simple_variant_type::String:
                 static_cast<variant_type&>(*this) = string(get<i_string>(aVariant));
                 break;
+            case simple_variant_type::Enum:
+                if (type() != simple_variant_type::Enum)
+                    static_cast<variant_type&>(*this) = ref_ptr<i_enum>(get<i_enum>(aVariant).clone());
+                else
+                    value_as_enum() = aVariant.value_as_enum();
+                break;
             case simple_variant_type::CustomType:
                 if (type() != simple_variant_type::CustomType || value_as_custom_type().name() != aVariant.value_as_custom_type().name())
                     static_cast<variant_type&>(*this) = ref_ptr<i_custom_type>(get<i_custom_type>(aVariant).clone());
@@ -129,7 +138,7 @@ namespace neolib
 
         // operations
     public:
-        virtual simple_variant_type type() const
+        simple_variant_type type() const override
         {
             auto result = static_cast<simple_variant_type>(variant_type::index());
             if (result < simple_variant_type::COUNT)
@@ -138,43 +147,51 @@ namespace neolib
         }
         using i_simple_variant::empty;
     public:
-        virtual const bool& value_as_boolean() const
+        const bool& value_as_boolean() const override
         {
             return static_variant_cast<const bool&>(*this);
         }
-        virtual bool& value_as_boolean()
+        bool& value_as_boolean() override
         {
             return static_variant_cast<bool&>(*this);
         }
-        virtual const int64_t& value_as_integer() const
+        const int64_t& value_as_integer() const override
         {
             return static_variant_cast<const int64_t&>(*this);
         }
-        virtual int64_t& value_as_integer()
+        int64_t& value_as_integer() override
         {
             return static_variant_cast<int64_t&>(*this);
         }
-        virtual const double& value_as_real() const
+        const double& value_as_real() const override
         {
             return static_variant_cast<const double&>(*this);
         }
-        virtual double& value_as_real()
+        double& value_as_real() override
         {
             return static_variant_cast<double&>(*this);
         }
-        virtual const i_string& value_as_string() const
+        const i_string& value_as_string() const override
         {
             return static_variant_cast<const string&>(*this);
         }
-        virtual i_string& value_as_string()
+        i_string& value_as_string() override
         {
             return static_variant_cast<string&>(*this);
         }
-        virtual const i_custom_type& value_as_custom_type() const
+        const i_enum& value_as_enum() const override
+        {
+            return *static_variant_cast<const ref_ptr<i_enum>&>(*this);
+        }
+        i_enum& value_as_enum() override
+        {
+            return *static_variant_cast<ref_ptr<i_enum>&>(*this);
+        }
+        const i_custom_type& value_as_custom_type() const override
         {
             return *static_variant_cast<const ref_ptr<i_custom_type>&>(*this);
         }
-        virtual i_custom_type& value_as_custom_type()
+        i_custom_type& value_as_custom_type() override
         {
             return *static_variant_cast<ref_ptr<i_custom_type>&>(*this);
         }
@@ -192,6 +209,7 @@ namespace neolib
             return boost::lexical_cast<double>(aValue);
         case simple_variant_type::String:
             return neolib::string(aValue);
+        case simple_variant_type::Enum:
         case simple_variant_type::CustomType:
         default:
             throw i_simple_variant::unsupported_operation("can't create from string");

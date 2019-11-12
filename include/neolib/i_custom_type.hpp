@@ -44,13 +44,11 @@ namespace neolib
 {
     class i_custom_type : public i_reference_counted
     {
+        // exceptions
     public:
         struct no_instance : std::logic_error { no_instance() : std::logic_error("neolib::i_custom_type::no_instance") {} };
+        // construction/assignment
     public:
-        virtual const i_string& name() const = 0;
-        virtual i_string& name() = 0;
-        virtual i_string* to_string() const = 0;
-        std::string to_std_string() const { ref_ptr<i_string> string(to_string()); return string->to_std_string(); }
         virtual i_custom_type* clone() const = 0;
         virtual i_custom_type& assign(const i_custom_type& aRhs) = 0;
         i_custom_type& operator=(const i_custom_type& aRhs)
@@ -58,8 +56,11 @@ namespace neolib
             assign(aRhs);
             return *this;
         }
+        // comparison
+    public:
         virtual bool operator==(const i_custom_type&) const = 0;
         virtual bool operator<(const i_custom_type&) const = 0;
+        // state
     public:
         bool has_instance() const { return instance_ptr() != nullptr; }
         template <typename T>
@@ -68,6 +69,12 @@ namespace neolib
         T& instance_as() { if (!has_instance()) throw no_instance(); return *static_cast<T*>(instance_ptr()); }
         virtual const void* instance_ptr() const = 0;
         virtual void* instance_ptr() = 0;
+        // meta
+    public:
+        virtual void name(i_string& aName) const = 0;
+        virtual void to_string(i_string& aString) const = 0;
+        std::string name() const { string n; name(n); return n.to_std_string(); }
+        std::string to_string() const { string s; to_string(s); return s.to_std_string(); }
     };
 
     inline bool operator!=(const i_custom_type& lhs, const i_custom_type& rhs)

@@ -60,10 +60,10 @@ namespace neolib
     template <typename CharType>
     class basic_data_packet : i_basic_packet<CharType>
     {
+        typedef basic_data_packet<CharType> self_type;
+        typedef i_basic_packet<CharType> base_type;
         // types
     public:
-        typedef basic_data_packet<CharType> our_type;
-        typedef i_basic_packet<CharType> base_type;
         typedef base_type::character_type character_type;
         typedef base_type::const_pointer const_pointer;
         typedef base_type::pointer pointer;
@@ -115,7 +115,7 @@ namespace neolib
         template <typename T>
         T decode() const
         {
-            return detail::decoder<our_type, T>()(*this);
+            return detail::decoder<self_type, T>()(*this);
         }
         virtual uint64_t decode_integer(std::size_t aLength) const = 0;
         virtual bool decode_bool() const = 0;

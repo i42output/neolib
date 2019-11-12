@@ -44,9 +44,9 @@ namespace neolib
     template <typename CharType>
     class basic_binary_packet : public i_basic_packet<CharType>
     {
+        typedef i_basic_packet<CharType> base_type;
         // types
     public:
-        typedef i_basic_packet<CharType> base_type;
         typedef typename base_type::character_type character_type;
         typedef typename base_type::const_pointer const_pointer;
         typedef typename base_type::pointer pointer;

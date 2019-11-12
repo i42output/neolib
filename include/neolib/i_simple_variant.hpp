@@ -38,10 +38,11 @@
 #include <neolib/neolib.hpp>
 #include <string>
 #include <boost/lexical_cast.hpp>
-#include "i_reference_counted.hpp"
-#include "i_string.hpp"
-#include "string.hpp"
-#include "i_custom_type.hpp"
+#include <neolib/i_reference_counted.hpp>
+#include <neolib/i_string.hpp>
+#include <neolib/string.hpp>
+#include <neolib/i_enum.hpp>
+#include <neolib/i_custom_type.hpp>
 
 namespace neolib
 {
@@ -52,6 +53,7 @@ namespace neolib
         Integer,
         Real,
         String,
+        Enum,
         CustomType,
         COUNT
     };
@@ -77,6 +79,8 @@ namespace neolib
         virtual double& value_as_real() = 0;
         virtual const i_string& value_as_string() const = 0;
         virtual i_string& value_as_string() = 0;
+        virtual const i_enum& value_as_enum() const = 0;
+        virtual i_enum& value_as_enum() = 0;
         virtual const i_custom_type& value_as_custom_type() const = 0;
         virtual i_custom_type& value_as_custom_type() = 0;
     };
@@ -108,6 +112,12 @@ namespace neolib
         {
             const i_string& operator()(const i_simple_variant& aVariant) { return aVariant.value_as_string(); }
             i_string& operator()(i_simple_variant& aVariant) { return aVariant.value_as_string(); }
+        };
+        template <>
+        struct variant_getter<i_enum>
+        {
+            const i_enum& operator()(const i_simple_variant& aVariant) { return aVariant.value_as_enum(); }
+            i_enum& operator()(i_simple_variant& aVariant) { return aVariant.value_as_enum(); }
         };
         template <>
         struct variant_getter<i_custom_type>
@@ -144,6 +154,8 @@ namespace neolib
             return get<double>(lhs) == get<double>(rhs);
         case simple_variant_type::String:
             return get<i_string>(lhs) == get<i_string>(rhs);
+        case simple_variant_type::Enum:
+            return get<i_enum>(lhs) == get<i_enum>(rhs);
         case simple_variant_type::CustomType:
             return get<i_custom_type>(lhs) == get<i_custom_type>(rhs);
         default:
@@ -211,8 +223,10 @@ namespace neolib
             return boost::lexical_cast<std::string>(get<double>(value));
         case simple_variant_type::String:
             return get<i_string>(value).to_std_string();
+        case simple_variant_type::Enum:
+            return get<i_enum>(value).to_string();
         case simple_variant_type::CustomType:
-            return get<i_custom_type>(value).to_std_string();
+            return get<i_custom_type>(value).to_string();
         default:
             throw i_simple_variant::unknown_type();
         }

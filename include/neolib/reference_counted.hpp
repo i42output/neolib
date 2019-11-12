@@ -45,7 +45,6 @@ namespace neolib
     template <typename Base, bool DeallocateOnRelease = true>
     class reference_counted : public Base
     {
-    public:
         typedef Base base_type;
     public:
         using typename base_type::release_during_destruction;

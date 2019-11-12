@@ -305,10 +305,10 @@ namespace neolib
     template <typename... Arguments>
     class event : protected event_lifetime
     {
+        typedef event<Arguments...> self_type;
         friend class sink;
         friend class async_event_queue;
     private:
-        typedef event<Arguments...> self_type;
         typedef event_handle<Arguments...> handle;
         typedef typename handle::event_ptr ptr;
         typedef typename handle::event_instance_ptr instance_ptr;

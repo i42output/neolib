@@ -205,7 +205,9 @@
     <ClInclude Include="..\..\..\include\neolib\custom_type.hpp" />
     <ClInclude Include="..\..\..\include\neolib\data_packet.hpp" />
     <ClInclude Include="..\..\..\include\neolib\detail_memory.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\enum.hpp" />
     <ClInclude Include="..\..\..\include\neolib\event.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_enum.hpp" />
     <ClInclude Include="..\..\..\include\neolib\plugin_event.hpp" />
     <ClInclude Include="..\..\..\include\neolib\intrusive_sort.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_plugin_event.hpp" />

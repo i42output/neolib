@@ -400,13 +400,13 @@ namespace neolib
     template <typename T, typename R, std::size_t SmallBufferSize>
     class basic_small_buffer_allocator<small_buffer_allocator_types<T, R>, SmallBufferSize> : public std::allocator<R>
     {
+        typedef basic_small_buffer_allocator<small_buffer_allocator_types<T, R>, SmallBufferSize> self_type;
         template <typename, std::size_t>
         friend class basic_small_buffer_allocator;
     public:
         struct no_small_buffer : std::logic_error { no_small_buffer() : std::logic_error("neolib::basic_small_buffer_allocator::no_small_buffer") {} };
     public:
         typedef small_buffer_allocator_types<T, R> types;
-        typedef basic_small_buffer_allocator<types, SmallBufferSize> self_type;
         typedef std::false_type propagate_on_container_move_assignment;
         typedef std::false_type is_always_equal;
         template<class U> struct rebind { typedef typename basic_small_buffer_allocator<small_buffer_allocator_types<T, U>, SmallBufferSize> other; };

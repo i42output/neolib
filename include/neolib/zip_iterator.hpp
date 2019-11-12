@@ -57,8 +57,8 @@ namespace neolib
     template <typename... Iterators>
     class zip_iterator
     {
-    private:
         typedef zip_iterator<Iterators...> self_type;
+    private:
         typedef zip_iterator_traits<Iterators...> traits;
         typedef typename traits::iterators iterators;
     public:
