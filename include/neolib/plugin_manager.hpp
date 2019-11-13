@@ -56,10 +56,10 @@ namespace neolib
         define_declared_event(PluginUnloaded, plugin_unloaded, i_plugin&)
         // types
     private:
-        typedef vector<i_string, string> plugin_file_extensions_t;
-        typedef vector<i_string, string> plugin_folders_t;
+        typedef vector<string> plugin_file_extensions_t;
+        typedef vector<string> plugin_folders_t;
         typedef std::map<uuid, std::unique_ptr<module>> modules_t;
-        typedef vector<i_ref_ptr<i_plugin>, ref_ptr<i_plugin>> plugins_t;
+        typedef vector<ref_ptr<i_plugin>> plugins_t;
         // construction
     public:
         plugin_manager(i_application& aApplication);

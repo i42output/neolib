@@ -50,6 +50,7 @@ namespace neolib
     private:
         typedef reference_counted<i_string> base;
     public:
+        typedef i_string abstract_type;
         typedef char value_type;
         typedef std::string container_type;
     protected:

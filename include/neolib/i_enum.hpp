@@ -36,12 +36,28 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <neolib/i_reference_counted.hpp>
+#include <neolib/reference_counted.hpp>
 #include <neolib/i_string.hpp>
-#include <neolib/i_map.hpp>
+#include <neolib/map.hpp>
 
 namespace neolib
 {
+    namespace enum_traits
+    {
+        template <typename Enum>
+        using enum_enumerators_t = map<std::underlying_type_t<Enum>, string>;
+
+        template <typename Enum>
+        struct enum_enumerators
+        {
+            static const enum_enumerators_t<Enum> enumerators;
+        };
+
+        #define declare_enum_string( enumName, enumEnumerator ) { static_cast<const std::underlying_type_t<enumName>>(enumName::enumEnumerator), string{ #enumEnumerator } },
+    }
+
+    using namespace enum_traits;
+
     template <typename UnderlyingType>
     class i_basic_enum : public i_reference_counted
     {
@@ -55,12 +71,13 @@ namespace neolib
         typedef i_map<underlying_type, i_string> enumerators_t;
         // construction/assignment
     public:
-        virtual self_type* clone() const = 0;
-        virtual self_type& assign(const self_type& aRhs) = 0;
+        ref_ptr<self_type> clone() const
+        {
+            return do_clone();
+        }
         self_type& operator=(const self_type& aRhs)
         {
-            assign(aRhs);
-            return *this;
+            return do_assign(aRhs);
         }
         // comparison
     public:
@@ -78,9 +95,9 @@ namespace neolib
         }
         // state
     public:
-        virtual const underlying_type& value() const = 0;
-        virtual underlying_type& value() = 0;
-        virtual underlying_type& set_value(const i_string& aValue) = 0;
+        virtual underlying_type value() const = 0;
+        virtual underlying_type set_value(underlying_type aValue) = 0;
+        virtual underlying_type set_value(const i_string& aValue) = 0;
         underlying_type& set_value(const std::string aValue)
         {
             return set_value(string{ aValue });
@@ -90,6 +107,10 @@ namespace neolib
         virtual void to_string(i_string& aString) const = 0;
         std::string to_string() const { string s; to_string(s); return s.to_std_string(); }
         virtual const enumerators_t& enumerators() const = 0;
+        // implementation
+    private:
+        virtual self_type* do_clone() const = 0;
+        virtual self_type& do_assign(const self_type& aRhs) = 0;
         // helpers
     public:
         template <typename Enum>
@@ -151,4 +172,9 @@ namespace neolib
     typedef i_basic_enum<int64_t> i_enum_i64;
 
     typedef i_enum_i32 i_enum;
+
+    template <typename T>
+    using i_enum_t = i_basic_enum<std::underlying_type_t<T>>;
 }
+
+using namespace neolib::enum_traits;

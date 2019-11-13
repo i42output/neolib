@@ -57,6 +57,8 @@ namespace neolib
         std::array<uint8_t, 6> iPart5;
     };
 
+    declare_abstract(uuid)
+
     inline bool operator==(const uuid& lhs, const uuid& rhs)
     {
         return lhs.iPart1 == rhs.iPart1 && lhs.iPart2 == rhs.iPart2 && lhs.iPart3 == rhs.iPart3 && lhs.iPart4 == rhs.iPart4 && lhs.iPart5 == rhs.iPart5;

@@ -145,9 +145,9 @@ namespace neolib
     class ref_ptr : public i_ref_ptr<Interface>
     {
     public:
-        typedef i_ref_ptr<Interface> abstract_base;
-        typedef typename abstract_base::no_object no_object;
-        typedef typename abstract_base::interface_not_found interface_not_found;
+        typedef i_ref_ptr<Interface> abstract_type;
+        typedef typename abstract_type::no_object no_object;
+        typedef typename abstract_type::interface_not_found interface_not_found;
     public:
         ref_ptr(Interface* aObject = nullptr) :
             iObject(aObject), iReferenceCounted(true)
@@ -165,7 +165,7 @@ namespace neolib
             if (valid() && iReferenceCounted)
                 iObject->add_ref();
         }
-        ref_ptr(const abstract_base& aOther) :
+        ref_ptr(const abstract_type& aOther) :
             iObject(aOther.ptr()), iReferenceCounted(aOther.reference_counted())
         {
             if (valid() && iReferenceCounted)
@@ -194,7 +194,7 @@ namespace neolib
             reset(aOther.ptr(), aOther.reference_counted());
             return *this;
         }
-        ref_ptr& operator=(const abstract_base& aOther)
+        ref_ptr& operator=(const abstract_type& aOther)
         {
             if (&aOther == this)
                 return *this;

@@ -43,23 +43,23 @@
 
 namespace neolib
 {
-    template <typename T, typename ConcreteType = T>
-    class vector : public reference_counted<i_vector<T> >
+    template <typename T>
+    class vector : public reference_counted<i_vector<abstract_t<T>> >
     {
         // types
     private:
         typedef reference_counted<i_vector<T> > base;
     public:
         typedef T value_type;
-        typedef ConcreteType concrete_value_type;
-        typedef std::vector<concrete_value_type> container_type;
-        typedef typename i_vector<T>::size_type size_type;
-        typedef typename i_vector<T>::const_iterator const_iterator;
-        typedef typename i_vector<T>::iterator iterator;
-        typedef typename i_vector<T>::generic_container_type generic_container_type;
+        typedef abstract_t<T> abstract_value_type;
+        typedef std::vector<value_type> container_type;
+        using typename i_vector<abstract_value_type>::size_type;
+        using typename i_vector<abstract_value_type>::const_iterator;
+        using typename i_vector<abstract_value_type>::iterator;
+        using typename i_vector<abstract_value_type>::generic_container_type;
     protected:
-        typedef typename i_vector<T>::abstract_const_iterator abstract_const_iterator;
-        typedef typename i_vector<T>::abstract_iterator abstract_iterator;
+        using typename i_vector<abstract_value_type>::abstract_const_iterator;
+        using typename i_vector<abstract_value_type>::abstract_iterator;
     protected:
         typedef container::random_access_const_iterator<T, typename container_type::const_iterator> container_const_iterator;
         typedef container::random_access_iterator<T, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
@@ -68,13 +68,13 @@ namespace neolib
         vector() {}
         vector(const vector& aOther) : iVector{ aOther.begin(), aOther.end() } {}
         vector(vector&& aOther) : iVector{ std::move(aOther.iVector) } {}
-        vector(const i_vector<T>& aOther) : iVector{ aOther.begin(), aOther.end() } {}
+        vector(const i_vector<abstract_value_type>& aOther) : iVector{ aOther.begin(), aOther.end() } {}
         vector(const container_type& aOtherContainer) : iVector{ aOtherContainer } {}
         template <typename InputIter>
         vector(InputIter aFirst, InputIter aLast) : iVector{ aFirst, aLast } {}
         vector& operator=(const vector& aOther) { assign(aOther); return *this; }
         vector& operator=(vector&& aOther) { iVector = std::move(aOther.iVector); return *this; }
-        vector& operator=(const i_vector<T>& aOther) { assign(aOther); return *this; }
+        vector& operator=(const i_vector<abstract_value_type>& aOther) { assign(aOther); return *this; }
         // operations
     public:
         container_type& container() { return iVector; }
@@ -98,20 +98,20 @@ namespace neolib
         // from i_sequence_container
         size_type capacity() const override { return iVector.size(); }
         void reserve(size_type aCapacity) override { iVector.reserve(aCapacity); }
-        void resize(size_type aSize, const value_type& aValue) override { iVector.resize(aSize, aValue); }
-        void push_back(const value_type& aValue) override { iVector.push_back(aValue); }
+        void resize(size_type aSize, const abstract_value_type& aValue) override { iVector.resize(aSize, aValue); }
+        void push_back(const abstract_value_type& aValue) override { iVector.push_back(aValue); }
         void pop_back() override { iVector.pop_back(); }
-        const value_type& back() const override { return iVector.back(); }
-        value_type& back() override { return iVector.back(); }
+        const abstract_value_type& back() const override { return iVector.back(); }
+        abstract_value_type& back() override { return iVector.back(); }
     private:
         // from i_sequence_container
-        abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const value_type& aValue) override { return new (memory) container_iterator(iVector.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
+        abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const abstract_value_type& aValue) override { return new (memory) container_iterator(iVector.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
     public:
         // from i_vector
-        const value_type& operator[](size_type aIndex) const override { return iVector[aIndex]; }
-        value_type& operator[](size_type aIndex) override { return iVector[aIndex]; }
+        const abstract_value_type& operator[](size_type aIndex) const override { return iVector[aIndex]; }
+        abstract_value_type& operator[](size_type aIndex) override { return iVector[aIndex]; }
         // attributes
     private:
-        std::vector<ConcreteType> iVector;
+        std::vector<value_type> iVector;
     };
 }

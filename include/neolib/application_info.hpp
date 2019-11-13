@@ -46,7 +46,7 @@ namespace neolib
 {
     std::string settings_folder(const std::string& aApplicationName, const std::string& aCompanyName);
 
-    typedef vector<i_string, string> program_arguments_t;
+    typedef vector<string> program_arguments_t;
     inline program_arguments_t to_program_arguments(int argc, char* argv[])
     {
         program_arguments_t result;
@@ -111,7 +111,7 @@ namespace neolib
         const i_string& plugin_extension() const override { return iPluginExtension; }
 
     private:
-        vector<i_string, string> iArguments;
+        vector<string> iArguments;
         string iName;
         string iCompany;
         neolib::version iVersion;

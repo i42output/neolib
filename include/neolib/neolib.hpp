@@ -57,6 +57,35 @@ inline to_const_reference_t<T> to_const(T&& object)
     return const_cast<to_const_reference_t<T>>(object);
 }
 
+namespace neolib::detail
+{
+    template <typename T, typename SFINAE = sfinae>
+    struct abstract_type;
+    template <typename T>
+    struct abstract_type<T, std::enable_if_t<std::is_class_v<T>, sfinae>> { typedef typename T::abstract_type type; };
+    template <typename T>
+    struct abstract_type<T, std::enable_if_t<std::is_arithmetic_v<T>, sfinae>> { typedef T type; };
+}
+
+#define declare_abstract( AbstractType ) \
+    template<>\
+    struct neolib::detail::abstract_type<AbstractType> { typedef AbstractType type; };
+
+template <typename T>
+using abstract_t = typename neolib::detail::abstract_type<T>::type;
+
+template <typename T>
+inline const abstract_t<T>& to_abstract_type(const T& aArgument)
+{
+    return static_cast<const abstract_t<T>&>(aArgument);
+}
+
+template <typename T>
+inline abstract_t<T>& to_abstract_type(T& aArgument)
+{
+    return static_cast<abstract_t<T>&>(aArgument);
+}
+
 #ifdef NEOLIB_HOSTED_ENVIRONMENT
 
 #define USING_BOOST

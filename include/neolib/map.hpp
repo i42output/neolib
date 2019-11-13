@@ -43,36 +43,40 @@
 
 namespace neolib
 {
-    template <typename Key, typename T, typename ConcreteKey = Key, typename ConcreteType = T>
-    class map : public reference_counted <i_map<Key, T>>
+    template <typename Key, typename T>
+    class map : public reference_counted<i_map<abstract_t<Key>, abstract_t<T>>>
     {
         // types
     public:
-        typedef Key abstract_key_type;
-        typedef T abstract_mapped_type;
-        typedef ConcreteKey concrete_key_type;
-        typedef ConcreteType concrete_mapped_type;
+        typedef i_map<abstract_t<Key>, abstract_t<T>> abstract_type;
+        typedef Key key_type;
+        typedef T mapped_type;
+        typedef pair<const key_type, mapped_type> value_type;
+        typedef abstract_t<key_type> abstract_key_type;
+        typedef abstract_t<mapped_type> abstract_mapped_type;
         typedef i_pair<const abstract_key_type, abstract_mapped_type> abstract_value_type;
-        typedef std::map<concrete_key_type, neolib::pair<const abstract_key_type, abstract_mapped_type, const concrete_key_type, concrete_mapped_type> > container_type;
-        typedef typename container_type::value_type concrete_value_type;
-    private:
-        typedef i_map<Key, T> abstract_base;
+        typedef std::map<key_type, value_type> container_type;
+        typedef typename container_type::value_type container_value_type;
     public:
-        typedef typename abstract_base::size_type size_type;
-        typedef typename abstract_base::const_iterator const_iterator;
-        typedef typename abstract_base::iterator iterator;
-        typedef typename abstract_base::generic_container_type generic_container_type;
+        typedef typename abstract_type::size_type size_type;
+        typedef typename abstract_type::const_iterator const_iterator;
+        typedef typename abstract_type::iterator iterator;
+        typedef typename abstract_type::generic_container_type generic_container_type;
     protected:
-        typedef container::const_iterator<abstract_value_type, typename container_type::const_iterator> container_const_iterator;
-        typedef container::iterator<abstract_value_type, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
-        typedef typename abstract_base::abstract_const_iterator abstract_const_iterator;
-        typedef typename abstract_base::abstract_iterator abstract_iterator;
+        typedef container::const_iterator<value_type, typename container_type::const_iterator> container_const_iterator;
+        typedef container::iterator<value_type, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
+        typedef typename abstract_type::abstract_const_iterator abstract_const_iterator;
+        typedef typename abstract_type::abstract_iterator abstract_iterator;
         // construction
     public:
         map() 
         {
         }
-        map(const generic_container_type& aOther) 
+        map(const std::initializer_list<value_type>& aIlist) :
+            iMap{ aIlist }
+        {
+        }
+        map(const generic_container_type& aOther)
         {
             assign(aOther);
         }
@@ -92,17 +96,12 @@ namespace neolib
                 return;
             clear();
             for (const_iterator i = aOther.begin(); i != aOther.end(); ++i)
-                iMap.insert(
-                    typename container_type::value_type(
-                        typename container_type::key_type(i->first()), 
-                        typename container_type::mapped_type(
-                            concrete_key_type(i->first()),
-                            concrete_mapped_type(i->second()))));
+                iMap.insert(value_type{ key_type{ i->first() }, mapped_type{ key_type{i->first()}, mapped_type{i->second()} } });
         }
         // from i_map
     public:
-        using abstract_base::insert;
-        using abstract_base::find;
+        using abstract_type::insert;
+        using abstract_type::find;
         // from i_container
     private:
         container_const_iterator* do_begin(void* memory) const override { return new (memory) container_const_iterator(iMap.begin()); }
@@ -113,7 +112,7 @@ namespace neolib
         container_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new (memory) container_iterator(iMap.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
         // from i_map
     public:
-        concrete_mapped_type& operator[](const abstract_key_type& aKey) override 
+        mapped_type& operator[](const abstract_key_type& aKey) override 
         { 
             auto existing = iMap.find(aKey);
             if (existing == iMap.end())
@@ -122,8 +121,8 @@ namespace neolib
                     typename container_type::value_type{
                         typename container_type::key_type{aKey},
                         typename container_type::mapped_type{
-                            concrete_key_type{aKey},
-                            concrete_mapped_type{}} }).first;
+                            key_type{aKey},
+                            mapped_type{}} }).first;
             }
             return existing->second.second(); 
         }
@@ -134,8 +133,8 @@ namespace neolib
                 typename container_type::value_type{
                     typename container_type::key_type{aKey},
                     typename container_type::mapped_type{
-                        concrete_key_type{aKey},
-                        concrete_mapped_type{aMapped}} }).first };
+                        key_type{aKey},
+                        mapped_type{aMapped}} }).first };
         }
         container_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator(iMap.find(aKey)); }
         container_iterator* do_find(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator(iMap.find(aKey)); }

@@ -128,6 +128,10 @@ namespace neolib
         typedef mutable_base<std::map<typename crack_key<T>::key_type, T, Pr, typename Alloc::template rebind<std::pair<typename crack_key<T>::key_type const, T>>::other>> base_type;
     public:
         typedef typename crack_key<T>::key_type key_type;
+        using typename base_type::const_iterator;
+        using typename base_type::iterator;
+        using typename base_type::const_reverse_iterator;
+        using typename base_type::reverse_iterator;
     public:
         mutable_set()
         {
@@ -138,18 +142,18 @@ namespace neolib
                 insert(e);
         }
     public:
-        typename base_type::iterator insert(const typename base_type::value_type& aValue)
+        iterator insert(const typename base_type::value_type& aValue)
         {
-            return typename base_type::iterator(base_type::insert(std::make_pair(static_cast<key_type>(aValue), aValue)).first);
+            return iterator(base_type::insert(std::make_pair(static_cast<key_type>(aValue), aValue)).first);
         }
         using base_type::find;
-        typename base_type::iterator find(const typename base_type::value_type& aValue)
+        iterator find(const typename base_type::value_type& aValue)
         {
-            return typename base_type::iterator(base_type::find(static_cast<key_type>(aValue)));
+            return iterator(base_type::find(static_cast<key_type>(aValue)));
         }
-        typename base_type::const_iterator find(const typename base_type::value_type& aValue) const
+        const_iterator find(const typename base_type::value_type& aValue) const
         {
-            return typename base_type::const_iterator(base_type::find(static_cast<key_type>(aValue)));
+            return const_iterator(base_type::find(static_cast<key_type>(aValue)));
         }
     };
 
@@ -159,6 +163,10 @@ namespace neolib
         typedef mutable_base<std::multimap<typename crack_key<T>::key_type, T, Pr, typename Alloc::template rebind<std::pair<typename crack_key<T>::key_type const, T>>::other>> base_type;
     public:
         typedef typename crack_key<T>::key_type key_type;
+        using typename base_type::const_iterator;
+        using typename base_type::iterator;
+        using typename base_type::const_reverse_iterator;
+        using typename base_type::reverse_iterator;
     public:
         mutable_multiset()
         {
@@ -169,18 +177,18 @@ namespace neolib
                 insert(e);
         }
     public:
-        typename base_type::iterator insert(const typename base_type::value_type& aValue)
+        iterator insert(const typename base_type::value_type& aValue)
         {
-            return typename base_type::iterator(base_type::insert(std::make_pair(static_cast<key_type>(aValue), aValue)));
+            return iterator(base_type::insert(std::make_pair(static_cast<key_type>(aValue), aValue)));
         }
         using base_type::find;
-        typename base_type::iterator find(const typename base_type::value_type& aValue)
+        iterator find(const typename base_type::value_type& aValue)
         {
-            return typename base_type::iterator(base_type::find(static_cast<key_type>(aValue)));
+            return iterator(base_type::find(static_cast<key_type>(aValue)));
         }
-        typename base_type::const_iterator find(const typename base_type::value_type& aValue) const
+        const_iterator find(const typename base_type::value_type& aValue) const
         {
-            return typename base_type::const_iterator(base_type::find(static_cast<key_type>(aValue)));
+            return const_iterator(base_type::find(static_cast<key_type>(aValue)));
         }
     };
 }

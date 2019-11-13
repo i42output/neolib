@@ -47,7 +47,8 @@ namespace neolib
     {
         // types
     public:
-        typedef T abstract_type;
+        typedef i_optional<T> abstract_type;
+        typedef T abstract_value_type;
         typedef ConcreteType value_type;
         typedef ConcreteType* pointer;
         typedef const ConcreteType* const_pointer;
@@ -55,12 +56,11 @@ namespace neolib
         typedef const ConcreteType& const_reference;
         typedef typename i_optional<T>::not_valid not_valid;
     private:
-        typedef i_optional<T> abstract_base;
         typedef std::optional<ConcreteType> base;
         // construction
     public:
         optional() {}
-        optional(const abstract_base& rhs) : base(rhs.get()) {}
+        optional(const abstract_type& rhs) : base(rhs.get()) {}
         optional(const_reference value) : base(value) {}
         // state
     public:
@@ -117,12 +117,12 @@ namespace neolib
             static_cast<base&>(*this) = std::nullopt;
             return *this;
         }
-        virtual optional& operator=(const abstract_base& rhs)
+        virtual optional& operator=(const abstract_type& rhs)
         { 
             *this = rhs.get();
             return *this;
         }
-        virtual optional& operator=(const abstract_type& value) 
+        virtual optional& operator=(const abstract_value_type& value) 
         {
             static_cast<base&>(*this) = value;
             return *this;

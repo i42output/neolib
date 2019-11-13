@@ -43,21 +43,12 @@
 
 namespace neolib
 {
-    namespace enum_traits
-    {
-        template <typename Enum>
-        using enum_enumerators_t = map<std::underlying_type<Enum>, string>;
-        template <typename Enum>
-        const enum_enumerators_t<Enum> enum_enumerators_v;
-    }
-
-    using namespace enum_traits;
-
     template <typename Enum>
     class basic_enum : public reference_counted<i_basic_enum<std::underlying_type_t<Enum>>>
     {
         typedef basic_enum<Enum> self_type;
         typedef reference_counted<i_basic_enum<std::underlying_type_t<Enum>>> base_type;
+        typedef i_basic_enum<std::underlying_type_t<Enum>> abstract_type;
         // exceptions
     public:
         using base_type::bad_enum_string;
@@ -75,31 +66,23 @@ namespace neolib
             iValue{ aValue }
         {
         }
-        self_type* clone() const override
-        {
-            return new self_type{ *this };
-        }
-        self_type& assign(const self_type& aRhs) override
-        {
-            iValue = aRhs.value();
-            return *this;
-        }
         // state
     public:
-        const underlying_type& value() const override
+        underlying_type value() const override
         {
-            return iValue;
+            return static_cast<underlying_type>(iValue);
         }
-        underlying_type& value() override
+        underlying_type set_value(underlying_type aValue) override
         {
-            return iValue;
+            iValue = static_cast<enum_type>(aValue);
+            return value();
         }
-        underlying_type& set_value(const i_string& aValue) override
+        underlying_type set_value(const i_string& aValue) override
         {
             for (auto const& e : enumerators())
-                if (e.second == aValue)
+                if (e.second() == aValue)
                 {
-                    iValue = e.first;
+                    iValue = static_cast<enum_type>(e.first());
                     return value();
                 }
             throw bad_enum_string();
@@ -108,11 +91,22 @@ namespace neolib
     public:
         void to_string(i_string& aString) const override
         {
-            aString = enumerators()[value()];
+            aString = enumerators().find(value())->second();
         }
-        const enum_enumerators_t<enum_type>& enumerators() const override
+        const typename base_type::enumerators_t& enumerators() const override
         {
-            return enum_enumerators_v<enum_type>;
+            return enum_enumerators<enum_type>::enumerators;
+        }
+        // implementation
+    private:
+        abstract_type* do_clone() const override
+        {
+            return new self_type{ *this };
+        }
+        abstract_type& do_assign(const abstract_type& aRhs) override
+        {
+            iValue = static_cast<enum_type>(aRhs.value());
+            return *this;
         }
         // state
     public:
@@ -123,4 +117,4 @@ namespace neolib
     using enum_t = basic_enum<Enum>;
 }
 
-using namespace neolib::enum_traits;
+
