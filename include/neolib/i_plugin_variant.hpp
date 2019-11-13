@@ -74,12 +74,12 @@ namespace neolib
         template <typename T>
         self_type& operator=(const T& aArgument)
         {
-            return do_assign(static_cast<id_t>(variadic_index<T, Types...>::value), &aArgument);
+            return do_assign(static_cast<id_t>(variadic::index<T, Types...>::value), &aArgument);
         }
         template <typename T>
         self_type& operator=(T&& aArgument)
         {
-            return do_move_assign(static_cast<id_t>(variadic_index<T, Types...>::value), &aArgument);
+            return do_move_assign(static_cast<id_t>(variadic::index<T, Types...>::value), &aArgument);
         }
         self_type& operator=(const none_t)
         {
@@ -110,14 +110,14 @@ namespace neolib
         template <typename T>
         const T& value() const
         {
-            if (which() == static_cast<id_t>(variadic_index<T, Types...>::value))
+            if (which() == static_cast<id_t>(variadic::index<T, Types...>::value))
                 return *static_cast<const T*>(data());
             throw bad_variant_access();
         }
         template <typename T>
         T& value()
         {
-            if (which() == static_cast<id_t>(variadic_index<T, Types...>::value))
+            if (which() == static_cast<id_t>(variadic::index<T, Types...>::value))
                 return *static_cast<T*>(data());
             throw bad_variant_access();
         }
