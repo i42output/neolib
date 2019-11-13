@@ -128,13 +128,13 @@ namespace neolib
     template <typename Enum>
     inline std::enable_if_t<std::is_enum_v<Enum>, bool> operator==(const i_basic_enum<std::underlying_type_t<Enum>>& lhs, Enum rhs)
     {
-        return lhs.value<Enum>() == rhs;
+        return lhs.template value<Enum>() == rhs;
     }
 
     template <typename Enum>
     inline std::enable_if_t<std::is_enum_v<Enum>, bool> operator==(Enum lhs, const i_basic_enum<std::underlying_type_t<Enum>>& rhs)
     {
-        return lhs == rhs.value<Enum>();
+        return lhs == rhs.template value<Enum>();
     }
 
     template <typename Enum>
