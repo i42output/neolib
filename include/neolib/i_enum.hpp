@@ -121,7 +121,7 @@ namespace neolib
         template <typename Enum>
         Enum set_value(Enum aValue)
         {
-            set_value(static_cast<underlying_type(aValue));
+            set_value(static_cast<underlying_type>(aValue));
         }
     };
 
