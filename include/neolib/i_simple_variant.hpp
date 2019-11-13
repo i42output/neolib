@@ -56,7 +56,7 @@ namespace neolib
     };
 
     template <>
-    const enum_enumerators_t<simple_variant_type> enum_enumerators<simple_variant_type>::enumerators =
+    const enum_enumerators_t<simple_variant_type> enum_enumerators<simple_variant_type>::enumerators
     { 
         declare_enum_string(simple_variant_type, Boolean)
         declare_enum_string(simple_variant_type, Integer)
