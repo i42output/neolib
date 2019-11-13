@@ -86,12 +86,12 @@ namespace neolib
         explicit operator bool() const { return valid(); }
         bool operator==(nullptr_t) const { return !valid(); }
         bool operator!=(nullptr_t) const { return valid(); }
-        template <typename Interface>
-        bool operator==(const i_ref_ptr<Interface>& aOther) const { return ptr() == aOther.ptr(); }
-        template <typename Interface>
-        bool operator!=(const i_ref_ptr<Interface>& aOther) const { return ptr() != aOther.ptr(); }
-        template <typename Interface>
-        bool operator<(const i_ref_ptr<Interface>& aOther) const { return ptr() < aOther.ptr(); }
+        template <typename Interface2>
+        bool operator==(const i_ref_ptr<Interface2>& aOther) const { return ptr() == aOther.ptr(); }
+        template <typename Interface2>
+        bool operator!=(const i_ref_ptr<Interface2>& aOther) const { return ptr() != aOther.ptr(); }
+        template <typename Interface2>
+        bool operator<(const i_ref_ptr<Interface2>& aOther) const { return ptr() < aOther.ptr(); }
     };
 
     template <typename Interface>
