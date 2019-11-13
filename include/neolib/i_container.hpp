@@ -50,8 +50,8 @@ namespace neolib
     public:
         typedef T value_type;
         typedef size_t size_type;
-        typedef typename ConstIteratorType abstract_const_iterator;
-        typedef typename IteratorType abstract_iterator;
+        typedef ConstIteratorType abstract_const_iterator;
+        typedef IteratorType abstract_iterator;
     public:
         typedef typename abstract_const_iterator::iterator_wrapper const_iterator;
         typedef typename abstract_iterator::iterator_wrapper iterator;
