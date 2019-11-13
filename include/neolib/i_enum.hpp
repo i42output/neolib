@@ -114,14 +114,14 @@ namespace neolib
         // helpers
     public:
         template <typename Enum>
-        const Enum& value() const
+        Enum value() const
         {
-            return static_cast<const Enum&>(value());
+            return static_cast<Enum>(value());
         }
         template <typename Enum>
-        Enum& value()
+        Enum set_value(Enum aValue)
         {
-            return static_cast<Enum&>(value());
+            set_value(static_cast<underlying_type(aValue));
         }
     };
 
