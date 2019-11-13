@@ -62,7 +62,7 @@ namespace neolib
             aList.push_back(
                 [](V& aThis, const void* aData)
                 {
-                    typedef std::remove_const_t<std::remove_reference_t<decltype(T)>> type;
+                    typedef std::remove_const_t<std::remove_reference_t<T>> type;
                     typedef abstract_t<type> assign_type;
                     aThis = *static_cast<const assign_type*>(aData);
                 });
@@ -84,7 +84,7 @@ namespace neolib
             aList.push_back(
                 [](V& aThis, void* aData)
                 {
-                    typedef std::remove_const_t<std::remove_reference_t<decltype(T)>> type;
+                    typedef std::remove_const_t<std::remove_reference_t<T>> type;
                     typedef abstract_t<type> move_assign_type;
                     aThis = static_cast<move_assign_type&&>(*static_cast<move_assign_type*>(aData));
                 });
