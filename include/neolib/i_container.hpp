@@ -75,18 +75,18 @@ namespace neolib
             assign(aRhs);
             return *this;
         }
-        template<bool Enable = DefaultComparisonOperators, typename T = bool>
-        typename std::enable_if<Enable, T>::type operator==(const i_container& aRhs) const
+        template <bool SFINAE = DefaultComparisonOperators>
+        typename std::enable_if_t<SFINAE, bool>::type operator==(const i_container& aRhs) const
         {
             return size() == aRhs.size() && std::equal(begin(), end(), aRhs.begin());
         }
-        template<bool Enable = DefaultComparisonOperators, typename T = bool>
-        typename std::enable_if<Enable, T>::type operator!=(const i_container& aRhs) const
+        template <bool SFINAE = DefaultComparisonOperators>
+        typename std::enable_if_t<SFINAE, bool>::type operator!=(const i_container& aRhs) const
         {
             return size() != aRhs.size() && !std::equal(begin(), end(), aRhs.begin());
         }
-        template<bool Enable = DefaultComparisonOperators, typename T = bool>
-        typename std::enable_if<Enable, T>::type operator<(const i_container& aRhs) const
+        template <bool SFINAE = DefaultComparisonOperators>
+        typename std::enable_if_t<SFINAE, bool>::type operator<(const i_container& aRhs) const
         {
             return std::lexicographical_compare(begin(), end(), aRhs.begin(), aRhs.end());
         }
