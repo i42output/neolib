@@ -43,8 +43,6 @@
 
 namespace neolib
 {
-    declare_abstract(std::monostate)
-
     namespace detail
     {
         template <typename V>

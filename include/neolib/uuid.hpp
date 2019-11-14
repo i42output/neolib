@@ -50,18 +50,17 @@ namespace neolib
 {
     struct uuid
     {
-        uint32_t iPart1;
-        uint16_t iPart2;
-        uint16_t iPart3;
-        uint16_t iPart4;
-        std::array<uint8_t, 6> iPart5;
+        typedef uuid abstract_type;
+        uint32_t part1;
+        uint16_t part2;
+        uint16_t part3;
+        uint16_t part4;
+        std::array<uint8_t, 6> part5;
     };
-
-    declare_abstract(uuid)
 
     inline bool operator==(const uuid& lhs, const uuid& rhs)
     {
-        return lhs.iPart1 == rhs.iPart1 && lhs.iPart2 == rhs.iPart2 && lhs.iPart3 == rhs.iPart3 && lhs.iPart4 == rhs.iPart4 && lhs.iPart5 == rhs.iPart5;
+        return lhs.part1 == rhs.part1 && lhs.part2 == rhs.part2 && lhs.part3 == rhs.part3 && lhs.part4 == rhs.part4 && lhs.part5 == rhs.part5;
     }
 
     inline bool operator!=(const uuid& lhs, const uuid& rhs)
@@ -71,20 +70,20 @@ namespace neolib
 
     inline bool operator<(const uuid& lhs, const uuid& rhs)
     {
-        return std::tie(lhs.iPart1, lhs.iPart2, lhs.iPart3, lhs.iPart4, lhs.iPart5) <
-            std::tie(rhs.iPart1, rhs.iPart2, rhs.iPart3, rhs.iPart4, rhs.iPart5);
+        return std::tie(lhs.part1, lhs.part2, lhs.part3, lhs.part4, lhs.part5) <
+            std::tie(rhs.part1, rhs.part2, rhs.part3, rhs.part4, rhs.part5);
     }
 
     inline uuid make_uuid(const std::string& aHyphenatedHexString /* "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" */)
     {
         uuid result;
-        result.iPart1 = static_cast<uint32_t>(std::strtoul(aHyphenatedHexString.substr(0, 8).c_str(), 0, 16));
-        result.iPart2 = static_cast<uint16_t>(std::strtoul(aHyphenatedHexString.substr(9, 4).c_str(), 0, 16));
-        result.iPart3 = static_cast<uint16_t>(std::strtoul(aHyphenatedHexString.substr(14, 4).c_str(), 0, 16));
-        result.iPart4 = static_cast<uint16_t>(std::strtoul(aHyphenatedHexString.substr(19, 4).c_str(), 0, 16));
+        result.part1 = static_cast<uint32_t>(std::strtoul(aHyphenatedHexString.substr(0, 8).c_str(), 0, 16));
+        result.part2 = static_cast<uint16_t>(std::strtoul(aHyphenatedHexString.substr(9, 4).c_str(), 0, 16));
+        result.part3 = static_cast<uint16_t>(std::strtoul(aHyphenatedHexString.substr(14, 4).c_str(), 0, 16));
+        result.part4 = static_cast<uint16_t>(std::strtoul(aHyphenatedHexString.substr(19, 4).c_str(), 0, 16));
         uint64_t bytes = static_cast<uint64_t>(std::strtoull(aHyphenatedHexString.substr(24, 12).c_str(), 0, 16));
         for (size_t i = 0; i <= 5; ++i)
-            result.iPart5[i] = static_cast<uint8_t>((bytes >> (5 - i) * 8) & 0xFF);
+            result.part5[i] = static_cast<uint8_t>((bytes >> (5 - i) * 8) & 0xFF);
         return result;
     }
 
@@ -103,12 +102,12 @@ namespace neolib
     inline std::ostream& operator<<(std::ostream& aStream, const uuid& aId)
     {
         char oldFill = aStream.fill('0');
-        aStream << std::hex << std::uppercase << std::setw(8) << aId.iPart1 << "-";
-        aStream << std::hex << std::uppercase << std::setw(4) << aId.iPart2 << "-";
-        aStream << std::hex << std::uppercase << std::setw(4) << aId.iPart3 << "-";
-        aStream << std::hex << std::uppercase << std::setw(4) << aId.iPart4 << "-";
+        aStream << std::hex << std::uppercase << std::setw(8) << aId.part1 << "-";
+        aStream << std::hex << std::uppercase << std::setw(4) << aId.part2 << "-";
+        aStream << std::hex << std::uppercase << std::setw(4) << aId.part3 << "-";
+        aStream << std::hex << std::uppercase << std::setw(4) << aId.part4 << "-";
         for (size_t i = 0; i <= 5; ++i)
-            aStream << std::hex << std::uppercase << std::setw(2) << static_cast<uint32_t>(aId.iPart5[i]);
+            aStream << std::hex << std::uppercase << std::setw(2) << static_cast<uint32_t>(aId.part5[i]);
         aStream << std::dec;
         aStream.fill(oldFill);
         return aStream;
@@ -130,7 +129,7 @@ namespace std
         typedef std::size_t result_type;
         result_type operator()(argument_type const& aUuid) const
         {
-            auto const& t = std::tie(aUuid.iPart1, aUuid.iPart2, aUuid.iPart3, aUuid.iPart4, aUuid.iPart5);
+            auto const& t = std::tie(aUuid.part1, aUuid.part2, aUuid.part3, aUuid.part4, aUuid.part5);
             return boost::hash<decltype(t)>{}(t);
         }
     };

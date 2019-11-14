@@ -38,6 +38,7 @@
 #include <neolib/neolib.hpp>
 #include <neolib/variadic.hpp>
 #include <neolib/reference_counted.hpp>
+#include <neolib/variant.hpp>
 #include <neolib/i_enum.hpp>
 
 namespace neolib

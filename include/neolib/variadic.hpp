@@ -26,9 +26,14 @@ namespace neolib
     namespace variadic
     {
         template <typename...>
-        struct index : std::integral_constant<std::size_t, 0u> {};
+        struct index;
 
+        // found it
         template <typename T, typename... R>
-        struct index<T, R...> : std::integral_constant<std::size_t, 1u + index<R...>::value> {};
+        struct index<T, T, R...> : std::integral_constant<size_t, 0u> {};
+
+        // still looking
+        template <typename T, typename F, typename... R>
+        struct index<T, F, R...> : std::integral_constant<size_t, 1u + index<T, R...>::value> {};
     }
 }

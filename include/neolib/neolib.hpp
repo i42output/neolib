@@ -39,6 +39,7 @@
 #include <type_traits>
 #include <cstdint>
 #include <utility>
+#include <variant>
 
 #ifdef NDEBUG
 constexpr bool ndebug = true;
@@ -83,16 +84,14 @@ namespace neolib
         struct abstract_type<T, typename std::enable_if<abstract_class_possible_v<T>, sfinae>::type> : std::true_type { typedef typename T::abstract_type type; };
         template <typename T>
         struct abstract_type<T, typename std::enable_if<std::is_arithmetic_v<T>, sfinae>::type> : std::true_type { typedef T type; };
-        template<typename T1, typename T2>
+        template <typename T1, typename T2>
         struct abstract_type<std::pair<T1, pair<T1, T2>>> : std::false_type { typedef typename abstract_type<pair<T1, T2>>::type type; };
-        template<typename T1, typename T2>
+        template <typename T1, typename T2>
         struct abstract_type<const std::pair<T1, pair<T1, T2>>> : std::false_type { typedef typename abstract_type<const pair<T1, T2>>::type type; };
+        template <>
+        struct abstract_type<std::monostate> : std::true_type { typedef std::monostate type; };
     }
 }
-
-#define declare_abstract( AbstractType ) \
-    template<>\
-    struct neolib::detail::abstract_type<AbstractType> { typedef AbstractType type; };
 
 template <typename T>
 using abstract_t = typename neolib::detail::abstract_type<T>::type;
