@@ -68,7 +68,7 @@ namespace neolib
     template <typename T1, typename T2>
     inline pair<T1, T2> make_pair(T1&& aFirst, T2&& aSecond)
     {
-        return pair{ std::forward<T1>(aFirst), std::forward<T2>(aSecond) };
+        return pair<T1, T2>{ std::forward<T1>(aFirst), std::forward<T2>(aSecond) };
     }
 
     namespace detail
