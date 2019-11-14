@@ -64,6 +64,8 @@ namespace neolib::detail
     struct is_pair { static constexpr bool value = false; };
     template <typename T1, typename T2>
     struct is_pair<std::pair<T1, T2>> { static constexpr bool value = true; };
+    template <typename T1, typename T2>
+    struct is_pair<const std::pair<T1, T2>> { static constexpr bool value = true; };
     template <typename T>
     constexpr bool is_pair_v = is_pair<T>::value;
 
@@ -73,9 +75,9 @@ namespace neolib::detail
     template <typename, typename = sfinae>
     struct abstract_type;
     template <typename T>
-    struct abstract_type<T, std::enable_if_t<abstract_class_possible_v<T>, sfinae>> { typedef typename T::abstract_type type; };
+    struct abstract_type<T, typename std::enable_if<abstract_class_possible_v<T>, sfinae>::type> { typedef typename T::abstract_type type; };
     template <typename T>
-    struct abstract_type<T, std::enable_if_t<std::is_arithmetic_v<T>, sfinae>> { typedef T type; };
+    struct abstract_type<T, typename std::enable_if<std::is_arithmetic_v<T>, sfinae>::type> { typedef T type; };
 }
 
 #define declare_abstract( AbstractType ) \
