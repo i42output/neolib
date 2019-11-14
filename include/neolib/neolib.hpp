@@ -70,7 +70,7 @@ namespace neolib::detail
     template <typename T>
     constexpr bool abstract_class_possible_v = std::is_class_v<T> && !is_pair_v<T>;
 
-    template <typename T, typename SFINAE = sfinae>
+    template <typename, typename = sfinae>
     struct abstract_type;
     template <typename T>
     struct abstract_type<T, std::enable_if_t<abstract_class_possible_v<T>, sfinae>> { typedef typename T::abstract_type type; };
