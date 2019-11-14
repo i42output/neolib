@@ -234,6 +234,23 @@ namespace neolib
     private:
         const enum_t<id_t> iEnum;
     };
+
+    namespace variant_visitors
+    {
+        template <typename Visitor, typename Id, typename... Types>
+        auto visit(Visitor&& vis, const neolib::plugin_variant<Id, Types...>& var)
+        {
+            return std::visit(std::forward<Visitor>(vis), var.for_visitor());
+        }
+
+        template <typename Visitor, typename Id, typename... Types>
+        auto visit(Visitor&& vis, neolib::plugin_variant<Id, Types...>& var)
+        {
+            return std::visit(std::forward<Visitor>(vis), var.for_visitor());
+        }
+    }
+
+    using namespace variant_visitors;
 }
 
 namespace std
@@ -245,4 +262,6 @@ namespace std
     template <size_t I, typename Id, class... Types>
     struct variant_alternative<I, neolib::plugin_variant<Id, Types...>>
         { typedef typename std::variant_alternative<I, typename neolib::plugin_variant<Id, Types...>::variant_type>::type type; };
+
+    using neolib::variant_visitors::visit;
 }
