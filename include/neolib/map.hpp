@@ -72,7 +72,7 @@ namespace neolib
         map() 
         {
         }
-        map(const std::initializer_list<value_type>& aIlist) :
+        map(const std::initializer_list<container_value_type>& aIlist) :
             iMap{ aIlist }
         {
         }

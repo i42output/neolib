@@ -68,7 +68,15 @@ namespace neolib
         template <typename Enum>
         using container_value_type = typename enum_traits_detail::types<Enum>::container_value_type;
 
-        #define declare_enum_string( enumName, enumEnumerator ) container_value_type<enumName>{ enumName::enumEnumerator, value_type<enumName>{ enumName::enumEnumerator, string{ #enumEnumerator } } },
+        template <typename Enum>
+        inline std::underlying_type_t<Enum> to_underlying_type(Enum aValue)
+        {
+            return static_cast<std::underlying_type_t<Enum>>(aValue);
+        }
+
+        #define declare_enum_string( enumName, enumEnumerator )\
+            neolib::enum_traits::container_value_type<enumName>{ neolib::enum_traits::to_underlying_type(enumName::enumEnumerator),\
+                neolib::enum_traits::value_type<enumName>{ neolib::enum_traits::to_underlying_type(enumName::enumEnumerator), neolib::string{ #enumEnumerator } } },
     }
 
     using namespace enum_traits;
@@ -191,5 +199,3 @@ namespace neolib
     template <typename T>
     using i_enum_t = i_basic_enum<std::underlying_type_t<T>>;
 }
-
-using namespace neolib::enum_traits;
