@@ -68,7 +68,7 @@ namespace neolib
         template <typename Enum>
         using container_value_type = typename enum_traits_detail::types<Enum>::container_value_type;
 
-        #define declare_enum_string( enumName, enumEnumerator ) container_value_type<enumName>{ value_type<enumName>{ enumName::enumEnumerator, #enumEnumerator } },
+        #define declare_enum_string( enumName, enumEnumerator ) container_value_type<enumName>{ value_type<enumName>{ enumName::enumEnumerator, string{ #enumEnumerator } } },
     }
 
     using namespace enum_traits;
