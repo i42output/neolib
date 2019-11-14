@@ -241,4 +241,8 @@ namespace std
     template <typename Id, typename... Types>
     struct variant_size<neolib::plugin_variant<Id, Types...>>
         : std::integral_constant<std::size_t, sizeof...(Types)> { };
+
+    template <size_t I, typename Id, class... Types>
+    struct variant_alternative<I, neolib::plugin_variant<Id, Types...>>
+        { typedef typename std::variant_alternative<I, neolib::plugin_variant<Id, Types...>>::variant_type type; };
 }

@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <neolib/variadic.hpp>
 
 #include <type_traits>
 #include <optional>
@@ -181,6 +182,10 @@ namespace std
     template <typename... Types>
     struct variant_size<neolib::variant<Types...>>
         : std::integral_constant<std::size_t, sizeof...(Types)> { };
+    
+    template <size_t I, class... Types>
+    struct variant_alternative<I, neolib::variant<Types...>> 
+        { typedef typename std::variant_alternative<I, neolib::variant<Types...>>::value_type type; };
 
     using neolib::variant_visitors::visit;
 }
