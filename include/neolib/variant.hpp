@@ -178,6 +178,10 @@ namespace neolib
 
 namespace std
 {
+    template <typename... Types>
+    struct variant_size<neolib::variant<Types...>>
+        : std::integral_constant<std::size_t, sizeof...(Types)> { };
+
     using neolib::variant_visitors::visit;
 }
 

@@ -236,3 +236,9 @@ namespace neolib
     };
 }
 
+namespace std
+{
+    template <typename Id, typename... Types>
+    struct variant_size<neolib::plugin_variant<Id, Types...>>
+        : std::integral_constant<std::size_t, sizeof...(Types)> { };
+}
