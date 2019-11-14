@@ -88,13 +88,13 @@ template <typename T>
 using abstract_t = typename neolib::detail::abstract_type<T>::type;
 
 template <typename T>
-inline const abstract_t<T>& to_abstract_type(const T& aArgument, std::enable_if_t<neolib::detail::abstract_type<T>::value, sfinae> = {})
+inline std::enable_if_t<neolib::detail::abstract_type<T>::value, const abstract_t<T>&> to_abstract_type(const T& aArgument)
 {
     return static_cast<const abstract_t<T>&>(aArgument);
 }
 
 template <typename T>
-inline abstract_t<T>& to_abstract_type(T& aArgument, std::enable_if_t<neolib::detail::abstract_type<T>::value, sfinae> = {})
+inline std::enable_if_t<neolib::detail::abstract_type<T>::value, abstract_t<T>&> to_abstract_type(T& aArgument)
 {
     return static_cast<abstract_t<T>&>(aArgument);
 }
