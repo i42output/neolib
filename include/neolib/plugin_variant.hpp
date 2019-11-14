@@ -244,5 +244,5 @@ namespace std
 
     template <size_t I, typename Id, class... Types>
     struct variant_alternative<I, neolib::plugin_variant<Id, Types...>>
-        { typedef typename std::variant_alternative<I, neolib::plugin_variant<Id, Types...>>::variant_type type; };
+        { typedef typename std::variant_alternative<I, typename neolib::plugin_variant<Id, Types...>::variant_type>::type type; };
 }

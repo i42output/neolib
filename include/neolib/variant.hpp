@@ -185,7 +185,7 @@ namespace std
     
     template <size_t I, class... Types>
     struct variant_alternative<I, neolib::variant<Types...>> 
-        { typedef typename std::variant_alternative<I, neolib::variant<Types...>>::value_type type; };
+        { typedef typename std::variant_alternative<I, typename neolib::variant<Types...>::value_type>::type type; };
 
     using neolib::variant_visitors::visit;
 }
