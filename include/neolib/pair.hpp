@@ -48,20 +48,21 @@ namespace neolib
         typedef i_pair<abstract_t<T1>, abstract_t<T2>> abstract_type;
         typedef abstract_t<T1> first_abstract_type;
         typedef abstract_t<T2> second_abstract_type;
-        typedef T1 first_concrete_type;
-        typedef T2 second_concrete_type;
+        typedef T1 first_type;
+        typedef T2 second_type;
     private:
-        typedef std::pair<first_concrete_type, second_concrete_type> concrete_base;
+        typedef std::pair<first_type, second_type> concrete_base;
     public:
-        pair() : concrete_base(first_concrete_type(), second_concrete_type()) {}
-        pair(const abstract_type& aPair) : concrete_base(aPair.first(), aPair.second()) {}
-        pair(const concrete_base& aPair) : concrete_base(aPair) {}
-        pair(const first_abstract_type& aFirst, const second_abstract_type& aSecond) : concrete_base(aFirst, aSecond) {}
+        pair() : concrete_base{ first_type{}, second_type{} } {}
+        pair(const abstract_type& aPair) : concrete_base{ first_type{ aPair.first() }, second_type{ aPair.second() } } {}
+        pair(const concrete_base& aPair) : concrete_base{ aPair } {}
+        pair(const first_abstract_type& aFirst, const second_abstract_type& aSecond) : concrete_base{ first_type{ aFirst }, second_type{ aSecond } } {}
+        pair(const first_type& aFirst, const second_type& aSecond) : concrete_base{ aFirst, aSecond } {}
     public:
-        const first_concrete_type& first() const override { return concrete_base::first; }
-        first_concrete_type& first() override { return concrete_base::first; }
-        const second_concrete_type& second() const override { return concrete_base::second; }
-        second_concrete_type& second() override { return concrete_base::second; }
+        const first_type& first() const override { return concrete_base::first; }
+        first_type& first() override { return concrete_base::first; }
+        const second_type& second() const override { return concrete_base::second; }
+        second_type& second() override { return concrete_base::second; }
     };
 
     template <typename T1, typename T2>
