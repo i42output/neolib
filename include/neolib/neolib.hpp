@@ -61,15 +61,14 @@ inline to_const_reference_t<T> to_const(T&& object)
 namespace neolib::detail
 {
     template <typename T>
-    struct abstract_class_possible { static constexpr bool value = std::is_class_v<T>; };
-
-    template <typename T>
     struct is_pair { static constexpr bool value = false; };
     template <typename T1, typename T2>
     struct is_pair<std::pair<T1, T2>> { static constexpr bool value = true; };
+    template <typename T>
+    constexpr bool is_pair_v = is_pair<T>::value;
 
     template <typename T>
-    constexpr bool abstract_class_possible_v = abstract_class_possible<T>::value && !is_pair<T>::value;
+    constexpr bool abstract_class_possible_v = std::is_class_v<T> && !is_pair_v<T>;
 
     template <typename T, typename SFINAE = sfinae>
     struct abstract_type;
