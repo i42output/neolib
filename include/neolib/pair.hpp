@@ -73,10 +73,7 @@ namespace neolib
 
     namespace detail
     {
-        template <typename T1, typename T2>
-        struct abstract_class_possible<std::pair<T1, T2>> { static constexpr bool value = false; };
-
         template<typename T1, typename T2>
-        struct abstract_type<std::pair<T1, T2>, sfinae> { typedef typename abstract_type<T2>::type type; };
+        struct abstract_type<std::pair<T1, pair<T1, T2>>, sfinae> { typedef typename abstract_type<T2>::type type; };
     }
 }

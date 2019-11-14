@@ -38,6 +38,7 @@
 
 #include <type_traits>
 #include <cstdint>
+#include <utility>
 
 #ifdef NDEBUG
 constexpr bool ndebug = true;
@@ -63,7 +64,12 @@ namespace neolib::detail
     struct abstract_class_possible { static constexpr bool value = std::is_class_v<T>; };
 
     template <typename T>
-    constexpr bool abstract_class_possible_v = abstract_class_possible<T>::value;
+    struct is_pair { static constexpr bool value = false; };
+    template <typename T1, typename T2>
+    struct is_pair<std::pair<T1, T2>> { static constexpr bool value = true; };
+
+    template <typename T>
+    constexpr bool abstract_class_possible_v = abstract_class_possible<T>::value && !is_pair<T>::value;
 
     template <typename T, typename SFINAE = sfinae>
     struct abstract_type;
