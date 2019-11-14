@@ -96,7 +96,7 @@ namespace neolib
                 return;
             clear();
             for (const_iterator i = aOther.begin(); i != aOther.end(); ++i)
-                iMap.insert(value_type{ key_type{ i->first() }, mapped_type{ key_type{i->first()}, mapped_type{i->second()} } });
+                iMap.insert(container_value_type{ key_type{ i->first() }, value_type{ key_type{i->first()}, mapped_type{i->second()} } });
         }
         // from i_map
     public:
