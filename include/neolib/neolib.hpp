@@ -59,10 +59,16 @@ inline to_const_reference_t<T> to_const(T&& object)
 
 namespace neolib::detail
 {
+    template <typename T>
+    struct abstract_class_possible { static constexpr bool value = std::is_class_v<T>; };
+
+    template <typename T>
+    constexpr bool abstract_class_possible_v = abstract_class_possible<T>::value;
+
     template <typename T, typename SFINAE = sfinae>
     struct abstract_type;
     template <typename T>
-    struct abstract_type<T, std::enable_if_t<std::is_class_v<T>, sfinae>> { typedef typename T::abstract_type type; };
+    struct abstract_type<T, std::enable_if_t<abstract_class_possible_v<T>, sfinae>> { typedef typename T::abstract_type type; };
     template <typename T>
     struct abstract_type<T, std::enable_if_t<std::is_arithmetic_v<T>, sfinae>> { typedef T type; };
 }
