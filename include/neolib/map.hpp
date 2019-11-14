@@ -37,9 +37,9 @@
 
 #include <neolib/neolib.hpp>
 #include <map>
-#include "pair.hpp"
-#include "container_iterator.hpp"
-#include "i_map.hpp"
+#include <neolib/pair.hpp>
+#include <neolib/container_iterator.hpp>
+#include <neolib/i_map.hpp>
 
 namespace neolib
 {
