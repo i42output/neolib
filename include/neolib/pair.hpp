@@ -56,8 +56,8 @@ namespace neolib
         pair() : concrete_base{ first_type{}, second_type{} } {}
         pair(const abstract_type& aPair) : concrete_base{ first_type{ aPair.first() }, second_type{ aPair.second() } } {}
         pair(const concrete_base& aPair) : concrete_base{ aPair } {}
-        pair(const first_abstract_type& aFirst, const second_abstract_type& aSecond) : concrete_base{ first_type{ aFirst }, second_type{ aSecond } } {}
-        pair(const first_type& aFirst, const second_type& aSecond) : concrete_base{ aFirst, aSecond } {}
+        template <typename T3, typename T4>
+        pair(T3&& aFirst, T4&& aSecond) : concrete_base{ first_type{ std::forward<T3>(aFirst) }, second_type{ std::forward<T4>(aSecond) } } {}
     public:
         const first_type& first() const override { return concrete_base::first; }
         first_type& first() override { return concrete_base::first; }
