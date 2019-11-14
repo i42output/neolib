@@ -53,7 +53,7 @@ namespace neolib
             static const enum_enumerators_t<Enum> enumerators;
         };
 
-        #define declare_enum_string( enumName, enumEnumerator ) { static_cast<std::underlying_type_t<enumName>>(enumName::enumEnumerator), string{ #enumEnumerator } },
+        #define declare_enum_string( enumName, enumEnumerator ) { make_pair(static_cast<const std::underlying_type_t<enumName>>(enumName::enumEnumerator), string{ #enumEnumerator }) },
     }
 
     using namespace enum_traits;
