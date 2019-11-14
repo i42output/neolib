@@ -66,7 +66,16 @@ namespace neolib
     namespace detail
     {
         template <typename T>
-        constexpr bool abstract_class_possible_v = std::is_class_v<T>;
+        struct is_pair { static constexpr bool value = false; };
+        template <typename T1, typename T2>
+        struct is_pair<std::pair<T1, T2>> { static constexpr bool value = true; };
+        template <typename T1, typename T2>
+        struct is_pair<const std::pair<T1, T2>> { static constexpr bool value = true; };
+        template <typename T>
+        constexpr bool is_pair_v = is_pair<T>::value;
+
+        template <typename T>
+        constexpr bool abstract_class_possible_v = std::is_class_v<T> && !is_pair_v<T>;
 
         template <typename, typename = sfinae>
         struct abstract_type : std::false_type {};
@@ -88,13 +97,13 @@ namespace neolib
 template <typename T>
 using abstract_t = typename neolib::detail::abstract_type<T>::type;
 
-template <typename T>
+template <typename T, typename = std::enable_if_t<neolib::detail::abstract_type<T>::value, sfinae>>
 inline const abstract_t<T>& to_abstract_type(const T& aArgument)
 {
     return static_cast<const abstract_t<T>&>(aArgument);
 }
 
-template <typename T>
+template <typename T, typename = std::enable_if_t<neolib::detail::abstract_type<T>::value, sfinae>>
 inline abstract_t<T>& to_abstract_type(T& aArgument)
 {
     return static_cast<abstract_t<T>&>(aArgument);
