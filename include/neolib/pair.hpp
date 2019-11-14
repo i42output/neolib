@@ -70,26 +70,5 @@ namespace neolib
     {
         return pair<T1, T2>{ std::forward<T1>(aFirst), std::forward<T2>(aSecond) };
     }
-
-    namespace detail
-    {
-        // Support for abstract mapped types (see <neolib/map.hpp>)... 
-
-        template<typename T1, typename T2>
-        struct abstract_type<std::pair<T1, pair<T1, T2>>> : std::false_type { typedef typename abstract_type<pair<T1, T2>>::type type; };
-        template<typename T1, typename T2>
-        struct abstract_type<const std::pair<T1, pair<T1, T2>>> : std::false_type { typedef typename abstract_type<const pair<T1, T2>>::type type; };
-    }
 }
 
-template <typename T1, typename T2>
-inline const abstract_t<neolib::pair<T1, T2>>& to_abstract_type(const std::pair<T1, neolib::pair<T1, T2>>& aArgument)
-{
-    return static_cast<const abstract_t<neolib::pair<T1, T2>>&>(aArgument.second);
-}
-
-template <typename T1, typename T2>
-inline abstract_t<neolib::pair<T1, T2>>& to_abstract_type(std::pair<T1, neolib::pair<T1, T2>>& aArgument)
-{
-    return static_cast<abstract_t<neolib::pair<T1, T2>>&>(aArgument.second);
-}
