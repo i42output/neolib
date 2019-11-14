@@ -51,7 +51,7 @@ namespace neolib
         typedef i_basic_enum<std::underlying_type_t<Enum>> abstract_type;
         // exceptions
     public:
-        using base_type::bad_enum_string;
+        using typename base_type::bad_enum_string;
         // types
     public:
         typedef Enum enum_type;
