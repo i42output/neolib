@@ -53,7 +53,7 @@ namespace neolib
             static const enum_enumerators_t<Enum> enumerators;
         };
 
-        namespace detail
+        namespace enum_traits_detail
         {
             template <typename Enum>
             struct types
@@ -64,9 +64,9 @@ namespace neolib
         }
 
         template <typename Enum>
-        using value_type = typename detail::types<Enum>::value_type;
+        using value_type = typename enum_traits_detail::types<Enum>::value_type;
         template <typename Enum>
-        using container_value_type = typename detail::types<Enum>::container_value_type;
+        using container_value_type = typename enum_traits_detail::types<Enum>::container_value_type;
 
         #define declare_enum_string( enumName, enumEnumerator ) container_value_type<enumName>{ value_type<enumName>{ enumName::enumEnumerator, #enumEnumerator } }
     }
