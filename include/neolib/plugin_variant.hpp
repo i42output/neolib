@@ -95,7 +95,7 @@ namespace neolib
     template <typename Id, typename... Types>
     class plugin_variant : 
         public reference_counted<i_plugin_variant<Id, abstract_t<Types>...>>,
-        private variant<Types...>
+        public variant<Types...>
     {
         typedef plugin_variant<Id, Types...> self_type;
         typedef reference_counted<i_plugin_variant<Id, abstract_t<Types>...>> base_type;
@@ -170,7 +170,7 @@ namespace neolib
     public:
         void clear() override
         {
-            iValue = none;
+            *this = none;
         }
         id_t which() const override
         {
@@ -180,7 +180,7 @@ namespace neolib
         }
         bool empty() const override
         {
-            return iValue == none;
+            return *this == none;
         }
         // meta
     public:
@@ -232,7 +232,6 @@ namespace neolib
         }
         // state
     private:
-        variant_type iValue;
         const enum_t<id_t> iEnum;
     };
 }
