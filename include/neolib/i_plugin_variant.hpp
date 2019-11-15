@@ -109,14 +109,14 @@ namespace neolib
         virtual id_t which() const = 0;
         virtual bool empty() const = 0;
         template <typename T>
-        const T& value() const
+        const T& get() const
         {
             if (which() == static_cast<id_t>(variadic::index_v<T, Types...>))
                 return *static_cast<const T*>(data());
             throw bad_variant_access();
         }
         template <typename T>
-        T& value()
+        T& get()
         {
             if (which() == static_cast<id_t>(variadic::index_v<T, Types...>))
                 return *static_cast<T*>(data());
