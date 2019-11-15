@@ -73,14 +73,14 @@ namespace neolib
             return result;
         }
         template <typename T>
-        self_type& operator=(const T& aArgument)
+        std::enable_if_t<!std::is_base_of_v<self_type, T>, self_type>& operator=(const T& aArgument)
         {
-            return do_assign(static_cast<id_t>(variadic::index<T, Types...>::value), &aArgument);
+            return do_assign(static_cast<id_t>(variadic::index_v<T, Types...>), &aArgument);
         }
         template <typename T>
-        self_type& operator=(T&& aArgument)
+        std::enable_if_t<!std::is_base_of_v<self_type, std::remove_reference_t<T>>, self_type>& operator=(T&& aArgument)
         {
-            return do_move_assign(static_cast<id_t>(variadic::index<T, Types...>::value), &aArgument);
+            return do_move_assign(static_cast<id_t>(variadic::no_reference_index_v<T, Types...>), &aArgument);
         }
         self_type& operator=(const none_t)
         {
@@ -111,14 +111,14 @@ namespace neolib
         template <typename T>
         const T& value() const
         {
-            if (which() == static_cast<id_t>(variadic::index<T, Types...>::value))
+            if (which() == static_cast<id_t>(variadic::index_v<T, Types...>))
                 return *static_cast<const T*>(data());
             throw bad_variant_access();
         }
         template <typename T>
         T& value()
         {
-            if (which() == static_cast<id_t>(variadic::index<T, Types...>::value))
+            if (which() == static_cast<id_t>(variadic::index_v<T, Types...>))
                 return *static_cast<T*>(data());
             throw bad_variant_access();
         }

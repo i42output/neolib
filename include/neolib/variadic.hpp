@@ -35,5 +35,11 @@ namespace neolib
         // still looking
         template <typename T, typename F, typename... R>
         struct index<T, F, R...> : std::integral_constant<size_t, 1u + index<T, R...>::value> {};
+
+        template <typename T, typename... R>
+        constexpr size_t index_v = index<T, R...>::value;
+
+        template <typename T, typename... R>
+        constexpr size_t no_reference_index_v = index<std::remove_reference_t<T>, R...>::value;
     }
 }

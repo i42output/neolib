@@ -58,8 +58,8 @@ namespace neolib
                 key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 5]
             }
         };
-        result.iPart3 = static_cast<uint16_t>((result.iPart3 & (0x0FFF)) | (0x4 << 12));
-        result.iPart4 = static_cast<uint16_t>((result.iPart4 & (0b0011111111111111)) | (0b10 << 14));
+        result.part3 = static_cast<uint16_t>((result.part3 & (0x0FFF)) | (0x4 << 12));
+        result.part4 = static_cast<uint16_t>((result.part4 & (0b0011111111111111)) | (0b10 << 14));
         return result;
     }
 }

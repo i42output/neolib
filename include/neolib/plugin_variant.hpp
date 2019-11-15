@@ -109,6 +109,14 @@ namespace neolib
         // construction/assignment
     public:
         using variant_type::variant_type;
+        plugin_variant(const self_type& aOther)
+        {
+            do_assign(aOther.which(), aOther.data());
+        }
+        plugin_variant(self_type&& aOther)
+        {
+            do_move_assign(aOther.which(), aOther.data());
+        }
         plugin_variant(const abstract_type& aOther)
         {
             do_assign(aOther.which(), aOther.data());
@@ -116,6 +124,14 @@ namespace neolib
         plugin_variant(abstract_type&& aOther)
         {
             do_move_assign(aOther.which(), aOther.data());
+        }
+        self_type& operator=(const self_type& aOther)
+        {
+            return static_cast<self_type&>(abstract_type::operator=(aOther));
+        }
+        self_type& operator=(self_type&& aOther)
+        {
+            return static_cast<self_type&>(abstract_type::operator=(aOther));
         }
         using abstract_type::operator=;
         // comparison
