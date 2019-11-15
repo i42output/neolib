@@ -136,6 +136,8 @@ namespace neolib
         using abstract_type::operator=;
         // comparison
     public:
+        using variant_type::operator==;
+        using variant_type::operator!=;
         bool operator==(const abstract_type& aRhs) const override
         {
             if (index() != index())
@@ -148,6 +150,10 @@ namespace neolib
                 result = (*static_cast<const comparison_type*>(data()) == *static_cast<const comparison_type*>(aRhs.data()));
             }, *this);
             return result;
+        }
+        bool operator!=(const abstract_type& aRhs) const
+        {
+            return !(*this == aRhs);
         }
         bool operator<(const abstract_type& aRhs) const override
         {
@@ -168,23 +174,11 @@ namespace neolib
             }
             throw type_not_less_than_comparable();
         }
-        bool operator!=(const abstract_type& aRhs) const
-        {
-            return !(*this == aRhs);
-        }
-        bool operator==(const none_t) const
-        {
-            return empty();
-        }
-        bool operator!=(const none_t) const
-        {
-            return !empty();
-        }
         // state
     public:
         void clear() override
         {
-            *this = none;
+            variant_type::operator=(none);
         }
         id_t which() const override
         {
@@ -194,7 +188,7 @@ namespace neolib
         }
         bool empty() const override
         {
-            return *this == none;
+            return variant_type::operator==(none);
         }
         // meta
     public:
@@ -230,16 +224,16 @@ namespace neolib
         }
         abstract_type& do_assign(id_t aType, const void* aData) override
         {
-            static detail::funky_assign_list_t<self_type> funks;
-            static auto const n = detail::funky_gen_assign<self_type, Types...>(funks);
+            static detail::funky_assign_list_t<variant_type> funks;
+            static auto const n = detail::funky_gen_assign<variant_type, Types...>(funks);
             if (static_cast<std::size_t>(aType) < n)
                 funks[static_cast<std::size_t>(aType)](*this, aData);
             return *this;
         }
         abstract_type& do_move_assign(id_t aType, void* aData) override
         {
-            static detail::funky_move_assign_list_t<self_type> funks;
-            static auto const n = detail::funky_gen_move_assign<self_type, Types...>(funks);
+            static detail::funky_move_assign_list_t<variant_type> funks;
+            static auto const n = detail::funky_gen_move_assign<variant_type, Types...>(funks);
             if (static_cast<std::size_t>(aType) < n)
                 funks[static_cast<std::size_t>(aType)](*this, aData);
             return *this;
