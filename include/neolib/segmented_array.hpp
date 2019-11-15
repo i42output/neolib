@@ -47,6 +47,7 @@ namespace neolib
     template <typename T, std::size_t SegmentSize = 64, typename Alloc = std::allocator<T> >
     class segmented_array : private array_tree<Alloc>
     {
+        typedef array_tree<Alloc> base_type;
     public:
         typedef T value_type;
         typedef Alloc allocator_type;
@@ -57,9 +58,8 @@ namespace neolib
         typedef typename allocator_type::size_type size_type;
         typedef typename allocator_type::difference_type difference_type;
     private:
-        typedef array_tree<Alloc> base;
         typedef neolib::vecarray<T, SegmentSize, SegmentSize, neolib::nocheck> segment_type;
-        class node : public base::node
+        class node : public base_type::node
         {
         public:
             node()
@@ -370,19 +370,19 @@ namespace neolib
         }
         const_iterator begin() const
         {
-            return const_iterator(*this, static_cast<node*>(base::front_node()), 0, 0);
+            return const_iterator(*this, static_cast<node*>(base_type::front_node()), 0, 0);
         }
         const_iterator end() const
         {
-            return const_iterator(*this, static_cast<node*>(base::back_node()), iSize, base::back_node() ? static_cast<node*>(base::back_node())->segment().size() : 0);
+            return const_iterator(*this, static_cast<node*>(base_type::back_node()), iSize, base_type::back_node() ? static_cast<node*>(base_type::back_node())->segment().size() : 0);
         }
         iterator begin()
         {
-            return iterator(*this, static_cast<node*>(base::front_node()), 0, 0);
+            return iterator(*this, static_cast<node*>(base_type::front_node()), 0, 0);
         }
         iterator end()
         {
-            return iterator(*this, static_cast<node*>(base::back_node()), iSize, base::back_node() ? static_cast<node*>(base::back_node())->segment().size() : 0);
+            return iterator(*this, static_cast<node*>(base_type::back_node()), iSize, base_type::back_node() ? static_cast<node*>(base_type::back_node())->segment().size() : 0);
         }
         const_reverse_iterator rbegin() const
         {
@@ -520,7 +520,7 @@ namespace neolib
         }
         void swap(segmented_array& aOther)
         {
-            base::swap(aOther);
+            base_type::swap(aOther);
             std::swap(iAllocator, aOther.iAllocator);
             std::swap(iSize, aOther.iSize);
         }
@@ -586,7 +586,7 @@ namespace neolib
             {
                 if (newNode != before && newNode != after)
                 {
-                    base::insert_node(newNode, index);
+                    base_type::insert_node(newNode, index);
                 }
                 index += newNode->segment().size();
                 if (newNode == lastNode)
@@ -612,7 +612,7 @@ namespace neolib
         node* find_node(size_type aContainerPosition, size_type& aSegmentPosition) const
         {
             size_type nodeIndex = 0;
-            node* result = static_cast<node*>(base::find_node(aContainerPosition, nodeIndex));
+            node* result = static_cast<node*>(base_type::find_node(aContainerPosition, nodeIndex));
             aSegmentPosition = aContainerPosition - nodeIndex;
             return result;
         }
@@ -654,8 +654,8 @@ namespace neolib
             }
             if (aAfter == nullptr)
             {
-                base::set_front_node(newNode);
-                base::set_back_node(newNode);
+                base_type::set_front_node(newNode);
+                base_type::set_back_node(newNode);
             }
             else
             {
@@ -666,8 +666,8 @@ namespace neolib
                     aAfter->next()->set_previous(newNode);
                 }
                 aAfter->set_next(newNode);
-                if (base::back_node() == aAfter)
-                    base::set_back_node(newNode);
+                if (base_type::back_node() == aAfter)
+                    base_type::set_back_node(newNode);
             }
             return newNode;
         }
@@ -679,11 +679,11 @@ namespace neolib
                     aNode->next()->set_previous(aNode->previous());
                 if (aNode->previous())
                     aNode->previous()->set_next(aNode->next());
-                if (base::back_node() == aNode)
-                    base::set_back_node(aNode->previous());
-                if (base::front_node() == aNode)
-                    base::set_front_node(aNode->next());
-                base::delete_node(aNode);
+                if (base_type::back_node() == aNode)
+                    base_type::set_back_node(aNode->previous());
+                if (base_type::front_node() == aNode)
+                    base_type::set_front_node(aNode->next());
+                base_type::delete_node(aNode);
             }
             std::allocator_traits<node_allocator_type>::destroy(iAllocator, aNode);
             std::allocator_traits<node_allocator_type>::deallocate(iAllocator, aNode, 1);

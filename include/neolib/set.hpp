@@ -56,7 +56,7 @@ namespace neolib
         typedef Alloc allocator_type;
         typedef mutable_set<value_type, compare_type, allocator_type> container_type;
     private:
-        typedef typename abstract_type::base abstract_container;
+        typedef typename abstract_type::abstract_container abstract_container;
     public:
         typedef typename abstract_type::size_type size_type;
         typedef container::const_iterator<value_type, typename container_type::const_iterator> container_const_iterator;
@@ -132,7 +132,7 @@ namespace neolib
         typedef Alloc allocator_type;
         typedef mutable_multiset<value_type, compare_type, allocator_type> container_type;
     private:
-        typedef typename abstract_type::base abstract_container;
+        typedef typename abstract_type::base_type abstract_container;
     public:
         typedef typename abstract_type::size_type size_type;
         typedef container::const_iterator<abstract_value_type, typename container_type::const_iterator> container_const_iterator;

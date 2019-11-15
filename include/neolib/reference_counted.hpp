@@ -257,12 +257,13 @@ namespace neolib
     template <typename Interface>
     class weak_ref_ptr : public i_weak_ref_ptr<Interface>
     {
+        typedef i_weak_ref_ptr<Interface> base_type;
     public:
-        typedef i_weak_ref_ptr<Interface> base;
-        typedef typename base::no_object no_object;
-        typedef typename base::interface_not_found interface_not_found;
-        typedef typename base::bad_release bad_release;
-        typedef typename base::wrong_object wrong_object;
+        typedef i_weak_ref_ptr<Interface> abstract_type;
+        typedef typename base_type::no_object no_object;
+        typedef typename base_type::interface_not_found interface_not_found;
+        typedef typename base_type::bad_release bad_release;
+        typedef typename base_type::wrong_object wrong_object;
     public:
         weak_ref_ptr(Interface* aObject = nullptr) :
             iObject(aObject)

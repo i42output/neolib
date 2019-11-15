@@ -43,17 +43,19 @@ namespace neolib
     template <typename T>
     class i_set : public i_container<T, i_const_iterator<T>, i_iterator<T> >
     {
-    protected:
-        typedef i_container<T, i_const_iterator<T>, i_iterator<T> > base;
+        typedef i_set<T> self_type;
+        typedef i_container<T, i_const_iterator<T>, i_iterator<T> > base_type;
     public:
+        typedef self_type abstract_type;
         typedef T abstract_key_type;
         typedef T abstract_value_type;
+        typedef base_type abstract_container;
     protected:
-        typedef typename base::abstract_const_iterator abstract_const_iterator;
-        typedef typename base::abstract_iterator abstract_iterator;
+        typedef typename base_type::abstract_const_iterator abstract_const_iterator;
+        typedef typename base_type::abstract_iterator abstract_iterator;
     public:
-        typedef typename base::const_iterator const_iterator;
-        typedef typename base::iterator iterator;
+        typedef typename base_type::const_iterator const_iterator;
+        typedef typename base_type::iterator iterator;
     public:
         iterator insert(const abstract_value_type& aValue) { iterator result; return do_insert(result.storage(), aValue); }
         const_iterator find(const abstract_key_type& aKey) const { const_iterator result; return do_find(result.storage(), aKey); }
@@ -67,17 +69,19 @@ namespace neolib
     template <typename T>
     class i_multiset : public i_container<T, i_const_iterator<T>, i_iterator<T> >
     {
-    protected:
-        typedef i_container<T, i_const_iterator<T>, i_iterator<T> > base;
+        typedef i_multiset<T> self_type;
+        typedef i_container<T, i_const_iterator<T>, i_iterator<T> > base_type;
     public:
+        typedef self_type abstract_type;
         typedef T abstract_key_type;
         typedef T abstract_value_type;
+        typedef base_type abstract_container;
     protected:
-        typedef typename base::abstract_const_iterator abstract_const_iterator;
-        typedef typename base::abstract_iterator abstract_iterator;
+        typedef typename base_type::abstract_const_iterator abstract_const_iterator;
+        typedef typename base_type::abstract_iterator abstract_iterator;
     public:
-        typedef typename base::const_iterator const_iterator;
-        typedef typename base::iterator iterator;
+        typedef typename base_type::const_iterator const_iterator;
+        typedef typename base_type::iterator iterator;
     public:
         iterator insert(const abstract_value_type& aValue) { iterator result; return do_insert(result.storage(), aValue); }
         const_iterator find(const abstract_key_type& aKey) const { const_iterator result; return do_find(result.storage(), aKey); }

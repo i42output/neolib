@@ -52,14 +52,13 @@ namespace neolib
         template <typename... Arguments>
         class event_callback : public i_event_callback<Arguments...>, public std::function<void(Arguments...)>
         {
+            typedef std::function<void(Arguments...)> base_type;
         public:
-            typedef std::function<void(Arguments...)> base;
-        public:
-            using base::base;
+            using base_type::base_type;
         public:
             void operator()(Arguments... aArguments) const override
             {
-                base::operator()(aArguments...);
+                base_type::operator()(aArguments...);
             }
         private:
             i_event_callback<Arguments...>* do_clone() const override

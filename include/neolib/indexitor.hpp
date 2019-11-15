@@ -47,6 +47,7 @@ namespace neolib
     template <typename T, typename ForeignIndex, typename Alloc = std::allocator<std::pair<T, const ForeignIndex>>>
     class indexitor : private index_array_tree<ForeignIndex, Alloc>
     {
+        typedef index_array_tree<ForeignIndex, Alloc> base_type;
     public:
         typedef T data_type;
         typedef ForeignIndex foreign_index_type;
@@ -60,8 +61,7 @@ namespace neolib
         typedef typename allocator_type::size_type size_type;
         typedef typename allocator_type::difference_type difference_type;
     private:
-        typedef index_array_tree<ForeignIndex, Alloc> base;
-        class node : public base::node
+        class node : public base_type::node
         {
         public:
             node(const value_type& aValue, const skip_type& aSkip = skip_type{}) :
@@ -339,7 +339,7 @@ namespace neolib
         }
         const_iterator begin() const
         {
-            return const_iterator{*this, static_cast<node*>(base::front_node()), 0};
+            return const_iterator{*this, static_cast<node*>(base_type::front_node()), 0};
         }
         const_iterator end() const
         {
@@ -347,7 +347,7 @@ namespace neolib
         }
         iterator begin()
         {
-            return iterator{*this, static_cast<node*>(base::front_node()), 0};
+            return iterator{*this, static_cast<node*>(base_type::front_node()), 0};
         }
         iterator end()
         {
@@ -495,7 +495,7 @@ namespace neolib
         }
         void swap(indexitor& aOther)
         {
-            base::swap(aOther);
+            base_type::swap(aOther);
             std::swap(iAllocator, aOther.iAllocator);
             std::swap(iSize, aOther.iSize);
         }
@@ -511,7 +511,7 @@ namespace neolib
         {
             size_type nodeIndex{};
             foreign_index_type nodeForeignIndex{};
-            auto n = base::find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred);
+            auto n = base_type::find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred);
             if (!n->is_nil() &&
                 !aPred(aForeignIndex - nodeForeignIndex, static_cast<node*>(n)->skip().first) &&
                 aPred(aForeignIndex - nodeForeignIndex, static_cast<node*>(n)->foreign_index() - static_cast<node*>(n)->skip().second))
@@ -524,7 +524,7 @@ namespace neolib
         {
             size_type nodeIndex{};
             foreign_index_type nodeForeignIndex{};
-            auto n = base::find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred);
+            auto n = base_type::find_node_by_foreign_index(aForeignIndex, nodeIndex, nodeForeignIndex, aPred);
             if (!n->is_nil() && 
                 !aPred(aForeignIndex - nodeForeignIndex, static_cast<node*>(n)->skip().first) &&
                 aPred(aForeignIndex - nodeForeignIndex, static_cast<node*>(n)->foreign_index() - static_cast<node*>(n)->skip().second))
@@ -537,7 +537,7 @@ namespace neolib
             if (aPosition.iNode != nullptr)
                 return do_foreign_index(aPosition.iNode) + aPosition.iNode->skip().first;
             else
-                return empty() ? foreign_index_type{} : do_foreign_index(static_cast<const node*>(base::back_node())) + base::back_node()->foreign_index();
+                return empty() ? foreign_index_type{} : do_foreign_index(static_cast<const node*>(base_type::back_node())) + base_type::back_node()->foreign_index();
         }
         foreign_index_type skip_before(const_iterator aPosition) const
         {
@@ -563,7 +563,7 @@ namespace neolib
             auto nextPos = pos;
             while (aFirst != aLast)
             {
-                base::insert_node(allocate_node(before, *aFirst++), nextPos++);
+                base_type::insert_node(allocate_node(before, *aFirst++), nextPos++);
                 ++iSize;
             }
             return iterator{*this, pos};
@@ -576,14 +576,14 @@ namespace neolib
             auto nextPos = pos;
             while (aFirst != aLast && aSkipFirst != aSkipLast)
             {
-                base::insert_node(allocate_node(before, *aFirst++, *aSkipFirst++), nextPos++);
+                base_type::insert_node(allocate_node(before, *aFirst++, *aSkipFirst++), nextPos++);
                 ++iSize;
             }
             return iterator{ *this, pos };
         }
         size_type do_index(const node* aNode) const
         {
-            if (aNode != base::root_node())
+            if (aNode != base_type::root_node())
             {
                 if (aNode == aNode->parent()->left())
                     return do_index(static_cast<const node*>(aNode->parent())) - aNode->size() + aNode->left_size();
@@ -591,11 +591,11 @@ namespace neolib
                     return do_index(static_cast<const node*>(aNode->parent())) + aNode->parent()->centre_size() + aNode->left_size();
             }
             else
-                return base::root_node()->left_size();
+                return base_type::root_node()->left_size();
         }
         foreign_index_type do_foreign_index(const node* aNode) const
         {
-            if (aNode != base::root_node())
+            if (aNode != base_type::root_node())
             {
                 if (aNode == aNode->parent()->left())
                     return do_foreign_index(static_cast<const node*>(aNode->parent())) - aNode->foreign_index() + aNode->left_foreign_index();
@@ -603,11 +603,11 @@ namespace neolib
                     return do_foreign_index(static_cast<const node*>(aNode->parent())) + aNode->parent()->centre_foreign_index() + aNode->left_foreign_index();
             }
             else
-                return base::root_node()->left_foreign_index();
+                return base_type::root_node()->left_foreign_index();
         }
         node* find_node(size_type aContainerPosition) const
         {
-            return static_cast<node*>(base::find_node(aContainerPosition));
+            return static_cast<node*>(base_type::find_node(aContainerPosition));
         }
         node* allocate_node(node* aBefore, const value_type& aValue, const skip_type& aSkip = skip_type{})
         {
@@ -623,8 +623,8 @@ namespace neolib
             }
             if (empty())
             {
-                base::set_front_node(newNode);
-                base::set_back_node(newNode);
+                base_type::set_front_node(newNode);
+                base_type::set_back_node(newNode);
             }
             else
             {
@@ -637,14 +637,14 @@ namespace neolib
                         aBefore->previous()->set_next(newNode);
                     }
                     aBefore->set_previous(newNode);
-                    if (base::front_node() == aBefore)
-                        base::set_front_node(newNode);
+                    if (base_type::front_node() == aBefore)
+                        base_type::set_front_node(newNode);
                 }
                 else
                 {
-                    base::back_node()->set_next(newNode);
-                    newNode->set_previous(base::back_node());
-                    base::set_back_node(newNode);
+                    base_type::back_node()->set_next(newNode);
+                    newNode->set_previous(base_type::back_node());
+                    base_type::set_back_node(newNode);
                 }
             }
             newNode->set_size(1);
@@ -659,11 +659,11 @@ namespace neolib
                     aNode->next()->set_previous(aNode->previous());
                 if (aNode->previous())
                     aNode->previous()->set_next(aNode->next());
-                if (base::back_node() == aNode)
-                    base::set_back_node(aNode->previous());
-                if (base::front_node() == aNode)
-                    base::set_front_node(aNode->next());
-                base::delete_node(aNode);
+                if (base_type::back_node() == aNode)
+                    base_type::set_back_node(aNode->previous());
+                if (base_type::front_node() == aNode)
+                    base_type::set_front_node(aNode->next());
+                base_type::delete_node(aNode);
             }
             std::allocator_traits<node_allocator_type>::destroy(iAllocator, aNode);
             std::allocator_traits<node_allocator_type>::deallocate(iAllocator, aNode, 1);

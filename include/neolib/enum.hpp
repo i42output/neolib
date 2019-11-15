@@ -48,12 +48,12 @@ namespace neolib
     {
         typedef basic_enum<Enum> self_type;
         typedef reference_counted<i_basic_enum<std::underlying_type_t<Enum>>> base_type;
-        typedef i_basic_enum<std::underlying_type_t<Enum>> abstract_type;
         // exceptions
     public:
         using typename base_type::bad_enum_string;
         // types
     public:
+        typedef i_basic_enum<std::underlying_type_t<Enum>> abstract_type;
         typedef Enum enum_type;
         typedef std::underlying_type_t<Enum> underlying_type;
         // construction/assignment

@@ -46,10 +46,11 @@ namespace neolib
 {
     class i_string : public i_sequence_container<char, i_random_access_const_iterator<char>, i_random_access_iterator<char>, false>
     {
-    private:
-        typedef i_sequence_container<char, i_random_access_const_iterator<char>, i_random_access_iterator<char> > base;
+        typedef i_string self_type;
+        typedef i_sequence_container<char, i_random_access_const_iterator<char>, i_random_access_iterator<char> > base_type;
     public:
-        typedef base::size_type size_type;
+        typedef self_type abstract_type;
+        typedef base_type::size_type size_type;
         typedef const char* const_fast_iterator;
         typedef char* fast_iterator;
     public:

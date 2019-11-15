@@ -44,11 +44,10 @@
 namespace neolib
 {
     template <typename T>
-    class vector : public reference_counted<i_vector<abstract_t<T>> >
+    class vector : public reference_counted<i_vector<abstract_t<T>>>
     {
+        typedef reference_counted<i_vector<T>> base_type;
         // types
-    private:
-        typedef reference_counted<i_vector<T> > base;
     public:
         typedef T value_type;
         typedef abstract_t<T> abstract_value_type;

@@ -33,47 +33,45 @@ namespace neolib
         template <typename... Arguments>
         class event_handle : public i_event_handle<Arguments...>, public neolib::event_handle<Arguments...>
         {
+            typedef neolib::event_handle<Arguments...> base_type;
         public:
-            typedef neolib::event_handle<Arguments...> base;
-        public:
-            using base::base;
-            event_handle(const base& aOther) :
-                base{ aOther }
+            using base_type::base_type;
+            event_handle(const base_type& aOther) :
+                base_type{ aOther }
             {
             }
         };
 
         class sink : public neolib::sink
         {
+            typedef neolib::sink base_type;
         public:
-            typedef neolib::sink base;
+            using base_type::base_type;
         public:
-            using base::base;
-        public:
-            using base::operator=;
-            using base::operator+=;
+            using base_type::operator=;
+            using base_type::operator+=;
             template <typename... Arguments>
             sink& operator=(const i_event_handle<Arguments...>& aHandle)
             {
-                base::operator=(static_cast<const event_handle<Arguments...>&>(aHandle));
+                base_type::operator=(static_cast<const event_handle<Arguments...>&>(aHandle));
                 return *this;
             }
             template <typename... Arguments>
             sink& operator+=(const i_event_handle<Arguments...>& aHandle)
             {
-                base::operator+=(static_cast<const event_handle<Arguments...>&>(aHandle));
+                base_type::operator+=(static_cast<const event_handle<Arguments...>&>(aHandle));
                 return *this;
             }
             template <typename... Arguments>
             sink& operator=(const std::unique_ptr<i_event_handle<Arguments...>>& aHandle)
             {
-                base::operator=(static_cast<const event_handle<Arguments...>&>(*aHandle));
+                base_type::operator=(static_cast<const event_handle<Arguments...>&>(*aHandle));
                 return *this;
             }
             template <typename... Arguments>
             sink& operator+=(const std::unique_ptr<i_event_handle<Arguments...>>& aHandle)
             {
-                base::operator+=(static_cast<const event_handle<Arguments...>&>(*aHandle));
+                base_type::operator+=(static_cast<const event_handle<Arguments...>&>(*aHandle));
                 return *this;
             }
         };
@@ -81,44 +79,44 @@ namespace neolib
         template <typename... Arguments>
         class event : public i_event<Arguments...>, public neolib::event<Arguments...>
         {
+            typedef neolib::event<Arguments...> base_type;
         public:
-            typedef neolib::event<Arguments...> base;
             typedef typename i_event<Arguments...>::handle handle;
             typedef typename i_event<Arguments...>::callback callback;
             typedef event_handle<Arguments...> concrete_handle;
         public:
-            using base::base;
+            using base_type::base_type;
         public:
-            using base::subscribe;
-            using base::operator();
-            using base::unsubscribe;
+            using base_type::subscribe;
+            using base_type::operator();
+            using base_type::unsubscribe;
         public:
             bool trigger(Arguments... aArguments) const override
             {
-                return base::trigger(aArguments...);
+                return base_type::trigger(aArguments...);
             }
             bool sync_trigger(Arguments... aArguments) const override
             {
-                return base::sync_trigger(aArguments...);
+                return base_type::sync_trigger(aArguments...);
             }
             void async_trigger(Arguments... aArguments) const override
             {
-                base::async_trigger(rvalue_cast<Arguments>(aArguments)...);
+                base_type::async_trigger(rvalue_cast<Arguments>(aArguments)...);
             }
             void accept() const override
             {
-                base::accept();
+                base_type::accept();
             }
             void ignore() const override
             {
-                base::ignore();
+                base_type::ignore();
             }
         private:
             handle* do_subscribe(const callback& aCallback, const void* aUniqueId = nullptr) const override
             {
                 std::shared_ptr<callback> cb = std::move(aCallback.clone());
                 return new concrete_handle(
-                    base::subscribe(
+                    base_type::subscribe(
                         [cb](Arguments&& ... aArguments)
                         {
                             (*cb)(std::forward<Arguments>(aArguments)...);
@@ -127,11 +125,11 @@ namespace neolib
             }
             void do_unsubscribe(handle& aHandle) const override
             {
-                return base::unsubscribe(static_cast<concrete_handle&>(aHandle));
+                return base_type::unsubscribe(static_cast<concrete_handle&>(aHandle));
             }
             void do_unsubscribe(const void* aUniqueId) const override
             {
-                return base::unsubscribe(aUniqueId);
+                return base_type::unsubscribe(aUniqueId);
             }
         };
     }

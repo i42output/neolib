@@ -90,6 +90,7 @@ namespace neolib
         struct bad_enum_string : std::logic_error { bad_enum_string() : std::logic_error("neolib::i_basic_enum::bad_enum_string") {} };
         // types
     public:
+        typedef self_type abstract_type;
         typedef UnderlyingType underlying_type;
         typedef i_map<underlying_type, i_string> enumerators_t;
         // construction/assignment

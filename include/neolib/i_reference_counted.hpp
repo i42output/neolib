@@ -69,9 +69,12 @@ namespace neolib
     template <typename Interface>
     class i_ref_ptr
     {
+        typedef i_ref_ptr<Interface> self_type;
     public:
         struct no_object : std::logic_error { no_object() : std::logic_error("neolib::i_ref_ptr::no_object") {} };
         struct interface_not_found : std::logic_error { interface_not_found() : std::logic_error("neolib::i_ref_ptr::interface_not_found") {} };
+    public:
+        typedef self_type abstract_type;
     public:
         virtual bool reference_counted() const = 0;
         virtual void reset(Interface* aObject = 0, bool aReferenceCounted = true) = 0;

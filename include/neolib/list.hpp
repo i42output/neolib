@@ -47,9 +47,8 @@ namespace neolib
     template <typename T>
     class list : public reference_counted<i_list<abstract_t<T>>>
     {
+        typedef reference_counted<i_list<T> > base_type;
         // types
-    private:
-        typedef reference_counted<i_list<T> > base;
     public:
         typedef T value_type;
         typedef abstract_t<T> abstract_value_type;

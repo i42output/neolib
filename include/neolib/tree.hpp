@@ -291,100 +291,96 @@ namespace neolib
         class const_sibling_iterator;
         class iterator : public iterator_base<node_pointer, node_with_value_pointer, pointer, reference, false>
         {
-        private:
+            typedef iterator_base<node_pointer, node_with_value_pointer, pointer, reference, false> base_type;
             friend class tree;
             friend class const_iterator;
-            typedef iterator_base<node_pointer, node_with_value_pointer, pointer, reference, false> base;
         public:
-            iterator() : base() {}
-            iterator(const iterator& x) : base(x) {}
+            iterator() : base_type{} {}
+            iterator(const iterator& x) : base_type{ x } {}
             iterator(const sibling_iterator& x);
         private:
-            iterator(const_node_pointer x) : base(const_cast<node_pointer>(x)) {}
+            iterator(const_node_pointer x) : base_type{ const_cast<node_pointer>(x) } {}
         public:
-            iterator& operator++() { base::increment(); return *this; }
-            iterator& operator--() { base::decrement(); return *this; }
+            iterator& operator++() { base_type::increment(); return *this; }
+            iterator& operator--() { base_type::decrement(); return *this; }
             iterator operator++(int) { iterator ret(*this); operator++(); return ret; }
             iterator operator--(int) { iterator ret(*this); operator--(); return ret; }
-            reference operator*() const { return static_cast<node_with_value&>(*base::iNode).value(); }
+            reference operator*() const { return static_cast<node_with_value&>(*base_type::iNode).value(); }
             pointer operator->() const { return &operator*(); }
         protected:
-            iterator parent() const { return base::ptr()->parent(); }
-            bool has_parent() const { return base::ptr()->has_parent(); }
-            bool is_root() const { return !has_parent() && base::ptr()->is_head(); }
+            iterator parent() const { return base_type::ptr()->parent(); }
+            bool has_parent() const { return base_type::ptr()->has_parent(); }
+            bool is_root() const { return !has_parent() && base_type::ptr()->is_head(); }
         };
         class const_iterator : public iterator_base<const_node_pointer, const_node_with_value_pointer, const_pointer, const_reference, false>
         {
-        private:
+            typedef iterator_base<const_node_pointer, const_node_with_value_pointer, const_pointer, const_reference, false> base_type;
             friend class tree;
-            typedef iterator_base<const_node_pointer, const_node_with_value_pointer, const_pointer, const_reference, false> base;
         public:
-            const_iterator() : base() {}
-            const_iterator(const const_iterator& x) : base(x) {}
-            const_iterator(const typename tree_type::iterator& x) : base(x) {}
+            const_iterator() : base_type{} {}
+            const_iterator(const const_iterator& x) : base_type{ x } {}
+            const_iterator(const typename tree_type::iterator& x) : base_type{ x } {}
             const_iterator(const sibling_iterator& x);
             const_iterator(const const_sibling_iterator& x);
         private:
-            const_iterator(const_node_pointer x) : base(x) {}
+            const_iterator(const_node_pointer x) : base_type{ x } {}
         public:
-            const_iterator& operator++() { base::increment(); return *this; }
-            const_iterator& operator--() { base::decrement(); return *this; }
+            const_iterator& operator++() { base_type::increment(); return *this; }
+            const_iterator& operator--() { base_type::decrement(); return *this; }
             const_iterator operator++(int) { const_iterator ret(*this); operator++(); return ret; }
             const_iterator operator--(int) { const_iterator ret(*this); operator--(); return ret; }
-            const_reference operator*() const { return static_cast<const node_with_value&>(*base::ptr()).value(); }
+            const_reference operator*() const { return static_cast<const node_with_value&>(*base_type::ptr()).value(); }
             const_pointer operator->() const { return &operator*(); }
         protected:
-            const_iterator parent() const { return base::ptr()->parent(); }
-            bool has_parent() const { return base::ptr()->has_parent(); }
-            bool is_root() const { return !has_parent() && base::ptr()->is_head(); }
+            const_iterator parent() const { return base_type::ptr()->parent(); }
+            bool has_parent() const { return base_type::ptr()->has_parent(); }
+            bool is_root() const { return !has_parent() && base_type::ptr()->is_head(); }
         };
         class sibling_iterator : public iterator_base<node_pointer, node_with_value_pointer, pointer, reference, true>
         {
-        private:
+            typedef iterator_base<node_pointer, node_with_value_pointer, pointer, reference, true> base_type;
             friend class tree;
             friend class tree::const_iterator;
-            typedef iterator_base<node_pointer, node_with_value_pointer, pointer, reference, true> base;
         public:
-            sibling_iterator() : base() {}
-            sibling_iterator(const typename tree_type::iterator& x) : base(x) {}
-            sibling_iterator(const sibling_iterator& x) : base(x) {}
+            sibling_iterator() : base_type{} {}
+            sibling_iterator(const typename tree_type::iterator& x) : base_type{ x } {}
+            sibling_iterator(const sibling_iterator& x) : base_type{ x } {}
         private:
-            sibling_iterator(const_node_pointer x) : base(const_cast<node_pointer>(x)) {}
+            sibling_iterator(const_node_pointer x) : base_type{ const_cast<node_pointer>(x) } {}
         public:
-            sibling_iterator& operator++() { base::increment(); return *this; }
-            sibling_iterator& operator--() { base::decrement(); return *this; }
+            sibling_iterator& operator++() { base_type::increment(); return *this; }
+            sibling_iterator& operator--() { base_type::decrement(); return *this; }
             sibling_iterator operator++(int) { sibling_iterator ret(*this); operator++(); return ret; }
             sibling_iterator operator--(int) { sibling_iterator ret(*this); operator--(); return ret; }
-            reference operator*() const { return static_cast<node_with_value&>(*base::iNode).value(); }
+            reference operator*() const { return static_cast<node_with_value&>(*base_type::iNode).value(); }
             pointer operator->() const { return &operator*(); }
         protected:
-            sibling_iterator parent() const { return base::ptr()->parent(); }
-            bool has_parent() const { return base::ptr()->has_parent(); }
-            bool is_root() const { return !has_parent() && base::ptr()->is_head(); }
+            sibling_iterator parent() const { return base_type::ptr()->parent(); }
+            bool has_parent() const { return base_type::ptr()->has_parent(); }
+            bool is_root() const { return !has_parent() && base_type::ptr()->is_head(); }
         };
         class const_sibling_iterator : public iterator_base<const_node_pointer, const_node_with_value_pointer, const_pointer, const_reference, true>
         {
-        private:
+            typedef iterator_base<const_node_pointer, const_node_with_value_pointer, const_pointer, const_reference, true> base_type;
             friend class tree;
-            typedef iterator_base<const_node_pointer, const_node_with_value_pointer, const_pointer, const_reference, true> base;
         public:
-            const_sibling_iterator() : base() {}
-            const_sibling_iterator(const const_iterator& x) : base(x) {}
-            const_sibling_iterator(const typename tree_type::iterator& x) : base(x) {}
-            const_sibling_iterator(const sibling_iterator& x) : base(x) {}
+            const_sibling_iterator() : base_type{} {}
+            const_sibling_iterator(const const_iterator& x) : base_type{ x } {}
+            const_sibling_iterator(const typename tree_type::iterator& x) : base_type{ x } {}
+            const_sibling_iterator(const sibling_iterator& x) : base_type{ x } {}
         private:
-            const_sibling_iterator(const_node_pointer x) : base(x) {}
+            const_sibling_iterator(const_node_pointer x) : base_type{ x } {}
         public:
-            const_sibling_iterator& operator++() { base::increment(); return *this; }
-            const_sibling_iterator& operator--() { base::decrement(); return *this; }
+            const_sibling_iterator& operator++() { base_type::increment(); return *this; }
+            const_sibling_iterator& operator--() { base_type::decrement(); return *this; }
             const_sibling_iterator operator++(int) { const_iterator ret(*this); operator++(); return ret; }
             const_sibling_iterator operator--(int) { const_iterator ret(*this); operator--(); return ret; }
-            const_reference operator*() const { return static_cast<const node_with_value&>(*base::ptr()).value(); }
+            const_reference operator*() const { return static_cast<const node_with_value&>(*base_type::ptr()).value(); }
             const_pointer operator->() const { return &operator*(); }
         protected:
-            const_sibling_iterator parent() const { return base::ptr()->parent(); }
-            bool has_parent() const { return base::ptr()->has_parent(); }
-            bool is_root() const { return !has_parent() && base::ptr()->is_head(); }
+            const_sibling_iterator parent() const { return base_type::ptr()->parent(); }
+            bool has_parent() const { return base_type::ptr()->has_parent(); }
+            bool is_root() const { return !has_parent() && base_type::ptr()->is_head(); }
         };
         typedef std::reverse_iterator<iterator> reverse_iterator;
         typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
@@ -874,82 +870,81 @@ namespace neolib
     template <typename T, typename A = std::allocator<T> >
     class ptr_tree : public tree<T*, typename A:: template rebind<T*>::other, ptr_tree_element_deleter<T*> >
     {
+        typedef tree<T*, typename A:: template rebind<T*>::other, ptr_tree_element_deleter<T*> > base_type;
         // types
-    private:
-        typedef tree<T*, typename A:: template rebind<T*>::other, ptr_tree_element_deleter<T*> > base;
     public:
-        typedef typename base::value_type value_type;
-        typedef typename base::size_type size_type;
-        typedef typename base::allocator_type allocator_type;
-        typedef typename base::const_iterator const_iterator;
-        typedef typename base::iterator iterator;
+        typedef typename base_type::value_type value_type;
+        typedef typename base_type::size_type size_type;
+        typedef typename base_type::allocator_type allocator_type;
+        typedef typename base_type::const_iterator const_iterator;
+        typedef typename base_type::iterator iterator;
         // construction
     public:
-        ptr_tree() : base() {}
-        ptr_tree(const allocator_type& allocator) : base(allocator) {} 
-        ptr_tree(const ptr_tree& rhs) : base(rhs) {}
+        ptr_tree() : base_type{} {}
+        ptr_tree(const allocator_type& allocator) : base_type{ allocator } {}
+        ptr_tree(const ptr_tree& rhs) : base_type{ rhs } {}
         template <typename T2, typename A2>
-        ptr_tree(const ptr_tree<T2, A2>& rhs) : base(rhs) {} 
-        ptr_tree(size_type n, typename base::parameter_type value = value_type()) : base(n, value) {}
+        ptr_tree(const ptr_tree<T2, A2>& rhs) : base_type{ rhs } {}
+        ptr_tree(size_type n, typename base_type::parameter_type value = value_type()) : base_type{ n, value } {}
         template <typename InputIterator>
-        ptr_tree(InputIterator first, InputIterator last) : base(first, last) {}
+        ptr_tree(InputIterator first, InputIterator last) : base_type{ first, last } {}
         // modifiers
     public:
-        using base::insert;
+        using base_type::insert;
         template <typename U>
         iterator insert(const_iterator position, std::unique_ptr<U> value)
         {
-            iterator result = base::insert(position, value.get());
+            iterator result = base_type::insert(position, value.get());
             value.release();
             return result;
         }
-        using base::append;
+        using base_type::append;
         template <typename U>
         iterator append(std::unique_ptr<U> value)
         {
-            iterator result = base::append(value.get());
+            iterator result = base_type::append(value.get());
             value.release();
             return result;
         }
         template <typename U>
         iterator append(const_iterator parent, std::unique_ptr<U> value)
         {
-            iterator result = base::append(parent, value.get());
+            iterator result = base_type::append(parent, value.get());
             value.release();
             return result;
         }
-        using base::push_front;
+        using base_type::push_front;
         template <typename U>
         void push_front(std::unique_ptr<U> value)
         {
-            base::push_front(value.get());
+            base_type::push_front(value.get());
             value.release();
         }
         template <typename U>
         void push_front(const_iterator parent, std::unique_ptr<U> value)
         {
-            base::push_front(parent, value.get());
+            base_type::push_front(parent, value.get());
             value.release();
         }
-        using base::push_back;
+        using base_type::push_back;
         template <typename U>
         void push_back(std::unique_ptr<U> value)
         {
-            base::push_back(value.get());
+            base_type::push_back(value.get());
             value.release();
         }
         template <typename U>
         void push_back(const_iterator parent, std::unique_ptr<U> value)
         {
-            base::push_back(parent, value.get());
+            base_type::push_back(parent, value.get());
             value.release();
         }
     };
 
     template <typename T, typename A, typename ElementDeleter>
-    inline tree<T, A, ElementDeleter>::iterator::iterator(const sibling_iterator& x) : base(x) {}
+    inline tree<T, A, ElementDeleter>::iterator::iterator(const sibling_iterator& x) : base_type{ x } {}
     template <typename T, typename A, typename ElementDeleter>
-    inline tree<T, A, ElementDeleter>::const_iterator::const_iterator(const sibling_iterator& x) : base(x) {}
+    inline tree<T, A, ElementDeleter>::const_iterator::const_iterator(const sibling_iterator& x) : base_type{ x } {}
     template <typename T, typename A, typename ElementDeleter>
-    inline tree<T, A, ElementDeleter>::const_iterator::const_iterator(const const_sibling_iterator& x) : base(x) {}
+    inline tree<T, A, ElementDeleter>::const_iterator::const_iterator(const const_sibling_iterator& x) : base_type{ x } {}
 }

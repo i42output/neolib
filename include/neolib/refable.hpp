@@ -97,22 +97,21 @@ namespace neolib
     template <typename ObjectType>
     class basic_weak_ref : public basic_ref<ObjectType>
     {
+        typedef basic_weak_ref<ObjectType> self_type;
+        typedef basic_ref<ObjectType> base_type;
         // types
-    private:
-        typedef basic_weak_ref<ObjectType> self;
-        typedef basic_ref<ObjectType> base;
     public:
-        typedef typename base::pointer pointer;
-        typedef typename base::reference reference;
+        typedef typename base_type::pointer pointer;
+        typedef typename base_type::reference reference;
 
         // construction
     public:
         basic_weak_ref();
         basic_weak_ref(pointer aObject);
         basic_weak_ref(reference aObject);
-        basic_weak_ref(const base& aOther);
+        basic_weak_ref(const base_type& aOther);
         ~basic_weak_ref();
-        basic_weak_ref& operator=(const base& aOther);
+        basic_weak_ref& operator=(const base_type& aOther);
 
         // operations
     public:
@@ -341,22 +340,22 @@ namespace neolib
     }
 
     template <typename ObjectType>
-    basic_weak_ref<ObjectType>::basic_weak_ref() : base() 
+    basic_weak_ref<ObjectType>::basic_weak_ref() : base_type{}
     { 
     }
 
     template <typename ObjectType>
-    basic_weak_ref<ObjectType>::basic_weak_ref(pointer aObject) : base(aObject)
+    basic_weak_ref<ObjectType>::basic_weak_ref(pointer aObject) : base_type{ aObject }
     {
     }
 
     template <typename ObjectType>
-    basic_weak_ref<ObjectType>::basic_weak_ref(reference aObject) : base(aObject)
+    basic_weak_ref<ObjectType>::basic_weak_ref(reference aObject) : base_type{ aObject }
     {
     }
 
     template <typename ObjectType>
-    basic_weak_ref<ObjectType>::basic_weak_ref(const base& aOther) : base(aOther) 
+    basic_weak_ref<ObjectType>::basic_weak_ref(const base_type& aOther) : base_type{ aOther }
     { 
     }
 
@@ -367,9 +366,9 @@ namespace neolib
     }
     
     template <typename ObjectType>
-    basic_weak_ref<ObjectType>& basic_weak_ref<ObjectType>::operator=(const base& aOther)
+    basic_weak_ref<ObjectType>& basic_weak_ref<ObjectType>::operator=(const base_type& aOther)
     {
-        base::operator=(aOther);
+        base_type::operator=(aOther);
         return *this;
     }
 

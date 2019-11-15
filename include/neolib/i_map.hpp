@@ -42,20 +42,21 @@
 namespace neolib
 {
     template <typename Key, typename T>
-    class i_map : public i_container<i_pair<const Key, T>, i_const_iterator<i_pair<const Key, T> >, i_iterator<i_pair<const Key, T> > >
+    class i_map : public i_container<i_pair<const Key, T>, i_const_iterator<i_pair<const Key, T>>, i_iterator<i_pair<const Key, T>>>
     {
-    private:
-        typedef i_container<i_pair<const Key, T>, i_const_iterator<i_pair<const Key, T> >, i_iterator<i_pair<const Key, T> > > base;
+        typedef i_map<Key, T> self_type;
+        typedef i_container<i_pair<const Key, T>, i_const_iterator<i_pair<const Key, T> >, i_iterator<i_pair<const Key, T>>> base_type;
     public:
+        typedef self_type abstract_type;
         typedef Key abstract_key_type;
         typedef T abstract_mapped_type;
         typedef i_pair<const abstract_key_type, abstract_mapped_type> abstract_value_type;
     protected:
-        typedef typename base::abstract_const_iterator abstract_const_iterator;
-        typedef typename base::abstract_iterator abstract_iterator;
+        typedef typename base_type::abstract_const_iterator abstract_const_iterator;
+        typedef typename base_type::abstract_iterator abstract_iterator;
     public:
-        typedef typename base::const_iterator const_iterator;
-        typedef typename base::iterator iterator;
+        typedef typename base_type::const_iterator const_iterator;
+        typedef typename base_type::iterator iterator;
     public:
         virtual abstract_mapped_type& operator[](const abstract_key_type& aKey) = 0;
     public:

@@ -45,8 +45,10 @@ namespace neolib
     template<typename T>
     class i_optional : public i_reference_counted
     {
+        typedef i_optional<T> self_type;
         // types
     public:
+        typedef self_type abstract_type;
         typedef T* pointer;
         typedef const T* const_pointer;
         typedef T& reference;

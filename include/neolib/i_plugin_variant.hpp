@@ -55,6 +55,7 @@ namespace neolib
         struct type_not_less_than_comparable : std::invalid_argument { type_not_less_than_comparable() : std::invalid_argument{ "neolib::i_plugin_variant::type_not_less_than_comparable" } {} };
         // types
     public:
+        typedef self_type abstract_type;
         typedef Id id_t;
         // construction/assignment
     public:

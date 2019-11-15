@@ -45,6 +45,7 @@ namespace neolib
     template<typename T, typename ConcreteType = T>
     class optional : public reference_counted<i_optional<T> >, public std::optional<ConcreteType>
     {
+        typedef std::optional<ConcreteType> base_type;
         // types
     public:
         typedef i_optional<T> abstract_type;
@@ -55,18 +56,16 @@ namespace neolib
         typedef ConcreteType& reference;
         typedef const ConcreteType& const_reference;
         typedef typename i_optional<T>::not_valid not_valid;
-    private:
-        typedef std::optional<ConcreteType> base;
         // construction
     public:
         optional() {}
-        optional(const abstract_type& rhs) : base(rhs.get()) {}
-        optional(const_reference value) : base(value) {}
+        optional(const abstract_type& rhs) : base_type(rhs.get()) {}
+        optional(const_reference value) : base_type(value) {}
         // state
     public:
         virtual bool valid() const
         {
-            return static_cast<const base&>(*this) != std::nullopt;
+            return static_cast<const base_type&>(*this) != std::nullopt;
         }
         virtual bool invalid() const
         {
@@ -81,13 +80,13 @@ namespace neolib
         virtual reference get()
         {
             if (valid())
-                return base::value();
+                return base_type::value();
             throw not_valid();
         }
         virtual const_reference get() const
         {
             if (valid())
-                return base::value();
+                return base_type::value();
             throw not_valid();
         }
         virtual reference operator*()
@@ -110,11 +109,11 @@ namespace neolib
     public:
         virtual void reset()
         { 
-            static_cast<base&>(*this) = std::nullopt;
+            static_cast<base_type&>(*this) = std::nullopt;
         }
         virtual optional& operator=(const std::nullopt_t&)
         {
-            static_cast<base&>(*this) = std::nullopt;
+            static_cast<base_type&>(*this) = std::nullopt;
             return *this;
         }
         virtual optional& operator=(const abstract_type& rhs)
@@ -124,12 +123,12 @@ namespace neolib
         }
         virtual optional& operator=(const abstract_value_type& value) 
         {
-            static_cast<base&>(*this) = value;
+            static_cast<base_type&>(*this) = value;
             return *this;
         }
         void swap(optional& rhs)
         {
-            base::swap(rhs);
+            base_type::swap(rhs);
         }
     };
 
