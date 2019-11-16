@@ -148,17 +148,17 @@ int main(int argc, char** argv)
         const std::string RJSON_test =
         {
             "{\n"
-//            "// This is a sample RJSON file\n"
+            "  // This is a sample RJSON file\n"
             "\n"
-            "buy: [milk eggs butter 'dog bones']\n"
-            "tasks : [{name:exercise completed : false} {name:eat completed : true}]\n"
+            "  buy: [milk eggs butter 'dog bones']\n"
+            "  tasks : [{name:exercise completed : false} {name:eat completed : true}]\n"
             "\n"
-            "'another key' : 'another value'\n"
+            "  'another key' : 'another value'\n"
             "\n"
-    //        "/*  It is very easy\n"
-        //    "to read and write RJSON\n"
-            //"without quotes or commas!\n"
-            //"*/\n"
+            "/*  It is very easy\n"
+            "to read and write RJSON\n"
+            "without quotes or commas!\n"
+            "*/\n"
             "}\n"
         };
         std::cout << "----RJSON-input---------------------" << std::endl;
@@ -169,6 +169,21 @@ int main(int argc, char** argv)
         rjson.write(std::cout);
         std::cout << std::endl; 
         std::cout << "----RJSON ends-----------------------" << std::endl;
+
+        const std::string FJSON_test =
+        {
+            "{\n"
+            "  default_size: [ 800spx 800spx ]\n"
+            "}\n"
+        };
+        std::cout << "----FJSON-input---------------------" << std::endl;
+        std::cout << FJSON_test;
+        std::cout << "----FJSON-output---------------------" << std::endl;
+        std::istringstream fjsonStream(FJSON_test);
+        neolib::fjson fjson{ fjsonStream };
+        fjson.write(std::cout);
+        std::cout << std::endl;
+        std::cout << "----FJSON ends-----------------------" << std::endl;
 
         std::cout << "------ code ------" << std::endl;
         neolib::json json;

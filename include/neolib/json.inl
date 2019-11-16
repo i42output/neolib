@@ -1227,6 +1227,8 @@ namespace neolib
                             {
                                 currentState = json_detail::state::Keyword;
                                 nextState = json_detail::state::Keyword;
+                                currentElement.type = element::Keyword;
+                                nextOutputCh = nextInputCh;
                             }
                             break;
                         default:

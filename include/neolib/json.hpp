@@ -420,6 +420,10 @@ namespace neolib
         {
             return *iContents;
         }
+        const json_value& contents() const
+        {
+            return *iContents;
+        }
         void set_contents(json_value& aOwner)
         {
             iContents = &aOwner;

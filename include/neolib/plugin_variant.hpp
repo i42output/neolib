@@ -97,13 +97,13 @@ namespace neolib
     {
         typedef plugin_variant<Id, Types...> self_type;
         typedef reference_counted<i_plugin_variant<Id, abstract_t<Types>...>> base_type;
-        typedef i_plugin_variant<Id, abstract_t<Types>...> abstract_type;
         // exceptions
     public:
         using typename base_type::bad_variant_access;
         using typename base_type::type_not_less_than_comparable;
         // types
     public:
+        typedef i_plugin_variant<Id, abstract_t<Types>...> abstract_type;
         using typename base_type::id_t;
         typedef variant<Types...> variant_type;
         // construction/assignment
