@@ -45,48 +45,51 @@ namespace neolib
 {
     namespace detail
     {
-        template <typename V>
-        using funky_assign_t = std::function<void(V&, const void*)>;
-        template <typename V>
-        using funky_assign_list_t = std::vector<funky_assign_t<V>> ;
-        template <typename V>
-        std::size_t funky_gen_assign(funky_assign_list_t<V>& aList)
+        namespace plugin_variant
         {
-            return aList.size();
-        }
-        template <typename V, typename T, typename... Types>
-        std::size_t funky_gen_assign(funky_assign_list_t<V>& aList)
-        {
-            aList.push_back(
-                [](V& aThis, const void* aData)
-                {
-                    typedef std::remove_const_t<std::remove_reference_t<T>> type;
-                    typedef abstract_t<type> assign_type;
-                    aThis = *static_cast<const assign_type*>(aData);
-                });
-            return funky_gen_assign<V, Types...>(aList);
-        }
+            template <typename V>
+            using funky_assign_t = std::function<void(V&, const void*)>;
+            template <typename V>
+            using funky_assign_list_t = std::vector<funky_assign_t<V>> ;
+            template <typename V>
+            std::size_t funky_gen_assign(funky_assign_list_t<V>& aList)
+            {
+                return aList.size();
+            }
+            template <typename V, typename T, typename... Types>
+            std::size_t funky_gen_assign(funky_assign_list_t<V>& aList)
+            {
+                aList.push_back(
+                    [](V& aThis, const void* aData)
+                    {
+                        typedef std::remove_const_t<std::remove_reference_t<T>> type;
+                        typedef abstract_t<type> assign_type;
+                        aThis = *static_cast<const assign_type*>(aData);
+                    });
+                return funky_gen_assign<V, Types...>(aList);
+            }
 
-        template <typename V>
-        using funky_move_assign_t = std::function<void(V&, void*)>;
-        template <typename V>
-        using funky_move_assign_list_t = std::vector<funky_move_assign_t<V>> ;
-        template <typename V>
-        std::size_t funky_gen_move_assign(funky_move_assign_list_t<V>& aList)
-        {
-            return aList.size();
-        }
-        template <typename V, typename T, typename... Types>
-        std::size_t funky_gen_move_assign(funky_move_assign_list_t<V>& aList)
-        {
-            aList.push_back(
-                [](V& aThis, void* aData)
-                {
-                    typedef std::remove_const_t<std::remove_reference_t<T>> type;
-                    typedef abstract_t<type> move_assign_type;
-                    aThis = static_cast<move_assign_type&&>(*static_cast<move_assign_type*>(aData));
-                });
-            return funky_gen_move_assign<V, Types...>(aList);
+            template <typename V>
+            using funky_move_assign_t = std::function<void(V&, void*)>;
+            template <typename V>
+            using funky_move_assign_list_t = std::vector<funky_move_assign_t<V>> ;
+            template <typename V>
+            std::size_t funky_gen_move_assign(funky_move_assign_list_t<V>& aList)
+            {
+                return aList.size();
+            }
+            template <typename V, typename T, typename... Types>
+            std::size_t funky_gen_move_assign(funky_move_assign_list_t<V>& aList)
+            {
+                aList.push_back(
+                    [](V& aThis, void* aData)
+                    {
+                        typedef std::remove_const_t<std::remove_reference_t<T>> type;
+                        typedef abstract_t<type> move_assign_type;
+                        aThis = static_cast<move_assign_type&&>(*static_cast<move_assign_type*>(aData));
+                    });
+                return funky_gen_move_assign<V, Types...>(aList);
+            }
         }
     }
 
@@ -224,18 +227,22 @@ namespace neolib
         }
         abstract_type& do_assign(id_t aType, const void* aData) override
         {
-            static detail::funky_assign_list_t<variant_type> funks;
-            static auto const n = detail::funky_gen_assign<variant_type, Types...>(funks);
+            static detail::plugin_variant::funky_assign_list_t<variant_type> funks;
+            static auto const n = detail::plugin_variant::funky_gen_assign<variant_type, Types...>(funks);
             if (static_cast<std::size_t>(aType) < n)
                 funks[static_cast<std::size_t>(aType)](*this, aData);
+            else
+                throw std::bad_variant_access();
             return *this;
         }
         abstract_type& do_move_assign(id_t aType, void* aData) override
         {
-            static detail::funky_move_assign_list_t<variant_type> funks;
-            static auto const n = detail::funky_gen_move_assign<variant_type, Types...>(funks);
+            static detail::plugin_variant::funky_move_assign_list_t<variant_type> funks;
+            static auto const n = detail::plugin_variant::funky_gen_move_assign<variant_type, Types...>(funks);
             if (static_cast<std::size_t>(aType) < n)
                 funks[static_cast<std::size_t>(aType)](*this, aData);
+            else
+                throw std::bad_variant_access();
             return *this;
         }
         // state

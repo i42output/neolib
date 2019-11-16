@@ -43,6 +43,33 @@
 
 namespace neolib
 {
+    namespace detail
+    {
+        namespace i_plugin_variant
+        {
+            template <typename Visitor, typename Variant>
+            using funky_visit_t = std::function<void(const Visitor&, Variant&)>;
+            template <typename Visitor, typename Variant>
+            using funky_visit_list_t = std::vector<funky_visit_t<Visitor, Variant>>;
+            template <typename Visitor, typename Variant>
+            std::size_t funky_gen_visit(funky_visit_list_t<Visitor, Variant>& aList)
+            {
+                return aList.size();
+            }
+            template <typename Visitor, typename Variant, typename T, typename... Types>
+            std::size_t funky_gen_visit(funky_visit_list_t<Visitor, Variant>& aList)
+            {
+                aList.push_back(
+                    [](const Visitor& aVisitor, Variant& aThis)
+                    {
+                        typedef std::remove_const_t<std::remove_reference_t<T>> type;
+                        aVisitor(aThis.get<type>());
+                    });
+                return funky_gen_visit<Visitor, Variant, Types...>(aList);
+            }
+        }
+    }
+
     template <typename Id, typename... Types>
     class i_plugin_variant : public i_reference_counted
     {
@@ -139,5 +166,37 @@ namespace neolib
         virtual self_type& do_assign(id_t aType, const void* aData) = 0;
         virtual self_type& do_move_assign(id_t aType, void* aData) = 0;
     };
+
+    namespace variant_visitors
+    {
+        template <typename Visitor, typename Id, typename... Types>
+        inline void visit(Visitor aVisitor, const i_plugin_variant<Id, Types...>& aVariant)
+        {
+            typedef const i_plugin_variant<Id, Types...> variant_type;
+            static detail::i_plugin_variant::funky_visit_list_t<Visitor, variant_type> funks;
+            static auto const n = detail::i_plugin_variant::funky_gen_visit<Visitor, variant_type, Types...>(funks);
+            if (static_cast<std::size_t>(aVariant.which()) < n)
+                funks[static_cast<std::size_t>(aVariant.which())](aVisitor, aVariant);
+            else
+                throw std::bad_variant_access();
+        }
+
+        template <typename Visitor, typename Id, typename... Types>
+        inline void visit(Visitor aVisitor, i_plugin_variant<Id, Types...>& aVariant)
+        {
+            typedef i_plugin_variant<Id, Types...> variant_type;
+            static detail::i_plugin_variant::funky_visit_list_t<Visitor, variant_type> funks;
+            static auto const n = detail::i_plugin_variant::funky_gen_visit<Visitor, variant_type, Types...>(funks);
+            if (static_cast<std::size_t>(aVariant.which()) < n)
+                funks[static_cast<std::size_t>(aVariant.which())](aVisitor, aVariant);
+            else
+                throw std::bad_variant_access();
+        }
+    }
+}
+
+namespace std
+{
+    using neolib::variant_visitors::visit;
 }
 
