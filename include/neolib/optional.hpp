@@ -37,35 +37,45 @@
 
 #include <neolib/neolib.hpp>
 #include <optional>
-#include "reference_counted.hpp"
-#include "i_optional.hpp"
+#include <neolib/reference_counted.hpp>
+#include <neolib/i_optional.hpp>
 
 namespace neolib
 {
-    template<typename T, typename ConcreteType = T>
-    class optional : public reference_counted<i_optional<T> >, public std::optional<ConcreteType>
+    template<typename T>
+    class optional : public reference_counted<i_optional<abstract_t<T>>>, public std::optional<T>
     {
-        typedef std::optional<ConcreteType> base_type;
+        typedef optional<T> self_type;
+        typedef reference_counted<i_optional<abstract_t<T>>> base_type;
+        typedef std::optional<T> container_type;
+        // exceptions
+    public:
+        using typename base_type::not_valid;
         // types
     public:
-        typedef i_optional<T> abstract_type;
-        typedef T abstract_value_type;
-        typedef ConcreteType value_type;
-        typedef ConcreteType* pointer;
-        typedef const ConcreteType* const_pointer;
-        typedef ConcreteType& reference;
-        typedef const ConcreteType& const_reference;
-        typedef typename i_optional<T>::not_valid not_valid;
+        typedef i_optional<abstract_t<T>> abstract_type;
+        typedef T value_type;
+        typedef value_type* pointer;
+        typedef const value_type* const_pointer;
+        typedef value_type& reference;
+        typedef const value_type& const_reference;
+        typedef typename base_type::value_type abstract_value_type;
+        typedef typename base_type::pointer abstract_pointer;
+        typedef typename base_type::const_pointer abstract_const_pointer;
+        typedef typename base_type::reference abstract_reference;
+        typedef typename base_type::const_reference abstract_const_reference;
         // construction
     public:
         optional() {}
-        optional(const abstract_type& rhs) : base_type(rhs.get()) {}
-        optional(const_reference value) : base_type(value) {}
+        optional(const abstract_type& rhs) : container_type{ rhs.get() } {}
+        optional(const_reference value) : container_type{ value } {}
+        template <typename SFINAE = sfinae>
+        optional(abstract_const_reference value, std::enable_if_t<!std::is_same_v<value_type, abstract_value_type>, SFINAE> = sfinae{}) : container_type{ value } {}
         // state
     public:
         virtual bool valid() const
         {
-            return static_cast<const base_type&>(*this) != std::nullopt;
+            return static_cast<const container_type&>(*this) != std::nullopt;
         }
         virtual bool invalid() const
         {
@@ -80,13 +90,13 @@ namespace neolib
         virtual reference get()
         {
             if (valid())
-                return base_type::value();
+                return container_type::value();
             throw not_valid();
         }
         virtual const_reference get() const
         {
             if (valid())
-                return base_type::value();
+                return container_type::value();
             throw not_valid();
         }
         virtual reference operator*()
@@ -109,11 +119,11 @@ namespace neolib
     public:
         virtual void reset()
         { 
-            static_cast<base_type&>(*this) = std::nullopt;
+            static_cast<container_type&>(*this) = std::nullopt;
         }
         virtual optional& operator=(const std::nullopt_t&)
         {
-            static_cast<base_type&>(*this) = std::nullopt;
+            static_cast<container_type&>(*this) = std::nullopt;
             return *this;
         }
         virtual optional& operator=(const abstract_type& rhs)
@@ -123,17 +133,17 @@ namespace neolib
         }
         virtual optional& operator=(const abstract_value_type& value) 
         {
-            static_cast<base_type&>(*this) = value;
+            static_cast<container_type&>(*this) = value;
             return *this;
         }
         void swap(optional& rhs)
         {
-            base_type::swap(rhs);
+            container_type::swap(rhs);
         }
     };
 
-    template <typename T, typename ConcreteType>
-    inline bool operator<(const optional<T, ConcreteType>& lhs, const optional<T, ConcreteType>& rhs)
+    template <typename T>
+    inline bool operator<(const optional<T>& lhs, const optional<T>& rhs)
     {
         if (lhs.valid() != rhs.valid())
             return lhs.valid() < rhs.valid();
@@ -142,8 +152,8 @@ namespace neolib
         return lhs.get() < rhs.get();
     }
 
-    template <typename T, typename ConcreteType>
-    inline bool operator==(const optional<T, ConcreteType>& lhs, const optional<T, ConcreteType>& rhs)
+    template <typename T>
+    inline bool operator==(const optional<T>& lhs, const optional<T>& rhs)
     {
         if (lhs.valid() != rhs.valid())
             return false;
@@ -153,8 +163,8 @@ namespace neolib
             return true;
     }
 
-    template <typename T, typename ConcreteType>
-    inline bool operator!=(const optional<T, ConcreteType>& lhs, const optional<T, ConcreteType>& rhs)
+    template <typename T>
+    inline bool operator!=(const optional<T>& lhs, const optional<T>& rhs)
     {
         return !operator==(lhs, rhs);
     }

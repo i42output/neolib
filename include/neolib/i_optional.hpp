@@ -38,7 +38,7 @@
 #include <neolib/neolib.hpp>
 #include <optional>
 #include <stdexcept>
-#include "i_reference_counted.hpp"
+#include <neolib/i_reference_counted.hpp>
 
 namespace neolib
 {
@@ -49,10 +49,11 @@ namespace neolib
         // types
     public:
         typedef self_type abstract_type;
-        typedef T* pointer;
-        typedef const T* const_pointer;
-        typedef T& reference;
-        typedef const T& const_reference;
+        typedef T value_type;
+        typedef value_type* pointer;
+        typedef const value_type* const_pointer;
+        typedef value_type& reference;
+        typedef const value_type& const_reference;
         struct not_valid : std::logic_error { not_valid() : std::logic_error("neolib::i_optional::not_valid") {} };
         // state
     public:
