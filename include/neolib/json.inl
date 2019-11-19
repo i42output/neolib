@@ -1206,7 +1206,7 @@ namespace neolib
                         if (skippingComment)
                         {
                             if (tempState != nextState && currentElement.start != nullptr && nextOutputCh == currentElement.start)
-                                nextOutputCh = nextInputCh;
+                                nextOutputCh = (currentState != json_detail::state::StringEnd ? nextInputCh : nextInputCh - 1);
                             tempState = nextState;
                             increment_cursor();
                         }

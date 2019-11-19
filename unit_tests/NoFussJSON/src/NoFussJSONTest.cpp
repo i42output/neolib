@@ -143,14 +143,16 @@ int main(int argc, char** argv)
             std::cout << "---------------------------" << std::endl;
         }
 
-        // TODO: Relaxed JSON comments
-
         const std::string RJSON_test =
         {
             "{\n"
             "  // This is a sample RJSON file\n"
             "\n"
             "  buy: [milk eggs butter 'dog bones']\n"
+            "  quotey: \"foo\"/*bar*/\n"
+            "  quotey: \"foo\" /*bar*/\n"
+            "  quotey: \"foo\"//bar\n"
+            "  quotey: \"foo\" //bar\n"
             "  tasks : [{name:exercise completed : false} {name:eat completed : true}]\n"
             "\n"
             "  'another key' : 'another value'\n"
