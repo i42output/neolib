@@ -307,7 +307,7 @@ namespace neolib
         }
 
         template <json_syntax Syntax>
-        constexpr std::array<std::array<state, TOKEN_COUNT>, STATE_COUNT> sStateTables =
+        constexpr std::array<std::array<state, TOKEN_COUNT>, STATE_COUNT> sStateTables
         {
             // state::Error
             std::array<state, TOKEN_COUNT>
@@ -451,7 +451,7 @@ namespace neolib
         };
 
         template <json_syntax Syntax>
-        constexpr std::array<token, 256> sTokenTable =
+        constexpr std::array<token, 256> sTokenTable
         { 
             {// 0x0   0x1   0x2   0x3   0x4   0x5   0x6   0x7   0x8   0x9   0xA   0xB   0xC   0xD   0xE   0xF
                 TZZZ, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TWSP, TWSP, TXXX, TXXX, TWSP, TXXX, TXXX, // 0x0
@@ -474,7 +474,7 @@ namespace neolib
         };
 
         template <>
-        constexpr std::array<token, 256> sTokenTable<json_syntax::Relaxed> =
+        constexpr std::array<token, 256> sTokenTable<json_syntax::Relaxed>
         {
             {// 0x0   0x1   0x2   0x3   0x4   0x5   0x6   0x7   0x8   0x9   0xA   0xB   0xC   0xD   0xE   0xF
                 TZZZ, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TWSP, TWSP, TXXX, TXXX, TWSP, TXXX, TXXX, // 0x0
@@ -497,7 +497,7 @@ namespace neolib
         };
 
         template <>
-        constexpr std::array<token, 256> sTokenTable<json_syntax::Functional> =
+        constexpr std::array<token, 256> sTokenTable<json_syntax::Functional>
         {
             {// 0x0   0x1   0x2   0x3   0x4   0x5   0x6   0x7   0x8   0x9   0xA   0xB   0xC   0xD   0xE   0xF
                 TZZZ, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TXXX, TWSP, TWSP, TXXX, TXXX, TWSP, TXXX, TXXX, // 0x0
