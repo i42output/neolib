@@ -86,6 +86,7 @@ namespace neolib
         iterator insert(const abstract_value_type& aValue) { iterator result; return do_insert(result.storage(), aValue); }
         const_iterator find(const abstract_key_type& aKey) const { const_iterator result; return do_find(result.storage(), aKey); }
         iterator find(const abstract_key_type& aKey) { iterator result; return do_find(result.storage(), aKey); }
+        // todo: equal_range, lower_bound, upper_bound
     private:
         virtual abstract_iterator* do_insert(void* memory, const abstract_value_type& aValue) = 0;
         virtual abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const = 0;

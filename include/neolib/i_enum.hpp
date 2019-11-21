@@ -53,30 +53,7 @@ namespace neolib
             static const enum_enumerators_t<Enum> enumerators;
         };
 
-        namespace enum_traits_detail
-        {
-            template <typename Enum>
-            struct types
-            {
-                typedef pair<const std::underlying_type_t<Enum>, string> value_type;
-                typedef std::pair<const std::underlying_type_t<Enum>, value_type> container_value_type;
-            };
-        }
-
-        template <typename Enum>
-        using value_type = typename enum_traits_detail::types<Enum>::value_type;
-        template <typename Enum>
-        using container_value_type = typename enum_traits_detail::types<Enum>::container_value_type;
-
-        template <typename Enum>
-        inline std::underlying_type_t<Enum> to_underlying_type(Enum aValue)
-        {
-            return static_cast<std::underlying_type_t<Enum>>(aValue);
-        }
-
-        #define declare_enum_string( enumName, enumEnumerator )\
-            neolib::enum_traits::container_value_type<enumName>{ neolib::enum_traits::to_underlying_type(enumName::enumEnumerator),\
-                neolib::enum_traits::value_type<enumName>{ neolib::enum_traits::to_underlying_type(enumName::enumEnumerator), neolib::string{ #enumEnumerator } } },
+        #define declare_enum_string( enumName, enumEnumerator ) { static_cast<std::underlying_type_t<enumName>>(enumName::enumEnumerator), neolib::string{ #enumEnumerator } },
     }
 
     using namespace enum_traits;

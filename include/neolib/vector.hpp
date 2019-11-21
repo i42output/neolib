@@ -49,16 +49,17 @@ namespace neolib
         typedef reference_counted<i_vector<T>> base_type;
         // types
     public:
+        typedef i_vector<abstract_t<T>> abstract_type;
         typedef T value_type;
         typedef abstract_t<T> abstract_value_type;
         typedef std::vector<value_type> container_type;
-        using typename i_vector<abstract_value_type>::size_type;
-        using typename i_vector<abstract_value_type>::const_iterator;
-        using typename i_vector<abstract_value_type>::iterator;
-        using typename i_vector<abstract_value_type>::generic_container_type;
+        using typename abstract_type::size_type;
+        using typename abstract_type::const_iterator;
+        using typename abstract_type::iterator;
+        using typename abstract_type::generic_container_type;
     protected:
-        using typename i_vector<abstract_value_type>::abstract_const_iterator;
-        using typename i_vector<abstract_value_type>::abstract_iterator;
+        using typename abstract_type::abstract_const_iterator;
+        using typename abstract_type::abstract_iterator;
     protected:
         typedef container::random_access_const_iterator<T, typename container_type::const_iterator> container_const_iterator;
         typedef container::random_access_iterator<T, typename container_type::iterator, typename container_type::const_iterator> container_iterator;

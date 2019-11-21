@@ -82,12 +82,12 @@ namespace neolib
         void assign(const i_container& aOther) override { if (&aOther == this) return; iString.assign(aOther.begin(), aOther.end()); }
         // from i_container
     private:
-        abstract_const_iterator* do_begin(void* memory) const override { return new (memory) container_const_iterator(iString.begin()); }
-        abstract_const_iterator* do_end(void* memory) const override { return new (memory) container_const_iterator(iString.end()); }
-        abstract_iterator* do_begin(void* memory) override { return new (memory) container_iterator(iString.begin()); }
-        abstract_iterator* do_end(void* memory) override { return new (memory) container_iterator(iString.end()); }
-        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override { return new (memory) container_iterator(iString.erase(static_cast<const container_const_iterator&>(aPosition))); }
-        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new (memory) container_iterator(iString.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
+        abstract_const_iterator* do_begin(void* memory) const override { return new (memory) container_const_iterator{ iString.begin() }; }
+        abstract_const_iterator* do_end(void* memory) const override { return new (memory) container_const_iterator{ iString.end() }; }
+        abstract_iterator* do_begin(void* memory) override { return new (memory) container_iterator{ iString.begin() }; }
+        abstract_iterator* do_end(void* memory) override { return new (memory) container_iterator{ iString.end() }; }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override { return new (memory) container_iterator{ iString.erase(static_cast<const container_const_iterator&>(aPosition)) }; }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new (memory) container_iterator{ iString.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast)) }; }
         // from i_sequence_container
     public:
         size_type capacity() const override { return iString.size(); }
@@ -98,7 +98,7 @@ namespace neolib
         const value_type& back() const override { return iString.back(); }
         value_type& back() override { return iString.back(); }
     private:
-        abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const value_type& aValue) override { return new (memory) container_iterator(iString.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
+        abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const value_type& aValue) override { return new (memory) container_iterator{ iString.insert(static_cast<const container_const_iterator&>(aPosition), aValue) }; }
         // from i_string
     public:
         const char* cdata() const override { return iString.data(); }

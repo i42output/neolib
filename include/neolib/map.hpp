@@ -58,10 +58,10 @@ namespace neolib
         typedef std::map<key_type, value_type> container_type;
         typedef typename container_type::value_type container_value_type;
     public:
-        typedef typename abstract_type::size_type size_type;
-        typedef typename abstract_type::const_iterator const_iterator;
-        typedef typename abstract_type::iterator iterator;
-        typedef typename abstract_type::generic_container_type generic_container_type;
+        using typename abstract_type::size_type;
+        using typename abstract_type::const_iterator;
+        using typename abstract_type::iterator;
+        using typename abstract_type::generic_container_type;
     protected:
         typedef container::const_iterator<value_type, typename container_type::const_iterator> container_const_iterator;
         typedef container::iterator<value_type, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
@@ -72,9 +72,10 @@ namespace neolib
         map() 
         {
         }
-        map(const std::initializer_list<container_value_type>& aIlist) :
-            iMap{ aIlist }
+        map(const std::initializer_list<value_type>& aIlist)
         {
+            for (auto& value : aIlist)
+                iMap.emplace(value.first(), value);
         }
         map(const generic_container_type& aOther)
         {
@@ -84,6 +85,16 @@ namespace neolib
         map(InputIter aFirst, InputIter aLast) :
             iMap(aFirst, aLast)
         {}
+        // non-asbtract operations
+    public:
+        const container_type& container() const
+        {
+            return iMap;
+        }
+        container_type& container()
+        {
+            return iMap;
+        }
         // implementation
         // from i_container
     public:
@@ -104,15 +115,15 @@ namespace neolib
         using abstract_type::find;
         // from i_container
     private:
-        container_const_iterator* do_begin(void* memory) const override { return new (memory) container_const_iterator(iMap.begin()); }
-        container_const_iterator* do_end(void* memory) const override { return new (memory) container_const_iterator(iMap.end()); }
-        container_iterator* do_begin(void* memory) override { return new (memory) container_iterator(iMap.begin()); }
-        container_iterator* do_end(void* memory) override { return new (memory) container_iterator(iMap.end()); }
-        container_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override { return new (memory) container_iterator(iMap.erase(static_cast<const container_const_iterator&>(aPosition))); }
-        container_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new (memory) container_iterator(iMap.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
+        abstract_const_iterator* do_begin(void* memory) const override { return new (memory) container_const_iterator{ iMap.begin() }; }
+        abstract_const_iterator* do_end(void* memory) const override { return new (memory) container_const_iterator{ iMap.end() }; }
+        abstract_iterator* do_begin(void* memory) override { return new (memory) container_iterator{ iMap.begin() }; }
+        abstract_iterator* do_end(void* memory) override { return new (memory) container_iterator{ iMap.end() }; }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override { return new (memory) container_iterator{ iMap.erase(static_cast<const container_const_iterator&>(aPosition)) }; }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new (memory) container_iterator{ iMap.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast)) }; }
         // from i_map
     public:
-        mapped_type& operator[](const abstract_key_type& aKey) override 
+        abstract_mapped_type& operator[](const abstract_key_type& aKey) override
         { 
             auto existing = iMap.find(aKey);
             if (existing == iMap.end())
@@ -136,8 +147,103 @@ namespace neolib
                         key_type{aKey},
                         mapped_type{aMapped}} }).first };
         }
-        container_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator(iMap.find(aKey)); }
-        container_iterator* do_find(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator(iMap.find(aKey)); }
+        abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.find(aKey) }; }
+        abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.find(aKey) }; }
+    private:
+        container_type iMap;
+    };
+
+    template <typename Key, typename T>
+    class multimap : public reference_counted<i_multimap<abstract_t<Key>, abstract_t<T>>>
+    {
+        // types
+    public:
+        typedef i_multimap<abstract_t<Key>, abstract_t<T>> abstract_type;
+        typedef Key key_type;
+        typedef T mapped_type;
+        typedef pair<const key_type, mapped_type> value_type;
+        typedef abstract_t<key_type> abstract_key_type;
+        typedef abstract_t<mapped_type> abstract_mapped_type;
+        typedef i_pair<const abstract_key_type, abstract_mapped_type> abstract_value_type;
+        typedef std::multimap<key_type, value_type> container_type;
+        typedef typename container_type::value_type container_value_type;
+    public:
+        using typename abstract_type::size_type;
+        using typename abstract_type::const_iterator;
+        using typename abstract_type::iterator;
+        using typename abstract_type::generic_container_type;
+    protected:
+        typedef container::const_iterator<value_type, typename container_type::const_iterator> container_const_iterator;
+        typedef container::iterator<value_type, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
+        typedef typename abstract_type::abstract_const_iterator abstract_const_iterator;
+        typedef typename abstract_type::abstract_iterator abstract_iterator;
+        // construction
+    public:
+        multimap()
+        {
+        }
+        multimap(const std::initializer_list<value_type>& aIlist)
+        {
+            for (auto& value : aIlist)
+                iMap.emplace(value.first(), value);
+        }
+        multimap(const generic_container_type& aOther)
+        {
+            assign(aOther);
+        }
+        template <typename InputIter>
+        multimap(InputIter aFirst, InputIter aLast) :
+            iMap(aFirst, aLast)
+        {}
+        // non-asbtract operations
+    public:
+        const container_type& container() const
+        {
+            return iMap;
+        }
+        container_type& container()
+        {
+            return iMap;
+        }
+        // implementation
+        // from i_container
+    public:
+        size_type size() const override { return iMap.size(); }
+        size_type max_size() const override { return iMap.max_size(); }
+        void clear() override { iMap.clear(); }
+        void assign(const generic_container_type& aOther) override
+        {
+            if (&aOther == this)
+                return;
+            clear();
+            for (const_iterator i = aOther.begin(); i != aOther.end(); ++i)
+                iMap.insert(container_value_type{ key_type{ i->first() }, value_type{ key_type{i->first()}, mapped_type{i->second()} } });
+        }
+        // from i_multimap
+    public:
+        using abstract_type::insert;
+        using abstract_type::find;
+        // from i_container
+    private:
+        abstract_const_iterator* do_begin(void* memory) const override { return new (memory) container_const_iterator{ iMap.begin() }; }
+        abstract_const_iterator* do_end(void* memory) const override { return new (memory) container_const_iterator{ iMap.end() }; }
+        abstract_iterator* do_begin(void* memory) override { return new (memory) container_iterator{ iMap.begin() }; }
+        abstract_iterator* do_end(void* memory) override { return new (memory) container_iterator{ iMap.end() }; }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override { return new (memory) container_iterator(iMap.erase(static_cast<const container_const_iterator&>(aPosition))); }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new (memory) container_iterator(iMap.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
+        // from i_multimap
+    private:
+        abstract_iterator* do_insert(void* memory, const abstract_key_type& aKey, const abstract_mapped_type& aMapped) override
+        {
+            return new (memory) container_iterator{ iMap.insert(
+                typename container_type::value_type{
+                    typename container_type::key_type{aKey},
+                    typename container_type::mapped_type{
+                        key_type{aKey},
+                        mapped_type{aMapped}} }).first };
+        }
+        abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.find(aKey) }; }
+        abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.find(aKey) }; }
     private:
         container_type iMap;
     };
