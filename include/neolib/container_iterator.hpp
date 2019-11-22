@@ -45,6 +45,9 @@ namespace neolib
     {
         struct pure_iterator : std::logic_error { pure_iterator() : std::logic_error{ "neolib iterator is pure" } {} };
 
+        template <typename, typename, typename, typename>
+        class iterator;
+
         template <typename T, typename ContainerIterator, typename AbstractIterator = i_const_iterator<abstract_t<T>>>
         class const_iterator : public reference_counted<AbstractIterator, false>
         {
@@ -66,16 +69,21 @@ namespace neolib
         public:
             const_iterator() {}
             const_iterator(container_iterator aContainerIterator) : iContainerIterator(aContainerIterator) {}
-            const_iterator(const const_iterator& aOther) : iContainerIterator(aOther.iContainerIterator) {}
-            template <typename ContainerIterator2>
-            const_iterator(const iterator<T, ContainerIterator2, ContainerIterator>& aOther) : iContainerIterator(aOther.iContainerIterator) {}
-            const_iterator& operator=(const const_iterator& aOther) { iContainerIterator = aOther.iContainerIterator; return *this; }
+            const_iterator(const self_type& aOther) : iContainerIterator(aOther.iContainerIterator) {}
+            template <typename ContainerIterator2, typename AbstractIterator2>
+            const_iterator(const const_iterator<T, ContainerIterator2, AbstractIterator2>& aOther) : iContainerIterator(aOther.iContainerIterator) {}
+            template <typename ContainerIterator2, typename ContainerConstIterator, typename AbstractIterator2>
+            const_iterator(const iterator<T, ContainerIterator2, ContainerConstIterator, AbstractIterator2>& aOther) : iContainerIterator(aOther.iContainerIterator) {}
+        public:
+            const_iterator& operator=(const self_type& aOther) { iContainerIterator = aOther.iContainerIterator; return *this; }
+            template <typename ContainerIterator2, typename ContainerConstIterator, typename AbstractIterator2>
+            const_iterator& operator=(const iterator<T, ContainerIterator2, ContainerConstIterator, AbstractIterator2>& aOther) { iContainerIterator = aOther.iContainerIterator; return *this; }
         public:
             operator container_iterator() const { return iContainerIterator; }
         public:
             abstract_iterator& operator++() override { ++iContainerIterator; return *this; }
             abstract_iterator& operator--() override { --iContainerIterator; return *this; }
-            reference operator*() const override { return *iContainerIterator; }
+            reference operator*() const override { return to_abstract_type(*iContainerIterator); }
             pointer operator->() const override { return &(**this); }
             bool operator==(const abstract_base_iterator& aOther) const override { return iContainerIterator == static_cast<const self_type&>(aOther).iContainerIterator; }
             bool operator!=(const abstract_base_iterator& aOther) const override { return iContainerIterator != static_cast<const self_type&>(aOther).iContainerIterator; }
@@ -87,6 +95,9 @@ namespace neolib
         protected:
             container_iterator iContainerIterator;
         };
+
+        template <typename, typename, typename>
+        class random_access_iterator;
 
         template <typename T, typename ContainerIterator>
         class random_access_const_iterator : public const_iterator<T, ContainerIterator, i_random_access_const_iterator<abstract_t<T>>>
@@ -110,10 +121,15 @@ namespace neolib
         public:
             random_access_const_iterator() {}
             random_access_const_iterator(container_iterator aContainerIterator) : base_type(aContainerIterator) {}
-            random_access_const_iterator(const random_access_const_iterator& aOther) : base_type(aOther.base_type::iContainerIterator) {}
+            random_access_const_iterator(const self_type& aOther) : base_type(aOther.base_type::iContainerIterator) {}
             template <typename ContainerIterator2>
-            random_access_const_iterator(const random_access_iterator<T, ContainerIterator2, ContainerIterator>& aOther) : base_type(aOther.base_type::iContainerIterator) {}
-            random_access_const_iterator& operator=(const random_access_const_iterator& aOther) { base_type::operator=(aOther); return *this; }
+            random_access_const_iterator(const random_access_const_iterator<T, ContainerIterator2>& aOther) : base_type(aOther.base_type::iContainerIterator) {}
+            template <typename ContainerIterator2, typename ContainerConstIterator>
+            random_access_const_iterator(const random_access_iterator<T, ContainerIterator2, ContainerConstIterator>& aOther) : base_type(aOther.base_type::iContainerIterator) {}
+        public:
+            random_access_const_iterator& operator=(const self_type& aOther) { base_type::operator=(aOther); return *this; }
+            template <typename ContainerIterator2, typename ContainerConstIterator>
+            random_access_const_iterator& operator=(const random_access_iterator<T, ContainerIterator2, ContainerConstIterator>& aOther) { base_type::operator=(aOther); return *this; }
         public:
             operator container_iterator() const { return base_type::iContainerIterator; }
         public:
@@ -164,7 +180,7 @@ namespace neolib
         public:
             abstract_iterator& operator++() override { ++iContainerIterator; return *this; }
             abstract_iterator& operator--() override { --iContainerIterator; return *this; }
-            reference operator*() const override { return *iContainerIterator; }
+            reference operator*() const override { return to_abstract_type(*iContainerIterator); }
             pointer operator->() const override { return &(**this); }
             bool operator==(const abstract_base_iterator& aOther) const override { return iContainerIterator == static_cast<const self_type&>(aOther).iContainerIterator; }
             bool operator!=(const abstract_base_iterator& aOther) const override { return iContainerIterator != static_cast<const self_type&>(aOther).iContainerIterator; }

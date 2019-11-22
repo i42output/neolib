@@ -78,14 +78,24 @@ namespace neolib
         template <typename T>
         constexpr bool abstract_class_possible_v = std::is_class_v<T> && !is_pair_v<T>;
 
+        template <typename T, typename AT, typename = sfinae>
+        struct correct_const;
+        template <typename T, typename AT>
+        struct correct_const<T, AT, typename std::enable_if<!std::is_const_v<T>, sfinae>::type> { typedef AT type; };
+        template <typename T, typename AT>
+        struct correct_const<T, AT, typename std::enable_if<std::is_const_v<T>, sfinae>::type> { typedef const AT type; };
+
+        template <typename T, typename AT>
+        using correct_const_t = typename correct_const<T, AT>::type;
+
         template <typename, typename = sfinae>
         struct abstract_type : std::false_type {};
         template <typename T>
-        struct abstract_type<T, typename std::enable_if<abstract_class_possible_v<T>, sfinae>::type> : std::true_type { typedef typename T::abstract_type type; };
+        struct abstract_type<T, typename std::enable_if<abstract_class_possible_v<T>, sfinae>::type> : std::true_type { typedef correct_const_t<T, typename T::abstract_type> type; };
         template <typename T>
-        struct abstract_type<T, typename std::enable_if<std::is_arithmetic_v<T>, sfinae>::type> : std::true_type { typedef T type; };
+        struct abstract_type<T, typename std::enable_if<std::is_arithmetic_v<T>, sfinae>::type> : std::true_type { typedef correct_const_t<T, T> type; };
         template <typename T>
-        struct abstract_type<T, typename std::enable_if<std::is_enum_v<T>, sfinae>::type> : std::true_type { typedef T type; };
+        struct abstract_type<T, typename std::enable_if<std::is_enum_v<T>, sfinae>::type> : std::true_type { typedef correct_const_t<T, T> type; };
         template <typename T1, typename T2>
         struct abstract_type<std::pair<T1, pair<T1, T2>>> : std::false_type { typedef typename abstract_type<pair<T1, T2>>::type type; };
         template <typename T1, typename T2>
@@ -117,7 +127,7 @@ inline const abstract_t<neolib::pair<T1, T2>>& to_abstract_type(const std::pair<
 }
 
 template <typename T1, typename T2>
-inline abstract_t<neolib::pair<T1, T2>> & to_abstract_type(std::pair<T1, neolib::pair<T1, T2>> & aArgument)
+inline abstract_t<neolib::pair<T1, T2>>& to_abstract_type(std::pair<T1, neolib::pair<T1, T2>> & aArgument)
 {
     return static_cast<abstract_t<neolib::pair<T1, T2>>&>(aArgument.second);
 }

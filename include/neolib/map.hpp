@@ -240,7 +240,7 @@ namespace neolib
                     typename container_type::key_type{aKey},
                     typename container_type::mapped_type{
                         key_type{aKey},
-                        mapped_type{aMapped}} }).first };
+                        mapped_type{aMapped}} }) };
         }
         abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.find(aKey) }; }
         abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.find(aKey) }; }
