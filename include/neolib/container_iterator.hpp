@@ -48,7 +48,7 @@ namespace neolib
         template <typename T, typename ContainerIterator, typename AbstractIterator = i_const_iterator<abstract_t<T>>>
         class const_iterator : public reference_counted<AbstractIterator, false>
         {
-            typedef const_iterator<T, ContainerIterator> self_type;
+            typedef const_iterator<T, ContainerIterator, AbstractIterator> self_type;
             typedef reference_counted<AbstractIterator, false> base_type;
         public:
             typedef AbstractIterator abstract_type;
@@ -75,7 +75,7 @@ namespace neolib
         public:
             abstract_iterator& operator++() override { ++iContainerIterator; return *this; }
             abstract_iterator& operator--() override { --iContainerIterator; return *this; }
-            reference operator*() const override { return to_abstract_iterator(*iContainerIterator); }
+            reference operator*() const override { return *iContainerIterator; }
             pointer operator->() const override { return &(**this); }
             bool operator==(const abstract_base_iterator& aOther) const override { return iContainerIterator == static_cast<const self_type&>(aOther).iContainerIterator; }
             bool operator!=(const abstract_base_iterator& aOther) const override { return iContainerIterator != static_cast<const self_type&>(aOther).iContainerIterator; }
@@ -130,8 +130,8 @@ namespace neolib
         private:
             abstract_iterator* do_post_increment(void* memory) override { return new (memory) self_type{ base_type::iContainerIterator++ }; }
             abstract_iterator* do_post_decrement(void* memory) override { return new (memory) self_type{ base_type::iContainerIterator-- }; }
-            abstract_iterator* do_add(void* memory, difference_type aDifference) const override { return new (memory) self_type{ base_type::iContainerIterator + aDifference }; }
-            abstract_iterator* do_subtract(void* memory, difference_type aDifference) const override { return new (memory) self_type{ base_type::iContainerIterator - aDifference }; }
+            abstract_random_access_iterator* do_add(void* memory, difference_type aDifference) const override { return new (memory) self_type{ base_type::iContainerIterator + aDifference }; }
+            abstract_random_access_iterator* do_subtract(void* memory, difference_type aDifference) const override { return new (memory) self_type{ base_type::iContainerIterator - aDifference }; }
         };
 
         template <typename T, typename ContainerIterator, typename ContainerConstIterator, typename AbstractIterator = i_iterator<abstract_t<T>>>
@@ -164,7 +164,7 @@ namespace neolib
         public:
             abstract_iterator& operator++() override { ++iContainerIterator; return *this; }
             abstract_iterator& operator--() override { --iContainerIterator; return *this; }
-            reference operator*() const override { return to_abstract_iterator(*iContainerIterator); }
+            reference operator*() const override { return *iContainerIterator; }
             pointer operator->() const override { return &(**this); }
             bool operator==(const abstract_base_iterator& aOther) const override { return iContainerIterator == static_cast<const self_type&>(aOther).iContainerIterator; }
             bool operator!=(const abstract_base_iterator& aOther) const override { return iContainerIterator != static_cast<const self_type&>(aOther).iContainerIterator; }
@@ -215,11 +215,11 @@ namespace neolib
             bool operator>(const abstract_random_access_iterator& aOther) const override { return base_type::iContainerIterator > static_cast<const self_type&>(aOther).base_type::iContainerIterator; }
             bool operator>=(const abstract_random_access_iterator& aOther) const override { return base_type::iContainerIterator >= static_cast<const self_type&>(aOther).base_type::iContainerIterator; }
         public:
-            abstract_iterator* clone(void* memory) const override { return new (memory) self_type{ base_type::iContainerIterator }; }
-            abstract_const_iterator* const_clone(void* memory) const override { return new (memory) random_access_const_iterator<T, ContainerConstIterator, AbstractConstIterator>{ *this }; }
+            abstract_random_access_iterator* clone(void* memory) const override { return new (memory) self_type{ base_type::iContainerIterator }; }
+            abstract_random_access_const_iterator* const_clone(void* memory) const override { return new (memory) random_access_const_iterator<T, ContainerConstIterator>{ *this }; }
         private:
-            abstract_iterator* do_add(void* memory, difference_type aDifference) const override { return new (memory) self_type{ base_type::iContainerIterator + aDifference }; }
-            abstract_iterator* do_subtract(void* memory, difference_type aDifference) const override { return new (memory) self_type{ base_type::iContainerIterator - aDifference }; }
+            abstract_random_access_iterator* do_add(void* memory, difference_type aDifference) const override { return new (memory) self_type{ base_type::iContainerIterator + aDifference }; }
+            abstract_random_access_iterator* do_subtract(void* memory, difference_type aDifference) const override { return new (memory) self_type{ base_type::iContainerIterator - aDifference }; }
         };
     }
 }

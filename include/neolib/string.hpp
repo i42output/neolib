@@ -55,8 +55,8 @@ namespace neolib
     protected:
         typedef container::random_access_const_iterator<char, std::string::const_iterator> container_const_iterator;
         typedef container::random_access_iterator<char, std::string::iterator, std::string::const_iterator> container_iterator;
-        typedef base_type::abstract_const_iterator abstract_const_iterator;
-        typedef base_type::abstract_iterator abstract_iterator;
+        typedef typename container_const_iterator::abstract_const_iterator abstract_const_iterator;
+        typedef typename container_iterator::abstract_iterator abstract_iterator;
         // construction
     public:
         string(const char* aString) : iString{ aString } {}

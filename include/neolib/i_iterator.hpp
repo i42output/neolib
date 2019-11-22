@@ -149,12 +149,12 @@ namespace neolib
             aOther.clone(storage());
             wrapped_iterator().add_ref();
         }
-        const_iterator(const i_iterator<T, Category, Difference, Pointer, Reference>& aOther)
+        const_iterator(const i_iterator<T, Category, Difference, T*, T&>& aOther)
         {
             aOther.const_clone(storage());
             wrapped_iterator().add_ref();
         }
-        const_iterator(const iterator<T, Category, Difference, Pointer, Reference>& aOther)
+        const_iterator(const iterator<T, Category, Difference, T*, T&>& aOther)
         {
             aOther.const_clone(storage());
             wrapped_iterator().add_ref();
@@ -173,7 +173,7 @@ namespace neolib
             wrapped_iterator().add_ref();
             return *this;
         }
-        self_type& operator=(const iterator<T, Category, Difference, Pointer, Reference>& aOther)
+        self_type& operator=(const iterator<T, Category, Difference, T*, T&>& aOther)
         {
             iterator temp(aOther);
             if (!is_singular())
@@ -253,11 +253,11 @@ namespace neolib
             base_type(aOther)
         {
         }
-        random_access_const_iterator(const i_random_access_iterator<T, Category, Difference, Pointer, Reference>& aOther) :
+        random_access_const_iterator(const i_random_access_iterator<T, Category, Difference, T*, T&>& aOther) :
             base_type(aOther)
         {
         }
-        random_access_const_iterator(const iterator<T, Category, Difference, Pointer, Reference>& aOther) :
+        random_access_const_iterator(const iterator<T, Category, Difference, T*, T&>& aOther) :
             base_type(aOther)
         {
         }
@@ -269,12 +269,12 @@ namespace neolib
             base_type::operator=(aOther);
             return *this;
         }
-        self_type& operator=(const i_random_access_iterator<T, Category, Difference, Pointer, Reference>& aOther)
+        self_type& operator=(const i_random_access_iterator<T, Category, Difference, T*, T&>& aOther)
         {
             base_type::operator=(aOther);
             return *this;
         }
-        self_type& operator=(const iterator<T, Category, Difference, Pointer, Reference>& aOther)
+        self_type& operator=(const iterator<T, Category, Difference, T*, T&>& aOther)
         {
             base_type::operator=(aOther);
             return *this;
