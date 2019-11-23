@@ -37,26 +37,44 @@
 
 #include <neolib/neolib.hpp>
 #include <neolib/reference_counted.hpp>
-#include <neolib/i_string.hpp>
+#include <neolib/string.hpp>
 #include <neolib/map.hpp>
 
 namespace neolib
 {
-    namespace enum_traits
+    template <typename Enum>
+    using enum_enumerators_t = map<std::underlying_type_t<Enum>, string>;
+    template <typename Enum>
+    const enum_enumerators_t<Enum> enum_enumerators_v;
+
+    #define declare_enum_string( enumName, enumEnumerator ) { static_cast<std::underlying_type_t<enumName>>(enumName::enumEnumerator), neolib::string{ #enumEnumerator } },
+
+    template <typename Enum, typename StringT = string>
+    inline StringT enum_to_string(Enum aEnumerator)
     {
-        template <typename Enum>
-        using enum_enumerators_t = map<std::underlying_type_t<Enum>, string>;
-
-        template <typename Enum>
-        struct enum_enumerators
-        {
-            static const enum_enumerators_t<Enum> enumerators;
-        };
-
-        #define declare_enum_string( enumName, enumEnumerator ) { static_cast<std::underlying_type_t<enumName>>(enumName::enumEnumerator), neolib::string{ #enumEnumerator } },
+        auto const& e = enum_enumerators_v<Enum>.find(static_cast<std::underlying_type_t<Enum>>(aEnumerator))->second();
+        if constexpr (std::is_same_v<StringT, std::string>)
+            return e.to_std_string();
+        else
+            return e;
     }
 
-    using namespace enum_traits;
+    struct bad_enum_string : std::runtime_error { bad_enum_string(const std::string& aString) : std::runtime_error{ "neolib: bad enum string '" + aString + "'" } {} };
+
+    template <typename Enum>
+    inline Enum string_to_enum(const neolib::i_string& aEnumerator)
+    {
+        // todo: use bimap.
+        for (auto const& e : enum_enumerators_v<Enum>)
+            if (e.second() == aEnumerator)
+                return static_cast<Enum>(e.first());
+        throw bad_enum_string(aEnumerator.to_std_string());
+    }
+    template <typename Enum>
+    inline Enum string_to_enum(const std::string& aEnumerator)
+    {
+        return string_to_enum<Enum>(neolib::string{ aEnumerator });
+    }
 
     template <typename UnderlyingType>
     class i_basic_enum : public i_reference_counted
