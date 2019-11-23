@@ -70,6 +70,10 @@ namespace neolib
         }
     }
 
+    struct bad_variant_access : std::invalid_argument { bad_variant_access() : std::invalid_argument{ "neolib::bad_variant_access" } {} };
+    struct variant_type_not_less_than_comparable : std::invalid_argument { variant_type_not_less_than_comparable() : std::invalid_argument{ "neolib::variant_type_not_less_than_comparable" } {} };
+    struct variant_type_not_convertible : std::invalid_argument { variant_type_not_convertible() : std::invalid_argument{ "neolib::variant_type_not_convertible" } {} };
+
     template <typename Id, typename... Types>
     class i_plugin_variant : public i_reference_counted
     {
@@ -78,8 +82,6 @@ namespace neolib
         friend class plugin_variant;
         // exceptions
     public:
-        struct bad_variant_access : std::invalid_argument { bad_variant_access() : std::invalid_argument{ "neolib::i_plugin_variant::bad_variant_access" } {} };
-        struct type_not_less_than_comparable : std::invalid_argument { type_not_less_than_comparable() : std::invalid_argument{ "neolib::i_plugin_variant::type_not_less_than_comparable" } {} };
         // types
     public:
         typedef self_type abstract_type;
@@ -192,6 +194,20 @@ namespace neolib
             else
                 throw std::bad_variant_access();
         }
+    }
+
+    template <typename T, typename Id, typename... Types>
+    inline T get_as(const i_plugin_variant<Id, Types...>& aVariant)
+    {
+        T result;
+        variant_visitors::visit([&result](auto&& v)
+        {
+            if constexpr (std::is_convertible_v<decltype(v), T>)
+                result = static_cast<T>(v);
+            else
+                throw variant_type_not_convertible();
+        }, aVariant);
+        return result;
     }
 }
 

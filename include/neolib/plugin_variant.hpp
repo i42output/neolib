@@ -100,10 +100,6 @@ namespace neolib
     {
         typedef plugin_variant<Id, Types...> self_type;
         typedef reference_counted<i_plugin_variant<Id, abstract_t<Types>...>> base_type;
-        // exceptions
-    public:
-        using typename base_type::bad_variant_access;
-        using typename base_type::type_not_less_than_comparable;
         // types
     public:
         typedef i_plugin_variant<Id, abstract_t<Types>...> abstract_type;
@@ -175,7 +171,7 @@ namespace neolib
                 }, *this);
                 return result;
             }
-            throw type_not_less_than_comparable();
+            throw variant_type_not_less_than_comparable();
         }
         // state
     public:
