@@ -67,71 +67,71 @@ namespace neolib
         // construction
     public:
         optional() {}
-        optional(const abstract_type& rhs) : container_type{ rhs.get() } {}
+        optional(const abstract_type& rhs) : container_type{ rhs.valid() ? self_type{ rhs.get() } : self_type{} } {}
         optional(const_reference value) : container_type{ value } {}
         template <typename SFINAE = sfinae>
         optional(abstract_const_reference value, std::enable_if_t<!std::is_same_v<value_type, abstract_value_type>, SFINAE> = sfinae{}) : container_type{ value } {}
         // state
     public:
-        virtual bool valid() const
+        bool valid() const override
         {
             return static_cast<const container_type&>(*this) != std::nullopt;
         }
-        virtual bool invalid() const
+        bool invalid() const override
         {
             return !valid();
         }
-        virtual operator bool() const 
+        operator bool() const override
         { 
             return valid();
         }
         // element access
     public:
-        virtual reference get()
+        reference get() override
         {
             if (valid())
                 return container_type::value();
             throw not_valid();
         }
-        virtual const_reference get() const
+        const_reference get() const override
         {
             if (valid())
                 return container_type::value();
             throw not_valid();
         }
-        virtual reference operator*()
+        reference operator*() override
         { 
             return get();
         }
-        virtual const_reference operator*() const
+        const_reference operator*() const override
         { 
             return get();
         }
-        virtual pointer operator->()
+        pointer operator->() override
         { 
             return &get(); 
         }
-        virtual const_pointer operator->() const
+        const_pointer operator->() const override
         { 
             return &get(); 
         }
         // modifiers
     public:
-        virtual void reset()
+        void reset() override
         { 
             static_cast<container_type&>(*this) = std::nullopt;
         }
-        virtual optional& operator=(const std::nullopt_t&)
+        optional& operator=(const std::nullopt_t&) override
         {
             static_cast<container_type&>(*this) = std::nullopt;
             return *this;
         }
-        virtual optional& operator=(const abstract_type& rhs)
+        optional& operator=(const abstract_type& rhs) override
         { 
             *this = rhs.get();
             return *this;
         }
-        virtual optional& operator=(const abstract_value_type& value) 
+        optional& operator=(const abstract_value_type& value) override
         {
             static_cast<container_type&>(*this) = value;
             return *this;

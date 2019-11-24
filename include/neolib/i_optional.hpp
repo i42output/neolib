@@ -71,6 +71,7 @@ namespace neolib
         // modifiers
     public:
         virtual void reset() = 0;
+        virtual i_optional<T>& operator=(const std::nullopt_t&) = 0;
         virtual i_optional<T>& operator=(const i_optional<T>& rhs) = 0;
         virtual i_optional<T>& operator=(const T& value) = 0;
     };
