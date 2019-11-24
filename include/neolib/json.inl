@@ -252,6 +252,75 @@ namespace neolib
         }
 
         template <json_syntax Syntax>
+        constexpr inline std::array<state, TOKEN_COUNT> object_state()
+        {
+            if constexpr (Syntax != json_syntax::Functional)
+            {
+                return
+                    // state::Object
+                    std::array<state, TOKEN_COUNT>
+                    {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+                        SXXX, SOBJ, SCLO, SXXX, SXXX, SXXX, SNOV, SNAM, SKEY, SXXX, SKEY, SKEY, SXXX, SXXX, SXXX, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
+                    }};
+            }
+            else
+            {
+                return
+                    // state::Object
+                    std::array<state, TOKEN_COUNT>
+                    {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+                        SXXX, SOBJ, SCLO, SXXX, SXXX, SXXX, SNOV, SNAM, SKEY, SXXX, SKEY, SKEY, SXXX, SXXX, SXXX, SKEY, SKEY, SKEY, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
+                    }};
+            }
+        }
+
+        template <json_syntax Syntax>
+        constexpr inline std::array<state, TOKEN_COUNT> need_value_state()
+        {
+            if constexpr (Syntax != json_syntax::Functional)
+            {
+                return
+                    // state::NeedValue
+                    std::array<state, TOKEN_COUNT>
+                    {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+                        SXXX, SOBJ, SXXX, SARR, SXXX, SXXX, SXXX, SSTR, SKEY, SXXX, SKEY, SKEY, SXXX, SNU1, SNU2, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
+                    }};
+            }
+            else
+            {
+                return
+                    // state::NeedValue
+                    std::array<state, TOKEN_COUNT>
+                    {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+                        SXXX, SOBJ, SXXX, SARR, SXXX, SXXX, SXXX, SSTR, SKEY, SXXX, SKEY, SKEY, SXXX, SNU1, SNU2, SKEY, SKEY, SKEY, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
+                    }};
+            }
+        }
+
+        template <json_syntax Syntax>
+        constexpr inline std::array<state, TOKEN_COUNT> need_object_value_state()
+        {
+            if constexpr (Syntax != json_syntax::Functional)
+            {
+                return
+                    // state::NeedObjectValue
+                    std::array<state, TOKEN_COUNT>
+                    {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+                        SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SNAM, SKEY, SXXX, SKEY, SKEY, SXXX, SXXX, SXXX, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
+                    }};
+            }
+            else
+            {
+                return
+                    // state::NeedObjectValue
+                    std::array<state, TOKEN_COUNT>
+                    {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
+                        SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SNAM, SKEY, SXXX, SKEY, SKEY, SXXX, SXXX, SXXX, SKEY, SKEY, SKEY, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
+                    }};
+            }
+        }
+
+        template <json_syntax Syntax>
         constexpr inline std::array<state, TOKEN_COUNT> value_state()
         {
             if constexpr (Syntax == json_syntax::Standard || Syntax == json_syntax::StandardNoKeywords)
@@ -330,10 +399,7 @@ namespace neolib
                 SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SIGN, SIGN, SZZZ
             }},
             // state::Object
-            std::array<state, TOKEN_COUNT>
-            {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
-                SXXX, SOBJ, SCLO, SXXX, SXXX, SXXX, SNOV, SNAM, SKEY, SXXX, SKEY, SKEY, SXXX, SXXX, SXXX, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
-            }},
+            object_state<Syntax>(),
             // state::Array
             std::array<state, TOKEN_COUNT>
             {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
@@ -352,20 +418,14 @@ namespace neolib
                 SXXX, SXXX, SCLO, SXXX, SCLO, SXXX, SVAL, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
             }},
             // state::NeedValue
-            std::array<state, TOKEN_COUNT>
-            {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
-                SXXX, SOBJ, SXXX, SARR, SXXX, SXXX, SXXX, SSTR, SKEY, SXXX, SKEY, SKEY, SXXX, SNU1, SNU2, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
-            }},
+            need_value_state<Syntax>(),
             // state::NeedObjectValueSeparator
             std::array<state, TOKEN_COUNT>
             {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
                 SXXX, SXXX, SCLO, SXXX, SCLO, SXXX, SNOV, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
             }},
             // state::NeedObjectValue
-            std::array<state, TOKEN_COUNT>
-            {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
-                SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SNAM, SKEY, SXXX, SKEY, SKEY, SXXX, SXXX, SXXX, SKEY, SKEY, SXXX, SKEY, SXXX, SXXX, SXXX, SIGN, SIGN, SXXX
-            }},
+            need_object_value_state<Syntax>(),
             // state::Keyword
             keyword_state<Syntax>(),
             // state::Name
