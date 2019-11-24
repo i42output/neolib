@@ -68,6 +68,7 @@ namespace neolib
     public:
         optional() : container_type{} {}
         optional(const abstract_type& rhs) : container_type{ rhs.valid() ? container_type{ rhs.get() } : container_type{} } {}
+        optional(const container_type& rhs) : container_type{ rhs } {}
         optional(const_reference value) : container_type{ value } {}
         template <typename SFINAE = sfinae>
         optional(abstract_const_reference value, std::enable_if_t<!std::is_same_v<value_type, abstract_value_type>, SFINAE> = sfinae{}) : container_type{ value } {}
