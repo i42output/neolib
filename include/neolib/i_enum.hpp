@@ -43,20 +43,37 @@
 namespace neolib
 {
     template <typename Enum>
-    using enum_enumerators_t = map<std::underlying_type_t<Enum>, string>;
+    using enum_enumerators_t = multimap<std::underlying_type_t<Enum>, string>;
     template <typename Enum>
     const enum_enumerators_t<Enum> enum_enumerators_v;
 
     #define declare_enum_string( enumName, enumEnumerator ) { static_cast<std::underlying_type_t<enumName>>(enumName::enumEnumerator), neolib::string{ #enumEnumerator } },
 
-    template <typename Enum, typename StringT = string>
-    inline StringT enum_to_string(Enum aEnumerator)
+    struct bad_enum_value : std::runtime_error { bad_enum_value(const std::string& aString) : std::runtime_error{ "neolib: bad enum value '" + aString + "'" } {} };
+
+    template <typename Enum>
+    inline std::string enum_to_hex(Enum aEnumValue)
     {
-        auto const& e = enum_enumerators_v<Enum>.find(static_cast<std::underlying_type_t<Enum>>(aEnumerator))->second();
-        if constexpr (std::is_same_v<StringT, std::string>)
-            return e.to_std_string();
+        std::ostringstream oss;
+        oss << "0x" << std::uppercase << std::hex << std::setfill('0') << std::setw(sizeof(Enum) * 2u) << static_cast<std::underlying_type_t<Enum>>(aEnumValue) << "u";
+        return oss.str();
+    }
+
+    template <typename Enum, typename StringT = string>
+    inline StringT enum_to_string(Enum aEnumerator, bool aMustEnumerate = false)
+    {
+        auto const e = enum_enumerators_v<Enum>.find(static_cast<std::underlying_type_t<Enum>>(aEnumerator));
+        if (e != enum_enumerators_v<Enum>.end())
+        {
+            if constexpr (std::is_same_v<StringT, std::string>)
+                return e->second().to_std_string();
+            else
+                return e->second();
+        }
+        else if (!aMustEnumerate)
+            return enum_to_hex(aEnumerator);
         else
-            return e;
+            throw bad_enum_value(enum_to_hex(aEnumerator));
     }
 
     struct bad_enum_string : std::runtime_error { bad_enum_string(const std::string& aString) : std::runtime_error{ "neolib: bad enum string '" + aString + "'" } {} };
@@ -87,7 +104,7 @@ namespace neolib
     public:
         typedef self_type abstract_type;
         typedef UnderlyingType underlying_type;
-        typedef i_map<underlying_type, i_string> enumerators_t;
+        typedef i_multimap<underlying_type, i_string> enumerators_t;
         // construction/assignment
     public:
         ref_ptr<self_type> clone() const
