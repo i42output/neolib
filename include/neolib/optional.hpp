@@ -66,8 +66,8 @@ namespace neolib
         typedef typename base_type::const_reference abstract_const_reference;
         // construction
     public:
-        optional() {}
-        optional(const abstract_type& rhs) : container_type{ rhs.valid() ? self_type{ rhs.get() } : self_type{} } {}
+        optional() : container_type{} {}
+        optional(const abstract_type& rhs) : container_type{ rhs.valid() ? container_type{ rhs.get() } : container_type{} } {}
         optional(const_reference value) : container_type{ value } {}
         template <typename SFINAE = sfinae>
         optional(abstract_const_reference value, std::enable_if_t<!std::is_same_v<value_type, abstract_value_type>, SFINAE> = sfinae{}) : container_type{ value } {}
