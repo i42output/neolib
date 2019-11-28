@@ -96,6 +96,8 @@ namespace neolib
         struct abstract_type<T, typename std::enable_if<std::is_arithmetic_v<T>, sfinae>::type> : std::true_type { typedef correct_const_t<T, T> type; };
         template <typename T>
         struct abstract_type<T, typename std::enable_if<std::is_enum_v<T>, sfinae>::type> : std::true_type { typedef correct_const_t<T, T> type; };
+        template <typename T>
+        struct abstract_type<T, typename std::enable_if<std::is_pointer_v<T>, sfinae>::type> : std::true_type { typedef correct_const_t<T, T> type; };
         template <typename T1, typename T2>
         struct abstract_type<std::pair<T1, pair<T1, T2>>> : std::false_type { typedef typename abstract_type<pair<T1, T2>>::type type; };
         template <typename T1, typename T2>

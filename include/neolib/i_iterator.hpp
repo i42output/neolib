@@ -184,7 +184,7 @@ namespace neolib
         }
         operator abstract_iterator& ()
         {
-            return *wrapped_iterator();
+            return wrapped_iterator();
         }
     public:
         abstract_iterator& operator++() { return ++wrapped_iterator(); }
@@ -437,7 +437,7 @@ namespace neolib
         }
         operator abstract_iterator&()
         {
-            return *wrapped_iterator();
+            return wrapped_iterator();
         }
     public:
         abstract_iterator& operator++() { return ++wrapped_iterator(); }
