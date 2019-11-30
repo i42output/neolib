@@ -127,6 +127,7 @@
     <ClInclude Include="..\..\..\include\neolib\array_tree.hpp" />
     <ClInclude Include="..\..\..\include\neolib\binary_data_packet.hpp" />
     <ClInclude Include="..\..\..\include\neolib\binary_packet.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\callable.hpp" />
     <ClInclude Include="..\..\..\include\neolib\container_iterator.hpp" />
     <ClInclude Include="..\..\..\include\neolib\cookie_jar.hpp" />
     <ClInclude Include="..\..\..\include\neolib\crc.hpp" />
@@ -135,6 +136,7 @@
     <ClInclude Include="..\..\..\include\neolib\detail_memory.hpp" />
     <ClInclude Include="..\..\..\include\neolib\enum.hpp" />
     <ClInclude Include="..\..\..\include\neolib\event.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_callable.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_enum.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_plugin_variant.hpp" />
     <ClInclude Include="..\..\..\include\neolib\plugin_event.hpp" />

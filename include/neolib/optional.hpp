@@ -169,4 +169,28 @@ namespace neolib
     {
         return !operator==(lhs, rhs);
     }
+
+    template <typename T>
+    struct optional_type
+    {
+        typedef T type;
+        static constexpr bool optional = false;
+    };
+    template <typename T>
+    struct optional_type<std::optional<T>>
+    {
+        typedef T type;
+        static constexpr bool optional = true;
+    };
+    template <typename T>
+    struct optional_type<optional<T>>
+    {
+        typedef T type;
+        static constexpr bool optional = true;
+    };
+
+    template <typename T>
+    using optional_t = typename optional_type<T>::type;
+    template <typename T>
+    inline constexpr bool is_optional_v = optional_type<T>::optional;
 }
