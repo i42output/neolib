@@ -25,29 +25,19 @@
 
 namespace neolib
 { 
-    class async_event_queue::local_thread : public async_thread
+    async_event_queue& async_event_queue::instance()
     {
-    public:
-        local_thread(async_event_queue& aOwner) :
-            async_thread{ "neolib::async_event_queue::local_thread" },
-            iOwner{ aOwner }
-        {
-        }
-    private:
-        async_event_queue& iOwner;
-    };
+        return get_instance(nullptr);
+    }
 
-    async_event_queue::async_event_queue() :
-        async_event_queue{ std::make_shared<local_thread>(*this) }
+    async_event_queue& async_event_queue::instance(neolib::async_task& aTask)
     {
-        static_cast<async_thread&>(*iTask).start();
+        return get_instance(&aTask);
     }
 
     async_event_queue::async_event_queue(async_task& aTask) : 
         async_event_queue{ std::shared_ptr<async_task>{std::shared_ptr<async_task>{}, &aTask} }
     {
-        std::lock_guard lg{ instance_mutex() };
-        instance_ptrs().aliased = this;
     }
 
     async_event_queue::async_event_queue(std::shared_ptr<async_task> aTask) :
@@ -56,157 +46,106 @@ namespace neolib
             *aTask,
             [this](neolib::callback_timer& aTimer)
             {
+                if (!is_alive())
+                    return;
+                std::scoped_lock sl{ iMutex };
                 publish_events();
                 if (!iEvents.empty() && !aTimer.waiting())
                     aTimer.again();
-                if (iCache.first && std::chrono::steady_clock::now() > iCache.second)
-                    iCache.first.reset();
             }, 1, false
-        },
-        iHaveThreadedCallbacks{ false },
-        iTerminated{ false }
+        }
     {
     }
 
     async_event_queue::~async_event_queue()
     {
+        {
+            std::scoped_lock sl{ iMutex };
+            set_destroying();
+        }
         exec();
-        while (iHaveThreadedCallbacks)
+        while (true)
+        {
+            std::scoped_lock sl{ iMutex };
+            if (iEvents.empty())
+                break;
             std::this_thread::sleep_for(std::chrono::milliseconds{ 1 });
-        std::lock_guard lg{ instance_mutex() };
-        if (instance_ptrs().aliased == this)
-            instance_ptrs().aliased = nullptr;
+        }
     }
 
-    std::shared_ptr<async_event_queue> async_event_queue::instance()
+    async_event_queue& async_event_queue::get_instance(neolib::async_task* aTask)
     {
-        std::lock_guard lg{ instance_mutex() };
-        if (instance_ptrs().aliased != nullptr)
-            return std::shared_ptr<async_event_queue>{ std::shared_ptr<async_event_queue>{}, instance_ptrs().aliased };
-        if (!instance_ptrs().counted.expired())
-            return instance_ptrs().counted.lock();
-        auto instanceRef = std::make_shared<async_event_queue>();
-        instance_ptrs().counted = instanceRef;
-        return instanceRef;
-    }
-
-    std::recursive_mutex& async_event_queue::instance_mutex()
-    {
-        static std::recursive_mutex sMutex;
-        return sMutex;
-    }
-
-    async_event_queue::instance_pointers& async_event_queue::instance_ptrs()
-    {
-        static instance_pointers sInstancePtrs;
-        return sInstancePtrs;
+        thread_local bool tInstantiated = false;
+        if (tInstantiated && aTask != nullptr)
+            throw async_event_queue_already_instantiated();
+        tInstantiated = true;
+        thread_local async_event_queue tLocalInstance{ aTask != nullptr ? 
+            std::shared_ptr<neolib::async_task>{ aTask } :
+            std::make_shared<neolib::async_thread>( "neogfx::async_event_queue", true ) };
+        return tLocalInstance;
     }
 
     bool async_event_queue::exec()
     {
-        bool didSome = false;
-        if (iHaveThreadedCallbacks)
-        {
-            event_callback_list work;
-            {
-                destroyable_mutex_lock_guard<event_mutex> guard{ iThreadedCallbacksMutex };
-                work = std::move(iThreadedCallbacks[std::this_thread::get_id()]);
-                iThreadedCallbacks.erase(iThreadedCallbacks.find(std::this_thread::get_id()));
-                iHaveThreadedCallbacks = !iThreadedCallbacks.empty();
-            }
-            for (auto& cl : work)
-            {
-                for (auto& cb : cl.second)
-                {
-                    if (iTerminated)
-                        return didSome;
-                    cb();
-                    didSome = true;
-                }
-            }
-        }
-        return didSome;
+        return publish_events();
     }
 
     void async_event_queue::terminate()
     {
-        destroyable_mutex_lock_guard<event_mutex> guard{ iThreadedCallbacksMutex };
-        iTerminated = true;
+        if (!is_alive())
+            return;
+        std::scoped_lock sl{ iMutex };
         iEvents.clear();
         if (iTimer.waiting())
             iTimer.cancel();
-        iThreadedCallbacks.clear();
-        iHaveThreadedCallbacks = false;
     }
 
-    void async_event_queue::persist(std::shared_ptr<async_event_queue> aPtr, uint32_t aDuration_ms)
+    void async_event_queue::unqueue(const i_event& aEvent)
     {
-        iCache.first = aPtr;
-        iCache.second = std::chrono::steady_clock::now() + std::chrono::milliseconds(aDuration_ms);
-    }
-
-    void async_event_queue::enqueue_to_thread(const void* aEvent, std::thread::id aThreadId, callback aCallback)
-    {
-        if (iTerminated)
+        if (!is_alive())
             return;
-        destroyable_mutex_lock_guard<event_mutex> guard{ iThreadedCallbacksMutex };
-        iThreadedCallbacks[aThreadId][aEvent].push_back(aCallback);
-        iHaveThreadedCallbacks = true;
-    }
-
-    void async_event_queue::unqueue(const void* aEvent)
-    {
-        if (iTerminated)
-            return;
-        destroyable_mutex_lock_guard<event_mutex> guard{ iThreadedCallbacksMutex };
         remove(aEvent);
     }
 
-    void async_event_queue::add(const void* aEvent, callback aCallback, neolib::lifetime::destroyed_flag aDestroyedFlag)
+    void async_event_queue::add(callback_ptr aCallback)
     {
-        if (iTerminated)
+        if (!is_alive())
             return;
-        destroyable_mutex_lock_guard<event_mutex> guard{ iEventsMutex };
-        iEvents.emplace(aEvent, std::make_pair(aCallback, aDestroyedFlag));
+        std::scoped_lock sl{ iMutex };
+        iEvents.push_back(std::move(aCallback));
         if (!iTimer.waiting())
             iTimer.again();
     }
 
-    void async_event_queue::remove(const void* aEvent)
+    void async_event_queue::remove(const i_event& aEvent)
     {
-        if (iTerminated)
+        if (!is_alive())
             return;
-        event_list toPublish;
-        {
-            destroyable_mutex_lock_guard<event_mutex> guard{ iEventsMutex };
-            auto events = iEvents.equal_range(aEvent);
-            if (events.first == events.second)
-                throw event_not_found();
-            toPublish.insert(events.first, events.second);
-            iEvents.erase(events.first, events.second);
-        }
-        for (auto& e : toPublish)
-            if (!e.second.second)
-                e.second.first();
+        std::scoped_lock sl{ iMutex };
+        for (auto& e : iEvents)
+            if (&e->event() == &aEvent)
+                e = nullptr;
     }
 
-    bool async_event_queue::has(const void* aEvent) const
+    bool async_event_queue::has(const i_event& aEvent) const
     {
-        destroyable_mutex_lock_guard<event_mutex> guard{ iEventsMutex };
-        return iEvents.find(aEvent) != iEvents.end();
+        return std::find_if(iEvents.begin(), iEvents.end(), [&aEvent](auto const& e) { return &e->event() == &aEvent; }) != iEvents.end();
     }
 
-    void async_event_queue::publish_events()
+    bool async_event_queue::publish_events()
     {
-        if (iTerminated)
-            return;
-        event_list toPublish;
-        {
-            destroyable_mutex_lock_guard<event_mutex> guard{ iEventsMutex };
-            toPublish.swap(iEvents);
-        }
+        if (!is_alive())
+            return false;
+        bool didSome = false;
+        std::scoped_lock sl{ iMutex };
+        event_list_t toPublish;
+        toPublish.swap(iEvents);
         for (auto& e : toPublish)
-            if (!e.second.second)
-                e.second.first();
+            if (e != nullptr)
+            {
+                didSome = true;
+                e->call();
+            }
+        return didSome;
     }
 }
