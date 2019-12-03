@@ -253,7 +253,7 @@ namespace neolib
 #ifdef _WIN32
         std::string appName = aAppInfo.name().to_std_string();
         version appVersion = aAppInfo.version();
-        std::string appVersionName = aAppInfo.version().name().to_std_string();
+        std::string appVersionName = aAppInfo.version().version_name().to_std_string();
         std::string appCopyright = aAppInfo.copyright().to_std_string();
         wchar_t szFullPath[MAX_PATH];
         GetModuleFileName(NULL, szFullPath, sizeof(szFullPath));
@@ -295,9 +295,9 @@ namespace neolib
             bRetCode = VerQueryValue((LPVOID)lpstrVffInfo, L"\\StringFileInfo\\080904B0\\ProductVersionName",
                 (LPVOID *)&lpVersion, (PUINT)&uVersionLen);
             if (bRetCode && uVersionLen && lpVersion)
-                appVersion = version(appVersion.major(), appVersion.minor(), appVersion.maintenance(), appVersion.build(), any_to_utf8(reinterpret_cast<char16_t*>(lpVersion)));
-            if (appVersion.build() == 0)
-                appVersion = version(appVersion.major(), appVersion.minor(), appVersion.maintenance(), aAppInfo.version().build(), any_to_utf8(reinterpret_cast<char16_t*>(lpVersion)));
+                appVersion = version(appVersion.version_major(), appVersion.version_minor(), appVersion.version_maintenance(), appVersion.version_build(), any_to_utf8(reinterpret_cast<char16_t*>(lpVersion)));
+            if (appVersion.version_build() == 0)
+                appVersion = version(appVersion.version_major(), appVersion.version_minor(), appVersion.version_maintenance(), aAppInfo.version().version_build(), any_to_utf8(reinterpret_cast<char16_t*>(lpVersion)));
             uVersionLen = 0;
             lpVersion = NULL;
             bRetCode = VerQueryValue((LPVOID)lpstrVffInfo, L"\\StringFileInfo\\080904B0\\LegalCopyright",

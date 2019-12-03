@@ -114,10 +114,9 @@ namespace neolib
         static async_event_queue& get_instance(neolib::async_task* aTask);
     public:
         bool exec();
-        template <typename... Args>
-        void enqueue(const i_event& aEvent, typename event_callback<Args...>::handler_ptr aHandler, Args&&... aArgs)
+        void enqueue(callback_ptr aCallback)
         {
-            add(std::make_unique<event_callback<Args...>>(aEvent, aHandler, std::forward<Args>(aArgs)...));
+            add(std::move(aCallback));
         }
         void unqueue(const i_event& aEvent);
         void terminate();
@@ -193,14 +192,26 @@ namespace neolib
         event() : iAlias{ *this }, iInstanceDataPtr { nullptr }, iNextId{ 0ull }
         {
         }
-        event(const event&) = delete;
+        event(const event&) : iAlias{ *this }, iInstanceDataPtr{ nullptr }, iNextId{ 0ull }
+        {
+        }
         virtual ~event()
         {
             set_destroying();
             clear();
         }
     public:
-        event& operator=(const event&) = delete;
+        self_type& operator=(const self_type&) = delete;
+        self_type& operator=(const self_type&& aOther)
+        {
+            std::scoped_lock lock1{ iMutex };
+            std::scoped_lock lock2{ aOther.iMutex };
+            clear();
+            iInstanceData = std::move(aOther.iInstanceData);
+            iInstanceDataPtr = &*iInstanceData;
+            return *this;
+        }
+
     public:
         void handle_in_same_thread_as_emitter(cookie aHandleId)
         {
@@ -209,17 +220,17 @@ namespace neolib
     public:
         event_trigger_type trigger_type() const
         {
-            return instance_data().triggerType;
+            return instance().triggerType;
         }
         void set_trigger_type(event_trigger_type aTriggerType)
         {
-            instance_data().triggerType = aTriggerType;
+            instance().triggerType = aTriggerType;
         }
         bool trigger(Args... aArguments) const
         {
             if (!has_instance_data()) // no instance date means no subscribers so no point triggering.
                 return true;
-            std::lock_guard lg{ iMutex };
+            std::scoped_lock lock{ iMutex };
             switch (trigger_type())
             {
             case event_trigger_type::Default:
@@ -237,7 +248,7 @@ namespace neolib
         {
             if (trigger_type() == event_trigger_type::SynchronousDontQueue && trigger_type() == event_trigger_type::AsynchronousDontQueue)
                 unqueue();
-            std::lock_guard lg{ iMutex };
+            std::scoped_lock lock{ iMutex };
             destroyed_flag destroyed{ *this };
             instance().contexts.emplace_back();
             for (auto& h : instance().handlers)
@@ -266,7 +277,7 @@ namespace neolib
         {
             if (!has_instance_data()) // no instance means no subscribers so no point triggering.
                 return;
-            std::lock_guard lg{ iMutex };
+            std::scoped_lock lock{ iMutex };
             destroyed_flag destroyed{ *this };
             for (auto& h : instance().handlers)
             {
@@ -277,18 +288,18 @@ namespace neolib
         }
         void accept() const
         {
-            std::lock_guard lg{ iMutex };
+            std::scoped_lock lock{ iMutex };
             instance_data().contexts.back().accepted = true;
         }
         void ignore() const
         {
-            std::lock_guard lg{ iMutex };
+            std::scoped_lock lock{ iMutex };
             instance_data().contexts.back().accepted = false;
         }
     public:
         event_handle subscribe(const function_type& aHandlerCallback, const void* aUniqueId = nullptr) const
         {
-            std::lock_guard lg{ iMutex };
+            std::scoped_lock lock{ iMutex };
             return event_handle{ iAlias, instance().handlers.emplace(async_event_queue::instance(), 0u, aUniqueId, std::make_shared<function_type>(aHandlerCallback)) };
         }
         event_handle operator()(const function_type& aHandlerCallback, const void* aUniqueId = nullptr) const
@@ -317,12 +328,12 @@ namespace neolib
         }
         void unsubscribe(event_handle aHandle) const
         {
-            std::lock_guard lg{ iMutex };
+            std::scoped_lock lock{ iMutex };
             instance().handlers.remove(aHandle.id);
         }
         void unsubscribe(const void* aClientId) const
         {
-            std::lock_guard lg{ iMutex };
+            std::scoped_lock lock{ iMutex };
             for (auto const& h : instance().handlers)
                 if (h.clientId == aClientId)
                     instance().handlers.remove(h.id);
@@ -340,35 +351,39 @@ namespace neolib
     private:
         void add_ref(cookie aCookie) override
         {
-            std::lock_guard lg{ iMutex };
+            std::scoped_lock lock{ iMutex };
             ++instance().handlers[aCookie].referenceCount;
         }
         void release(cookie aCookie) override
         {
-            std::lock_guard lg{ iMutex };
+            std::scoped_lock lock{ iMutex };
             if (--instance().handlers[aCookie].referenceCount == 0u)
                 instance().handlers.remove(aCookie);
         }
         long use_count(cookie aCookie) const override
         {
-            std::lock_guard lg{ iMutex };
+            std::scoped_lock lock{ iMutex };
             return instance().handlers[aCookie].referenceCount;
         }
     private:
         void enqueue(handler& aHandler, bool aAsync, Args... aArguments) const
         {
-            std::lock_guard lg{ iMutex };
+            std::scoped_lock lock{ iMutex };
             auto& emitterQueue = async_event_queue::instance();
             if (!aAsync && aHandler.queue == &emitterQueue)
                 (*aHandler.callback)(aArguments...);
-            else if (aHandler.handleInSameThreadAsEmitter)
-                emitterQueue.enqueue(*this, aHandler.callback, aArguments...);
             else
-                aHandler.queue->enqueue(*this, aHandler.callback, aArguments...);
+            {
+                auto ecb = std::make_unique<event_callback<Args...>>(*this, aHandler.callback, aArguments...);
+                if (aHandler.handleInSameThreadAsEmitter)
+                    emitterQueue.enqueue(std::move(ecb));
+                else
+                    aHandler.queue->enqueue(std::move(ecb));
+            }
         }
         void unqueue() const
         {
-            std::lock_guard lg{ iMutex };
+            std::scoped_lock lock{ iMutex };
             std::unordered_set<async_event_queue*> queues;
             for (auto const& h : instance().handlers)
                 queues.insert(h.queue);
@@ -377,7 +392,9 @@ namespace neolib
         }
         void clear()
         {
-            std::lock_guard lg{ iMutex };
+            std::scoped_lock lock{ iMutex };
+            for (auto& h : instance().handlers)
+                h.queue->remove(*this);
             iInstanceDataPtr = nullptr;
             iInstanceData = std::nullopt;
         }
@@ -389,9 +406,10 @@ namespace neolib
         {
             if (iInstanceDataPtr != nullptr)
                 return *iInstanceDataPtr;
-            std::lock_guard lg{ iMutex };
+            std::scoped_lock lock{ iMutex };
             iInstanceData.emplace();
             iInstanceDataPtr = &*iInstanceData;
+            return *iInstanceDataPtr;
         }
     private:
         self_type& iAlias;

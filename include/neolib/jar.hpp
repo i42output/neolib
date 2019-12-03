@@ -235,12 +235,12 @@ namespace neolib
     public:
         bool contains(cookie_type aCookie) const
         {
-            std::lock_guard<mutex_type> lg{ mutex() };
+            std::scoped_lock<mutex_type> lock{ mutex() };
             return aCookie < reverse_indices().size() && reverse_indices()[aCookie] != INVALID_REVERSE_INDEX;
         }
         const value_type& operator[](cookie_type aCookie) const
         {
-            std::lock_guard<mutex_type> lg{ mutex() };
+            std::scoped_lock<mutex_type> lock{ mutex() };
             if (aCookie >= reverse_indices().size())
                 throw invalid_cookie();
             auto reverseIndex = reverse_indices()[aCookie];
@@ -270,7 +270,7 @@ namespace neolib
         template <typename Arg>
         iterator add(Arg&& aItem)
         {
-            std::lock_guard<mutex_type> lg{ mutex() };
+            std::scoped_lock<mutex_type> lock{ mutex() };
             auto cookie = item_cookie(aItem);
             if (reverse_indices().size() <= cookie)
                 reverse_indices().resize(cookie + 1, INVALID_REVERSE_INDEX);
@@ -282,12 +282,12 @@ namespace neolib
         }
         iterator remove(const value_type& aItem)
         {
-            std::lock_guard<mutex_type> lg{ mutex() };
+            std::scoped_lock<mutex_type> lock{ mutex() };
             return remove(item_cookie(aItem));
         }
         iterator remove(cookie_type aCookie)
         {
-            std::lock_guard<mutex_type> lg{ mutex() };
+            std::scoped_lock<mutex_type> lock{ mutex() };
             auto& reverseIndex = reverse_indices()[aCookie];
             if (reverseIndex == INVALID_REVERSE_INDEX)
                 throw invalid_cookie();
@@ -306,7 +306,7 @@ namespace neolib
     public:
         cookie_type next_cookie()
         {
-            std::lock_guard<mutex_type> lg{ mutex() };
+            std::scoped_lock<mutex_type> lock{ mutex() };
             if (!free_cookies().empty())
             {
                 auto nextCookie = free_cookies().back();
@@ -320,7 +320,7 @@ namespace neolib
         }
         void return_cookie(cookie_type aCookie)
         {
-            std::lock_guard<mutex_type> lg{ mutex() };
+            std::scoped_lock<mutex_type> lock{ mutex() };
             free_cookies().push_back(aCookie);
         }
     public:
@@ -355,7 +355,7 @@ namespace neolib
     public:
         void clear()
         {
-            std::lock_guard<mutex_type> lg{ mutex() };
+            std::scoped_lock<mutex_type> lock{ mutex() };
             iNextAvailableCookie = 0ul;
             free_cookies().clear();
             jar().clear();

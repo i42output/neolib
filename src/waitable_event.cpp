@@ -46,7 +46,7 @@ namespace neolib
 
     void waitable_event::signal_one() const
     {
-        std::lock_guard<std::mutex> lock(iMutex);
+        std::scoped_lock<std::mutex> lock(iMutex);
         iReady = true;
         iSignalType = SignalOne;
         iCondVar.notify_one();
@@ -54,7 +54,7 @@ namespace neolib
 
     void waitable_event::signal_all() const
     {
-        std::lock_guard<std::mutex> lock(iMutex);
+        std::scoped_lock<std::mutex> lock(iMutex);
         iReady = true;
         iSignalType = SignalAll;
         iCondVar.notify_all();
@@ -113,7 +113,7 @@ namespace neolib
 
     void waitable_event::reset() const
     {
-        std::lock_guard<std::mutex> lock(iMutex);
+        std::scoped_lock<std::mutex> lock(iMutex);
         iReady = false;
     }
 

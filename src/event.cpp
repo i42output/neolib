@@ -48,7 +48,7 @@ namespace neolib
             {
                 if (!is_alive())
                     return;
-                std::scoped_lock sl{ iMutex };
+                std::scoped_lock lock{ iMutex };
                 publish_events();
                 if (!iEvents.empty() && !aTimer.waiting())
                     aTimer.again();
@@ -60,13 +60,13 @@ namespace neolib
     async_event_queue::~async_event_queue()
     {
         {
-            std::scoped_lock sl{ iMutex };
+            std::scoped_lock lock{ iMutex };
             set_destroying();
         }
         exec();
         while (true)
         {
-            std::scoped_lock sl{ iMutex };
+            std::scoped_lock lock{ iMutex };
             if (iEvents.empty())
                 break;
             std::this_thread::sleep_for(std::chrono::milliseconds{ 1 });
@@ -94,7 +94,7 @@ namespace neolib
     {
         if (!is_alive())
             return;
-        std::scoped_lock sl{ iMutex };
+        std::scoped_lock lock{ iMutex };
         iEvents.clear();
         if (iTimer.waiting())
             iTimer.cancel();
@@ -111,7 +111,7 @@ namespace neolib
     {
         if (!is_alive())
             return;
-        std::scoped_lock sl{ iMutex };
+        std::scoped_lock lock{ iMutex };
         iEvents.push_back(std::move(aCallback));
         if (!iTimer.waiting())
             iTimer.again();
@@ -121,7 +121,7 @@ namespace neolib
     {
         if (!is_alive())
             return;
-        std::scoped_lock sl{ iMutex };
+        std::scoped_lock lock{ iMutex };
         for (auto& e : iEvents)
             if (&e->event() == &aEvent)
                 e = nullptr;
@@ -137,7 +137,7 @@ namespace neolib
         if (!is_alive())
             return false;
         bool didSome = false;
-        std::scoped_lock sl{ iMutex };
+        std::scoped_lock lock{ iMutex };
         event_list_t toPublish;
         toPublish.swap(iEvents);
         for (auto& e : toPublish)

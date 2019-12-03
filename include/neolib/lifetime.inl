@@ -163,7 +163,7 @@ namespace neolib
     template <typename FlagList>
     inline basic_lifetime<FlagList>::~basic_lifetime()
     {
-        std::lock_guard<mutex_type> lk(iFlagList.mutex());
+        std::scoped_lock<mutex_type> lk(iFlagList.mutex());
         if (!is_destroyed())
         {
             set_destroying();
@@ -204,7 +204,7 @@ namespace neolib
     template <typename FlagList>
     inline void basic_lifetime<FlagList>::set_alive()
     {
-        std::lock_guard<mutex_type> lk(iFlagList.mutex());
+        std::scoped_lock<mutex_type> lk(iFlagList.mutex());
         if (!is_creating())
             throw not_creating();
         iState = lifetime_state::Alive;
@@ -215,7 +215,7 @@ namespace neolib
     template <typename FlagList>
     inline void basic_lifetime<FlagList>::set_destroying()
     {
-        std::lock_guard<mutex_type> lk(iFlagList.mutex());
+        std::scoped_lock<mutex_type> lk(iFlagList.mutex());
         if (!is_destroying())
         {
             if (is_destroyed())
@@ -229,7 +229,7 @@ namespace neolib
     template <typename FlagList>
     inline void basic_lifetime<FlagList>::set_destroyed()
     {
-        std::lock_guard<mutex_type> lk(iFlagList.mutex());
+        std::scoped_lock<mutex_type> lk(iFlagList.mutex());
         if (!is_destroyed())
         {
             if (iState == lifetime_state::Creating || iState == lifetime_state::Alive)
@@ -243,14 +243,14 @@ namespace neolib
     template <typename FlagList>
     inline cookie basic_lifetime<FlagList>::next_cookie() const
     {
-        std::lock_guard<mutex_type> lk(flags().mutex());
+        std::scoped_lock<mutex_type> lk(flags().mutex());
         return flags().next_cookie();
     }
 
     template <typename FlagList>
     inline void basic_lifetime<FlagList>::add_flag(i_lifetime_flag* aFlag) const
     {
-        std::lock_guard<mutex_type> lk(flags().mutex());
+        std::scoped_lock<mutex_type> lk(flags().mutex());
         flags().add(aFlag);
         switch (iState)
         {
@@ -271,7 +271,7 @@ namespace neolib
     template <typename FlagList>
     inline void basic_lifetime<FlagList>::remove_flag(i_lifetime_flag* aFlag) const
     {
-        std::lock_guard<mutex_type> lk(flags().mutex());
+        std::scoped_lock<mutex_type> lk(flags().mutex());
         flags().remove(aFlag);
     }
 
