@@ -527,7 +527,7 @@ namespace neolib
         self_type operator+(difference_type aDifference) const { return wrapped_iterator() + aDifference; }
         self_type operator-(difference_type aDifference) const { return wrapped_iterator() - aDifference; }
         reference operator[](difference_type aDifference) const { return wrapped_iterator()[aDifference]; }
-        difference_type operator-(const self_type& aOther) const { return wrapped_iterator() - (*aOther.wrapped_iterator()); }
+        difference_type operator-(const self_type& aOther) const { return wrapped_iterator() - (aOther.wrapped_iterator()); }
         bool operator<(const self_type& aOther) const { return wrapped_iterator() < aOther.wrapped_iterator(); }
         bool operator<=(const self_type& aOther) const { return wrapped_iterator() <= aOther.wrapped_iterator(); }
         bool operator>(const self_type& aOther) const { return wrapped_iterator() > aOther.wrapped_iterator(); }
