@@ -123,9 +123,9 @@ namespace neolib
             random_access_const_iterator(container_iterator aContainerIterator) : base_type(aContainerIterator) {}
             random_access_const_iterator(const self_type& aOther) : base_type(aOther.base_type::iContainerIterator) {}
             template <typename ContainerIterator2>
-            random_access_const_iterator(const random_access_const_iterator<T, ContainerIterator2>& aOther) : base_type(aOther.base_type::iContainerIterator) {}
+            random_access_const_iterator(const random_access_const_iterator<T, ContainerIterator2>& aOther) : base_type(aOther.iContainerIterator) {}
             template <typename ContainerIterator2, typename ContainerConstIterator>
-            random_access_const_iterator(const random_access_iterator<T, ContainerIterator2, ContainerConstIterator>& aOther) : base_type(aOther.base_type::iContainerIterator) {}
+            random_access_const_iterator(const random_access_iterator<T, ContainerIterator2, ContainerConstIterator>& aOther) : base_type(aOther.iContainerIterator) {}
         public:
             random_access_const_iterator& operator=(const self_type& aOther) { base_type::operator=(aOther); return *this; }
             template <typename ContainerIterator2, typename ContainerConstIterator>
