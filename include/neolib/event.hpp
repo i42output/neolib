@@ -21,116 +21,38 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <neolib/neolib.hpp>
 #include <vector>
-#include <list>
-#include <unordered_map>
 #include <optional>
 #include <mutex>
 
-#include <neolib/any.hpp>
-#include <neolib/allocator.hpp>
-#include <neolib/mutex.hpp>
 #include <neolib/lifetime.hpp>
+#include <neolib/jar.hpp>
 #include <neolib/async_task.hpp>
 #include <neolib/timer.hpp>
-#include <neolib/raii.hpp>
 
 namespace neolib
 {
+    struct event_destroyed : std::logic_error { event_destroyed() : std::logic_error{ "neolib::event_destroyed" } {} };
+
     class sink;
 
-    class i_event_handle;
-
-    class i_event
+    class i_event : public i_cookie_consumer
     {
     public:
         virtual ~i_event() {}
     public:
-        virtual void handle_add_ref(const i_event_handle& aHandle) const = 0;
-        virtual void handle_release(const i_event_handle& aHandle) const = 0;
-        virtual void handle_updated(const i_event_handle& aHandle) const = 0;
+        virtual void handle_in_same_thread_as_emitter(cookie aHandleId) = 0;
     };
 
-    class i_event_handle
+    struct event_handle
     {
-    public:
-        virtual ~i_event_handle() {}
-    public:
-        virtual i_event_handle& operator=(const i_event_handle& aOther) = 0;
-    public:
-        virtual void add_ref() = 0;
-        virtual void release() = 0;
-    public:
-        virtual const i_event& event() const = 0;
-        virtual uint64_t id() const = 0;
-    public:
-        virtual bool is_handling_in_same_thread_as_emitter() const = 0;
-        virtual void handle_in_same_thread_as_emitter() = 0;
-    };
+        i_event& event;
+        cookie id;
 
-    struct event_destroyed : std::logic_error { event_destroyed() : std::logic_error{ "neolib::event_destroyed" } {} };
-
-    template <typename... Args>
-    class event_handle : public i_event_handle, std::enable_shared_from_this<i_event_handle>
-    {
-        typedef event_handle<Args...> self_type;
-    public:
-        event_handle(const i_event& aEvent, uint64_t aId) :
-            iEvent{ aEvent }, iId{ aId }, iHandleInSameThreadAsEmitter{ false }
-        {
-        }
-        event_handle(const i_event_handle& aOther) :
-            iEvent{ aOther.event() }, iId{ aOther.id() }, iHandleInSameThreadAsEmitter{ aOther.is_handling_in_same_thread_as_emitter() }
-        {
-        }
-    public:
-        self_type& operator=(const self_type& aOther)
-        {
-            iId = aOther.id();
-            iHandleInSameThreadAsEmitter = aOther.is_handling_in_same_thread_as_emitter();
-            return *this;
-        }
-        self_type& operator=(const i_event_handle& aOther) override
-        {
-            iId = aOther.id();
-            iHandleInSameThreadAsEmitter = aOther.is_handling_in_same_thread_as_emitter();
-            return *this;
-        }
-    public:
-        void add_ref() override
-        {
-            event().handle_add_ref(*this);
-        }
-        void release() override
-        {
-            event().handle_release(*this);
-        }
-    public:
-        const i_event& event() const override
-        {
-            return iEvent;
-        }
-        uint64_t id() const override
-        {
-            return iId;
-        }
-        bool is_handling_in_same_thread_as_emitter() const override
-        {
-            return iHandleInSameThreadAsEmitter;
-        }
-        void handle_in_same_thread_as_emitter() override
-        {
-            iHandleInSameThreadAsEmitter = true;
-            event().handle_updated(*this);
-        }
         event_handle& operator~()
         {
-            handle_in_same_thread_as_emitter();
+            event.handle_in_same_thread_as_emitter(id);
             return *this;
         }
-    public:
-        const i_event& iEvent;
-        uint64_t iId;
-        bool iHandleInSameThreadAsEmitter;
     };
 
     class i_event_callback
@@ -148,12 +70,13 @@ namespace neolib
         template <typename...>
         friend class event;
     private:
-        typedef std::function<void(Args&&...)> function_type;
+        typedef std::function<void(Args...)> function_type;
         typedef std::shared_ptr<function_type> handler_ptr;
         typedef std::tuple<Args&&...> argument_pack;
     public:
-        event_callback(const i_event& aEvent, handler_ptr aHandler, Args&&... aArguments) :
-            iEvent{ aEvent }, iArguments { aArguments... }
+        template <typename... Args2>
+        event_callback(const i_event& aEvent, handler_ptr aHandler, Args2&&... aArguments) :
+            iEvent{ aEvent }, iHandler{ aHandler }, iArguments{ std::forward<Args2>(aArguments)... }
         {
         }
     public:
@@ -191,10 +114,10 @@ namespace neolib
         static async_event_queue& get_instance(neolib::async_task* aTask);
     public:
         bool exec();
-        template <typename Handler, typename... Args>
-        void enqueue(const i_event& aEvent, Handler aHandler, Args&&... aArguments)
+        template <typename... Args>
+        void enqueue(const i_event& aEvent, typename event_callback<Args...>::handler_ptr aHandler, Args... aArguments)
         {
-            add(std::make_unique<event_callback<Args...>>(aEvent, aHandler, std::forward<Args>(aArguments)...));
+            add(std::make_unique<event_callback<Args...>>(aEvent, aHandler, aArguments...));
         }
         void unqueue(const i_event& aEvent);
         void terminate();
@@ -226,22 +149,40 @@ namespace neolib
         friend class sink;
         friend class async_event_queue;
     private:
-        typedef event_handle<Args...> handle_type;
         typedef typename event_callback<Args...>::function_type function_type;
-        struct handler
+        typedef typename event_callback<Args...>::handler_ptr handler_ptr;
+        struct handler : i_jar_item
         {
+            neolib::cookie id;
             async_event_queue* queue;
             uint32_t referenceCount;
-            const void* id;
-            handle_type handle;
-            std::shared_ptr<function_type> callback;
+            const void* clientId;
+            handler_ptr callback;
+            bool handleInSameThreadAsEmitter;
+
+            neolib::cookie cookie() const override { return id; }
+
+            handler(
+                neolib::cookie id, 
+                async_event_queue& queue, 
+                uint32_t referenceCount, 
+                const void* clientId, 
+                handler_ptr callback,
+                bool handleInSameThreadAsEmitter = true) : 
+                id{ id },
+                queue{ &queue },
+                referenceCount{ referenceCount },
+                clientId{ clientId },
+                callback{ callback },
+                handleInSameThreadAsEmitter{ handleInSameThreadAsEmitter }
+            {}
         };
-        typedef std::vector<handler> handler_list_t;
+        typedef neolib::jar<handler> handler_list_t;
         struct context
         {
             bool accepted;
         };
-        typedef std::deque<context> context_list_t;
+        typedef std::vector<context> context_list_t;
         struct instance_data
         {
             event_trigger_type triggerType = event_trigger_type::Default;
@@ -249,7 +190,7 @@ namespace neolib
             context_list_t contexts;
         };
     public:
-        event() : iInstanceDataPtr { nullptr }, iNextId{ 0ull }
+        event() : iAlias{ *this }, iInstanceDataPtr { nullptr }, iNextId{ 0ull }
         {
         }
         event(const event&) = delete;
@@ -259,10 +200,11 @@ namespace neolib
             clear();
         }
     public:
-        event & operator=(const event&)
+        event& operator=(const event&) = delete;
+    public:
+        void handle_in_same_thread_as_emitter(cookie aHandleId)
         {
-            clear();
-            return *this;
+            instance().handlers[aHandleId].handleInSameThreadAsEmitter = true;
         }
     public:
         event_trigger_type trigger_type() const
@@ -273,7 +215,7 @@ namespace neolib
         {
             instance_data().triggerType = aTriggerType;
         }
-        bool trigger(Args... aArguments) const
+        bool trigger(Args&&... aArguments) const
         {
             if (!has_instance_data()) // no instance date means no subscribers so no point triggering.
                 return true;
@@ -284,40 +226,51 @@ namespace neolib
             case event_trigger_type::Synchronous:
             case event_trigger_type::SynchronousDontQueue:
             default:
-                return sync_trigger(aArguments...);
+                return sync_trigger(std::forward<Args>(aArguments)...);
             case event_trigger_type::Asynchronous:
             case event_trigger_type::AsynchronousDontQueue:
-                async_trigger(aArguments...);
+                async_trigger(std::forward<Args>(aArguments)...);
                 return true;
             }
         }
-        bool sync_trigger(Args... aArguments) const
+        bool sync_trigger(Args&&... aArguments) const
         {
             if (trigger_type() == event_trigger_type::SynchronousDontQueue && trigger_type() == event_trigger_type::AsynchronousDontQueue)
                 unqueue();
             std::lock_guard lg{ iMutex };
             destroyed_flag destroyed{ *this };
             instance().contexts.emplace_back();
-            auto const& context = instance().contexts.back();
-            for (auto const& h : instance().handlers)
+            for (auto& h : instance().handlers)
             {
-                enqueue(h, false, aArguments...);
+                try
+                {
+                    enqueue(h, false, std::forward<Args>(aArguments)...);
+                }
+                catch (...)
+                {
+                    instance().contexts.pop_back();
+                    throw;
+                }
                 if (destroyed)
                     return false;
-                if (context.accepted)
+                if (instance().contexts.back().accepted)
+                {
+                    instance().contexts.pop_back();
                     return false;
+                }
             }
+            instance().contexts.pop_back();
             return true;
         }
-        void async_trigger(Args... aArguments) const
+        void async_trigger(Args&&... aArguments) const
         {
             if (!has_instance_data()) // no instance means no subscribers so no point triggering.
                 return;
             std::lock_guard lg{ iMutex };
             destroyed_flag destroyed{ *this };
-            for (auto const& h : instance().handlers)
+            for (auto& h : instance().handlers)
             {
-                enqueue(h, true, aArguments...);
+                enqueue(h, true, std::forward<Args>(aArguments)...);
                 if (destroyed)
                     return;
             }
@@ -333,103 +286,85 @@ namespace neolib
             instance_data().contexts.back().accepted = false;
         }
     public:
-        handle_type subscribe(const function_type& aHandlerCallback, const void* aUniqueId = nullptr) const
+        event_handle subscribe(const function_type& aHandlerCallback, const void* aUniqueId = nullptr) const
         {
             std::lock_guard lg{ iMutex };
-            instance().handlers.push_back(handler{ &async_event_queue::instance(), 0u, aUniqueId, handle_type{ *this, iNextId++ }, std::make_shared<function_type>(aHandlerCallback) });
-            return instance().handlers.back().handle;
+            return event_handle{ iAlias, instance().handlers.emplace(async_event_queue::instance(), 0u, aUniqueId, std::make_shared<function_type>(aHandlerCallback)) };
         }
-        handle_type operator()(const function_type& aHandlerCallback, const void* aUniqueId = nullptr) const
+        event_handle operator()(const function_type& aHandlerCallback, const void* aUniqueId = nullptr) const
         {
             return subscribe(aHandlerCallback, aUniqueId);
         }
         template <typename T>
-        handle_type subscribe(const function_type& aHandlerCallback, const T* aUniqueIdObject) const
+        event_handle subscribe(const function_type& aHandlerCallback, const T* aClientId) const
         {
-            return subscribe(aHandlerCallback, static_cast<const void*>(aUniqueIdObject));
+            return subscribe(aHandlerCallback, static_cast<const void*>(aClientId));
         }
         template <typename T>
-        handle_type operator()(const function_type& aHandlerCallback, const T* aUniqueIdObject) const
+        event_handle operator()(const function_type& aHandlerCallback, const T* aClientId) const
         {
-            return subscribe(aHandlerCallback, static_cast<const void*>(aUniqueIdObject));
+            return subscribe(aHandlerCallback, static_cast<const void*>(aClientId));
         }
         template <typename T>
-        handle_type subscribe(const function_type& aHandlerCallback, const T& aUniqueIdObject) const
+        event_handle subscribe(const function_type& aHandlerCallback, const T& aClientId) const
         {
-            return subscribe(aHandlerCallback, static_cast<const void*>(&aUniqueIdObject));
+            return subscribe(aHandlerCallback, static_cast<const void*>(&aClientId));
         }
         template <typename T>
-        handle_type operator()(const function_type& aHandlerCallback, const T& aUniqueIdObject) const
+        event_handle operator()(const function_type& aHandlerCallback, const T& aClientId) const
         {
-            return subscribe(aHandlerCallback, static_cast<const void*>(&aUniqueIdObject));
+            return subscribe(aHandlerCallback, static_cast<const void*>(&aClientId));
         }
-        void unsubscribe(handle_type aHandle) const
+        void unsubscribe(event_handle aHandle) const
         {
             std::lock_guard lg{ iMutex };
-            auto handler = find_handler(aHandle);
-            if (handler != instance().handlers.end())
-                instance().handlers.erase(handler);
+            instance().handlers.remove(aHandle.id);
         }
-        void unsubscribe(const void* aUniqueId) const
+        void unsubscribe(const void* aClientId) const
         {
             std::lock_guard lg{ iMutex };
-            for (auto h = instance().handlers.begin(); h != instance().handlers.end();)
-                if (h->id == aUniqueId)
-                    h = instance().handlers.erase(h);
-                else
-                    ++h;
+            for (auto const& h : instance().handlers)
+                if (h.clientId == aClientId)
+                    instance().handlers.remove(h.id);
         }
         template <typename T>
-        void unsubscribe(const T* aUniqueIdObject) const
+        void unsubscribe(const T* aClientId) const
         {
-            return unsubscribe(static_cast<const void*>(aUniqueIdObject));
+            return unsubscribe(static_cast<const void*>(aClientId));
         }
         template <typename T>
-        void unsubscribe(const T& aUniqueIdObject) const
+        void unsubscribe(const T& aClientId) const
         {
-            return unsubscribe(static_cast<const void*>(&aUniqueIdObject));
+            return unsubscribe(static_cast<const void*>(&aClientId));
         }
     private:
-        void handle_add_ref(const i_event_handle& aHandle) const override
+        void add_ref(cookie aCookie) override
         {
             std::lock_guard lg{ iMutex };
-            auto handler = find_handler(aHandle);
-            if (handler != instance().handlers.end())
-                ++handler->referenceCount;
+            ++instance().handlers[aCookie].referenceCount;
         }
-        void handle_release(const i_event_handle& aHandle) const override
+        void release(cookie aCookie) override
         {
             std::lock_guard lg{ iMutex };
-            auto handler = find_handler(aHandle);
-            if (handler != instance().handlers.end())
-                if (--handler->referenceCount == 0u)
-                    instance().handlers.erase(handler);
+            if (--instance().handlers[aCookie].referenceCount == 0u)
+                instance().handlers.remove(aCookie);
         }
-        void handle_updated(const i_event_handle& aHandle) const override
+        long use_count(cookie aCookie) const override
         {
             std::lock_guard lg{ iMutex };
-            auto handler = find_handler(aHandle);
-            if (handler != instance().handlers.end())
-                handler->handle = aHandle;
+            return instance().handlers[aCookie].referenceCount;
         }
     private:
-        typename handler_list_t::iterator find_handler(const i_event_handle& aHandle) const
-        {
-            std::lock_guard lg{ iMutex };
-            // todo: faster ID lookup?
-            return std::find_if(instance().handlers.begin(), instance().handlers.end(), [&aHandle](auto const& h) { return h.handle.id() == aHandle.id(); });
-        }
-    private:
-        void enqueue(const handler& aHandler, bool aAsync, Args... aArguments) const
+        void enqueue(handler& aHandler, bool aAsync, Args&&... aArguments) const
         {
             std::lock_guard lg{ iMutex };
             auto& emitterQueue = async_event_queue::instance();
             if (!aAsync && aHandler.queue == &emitterQueue)
                 (*aHandler.callback)(aArguments...);
-            else if (aHandler.handle.is_handling_in_same_thread_as_emitter())
-                emitterQueue.enqueue(*this, aHandler.callback, aArguments...);
+            else if (aHandler.handleInSameThreadAsEmitter)
+                emitterQueue.enqueue(*this, aHandler.callback, std::forward<Args>(aArguments)...);
             else
-                aHandler.queue->enqueue(*this, aHandler.callback, aArguments...);
+                aHandler.queue->enqueue(*this, aHandler.callback, std::forward<Args>(aArguments)...);
         }
         void unqueue() const
         {
@@ -459,6 +394,7 @@ namespace neolib
             iInstanceDataPtr = &*iInstanceData;
         }
     private:
+        self_type& iAlias;
         mutable std::recursive_mutex iMutex;
         mutable std::optional<instance_data> iInstanceData;
         mutable std::atomic<instance_data*> iInstanceDataPtr;
@@ -471,16 +407,13 @@ namespace neolib
         sink()
         {
         }
-        template <typename... Args>
-        sink(const event_handle<Args...>& aHandle)
+        sink(event_handle aHandle)
         {
-            iHandles.emplace_back(aHandle);
-            add_ref();
+            iHandles.emplace_back(aHandle.event, aHandle.id);
         }
         sink(const sink& aSink) :
             iHandles{ aSink.iHandles }
         {
-            add_ref();
         }
         virtual ~sink()
         {
@@ -491,43 +424,26 @@ namespace neolib
         {
             if (this == &aSink)
                 return *this;
-            release();
             iHandles = aSink.iHandles;
-            add_ref();
             return *this;
         }
     public:
-        template <typename... Args>
-        sink& operator=(const event_handle<Args...>& aHandle)
+        sink& operator=(event_handle aHandle)
         {
             return *this = sink{ aHandle };
         }
-        template <typename... Args>
-        sink& operator+=(const event_handle<Args...>& aHandle)
+        sink& operator+=(event_handle aHandle)
         {
             sink s{ aHandle };
-            s.add_ref();
             iHandles.insert(iHandles.end(), s.iHandles.begin(), s.iHandles.end());
             return *this;
         }
     public:
         void clear()
         {
-            release();
             iHandles.clear();
         }
     private:
-        void add_ref() const
-        {
-            for (auto h : iHandles)
-                h->add_ref();
-        }
-        void release() const
-        {
-            for (auto h : iHandles)
-                h->release();
-        }
-    private:
-        mutable std::vector<i_event_handle*> iHandles;
+        mutable std::vector<cookie_ref_ptr> iHandles;
     };
 }

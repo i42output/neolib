@@ -37,11 +37,11 @@
 
 #include <neolib/neolib.hpp>
 
-#include <neolib/cookie_jar.hpp>
+#include <neolib/jar.hpp>
 
 namespace neolib
 {
-    class i_lifetime_flag : public i_cookie_jar_item
+    class i_lifetime_flag : public i_jar_item
     {
     public:
         typedef uint32_t cookie_type;

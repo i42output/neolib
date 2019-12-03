@@ -22,16 +22,13 @@
 #include <neolib/neolib.hpp>
 #include <memory>
 
+#include <neolib/event.hpp>
+
 namespace neolib
 {
     namespace plugin_events
     {
-        template <typename... Arguments>
-        class i_event_handle
-        {
-        public:
-            virtual ~i_event_handle() {}
-        };
+        using neolib::sink;
 
         template <typename... Arguments>
         class i_event_callback
@@ -71,8 +68,6 @@ namespace neolib
         class i_event
         {
         public:
-            typedef i_event_handle<Arguments...> handle;
-            typedef std::unique_ptr<handle> handle_ptr;
             typedef i_event_callback<Arguments...> callback;
             typedef event_callback<Arguments...> concrete_callback;
         public:
@@ -84,35 +79,35 @@ namespace neolib
             virtual void accept() const = 0;
             virtual void ignore() const = 0;
         public:
-            handle_ptr subscribe(const concrete_callback& aCallback, const void* aUniqueId = nullptr) const
+            event_handle subscribe(const concrete_callback& aCallback, const void* aUniqueId = nullptr) const
             {
-                return handle_ptr{ do_subscribe(aCallback, aUniqueId) };
+                return event_handle{ do_subscribe(aCallback, aUniqueId) };
             }
-            handle_ptr operator()(const concrete_callback& aCallback, const void* aUniqueId = nullptr) const
+            event_handle operator()(const concrete_callback& aCallback, const void* aUniqueId = nullptr) const
             {
-                return handle_ptr{ do_subscribe(aCallback, aUniqueId) };
-            }
-            template <typename T>
-            handle_ptr subscribe(const concrete_callback& aCallback, const T* aUniqueIdObject) const
-            {
-                return handle_ptr{ do_subscribe(aCallback, static_cast<const void*>(aUniqueIdObject)) };
+                return event_handle{ do_subscribe(aCallback, aUniqueId) };
             }
             template <typename T>
-            handle_ptr operator()(const concrete_callback& aCallback, const T* aUniqueIdObject) const
+            event_handle subscribe(const concrete_callback& aCallback, const T* aUniqueIdObject) const
             {
-                return handle_ptr{ do_subscribe(aCallback, static_cast<const void*>(aUniqueIdObject)) };
+                return event_handle{ do_subscribe(aCallback, static_cast<const void*>(aUniqueIdObject)) };
             }
             template <typename T>
-            handle_ptr subscribe(const concrete_callback& aCallback, const T& aUniqueIdObject) const
+            event_handle operator()(const concrete_callback& aCallback, const T* aUniqueIdObject) const
             {
-                return handle_ptr{ do_subscribe(aCallback, static_cast<const void*>(&aUniqueIdObject)) };
+                return event_handle{ do_subscribe(aCallback, static_cast<const void*>(aUniqueIdObject)) };
             }
             template <typename T>
-            handle_ptr operator()(const concrete_callback& aCallback, const T& aUniqueIdObject) const
+            event_handle subscribe(const concrete_callback& aCallback, const T& aUniqueIdObject) const
             {
-                return handle_ptr{ do_subscribe(aCallback, static_cast<const void*>(&aUniqueIdObject)) };
+                return event_handle{ do_subscribe(aCallback, static_cast<const void*>(&aUniqueIdObject)) };
             }
-            void unsubscribe(handle aHandle) const
+            template <typename T>
+            event_handle operator()(const concrete_callback& aCallback, const T& aUniqueIdObject) const
+            {
+                return event_handle{ do_subscribe(aCallback, static_cast<const void*>(&aUniqueIdObject)) };
+            }
+            void unsubscribe(event_handle aHandle) const
             {
                 return do_unsubscribe(aHandle);
             }
@@ -131,22 +126,22 @@ namespace neolib
                 return do_unsubscribe(static_cast<const void*>(&aUniqueIdObject));
             }
         private:
-            virtual handle* do_subscribe(const callback& aCallback, const void* aUniqueId = nullptr) const = 0;
-            virtual void do_unsubscribe(handle& aHandle) const = 0;
+            virtual event_handle do_subscribe(const callback& aCallback, const void* aUniqueId = nullptr) const = 0;
+            virtual void do_unsubscribe(event_handle aHandle) const = 0;
             virtual void do_unsubscribe(const void* aUniqueId) const = 0;
         };
 
         #define detail_event_subscribe( declName, ... ) \
-            std::unique_ptr<neolib::plugin_events::i_event_handle<__VA_ARGS__>> declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, const void* aUniqueId = nullptr) const { return declName()(aCallback, aUniqueId); }\
-            std::unique_ptr<neolib::plugin_events::i_event_handle<__VA_ARGS__>> declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, const void* aUniqueId = nullptr) { return declName()(aCallback, aUniqueId); }\
+            neolib::event_handle declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, const void* aUniqueId = nullptr) const { return declName()(aCallback, aUniqueId); }\
+            neolib::event_handle declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, const void* aUniqueId = nullptr) { return declName()(aCallback, aUniqueId); }\
             template <typename T>\
-            std::unique_ptr<neolib::plugin_events::i_event_handle<__VA_ARGS__>> declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, const T* aUniqueObject) const { return declName()(aCallback, static_cast<const void*>(aUniqueObject)); }\
+            neolib::event_handle declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, const T* aUniqueObject) const { return declName()(aCallback, static_cast<const void*>(aUniqueObject)); }\
             template <typename T>\
-            std::unique_ptr<neolib::plugin_events::i_event_handle<__VA_ARGS__>> declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, const T* aUniqueObject) { return declName()(aCallback, static_cast<const void*>(aUniqueObject)); }\
+            neolib::event_handle declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, const T* aUniqueObject) { return declName()(aCallback, static_cast<const void*>(aUniqueObject)); }\
             template <typename T>\
-            std::unique_ptr<neolib::plugin_events::i_event_handle<__VA_ARGS__>> declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, T&& aUniqueObject) const { return declName()(aCallback, static_cast<const void*>(&aUniqueObject)); }\
+            neolib::event_handle declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, T&& aUniqueObject) const { return declName()(aCallback, static_cast<const void*>(&aUniqueObject)); }\
             template <typename T>\
-            std::unique_ptr<neolib::plugin_events::i_event_handle<__VA_ARGS__>> declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, T&& aUniqueObject) { return declName()(aCallback, static_cast<const void*>(&aUniqueObject)); }
+            neolib::event_handle declName(const neolib::plugin_events::event_callback<__VA_ARGS__>& aCallback, T&& aUniqueObject) { return declName()(aCallback, static_cast<const void*>(&aUniqueObject)); }
 
         #define declare_event( declName, ... ) \
             virtual const neolib::plugin_events::i_event<__VA_ARGS__>& ev_##declName() const = 0;\

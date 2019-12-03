@@ -31,59 +31,11 @@ namespace neolib
         using neolib::event_trigger_type;
 
         template <typename... Args>
-        class event_handle : public i_event_handle<Args...>, public neolib::event_handle<Args...>
-        {
-            typedef neolib::event_handle<Args...> base_type;
-        public:
-            using base_type::base_type;
-            event_handle(const base_type& aOther) :
-                base_type{ aOther }
-            {
-            }
-        };
-
-        class sink : public neolib::sink
-        {
-            typedef neolib::sink base_type;
-        public:
-            using base_type::base_type;
-        public:
-            using base_type::operator=;
-            using base_type::operator+=;
-            template <typename... Args>
-            sink& operator=(const i_event_handle<Args...>& aHandle)
-            {
-                base_type::operator=(static_cast<const event_handle<Args...>&>(aHandle));
-                return *this;
-            }
-            template <typename... Args>
-            sink& operator+=(const i_event_handle<Args...>& aHandle)
-            {
-                base_type::operator+=(static_cast<const event_handle<Args...>&>(aHandle));
-                return *this;
-            }
-            template <typename... Args>
-            sink& operator=(const std::unique_ptr<i_event_handle<Args...>>& aHandle)
-            {
-                base_type::operator=(static_cast<const event_handle<Args...>&>(*aHandle));
-                return *this;
-            }
-            template <typename... Args>
-            sink& operator+=(const std::unique_ptr<i_event_handle<Args...>>& aHandle)
-            {
-                base_type::operator+=(static_cast<const event_handle<Args...>&>(*aHandle));
-                return *this;
-            }
-        };
-
-        template <typename... Args>
         class event : public i_event<Args...>, public neolib::event<Args...>
         {
             typedef neolib::event<Args...> base_type;
         public:
-            typedef typename i_event<Args...>::handle handle;
-            typedef typename i_event<Args...>::callback callback;
-            typedef event_handle<Args...> concrete_handle;
+            using typename i_event<Args...>::callback;
         public:
             using base_type::base_type;
         public:
@@ -112,20 +64,19 @@ namespace neolib
                 base_type::ignore();
             }
         private:
-            handle* do_subscribe(const callback& aCallback, const void* aUniqueId = nullptr) const override
+            event_handle do_subscribe(const callback& aCallback, const void* aUniqueId = nullptr) const override
             {
                 std::shared_ptr<callback> cb = std::move(aCallback.clone());
-                return new concrete_handle(
-                    base_type::subscribe(
+                return base_type::subscribe(
                         [cb](Args&& ... aArguments)
                         {
                             (*cb)(std::forward<Args>(aArguments)...);
                         },
-                        aUniqueId));
+                        aUniqueId);
             }
-            void do_unsubscribe(handle& aHandle) const override
+            void do_unsubscribe(event_handle aHandle) const override
             {
-                return base_type::unsubscribe(static_cast<concrete_handle&>(aHandle));
+                return base_type::unsubscribe(aHandle);
             }
             void do_unsubscribe(const void* aUniqueId) const override
             {

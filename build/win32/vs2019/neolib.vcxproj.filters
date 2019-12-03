@@ -476,9 +476,6 @@
     <ClInclude Include="..\..\..\include\neolib\intrusive_sort.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\cookie_jar.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\recursion.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -501,6 +498,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\plugin_variant.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\neolib\jar.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

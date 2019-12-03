@@ -96,7 +96,7 @@ namespace neolib
         typedef FlagList flag_list_type;
     public:
         typedef neolib::destroyed_flag destroyed_flag;
-        typedef typename flag_list_type::jar_t flags_t;
+        typedef typename flag_list_type::container_type flags_t;
     private:
         typedef typename flag_list_type::mutex_type mutex_type;
     public:
@@ -122,8 +122,8 @@ namespace neolib
         mutable flag_list_type iFlagList;
     };
 
-    typedef basic_lifetime<cookie_jar<i_lifetime_flag*, null_mutex>> single_threaded_lifetime;
-    typedef basic_lifetime<cookie_jar<i_lifetime_flag*, std::recursive_mutex>> multi_threaded_lifetime;
+    typedef basic_lifetime<jar<i_lifetime_flag*, null_mutex>> single_threaded_lifetime;
+    typedef basic_lifetime<jar<i_lifetime_flag*, std::recursive_mutex>> multi_threaded_lifetime;
 
     typedef multi_threaded_lifetime lifetime;
 }

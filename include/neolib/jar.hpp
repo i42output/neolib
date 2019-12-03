@@ -1,4 +1,4 @@
-// cookie_jar.hpp
+// jar.hpp
 /*
  *  Copyright (c) 2018 Leigh Johnston.
  *
@@ -48,24 +48,24 @@ namespace neolib
     typedef uint16_t small_cookie;
 
     template <typename CookieType = cookie>
-    class i_basic_cookie_jar_item
+    class i_basic_jar_item
     {
     public:
         typedef CookieType cookie_type;
     public:
-        virtual ~i_basic_cookie_jar_item() {}
+        virtual ~i_basic_jar_item() {}
     public:
         virtual cookie_type cookie() const = 0;
     };
 
     template <typename CookieType>
-    inline CookieType item_cookie(const i_basic_cookie_jar_item<CookieType>& aItem)
+    inline CookieType item_cookie(const i_basic_jar_item<CookieType>& aItem)
     {
         return aItem.cookie();
     }
 
     template <typename CookieType>
-    inline CookieType item_cookie(const i_basic_cookie_jar_item<CookieType>* aItem)
+    inline CookieType item_cookie(const i_basic_jar_item<CookieType>* aItem)
     {
         return aItem->cookie();
     }
@@ -207,29 +207,29 @@ namespace neolib
     };
 
     template <typename T, typename CookieType = cookie, typename MutexType = std::recursive_mutex>
-    class basic_cookie_jar
+    class basic_jar
     {
     public:
         typedef CookieType cookie_type;
     public:
         typedef T value_type;
-        typedef std::vector<value_type> jar_t;
-        typedef typename jar_t::const_iterator const_iterator;
-        typedef typename jar_t::iterator iterator;
+        typedef std::vector<value_type> container_type;
+        typedef typename container_type::const_iterator const_iterator;
+        typedef typename container_type::iterator iterator;
         typedef MutexType mutex_type;
     private:
-        typedef typename jar_t::size_type reverse_index_t;
+        typedef typename container_type::size_type reverse_index_t;
         typedef std::vector<reverse_index_t> reverse_indices_t;
         typedef std::vector<cookie_type> free_cookies_t;
     private:
         static constexpr cookie_type INVALID_COOKIE = static_cast<cookie_type>(~cookie_type{});
         static constexpr reverse_index_t INVALID_REVERSE_INDEX = static_cast<reverse_index_t>(~reverse_index_t{});
     public:
-        struct invalid_cookie : std::logic_error { invalid_cookie() : std::logic_error("neolib::basic_cookie_jar::invalid_cookie") {} };
-        struct cookie_already_added : std::logic_error { cookie_already_added() : std::logic_error("neolib::basic_cookie_jar::cookie_already_added") {} };
-        struct cookies_exhausted : std::logic_error { cookies_exhausted() : std::logic_error("neolib::basic_cookie_jar::cookies_exhausted") {} };
+        struct invalid_cookie : std::logic_error { invalid_cookie() : std::logic_error("neolib::basic_jar::invalid_cookie") {} };
+        struct cookie_already_added : std::logic_error { cookie_already_added() : std::logic_error("neolib::basic_jar::cookie_already_added") {} };
+        struct cookies_exhausted : std::logic_error { cookies_exhausted() : std::logic_error("neolib::basic_jar::cookies_exhausted") {} };
     public:
-        basic_cookie_jar() : iNextAvailableCookie{}
+        basic_jar() : iNextAvailableCookie{}
         {
         }
     public:
@@ -251,6 +251,21 @@ namespace neolib
         value_type& operator[](cookie_type aCookie)
         {
             return const_cast<value_type&>(to_const(*this)[aCookie]);
+        }
+        template <typename... Args>
+        cookie_type emplace(Args&&... aArgs)
+        {
+            auto cookie = next_cookie();
+            try
+            {
+                add(value_type{ cookie, std::forward<Args>(aArgs)... });
+            }
+            catch (...)
+            {
+                return_cookie(cookie);
+                throw;
+            }
+            return cookie;
         }
         template <typename T>
         iterator add(T&& aItem)
@@ -347,11 +362,11 @@ namespace neolib
             reverse_indices().clear();
         }
     private:
-        const jar_t& jar() const
+        const container_type& jar() const
         {
             return iJar;
         }
-        jar_t& jar()
+        container_type& jar()
         {
             return iJar;
         }
@@ -375,18 +390,18 @@ namespace neolib
         mutable mutex_type iMutex;
         mutable std::atomic<cookie_type> iNextAvailableCookie;
         mutable free_cookies_t iFreeCookies;
-        jar_t iJar;
+        container_type iJar;
         reverse_indices_t iReverseIndices;
     };
 
     typedef i_basic_cookie_consumer<cookie> i_cookie_consumer;
     typedef i_basic_cookie_consumer<small_cookie> i_small_cookie_consumer;
-    typedef i_basic_cookie_jar_item<cookie> i_cookie_jar_item;
-    typedef i_basic_cookie_jar_item<small_cookie> i_small_cookie_jar_item;
+    typedef i_basic_jar_item<cookie> i_jar_item;
+    typedef i_basic_jar_item<small_cookie> i_small_jar_item;
     typedef basic_cookie_ref_ptr<cookie> cookie_ref_ptr;
     typedef basic_cookie_ref_ptr<small_cookie> small_cookie_ref_ptr;
     template <typename T, typename MutexType = std::recursive_mutex>
-    using cookie_jar = basic_cookie_jar<T, cookie, MutexType>;
+    using jar = basic_jar<T, cookie, MutexType>;
     template <typename T, typename MutexType = std::recursive_mutex>
-    using small_cookie_jar = basic_cookie_jar<T, small_cookie, MutexType>;
+    using small_jar = basic_jar<T, small_cookie, MutexType>;
 }
