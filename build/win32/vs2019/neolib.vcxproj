@@ -142,6 +142,7 @@
     <ClInclude Include="..\..\..\include\neolib\i_plugin_event.hpp" />
     <ClInclude Include="..\..\..\include\neolib\mutex.hpp" />
     <ClInclude Include="..\..\..\include\neolib\plugin_variant.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\posix_module.hpp" />
     <ClInclude Include="..\..\..\include\neolib\recursion.hpp" />
     <ClInclude Include="..\..\..\include\neolib\variadic.hpp" />
     <ClInclude Include="..\..\..\include\neolib\waitable_event.hpp" />

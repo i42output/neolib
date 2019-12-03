@@ -267,8 +267,8 @@ namespace neolib
             }
             return cookie;
         }
-        template <typename T>
-        iterator add(T&& aItem)
+        template <typename Arg>
+        iterator add(Arg&& aItem)
         {
             std::lock_guard<mutex_type> lg{ mutex() };
             auto cookie = item_cookie(aItem);
@@ -276,7 +276,7 @@ namespace neolib
                 reverse_indices().resize(cookie + 1, INVALID_REVERSE_INDEX);
             if (reverse_indices()[cookie] != INVALID_REVERSE_INDEX)
                 throw cookie_already_added();
-            auto result = jar().insert(jar().end(), std::forward<T>(aItem));
+            auto result = jar().insert(jar().end(), std::forward<Arg>(aItem));
             reverse_indices()[cookie] = jar().size() - 1;
             return result;
         }

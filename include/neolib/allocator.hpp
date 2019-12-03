@@ -409,7 +409,7 @@ namespace neolib
         typedef small_buffer_allocator_types<T, R> types;
         typedef std::false_type propagate_on_container_move_assignment;
         typedef std::false_type is_always_equal;
-        template<class U> struct rebind { typedef typename basic_small_buffer_allocator<small_buffer_allocator_types<T, U>, SmallBufferSize> other; };
+        template<class U> struct rebind { typedef basic_small_buffer_allocator<small_buffer_allocator_types<T, U>, SmallBufferSize> other; };
     public:
         typedef T controlled_value_type;
         typedef R value_type;
