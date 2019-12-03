@@ -46,11 +46,11 @@ namespace neolib
     class i_version
     {
     public:
-        virtual uint32_t major() const = 0;
-        virtual uint32_t minor() const = 0;
-        virtual uint32_t maintenance() const = 0;
-        virtual uint32_t build() const = 0;
-        virtual const i_string& name() const = 0;
+        virtual uint32_t version_major() const = 0;
+        virtual uint32_t version_minor() const = 0;
+        virtual uint32_t version_maintenance() const = 0;
+        virtual uint32_t version_build() const = 0;
+        virtual const i_string& version_name() const = 0;
     };
 
     inline std::ostream& operator<<(std::ostream& aStream, const i_version& aVersion)

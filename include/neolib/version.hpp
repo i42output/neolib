@@ -90,23 +90,23 @@ namespace neolib
         // implementation
     public:
         // from i_version
-        uint32_t major() const
+        uint32_t version_major() const
         {
             return iMajor;
         }
-        uint32_t minor() const
+        uint32_t version_minor() const
         {
             return iMinor;
         }
-        uint32_t maintenance() const
+        uint32_t version_maintenance() const
         {
             return iMaintenance;
         }
-        uint32_t build() const
+        uint32_t version_build() const
         {
             return iBuild;
         }
-        const i_string& name() const
+        const i_string& version_name() const
         {
             return iName;
         }
