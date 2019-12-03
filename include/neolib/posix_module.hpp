@@ -1,6 +1,6 @@
-// module.hpp v1.0.1
+// posix_module.cpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2019 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -33,45 +33,26 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#pragma once
-
 #include <neolib/neolib.hpp>
-#include <string>
-#include <memory>
-#ifdef _WIN32
-#include <neolib/win32_module.hpp>
-#else
-#include <neolib/posix_module.hpp>
-#endif 
 
 namespace neolib
 {
-    class module
+    class posix_module
     {
-        // types
-    private:
-        typedef std::unique_ptr<os_module> os_module_ptr;
         // construction
     public:
-        module();
-        module(const module& aOther);
-        module(const std::string& aPath);
-        ~module();
+        posix_module(const std::string& aPath);
+        ~posix_module();
         // operations
     public:
-        const std::string& path() const { return iPath; }
-        bool load();
+        bool load(const std::string& aPath);
         void unload();
         bool loaded() const;
         void* procedure_address(const std::string& aProcedureName);
-        template <typename FunctionType>
-        FunctionType procedure(const std::string& aProcedureName)
-        {
-            return reinterpret_cast<FunctionType>(procedure_address(aProcedureName));
-        }
         // attributes
     private:
-        std::string iPath;
-        os_module_ptr iOsModule;
+        void* iHandle;
     };
+
+    typedef posix_module os_module;
 }

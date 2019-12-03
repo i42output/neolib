@@ -1,6 +1,6 @@
-// module.hpp v1.0.1
+// posix_module.cpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2019 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -33,45 +33,56 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#pragma once
-
 #include <neolib/neolib.hpp>
-#include <string>
-#include <memory>
-#ifdef _WIN32
-#include <neolib/win32_module.hpp>
-#else
+#include <dlfcn.h>
+#include <neolib/file.hpp>
 #include <neolib/posix_module.hpp>
-#endif 
 
 namespace neolib
 {
-    class module
-    {
-        // types
-    private:
-        typedef std::unique_ptr<os_module> os_module_ptr;
-        // construction
-    public:
-        module();
-        module(const module& aOther);
-        module(const std::string& aPath);
-        ~module();
-        // operations
-    public:
-        const std::string& path() const { return iPath; }
-        bool load();
-        void unload();
-        bool loaded() const;
-        void* procedure_address(const std::string& aProcedureName);
-        template <typename FunctionType>
-        FunctionType procedure(const std::string& aProcedureName)
+    posix_module::posix_module(const std::string& aPath) : 
+        iHandle{ nullptr }
+    { 
+        load(aPath); 
+    }
+
+    posix_module::~posix_module() 
+    { 
+        unload(); 
+    }
+
+    bool posix_module::load(const std::string& aPath)
+    { 
+        try
         {
-            return reinterpret_cast<FunctionType>(procedure_address(aProcedureName));
+            iHandle = dlopen(aPath.c_str());
+            if (iHandle == nullptr)
+                throw std::exception{ dlerror() };
         }
-        // attributes
-    private:
-        std::string iPath;
-        os_module_ptr iOsModule;
-    };
+        catch (const std::exception& e)
+        {
+            throw std::runtime_error("neolib::posix_module: Failed to load module '" + aPath + "', reason: " + e.what());
+        }
+        catch (...)
+        {
+            throw std::runtime_error("neolib::posix_module: Failed to load module '" + aPath + "', unknown reason");
+        }
+        return loaded(); 
+    }
+
+    void posix_module::unload() 
+    { 
+        dlclose(iHandle); 
+        iHandle = nullptr; 
+    }
+
+    bool posix_module::loaded() const 
+    { 
+        return iHandle != nullptr; 
+    }
+
+    void* posix_module::procedure_address(const std::string& aProcedureName)
+    { 
+        return dlsym(iHandle, aProcedureName.c_str()); 
+    }
 }
