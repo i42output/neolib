@@ -72,11 +72,10 @@ namespace neolib
     private:
         typedef std::function<void(Args...)> function_type;
         typedef std::shared_ptr<function_type> handler_ptr;
-        typedef std::tuple<Args&&...> argument_pack;
+        typedef std::tuple<Args...> argument_pack;
     public:
-        template <typename... Args2>
-        event_callback(const i_event& aEvent, handler_ptr aHandler, Args2&&... aArguments) :
-            iEvent{ aEvent }, iHandler{ aHandler }, iArguments{ std::forward<Args2>(aArguments)... }
+        event_callback(const i_event& aEvent, handler_ptr aHandler, Args... aArguments) :
+            iEvent{ aEvent }, iHandler{ aHandler }, iArguments{ aArguments... }
         {
         }
     public:
@@ -115,9 +114,9 @@ namespace neolib
     public:
         bool exec();
         template <typename... Args>
-        void enqueue(const i_event& aEvent, typename event_callback<Args...>::handler_ptr aHandler, Args... aArguments)
+        void enqueue(const i_event& aEvent, typename event_callback<Args...>::handler_ptr aHandler, Args&&... aArgs)
         {
-            add(std::make_unique<event_callback<Args...>>(aEvent, aHandler, aArguments...));
+            add(std::make_unique<event_callback<Args...>>(aEvent, aHandler, std::forward<Args>(aArgs)...));
         }
         void unqueue(const i_event& aEvent);
         void terminate();
@@ -215,7 +214,7 @@ namespace neolib
         {
             instance_data().triggerType = aTriggerType;
         }
-        bool trigger(Args&&... aArguments) const
+        bool trigger(Args... aArguments) const
         {
             if (!has_instance_data()) // no instance date means no subscribers so no point triggering.
                 return true;
@@ -226,14 +225,14 @@ namespace neolib
             case event_trigger_type::Synchronous:
             case event_trigger_type::SynchronousDontQueue:
             default:
-                return sync_trigger(std::forward<Args>(aArguments)...);
+                return sync_trigger(aArguments...);
             case event_trigger_type::Asynchronous:
             case event_trigger_type::AsynchronousDontQueue:
-                async_trigger(std::forward<Args>(aArguments)...);
+                async_trigger(aArguments...);
                 return true;
             }
         }
-        bool sync_trigger(Args&&... aArguments) const
+        bool sync_trigger(Args... aArguments) const
         {
             if (trigger_type() == event_trigger_type::SynchronousDontQueue && trigger_type() == event_trigger_type::AsynchronousDontQueue)
                 unqueue();
@@ -244,7 +243,7 @@ namespace neolib
             {
                 try
                 {
-                    enqueue(h, false, std::forward<Args>(aArguments)...);
+                    enqueue(h, false, aArguments...);
                 }
                 catch (...)
                 {
@@ -262,7 +261,7 @@ namespace neolib
             instance().contexts.pop_back();
             return true;
         }
-        void async_trigger(Args&&... aArguments) const
+        void async_trigger(Args... aArguments) const
         {
             if (!has_instance_data()) // no instance means no subscribers so no point triggering.
                 return;
@@ -270,7 +269,7 @@ namespace neolib
             destroyed_flag destroyed{ *this };
             for (auto& h : instance().handlers)
             {
-                enqueue(h, true, std::forward<Args>(aArguments)...);
+                enqueue(h, true, aArguments...);
                 if (destroyed)
                     return;
             }
@@ -355,16 +354,16 @@ namespace neolib
             return instance().handlers[aCookie].referenceCount;
         }
     private:
-        void enqueue(handler& aHandler, bool aAsync, Args&&... aArguments) const
+        void enqueue(handler& aHandler, bool aAsync, Args... aArguments) const
         {
             std::lock_guard lg{ iMutex };
             auto& emitterQueue = async_event_queue::instance();
             if (!aAsync && aHandler.queue == &emitterQueue)
                 (*aHandler.callback)(aArguments...);
             else if (aHandler.handleInSameThreadAsEmitter)
-                emitterQueue.enqueue(*this, aHandler.callback, std::forward<Args>(aArguments)...);
+                emitterQueue.enqueue(*this, aHandler.callback, aArguments...);
             else
-                aHandler.queue->enqueue(*this, aHandler.callback, std::forward<Args>(aArguments)...);
+                aHandler.queue->enqueue(*this, aHandler.callback, aArguments...);
         }
         void unqueue() const
         {
