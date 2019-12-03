@@ -69,6 +69,7 @@ namespace neolib
     {
         template <typename...>
         friend class event;
+        friend class async_event_queue;
     private:
         typedef std::function<void(Args...)> function_type;
         typedef std::shared_ptr<function_type> handler_ptr;
