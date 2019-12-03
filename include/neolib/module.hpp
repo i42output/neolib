@@ -40,6 +40,8 @@
 #include <memory>
 #ifdef _WIN32
 #include "win32_module.hpp"
+#else
+#include "posix_module.hpp"
 #endif 
 
 namespace neolib
