@@ -55,11 +55,11 @@ namespace neolib
 
     inline std::ostream& operator<<(std::ostream& aStream, const i_version& aVersion)
     {
-        aStream << aVersion.major() << "." << aVersion.minor() << "." << aVersion.maintenance();
-        if (aVersion.build() != 0)
-            aStream << "." << aVersion.build();
-        if (!aVersion.name().empty())
-            aStream << " " << aVersion.name();
+        aStream << aVersion.version_major() << "." << aVersion.version_minor() << "." << aVersion.version_maintenance();
+        if (aVersion.version_build() != 0)
+            aStream << "." << aVersion.version_build();
+        if (!aVersion.version_name().empty())
+            aStream << " " << aVersion.version_name();
         return aStream;
     }
 

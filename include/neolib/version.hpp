@@ -69,7 +69,7 @@ namespace neolib
                 iName = bits[3];
         }
         version(const i_version& aOther) :
-            iMajor(aOther.major()), iMinor(aOther.minor()), iMaintenance(aOther.maintenance()), iBuild(aOther.build()), iName(aOther.name())
+            iMajor(aOther.version_major()), iMinor(aOther.version_minor()), iMaintenance(aOther.version_maintenance()), iBuild(aOther.version_build()), iName(aOther.version_name())
         {
         }
 
@@ -121,9 +121,9 @@ namespace neolib
     template <typename Elem, typename Traits>
     inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const version& aVersion)
     {
-        aStream << aVersion.major() << "." << aVersion.minor() << "." << aVersion.maintenance() << "." << aVersion.build();
-        if (!aVersion.name().empty())
-            aStream << " " << aVersion.name();
+        aStream << aVersion.version_major() << "." << aVersion.version_minor() << "." << aVersion.version_maintenance() << "." << aVersion.version_build();
+        if (!aVersion.version_name().empty())
+            aStream << " " << aVersion.version_name();
         return aStream;
     }
 
