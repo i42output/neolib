@@ -90,7 +90,7 @@ namespace neolib
     typedef std::optional<destroyed_flag> optional_destroyed_flag;
 
     template <typename FlagList>
-    class basic_lifetime : public i_lifetime
+    class basic_lifetime : public virtual i_lifetime
     {
     private:
         typedef FlagList flag_list_type;

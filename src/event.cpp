@@ -92,8 +92,6 @@ namespace neolib
 
     void async_event_queue::terminate()
     {
-        if (!is_alive())
-            return;
         std::scoped_lock lock{ iMutex };
         iEvents.clear();
         if (iTimer.waiting())
@@ -102,8 +100,6 @@ namespace neolib
 
     void async_event_queue::unqueue(const i_event& aEvent)
     {
-        if (!is_alive())
-            return;
         remove(aEvent);
     }
 
@@ -119,8 +115,6 @@ namespace neolib
 
     void async_event_queue::remove(const i_event& aEvent)
     {
-        if (!is_alive())
-            return;
         std::scoped_lock lock{ iMutex };
         for (auto& e : iEvents)
             if (&e->event() == &aEvent)

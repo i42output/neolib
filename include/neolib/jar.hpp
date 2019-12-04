@@ -174,6 +174,11 @@ namespace neolib
         {
             return iCookie;
         }
+        void reset() const
+        {
+            iConsumer = nullptr;
+            iCookie = no_cookie;
+        }
     private:
         void add_ref() const
         {
@@ -186,8 +191,7 @@ namespace neolib
             if (!valid())
                 return;
             consumer().release(cookie());
-            iConsumer = nullptr;
-            iCookie = no_cookie;
+            reset();
         }
         bool have_consumer() const
         {

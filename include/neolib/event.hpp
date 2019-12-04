@@ -40,19 +40,142 @@ namespace neolib
     public:
         virtual ~i_event() {}
     public:
+        virtual void release_control() = 0;
         virtual void handle_in_same_thread_as_emitter(cookie aHandleId) = 0;
     };
 
-    struct event_handle
+    class i_event_control
     {
-        i_event& event;
-        cookie id;
+    public:
+        virtual ~i_event_control() {}
+    public:
+        virtual void add_ref() = 0;
+        virtual void release() = 0;
+        virtual bool valid() const = 0;
+        virtual i_event& get() const = 0;
+    public:
+        virtual void reset() = 0;
+    };
 
-        event_handle& operator~()
+    class event_handle
+    {
+    public:
+        struct no_control : std::logic_error { no_control() : std::logic_error{ "neolib::event_handle::no_control" } {} };
+    public:
+        event_handle(i_event_control& aControl, cookie aId) : 
+            iControl{ &aControl }, iRef{ aControl.get(), aId }, iPrimary{ true }
         {
-            event.handle_in_same_thread_as_emitter(id);
+            control().add_ref();
+        }
+        event_handle(const event_handle& aOther) :
+            iControl{ aOther.iControl }, iRef{ aOther.iRef }, iPrimary{ false }
+        {
+            if (have_control())
+                control().add_ref();
+        }
+        event_handle(event_handle&& aOther) :
+            iControl{ aOther.iControl }, iRef{ aOther.iRef }, iPrimary{ false }
+        {
+            aOther.iPrimary = false;
+            if (have_control())
+                control().add_ref();
+        }
+        ~event_handle()
+        {
+            if (have_control())
+            {
+                if (!control().valid() || primary())
+                    iRef.reset();
+                control().release();
+            }
+        }
+    public:
+        event_handle& operator=(const event_handle& aRhs)
+        {
+            if (&aRhs == this)
+                return *this;
+            auto oldControl = iControl;
+            iControl = aRhs.iControl;
+            if (have_control())
+                control().add_ref();
+            if (oldControl != nullptr)
+                oldControl->release();
+            iRef = aRhs.iRef;
             return *this;
         }
+    public:
+        bool have_control() const
+        {
+            return iControl != nullptr;
+        }
+        i_event_control& control() const
+        {
+            if (have_control())
+                return *iControl;
+            throw no_control();
+        }
+        cookie id() const
+        {
+            return iRef.cookie();
+        }
+        bool primary() const
+        {
+            return iPrimary;
+        }
+        event_handle& operator~()
+        {
+            if (control().valid())
+                control().get().handle_in_same_thread_as_emitter(id());
+            return *this;
+        }
+    private:
+        i_event_control* iControl;
+        cookie_ref_ptr iRef;
+        bool iPrimary;
+    };
+
+    class event_control : public i_event_control
+    {
+    public:
+        struct no_event : std::logic_error { no_event() : std::logic_error{ "neolib::event_control::no_event" } {} };
+    public:
+        event_control(i_event& aEvent) :
+            iEvent{ &aEvent }, iRefCount{ 0u }
+        {
+        }
+        ~event_control()
+        {
+            if (valid())
+                get().release_control();
+        }
+    public:
+        void add_ref() override
+        {
+            ++iRefCount;
+        }
+        void release() override
+        {
+            if (--iRefCount == 0u)
+                delete this;
+        }
+        bool valid() const override
+        {
+            return iEvent != nullptr;
+        }
+        i_event& get() const override
+        {
+            if (valid())
+                return *iEvent;
+            throw no_event();
+        }
+    public:
+        void reset() override
+        {
+            iEvent = nullptr;
+        }
+    private:
+        std::atomic<i_event*> iEvent;
+        std::atomic<uint32_t> iRefCount;
     };
 
     class i_event_callback
@@ -189,14 +312,17 @@ namespace neolib
             context_list_t contexts;
         };
     public:
-        event() : iAlias{ *this }, iInstanceDataPtr { nullptr }, iNextId{ 0ull }
+        event() : iAlias{ *this }, iControl{ nullptr }, iInstanceDataPtr{ nullptr }
         {
         }
-        event(const event&) : iAlias{ *this }, iInstanceDataPtr{ nullptr }, iNextId{ 0ull }
+        event(const event&) : iAlias{ *this }, iControl{ nullptr }, iInstanceDataPtr{ nullptr }
         {
         }
         virtual ~event()
         {
+            std::scoped_lock lock{ iMutex };
+            if (is_controlled())
+                control().reset();
             set_destroying();
             clear();
         }
@@ -208,11 +334,19 @@ namespace neolib
             std::scoped_lock lock2{ aOther.iMutex };
             clear();
             iInstanceData = std::move(aOther.iInstanceData);
+            aOther.clear();
             iInstanceDataPtr = &*iInstanceData;
             return *this;
         }
-
     public:
+        void release_control() override
+        {
+            if (iControl != nullptr)
+            {
+                iControl.load()->reset();
+                iControl.store(nullptr);
+            }
+        }
         void handle_in_same_thread_as_emitter(cookie aHandleId)
         {
             instance().handlers[aHandleId].handleInSameThreadAsEmitter = true;
@@ -300,7 +434,7 @@ namespace neolib
         event_handle subscribe(const function_type& aHandlerCallback, const void* aUniqueId = nullptr) const
         {
             std::scoped_lock lock{ iMutex };
-            return event_handle{ iAlias, instance().handlers.emplace(async_event_queue::instance(), 0u, aUniqueId, std::make_shared<function_type>(aHandlerCallback)) };
+            return event_handle{ control(), instance().handlers.emplace(async_event_queue::instance(), 0u, aUniqueId, std::make_shared<function_type>(aHandlerCallback)) };
         }
         event_handle operator()(const function_type& aHandlerCallback, const void* aUniqueId = nullptr) const
         {
@@ -329,7 +463,7 @@ namespace neolib
         void unsubscribe(event_handle aHandle) const
         {
             std::scoped_lock lock{ iMutex };
-            instance().handlers.remove(aHandle.id);
+            instance().handlers.remove(aHandle.id());
         }
         void unsubscribe(const void* aClientId) const
         {
@@ -398,6 +532,17 @@ namespace neolib
             iInstanceDataPtr = nullptr;
             iInstanceData = std::nullopt;
         }
+        bool is_controlled() const
+        {
+            return iControl != nullptr;
+        }
+        i_event_control& control() const
+        {
+            std::scoped_lock lock{ iMutex };
+            if (iControl == nullptr)
+                iControl = new event_control{ iAlias };
+            return *iControl;
+        }
         bool has_instance_data() const
         {
             return iInstanceDataPtr != nullptr;
@@ -412,11 +557,11 @@ namespace neolib
             return *iInstanceDataPtr;
         }
     private:
-        self_type& iAlias;
+        self_type& iAlias; // bit of a hack: most event operations are logically const as we want to be able to trigger events from const methods of the containing object
         mutable std::recursive_mutex iMutex;
+        mutable std::atomic<i_event_control*> iControl;
         mutable std::optional<instance_data> iInstanceData;
         mutable std::atomic<instance_data*> iInstanceDataPtr;
-        mutable uint64_t iNextId;
     };
 
     class sink
@@ -425,9 +570,13 @@ namespace neolib
         sink()
         {
         }
-        sink(event_handle aHandle)
+        sink(const event_handle& aHandle)
         {
-            iHandles.emplace_back(aHandle.event, aHandle.id);
+            iHandles.push_back(aHandle);
+        }
+        sink(event_handle&& aHandle)
+        {
+            iHandles.push_back(std::move(aHandle));
         }
         sink(const sink& aSink) :
             iHandles{ aSink.iHandles }
@@ -446,13 +595,23 @@ namespace neolib
             return *this;
         }
     public:
-        sink& operator=(event_handle aHandle)
+        sink& operator=(const event_handle& aHandle)
         {
             return *this = sink{ aHandle };
         }
-        sink& operator+=(event_handle aHandle)
+        sink& operator=(event_handle&& aHandle)
+        {
+            return *this = sink{ std::move(aHandle) };
+        }
+        sink& operator+=(const event_handle& aHandle)
         {
             sink s{ aHandle };
+            iHandles.insert(iHandles.end(), s.iHandles.begin(), s.iHandles.end());
+            return *this;
+        }
+        sink& operator+=(event_handle&& aHandle)
+        {
+            sink s{ std::move(aHandle) };
             iHandles.insert(iHandles.end(), s.iHandles.begin(), s.iHandles.end());
             return *this;
         }
@@ -462,6 +621,6 @@ namespace neolib
             iHandles.clear();
         }
     private:
-        mutable std::vector<cookie_ref_ptr> iHandles;
+        mutable std::vector<event_handle> iHandles;
     };
 }
