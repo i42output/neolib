@@ -52,23 +52,23 @@ namespace neolib
 {
     template <lifetime_state RequiredState, typename Owner>
     inline lifetime_flag<RequiredState, Owner>::lifetime_flag(const i_lifetime& aSubject, owner_pointer aOwner) : 
-        iCookie{ aSubject.next_cookie() }, iSubject { &aSubject }, iOwner{ aOwner }, iState{ aSubject.object_state() }, iDebug{ false }
+        iCookie{ invalid_cookie<cookie_type> }, iSubject { &aSubject }, iOwner{ aOwner }, iState{ aSubject.object_state() }, iDebug{ false }
     {
-        subject().add_flag(this);
+        iCookie = subject().add_flag(*this);
     }
 
     template <lifetime_state RequiredState, typename Owner>
     inline lifetime_flag<RequiredState, Owner>::lifetime_flag(const lifetime_flag& aOther) : 
-        iCookie{ aOther.iSubject->next_cookie() }, iSubject{ aOther.iSubject }, iOwner{ aOther.iOwner }, iState { aOther.iSubject->object_state() }, iDebug{ false }
+        iCookie{ invalid_cookie<cookie_type> }, iSubject{ aOther.iSubject }, iOwner{ aOther.iOwner }, iState { aOther.iSubject->object_state() }, iDebug{ false }
     {
-        subject().add_flag(this);
+        iCookie = subject().add_flag(*this);
     }
 
     template <lifetime_state RequiredState, typename Owner>
     inline lifetime_flag<RequiredState, Owner>::~lifetime_flag()
     {
         if (!is_destroyed())
-            subject().remove_flag(this);
+            subject().remove_flag(*this);
     }
 
     template <lifetime_state RequiredState, typename Owner>
@@ -241,38 +241,32 @@ namespace neolib
     }
 
     template <typename FlagList>
-    inline cookie basic_lifetime<FlagList>::next_cookie() const
+    inline typename basic_lifetime<FlagList>::cookie_type basic_lifetime<FlagList>::add_flag(i_lifetime_flag& aFlag) const
     {
         std::scoped_lock<mutex_type> lk(flags().mutex());
-        return flags().next_cookie();
-    }
-
-    template <typename FlagList>
-    inline void basic_lifetime<FlagList>::add_flag(i_lifetime_flag* aFlag) const
-    {
-        std::scoped_lock<mutex_type> lk(flags().mutex());
-        flags().add(aFlag);
+        cookie_type result = flags().insert(&aFlag);
         switch (iState)
         {
         case lifetime_state::Creating:
         case lifetime_state::Alive:
             break;
         case lifetime_state::Destroying:
-            aFlag->set_destroying();
+            aFlag.set_destroying();
             break;
         case lifetime_state::Destroyed:
         default:
-            aFlag->set_destroying();
-            aFlag->set_destroyed();
+            aFlag.set_destroying();
+            aFlag.set_destroyed();
             break;
         }
+        return result;
     }
 
     template <typename FlagList>
-    inline void basic_lifetime<FlagList>::remove_flag(i_lifetime_flag* aFlag) const
+    inline void basic_lifetime<FlagList>::remove_flag(const i_lifetime_flag& aFlag) const
     {
         std::scoped_lock<mutex_type> lk(flags().mutex());
-        flags().remove(aFlag);
+        flags().remove(aFlag.cookie());
     }
 
     template <typename FlagList>

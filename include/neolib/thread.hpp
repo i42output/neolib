@@ -41,14 +41,13 @@
 #include <thread>
 #include <atomic>
 #include "noncopyable.hpp"
-#include "lockable.hpp"
 #include "waitable.hpp"
 #include "waitable_event.hpp"
 #include "i_thread.hpp"
 
 namespace neolib
 {
-    class thread : public i_thread, public lockable, public waitable, private noncopyable
+    class thread : public i_thread, public waitable, private noncopyable
     {
         // types
     public:
@@ -113,6 +112,7 @@ namespace neolib
         void entry_point();
         // attributes
     private:
+        mutable std::recursive_mutex iMutex;
         const std::string iName;
         bool iUsingExistingThread;
         std::optional<std::function<void()>> iExecFunction;

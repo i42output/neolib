@@ -78,10 +78,9 @@ namespace neolib
 
     void thread::start()
     {
-        lock();
+        std::optional<std::scoped_lock<std::recursive_mutex>> lock{ iMutex };
         if (started())
         {
-            unlock();
             throw thread_already_started();
         }
         try
@@ -90,25 +89,23 @@ namespace neolib
             if (!iUsingExistingThread)
             {
                 iThreadObject = std::make_unique<std::thread>(std::bind(&thread::entry_point, this));
-                unlock();
+                lock = std::nullopt;
             }
             else
             {
-                unlock();
+                lock = std::nullopt;
                 entry_point();
             }
         }
         catch(const std::exception& aException)
         {
             iState = Error;
-            unlock();
             std::cerr << std::string("Error starting thread due to exception being thrown (") + aException.what() + ")." << std::endl;
             throw;
         }
         catch(...)
         {
             iState = Error;
-            unlock();
             std::cerr << std::string("Error starting thread due to exception of unknown type being thrown.") << std::endl;
             throw;
         }
@@ -116,50 +113,47 @@ namespace neolib
 
     void thread::cancel()
     {
-        lock();
+        std::optional<std::scoped_lock<std::recursive_mutex>> lock{ iMutex };
         if (finished())
         {
-            unlock();
             return;
         }
-        unlock();
+        lock = std::nullopt;
         if (!in())
         {
             abort();
             return;
         }
         bool canCancel = false;
-        lock();
+        lock.emplace(iMutex);
         if (started())
         {
             iState = Cancelled;
             canCancel = true;
         }
-        unlock();
         if (canCancel)
             throw cancellation();
     }
 
     void thread::abort(bool aWait)
     {
-        lock();
+        std::optional<std::scoped_lock<std::recursive_mutex>> lock{ iMutex };
         if (finished())
         {
-            unlock();
             return;
         }
-        unlock();
+        lock = std::nullopt;
         if (in())
         {
             cancel();
             return;
         }
-        lock();
+        lock.emplace(iMutex);
         if (started())
         {
             iState = Aborted;
         }
-        unlock();
+        lock = std::nullopt;
         if (aWait)
             wait();
     }
@@ -212,10 +206,12 @@ namespace neolib
     {
         if (!in())
             throw not_in_thread();
-        lock();
-        ++iBlockedCount;
-        bool shouldCancel = aborted();
-        unlock();
+        bool shouldCancel = false;
+        {
+            std::scoped_lock<std::recursive_mutex> lock{ iMutex };
+            ++iBlockedCount;
+            shouldCancel = aborted();
+        }
         if (shouldCancel)
             throw cancellation();
     }
@@ -224,10 +220,12 @@ namespace neolib
     {
         if (!in())
             throw not_in_thread();
-        lock();
-        --iBlockedCount;
-        bool shouldCancel = aborted();
-        unlock();
+        bool shouldCancel = false;
+        {
+            std::scoped_lock<std::recursive_mutex> lock{ iMutex };
+            --iBlockedCount;
+            shouldCancel = aborted();
+        }
         if (shouldCancel)
             throw cancellation();
     }
@@ -356,20 +354,20 @@ namespace neolib
 
     void thread::entry_point()
     {
-        lock();
-        iState = Started;
-        iId = std::this_thread::get_id();
-        unlock();
+        {
+            std::scoped_lock<std::recursive_mutex> lock{ iMutex };
+            iState = Started;
+            iId = std::this_thread::get_id();
+        }
         try
         {
             exec_preamble();
             exec();
             if (!iUsingExistingThread)
             {
-                lock();
+                std::scoped_lock<std::recursive_mutex> lock{ iMutex };
                 if (iState == Started)
                     iState = Finished;
-                unlock();
             }
         }
         catch(const std::exception& aException)

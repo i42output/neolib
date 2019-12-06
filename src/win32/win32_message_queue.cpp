@@ -1,5 +1,5 @@
 #include <neolib/neolib.hpp>
-#include <neolib/raii.hpp>
+#include <neolib/scoped.hpp>
 #include <neolib/win32_message_queue.hpp>
 
 namespace neolib

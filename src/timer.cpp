@@ -178,7 +178,7 @@ namespace neolib
         iDuration_ms = aDuration_ms;
         if (aEffectiveImmediately && waiting())
         {
-            neolib::lifetime::destroyed_flag destroyed{ *this };
+            destroyed_flag destroyed{ *this };
             cancel();
             if (destroyed)
                 return;
@@ -215,7 +215,7 @@ namespace neolib
             try
             {
                 iInReady = true;
-                neolib::lifetime::destroyed_flag destroyed{ *this };
+                destroyed_flag destroyed{ *this };
                 if (std::uncaught_exceptions() == 0)
                     ready();
                 else

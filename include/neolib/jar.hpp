@@ -47,35 +47,6 @@ namespace neolib
     typedef uint32_t cookie;
     typedef uint16_t small_cookie;
 
-    template <typename CookieType = cookie>
-    class i_basic_jar_item
-    {
-    public:
-        typedef CookieType cookie_type;
-    public:
-        virtual ~i_basic_jar_item() {}
-    public:
-        virtual cookie_type cookie() const = 0;
-    };
-
-    template <typename CookieType>
-    inline CookieType item_cookie(const i_basic_jar_item<CookieType>& aItem)
-    {
-        return aItem.cookie();
-    }
-
-    template <typename CookieType>
-    inline CookieType item_cookie(const i_basic_jar_item<CookieType>* aItem)
-    {
-        return aItem->cookie();
-    }
-
-    template <typename T>
-    inline auto item_cookie(const std::unique_ptr<T>& aPtr) -> decltype(item_cookie(*aPtr))
-    {
-        return item_cookie(*aPtr);
-    }
-
     template <typename CookieType>
     class i_basic_cookie_consumer
     {
@@ -210,6 +181,14 @@ namespace neolib
         mutable cookie_type iCookie;
     };
 
+    template<class CookieType>
+    constexpr CookieType invalid_cookie = static_cast<CookieType>(~CookieType{});
+
+    struct cookie_invalid : std::logic_error { cookie_invalid() : std::logic_error("neolib::cookie_invalid") {} };
+    struct cookie_already_added : std::logic_error { cookie_already_added() : std::logic_error("neolib::cookie_already_added") {} };
+    struct cookies_exhausted : std::logic_error { cookies_exhausted() : std::logic_error("neolib::cookies_exhausted") {} };
+    struct no_pointer_value_type_cookie_lookup : std::logic_error { no_pointer_value_type_cookie_lookup() : std::logic_error("neolib::no_pointer_value_type_cookie_lookup") {} };
+
     template <typename T, typename CookieType = cookie, typename MutexType = std::recursive_mutex>
     class basic_jar
     {
@@ -224,14 +203,10 @@ namespace neolib
     private:
         typedef typename container_type::size_type reverse_index_t;
         typedef std::vector<reverse_index_t> reverse_indices_t;
-        typedef std::vector<cookie_type> free_cookies_t;
+        typedef std::vector<cookie_type> cookies_t;
     private:
-        static constexpr cookie_type INVALID_COOKIE = static_cast<cookie_type>(~cookie_type{});
+        static constexpr cookie_type INVALID_COOKIE = invalid_cookie<cookie_type>;
         static constexpr reverse_index_t INVALID_REVERSE_INDEX = static_cast<reverse_index_t>(~reverse_index_t{});
-    public:
-        struct invalid_cookie : std::logic_error { invalid_cookie() : std::logic_error("neolib::basic_jar::invalid_cookie") {} };
-        struct cookie_already_added : std::logic_error { cookie_already_added() : std::logic_error("neolib::basic_jar::cookie_already_added") {} };
-        struct cookies_exhausted : std::logic_error { cookies_exhausted() : std::logic_error("neolib::basic_jar::cookies_exhausted") {} };
     public:
         basic_jar() : iNextAvailableCookie{}
         {
@@ -246,23 +221,22 @@ namespace neolib
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
             if (aCookie >= reverse_indices().size())
-                throw invalid_cookie();
+                throw cookie_invalid();
             auto reverseIndex = reverse_indices()[aCookie];
             if (reverseIndex == INVALID_REVERSE_INDEX)
-                throw invalid_cookie();
+                throw cookie_invalid();
             return jar()[reverseIndex];
         }
         value_type& operator[](cookie_type aCookie)
         {
             return const_cast<value_type&>(to_const(*this)[aCookie]);
         }
-        template <typename... Args>
-        cookie_type emplace(Args&&... aArgs)
+        cookie_type insert(const value_type& aItem)
         {
             auto cookie = next_cookie();
             try
             {
-                add(value_type{ cookie, std::forward<Args>(aArgs)... });
+                add(cookie, aItem);
             }
             catch (...)
             {
@@ -271,17 +245,44 @@ namespace neolib
             }
             return cookie;
         }
-        template <typename Arg>
-        iterator add(Arg&& aItem)
+        template <typename... Args>
+        cookie_type emplace(Args&&... aArgs)
+        {
+            auto cookie = next_cookie();
+            try
+            {
+                add(cookie, std::forward<Args>(aArgs)...);
+            }
+            catch (...)
+            {
+                return_cookie(cookie);
+                throw;
+            }
+            return cookie;
+        }
+        iterator erase(const_iterator aItem)
+        {
+            return remove(*aItem);
+        }
+        template <typename... Args>
+        iterator add(cookie_type aCookie, Args&&... aArgs)
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
-            auto cookie = item_cookie(aItem);
-            if (reverse_indices().size() <= cookie)
-                reverse_indices().resize(cookie + 1, INVALID_REVERSE_INDEX);
-            if (reverse_indices()[cookie] != INVALID_REVERSE_INDEX)
+            if (reverse_indices().size() <= aCookie)
+                reverse_indices().resize(aCookie + 1, INVALID_REVERSE_INDEX);
+            if (reverse_indices()[aCookie] != INVALID_REVERSE_INDEX)
                 throw cookie_already_added();
-            auto result = jar().insert(jar().end(), std::forward<Arg>(aItem));
-            reverse_indices()[cookie] = jar().size() - 1;
+            auto result = jar().emplace(jar().end(), std::forward<Args>(aArgs)...);
+            try
+            {
+                allocated_cookies().insert(allocated_cookies().end(), aCookie);
+            }
+            catch (...)
+            {
+                jar().pop_back();
+                throw;
+            }
+            reverse_indices()[aCookie] = jar().size() - 1;
             return result;
         }
         iterator remove(const value_type& aItem)
@@ -294,20 +295,30 @@ namespace neolib
             std::scoped_lock<mutex_type> lock{ mutex() };
             auto& reverseIndex = reverse_indices()[aCookie];
             if (reverseIndex == INVALID_REVERSE_INDEX)
-                throw invalid_cookie();
+                throw cookie_invalid();
             if (reverseIndex < jar().size() - 1)
             {
                 auto& item = jar()[reverseIndex];
                 std::swap(item, jar().back());
-                reverse_indices()[item_cookie(item)] = reverseIndex;
+                auto& cookie = allocated_cookies()[reverseIndex];
+                std::swap(cookie, allocated_cookies().back());
+                reverse_indices()[cookie] = reverseIndex;
             }
             jar().pop_back();
+            allocated_cookies().pop_back();
             iterator result = std::next(jar().begin(), reverseIndex);
             reverseIndex = INVALID_REVERSE_INDEX;
             return_cookie(aCookie);
             return result;
         }
     public:
+        cookie_type item_cookie(const value_type& aItem) const
+        {
+            if constexpr (!std::is_pointer_v<value_type>)
+                return allocated_cookies()[std::distance(&*jar().begin(), &aItem)];
+            else
+                throw no_pointer_value_type_cookie_lookup();
+        }
         cookie_type next_cookie()
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
@@ -366,6 +377,14 @@ namespace neolib
             reverse_indices().clear();
         }
     private:
+        const cookies_t& allocated_cookies() const
+        {
+            return iAllocatedCookies;
+        }
+        cookies_t& allocated_cookies()
+        {
+            return iAllocatedCookies;
+        }
         const container_type& jar() const
         {
             return iJar;
@@ -373,6 +392,14 @@ namespace neolib
         container_type& jar()
         {
             return iJar;
+        }
+        const cookies_t& free_cookies() const
+        {
+            return iFreeCookies;
+        }
+        cookies_t& free_cookies()
+        {
+            return iFreeCookies;
         }
         const reverse_indices_t& reverse_indices() const
         {
@@ -382,26 +409,17 @@ namespace neolib
         {
             return iReverseIndices;
         }
-        const free_cookies_t& free_cookies() const
-        {
-            return iFreeCookies;
-        }
-        free_cookies_t& free_cookies()
-        {
-            return iFreeCookies;
-        }
     private:
         mutable mutex_type iMutex;
         mutable std::atomic<cookie_type> iNextAvailableCookie;
-        mutable free_cookies_t iFreeCookies;
+        cookies_t iAllocatedCookies;
         container_type iJar;
+        mutable cookies_t iFreeCookies;
         reverse_indices_t iReverseIndices;
     };
 
     typedef i_basic_cookie_consumer<cookie> i_cookie_consumer;
     typedef i_basic_cookie_consumer<small_cookie> i_small_cookie_consumer;
-    typedef i_basic_jar_item<cookie> i_jar_item;
-    typedef i_basic_jar_item<small_cookie> i_small_jar_item;
     typedef basic_cookie_ref_ptr<cookie> cookie_ref_ptr;
     typedef basic_cookie_ref_ptr<small_cookie> small_cookie_ref_ptr;
     template <typename T, typename MutexType = std::recursive_mutex>

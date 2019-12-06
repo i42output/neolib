@@ -35,7 +35,7 @@
 
 #include <neolib/neolib.hpp>
 #include <condition_variable>
-#include <neolib/raii.hpp>
+#include <neolib/scoped.hpp>
 #include <neolib/lifetime.hpp>
 #include <neolib/thread.hpp>
 #include <neolib/thread_pool.hpp>

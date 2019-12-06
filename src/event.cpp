@@ -18,6 +18,7 @@
 */
 
 #include <neolib/neolib.hpp>
+#include <neolib/scoped.hpp>
 #include <neolib/async_thread.hpp>
 #include <neolib/async_task.hpp>
 #include <neolib/timer.hpp>
@@ -51,7 +52,8 @@ namespace neolib
                 }, 1, false}
         },
         iTerminated { false },
-        iTaskDestroyed{ aTask }
+        iTaskDestroyed{ aTask },
+        iPublishNestingLevel{ 0u }
     {
     }
 
@@ -125,10 +127,18 @@ namespace neolib
     bool async_event_queue::publish_events()
     {
         bool didSome = false;
-        std::scoped_lock lock{ iMutex };
-        event_list_t toPublish;
-        toPublish.swap(iEvents);
-        for (auto& e : toPublish)
+        std::optional<std::scoped_lock<std::recursive_mutex>> lock{ iMutex };
+        scoped_counter<std::atomic<uint32_t>> sc{ iPublishNestingLevel };
+        if (iPublishNestingLevel > iPublishCache.size())
+        {
+            iPublishCache.resize(iPublishNestingLevel);
+            iPublishCache[iPublishNestingLevel - 1u] = std::make_unique<event_list_t>();
+        }
+        auto& currentContext = *iPublishCache[iPublishNestingLevel - 1u];
+        currentContext.clear();
+        currentContext.swap(iEvents);
+        lock = std::nullopt;
+        for (auto& e : currentContext)
             if (e != nullptr)
             {
                 didSome = true;

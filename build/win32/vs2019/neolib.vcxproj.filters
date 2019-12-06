@@ -215,16 +215,7 @@
     <ClInclude Include="..\..\..\include\neolib\i_version.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\interlockable.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\list.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\lockable.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\locking_policy.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\map.hpp">
@@ -386,9 +377,6 @@
     <ClInclude Include="..\..\..\include\neolib\uri.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\raii.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\index_array_tree.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -470,9 +458,6 @@
     <ClInclude Include="..\..\..\include\neolib\event.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\mutex.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\intrusive_sort.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -510,6 +495,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\i_async_task.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\neolib\scoped.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\neolib\lock.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

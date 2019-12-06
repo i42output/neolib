@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <mutex>
 #include <atomic>
 
+#include <neolib/scoped.hpp>
 #include <neolib/lifetime.hpp>
 #include <neolib/jar.hpp>
 #include <neolib/i_event.hpp>
@@ -226,6 +227,8 @@ namespace neolib
         event_list_t iEvents;
         std::atomic<bool> iTerminated;
         destroyed_flag iTaskDestroyed;
+        std::atomic<uint32_t> iPublishNestingLevel;
+        std::vector<std::unique_ptr<event_list_t>> iPublishCache;
     };
 
     enum class event_trigger_type
@@ -244,27 +247,24 @@ namespace neolib
         friend class sink;
         friend class async_event_queue;
     private:
+        typedef std::optional<std::scoped_lock<std::recursive_mutex>> optional_scoped_lock;
         typedef typename event_callback<Args...>::function_type function_type;
         typedef typename event_callback<Args...>::handler_ptr handler_ptr;
-        struct handler : i_jar_item
+        struct handler
         {
-            neolib::cookie id;
             async_event_queue* queue;
             uint32_t referenceCount;
             const void* clientId;
             handler_ptr callback;
             bool handleInSameThreadAsEmitter;
-
-            neolib::cookie cookie() const override { return id; }
+            uint64_t triggerId = 0ull;
 
             handler(
-                neolib::cookie id, 
                 async_event_queue& queue, 
                 uint32_t referenceCount, 
                 const void* clientId, 
                 handler_ptr callback,
-                bool handleInSameThreadAsEmitter = true) : 
-                id{ id },
+                bool handleInSameThreadAsEmitter = false) : 
                 queue{ &queue },
                 referenceCount{ referenceCount },
                 clientId{ clientId },
@@ -275,7 +275,8 @@ namespace neolib
         typedef neolib::jar<handler> handler_list_t;
         struct context
         {
-            bool accepted;
+            bool accepted = false;
+            bool handlersChanged = false;
         };
         typedef std::vector<context> context_list_t;
         struct instance_data
@@ -283,17 +284,20 @@ namespace neolib
             event_trigger_type triggerType = event_trigger_type::Default;
             handler_list_t handlers;
             context_list_t contexts;
+            bool triggering = false;
+            uint64_t triggerId = 0ull;
+            bool handlersChanged = false;
         };
     public:
-        event() : iAlias{ *this }, iControl{ nullptr }, iInstanceDataPtr{ nullptr }
+        event() : iAlias{ *this }, iMutex{ std::make_shared<std::recursive_mutex>() }, iControl{ nullptr }, iInstanceDataPtr{ nullptr }
         {
         }
-        event(const event&) : iAlias{ *this }, iControl{ nullptr }, iInstanceDataPtr{ nullptr }
+        event(const event&) : iAlias{ *this }, iMutex{ std::make_shared<std::recursive_mutex>() }, iControl{ nullptr }, iInstanceDataPtr{ nullptr }
         {
         }
         virtual ~event()
         {
-            std::scoped_lock lock{ iMutex };
+            std::scoped_lock lock{ *iMutex };
             if (is_controlled())
                 control().reset();
             set_destroying();
@@ -303,8 +307,8 @@ namespace neolib
         self_type& operator=(const self_type&) = delete;
         self_type& operator=(const self_type&& aOther)
         {
-            std::scoped_lock lock1{ iMutex };
-            std::scoped_lock lock2{ aOther.iMutex };
+            std::scoped_lock lock1{ *iMutex };
+            std::scoped_lock lock2{ *aOther.iMutex };
             clear();
             iInstanceData = std::move(aOther.iInstanceData);
             aOther.clear();
@@ -337,7 +341,6 @@ namespace neolib
         {
             if (!has_instance_data()) // no instance date means no subscribers so no point triggering.
                 return true;
-            std::scoped_lock lock{ iMutex };
             switch (trigger_type())
             {
             case event_trigger_type::Default:
@@ -355,14 +358,31 @@ namespace neolib
         {
             if (trigger_type() == event_trigger_type::SynchronousDontQueue && trigger_type() == event_trigger_type::AsynchronousDontQueue)
                 unqueue();
-            std::scoped_lock lock{ iMutex };
+            auto mutex = iMutex;
+            optional_scoped_lock lock{ *mutex };
             destroyed_flag destroyed{ *this };
             instance().contexts.emplace_back();
-            for (auto& h : instance().handlers)
+            scoped_flag sf{ instance().triggering };
+            if (!instance().triggering)
             {
+                instance().triggering = true;
+                instance().triggerId = 0ull;
+                for (auto& handler : instance().handlers)
+                    handler.triggerId = 0ull;
+            }
+            auto triggerId = ++instance().triggerId;
+            for (auto h = instance().handlers.begin(); h != instance().handlers.end();)
+            {
+                auto& handler = *h++;
+                if (handler.triggerId < triggerId)
+                    handler.triggerId = triggerId;
+                else if (handler.triggerId == triggerId)
+                    continue;
                 try
                 {
-                    enqueue(h, false, aArguments...);
+                    enqueue(lock, handler, false, aArguments...);
+                    if (destroyed)
+                        return false;
                 }
                 catch (...)
                 {
@@ -376,6 +396,11 @@ namespace neolib
                     instance().contexts.pop_back();
                     return false;
                 }
+                if (instance().contexts.back().handlersChanged)
+                {
+                    instance().contexts.back().handlersChanged = false;
+                    h = instance().handlers.begin();
+                }
             }
             instance().contexts.pop_back();
             return true;
@@ -384,29 +409,50 @@ namespace neolib
         {
             if (!has_instance_data()) // no instance means no subscribers so no point triggering.
                 return;
-            std::scoped_lock lock{ iMutex };
+            auto mutex = iMutex;
+            optional_scoped_lock lock{ *mutex };
             destroyed_flag destroyed{ *this };
-            for (auto& h : instance().handlers)
+            scoped_flag sf{ instance().triggering };
+            if (!instance().triggering)
             {
-                enqueue(h, true, aArguments...);
+                instance().triggering = true;
+                instance().triggerId = 0ull;
+                for (auto& handler : instance().handlers)
+                    handler.triggerId = 0ull;
+            }
+            auto triggerId = ++instance().triggerId;
+            for (auto h = instance().handlers.begin(); h != instance().handlers.end();)
+            {
+                auto& handler = *h++;
+                if (handler.triggerId < triggerId)
+                    handler.triggerId = triggerId;
+                else if (handler.triggerId == triggerId)
+                    continue;
+                enqueue(lock, handler, true, aArguments...);
                 if (destroyed)
                     return;
+                if (instance().handlersChanged)
+                {
+                    instance().handlersChanged = false;
+                    h = instance().handlers.begin();
+                }
             }
         }
         void accept() const
         {
-            std::scoped_lock lock{ iMutex };
+            std::scoped_lock lock{ *iMutex };
             instance_data().contexts.back().accepted = true;
         }
         void ignore() const
         {
-            std::scoped_lock lock{ iMutex };
+            std::scoped_lock lock{ *iMutex };
             instance_data().contexts.back().accepted = false;
         }
     public:
         event_handle subscribe(const function_type& aHandlerCallback, const void* aUniqueId = nullptr) const
         {
-            std::scoped_lock lock{ iMutex };
+            std::scoped_lock lock{ *iMutex };
+            invalidate_handler_list();
             return event_handle{ control(), instance().handlers.emplace(async_event_queue::instance(), 0u, aUniqueId, std::make_shared<function_type>(aHandlerCallback)) };
         }
         event_handle operator()(const function_type& aHandlerCallback, const void* aUniqueId = nullptr) const
@@ -435,15 +481,19 @@ namespace neolib
         }
         void unsubscribe(event_handle aHandle) const
         {
-            std::scoped_lock lock{ iMutex };
+            std::scoped_lock lock{ *iMutex };
+            invalidate_handler_list();
             instance().handlers.remove(aHandle.id());
         }
         void unsubscribe(const void* aClientId) const
         {
-            std::scoped_lock lock{ iMutex };
-            for (auto const& h : instance().handlers)
-                if (h.clientId == aClientId)
-                    instance().handlers.remove(h.id);
+            std::scoped_lock lock{ *iMutex };
+            invalidate_handler_list();
+            for (auto h = instance().handlers.begin(); h != instance().handlers.end();)
+                if (h->clientId == aClientId)
+                    h = instance().handlers.erase(h);
+                else
+                    ++h;
         }
         template <typename T>
         void unsubscribe(const T* aClientId) const
@@ -458,27 +508,39 @@ namespace neolib
     private:
         void add_ref(cookie aCookie) override
         {
-            std::scoped_lock lock{ iMutex };
+            std::scoped_lock lock{ *iMutex };
             ++instance().handlers[aCookie].referenceCount;
         }
         void release(cookie aCookie) override
         {
-            std::scoped_lock lock{ iMutex };
+            std::scoped_lock lock{ *iMutex };
             if (--instance().handlers[aCookie].referenceCount == 0u)
                 instance().handlers.remove(aCookie);
         }
         long use_count(cookie aCookie) const override
         {
-            std::scoped_lock lock{ iMutex };
+            std::scoped_lock lock{ *iMutex };
             return instance().handlers[aCookie].referenceCount;
         }
     private:
-        void enqueue(handler& aHandler, bool aAsync, Args... aArguments) const
+        void invalidate_handler_list() const
         {
-            std::scoped_lock lock{ iMutex };
+            std::scoped_lock lock{ *iMutex };
+            instance().handlersChanged = true;
+            for (auto& context : instance().contexts)
+                context.handlersChanged = true;
+        }
+        void enqueue(optional_scoped_lock& lock, handler& aHandler, bool aAsync, Args... aArguments) const
+        {
             auto& emitterQueue = async_event_queue::instance();
             if (!aAsync && aHandler.queue == &emitterQueue)
-                (*aHandler.callback)(aArguments...);
+            {
+                auto mutex = iMutex;
+                auto callback = aHandler.callback;
+                lock = std::nullopt;
+                (*callback)(aArguments...);
+                lock.emplace(*mutex);
+            }
             else
             {
                 auto ecb = std::make_unique<event_callback<Args...>>(*this, aHandler.callback, aArguments...);
@@ -490,7 +552,7 @@ namespace neolib
         }
         void unqueue() const
         {
-            std::scoped_lock lock{ iMutex };
+            std::scoped_lock lock{ *iMutex };
             std::unordered_set<async_event_queue*> queues;
             for (auto const& h : instance().handlers)
                 queues.insert(h.queue);
@@ -499,7 +561,7 @@ namespace neolib
         }
         void clear()
         {
-            std::scoped_lock lock{ iMutex };
+            std::scoped_lock lock{ *iMutex };
             for (auto& h : instance().handlers)
                 h.queue->remove(*this);
             iInstanceDataPtr = nullptr;
@@ -511,7 +573,7 @@ namespace neolib
         }
         i_event_control& control() const
         {
-            std::scoped_lock lock{ iMutex };
+            std::scoped_lock lock{ *iMutex };
             if (iControl == nullptr)
                 iControl = new event_control{ iAlias };
             return *iControl;
@@ -524,14 +586,14 @@ namespace neolib
         {
             if (iInstanceDataPtr != nullptr)
                 return *iInstanceDataPtr;
-            std::scoped_lock lock{ iMutex };
+            std::scoped_lock lock{ *iMutex };
             iInstanceData.emplace();
             iInstanceDataPtr = &*iInstanceData;
             return *iInstanceDataPtr;
         }
     private:
         self_type& iAlias; // bit of a hack: most event operations are logically const as we want to be able to trigger events from const methods of the containing object
-        mutable std::recursive_mutex iMutex;
+        mutable std::shared_ptr<std::recursive_mutex> iMutex;
         mutable std::atomic<i_event_control*> iControl;
         mutable std::optional<instance_data> iInstanceData;
         mutable std::atomic<instance_data*> iInstanceDataPtr;

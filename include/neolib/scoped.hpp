@@ -1,4 +1,4 @@
-// raii.hpp
+// scoped.hpp
 /*
  *  Copyright (c) 2007 Leigh Johnston.
  *
@@ -59,11 +59,12 @@ namespace neolib
         void ignore() { iIgnore = true; }
     };
 
+    template <typename T>
     struct scoped_counter
     {
-        uint32_t& iCounter;
+        T& iCounter;
         bool iIgnore;
-        scoped_counter(uint32_t& aCounter) : iCounter(aCounter), iIgnore{ false } { ++iCounter; }
+        scoped_counter(T& aCounter) : iCounter(aCounter), iIgnore{ false } { ++iCounter; }
         ~scoped_counter() { if (!iIgnore) --iCounter; }
         void ignore() { iIgnore = true; }
     };

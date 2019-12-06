@@ -55,6 +55,8 @@ namespace neolib
     {
         template <typename Mutex>
         friend class basic_lifetime;
+    public:
+        using i_lifetime_flag::cookie_type;
     private:
         typedef const i_lifetime* subject_pointer;
         typedef Owner* owner_pointer;
@@ -63,7 +65,7 @@ namespace neolib
         lifetime_flag(const lifetime_flag& aOther);
         ~lifetime_flag();
     public:
-        neolib::cookie cookie() const;
+        cookie_type cookie() const final;
     public:
         bool is_creating() const final;
         bool is_alive() const final;
@@ -79,7 +81,7 @@ namespace neolib
     private:
         const i_lifetime& subject() const;
     private:
-        neolib::cookie iCookie;
+        cookie_type iCookie;
         subject_pointer iSubject;
         owner_pointer iOwner;
         std::atomic<lifetime_state> iState;
@@ -92,12 +94,12 @@ namespace neolib
     template <typename FlagList>
     class basic_lifetime : public virtual i_lifetime
     {
-    private:
-        typedef FlagList flag_list_type;
     public:
         typedef neolib::destroyed_flag destroyed_flag;
-        typedef typename flag_list_type::container_type flags_t;
+        using i_lifetime::cookie_type;
     private:
+        typedef FlagList flag_list_type;
+        typedef typename flag_list_type::container_type flags_t;
         typedef typename flag_list_type::mutex_type mutex_type;
     public:
         basic_lifetime(lifetime_state aState = lifetime_state::Alive);
@@ -112,9 +114,8 @@ namespace neolib
         void set_destroying() override;
         void set_destroyed() override;
     public:
-        neolib::cookie next_cookie() const final;
-        void add_flag(i_lifetime_flag* aFlag) const final;
-        void remove_flag(i_lifetime_flag* aFlag) const final;
+        cookie_type add_flag(i_lifetime_flag& aFlag) const final;
+        void remove_flag(const i_lifetime_flag& aFlag) const final;
     private:
         flag_list_type& flags() const;
     private:
