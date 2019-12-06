@@ -37,24 +37,29 @@
 
 #include <neolib/neolib.hpp>
 #include <boost/asio.hpp>
-#include "i_thread.hpp"
-#include "task.hpp"
-#include "message_queue.hpp"
+#include <neolib/lifetime.hpp>
+#include <neolib/i_thread.hpp>
+#include <neolib/i_plugin_event.hpp>
+#include <neolib/task.hpp>
+#include <neolib/i_async_task.hpp>
+#include <neolib/plugin_event.hpp>
+#include <neolib/message_queue.hpp>
 
 namespace neolib
 {
     class async_task;
 
-    class io_service
+    class io_service : public i_io_service
     {
         // types
     public:
         typedef boost::asio::io_service native_io_service_type;
+        // construction
     public:
         io_service(async_task& aTask) : iTask(aTask) {}
         // operations
     public:
-        bool do_io(bool aProcessEvents = true);
+        bool do_io(bool aProcessEvents = true) override;
         native_io_service_type& native_object() { return iNativeIoService; }
         // attributes
     private:
@@ -62,21 +67,15 @@ namespace neolib
         native_io_service_type iNativeIoService;
     };
 
-    enum class yield_type
+    class async_task : public task<i_async_task>, public lifetime
     {
-        NoYield,
-        Yield,
-        Sleep
-    };
-
-    class async_task : public task
-    {
+        // events
+    public:
+        define_declared_event(Destroying, destroying)
+        define_declared_event(Destroyed, destroyed)
         // types
     private:
         typedef std::unique_ptr<neolib::message_queue> message_queue_pointer;
-        // exceptions
-    public:
-        struct no_message_queue : std::logic_error { no_message_queue() : std::logic_error("neolib::async_task::no_message_queue") {} };
         // construction
     public:
         async_task(i_thread& aThread, const std::string& aName = std::string{});
@@ -96,8 +95,13 @@ namespace neolib
         bool halted() const;
         void halt();
         // implementation
-    public:
+    protected:
+        // i_lifetime
+        void set_destroying() override;
+        void set_destroyed() override;
+        // task
         void run() override;
+        void do_work() override;
         // attributes
     private:
         i_thread& iThread;

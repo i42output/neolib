@@ -69,6 +69,7 @@ namespace neolib
         // construction
     public:
         thread(const std::string& aName = "", bool aAttachToCurrentThread = false);
+        thread(std::function<void()> aExecFunction, const std::string& aName = "");
         virtual ~thread();
         // operations
     public:
@@ -105,13 +106,16 @@ namespace neolib
         // implementation
     private:
         // from waitable
-        virtual bool waitable_ready() const;
+        bool waitable_ready() const override;
         // own
+        void exec_preamble() override;
+        void exec() override;
         void entry_point();
         // attributes
     private:
         const std::string iName;
         bool iUsingExistingThread;
+        std::optional<std::function<void()>> iExecFunction;
         std::atomic<state_e> iState;
         thread_object_pointer iThreadObject;
         id_type iId;

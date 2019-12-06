@@ -38,11 +38,13 @@
 #include <neolib/neolib.hpp>
 #include <future>
 #include <atomic>
-#include "i_task.hpp"
+#include <neolib/lifetime.hpp>
+#include <neolib/i_task.hpp>
 
 namespace neolib
 {
-    class task : public i_task
+    template <typename Base = i_task>
+    class task : public Base
     {
         // construction
     public:
@@ -57,6 +59,9 @@ namespace neolib
         }
         // implementation
     public:
+        void do_work() override
+        {
+        }
         void cancel() override
         {
             iCancelled = true;
@@ -72,7 +77,7 @@ namespace neolib
     };
 
     template <typename T>
-    class function_task : public task
+    class function_task : public task<>
     {
     public:
         function_task(std::function<T()> aFunction) : task{}, iFunction{ aFunction }

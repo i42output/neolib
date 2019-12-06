@@ -30,58 +30,45 @@ namespace neolib
         return get_instance(nullptr);
     }
 
-    async_event_queue& async_event_queue::instance(neolib::async_task& aTask)
+    async_event_queue& async_event_queue::instance(async_task& aTask)
     {
         return get_instance(&aTask);
     }
 
-    async_event_queue::async_event_queue(async_task& aTask) : 
-        async_event_queue{ std::shared_ptr<async_task>{std::shared_ptr<async_task>{}, &aTask} }
-    {
-    }
-
-    async_event_queue::async_event_queue(std::shared_ptr<async_task> aTask) :
-        iTask { aTask },
-        iTimer {
-            *aTask,
-            [this](neolib::callback_timer& aTimer)
-            {
-                if (!is_alive())
-                    return;
-                std::scoped_lock lock{ iMutex };
-                publish_events();
-                if (!iEvents.empty() && !aTimer.waiting())
-                    aTimer.again();
-            }, 1, false
-        }
+    async_event_queue::async_event_queue(async_task& aTask) :
+        iTimer
+        {
+            new callback_timer{
+                aTask,
+                [this](neolib::callback_timer& aTimer)
+                {
+                    if (terminated())
+                        return;
+                    std::scoped_lock lock{ iMutex };
+                    publish_events();
+                    if (!iEvents.empty() && !aTimer.waiting())
+                        aTimer.again();
+                }, 1, false}
+        },
+        iTerminated { false },
+        iTaskDestroyed{ aTask }
     {
     }
 
     async_event_queue::~async_event_queue()
     {
-        {
-            std::scoped_lock lock{ iMutex };
-            set_destroying();
-        }
-        exec();
-        while (true)
-        {
-            std::scoped_lock lock{ iMutex };
-            if (iEvents.empty())
-                break;
-            std::this_thread::sleep_for(std::chrono::milliseconds{ 1 });
-        }
+        terminate();
     }
 
-    async_event_queue& async_event_queue::get_instance(neolib::async_task* aTask)
+    async_event_queue& async_event_queue::get_instance(async_task* aTask)
     {
         thread_local bool tInstantiated = false;
+        if (!tInstantiated && aTask == nullptr)
+            throw async_event_queue_needs_a_task();
         if (tInstantiated && aTask != nullptr)
             throw async_event_queue_already_instantiated();
         tInstantiated = true;
-        thread_local async_event_queue tLocalInstance{ aTask != nullptr ? 
-            std::shared_ptr<neolib::async_task>{ aTask } :
-            std::make_shared<neolib::async_thread>( "neogfx::async_event_queue", true ) };
+        thread_local async_event_queue tLocalInstance{ *aTask };
         return tLocalInstance;
     }
 
@@ -93,9 +80,18 @@ namespace neolib
     void async_event_queue::terminate()
     {
         std::scoped_lock lock{ iMutex };
-        iEvents.clear();
-        if (iTimer.waiting())
-            iTimer.cancel();
+        if (!terminated())
+        {
+            iTerminated = true;
+            if (&instance() == this)
+                publish_events();
+            iEvents.clear();
+        }
+    }
+
+    bool async_event_queue::terminated() const
+    {
+        return iTerminated;
     }
 
     void async_event_queue::unqueue(const i_event& aEvent)
@@ -105,12 +101,12 @@ namespace neolib
 
     void async_event_queue::add(callback_ptr aCallback)
     {
-        if (!is_alive())
-            return;
         std::scoped_lock lock{ iMutex };
+        if (terminated())
+            throw async_event_queue_terminated();
         iEvents.push_back(std::move(aCallback));
-        if (!iTimer.waiting())
-            iTimer.again();
+        if (!iTimer->waiting())
+            iTimer->again();
     }
 
     void async_event_queue::remove(const i_event& aEvent)
@@ -128,8 +124,6 @@ namespace neolib
 
     bool async_event_queue::publish_events()
     {
-        if (!is_alive())
-            return false;
         bool didSome = false;
         std::scoped_lock lock{ iMutex };
         event_list_t toPublish;

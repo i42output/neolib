@@ -41,6 +41,9 @@ namespace neolib
 {
     class i_thread
     {
+        // exceptions
+    public:
+        struct nothing_to_do : std::logic_error { nothing_to_do() : std::logic_error{ "neolib::i_thread::nothing_to_do" } {} };
         // construction
     public:
         virtual ~i_thread() {}
@@ -51,6 +54,7 @@ namespace neolib
         virtual void abort(bool aWait = true) = 0;
         // implementation
     protected:
+        virtual void exec_preamble() = 0;
         virtual void exec() = 0;
     };
 }

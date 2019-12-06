@@ -40,11 +40,13 @@
 #include <boost/bind.hpp>
 
 #include <neolib/noncopyable.hpp>
-#include <neolib/async_task.hpp>
 #include <neolib/lifetime.hpp>
+#include <neolib/event.hpp>
 
 namespace neolib
 {
+    class async_task;
+
     class timer : private noncopyable, public lifetime
     {
         // types
@@ -52,7 +54,6 @@ namespace neolib
         struct already_waiting : std::logic_error { already_waiting() : std::logic_error("neolib::timer::already_waiting") {} };
         struct already_enabled : std::logic_error { already_enabled() : std::logic_error("neolib::timer::already_enabled") {} };
         struct already_disabled : std::logic_error { already_disabled() : std::logic_error("neolib::timer::already_disabled") {} };
-        struct timer_destroyed : std::logic_error { timer_destroyed() : std::logic_error("neolib::timer::timer_destroyed") {} };
     private:
         class handler_proxy
         {
@@ -80,8 +81,8 @@ namespace neolib
         };
         // construction
     public:
-        timer(async_task& aIoTask, uint32_t aDuration_ms, bool aInitialWait = true);
-        timer(async_task& aIoTask, const i_lifetime& aContext, uint32_t aDuration_ms, bool aInitialWait = true);
+        timer(async_task& aTask, uint32_t aDuration_ms, bool aInitialWait = true);
+        timer(async_task& aTask, const i_lifetime& aContext, uint32_t aDuration_ms, bool aInitialWait = true);
         timer(const timer& aOther);
         timer& operator=(const timer& aOther);
         virtual ~timer();
@@ -102,14 +103,17 @@ namespace neolib
         uint32_t duration_ms() const;
         // implementation
     private:
+        boost::asio::deadline_timer& timer_object();
         void handler(const boost::system::error_code& aError);
         virtual void ready() = 0;
         // attributes
     private:
-        async_task& iIoTask;
+        async_task& iTask;
+        destroyed_flag iTaskDestroyed;
         optional_destroyed_flag iContextDestroyed;
+        sink iSink;
         std::shared_ptr<handler_proxy> iHandlerProxy;
-        boost::asio::deadline_timer iTimerObject;
+        std::optional<boost::asio::deadline_timer> iTimerObject;
         uint32_t iDuration_ms;
         bool iEnabled;
         bool iWaiting;
@@ -119,8 +123,8 @@ namespace neolib
     class callback_timer : public timer
     {
     public:
-        callback_timer(async_task& aIoTask, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true);
-        callback_timer(async_task& aIoTask, const i_lifetime& aContext, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true);
+        callback_timer(async_task& aTask, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true);
+        callback_timer(async_task& aTask, const i_lifetime& aContext, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true);
         ~callback_timer();
     private:
         virtual void ready();

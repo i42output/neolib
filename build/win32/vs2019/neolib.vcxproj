@@ -128,6 +128,8 @@
     <ClInclude Include="..\..\..\include\neolib\binary_data_packet.hpp" />
     <ClInclude Include="..\..\..\include\neolib\binary_packet.hpp" />
     <ClInclude Include="..\..\..\include\neolib\container_iterator.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_async_task.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_event.hpp" />
     <ClInclude Include="..\..\..\include\neolib\jar.hpp" />
     <ClInclude Include="..\..\..\include\neolib\crc.hpp" />
     <ClInclude Include="..\..\..\include\neolib\custom_type.hpp" />

@@ -51,6 +51,7 @@ namespace neolib
         // implementation
     public:
         virtual void run() = 0;
+        virtual void do_work() = 0;
         virtual void cancel() = 0;
         virtual bool cancelled() const = 0;
     };

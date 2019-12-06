@@ -35,12 +35,20 @@
 
 #include <neolib/neolib.hpp>
 #include <neolib/async_thread.hpp>
+#include <neolib/event.hpp>
 
 namespace neolib
 {
     async_thread::async_thread(const std::string& aName, bool aAttachToCurrentThread) : 
         neolib::thread{ aName, aAttachToCurrentThread }, async_task{ static_cast<i_thread&>(*this) }
     {
+        if (using_existing_thread())
+            async_event_queue::instance(*this);
+    }
+
+    void async_thread::exec_preamble()
+    {
+        async_event_queue::instance(*this);
     }
 
     void async_thread::exec()

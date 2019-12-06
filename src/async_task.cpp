@@ -75,6 +75,7 @@ namespace neolib
 
     async_task::~async_task()
     {
+        set_destroying();
         thread().abort();
     }
 
@@ -162,10 +163,33 @@ namespace neolib
         iHalted = true;
     }
 
+    void async_task::set_destroying()
+    {
+        if (is_alive())
+        {
+            Destroying.trigger();
+            lifetime::set_destroying();
+        }
+    }
+
+    void async_task::set_destroyed()
+    {
+        if (!is_destroyed())
+        {
+            Destroyed.trigger();
+            lifetime::set_destroyed();
+        }
+    }
+
     void async_task::run()
     {
-        while(!iThread.finished())
-            do_io(yield_type::Sleep);
+        while (!iThread.finished())
+            do_work();
+    }
+
+    void async_task::do_work()
+    {
+        do_io(yield_type::Sleep);
     }
 
 } // namespace neolib

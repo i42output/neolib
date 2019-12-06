@@ -1,4 +1,4 @@
-// async_thread.hpp
+// async_task.hpp v1.0
 /*
  *  Copyright (c) 2007 Leigh Johnston.
  *
@@ -36,19 +36,47 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include "thread.hpp"
-#include "async_task.hpp"
+#include <neolib/i_thread.hpp>
+#include <neolib/i_plugin_event.hpp>
 
 namespace neolib
 {
-    class async_thread : public thread, public async_task
+    enum class yield_type
+    {
+        NoYield,
+        Yield,
+        Sleep
+    };
+
+    class i_io_service
     {
         // construction
     public:
-        async_thread(const std::string& aName = "", bool aAttachToCurrentThread = false);
-        // implemenation
-    protected:
-        void exec_preamble() override;
-        void exec() override;
+        virtual ~i_io_service() {}
+        // operations
+    public:
+        virtual bool do_io(bool aProcessEvents = true) = 0;
+    };
+
+    class i_async_task : public i_task
+    {
+        // events
+    public:
+        declare_event(destroying)
+        declare_event(destroyed)
+        // exceptions
+    public:
+        struct no_message_queue : std::logic_error { no_message_queue() : std::logic_error("neolib::i_async_task::no_message_queue") {} };
+        // operations
+    public:
+        virtual i_thread& thread() const = 0;
+        virtual bool do_io(yield_type aYieldIfNoWork = yield_type::NoYield) = 0;
+        virtual i_io_service& timer_io_service() = 0;
+        virtual i_io_service& networking_io_service() = 0;
+        virtual bool have_message_queue() const = 0;
+        virtual bool have_messages() const = 0;
+        virtual bool pump_messages() = 0;
+        virtual bool halted() const = 0;
+        virtual void halt() = 0;
     };
 }

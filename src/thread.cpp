@@ -52,6 +52,12 @@ namespace neolib
     {
     }
 
+    thread::thread(std::function<void()> aExecFunction, const std::string& aName) : 
+        thread{ aName, false }
+    {
+        iExecFunction = aExecFunction;
+    }
+
     thread::~thread()
     {
         if (!finished() && !using_existing_thread())
@@ -336,6 +342,18 @@ namespace neolib
         return thread_object().get_id() == std::thread::id();
     }
 
+    void thread::exec_preamble()
+    {
+    }
+
+    void thread::exec()
+    {
+        if (iExecFunction != std::nullopt)
+            (*iExecFunction)();
+        else
+            throw nothing_to_do();
+    }
+
     void thread::entry_point()
     {
         lock();
@@ -344,6 +362,7 @@ namespace neolib
         unlock();
         try
         {
+            exec_preamble();
             exec();
             if (!iUsingExistingThread)
             {

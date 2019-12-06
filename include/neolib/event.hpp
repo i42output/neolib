@@ -23,39 +23,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <optional>
 #include <mutex>
+#include <atomic>
 
 #include <neolib/lifetime.hpp>
 #include <neolib/jar.hpp>
-#include <neolib/async_task.hpp>
-#include <neolib/timer.hpp>
+#include <neolib/i_event.hpp>
 
 namespace neolib
 {
-    struct event_destroyed : std::logic_error { event_destroyed() : std::logic_error{ "neolib::event_destroyed" } {} };
-
     class sink;
-
-    class i_event : public i_cookie_consumer
-    {
-    public:
-        virtual ~i_event() {}
-    public:
-        virtual void release_control() = 0;
-        virtual void handle_in_same_thread_as_emitter(cookie aHandleId) = 0;
-    };
-
-    class i_event_control
-    {
-    public:
-        virtual ~i_event_control() {}
-    public:
-        virtual void add_ref() = 0;
-        virtual void release() = 0;
-        virtual bool valid() const = 0;
-        virtual i_event& get() const = 0;
-    public:
-        virtual void reset() = 0;
-    };
 
     class event_handle
     {
@@ -178,15 +154,6 @@ namespace neolib
         std::atomic<uint32_t> iRefCount;
     };
 
-    class i_event_callback
-    {
-    public:
-        virtual ~i_event_callback() {}
-    public:
-        virtual const i_event& event() const = 0;
-        virtual void call() const = 0;
-    };
-
     template <typename... Args>
     class event_callback : public i_event_callback
     {
@@ -217,24 +184,28 @@ namespace neolib
         argument_pack iArguments;
     };
 
+    class async_task;
+    class callback_timer;
+
     class async_event_queue : public lifetime
     {
         template <typename...>
         friend class event;
     public:
+        struct async_event_queue_needs_a_task : std::logic_error { async_event_queue_needs_a_task() : std::logic_error("neogfx::async_event_queue::async_event_queue_needs_a_task") {} };
         struct async_event_queue_already_instantiated : std::logic_error { async_event_queue_already_instantiated() : std::logic_error("neogfx::async_event_queue::async_event_queue_already_instantiated") {} };
+        struct async_event_queue_terminated : std::logic_error { async_event_queue_terminated() : std::logic_error("neogfx::async_event_queue::async_event_queue_terminated") {} };
         struct event_not_found : std::logic_error { event_not_found() : std::logic_error("neogfx::async_event_queue::event_not_found") {} };
     private:
         typedef std::unique_ptr<i_event_callback> callback_ptr;
         typedef std::deque<callback_ptr> event_list_t;
     public:
         static async_event_queue& instance();
-        static async_event_queue& instance(neolib::async_task& aTask);
+        static async_event_queue& instance(async_task& aTask);
         ~async_event_queue();
     private:
-        async_event_queue(neolib::async_task& aTask);
-        async_event_queue(std::shared_ptr<async_task> aTask);
-        static async_event_queue& get_instance(neolib::async_task* aTask);
+        async_event_queue(async_task& aTask);
+        static async_event_queue& get_instance(async_task* aTask);
     public:
         bool exec();
         void enqueue(callback_ptr aCallback)
@@ -244,15 +215,17 @@ namespace neolib
         void unqueue(const i_event& aEvent);
         void terminate();
     private:
+        bool terminated() const;
         void add(callback_ptr aCallback);
         void remove(const i_event& aEvent);
         bool has(const i_event& aEvent) const;
         bool publish_events();
     private:
-        std::shared_ptr<async_task> iTask;
-        neolib::callback_timer iTimer;
-        event_list_t iEvents;
         std::recursive_mutex iMutex;
+        std::unique_ptr<callback_timer> iTimer;
+        event_list_t iEvents;
+        std::atomic<bool> iTerminated;
+        destroyed_flag iTaskDestroyed;
     };
 
     enum class event_trigger_type
