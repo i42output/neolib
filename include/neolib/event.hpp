@@ -43,7 +43,8 @@ namespace neolib
         event_handle(i_event_control& aControl, cookie aId) : 
             iControl{ &aControl }, iRef{ aControl.get(), aId }, iPrimary{ true }
         {
-            control().add_ref();
+            if (have_control())
+                control().add_ref();
         }
         event_handle(const event_handle& aOther) :
             iControl{ aOther.iControl }, iRef{ aOther.iRef }, iPrimary{ false }
@@ -310,29 +311,20 @@ namespace neolib
         event() : iAlias{ *this }, iMutex{ std::make_shared<std::recursive_mutex>() }, iControl{ nullptr }, iInstanceDataPtr{ nullptr }
         {
         }
-        event(const event&) : iAlias{ *this }, iMutex{ std::make_shared<std::recursive_mutex>() }, iControl{ nullptr }, iInstanceDataPtr{ nullptr }
-        {
-        }
+        event(const event&) = delete;
         virtual ~event()
         {
             std::scoped_lock lock{ *iMutex };
             if (is_controlled())
+            {
                 control().reset();
+                control().release();
+            }
             set_destroying();
             clear();
         }
     public:
         self_type& operator=(const self_type&) = delete;
-        self_type& operator=(const self_type&& aOther)
-        {
-            std::scoped_lock lock1{ *iMutex };
-            std::scoped_lock lock2{ *aOther.iMutex };
-            clear();
-            iInstanceData = std::move(aOther.iInstanceData);
-            aOther.clear();
-            iInstanceDataPtr = &*iInstanceData;
-            return *this;
-        }
     public:
         void release_control() override
         {
@@ -345,6 +337,10 @@ namespace neolib
         void handle_in_same_thread_as_emitter(cookie aHandleId)
         {
             instance().handlers[aHandleId].handleInSameThreadAsEmitter = true;
+        }
+        std::recursive_mutex& mutex() const
+        {
+            return *iMutex;
         }
     public:
         event_trigger_type trigger_type() const
@@ -591,7 +587,10 @@ namespace neolib
         {
             std::scoped_lock lock{ *iMutex };
             if (iControl == nullptr)
+            {
                 iControl = new event_control{ iAlias };
+                iControl.load()->add_ref();
+            }
             return *iControl;
         }
         bool has_instance_data() const
