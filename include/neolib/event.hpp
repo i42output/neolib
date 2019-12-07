@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <neolib/neolib.hpp>
 #include <vector>
+#include <deque>
 #include <optional>
 #include <mutex>
 #include <atomic>
