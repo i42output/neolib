@@ -40,6 +40,7 @@
 #include <memory>
 #include <thread>
 #include <atomic>
+#include <functional>
 #include "noncopyable.hpp"
 #include "waitable.hpp"
 #include "waitable_event.hpp"
