@@ -36,19 +36,37 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include "thread.hpp"
-#include "async_task.hpp"
+#include <neolib/thread.hpp>
+#include <neolib/async_task.hpp>
+#include <neolib/event.hpp>
 
 namespace neolib
 {
+    class async_event_queue;
+
     class async_thread : public thread, public async_task
     {
+        // types
+    private:
+        struct queue_ref
+        {
+            async_event_queue& queue;
+            destroyed_flag queueDestroyed;
+
+            queue_ref(async_event_queue& queue) :
+                queue{ queue },
+                queueDestroyed{ queue }
+            {}
+        };
         // construction
     public:
         async_thread(const std::string& aName = "", bool aAttachToCurrentThread = false);
+        ~async_thread();
         // implemenation
     protected:
         void exec_preamble() override;
         void exec() override;
+    private:
+        std::optional<queue_ref> iEventQueue;
     };
 }

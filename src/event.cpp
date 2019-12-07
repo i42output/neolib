@@ -91,8 +91,7 @@ namespace neolib
         if (!terminated())
         {
             iTerminated = true;
-            if (&instance() == this)
-                publish_events();
+            iTimer = nullptr;
             iEvents.clear();
         }
     }

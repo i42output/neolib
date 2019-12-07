@@ -72,6 +72,7 @@ namespace neolib
     async_task::async_task(i_thread& aThread, const std::string& aName) :
         task{ aName }, iThread{ aThread }, iTimerIoService{ *this }, iNetworkingIoService{ *this }, iHalted{ false }
     {
+        Destroying.ignore_errors();
     }
 
     async_task::~async_task()
@@ -168,7 +169,13 @@ namespace neolib
     {
         if (is_alive())
         {
-            Destroying.trigger();
+            try
+            {
+                Destroying.trigger();
+            }
+            catch (event_queue_destroyed)
+            {
+            }
             lifetime::set_destroying();
         }
     }

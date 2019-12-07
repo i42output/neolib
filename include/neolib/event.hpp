@@ -253,9 +253,20 @@ namespace neolib
         typedef std::optional<std::scoped_lock<std::recursive_mutex>> optional_scoped_lock;
         typedef typename event_callback<Args...>::function_type function_type;
         typedef typename event_callback<Args...>::handler_ptr handler_ptr;
+        struct queue_ref
+        {
+            async_event_queue& queue;
+            destroyed_flag queueDestroyed;
+
+            queue_ref(async_event_queue& queue) :
+                queue{ queue },
+                queueDestroyed{ queue }
+            {}
+        };
+        typedef std::shared_ptr<queue_ref> queue_ref_ptr;
         struct handler
         {
-            async_event_queue* queue;
+            queue_ref_ptr queueRef;
             uint32_t referenceCount;
             const void* clientId;
             handler_ptr callback;
@@ -264,12 +275,11 @@ namespace neolib
 
             handler(
                 async_event_queue& queue, 
-                uint32_t referenceCount, 
                 const void* clientId, 
                 handler_ptr callback,
                 bool handleInSameThreadAsEmitter = false) : 
-                queue{ &queue },
-                referenceCount{ referenceCount },
+                queueRef{ std::make_shared<queue_ref>(queue) },
+                referenceCount{ 0u },
                 clientId{ clientId },
                 callback{ callback },
                 handleInSameThreadAsEmitter{ handleInSameThreadAsEmitter }
@@ -300,6 +310,7 @@ namespace neolib
         typedef std::vector<context> context_list_t;
         struct instance_data
         {
+            bool ignoreErrors = false;
             event_trigger_type triggerType = event_trigger_type::Default;
             handler_list_t handlers;
             context_list_t contexts;
@@ -343,6 +354,10 @@ namespace neolib
             return *iMutex;
         }
     public:
+        void ignore_errors()
+        {
+            instance().ignoreErrors = true;
+        }
         event_trigger_type trigger_type() const
         {
             return instance().triggerType;
@@ -465,7 +480,7 @@ namespace neolib
         {
             std::scoped_lock lock{ *iMutex };
             invalidate_handler_list();
-            return event_handle{ control(), instance().handlers.emplace(async_event_queue::instance(), 0u, aUniqueId, std::make_shared<function_type>(aHandlerCallback)) };
+            return event_handle{ control(), instance().handlers.emplace(async_event_queue::instance(), aUniqueId, std::make_shared<function_type>(aHandlerCallback)) };
         }
         event_handle operator()(const function_type& aHandlerCallback, const void* aUniqueId = nullptr) const
         {
@@ -545,7 +560,7 @@ namespace neolib
         void enqueue(optional_scoped_lock& lock, handler& aHandler, bool aAsync, Args... aArguments) const
         {
             auto& emitterQueue = async_event_queue::instance();
-            if (!aAsync && aHandler.queue == &emitterQueue)
+            if (!aAsync && !aHandler.queueRef->queueDestroyed && &aHandler.queueRef->queue == &emitterQueue)
             {
                 auto mutex = iMutex;
                 auto callback = aHandler.callback;
@@ -559,7 +574,12 @@ namespace neolib
                 if (aHandler.handleInSameThreadAsEmitter)
                     emitterQueue.enqueue(std::move(ecb));
                 else
-                    aHandler.queue->enqueue(std::move(ecb));
+                {
+                    if (!aHandler.queueRef->queueDestroyed)
+                        aHandler.queueRef->queue.enqueue(std::move(ecb));
+                    else if (!instance().ignoreErrors)
+                        throw event_queue_destroyed();
+                }
             }
         }
         void unqueue() const
@@ -567,7 +587,8 @@ namespace neolib
             std::scoped_lock lock{ *iMutex };
             std::unordered_set<async_event_queue*> queues;
             for (auto const& h : instance().handlers)
-                queues.insert(h.queue);
+                if (!h.queueRef->queueDestroyed)
+                    queues.insert(&h.queueRef->queue);
             for (auto const& q : queues)
                 q->unqueue(*this);
         }
@@ -575,7 +596,8 @@ namespace neolib
         {
             std::scoped_lock lock{ *iMutex };
             for (auto& h : instance().handlers)
-                h.queue->remove(*this);
+                if (!h.queueRef->queueDestroyed)
+                    h.queueRef->queue.remove(*this);
             iInstanceDataPtr = nullptr;
             iInstanceData = std::nullopt;
         }
