@@ -53,6 +53,7 @@ namespace neolib
     {
         std::size_t iterationsLeft = kMaxiumPollIterations;
         bool didSome = false;
+        iNativeIoService.restart();
         while (iterationsLeft-- > 0)
         {
             if (iTask.halted())

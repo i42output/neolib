@@ -356,7 +356,9 @@ namespace neolib
         }
         bool sync_trigger(Args... aArguments) const
         {
-            if (trigger_type() == event_trigger_type::SynchronousDontQueue && trigger_type() == event_trigger_type::AsynchronousDontQueue)
+            if (!has_instance_data()) // no instance means no subscribers so no point triggering.
+                return false;
+            if (trigger_type() == event_trigger_type::SynchronousDontQueue)
                 unqueue();
             auto mutex = iMutex;
             optional_scoped_lock lock{ *mutex };
@@ -409,6 +411,8 @@ namespace neolib
         {
             if (!has_instance_data()) // no instance means no subscribers so no point triggering.
                 return;
+            if (trigger_type() == event_trigger_type::AsynchronousDontQueue)
+                unqueue();
             auto mutex = iMutex;
             optional_scoped_lock lock{ *mutex };
             destroyed_flag destroyed{ *this };

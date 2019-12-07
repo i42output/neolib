@@ -115,7 +115,7 @@ namespace neolib
     {
         std::scoped_lock lock{ iMutex };
         for (auto& e : iEvents)
-            if (&e->event() == &aEvent)
+            if (e != nullptr && &e->event() == &aEvent)
                 e = nullptr;
     }
 
