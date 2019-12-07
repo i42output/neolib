@@ -37,6 +37,7 @@ namespace neolib
     }
 
     async_event_queue::async_event_queue(async_task& aTask) :
+        iTask{ &aTask },
         iTimer
         {
             new callback_timer{
@@ -65,12 +66,17 @@ namespace neolib
     async_event_queue& async_event_queue::get_instance(async_task* aTask)
     {
         thread_local bool tInstantiated = false;
-        if (!tInstantiated && aTask == nullptr)
+        bool const alreadyInstantiated = tInstantiated;
+        if (!alreadyInstantiated && aTask == nullptr)
             throw async_event_queue_needs_a_task();
-        if (tInstantiated && aTask != nullptr)
-            throw async_event_queue_already_instantiated();
-        tInstantiated = true;
         thread_local async_event_queue tLocalInstance{ *aTask };
+        tInstantiated = true;
+        if (tLocalInstance.iTaskDestroyed)
+            throw async_event_queue_needs_a_task();
+        if (aTask == nullptr)
+            return tLocalInstance;
+        if (alreadyInstantiated && aTask != tLocalInstance.iTask)
+            throw async_event_queue_already_instantiated();
         return tLocalInstance;
     }
 

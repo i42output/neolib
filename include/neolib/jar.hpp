@@ -212,6 +212,10 @@ namespace neolib
         {
         }
     public:
+        std::size_t size() const
+        {
+            return jar().size();
+        }
         bool contains(cookie_type aCookie) const
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
@@ -230,6 +234,14 @@ namespace neolib
         value_type& operator[](cookie_type aCookie)
         {
             return const_cast<value_type&>(to_const(*this)[aCookie]);
+        }
+        const value_type& at_index(std::size_t aIndex) const
+        {
+            return jar().at(aIndex);
+        }
+        value_type& at_index(std::size_t aIndex)
+        {
+            return jar().at(aIndex);
         }
         cookie_type insert(const value_type& aItem)
         {

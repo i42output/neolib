@@ -223,6 +223,7 @@ namespace neolib
         bool has(const i_event& aEvent) const;
         bool publish_events();
     private:
+        async_task* iTask;
         std::recursive_mutex iMutex;
         std::unique_ptr<callback_timer> iTimer;
         event_list_t iEvents;
@@ -276,8 +277,24 @@ namespace neolib
         typedef neolib::jar<handler> handler_list_t;
         struct context
         {
-            bool accepted = false;
-            bool handlersChanged = false;
+            bool accepted;
+            std::atomic<bool> handlersChanged;
+            context() : 
+                accepted{ false },
+                handlersChanged{ false }
+            {
+            }
+            context(const context& aOther) : 
+                accepted{ aOther.accepted },
+                handlersChanged{ aOther.handlersChanged.load() }
+            {
+            }
+            context& operator=(const context& aOther)
+            {
+                accepted = aOther.accepted;
+                handlersChanged = aOther.handlersChanged.load();
+                return *this;
+            }
         };
         typedef std::vector<context> context_list_t;
         struct instance_data
@@ -287,7 +304,7 @@ namespace neolib
             context_list_t contexts;
             bool triggering = false;
             uint64_t triggerId = 0ull;
-            bool handlersChanged = false;
+            std::atomic<bool> handlersChanged = false;
         };
     public:
         event() : iAlias{ *this }, iMutex{ std::make_shared<std::recursive_mutex>() }, iControl{ nullptr }, iInstanceDataPtr{ nullptr }
@@ -374,9 +391,9 @@ namespace neolib
                     handler.triggerId = 0ull;
             }
             auto triggerId = ++instance().triggerId;
-            for (auto h = instance().handlers.begin(); h != instance().handlers.end();)
+            for (std::size_t handlerIndex = {}; handlerIndex < instance().handlers.size();)
             {
-                auto& handler = *h++;
+                auto& handler = instance().handlers.at_index(handlerIndex++);
                 if (handler.triggerId < triggerId)
                     handler.triggerId = triggerId;
                 else if (handler.triggerId == triggerId)
@@ -399,11 +416,8 @@ namespace neolib
                     instance().contexts.pop_back();
                     return false;
                 }
-                if (instance().contexts.back().handlersChanged)
-                {
-                    instance().contexts.back().handlersChanged = false;
-                    h = instance().handlers.begin();
-                }
+                if (instance().handlersChanged.exchange(false))
+                    handlerIndex = {};
             }
             instance().contexts.pop_back();
             return true;
@@ -426,9 +440,9 @@ namespace neolib
                     handler.triggerId = 0ull;
             }
             auto triggerId = ++instance().triggerId;
-            for (auto h = instance().handlers.begin(); h != instance().handlers.end();)
+            for (std::size_t handlerIndex = {}; handlerIndex < instance().handlers.size();)
             {
-                auto& handler = *h++;
+                auto& handler = instance().handlers.at_index(handlerIndex++);
                 if (handler.triggerId < triggerId)
                     handler.triggerId = triggerId;
                 else if (handler.triggerId == triggerId)
@@ -436,11 +450,8 @@ namespace neolib
                 enqueue(lock, handler, true, aArguments...);
                 if (destroyed)
                     return;
-                if (instance().handlersChanged)
-                {
-                    instance().handlersChanged = false;
-                    h = instance().handlers.begin();
-                }
+                if (instance().handlersChanged.exchange(false))
+                    handlerIndex = {};
             }
         }
         void accept() const
