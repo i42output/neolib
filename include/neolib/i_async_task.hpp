@@ -50,12 +50,15 @@ namespace neolib
 
     class i_io_service
     {
+        // constants
+    public:
+        static constexpr std::size_t kDefaultPollCount = 256;
         // construction
     public:
         virtual ~i_io_service() {}
         // operations
     public:
-        virtual bool do_io(bool aProcessEvents = true, std::size_t aMaximumPollCount = 0u) = 0;
+        virtual bool do_io(bool aProcessEvents = true, std::size_t aMaximumPollCount = kDefaultPollCount) = 0;
     };
 
     class i_async_task : public i_task
