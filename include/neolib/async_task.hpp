@@ -59,7 +59,7 @@ namespace neolib
         io_service(async_task& aTask) : iTask(aTask) {}
         // operations
     public:
-        bool do_io(bool aProcessEvents = true) override;
+        bool do_io(bool aProcessEvents = true, std::size_t aMaximumPollCount = 0u) override;
         native_io_service_type& native_object() { return iNativeIoService; }
         // attributes
     private:

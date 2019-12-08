@@ -44,28 +44,23 @@
 
 namespace neolib
 {
-    namespace
+    bool io_service::do_io(bool aProcessEvents, std::size_t aMaximumPollCount)
     {
-        const std::size_t kMaxiumPollIterations = 256;
-    }
-
-    bool io_service::do_io(bool aProcessEvents)
-    {
-        std::size_t iterationsLeft = kMaxiumPollIterations;
+        std::size_t iterationsLeft = aMaximumPollCount;
         bool didSome = false;
         iNativeIoService.restart();
-        while (iterationsLeft-- > 0)
+        do
         {
             if (iTask.halted())
                 return didSome;
             bool didSomeThisIteration = false;
             if (aProcessEvents)
                 didSomeThisIteration = (iTask.pump_messages() || didSomeThisIteration);
-            didSomeThisIteration = (iNativeIoService.poll_one() != 0 || didSomeThisIteration);
+            didSomeThisIteration = ((aMaximumPollCount == 0 ? iNativeIoService.poll() : iNativeIoService.poll_one()) != 0 || didSomeThisIteration);
             if (!didSomeThisIteration)
                 break;
             didSome = true;
-        }
+        } while (aMaximumPollCount != 0 && --iterationsLeft > 0);
         return didSome;
     }
 

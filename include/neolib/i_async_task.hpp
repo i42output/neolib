@@ -55,7 +55,7 @@ namespace neolib
         virtual ~i_io_service() {}
         // operations
     public:
-        virtual bool do_io(bool aProcessEvents = true) = 0;
+        virtual bool do_io(bool aProcessEvents = true, std::size_t aMaximumPollCount = 0u) = 0;
     };
 
     class i_async_task : public i_task
