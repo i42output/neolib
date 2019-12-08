@@ -93,6 +93,21 @@ namespace neolib
         return string_to_enum<Enum>(neolib::string{ aEnumerator });
     }
 
+    template <typename Enum>
+    inline std::optional<Enum> try_string_to_enum(const neolib::i_string& aEnumerator)
+    {
+        // todo: use bimap.
+        for (auto const& e : enum_enumerators_v<Enum>)
+            if (e.second() == aEnumerator)
+                return static_cast<Enum>(e.first());
+        return {};
+    }
+    template <typename Enum>
+    inline std::optional<Enum> try_string_to_enum(const std::string& aEnumerator)
+    {
+        return try_string_to_enum<Enum>(neolib::string{ aEnumerator });
+    }
+
     template <typename UnderlyingType>
     class i_basic_enum : public i_reference_counted
     {
