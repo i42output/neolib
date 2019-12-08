@@ -37,10 +37,9 @@
 
 #include <neolib/neolib.hpp>
 #include <list>
-#include "reference_counted.hpp"
-#include "i_list.hpp"
-#include "container_iterator.hpp"
-#include "container_helper.hpp"
+#include <neolib/reference_counted.hpp>
+#include <neolib/i_list.hpp>
+#include <neolib/container_iterator.hpp>
 
 namespace neolib
 {
@@ -54,13 +53,13 @@ namespace neolib
         typedef T value_type;
         typedef abstract_t<T> abstract_value_type;
         typedef std::list<value_type> container_type;
-        using typename abstract_type::size_type size_type;
-        using typename abstract_type::const_iterator const_iterator;
-        using typename abstract_type::iterator iterator;
-        using typename abstract_type::generic_container_type generic_container_type;
+        using typename abstract_type::size_type;
+        using typename abstract_type::const_iterator;
+        using typename abstract_type::iterator;
+        using typename abstract_type::generic_container_type;
     protected:
-        using typename abstract_type::abstract_const_iterator abstract_const_iterator;
-        using typename abstract_type::abstract_iterator abstract_iterator;
+        using typename abstract_type::abstract_const_iterator;
+        using typename abstract_type::abstract_iterator;
     protected:
         typedef container::const_iterator<T, typename container_type::const_iterator> container_const_iterator;
         typedef container::iterator<T, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
@@ -112,6 +111,6 @@ namespace neolib
         abstract_value_type& front() override { return to_abstract_type(iList.front()); }
         // attributes
     private:
-        std::list<ConcreteType> iList;
+        std::list<value_type> iList;
     };
 }
