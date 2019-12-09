@@ -174,4 +174,12 @@ namespace neolib
     {
         return std::strcmp(lhs.c_str(), rhs.c_str()) < 0;
     }
+
+    namespace string_literals
+    {
+        inline string operator"" _s(const char* str, size_t len)
+        {
+            return string{ str, len };
+        }
+    }
 }
