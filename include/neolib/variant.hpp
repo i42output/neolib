@@ -52,6 +52,7 @@ namespace neolib
     {
     public:
         typedef std::variant<none_t, Types...> value_type;
+        typedef std::size_t index_type;
     public:
         variant() :
             value_type()
@@ -188,6 +189,20 @@ namespace std
         { typedef typename std::variant_alternative<I, typename neolib::variant<Types...>::value_type>::type type; };
 
     using neolib::variant_visitors::visit;
+}
+
+namespace neolib
+{
+    template<typename T, typename Variant, std::size_t index = 0>
+    constexpr std::size_t index_of()
+    {
+        if constexpr (index == std::variant_size_v<Variant>)
+            return index - 1;
+        else if constexpr (std::is_same_v<std::variant_alternative_t<index, Variant>, T>)
+            return index - 1;
+        else
+            return index_of<T, Variant, index + 1>();
+    }
 }
 
 // Deprecated, use std::get.

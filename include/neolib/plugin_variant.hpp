@@ -104,6 +104,7 @@ namespace neolib
     public:
         typedef i_plugin_variant<Id, abstract_t<Types>...> abstract_type;
         using typename base_type::id_t;
+        using typename base_type::index_type;
         typedef variant<Types...> variant_type;
         // construction/assignment
     public:

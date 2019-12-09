@@ -60,6 +60,7 @@ namespace neolib
         // construction
     public:
         string(const char* aString) : iString{ aString } {}
+        string(const char* aString, std::size_t aLength) : iString{ aString, aLength } {}
         string(const std::string& aString = std::string{}) : iString{ aString } {}
         string(const neolib::quick_string& aOther) : iString{ aOther } {}
         string(const string& aOther) : iString{ aOther.to_std_string() } {}

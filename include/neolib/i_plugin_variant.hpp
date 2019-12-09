@@ -86,6 +86,7 @@ namespace neolib
     public:
         typedef self_type abstract_type;
         typedef Id id_t;
+        typedef std::size_t index_type;
         // construction/assignment
     public:
         ref_ptr<self_type> clone() const

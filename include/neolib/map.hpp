@@ -137,6 +137,13 @@ namespace neolib
             }
             return existing->second.second(); 
         }
+        // own
+    public:
+        template <typename... Args>
+        void emplace(Args&&... aArgs)
+        {
+            iMap.emplace(std::forward<Args>(aArgs)...);
+        }
     private:
         abstract_iterator* do_insert(void* memory, const abstract_key_type& aKey, const abstract_mapped_type& aMapped) override
         { 
@@ -231,6 +238,13 @@ namespace neolib
         abstract_iterator* do_end(void* memory) override { return new (memory) container_iterator{ iMap.end() }; }
         abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override { return new (memory) container_iterator(iMap.erase(static_cast<const container_const_iterator&>(aPosition))); }
         abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new (memory) container_iterator(iMap.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
+        // own
+    public:
+        template <typename... Args>
+        void emplace(Args&&... aArgs)
+        {
+            iMap.emplace(std::forward<Args>(aArgs)...);
+        }
         // from i_multimap
     private:
         abstract_iterator* do_insert(void* memory, const abstract_key_type& aKey, const abstract_mapped_type& aMapped) override
