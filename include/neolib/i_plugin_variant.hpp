@@ -71,6 +71,7 @@ namespace neolib
     }
 
     struct bad_variant_access : std::invalid_argument { bad_variant_access() : std::invalid_argument{ "neolib::bad_variant_access" } {} };
+    struct variant_type_not_equality_comparable : std::invalid_argument { variant_type_not_equality_comparable() : std::invalid_argument{ "neolib::variant_type_not_equality_comparable" } {} };
     struct variant_type_not_less_than_comparable : std::invalid_argument { variant_type_not_less_than_comparable() : std::invalid_argument{ "neolib::variant_type_not_less_than_comparable" } {} };
     struct variant_type_not_convertible : std::invalid_argument { variant_type_not_convertible() : std::invalid_argument{ "neolib::variant_type_not_convertible" } {} };
 

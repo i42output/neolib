@@ -37,6 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <type_traits>
+#include <boost/type_traits.hpp>
 #include <neolib/enum.hpp>
 #include <neolib/variant.hpp>
 #include <neolib/i_plugin_variant.hpp>
@@ -147,7 +148,10 @@ namespace neolib
             {
                 typedef std::remove_const_t<std::remove_reference_t<decltype(v)>> type;
                 typedef abstract_t<type> comparison_type;
-                result = (*static_cast<const comparison_type*>(data()) == *static_cast<const comparison_type*>(aRhs.data()));
+                if constexpr (boost::has_equal_to<comparison_type, comparison_type>::value)
+                    result = (*static_cast<const comparison_type*>(data()) == *static_cast<const comparison_type*>(aRhs.data()));
+                else
+                    throw variant_type_not_equality_comparable();
             }, *this);
             return result;
         }
@@ -157,22 +161,21 @@ namespace neolib
         }
         bool operator<(const abstract_type& aRhs) const override
         {
-            if constexpr (std::is_invocable_v<std::less<abstract_type>, abstract_type, abstract_type>)
+            if (index() != aRhs.index())
+                return index() < aRhs.index();
+            if (index() == 0u)
+                return false;
+            bool result = false;
+            visit([this, &aRhs, &result](auto&& v)
             {
-                if (index() != aRhs.index())
-                    return index() < aRhs.index();
-                if (index() == 0u)
-                    return false;
-                bool result = false;
-                visit([this, &aRhs, &result](auto&& v)
-                {
-                    typedef std::remove_const_t<std::remove_reference_t<decltype(v)>> type;
-                    typedef abstract_t<type> comparison_type;
+                typedef std::remove_const_t<std::remove_reference_t<decltype(v)>> type;
+                typedef abstract_t<type> comparison_type;
+                if constexpr (boost::has_less<comparison_type, comparison_type>::value)
                     result = (*static_cast<const comparison_type*>(data()) < *static_cast<const comparison_type*>(aRhs.data()));
-                }, *this);
-                return result;
-            }
-            throw variant_type_not_less_than_comparable();
+                else
+                    throw variant_type_not_less_than_comparable();
+            }, *this);
+            return result;
         }
         // state
     public:
