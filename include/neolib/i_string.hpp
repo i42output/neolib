@@ -67,6 +67,8 @@ namespace neolib
         virtual void append(const i_string& aOther) = 0;
         virtual void append(const char* aSource, size_type aSourceLength) = 0;
     public:
+        virtual void replace_all(const i_string& aSearch, const i_string& aReplace) = 0;
+    public:
         operator std::string() const { return to_std_string(); }
         i_string& operator=(const std::string& aOther) { assign(aOther); return *this; }
         size_type length() const { return size(); }
@@ -116,5 +118,5 @@ namespace neolib
         aStream >> temp;
         aString.assign(temp.c_str(), temp.size());
         return aStream;
-    }
 }
+    }

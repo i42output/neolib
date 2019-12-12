@@ -37,6 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <string>
+#include <boost/algorithm/string/replace.hpp>
 #include "reference_counted.hpp"
 #include "i_string.hpp"
 #include "container_iterator.hpp"
@@ -114,6 +115,8 @@ namespace neolib
         void append(const string& aOther) { iString.append(aOther.to_std_string_view()); }
         void append(const i_string& aOther) override { iString.append(aOther.to_std_string_view()); }
         void append(const char* aSource, size_type aSourceLength) override { iString.append(aSource, aSourceLength); }
+    public:
+        void replace_all(const i_string& aSearch, const i_string& aReplace) override { boost::replace_all(iString, aSearch.to_std_string_view(), aReplace.to_std_string_view()); }
         // attributes
     private:
         std::string iString;
