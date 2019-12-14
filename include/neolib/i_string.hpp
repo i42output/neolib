@@ -47,7 +47,7 @@ namespace neolib
     class i_string : public i_sequence_container<char, i_random_access_const_iterator<char>, i_random_access_iterator<char>, false>
     {
         typedef i_string self_type;
-        typedef i_sequence_container<char, i_random_access_const_iterator<char>, i_random_access_iterator<char> > base_type;
+        typedef i_sequence_container<char, i_random_access_const_iterator<char>, i_random_access_iterator<char>, false> base_type;
     public:
         typedef self_type abstract_type;
         typedef base_type::size_type size_type;
@@ -118,5 +118,5 @@ namespace neolib
         aStream >> temp;
         aString.assign(temp.c_str(), temp.size());
         return aStream;
-}
     }
+}
