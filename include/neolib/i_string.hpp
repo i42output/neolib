@@ -60,14 +60,15 @@ namespace neolib
         virtual const char* data() const = 0;
         virtual char* data() = 0;
         virtual const char* c_str() const = 0;
-        virtual const char& operator[](size_type aIndex) const = 0;
-        virtual char& operator[](size_type aIndex) = 0;
         virtual void assign(const i_string& aOther) = 0;
         virtual void assign(const char* aSource, size_type aSourceLength) = 0;
         virtual void append(const i_string& aOther) = 0;
         virtual void append(const char* aSource, size_type aSourceLength) = 0;
     public:
         virtual void replace_all(const i_string& aSearch, const i_string& aReplace) = 0;
+    public:
+        const char& operator[](size_type aIndex) const { return data()[aIndex]; }
+        char& operator[](size_type aIndex) { return data()[aIndex]; }
     public:
         operator std::string() const { return to_std_string(); }
         i_string& operator=(const std::string& aOther) { assign(aOther); return *this; }
