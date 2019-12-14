@@ -36,22 +36,24 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include "i_container.hpp"
+#include <neolib/i_container.hpp>
 
 namespace neolib
 {
     template <typename T, typename ConstIteratorType, typename IteratorType, bool DefaultComparisonOperators = true>
     class i_sequence_container : public i_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators>
     {
-    protected:
-        typedef i_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators> generic_container_type;
+        typedef i_sequence_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators> self_type;
+        typedef i_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators> base_type;
     public:
-        typedef typename generic_container_type::value_type value_type;
-        typedef typename generic_container_type::size_type size_type;
-        typedef typename generic_container_type::const_iterator const_iterator;
-        typedef typename generic_container_type::iterator iterator;
-        typedef typename generic_container_type::abstract_const_iterator abstract_const_iterator;
-        typedef typename generic_container_type::abstract_iterator abstract_iterator;
+        typedef self_type abstract_type;
+    public:
+        using typename base_type::value_type;
+        using typename base_type::size_type;
+        using typename base_type::const_iterator;
+        using typename base_type::iterator;
+        using typename base_type::abstract_const_iterator;
+        using typename base_type::abstract_iterator;
     public:
         virtual size_type capacity() const = 0;
         virtual void reserve(size_type aCapacity) = 0;

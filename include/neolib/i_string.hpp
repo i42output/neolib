@@ -39,36 +39,30 @@
 #include <string>
 #include <string_view>
 #include <iostream>
-#include "fwd_abstract.hpp"
-#include "i_sequence_container.hpp"
+#include <neolib/fwd_abstract.hpp>
+#include <neolib/i_random_access_container.hpp>
 
 namespace neolib
 {
-    class i_string : public i_sequence_container<char, i_random_access_const_iterator<char>, i_random_access_iterator<char>, false>
+    class i_string : public i_random_access_container<char, false>
     {
         typedef i_string self_type;
-        typedef i_sequence_container<char, i_random_access_const_iterator<char>, i_random_access_iterator<char>, false> base_type;
+        typedef i_random_access_container<char, false> base_type;
     public:
         typedef self_type abstract_type;
-        typedef base_type::size_type size_type;
-        typedef const char* const_fast_iterator;
-        typedef char* fast_iterator;
+    public:
+        using typename base_type::value_type;
+        using typename base_type::size_type;
     public:
         virtual i_string& operator=(const i_string& aOther) = 0;
     public:
-        virtual const char* cdata() const = 0;
-        virtual const char* data() const = 0;
-        virtual char* data() = 0;
-        virtual const char* c_str() const = 0;
+        virtual const value_type* c_str() const = 0;
         virtual void assign(const i_string& aOther) = 0;
-        virtual void assign(const char* aSource, size_type aSourceLength) = 0;
+        virtual void assign(const value_type* aSource, size_type aSourceLength) = 0;
         virtual void append(const i_string& aOther) = 0;
-        virtual void append(const char* aSource, size_type aSourceLength) = 0;
+        virtual void append(const value_type* aSource, size_type aSourceLength) = 0;
     public:
         virtual void replace_all(const i_string& aSearch, const i_string& aReplace) = 0;
-    public:
-        const char& operator[](size_type aIndex) const { return data()[aIndex]; }
-        char& operator[](size_type aIndex) { return data()[aIndex]; }
     public:
         operator std::string() const { return to_std_string(); }
         i_string& operator=(const std::string& aOther) { assign(aOther); return *this; }
@@ -77,13 +71,6 @@ namespace neolib
         void append(const std::string& aSource) { append(aSource.c_str(), aSource.size()); }
         std::string to_std_string() const { return std::string(c_str(), size()); }
         std::string_view to_std_string_view() const { return std::string_view(c_str(), size()); }
-    public:
-        const_fast_iterator cfbegin() const { return cdata(); }
-        const_fast_iterator cfend() const { return cdata() + size(); }
-        const_fast_iterator fbegin() const { return data(); }
-        const_fast_iterator fend() const { return data() + size(); }
-        fast_iterator fbegin() { return data(); }
-        fast_iterator fend() { return data() + size(); }
     };
 
     inline i_string& operator+=(i_string& lhs, const i_string& rhs)

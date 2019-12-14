@@ -80,22 +80,22 @@ namespace neolib
         container_type& container() { return iVector; }
         const container_type& container() const { return iVector; }
         // implementation
-    public:
         // from i_container
+    public:
         size_type size() const override { return iVector.size(); }
         size_type max_size() const override { return iVector.max_size(); }
         void clear() override { iVector.clear(); }
         void assign(const generic_container_type& aOther) override { if (&aOther == this) return; iVector.assign(aOther.begin(), aOther.end()); }
-    private:
         // from i_container
+    private:
         abstract_const_iterator* do_begin(void* memory) const override { return new (memory) container_const_iterator(iVector.begin()); }
         abstract_const_iterator* do_end(void* memory) const override { return new (memory) container_const_iterator(iVector.end()); }
         abstract_iterator* do_begin(void* memory) override { return new (memory) container_iterator(iVector.begin()); }
         abstract_iterator* do_end(void* memory) override { return new (memory) container_iterator(iVector.end()); }
         abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override { return new (memory) container_iterator(iVector.erase(static_cast<const container_const_iterator&>(aPosition))); }
         abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new (memory) container_iterator(iVector.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
-    public:
         // from i_sequence_container
+    public:
         size_type capacity() const override { return iVector.size(); }
         void reserve(size_type aCapacity) override { iVector.reserve(aCapacity); }
         void resize(size_type aSize, const abstract_value_type& aValue) override { iVector.resize(aSize, aValue); }
@@ -103,13 +103,14 @@ namespace neolib
         void pop_back() override { iVector.pop_back(); }
         const abstract_value_type& back() const override { return iVector.back(); }
         abstract_value_type& back() override { return iVector.back(); }
-    private:
-        // from i_sequence_container
-        abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const abstract_value_type& aValue) override { return new (memory) container_iterator(iVector.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
+        // from i_random_access_container
     public:
-        // from i_vector
-        const abstract_value_type& operator[](size_type aIndex) const override { return iVector[aIndex]; }
-        abstract_value_type& operator[](size_type aIndex) override { return iVector[aIndex]; }
+        const value_type* cdata() const override { return iVector.data(); }
+        const value_type* data() const override { return iVector.data(); }
+        value_type* data() override { return iVector.data(); }
+        // from i_sequence_container
+    private:
+        abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const abstract_value_type& aValue) override { return new (memory) container_iterator(iVector.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
         // attributes
     private:
         std::vector<value_type> iVector;

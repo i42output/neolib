@@ -1,4 +1,4 @@
-// i_vector.hpp
+// i_random_access_container.hpp
 /*
  *  Copyright (c) 2019 Leigh Johnston.
  *
@@ -36,17 +36,35 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <neolib/i_random_access_container.hpp>
+#include <neolib/i_sequence_container.hpp>
 
 namespace neolib
 {
-    template <typename T>
-    class i_vector : public i_random_access_container<T, true>
+    template <typename T, bool DefaultComparisonOperators = true>
+    class i_random_access_container : public i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T>, DefaultComparisonOperators>
     {
-        typedef i_vector<T> self_type;
+        typedef i_random_access_container<T, DefaultComparisonOperators> self_type;
+        typedef i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T>, DefaultComparisonOperators> base_type;
     public:
         typedef self_type abstract_type;
     public:
-        // todo abstract push_back et al
+        using typename base_type::value_type;
+        using typename base_type::size_type;
+        typedef const value_type* const_fast_iterator;
+        typedef value_type* fast_iterator;
+    public:
+        virtual const value_type* cdata() const = 0;
+        virtual const value_type* data() const = 0;
+        virtual value_type* data() = 0;
+    public:
+        const value_type& operator[](size_type aIndex) const { return data()[aIndex]; }
+        value_type& operator[](size_type aIndex) { return data()[aIndex]; }
+    public:
+        const_fast_iterator cfbegin() const { return cdata(); }
+        const_fast_iterator cfend() const { return cdata() + size(); }
+        const_fast_iterator fbegin() const { return data(); }
+        const_fast_iterator fend() const { return data() + size(); }
+        fast_iterator fbegin() { return data(); }
+        fast_iterator fend() { return data() + size(); }
     };
 }

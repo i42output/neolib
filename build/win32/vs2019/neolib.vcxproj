@@ -169,6 +169,7 @@
     <ClInclude Include="..\..\..\include\neolib\container_iterator.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_async_task.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_event.hpp" />
+    <ClInclude Include="..\..\..\include\neolib\i_random_access_container.hpp" />
     <ClInclude Include="..\..\..\include\neolib\jar.hpp" />
     <ClInclude Include="..\..\..\include\neolib\crc.hpp" />
     <ClInclude Include="..\..\..\include\neolib\custom_type.hpp" />
