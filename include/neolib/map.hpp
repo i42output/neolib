@@ -137,6 +137,14 @@ namespace neolib
             }
             return existing->second.second(); 
         }
+        const abstract_mapped_type& at(const abstract_key_type& aKey) const override
+        {
+            return iMap.at(aKey).second();
+        }
+        abstract_mapped_type& at(const abstract_key_type& aKey) override
+        {
+            return iMap.at(aKey).second();
+        }
         // own
     public:
         template <typename... Args>

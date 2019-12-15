@@ -59,6 +59,8 @@ namespace neolib
         typedef typename base_type::iterator iterator;
     public:
         virtual abstract_mapped_type& operator[](const abstract_key_type& aKey) = 0;
+        virtual const abstract_mapped_type& at(const abstract_key_type& aKey) const = 0;
+        virtual abstract_mapped_type& at(const abstract_key_type& aKey) = 0;
     public:
         iterator insert(const abstract_value_type& aValue) { iterator result; return do_insert(result.storage(), aValue.first(), aValue.second()); }
         iterator insert(const abstract_key_type& aKey, const abstract_mapped_type& aMapped) { iterator result; return do_insert(result.storage(), aKey, aMapped); }
