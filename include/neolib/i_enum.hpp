@@ -176,6 +176,15 @@ namespace neolib
         }
     };
 
+    template <typename T>
+    using i_enum_t = i_basic_enum<std::underlying_type_t<T>>;
+
+    template <typename Enum, typename StringT = string>
+    inline StringT enum_to_string(const i_enum_t<Enum>& aEnumerator, bool aMustEnumerate = false)
+    {
+        return enum_to_string(aEnumerator.value<Enum>(), aMustEnumerate);
+    }
+
     template <typename Enum>
     inline std::enable_if_t<std::is_enum_v<Enum>, bool> operator==(const i_basic_enum<std::underlying_type_t<Enum>>& lhs, Enum rhs)
     {
@@ -223,7 +232,4 @@ namespace neolib
     typedef i_basic_enum<int64_t> i_enum_i64;
 
     typedef i_enum_i32 i_enum;
-
-    template <typename T>
-    using i_enum_t = i_basic_enum<std::underlying_type_t<T>>;
 }
