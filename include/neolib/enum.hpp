@@ -66,6 +66,10 @@ namespace neolib
             iValue{ aValue }
         {
         }
+        basic_enum(const abstract_type& aOther) :
+            iValue{ aOther.value<enum_type>() }
+        {
+        }
         // state
     public:
         underlying_type value() const override
