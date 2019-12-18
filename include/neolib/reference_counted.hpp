@@ -207,6 +207,12 @@ namespace neolib
             return *this;
         }
     public:
+        template <typename Interface2>
+        ref_ptr<Interface2> as()
+        {
+            return ref_ptr<Interface2>{ *this };
+        }
+    public:
         bool reference_counted() const override
         {
             return iReferenceCounted;
