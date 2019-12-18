@@ -62,7 +62,7 @@ namespace neolib
                 aList.push_back(
                     [](const Visitor& aVisitor, Variant& aThis)
                     {
-                        typedef std::remove_const_t<std::remove_reference_t<T>> type;
+                        typedef std::decay_t<T> type;
                         aVisitor(aThis.get<type>());
                     });
                 return funky_gen_visit<Visitor, Variant, Types...>(aList);

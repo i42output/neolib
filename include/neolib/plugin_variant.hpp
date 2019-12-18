@@ -63,7 +63,7 @@ namespace neolib
                 aList.push_back(
                     [](V& aThis, const void* aData)
                     {
-                        typedef std::remove_const_t<std::remove_reference_t<T>> type;
+                        typedef std::decay_t<T> type;
                         typedef abstract_t<type> assign_type;
                         aThis = *static_cast<const assign_type*>(aData);
                     });
@@ -85,7 +85,7 @@ namespace neolib
                 aList.push_back(
                     [](V& aThis, void* aData)
                     {
-                        typedef std::remove_const_t<std::remove_reference_t<T>> type;
+                        typedef std::decay_t<T> type;
                         typedef abstract_t<type> move_assign_type;
                         aThis = static_cast<move_assign_type&&>(*static_cast<move_assign_type*>(aData));
                     });
@@ -97,7 +97,7 @@ namespace neolib
     template <typename Id, typename... Types>
     class plugin_variant : 
         public reference_counted<i_plugin_variant<Id, abstract_t<Types>...>>,
-        public variant<Types...>
+        private variant<Types...>
     {
         typedef plugin_variant<Id, Types...> self_type;
         typedef reference_counted<i_plugin_variant<Id, abstract_t<Types>...>> base_type;
@@ -146,13 +146,13 @@ namespace neolib
             bool result = false;
             visit([this, &aRhs, &result](auto&& v)
             {
-                typedef std::remove_const_t<std::remove_reference_t<decltype(v)>> type;
+                typedef std::decay_t<decltype(v)> type;
                 typedef abstract_t<type> comparison_type;
                 if constexpr (boost::has_equal_to<comparison_type, comparison_type>::value)
                     result = (*static_cast<const comparison_type*>(data()) == *static_cast<const comparison_type*>(aRhs.data()));
                 else
                     throw variant_type_not_equality_comparable();
-            }, *this);
+            }, for_visitor());
             return result;
         }
         bool operator!=(const abstract_type& aRhs) const
@@ -168,13 +168,13 @@ namespace neolib
             bool result = false;
             visit([this, &aRhs, &result](auto&& v)
             {
-                typedef std::remove_const_t<std::remove_reference_t<decltype(v)>> type;
+                typedef std::decay_t<decltype(v)> type;
                 typedef abstract_t<type> comparison_type;
                 if constexpr (boost::has_less<comparison_type, comparison_type>::value)
                     result = (*static_cast<const comparison_type*>(data()) < *static_cast<const comparison_type*>(aRhs.data()));
                 else
                     throw variant_type_not_less_than_comparable();
-            }, *this);
+            }, for_visitor());
             return result;
         }
         // state
@@ -193,6 +193,9 @@ namespace neolib
         {
             return variant_type::operator==(none);
         }
+        // visiting
+    public:
+        using variant_type::for_visitor;
         // meta
     public:
         const typename i_enum_t<Id>::enumerators_t& ids() const override
@@ -212,13 +215,13 @@ namespace neolib
         const void* data() const override
         {
             const void* result = nullptr;
-            visit([&result](auto&& v) { result = &v; }, *this);
+            visit([&result](auto&& v) { result = &v; }, for_visitor());
             return result;
         }
         void* data() override
         {
             void* result = nullptr;
-            visit([&result](auto&& v) { result = &v; }, *this);
+            visit([&result](auto&& v) { result = &v; }, for_visitor());
             return result;
         }
         abstract_type* do_clone() const override

@@ -53,6 +53,8 @@ namespace neolib
         typedef const value_type* const_fast_iterator;
         typedef value_type* fast_iterator;
     public:
+        using base_type::size;
+    public:
         virtual const value_type* cdata() const = 0;
         virtual const value_type* data() const = 0;
         virtual value_type* data() = 0;
