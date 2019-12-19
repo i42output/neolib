@@ -110,25 +110,25 @@ namespace neolib
     using abstract_t = typename detail::abstract_type<T>::type;
 
     template <typename T, typename = std::enable_if_t<detail::abstract_type<T>::value, sfinae>>
-    inline const abstract_t<T>& to_abstract_type(const T& aArgument)
+    inline const abstract_t<T>& to_abstract(const T& aArgument)
     {
         return static_cast<const abstract_t<T>&>(aArgument);
     }
 
     template <typename T, typename = std::enable_if_t<detail::abstract_type<T>::value, sfinae>>
-    inline abstract_t<T>& to_abstract_type(T& aArgument)
+    inline abstract_t<T>& to_abstract(T& aArgument)
     {
         return static_cast<abstract_t<T>&>(aArgument);
     }
 
     template <typename T1, typename T2>
-    inline const abstract_t<pair<T1, T2>>& to_abstract_type(const std::pair<T1, pair<T1, T2>>& aArgument)
+    inline const abstract_t<pair<T1, T2>>& to_abstract(const std::pair<T1, pair<T1, T2>>& aArgument)
     {
         return static_cast<const abstract_t<pair<T1, T2>>&>(aArgument.second);
     }
 
     template <typename T1, typename T2>
-    inline abstract_t<neolib::pair<T1, T2>>& to_abstract_type(std::pair<T1, pair<T1, T2>>& aArgument)
+    inline abstract_t<neolib::pair<T1, T2>>& to_abstract(std::pair<T1, pair<T1, T2>>& aArgument)
     {
         return static_cast<abstract_t<pair<T1, T2>>&>(aArgument.second);
     }

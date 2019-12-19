@@ -83,7 +83,7 @@ namespace neolib
         public:
             abstract_iterator& operator++() override { ++iContainerIterator; return *this; }
             abstract_iterator& operator--() override { --iContainerIterator; return *this; }
-            reference operator*() const override { return to_abstract_type(*iContainerIterator); }
+            reference operator*() const override { return to_abstract(*iContainerIterator); }
             pointer operator->() const override { return &(**this); }
             bool operator==(const abstract_base_iterator& aOther) const override { return iContainerIterator == static_cast<const self_type&>(aOther).iContainerIterator; }
             bool operator!=(const abstract_base_iterator& aOther) const override { return iContainerIterator != static_cast<const self_type&>(aOther).iContainerIterator; }
@@ -180,7 +180,7 @@ namespace neolib
         public:
             abstract_iterator& operator++() override { ++iContainerIterator; return *this; }
             abstract_iterator& operator--() override { --iContainerIterator; return *this; }
-            reference operator*() const override { return to_abstract_type(*iContainerIterator); }
+            reference operator*() const override { return to_abstract(*iContainerIterator); }
             pointer operator->() const override { return &(**this); }
             bool operator==(const abstract_base_iterator& aOther) const override { return iContainerIterator == static_cast<const self_type&>(aOther).iContainerIterator; }
             bool operator!=(const abstract_base_iterator& aOther) const override { return iContainerIterator != static_cast<const self_type&>(aOther).iContainerIterator; }

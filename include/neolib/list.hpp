@@ -98,8 +98,8 @@ namespace neolib
         void resize(size_type aSize, const abstract_value_type& aValue) override { iList.resize(aSize, aValue); }
         void push_back(const abstract_value_type& aValue) override { iList.push_back(aValue); }
         void pop_back() override { iList.pop_back(); }
-        const abstract_value_type& back() const override { return to_abstract_type(iList.back()); }
-        abstract_value_type& back() override { return to_abstract_type(iList.back()); }
+        const abstract_value_type& back() const override { return to_abstract(iList.back()); }
+        abstract_value_type& back() override { return to_abstract(iList.back()); }
     private:
         // from i_sequence_container
         abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const abstract_value_type& aValue) override { return new (memory) container_iterator(iList.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
@@ -107,8 +107,8 @@ namespace neolib
         // from i_list
         void push_front(const abstract_value_type& aValue) override { iList.push_front(aValue); }
         void pop_front() override { iList.pop_front(); }
-        const abstract_value_type& front() const override { return to_abstract_type(iList.front()); }
-        abstract_value_type& front() override { return to_abstract_type(iList.front()); }
+        const abstract_value_type& front() const override { return to_abstract(iList.front()); }
+        abstract_value_type& front() override { return to_abstract(iList.front()); }
         // attributes
     private:
         std::list<value_type> iList;

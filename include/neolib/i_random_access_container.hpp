@@ -59,14 +59,27 @@ namespace neolib
         virtual const value_type* data() const = 0;
         virtual value_type* data() = 0;
     public:
-        const value_type& operator[](size_type aIndex) const { return data()[aIndex]; }
-        value_type& operator[](size_type aIndex) { return data()[aIndex]; }
+        using base_type::begin;
+        template <typename T_ = T>
+        std::enable_if_t<std::is_abstract_v<T_>, const value_type&> operator[](size_type aIndex) const { return *std::next(begin(), aIndex); }
+        template <typename T_ = T>
+        std::enable_if_t<std::is_abstract_v<T_>, value_type&> operator[](size_type aIndex) { return *std::next(begin(), aIndex); }
+        template <typename T_ = T>
+        std::enable_if_t<!std::is_abstract_v<T_>, const value_type&> operator[](size_type aIndex) const { return data()[aIndex]; }
+        template <typename T_ = T>
+        std::enable_if_t<!std::is_abstract_v<T_>, value_type&> operator[](size_type aIndex) { return data()[aIndex]; }
     public:
-        const_fast_iterator cfbegin() const { return cdata(); }
-        const_fast_iterator cfend() const { return cdata() + size(); }
-        const_fast_iterator fbegin() const { return data(); }
-        const_fast_iterator fend() const { return data() + size(); }
-        fast_iterator fbegin() { return data(); }
-        fast_iterator fend() { return data() + size(); }
+        template <typename T_ = T>
+        std::enable_if_t<!std::is_abstract_v<T_>, const_fast_iterator> cfbegin() const { return cdata(); }
+        template <typename T_ = T>
+        std::enable_if_t<!std::is_abstract_v<T_>, const_fast_iterator> cfend() const { return cdata() + size(); }
+        template <typename T_ = T>
+        std::enable_if_t<!std::is_abstract_v<T_>, const_fast_iterator> fbegin() const { return data(); }
+        template <typename T_ = T>
+        std::enable_if_t<!std::is_abstract_v<T_>, const_fast_iterator> fend() const { return data() + size(); }
+        template <typename T_ = T>
+        std::enable_if_t<!std::is_abstract_v<T_>, fast_iterator> fbegin() { return data(); }
+        template <typename T_ = T>
+        std::enable_if_t<!std::is_abstract_v<T_>, fast_iterator> fend() { return data() + size(); }
     };
 }

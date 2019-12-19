@@ -40,3 +40,5 @@
 /unit_tests/NoFussJSON/build/win32/vs2019/NoFussJSONTest/NoFussJSONTest.vcxproj.user
 /unit_tests/NoFussJSON/build/win32/vs2019/NoFussJSONTest/x64/Debug
 /build/win32/vs2019/x64/Tools
+/build/win32/vs2019/x64/Tools - Debug
+/build/win32/vs2019/x64/Tools_Debug
