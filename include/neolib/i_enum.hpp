@@ -48,6 +48,7 @@ namespace neolib
     const enum_enumerators_t<Enum> enum_enumerators_v;
 
     #define declare_enum_string( enumName, enumEnumerator ) { static_cast<std::underlying_type_t<enumName>>(enumName::enumEnumerator), neolib::string{ #enumEnumerator } },
+    #define declare_enum_string_explicit( enumName, enumEnumerator, enumString ) { static_cast<std::underlying_type_t<enumName>>(enumName::enumEnumerator), neolib::string{ #enumString } },
 
     struct bad_enum_value : std::runtime_error { bad_enum_value(const std::string& aString) : std::runtime_error{ "neolib: bad enum value '" + aString + "'" } {} };
 
