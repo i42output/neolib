@@ -38,9 +38,8 @@
 #include <neolib/neolib.hpp>
 #include <string>
 #include <vector>
-#include "string_numeric.hpp"
-#include "string_utf.hpp"
-#include "string_ci.hpp"
+#include <neolib/string_numeric.hpp>
+#include <neolib/string_utf.hpp>
 
 namespace neolib 
 {

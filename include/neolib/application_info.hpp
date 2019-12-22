@@ -37,10 +37,11 @@
 
 #include <neolib/neolib.hpp>
 #include <boost/filesystem.hpp>
-#include "vector.hpp"
-#include "string.hpp"
-#include "version.hpp"
-#include "i_application_info.hpp"
+#include <neolib/string_ci.hpp>
+#include <neolib/vector.hpp>
+#include <neolib/string.hpp>
+#include <neolib/version.hpp>
+#include <neolib/i_application_info.hpp>
 
 namespace neolib
 {

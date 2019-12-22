@@ -37,6 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <string>
+#include <neolib/string_utils.hpp>
 
 namespace neolib 
 {

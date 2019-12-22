@@ -44,7 +44,7 @@
 
 #include <neolib/variant.hpp>
 #include <neolib/plugin_event.hpp>
-#include <neolib/string_utils.hpp>
+#include <neolib/string_ci.hpp>
 #include <neolib/packet_stream.hpp>
 #include <neolib/string_packet.hpp>
 

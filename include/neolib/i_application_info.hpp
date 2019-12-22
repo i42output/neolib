@@ -36,9 +36,9 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include "i_vector.hpp"
-#include "i_string.hpp"
-#include "i_version.hpp"
+#include <neolib/i_vector.hpp>
+#include <neolib/i_string.hpp>
+#include <neolib/i_version.hpp>
 
 namespace neolib
 {
