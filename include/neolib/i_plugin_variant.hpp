@@ -157,10 +157,6 @@ namespace neolib
         // meta
     public:
         virtual const typename i_enum_t<Id>::enumerators_t& ids() const = 0;
-        std::string which_as_string() const
-        {
-            ids().enumerators().find(which())->second.to_std_string();
-        }
         // implementation
     private:
         virtual std::size_t index() const = 0;

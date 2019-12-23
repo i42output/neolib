@@ -157,7 +157,8 @@ namespace neolib
         // meta
     public:
         virtual void to_string(i_string& aString) const = 0;
-        std::string to_string() const { string s; to_string(s); return s.to_std_string(); }
+        string to_string() const { string s; to_string(s); return s; }
+        std::string to_std_string() const { return to_string().to_std_string(); }
         virtual const enumerators_t& enumerators() const = 0;
         // implementation
     private:

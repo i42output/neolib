@@ -148,9 +148,11 @@ namespace neolib
         // own
     public:
         template <typename Key, typename... Args>
-        void emplace(Key&& aKey, Args&&... aArgs)
+        value_type& emplace(Key&& aKey, Args&&... aArgs)
         {
-            iMap.emplace(std::forward<Key>(aKey), typename container_type::mapped_type{ aKey, mapped_type{ std::forward<Args>(aArgs)... } });
+            auto result = iMap.emplace(std::forward<Key>(aKey), 
+                typename container_type::mapped_type{ aKey, mapped_type{ std::forward<Args>(aArgs)... } });
+            return result.first->second;
         }
     private:
         abstract_iterator* do_insert(void* memory, const abstract_key_type& aKey, const abstract_mapped_type& aMapped) override
