@@ -113,7 +113,7 @@ namespace neolib
         return aStream;
     }
 
-    inline std::string to_string(const uuid& aId)
+    inline std::string uuid_to_string(const uuid& aId)
     {
         std::ostringstream oss;
         oss << aId;
