@@ -55,14 +55,24 @@ namespace neolib
     public:
         typedef typename abstract_const_iterator::iterator_wrapper const_iterator;
         typedef typename abstract_iterator::iterator_wrapper iterator;
+        typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+        typedef std::reverse_iterator<iterator> reverse_iterator;
     public:
         virtual size_type size() const = 0;
         virtual size_type max_size() const = 0;
         bool empty() const { return size() == 0; }
-        const_iterator begin() const { const_iterator result; return do_begin(result.storage()); }
-        const_iterator end() const { const_iterator result; return do_end(result.storage()); }
+        const_iterator cbegin() const { const_iterator result; return do_begin(result.storage()); }
+        const_iterator begin() const { return cbegin(); }
         iterator begin() { iterator result; return do_begin(result.storage()); }
+        const_iterator cend() const { const_iterator result; return do_end(result.storage()); }
+        const_iterator end() const { return cend(); }
         iterator end() { iterator result; return do_end(result.storage()); }
+        const_reverse_iterator crbegin() const { return const_reverse_iterator{ end() }; }
+        const_reverse_iterator rbegin() const { return crbegin(); }
+        reverse_iterator rbegin() { return reverse_iterator{ end() }; }
+        const_reverse_iterator crend() const { return const_reverse_iterator{ begin() }; }
+        const_reverse_iterator rend() const { return crend(); }
+        reverse_iterator rend() { return reverse_iterator{ begin() }; }
         iterator erase(const abstract_iterator& aPosition) { iterator result; return do_erase(result.storage(), const_iterator(aPosition)); }
         iterator erase(const abstract_const_iterator& aPosition) { iterator result; return do_erase(result.storage(), aPosition); }
         iterator erase(const abstract_iterator& aFirst, const abstract_iterator& aLast) { iterator result; return do_erase(result.storage(), const_iterator(aFirst), const_iterator(aLast)); }

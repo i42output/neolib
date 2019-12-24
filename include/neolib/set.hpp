@@ -36,9 +36,9 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include "mutable_set.hpp"
-#include "container_iterator.hpp"
-#include "i_set.hpp"
+#include <neolib/mutable_set.hpp>
+#include <neolib/container_iterator.hpp>
+#include <neolib/i_set.hpp>
 
 namespace neolib
 {
