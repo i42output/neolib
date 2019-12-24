@@ -42,9 +42,13 @@ namespace neolib
     template <typename T1, typename T2>
     class i_pair
     {
+        typedef i_pair<T1, T2> self_type;
     public:
+        typedef self_type abstract_type;
         typedef T1 first_type;
         typedef T2 second_type;
+    public:
+        virtual self_type& operator=(const self_type& aOther) = 0;
     public:
         virtual const first_type& first() const = 0;
         virtual first_type& first() = 0;

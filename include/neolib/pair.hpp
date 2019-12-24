@@ -44,25 +44,40 @@ namespace neolib
     template <typename T1, typename T2>
     class pair : public i_pair<abstract_t<T1>, abstract_t<T2>>, public std::pair<T1, T2>
     {
+        typedef pair<T1, T2> self_type;
+        typedef i_pair<abstract_t<T1>, abstract_t<T2>> base_type;
     public:
-        typedef i_pair<abstract_t<T1>, abstract_t<T2>> abstract_type;
+        using typename base_type::abstract_type;
         typedef abstract_t<T1> first_abstract_type;
         typedef abstract_t<T2> second_abstract_type;
         typedef T1 first_type;
         typedef T2 second_type;
     private:
-        typedef std::pair<first_type, second_type> concrete_base;
+        typedef std::pair<first_type, second_type> concrete_type;
     public:
-        pair() : concrete_base{ first_type{}, second_type{} } {}
-        pair(const abstract_type& aPair) : concrete_base{ first_type{ aPair.first() }, second_type{ aPair.second() } } {}
-        pair(const concrete_base& aPair) : concrete_base{ aPair } {}
+        pair() : concrete_type{ first_type{}, second_type{} } {}
+        pair(const abstract_type& aPair) : concrete_type{ first_type{ aPair.first() }, second_type{ aPair.second() } } {}
+        pair(const concrete_type& aPair) : concrete_type{ aPair } {}
         template <typename T3, typename T4>
-        pair(T3&& aFirst, T4&& aSecond) : concrete_base{ std::forward<T3>(aFirst), std::forward<T4>(aSecond) } {}
+        pair(T3&& aFirst, T4&& aSecond) : concrete_type{ std::forward<T3>(aFirst), std::forward<T4>(aSecond) } {}
     public:
-        const first_abstract_type& first() const override { return concrete_base::first; }
-        first_abstract_type& first() override { return concrete_base::first; }
-        const second_abstract_type& second() const override { return concrete_base::second; }
-        second_abstract_type& second() override { return concrete_base::second; }
+        abstract_type& operator=(const abstract_type& aOther) override { return assign(aOther); }
+    public:
+        const first_abstract_type& first() const override { return concrete_type::first; }
+        first_abstract_type& first() override { return concrete_type::first; }
+        const second_abstract_type& second() const override { return concrete_type::second; }
+        second_abstract_type& second() override { return concrete_type::second; }
+    public:
+        abstract_type& assign(const abstract_type& aOther)
+        {
+            if constexpr (!std::is_const_v<first_type> && !std::is_const_v<second_type>)
+            {
+                concrete_type::operator=(concrete_type{ first_type{ aOther.first() }, second_type{ aOther.second() } });
+                return *this;
+            }
+            else
+                throw std::logic_error("neolib::pair isn't assignable (const value_type)");
+        }
     };
 
     template <typename T1, typename T2>
