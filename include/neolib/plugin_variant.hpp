@@ -112,11 +112,13 @@ namespace neolib
         using variant_type::variant_type;
         plugin_variant(const self_type& aOther)
         {
-            do_assign(aOther.which(), aOther.data());
+            if (!aOther.empty())
+                do_assign(aOther.which(), aOther.data());
         }
         plugin_variant(self_type&& aOther)
         {
-            do_move_assign(aOther.which(), aOther.data());
+            if (!aOther.empty())
+                do_move_assign(aOther.which(), aOther.data());
         }
         plugin_variant(const abstract_type& aOther)
         {
