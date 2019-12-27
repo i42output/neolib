@@ -122,11 +122,13 @@ namespace neolib
         }
         plugin_variant(const abstract_type& aOther)
         {
-            do_assign(aOther.which(), aOther.data());
+            if (!aOther.empty())
+                do_assign(aOther.which(), aOther.data());
         }
         plugin_variant(abstract_type&& aOther)
         {
-            do_move_assign(aOther.which(), aOther.data());
+            if (!aOther.empty())
+                do_move_assign(aOther.which(), aOther.data());
         }
         self_type& operator=(const self_type& aOther)
         {
