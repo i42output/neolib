@@ -42,6 +42,53 @@
 
 namespace neolib
 {
+    template <typename, bool>
+    class reference_counted;
+
+    class ref_control_block : public i_ref_control_block
+    {
+        template <typename, bool>
+        friend class reference_counted;
+    public:
+        ref_control_block(i_reference_counted& aObject) :
+            iObject{ &aObject },
+            iWeakUseCount{ 0 }
+        {
+        }
+    public:
+        i_reference_counted* ptr() const override
+        {
+            return iObject;
+        }
+        bool expired() const override
+        {
+            return iObject == nullptr;
+        }
+        int32_t weak_use_count() const override
+        {
+            return iWeakUseCount;
+        }
+        void add_ref() override
+        {
+            ++iWeakUseCount;
+        }
+        void release() override
+        {
+            if (--iWeakUseCount <= 0 && expired())
+                delete this;
+        }
+    private:
+        void set_expired()
+        {
+            iObject = nullptr;
+            if (weak_use_count() <= 0)
+                delete this;
+        }
+    private:
+        i_reference_counted* iObject;
+        int32_t iWeakUseCount;
+    };
+
     template <typename Base, bool DeallocateOnRelease = true>
     class reference_counted : public Base
     {
@@ -49,23 +96,18 @@ namespace neolib
     public:
         using typename base_type::release_during_destruction;
         using typename base_type::too_many_references;
-        using typename base_type::destruction_watcher_already_subscribed;
-        using typename base_type::destruction_watcher_not_found;
     public:
-        using typename base_type::i_object_destruction_watcher;
-    public:
-        reference_counted() : iReferenceCount(0), iPinned(false), iDestroying(false)
+        reference_counted() : iDestroying{ false }, iReferenceCount{ 0 }, iPinned{ false }, iControlBlock{ nullptr }
         {
         }
-        reference_counted(const reference_counted& aOther) : iReferenceCount(0), iPinned(aOther.iPinned), iDestroying(false)
+        reference_counted(const reference_counted& aOther) : iDestroying{ false }, iReferenceCount{ 0 }, iPinned{ aOther.iPinned }, iControlBlock{ nullptr }
         {
         }
-        virtual ~reference_counted()
+        ~reference_counted()
         {
             iDestroying = true;
-            for (auto i = iDestructionWatchers.begin(); i != iDestructionWatchers.end(); ++i)
-                if (*i != 0)
-                    (*i)->object_being_destroyed(*this);
+            if (iControlBlock != nullptr)
+                iControlBlock->set_expired();
         }
         reference_counted& operator=(const reference_counted&)
         {
@@ -73,11 +115,11 @@ namespace neolib
             return *this;
         }
     public:
-        virtual void add_ref() const
+        void add_ref() const override
         {
             ++iReferenceCount;
         }
-        virtual void release() const
+        void release() const override
         {
             if (--iReferenceCount <= 0 && !iPinned)
             {
@@ -87,44 +129,33 @@ namespace neolib
                     throw release_during_destruction();
             }
         }
-        virtual const base_type* release_and_take_ownership() const
+        const base_type* release_and_take_ownership() const override
         {
             if (iReferenceCount != 1)
                 throw too_many_references();
             iReferenceCount = 0;
             return this;
         }
-        virtual base_type* release_and_take_ownership()
+        base_type* release_and_take_ownership() override
         {
             return const_cast<base_type*>(to_const(*this).release_and_take_ownership());
         }
-        virtual void pin() const
+        void pin() const override
         {
             iPinned = true;
         }
-        virtual void unpin() const
+        void unpin() const override
         {
             iPinned = false;
             if (iReferenceCount <= 0)
                 destroy();
         }
     public:
-        virtual void subcribe_destruction_watcher(i_object_destruction_watcher& aWatcher) const
+        i_ref_control_block& control_block() override
         {
-            auto existingWatcher = std::find(iDestructionWatchers.begin(), iDestructionWatchers.end(), &aWatcher);
-            if (existingWatcher != iDestructionWatchers.end())
-                throw destruction_watcher_already_subscribed();
-            iDestructionWatchers.push_back(&aWatcher);
-        }
-        virtual void unsubcribe_destruction_watcher(i_object_destruction_watcher& aWatcher) const
-        {
-            auto existingWatcher = std::find(iDestructionWatchers.begin(), iDestructionWatchers.end(), &aWatcher);
-            if (existingWatcher == iDestructionWatchers.end())
-                throw destruction_watcher_not_found();
-            if (!iDestroying)
-                iDestructionWatchers.erase(existingWatcher);
-            else
-                *existingWatcher = 0;
+            if (iControlBlock == nullptr)
+                iControlBlock = new ref_control_block{ *this };
+            return *iControlBlock;
         }
     private:
         void destroy() const
@@ -135,10 +166,10 @@ namespace neolib
                 (*this).~reference_counted();
         }
     private:
+        bool iDestroying;
         mutable int32_t iReferenceCount;
         mutable bool iPinned;
-        bool iDestroying;
-        mutable std::vector<i_object_destruction_watcher*> iDestructionWatchers;
+        mutable ref_control_block* iControlBlock;
     };
 
     template <typename Interface>
@@ -272,41 +303,35 @@ namespace neolib
         typedef typename base_type::wrong_object wrong_object;
     public:
         weak_ref_ptr(Interface* aObject = nullptr) :
-            iObject(aObject)
+            iControlBlock{ nullptr }
         {
-            if (valid())
-                iObject->subcribe_destruction_watcher(*this);
+            update_control_block(aObject);
         }
         weak_ref_ptr(Interface& aObject) :
-            iObject(&aObject)
+            iControlBlock{ nullptr }
         {
-            if (valid())
-                iObject->subcribe_destruction_watcher(*this);
+            update_control_block(&aObject);
         }
         weak_ref_ptr(const weak_ref_ptr& aOther) :
-            iObject(aOther.ptr())
+            iControlBlock{ nullptr }
         {
-            if (valid())
-                iObject->subcribe_destruction_watcher(*this);
+            update_control_block(aOther.ptr());
         }
         weak_ref_ptr(const i_ref_ptr<Interface>& aOther) :
-            iObject(aOther.ptr())
+            iControlBlock{ nullptr }
         {
-            if (valid())
-                iObject->subcribe_destruction_watcher(*this);
+            update_control_block(aOther.ptr());
         }
         weak_ref_ptr(i_discoverable& aDiscoverable) :
-            iObject(nullptr)
+            iControlBlock{ nullptr }
         {
             if (!aDiscoverable.discover(*this))
                 throw interface_not_found();
-            if (valid())
-                iObject->subcribe_destruction_watcher(*this);
         }
         ~weak_ref_ptr()
         {
-            if (valid())
-                iObject->unsubcribe_destruction_watcher(*this);
+            if (iControlBlock != nullptr)
+                iControlBlock->release();
         }
         weak_ref_ptr& operator=(const weak_ref_ptr& aOther)
         {
@@ -324,53 +349,57 @@ namespace neolib
             return *this;
         }
     public:
-        virtual bool reference_counted() const
+        bool reference_counted() const override
         {
             return false;
         }
-        virtual void reset(Interface* aObject = nullptr, bool = false)
+        void reset(Interface* aObject = nullptr, bool = false) override
         {
             weak_ref_ptr copy(*this);
-            iObject = aObject;
-            if (valid())
-                iObject->subcribe_destruction_watcher(*this);
+            update_control_block(aObject);
         }
-        virtual Interface* release()
+        Interface* release() override
         {
             if (iObject == nullptr)
                 throw no_object();
             else
                 throw bad_release();
         }
-        virtual bool valid() const
+        bool expired() const override
         {
-            return iObject != nullptr;
+            return iControlBlock == nullptr || iControlBlock->expired();
         }
-        virtual Interface* ptr() const
+        Interface* ptr() const override
         {
-            return iObject;
+            return iControlBlock != nullptr ? iControlBlock->ptr() : nullptr;
         }
-        virtual Interface* operator->() const
+        Interface* operator->() const override
         {
-            if (iObject == nullptr)
+            if (expired())
                 throw no_object();
-            return iObject;
+            return ptr();
         }
-        virtual Interface& operator*() const
+        Interface& operator*() const override
         {
-            if (iObject == nullptr)
+            if (expired())
                 throw no_object();
-            return *iObject;
+            return *ptr();
         }
     private:
-        virtual void object_being_destroyed(i_reference_counted& aObject)
+        void update_control_block(Interface* aObject)
         {
-            if (&aObject != iObject)
-                throw wrong_object();
-            iObject = nullptr;
+            auto controlBlock = aObject != nullptr ? &(*aObject).control_block() : nullptr;
+            if (iControlBlock != controlBlock)
+            {
+                if (iControlBlock != nullptr)
+                    iControlBlock->release();
+                iControlBlock = controlBlock;
+                if (iControlBlock != nullptr)
+                    iControlBlock->add_ref();
+            }
         }
     private:
-        Interface* iObject;
+        i_ref_control_block* iControlBlock;
     };
 
     template <typename Interface>

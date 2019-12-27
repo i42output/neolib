@@ -39,19 +39,25 @@
 
 namespace neolib
 {
+    class i_reference_counted;
+
+    class i_ref_control_block
+    {
+    public:
+        virtual ~i_ref_control_block() {}
+    public:
+        virtual i_reference_counted* ptr() const = 0;
+        virtual bool expired() const = 0;
+        virtual int32_t weak_use_count() const = 0;
+        virtual void add_ref() = 0;
+        virtual void release() = 0;
+    };
+
     class i_reference_counted
     {
     public:
-        class i_object_destruction_watcher
-        {
-        public:
-            virtual void object_being_destroyed(i_reference_counted& aObject) = 0;
-        };
-    public:
         struct too_many_references : std::logic_error { too_many_references() : std::logic_error("neolib::i_reference_counted::too_many_references") {} };
         struct release_during_destruction : std::logic_error { release_during_destruction() : std::logic_error("neolib::i_reference_counted::release_during_destruction") {} };
-        struct destruction_watcher_already_subscribed : std::logic_error { destruction_watcher_already_subscribed() : std::logic_error("neolib::i_reference_counted::destruction_watcher_already_subscribed") {} };
-        struct destruction_watcher_not_found : std::logic_error { destruction_watcher_not_found() : std::logic_error("neolib::i_reference_counted::destruction_watcher_not_found") {} };
     public:
         virtual ~i_reference_counted() {}
     public:
@@ -62,8 +68,7 @@ namespace neolib
         virtual void pin() const = 0;
         virtual void unpin() const = 0;
     public:
-        virtual void subcribe_destruction_watcher(i_object_destruction_watcher& aWatcher) const = 0;
-        virtual void unsubcribe_destruction_watcher(i_object_destruction_watcher& aWatcher) const = 0;
+        virtual i_ref_control_block& control_block() = 0;
     };
 
     template <typename Interface>
@@ -103,7 +108,5 @@ namespace neolib
     public:
         struct bad_release : std::logic_error { bad_release() : std::logic_error("neolib::i_weak_ref_ptr::bad_release") {} };
         struct wrong_object : std::logic_error { wrong_object() : std::logic_error("neolib::i_weak_ref_ptr::wrong_object") {} };
-    public:
-        virtual void object_being_destroyed(i_reference_counted& aObject) = 0;
     };
 }
