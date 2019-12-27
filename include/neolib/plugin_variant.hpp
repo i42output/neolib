@@ -145,7 +145,7 @@ namespace neolib
         using variant_type::operator!=;
         bool operator==(const abstract_type& aRhs) const override
         {
-            if (index() != index())
+            if (index() != aRhs.index())
                 return false;
             bool result = false;
             visit([this, &aRhs, &result](auto&& v)
