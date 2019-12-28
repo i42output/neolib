@@ -1,6 +1,6 @@
-// i_reference_counted.hpp - v1.0
+// i_reference_counted.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2019 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -103,7 +103,7 @@ namespace neolib
     };
 
     template <typename Interface>
-    class i_weak_ref_ptr : public i_ref_ptr<Interface>, protected i_reference_counted::i_object_destruction_watcher
+    class i_weak_ref_ptr : public i_ref_ptr<Interface>
     {
     public:
         struct bad_release : std::logic_error { bad_release() : std::logic_error("neolib::i_weak_ref_ptr::bad_release") {} };

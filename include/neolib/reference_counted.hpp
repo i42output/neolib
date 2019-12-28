@@ -360,7 +360,7 @@ namespace neolib
         }
         Interface* release() override
         {
-            if (iObject == nullptr)
+            if (expired())
                 throw no_object();
             else
                 throw bad_release();
