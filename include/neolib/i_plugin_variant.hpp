@@ -96,13 +96,21 @@ namespace neolib
         }
         self_type& operator=(const self_type& aOther)
         {
-            return do_assign(aOther.which(), aOther.data());
+            if (!aOther.empty())
+                return do_assign(aOther.which(), aOther.data());
+            clear();
+            return *this;
         }
         self_type& operator=(self_type&& aOther)
         {
-            auto& result = do_move_assign(aOther.which(), aOther.data());
-            aOther.clear();
-            return result;
+            if (!aOther.empty())
+            {
+                auto& result = do_move_assign(aOther.which(), aOther.data());
+                aOther.clear();
+                return result;
+            }
+            clear();
+            return *this;
         }
         template <typename T>
         std::enable_if_t<!std::is_base_of_v<self_type, T>, self_type>& operator=(const T& aArgument)
