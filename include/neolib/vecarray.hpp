@@ -470,40 +470,42 @@ namespace neolib
         void assign(InputIterator first, InputIterator last)
         {
             clear();
-            insert(begin(), first, last);
+            insert(cbegin(), first, last);
         }
         void assign(size_type n, value_type value)
         {
             clear();
-            insert(begin(), n, value);
+            insert(cbegin(), n, value);
         }
         template <class InputIterator>
-        typename std::enable_if<!std::is_integral<InputIterator>::value, void>::type
+        typename std::enable_if_t<!std::is_integral<InputIterator>::value, iterator>
         insert(const_iterator position, InputIterator first, InputIterator last)
         {
-            do_insert(position, first, last);
+            need(std::distance(first, last), position);
+            position = do_insert(position, first, last);
+            return begin() + (position - cbegin());
         }
         iterator insert(const_iterator position, value_type value)
         {
             need(1, position);
-            size_type index = position - const_iterator(vector().begin());
             insert(position, 1, value);
-            return begin() + index;
+            return begin() + (position - cbegin());
         }
-        void insert(const_iterator position, size_type count, const value_type& value)
+        iterator insert(const_iterator position, size_type count, const value_type& value)
         {
             need(count, position);
             if (using_array())
             {
-                const_iterator next = position;
+                iterator next = std::next(begin(), std::distance(cbegin(), position));
                 while (count > 0)
                 {
-                    insert(next++, &value, &value + 1);
+                    next = std::next(insert(next, &value, &value + 1));
                     --count;
                 }
+                return next;
             }
             else
-                vector().insert(position.vector_iter(), count, value);
+                return vector().insert(position.vector_iter(), count, value);
         }
         iterator erase(const_iterator position)
         { 
@@ -674,24 +676,35 @@ namespace neolib
         void need(size_type aAmount)
         {
             if (using_array() && size() + aAmount > ArraySize)
-                convert();
+                convert(aAmount);
         }
         template <typename Iter>
         void need(size_type aAmount, Iter& aIter)
         {
             if (using_array() && size() + aAmount > ArraySize)
             {
-                size_type index = aIter - begin();
-                convert();
-                aIter = begin() + index;
+                if constexpr (std::is_same_v<Iter, const_iterator>)
+                {
+                    size_type index = aIter - cbegin();
+                    convert(aAmount);
+                    aIter = cbegin() + index;
+                }
+                else if constexpr (std::is_same_v<Iter, iterator>)
+                {
+                    size_type index = aIter - begin();
+                    convert(aAmount);
+                    aIter = begin() + index;
+                }
+                else
+                    static_assert(false, "bad usage");
             }
         }
-        void convert()
+        void convert(size_type aExtra)
         {
             if (using_array())
             {
                 vector_type copy;
-                copy.reserve(ArraySize * 2);
+                copy.reserve(std::max(ArraySize * 2, size() + aExtra));
                 copy.insert(copy.begin(), std::make_move_iterator(begin()), std::make_move_iterator(end()));
                 clear();
                 new (iAlignedBuffer.iVector) vector_type{ std::move(copy) };
@@ -699,7 +712,7 @@ namespace neolib
             }
         }
         template <class InputIterator>
-        typename std::enable_if<!std::is_same<typename std::iterator_traits<InputIterator>::iterator_category, std::input_iterator_tag>::value, void>::type
+        typename std::enable_if<!std::is_same<typename std::iterator_traits<InputIterator>::iterator_category, std::input_iterator_tag>::value, iterator>::type
         do_insert(const_iterator position, InputIterator first, InputIterator last)
         {
             difference_type n = last - first;
@@ -707,6 +720,7 @@ namespace neolib
             need(n, position);
             if (using_array())
             {
+                auto pos = const_cast<pointer>(position.array_ptr());
                 const_iterator theEnd = end();
                 difference_type t = theEnd - position;
                 if (t > 0)
@@ -716,36 +730,37 @@ namespace neolib
                         std::uninitialized_copy(theEnd - n, theEnd, const_cast<pointer>(theEnd.array_ptr()));
                         iSize += n;
                         std::copy_backward(position, theEnd - n, const_cast<pointer>(theEnd.array_ptr()));
-                        std::copy(first, last, const_cast<pointer>(position.array_ptr()));
+                        std::copy(first, last, pos);
                     }
                     else
                     {
                         detail::uninitialized_copy2(theEnd - t, theEnd, const_cast<pointer>((theEnd + (n - t)).array_ptr()), first + t, last, const_cast<pointer>(theEnd.array_ptr()));
                         iSize += n;
-                        std::copy(first, first + t, const_cast<pointer>(position.array_ptr()));
+                        std::copy(first, first + t, pos);
                     }
                 }
                 else
                 {
-                    std::uninitialized_copy(first, last, const_cast<pointer>(theEnd.array_ptr()));
+                    std::uninitialized_copy(first, last, pos);
                     iSize += n;
                 }
+                return pos;
             }
             else
             {
-                vector().insert(position.vector_iter(), first, last);
+                return vector().insert(position.vector_iter(), first, last);
             }
         }
         template <class InputIterator>
-        typename std::enable_if<std::is_same<typename std::iterator_traits<InputIterator>::iterator_category, std::input_iterator_tag>::value, void>::type
+        typename std::enable_if<std::is_same<typename std::iterator_traits<InputIterator>::iterator_category, std::input_iterator_tag>::value, iterator>::type
         do_insert(const_iterator position, InputIterator first, InputIterator last)
         {
-            const_iterator next = position;
+            iterator next = position;
             while (first != last)
             {
-                insert(next++, 1, *first++);
+                next = std::next(insert(next, 1, *first++));
             }
-            const_cast<pointer>(position);
+            return next;
         }
 
     private:
