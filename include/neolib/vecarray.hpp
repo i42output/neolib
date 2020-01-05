@@ -623,6 +623,11 @@ namespace neolib
             else
                 vector().resize(n, value);
         }
+        void reserve(size_type n)
+        {
+            if (n > ArraySize && n > size())
+                need(n - size());
+        }
         template<typename T2, std::size_t ArraySize2, std::size_t MaxVectorSize2, typename CheckPolicy2, typename Alloc2>
         void swap(vecarray<T2, ArraySize2, MaxVectorSize2, CheckPolicy2, Alloc2>& rhs)
         {
