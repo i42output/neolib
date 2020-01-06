@@ -306,6 +306,8 @@ namespace neolib
         iterator remove(cookie_type aCookie)
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
+            if (aCookie >= reverse_indices().size())
+                throw cookie_invalid();
             auto& reverseIndex = reverse_indices()[aCookie];
             if (reverseIndex == INVALID_REVERSE_INDEX)
                 throw cookie_invalid();
