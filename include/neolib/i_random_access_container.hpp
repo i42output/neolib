@@ -40,6 +40,66 @@
 
 namespace neolib
 {
+    template <typename T, typename = sfinae>
+    struct offset_pointer;
+    template <typename T>
+    struct offset_pointer<T, typename std::enable_if_t<std::is_const_v<T>, sfinae>> { typedef char const* pointer_type; };
+    template <typename T>
+    struct offset_pointer<T, typename std::enable_if_t<!std::is_const_v<T>, sfinae>> { typedef char* pointer_type; };
+    template <typename T>
+    using offset_pointer_t = typename offset_pointer<T>::pointer_type;
+
+    template <typename T>
+    class offset_iterator : public std::iterator<std::random_access_iterator_tag, T, std::ptrdiff_t, T*, T&>
+    {
+        template <typename T2>
+        friend class offset_iterator;
+        typedef offset_iterator<T> self_type;
+        typedef std::iterator<std::random_access_iterator_tag, T, std::ptrdiff_t, T*, T&> base_type;
+    public:
+        using typename base_type::iterator_category;
+        using typename base_type::value_type;
+        using typename base_type::pointer;
+        using typename base_type::reference;
+        using typename base_type::difference_type;
+    public:
+        offset_iterator(T* aElement, std::ptrdiff_t aOffset) : 
+            iElement{ aElement }, iOffset{ aOffset }
+        {
+        }
+        offset_iterator(const self_type& aOther) :
+            iElement{ aOther.iElement }, iOffset{ aOther.iOffset }
+        {
+        }
+        template <typename Iterator>
+        offset_iterator(const Iterator& aOther, std::enable_if_t<!std::is_same_v<Iterator, self_type> && std::is_same_v<Iterator, offset_iterator<std::remove_const_t<value_type>>>, sfinae> = {}) :
+            iElement{ aOther.iElement }, iOffset{ aOther.iOffset }
+        {
+        }
+    public:
+        offset_iterator& operator++() { return *this += 1; }
+        offset_iterator& operator--() { return *this -= 1; }
+        offset_iterator operator++(int) { offset_iterator result = *this; result += 1; return result; }
+        offset_iterator operator--(int) { offset_iterator result = *this; result -= 1; return result; }
+        offset_iterator& operator+=(difference_type aDifference) { iElement = reinterpret_cast<T*>(reinterpret_cast<offset_pointer_t<T>>(iElement) + aDifference * iOffset); return *this; }
+        offset_iterator& operator-=(difference_type aDifference) { iElement = reinterpret_cast<T*>(reinterpret_cast<offset_pointer_t<T>>(iElement) - aDifference * iOffset); return *this; }
+        offset_iterator operator+(difference_type aDifference) const { offset_iterator result = *this; result += aDifference; return result; }
+        offset_iterator operator-(difference_type aDifference) const { offset_iterator result = *this; result -= aDifference; return result; }
+        reference operator[](difference_type aDifference) const { return *(*this + aDifference); }
+        difference_type operator-(const offset_iterator& aOther) const { return iOffset - aOther.iOffset; }
+        reference operator*() const { return *iElement; }
+        pointer operator->() const { return &(**this); }
+        bool operator==(const offset_iterator& aOther) const { return iElement == aOther.iElement; }
+        bool operator!=(const offset_iterator& aOther) const { return iElement != aOther.iElement; }
+        bool operator<(const offset_iterator& aOther) const { return iElement < aOther.iElement; }
+        bool operator<=(const offset_iterator& aOther) const { return iElement <= aOther.iElement; }
+        bool operator>(const offset_iterator& aOther) const { return iElement > aOther.iElement; }
+        bool operator>=(const offset_iterator& aOther) const { return iElement >= aOther.iElement; }
+    private:
+        T* iElement;
+        std::ptrdiff_t iOffset;
+    };
+
     template <typename T, bool DefaultComparisonOperators = true>
     class i_random_access_container : public i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T>, DefaultComparisonOperators>
     {
@@ -50,8 +110,10 @@ namespace neolib
     public:
         using typename base_type::value_type;
         using typename base_type::size_type;
-        typedef const value_type* const_fast_iterator;
-        typedef value_type* fast_iterator;
+        typedef offset_iterator<const value_type> const_iterator;
+        typedef offset_iterator<value_type> iterator;
+        typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+        typedef std::reverse_iterator<iterator> reverse_iterator;
     public:
         using base_type::size;
     public:
@@ -59,27 +121,21 @@ namespace neolib
         virtual const value_type* data() const = 0;
         virtual value_type* data() = 0;
     public:
-        using base_type::begin;
-        template <typename T_ = T>
-        std::enable_if_t<std::is_abstract_v<T_>, const value_type&> operator[](size_type aIndex) const { return *std::next(begin(), aIndex); }
-        template <typename T_ = T>
-        std::enable_if_t<std::is_abstract_v<T_>, value_type&> operator[](size_type aIndex) { return *std::next(begin(), aIndex); }
-        template <typename T_ = T>
-        std::enable_if_t<!std::is_abstract_v<T_>, const value_type&> operator[](size_type aIndex) const { return data()[aIndex]; }
-        template <typename T_ = T>
-        std::enable_if_t<!std::is_abstract_v<T_>, value_type&> operator[](size_type aIndex) { return data()[aIndex]; }
-    public:
-        template <typename T_ = T>
-        std::enable_if_t<!std::is_abstract_v<T_>, const_fast_iterator> cfbegin() const { return cdata(); }
-        template <typename T_ = T>
-        std::enable_if_t<!std::is_abstract_v<T_>, const_fast_iterator> cfend() const { return cdata() + size(); }
-        template <typename T_ = T>
-        std::enable_if_t<!std::is_abstract_v<T_>, const_fast_iterator> fbegin() const { return data(); }
-        template <typename T_ = T>
-        std::enable_if_t<!std::is_abstract_v<T_>, const_fast_iterator> fend() const { return data() + size(); }
-        template <typename T_ = T>
-        std::enable_if_t<!std::is_abstract_v<T_>, fast_iterator> fbegin() { return data(); }
-        template <typename T_ = T>
-        std::enable_if_t<!std::is_abstract_v<T_>, fast_iterator> fend() { return data() + size(); }
+        const_iterator cbegin() const { return const_iterator{ cdata(), iterator_offset() }; }
+        const_iterator begin() const { return cbegin(); }
+        iterator begin() { return iterator{ data(), iterator_offset() }; }
+        const_iterator cend() const { return cbegin() + size(); }
+        const_iterator end() const { return cend(); }
+        iterator end() { return begin() + size(); }
+        const_reverse_iterator crbegin() const { return const_reverse_iterator{ end() }; }
+        const_reverse_iterator rbegin() const { return crbegin(); }
+        reverse_iterator rbegin() { return reverse_iterator{ end() }; }
+        const_reverse_iterator crend() const { return const_reverse_iterator{ begin() }; }
+        const_reverse_iterator rend() const { return crend(); }
+        reverse_iterator rend() { return reverse_iterator{ begin() }; }
+        const value_type& operator[](size_type aIndex) const { return *std::next(begin(), aIndex); }
+        value_type& operator[](size_type aIndex) { return *std::next(begin(), aIndex); }
+    private:
+        virtual std::ptrdiff_t iterator_offset() const = 0;
     };
 }

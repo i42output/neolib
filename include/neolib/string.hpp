@@ -101,6 +101,9 @@ namespace neolib
         value_type& back() override { return iString.back(); }
     private:
         abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const value_type& aValue) override { return new (memory) container_iterator{ iString.insert(static_cast<const container_const_iterator&>(aPosition), aValue) }; }
+        // from i_random_access_container
+    private:
+        std::ptrdiff_t iterator_offset() const override { return sizeof(char); }
         // from i_string
     public:
         const char* cdata() const override { return iString.data(); }

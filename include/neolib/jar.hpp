@@ -41,6 +41,7 @@
 #include <mutex>
 #include <atomic>
 #include <boost/stacktrace.hpp>
+#include <neolib/vector.hpp>
 
 namespace neolib
 {
@@ -189,14 +190,14 @@ namespace neolib
     struct cookies_exhausted : std::logic_error { cookies_exhausted() : std::logic_error("neolib::cookies_exhausted") {} };
     struct no_pointer_value_type_cookie_lookup : std::logic_error { no_pointer_value_type_cookie_lookup() : std::logic_error("neolib::no_pointer_value_type_cookie_lookup") {} };
 
-    template <typename T, typename CookieType = cookie, typename MutexType = std::recursive_mutex>
+    template <typename T, typename Container = std::vector<T>, typename CookieType = cookie, typename MutexType = std::recursive_mutex>
     class basic_jar
     {
     public:
         typedef CookieType cookie_type;
     public:
         typedef T value_type;
-        typedef std::vector<value_type> container_type;
+        typedef Container container_type;
         typedef typename container_type::const_iterator const_iterator;
         typedef typename container_type::iterator iterator;
         typedef MutexType mutex_type;
@@ -434,8 +435,14 @@ namespace neolib
     typedef i_basic_cookie_consumer<small_cookie> i_small_cookie_consumer;
     typedef basic_cookie_ref_ptr<cookie> cookie_ref_ptr;
     typedef basic_cookie_ref_ptr<small_cookie> small_cookie_ref_ptr;
+
     template <typename T, typename MutexType = std::recursive_mutex>
-    using jar = basic_jar<T, cookie, MutexType>;
+    using jar = basic_jar<T, std::vector<T>, cookie, MutexType>;
     template <typename T, typename MutexType = std::recursive_mutex>
-    using small_jar = basic_jar<T, small_cookie, MutexType>;
+    using small_jar = basic_jar<T, std::vector<T>, small_cookie, MutexType>;
+
+    template <typename T, typename MutexType = std::recursive_mutex>
+    using polymorphic_jar = basic_jar<T, neolib::vector<T>, cookie, MutexType>;
+    template <typename T, typename MutexType = std::recursive_mutex>
+    using polymorphic_small_jar = basic_jar<T, neolib::vector<T>, small_cookie, MutexType>;
 }

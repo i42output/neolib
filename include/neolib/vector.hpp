@@ -66,12 +66,12 @@ namespace neolib
         // construction
     public:
         vector() {}
-        vector(const vector& aOther) : iVector{ aOther.begin(), aOther.end() } {}
+        vector(const vector& aOther) : iVector{ aOther.iVector } {}
         vector(vector&& aOther) : iVector{ std::move(aOther.iVector) } {}
-        vector(const i_vector<abstract_value_type>& aOther) : iVector{ aOther.begin(), aOther.end() } {}
+        vector(const i_vector<abstract_value_type>& aOther) { assign(aOther); }
         vector(const container_type& aOtherContainer) : iVector{ aOtherContainer } {}
         template <typename InputIter>
-        vector(InputIter aFirst, InputIter aLast) : iVector{ aFirst, aLast } {}
+        vector(InputIter aFirst, InputIter aLast) : iVector(aFirst, aLast) {}
         vector& operator=(const vector& aOther) { assign(aOther); return *this; }
         vector& operator=(vector&& aOther) { iVector = std::move(aOther.iVector); return *this; }
         vector& operator=(const i_vector<abstract_value_type>& aOther) { assign(aOther); return *this; }
@@ -85,7 +85,7 @@ namespace neolib
         size_type size() const override { return iVector.size(); }
         size_type max_size() const override { return iVector.max_size(); }
         void clear() override { iVector.clear(); }
-        void assign(const generic_container_type& aOther) override { if (&aOther == this) return; iVector.assign(aOther.begin(), aOther.end()); }
+        void assign(const generic_container_type& aOther) override { if (&aOther == this) return; clear(); reserve(aOther.size()); std::copy(aOther.begin(), aOther.end(), std::back_insert_iterator{ iVector }); }
         // from i_container
     private:
         abstract_const_iterator* do_begin(void* memory) const override { return new (memory) container_const_iterator(iVector.begin()); }
@@ -96,7 +96,7 @@ namespace neolib
         abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new (memory) container_iterator(iVector.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
         // from i_sequence_container
     public:
-        size_type capacity() const override { return iVector.size(); }
+        size_type capacity() const override { return iVector.capacity(); }
         void reserve(size_type aCapacity) override { iVector.reserve(aCapacity); }
         void resize(size_type aSize, const abstract_value_type& aValue) override { iVector.resize(aSize, aValue); }
         void push_back(const abstract_value_type& aValue) override { iVector.push_back(aValue); }
@@ -108,6 +108,8 @@ namespace neolib
         const value_type* cdata() const override { return iVector.data(); }
         const value_type* data() const override { return iVector.data(); }
         value_type* data() override { return iVector.data(); }
+    private:
+        std::ptrdiff_t iterator_offset() const override { return sizeof(value_type); }
         // from i_sequence_container
     private:
         abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const abstract_value_type& aValue) override { return new (memory) container_iterator(iVector.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
