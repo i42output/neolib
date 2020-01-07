@@ -80,7 +80,7 @@ namespace neolib
         container_type& container() { return iVector; }
         const container_type& container() const { return iVector; }
         template <typename... Args>
-        iterator emplace(const_iterator aPos, Args&&... aArgs) { auto newPos = iVector.emplace(iVector.begin() + (aPos - cbegin()), std::forward<Args>(aArgs)...); return begin() + (newPos - iVector.begin()); }
+        iterator emplace(const_iterator aPos, Args&&... aArgs) { auto newPos = iVector.emplace(iVector.begin() + (aPos - base_type::cbegin()), std::forward<Args>(aArgs)...); return base_type::begin() + (newPos - iVector.begin()); }
         // implementation
         // from i_container
     public:
