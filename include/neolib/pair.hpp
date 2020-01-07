@@ -61,6 +61,7 @@ namespace neolib
         template <typename T3, typename T4>
         pair(T3&& aFirst, T4&& aSecond) : concrete_type{ std::forward<T3>(aFirst), std::forward<T4>(aSecond) } {}
     public:
+        self_type& operator=(const self_type& aOther) { return assign(aOther); }
         abstract_type& operator=(const abstract_type& aOther) override { return assign(aOther); }
     public:
         const first_abstract_type& first() const override { return concrete_type::first; }
@@ -68,7 +69,7 @@ namespace neolib
         const second_abstract_type& second() const override { return concrete_type::second; }
         second_abstract_type& second() override { return concrete_type::second; }
     public:
-        abstract_type& assign(const abstract_type& aOther)
+        self_type& assign(const abstract_type& aOther)
         {
             if constexpr (!std::is_const_v<first_type> && !std::is_const_v<second_type>)
             {
