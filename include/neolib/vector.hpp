@@ -79,6 +79,8 @@ namespace neolib
     public:
         container_type& container() { return iVector; }
         const container_type& container() const { return iVector; }
+        template <typename... Args>
+        iterator emplace(const_iterator aPos, Args&&... aArgs) { auto newPos = iVector.emplace(iVector.begin() + (aPos - cbegin()), std::forward<Args>(aArgs)...); return begin() + (newPos - iVector.begin()); }
         // implementation
         // from i_container
     public:
@@ -101,13 +103,16 @@ namespace neolib
         void resize(size_type aSize, const abstract_value_type& aValue) override { iVector.resize(aSize, aValue); }
         void push_back(const abstract_value_type& aValue) override { iVector.push_back(aValue); }
         void pop_back() override { iVector.pop_back(); }
-        const abstract_value_type& back() const override { return iVector.back(); }
-        abstract_value_type& back() override { return iVector.back(); }
+        const value_type& back() const override { return iVector.back(); }
+        value_type& back() override { return iVector.back(); }
         // from i_random_access_container
     public:
         const value_type* cdata() const override { return iVector.data(); }
         const value_type* data() const override { return iVector.data(); }
         value_type* data() override { return iVector.data(); }
+    public:
+        const value_type& operator[](size_type aIndex) const override { return iVector[aIndex]; }
+        value_type& operator[](size_type aIndex) override { return iVector[aIndex]; }
     private:
         std::ptrdiff_t iterator_offset() const override { return sizeof(value_type); }
         // from i_sequence_container

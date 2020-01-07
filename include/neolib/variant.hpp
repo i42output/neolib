@@ -62,7 +62,7 @@ namespace neolib
             value_type{ static_cast<const value_type&>(aOther) }
         {
         }
-        variant(variant&& aOther) :
+        variant(variant&& aOther) noexcept :
             value_type{ static_cast<value_type&&>(std::move(aOther)) }
         {
         }
@@ -77,7 +77,7 @@ namespace neolib
             value_type::operator=(static_cast<const value_type&>(aOther));
             return *this;
         }
-        variant& operator=(variant&& aOther)
+        variant& operator=(variant&& aOther) noexcept
         {
             value_type::operator=(static_cast<value_type&&>(std::move(aOther)));
             return *this;

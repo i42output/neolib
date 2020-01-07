@@ -115,7 +115,7 @@ namespace neolib
             if (!aOther.empty())
                 do_assign(aOther.which(), aOther.data());
         }
-        plugin_variant(self_type&& aOther)
+        plugin_variant(self_type&& aOther) noexcept
         {
             if (!aOther.empty())
                 do_move_assign(aOther.which(), aOther.data());
@@ -125,18 +125,20 @@ namespace neolib
             if (!aOther.empty())
                 do_assign(aOther.which(), aOther.data());
         }
-        plugin_variant(abstract_type&& aOther)
+        plugin_variant(abstract_type&& aOther) noexcept
         {
             if (!aOther.empty())
                 do_move_assign(aOther.which(), aOther.data());
         }
         self_type& operator=(const self_type& aOther)
         {
-            return static_cast<self_type&>(abstract_type::operator=(aOther));
+            variant_type::operator=(aOther);
+            return *this;
         }
-        self_type& operator=(self_type&& aOther)
+        self_type& operator=(self_type&& aOther) noexcept
         {
-            return static_cast<self_type&>(abstract_type::operator=(aOther));
+            variant_type::operator=(std::move(aOther));
+            return *this;
         }
         using abstract_type::operator=;
         // comparison

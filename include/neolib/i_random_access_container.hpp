@@ -81,12 +81,12 @@ namespace neolib
         offset_iterator& operator--() { return *this -= 1; }
         offset_iterator operator++(int) { offset_iterator result = *this; result += 1; return result; }
         offset_iterator operator--(int) { offset_iterator result = *this; result -= 1; return result; }
-        offset_iterator& operator+=(difference_type aDifference) { iElement = reinterpret_cast<T*>(reinterpret_cast<offset_pointer_t<T>>(iElement) + aDifference * iOffset); return *this; }
-        offset_iterator& operator-=(difference_type aDifference) { iElement = reinterpret_cast<T*>(reinterpret_cast<offset_pointer_t<T>>(iElement) - aDifference * iOffset); return *this; }
+        offset_iterator& operator+=(difference_type aDifference) { iElement = reinterpret_cast<T*>(ptr() + aDifference * iOffset); return *this; }
+        offset_iterator& operator-=(difference_type aDifference) { iElement = reinterpret_cast<T*>(ptr() - aDifference * iOffset); return *this; }
         offset_iterator operator+(difference_type aDifference) const { offset_iterator result = *this; result += aDifference; return result; }
         offset_iterator operator-(difference_type aDifference) const { offset_iterator result = *this; result -= aDifference; return result; }
         reference operator[](difference_type aDifference) const { return *(*this + aDifference); }
-        difference_type operator-(const offset_iterator& aOther) const { return iOffset - aOther.iOffset; }
+        difference_type operator-(const offset_iterator& aOther) const { return (ptr() - aOther.ptr()) / iOffset; }
         reference operator*() const { return *iElement; }
         pointer operator->() const { return &(**this); }
         bool operator==(const offset_iterator& aOther) const { return iElement == aOther.iElement; }
@@ -95,6 +95,8 @@ namespace neolib
         bool operator<=(const offset_iterator& aOther) const { return iElement <= aOther.iElement; }
         bool operator>(const offset_iterator& aOther) const { return iElement > aOther.iElement; }
         bool operator>=(const offset_iterator& aOther) const { return iElement >= aOther.iElement; }
+    private:
+        offset_pointer_t<T> ptr() const { return reinterpret_cast<offset_pointer_t<T>>(iElement); }
     private:
         T* iElement;
         std::ptrdiff_t iOffset;
@@ -121,6 +123,9 @@ namespace neolib
         virtual const value_type* data() const = 0;
         virtual value_type* data() = 0;
     public:
+        virtual const value_type& operator[](size_type aIndex) const = 0;
+        virtual value_type& operator[](size_type aIndex) = 0;
+    public:
         const_iterator cbegin() const { return const_iterator{ cdata(), iterator_offset() }; }
         const_iterator begin() const { return cbegin(); }
         iterator begin() { return iterator{ data(), iterator_offset() }; }
@@ -133,8 +138,6 @@ namespace neolib
         const_reverse_iterator crend() const { return const_reverse_iterator{ begin() }; }
         const_reverse_iterator rend() const { return crend(); }
         reverse_iterator rend() { return reverse_iterator{ begin() }; }
-        const value_type& operator[](size_type aIndex) const { return *std::next(begin(), aIndex); }
-        value_type& operator[](size_type aIndex) { return *std::next(begin(), aIndex); }
     private:
         virtual std::ptrdiff_t iterator_offset() const = 0;
     };
