@@ -103,6 +103,8 @@ namespace neolib
         abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const value_type& aValue) override { return new (memory) container_iterator{ iString.insert(static_cast<const container_const_iterator&>(aPosition), aValue) }; }
         // from i_random_access_container
     public:
+        const value_type& at(size_type aIndex) const override { return iString.at(aIndex); }
+        value_type& at(size_type aIndex) override { return iString.at(aIndex); }
         const value_type& operator[](size_type aIndex) const override { return iString[aIndex]; }
         value_type& operator[](size_type aIndex) override { return iString[aIndex]; }
     private:

@@ -123,6 +123,8 @@ namespace neolib
         virtual const value_type* data() const = 0;
         virtual value_type* data() = 0;
     public:
+        virtual const value_type& at(size_type aIndex) const = 0;
+        virtual value_type& at(size_type aIndex) = 0;
         virtual const value_type& operator[](size_type aIndex) const = 0;
         virtual value_type& operator[](size_type aIndex) = 0;
     public:

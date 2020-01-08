@@ -111,6 +111,8 @@ namespace neolib
         const value_type* data() const override { return iVector.data(); }
         value_type* data() override { return iVector.data(); }
     public:
+        const value_type& at(size_type aIndex) const override { return iVector.at(aIndex); }
+        value_type& at(size_type aIndex) override { return iVector.at(aIndex); }
         const value_type& operator[](size_type aIndex) const override { return iVector[aIndex]; }
         value_type& operator[](size_type aIndex) override { return iVector[aIndex]; }
     private:

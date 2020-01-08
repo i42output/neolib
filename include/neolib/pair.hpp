@@ -64,10 +64,10 @@ namespace neolib
         self_type& operator=(const self_type& aOther) { return assign(aOther); }
         abstract_type& operator=(const abstract_type& aOther) override { return assign(aOther); }
     public:
-        const first_abstract_type& first() const override { return concrete_type::first; }
-        first_abstract_type& first() override { return concrete_type::first; }
-        const second_abstract_type& second() const override { return concrete_type::second; }
-        second_abstract_type& second() override { return concrete_type::second; }
+        const first_type& first() const override { return concrete_type::first; }
+        first_type& first() override { return concrete_type::first; }
+        const second_type& second() const override { return concrete_type::second; }
+        second_type& second() override { return concrete_type::second; }
     public:
         self_type& assign(const abstract_type& aOther)
         {
