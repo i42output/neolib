@@ -285,7 +285,7 @@ namespace neolib
                 handleInSameThreadAsEmitter{ handleInSameThreadAsEmitter }
             {}
         };
-        typedef neolib::jar<handler> handler_list_t;
+        typedef neolib::jar<handler, std::recursive_mutex> handler_list_t;
         struct context
         {
             bool accepted;

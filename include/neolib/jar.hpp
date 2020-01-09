@@ -42,6 +42,7 @@
 #include <atomic>
 #include <boost/stacktrace.hpp>
 #include <neolib/vector.hpp>
+#include <neolib/null_mutex.hpp>
 
 namespace neolib
 {
@@ -190,7 +191,7 @@ namespace neolib
     struct cookies_exhausted : std::logic_error { cookies_exhausted() : std::logic_error("neolib::cookies_exhausted") {} };
     struct no_pointer_value_type_cookie_lookup : std::logic_error { no_pointer_value_type_cookie_lookup() : std::logic_error("neolib::no_pointer_value_type_cookie_lookup") {} };
 
-    template <typename T, typename Container = std::vector<T>, typename CookieType = cookie, typename MutexType = std::recursive_mutex>
+    template <typename T, typename Container = std::vector<T>, typename CookieType = cookie, typename MutexType = null_mutex>
     class basic_jar
     {
     public:
@@ -438,13 +439,13 @@ namespace neolib
     typedef basic_cookie_ref_ptr<cookie> cookie_ref_ptr;
     typedef basic_cookie_ref_ptr<small_cookie> small_cookie_ref_ptr;
 
-    template <typename T, typename MutexType = std::recursive_mutex>
+    template <typename T, typename MutexType = null_mutex>
     using jar = basic_jar<T, std::vector<T>, cookie, MutexType>;
-    template <typename T, typename MutexType = std::recursive_mutex>
+    template <typename T, typename MutexType = null_mutex>
     using small_jar = basic_jar<T, std::vector<T>, small_cookie, MutexType>;
 
-    template <typename T, typename MutexType = std::recursive_mutex>
-    using polymorphic_jar = basic_jar<T, neolib::vector<T>, cookie, MutexType>;
-    template <typename T, typename MutexType = std::recursive_mutex>
-    using polymorphic_small_jar = basic_jar<T, neolib::vector<T>, small_cookie, MutexType>;
+    template <typename T, typename MutexType = null_mutex>
+    using polymorphic_jar = basic_jar<T, vector<T>, cookie, MutexType>;
+    template <typename T, typename MutexType = null_mutex>
+    using polymorphic_small_jar = basic_jar<T, vector<T>, small_cookie, MutexType>;
 }

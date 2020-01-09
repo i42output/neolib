@@ -506,6 +506,9 @@
     <ClInclude Include="..\..\..\include\neolib\i_random_access_container.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\include\neolib\null_mutex.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\include\neolib\json.inl">
