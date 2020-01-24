@@ -68,42 +68,48 @@ namespace neolib
         class i_event
         {
         public:
-            typedef i_event_callback<Arguments...> callback;
-            typedef event_callback<Arguments...> concrete_callback;
+            typedef i_event_callback<Arguments...> abstract_callback;
+            typedef event_callback<Arguments...> callback;
         public:
             virtual ~i_event() {}
+        public:
+            virtual const neolib::i_event& raw_event() const = 0;
+            virtual neolib::i_event& raw_event() = 0;
+        public:
+            virtual void pre_trigger() const = 0;
         public:
             virtual bool trigger(Arguments... aArguments) const = 0;
             virtual bool sync_trigger(Arguments... aArguments) const = 0;
             virtual void async_trigger(Arguments... aArguments) const = 0;
+            virtual bool accepted() const = 0;
             virtual void accept() const = 0;
             virtual void ignore() const = 0;
         public:
-            event_handle subscribe(const concrete_callback& aCallback, const void* aUniqueId = nullptr) const
+            event_handle subscribe(const callback& aCallback, const void* aUniqueId = nullptr) const
             {
                 return event_handle{ do_subscribe(aCallback, aUniqueId) };
             }
-            event_handle operator()(const concrete_callback& aCallback, const void* aUniqueId = nullptr) const
+            event_handle operator()(const callback& aCallback, const void* aUniqueId = nullptr) const
             {
                 return event_handle{ do_subscribe(aCallback, aUniqueId) };
             }
             template <typename T>
-            event_handle subscribe(const concrete_callback& aCallback, const T* aUniqueIdObject) const
+            event_handle subscribe(const callback& aCallback, const T* aUniqueIdObject) const
             {
                 return event_handle{ do_subscribe(aCallback, static_cast<const void*>(aUniqueIdObject)) };
             }
             template <typename T>
-            event_handle operator()(const concrete_callback& aCallback, const T* aUniqueIdObject) const
+            event_handle operator()(const callback& aCallback, const T* aUniqueIdObject) const
             {
                 return event_handle{ do_subscribe(aCallback, static_cast<const void*>(aUniqueIdObject)) };
             }
             template <typename T>
-            event_handle subscribe(const concrete_callback& aCallback, const T& aUniqueIdObject) const
+            event_handle subscribe(const callback& aCallback, const T& aUniqueIdObject) const
             {
                 return event_handle{ do_subscribe(aCallback, static_cast<const void*>(&aUniqueIdObject)) };
             }
             template <typename T>
-            event_handle operator()(const concrete_callback& aCallback, const T& aUniqueIdObject) const
+            event_handle operator()(const callback& aCallback, const T& aUniqueIdObject) const
             {
                 return event_handle{ do_subscribe(aCallback, static_cast<const void*>(&aUniqueIdObject)) };
             }
@@ -126,7 +132,7 @@ namespace neolib
                 return do_unsubscribe(static_cast<const void*>(&aUniqueIdObject));
             }
         private:
-            virtual event_handle do_subscribe(const callback& aCallback, const void* aUniqueId = nullptr) const = 0;
+            virtual event_handle do_subscribe(const abstract_callback& aCallback, const void* aUniqueId = nullptr) const = 0;
             virtual void do_unsubscribe(event_handle aHandle) const = 0;
             virtual void do_unsubscribe(const void* aUniqueId) const = 0;
         };
@@ -150,13 +156,6 @@ namespace neolib
             neolib::plugin_events::i_event<__VA_ARGS__>& declName() { return ev_##declName(); }\
             detail_event_subscribe(declName, __VA_ARGS__)
 
-        #define declare_event_2( declName, ... ) \
-            virtual const neolib::plugin_events::i_event<__VA_ARGS__>& ev_2_##declName() const = 0;\
-            virtual neolib::plugin_events::i_event<__VA_ARGS__>& ev__2##declName() = 0;\
-            const neolib::plugin_events::i_event<__VA_ARGS__>& declName() const { return ev_2_##declName(); }\
-            neolib::plugin_events::i_event<__VA_ARGS__>& declName() { return ev_2_##declName(); }\
-            detail_event_subscribe(declName, __VA_ARGS__)
-
         template <typename... Arguments>
         class event;
 
@@ -165,25 +164,12 @@ namespace neolib
             const neolib::plugin_events::i_event<__VA_ARGS__>& ev_##declName() const override { return name; };\
             neolib::plugin_events::i_event<__VA_ARGS__>& ev_##declName() override { return name; };
 
-        #define define_declared_event_2( name, declName, ... ) \
-            neolib::plugin_events::event<__VA_ARGS__> name; \
-            const neolib::plugin_events::i_event<__VA_ARGS__>& ev_2_##declName() const override { return name; };\
-            neolib::plugin_events::i_event<__VA_ARGS__>& ev_2_##declName() override { return name; };
-
         #define define_event( name, declName, ... ) \
             neolib::plugin_events::event<__VA_ARGS__> name; \
             const neolib::plugin_events::i_event<__VA_ARGS__>& ev_##declName() const { return name; };\
             neolib::plugin_events::i_event<__VA_ARGS__>& ev_##declName() { return name; };\
             const neolib::plugin_events::i_event<__VA_ARGS__>& declName() const { return ev_##declName(); }\
             neolib::plugin_events::i_event<__VA_ARGS__>& declName() { return ev_##declName(); }\
-            detail_event_subscribe(declName, __VA_ARGS__)
-
-        #define define_event_2( name, declName, ... ) \
-            neolib::plugin_events::event<__VA_ARGS__> name; \
-            const neolib::plugin_events::i_event<__VA_ARGS__>& ev_2_##declName() const { return name; };\
-            neolib::plugin_events::i_event<__VA_ARGS__>& ev_2_##declName() { return name; };\
-            const neolib::plugin_events::i_event<__VA_ARGS__>& declName() const { return ev_2_##declName(); }\
-            neolib::plugin_events::i_event<__VA_ARGS__>& declName() { return ev_2_##declName(); }\
             detail_event_subscribe(declName, __VA_ARGS__)
    }
 }

@@ -127,23 +127,44 @@ namespace neolib
 
     // Deprecated, use std::get.
     template <typename T, typename Variant>
-    inline T static_variant_cast(const Variant& aVariant)
+    inline auto& static_variant_cast(const Variant& aVariant)
     {
-        typedef T result_type;
-        typedef std::remove_cv_t<std::remove_reference_t<result_type>> alternative_type;
-        auto& result = std::get<alternative_type>(aVariant);
-        return static_cast<result_type>(result);
+        return std::get<std::decay_t<T>>(aVariant);
     }
 
     // Deprecated, use std::get.
     template <typename T, typename Variant>
-    inline T static_variant_cast(Variant& aVariant)
+    inline auto& static_variant_cast(Variant& aVariant)
     { 
-        typedef T result_type;
-        typedef std::remove_cv_t<std::remove_reference_t<result_type>> alternative_type;
-        auto& result = std::get<alternative_type>(aVariant);
-        return static_cast<result_type>(result);
+        return std::get<std::decay_t<T>>(aVariant);
     }
+
+    template <typename VariantRef>
+    struct auto_variant_caster
+    {
+        VariantRef variant;
+        auto_variant_caster(VariantRef variant) :
+            variant{ variant }
+        {}
+        template <typename T2>
+        operator T2 () const
+        {
+            return static_variant_cast<T2&&>(variant);
+        }
+    };
+
+    template <typename Variant>
+    auto make_auto_variant_caster(const Variant& aVariant)
+    {
+        return auto_variant_caster<const Variant&>{aVariant};
+    }
+
+    template <typename Variant>
+    auto make_auto_variant_caster(Variant& aVariant)
+    {
+        return auto_variant_caster<Variant&>{aVariant};
+    }
+
 
     struct bad_numeric_variant_cast : std::logic_error { bad_numeric_variant_cast() : std::logic_error{ "neolib::bad_numeric_variant_cast" } {} };
 

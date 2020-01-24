@@ -200,8 +200,10 @@ namespace neolib
         struct async_event_queue_terminated : std::logic_error { async_event_queue_terminated() : std::logic_error("neogfx::async_event_queue::async_event_queue_terminated") {} };
         struct event_not_found : std::logic_error { event_not_found() : std::logic_error("neogfx::async_event_queue::event_not_found") {} };
     private:
+        typedef uint64_t transaction;
+        typedef std::optional<transaction> optional_transaction;
         typedef std::unique_ptr<i_event_callback> callback_ptr;
-        typedef std::deque<callback_ptr> event_list_t;
+        typedef std::deque<std::pair<transaction, callback_ptr>> event_list_t;
     public:
         static async_event_queue& instance();
         static async_event_queue& instance(async_task& aTask);
@@ -211,15 +213,17 @@ namespace neolib
         static async_event_queue& get_instance(async_task* aTask);
     public:
         bool exec();
-        void enqueue(callback_ptr aCallback)
+        transaction enqueue(callback_ptr aCallback, const optional_transaction& aTransaction = {})
         {
-            add(std::move(aCallback));
+            return add(std::move(aCallback), aTransaction);
         }
         void unqueue(const i_event& aEvent);
         void terminate();
+    public:
+        i_event_filter_registry& filter_registry();
     private:
         bool terminated() const;
-        void add(callback_ptr aCallback);
+        transaction add(callback_ptr aCallback, const optional_transaction& aTransaction);
         void remove(const i_event& aEvent);
         bool has(const i_event& aEvent) const;
         bool publish_events();
@@ -232,6 +236,7 @@ namespace neolib
         destroyed_flag iTaskDestroyed;
         std::atomic<uint32_t> iPublishNestingLevel;
         std::vector<std::unique_ptr<event_list_t>> iPublishCache;
+        transaction iNextTransaction;
     };
 
     enum class event_trigger_type
@@ -253,6 +258,7 @@ namespace neolib
         typedef std::optional<std::scoped_lock<std::recursive_mutex>> optional_scoped_lock;
         typedef typename event_callback<Args...>::function_type function_type;
         typedef typename event_callback<Args...>::handler_ptr handler_ptr;
+        typedef async_event_queue::optional_transaction optional_async_transaction;
         struct queue_ref
         {
             async_event_queue& queue;
@@ -317,6 +323,7 @@ namespace neolib
             bool triggering = false;
             uint64_t triggerId = 0ull;
             std::atomic<bool> handlersChanged = false;
+            std::atomic<uint32_t> filterCount;
         };
     public:
         event() : iAlias{ *this }, iMutex{ std::make_shared<std::recursive_mutex>() }, iControl{ nullptr }, iInstanceDataPtr{ nullptr }
@@ -325,6 +332,8 @@ namespace neolib
         event(const event&) = delete;
         virtual ~event()
         {
+            if (filtered())
+                async_event_queue::instance().filter_registry().uninstall_event_filter(*this);
             std::scoped_lock<std::recursive_mutex> lock{ *iMutex };
             if (is_controlled())
             {
@@ -337,6 +346,11 @@ namespace neolib
     public:
         self_type& operator=(const self_type&) = delete;
     public:
+        std::recursive_mutex& mutex() const
+        {
+            return *iMutex;
+        }
+    public:
         void release_control() override
         {
             if (iControl != nullptr)
@@ -345,13 +359,26 @@ namespace neolib
                 iControl.store(nullptr);
             }
         }
-        void handle_in_same_thread_as_emitter(cookie aHandleId)
+        void handle_in_same_thread_as_emitter(cookie aHandleId) override
         {
             instance().handlers[aHandleId].handleInSameThreadAsEmitter = true;
         }
-        std::recursive_mutex& mutex() const
+    public:
+        void push_context() const override
         {
-            return *iMutex;
+            std::scoped_lock<std::recursive_mutex> lock{ *iMutex };
+            instance().contexts.emplace_back();
+        }
+        void pop_context() const override
+        {
+            std::scoped_lock<std::recursive_mutex> lock{ *iMutex };
+            instance().contexts.pop_back();
+        }
+    public:
+        void pre_trigger() const override
+        {
+            if (filtered())
+                async_event_queue::instance().filter_registry().pre_filter_event(*this);
         }
     public:
         void ignore_errors()
@@ -368,7 +395,7 @@ namespace neolib
         }
         bool trigger(Args... aArguments) const
         {
-            if (!has_instance_data()) // no instance date means no subscribers so no point triggering.
+            if (!has_instance()) // no instance date means no subscribers so no point triggering.
                 return true;
             switch (trigger_type())
             {
@@ -385,14 +412,29 @@ namespace neolib
         }
         bool sync_trigger(Args... aArguments) const
         {
-            if (!has_instance_data()) // no instance means no subscribers so no point triggering.
-                return false;
+            if (!has_instance()) // no instance means no subscribers so no point triggering.
+                return true;
             if (trigger_type() == event_trigger_type::SynchronousDontQueue)
                 unqueue();
             auto mutex = iMutex;
             optional_scoped_lock lock{ *mutex };
+            if (instance().handlers.empty() && !filtered())
+                return true;
             destroyed_flag destroyed{ *this };
-            instance().contexts.emplace_back();
+            push_context();
+            if (filtered())
+            {
+                async_event_queue::instance().filter_registry().filter_event(*this);
+                if (destroyed)
+                    return true;
+                if (instance().contexts.back().accepted)
+                {
+                    pop_context();
+                    return false;
+                }
+            }
+            if (instance().handlers.empty())
+                return true;
             scoped_flag sf{ instance().triggering };
             if (!instance().triggering)
             {
@@ -402,6 +444,7 @@ namespace neolib
                     handler.triggerId = 0ull;
             }
             auto triggerId = ++instance().triggerId;
+            optional_async_transaction transaction;
             for (std::size_t handlerIndex = {}; handlerIndex < instance().handlers.size();)
             {
                 auto& handler = instance().handlers.at_index(handlerIndex++);
@@ -411,36 +454,38 @@ namespace neolib
                     continue;
                 try
                 {
-                    enqueue(lock, handler, false, aArguments...);
+                    transaction = enqueue(lock, handler, false, transaction, aArguments...);
                     if (destroyed)
-                        return false;
+                        return true;
                 }
                 catch (...)
                 {
-                    instance().contexts.pop_back();
+                    pop_context();
                     throw;
                 }
                 if (destroyed)
-                    return false;
+                    return true;
                 if (instance().contexts.back().accepted)
                 {
-                    instance().contexts.pop_back();
+                    pop_context();
                     return false;
                 }
                 if (instance().handlersChanged.exchange(false))
                     handlerIndex = {};
             }
-            instance().contexts.pop_back();
+            pop_context();
             return true;
         }
         void async_trigger(Args... aArguments) const
         {
-            if (!has_instance_data()) // no instance means no subscribers so no point triggering.
+            if (!has_instance()) // no instance means no subscribers so no point triggering.
                 return;
             if (trigger_type() == event_trigger_type::AsynchronousDontQueue)
                 unqueue();
             auto mutex = iMutex;
             optional_scoped_lock lock{ *mutex };
+            if (instance().handlers.empty())
+                return;
             destroyed_flag destroyed{ *this };
             scoped_flag sf{ instance().triggering };
             if (!instance().triggering)
@@ -451,6 +496,7 @@ namespace neolib
                     handler.triggerId = 0ull;
             }
             auto triggerId = ++instance().triggerId;
+            optional_async_transaction transaction;
             for (std::size_t handlerIndex = {}; handlerIndex < instance().handlers.size();)
             {
                 auto& handler = instance().handlers.at_index(handlerIndex++);
@@ -458,22 +504,44 @@ namespace neolib
                     handler.triggerId = triggerId;
                 else if (handler.triggerId == triggerId)
                     continue;
-                enqueue(lock, handler, true, aArguments...);
+                transaction = enqueue(lock, handler, true, transaction, aArguments...);
                 if (destroyed)
                     return;
                 if (instance().handlersChanged.exchange(false))
                     handlerIndex = {};
             }
         }
-        void accept() const
+        bool accepted() const override
         {
             std::scoped_lock<std::recursive_mutex> lock{ *iMutex };
-            instance_data().contexts.back().accepted = true;
+            return !instance().contexts.empty() ? instance().contexts.back().accepted : false;
         }
-        void ignore() const
+        void accept() const override
         {
             std::scoped_lock<std::recursive_mutex> lock{ *iMutex };
-            instance_data().contexts.back().accepted = false;
+            instance().contexts.back().accepted = true;
+        }
+        void ignore() const override
+        {
+            std::scoped_lock<std::recursive_mutex> lock{ *iMutex };
+            instance().contexts.back().accepted = false;
+        }
+    public:
+        bool filtered() const override
+        {
+            return instance().filterCount > 0u;
+        }
+        void filter_added() const override
+        {
+            ++instance().filterCount;
+        }
+        void filter_removed() const override
+        {
+            --instance().filterCount;
+        }
+        void filters_removed() const override
+        {
+            instance().filterCount = 0u;
         }
     public:
         event_handle subscribe(const function_type& aHandlerCallback, const void* aUniqueId = nullptr) const
@@ -557,8 +625,9 @@ namespace neolib
             for (auto& context : instance().contexts)
                 context.handlersChanged = true;
         }
-        void enqueue(optional_scoped_lock& lock, handler& aHandler, bool aAsync, Args... aArguments) const
+        optional_async_transaction enqueue(optional_scoped_lock& lock, handler& aHandler, bool aAsync, const optional_async_transaction& aAsyncTransaction, Args... aArguments) const
         {
+            optional_async_transaction transaction;
             auto& emitterQueue = async_event_queue::instance();
             if (!aAsync && !aHandler.queueRef->queueDestroyed && &aHandler.queueRef->queue == &emitterQueue)
             {
@@ -572,15 +641,16 @@ namespace neolib
             {
                 auto ecb = std::make_unique<event_callback<Args...>>(*this, aHandler.callback, aArguments...);
                 if (aHandler.handleInSameThreadAsEmitter)
-                    emitterQueue.enqueue(std::move(ecb));
+                    transaction = emitterQueue.enqueue(std::move(ecb), aAsyncTransaction);
                 else
                 {
                     if (!aHandler.queueRef->queueDestroyed)
-                        aHandler.queueRef->queue.enqueue(std::move(ecb));
+                        transaction = aHandler.queueRef->queue.enqueue(std::move(ecb), aAsyncTransaction);
                     else if (!instance().ignoreErrors)
                         throw event_queue_destroyed();
                 }
             }
+            return transaction;
         }
         void unqueue() const
         {
@@ -615,7 +685,7 @@ namespace neolib
             }
             return *iControl;
         }
-        bool has_instance_data() const
+        bool has_instance() const
         {
             return iInstanceDataPtr != nullptr;
         }

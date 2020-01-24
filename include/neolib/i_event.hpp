@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <neolib/neolib.hpp>
 #include <neolib/jar.hpp>
+#include <neolib/i_map.hpp>
 
 namespace neolib
 {
@@ -30,16 +31,30 @@ namespace neolib
     class i_event : public i_cookie_consumer
     {
     public:
-        virtual ~i_event() {}
+        virtual ~i_event() = default;
     public:
         virtual void release_control() = 0;
         virtual void handle_in_same_thread_as_emitter(cookie aHandleId) = 0;
+    public:
+        virtual void pre_trigger() const = 0;
+    public:
+        virtual void push_context() const = 0;
+        virtual void pop_context() const = 0;
+    public:
+        virtual bool accepted() const = 0;
+        virtual void accept() const = 0;
+        virtual void ignore() const = 0;
+    public:
+        virtual bool filtered() const = 0;
+        virtual void filter_added() const = 0;
+        virtual void filter_removed() const = 0;
+        virtual void filters_removed() const = 0;
     };
 
     class i_event_control
     {
     public:
-        virtual ~i_event_control() {}
+        virtual ~i_event_control() = default;
     public:
         virtual void add_ref() = 0;
         virtual void release() = 0;
@@ -52,9 +67,29 @@ namespace neolib
     class i_event_callback
     {
     public:
-        virtual ~i_event_callback() {}
+        virtual ~i_event_callback() = default;
     public:
         virtual const i_event& event() const = 0;
         virtual void call() const = 0;
+    };
+
+    class i_event_filter
+    {
+    public:
+        virtual ~i_event_filter() = default;
+    public:
+        virtual void pre_filter_event(const i_event& aEvent) = 0;
+        virtual void filter_event(const i_event& aEvent) = 0;
+    };
+
+    class i_event_filter_registry
+    {
+    public:
+        virtual void install_event_filter(i_event_filter& aFilter, const i_event& aEvent) = 0;
+        virtual void uninstall_event_filter(i_event_filter& aFilter, const i_event& aEvent) = 0;
+        virtual void uninstall_event_filter(const i_event& aEvent) = 0;
+    public:
+        virtual void pre_filter_event(const i_event& aEvent) const = 0;
+        virtual void filter_event(const i_event& aEvent) const = 0;
     };
 }

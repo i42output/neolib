@@ -35,39 +35,60 @@ namespace neolib
         {
             typedef neolib::event<Args...> base_type;
         public:
-            using typename i_event<Args...>::callback;
+            using typename i_event<Args...>::abstract_callback;
         public:
-            using base_type::base_type;
+            typedef base_type event_type;
+            typedef i_event<Args...> abstract_plugin_event_type;
         public:
-            using base_type::subscribe;
-            using base_type::operator();
-            using base_type::unsubscribe;
+            using event_type::event_type;
+        public:
+            using event_type::subscribe;
+            using event_type::operator();
+            using event_type::unsubscribe;
+        public:
+            const neolib::i_event& raw_event() const override
+            {
+                return *this;
+            }
+            neolib::i_event& raw_event() override
+            {
+                return *this;
+            }
+        public:
+            void pre_trigger() const override
+            {
+                event_type::pre_trigger();
+            }
         public:
             bool trigger(Args... aArguments) const override
             {
-                return base_type::trigger(aArguments...);
+                return event_type::trigger(aArguments...);
             }
             bool sync_trigger(Args... aArguments) const override
             {
-                return base_type::sync_trigger(aArguments...);
+                return event_type::sync_trigger(aArguments...);
             }
             void async_trigger(Args... aArguments) const override
             {
-                base_type::async_trigger(rvalue_cast<Args>(aArguments)...);
+                event_type::async_trigger(rvalue_cast<Args>(aArguments)...);
+            }
+            bool accepted() const override
+            {
+                return event_type::accepted();
             }
             void accept() const override
             {
-                base_type::accept();
+                event_type::accept();
             }
             void ignore() const override
             {
-                base_type::ignore();
+                event_type::ignore();
             }
         private:
-            event_handle do_subscribe(const callback& aCallback, const void* aUniqueId = nullptr) const override
+            event_handle do_subscribe(const abstract_callback& aCallback, const void* aUniqueId = nullptr) const override
             {
-                std::shared_ptr<callback> cb = std::move(aCallback.clone());
-                return base_type::subscribe(
+                std::shared_ptr<abstract_callback> cb = std::move(aCallback.clone());
+                return event_type::subscribe(
                         [cb](Args&& ... aArguments)
                         {
                             (*cb)(std::forward<Args>(aArguments)...);
@@ -76,11 +97,11 @@ namespace neolib
             }
             void do_unsubscribe(event_handle aHandle) const override
             {
-                return base_type::unsubscribe(aHandle);
+                return event_type::unsubscribe(aHandle);
             }
             void do_unsubscribe(const void* aUniqueId) const override
             {
-                return base_type::unsubscribe(aUniqueId);
+                return event_type::unsubscribe(aUniqueId);
             }
         };
     }

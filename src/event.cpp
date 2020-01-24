@@ -54,7 +54,8 @@ namespace neolib
         },
         iTerminated { false },
         iTaskDestroyed{ aTask },
-        iPublishNestingLevel{ 0u }
+        iPublishNestingLevel{ 0u },
+        iNextTransaction{ 0ull }
     {
     }
 
@@ -96,6 +97,56 @@ namespace neolib
         }
     }
 
+    class event_filter_registry : public i_event_filter_registry
+    {
+    public:
+        void install_event_filter(i_event_filter& aFilter, const i_event& aEvent) override
+        {
+            std::scoped_lock lock{ iMutex };
+            aEvent.filter_added();
+            iFilters.emplace(&aEvent, &aFilter);
+        }
+        void uninstall_event_filter(i_event_filter& aFilter, const i_event& aEvent) override
+        {
+            std::scoped_lock lock{ iMutex };
+            aEvent.filter_removed();
+            for (auto f = iFilters.lower_bound(&aEvent); f != iFilters.upper_bound(&aEvent); ++f)
+                if (f->second == &aFilter)
+                {
+                    iFilters.erase(f);
+                    return;
+                }
+        }
+        void uninstall_event_filter(const i_event& aEvent) override
+        {
+            std::scoped_lock lock{ iMutex };
+            aEvent.filters_removed();
+            iFilters.erase(iFilters.lower_bound(&aEvent), iFilters.upper_bound(&aEvent));
+        }
+    public:
+        void pre_filter_event(const i_event& aEvent) const override
+        {
+            std::scoped_lock lock{ iMutex };
+            for (auto f = iFilters.lower_bound(&aEvent); f != iFilters.upper_bound(&aEvent); ++f)
+                f->second->pre_filter_event(*f->first);
+        }
+        void filter_event(const i_event& aEvent) const override
+        {
+            std::scoped_lock lock{ iMutex };
+            for (auto f = iFilters.lower_bound(&aEvent); f != iFilters.upper_bound(&aEvent); ++f)
+                f->second->filter_event(*f->first);
+        }
+    private:
+        mutable std::recursive_mutex iMutex;
+        std::unordered_multimap<const i_event*, i_event_filter*> iFilters;
+    };
+
+    i_event_filter_registry& async_event_queue::filter_registry()
+    {
+        static event_filter_registry sFilterRegistry;
+        return sFilterRegistry;
+    }
+
     bool async_event_queue::terminated() const
     {
         return iTerminated;
@@ -106,27 +157,28 @@ namespace neolib
         remove(aEvent);
     }
 
-    void async_event_queue::add(callback_ptr aCallback)
+    async_event_queue::transaction async_event_queue::add(callback_ptr aCallback, const optional_transaction& aTransaction)
     {
         std::scoped_lock lock{ iMutex };
         if (terminated())
             throw async_event_queue_terminated();
-        iEvents.push_back(std::move(aCallback));
+        iEvents.push_back(std::make_pair(aTransaction == std::nullopt ? ++iNextTransaction : *aTransaction, std::move(aCallback)));
         if (!iTimer->waiting())
             iTimer->again();
+        return iEvents.back().first;
     }
 
     void async_event_queue::remove(const i_event& aEvent)
     {
         std::scoped_lock lock{ iMutex };
         for (auto& e : iEvents)
-            if (e != nullptr && &e->event() == &aEvent)
-                e = nullptr;
+            if (e.second != nullptr && &e.second->event() == &aEvent)
+                e.second = nullptr;
     }
 
     bool async_event_queue::has(const i_event& aEvent) const
     {
-        return std::find_if(iEvents.begin(), iEvents.end(), [&aEvent](auto const& e) { return &e->event() == &aEvent; }) != iEvents.end();
+        return std::find_if(iEvents.begin(), iEvents.end(), [&aEvent](auto const& e) { return &e.second->event() == &aEvent; }) != iEvents.end();
     }
 
     bool async_event_queue::publish_events()
@@ -143,12 +195,30 @@ namespace neolib
         currentContext.clear();
         currentContext.swap(iEvents);
         lock = std::nullopt;
-        for (auto& e : currentContext)
-            if (e != nullptr)
+        optional_transaction currentTransaction;
+        for (auto e = currentContext.begin(); e != currentContext.end(); ++e)
+        {
+            if (e->second == nullptr)
+                continue;
+            auto const& ec = *e->second;
+            if (currentTransaction == std::nullopt || *currentTransaction != e->first)
             {
-                didSome = true;
-                e->call();
+                currentTransaction = e->first;
+                ec.event().push_context();
             }
+            if (!ec.event().accepted())
+            {
+                if (ec.event().filtered())
+                    filter_registry().filter_event(ec.event());
+                if (!ec.event().accepted())
+                {
+                    didSome = true;
+                    ec.call();
+                }
+            }
+            if (std::next(e) == currentContext.end() || std::next(e)->first != *currentTransaction)
+                ec.event().pop_context();
+        }
         return didSome;
     }
 }

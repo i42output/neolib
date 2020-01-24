@@ -214,6 +214,10 @@ namespace neolib
         {
         }
     public:
+        bool empty() const
+        {
+            return items().empty();
+        }
         std::size_t size() const
         {
             return items().size();
