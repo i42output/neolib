@@ -1283,14 +1283,19 @@ namespace neolib
                         case json_detail::state::NumberInt:
                         case json_detail::state::NumberFrac:
                         case json_detail::state::NumberExpInt:
-                            if (to_token(json_detail::sTokenTable<json_syntax::Functional>, *nextInputCh) == json_detail::token::Character)
+                            switch (to_token(json_detail::sTokenTable<json_syntax::Functional>, *nextInputCh))
                             {
+                            case json_detail::token::Character:
+                            case json_detail::token::HexDigit:
+                            case json_detail::token::EscapedOrHexDigit:
                                 currentState = json_detail::state::Keyword;
                                 nextState = json_detail::state::Keyword;
                                 currentElement.type = element::Keyword;
                                 nextOutputCh = nextInputCh;
+                                break;
+                            default:
+                                break;
                             }
-                            break;
                         default:
                             break;
                         }
