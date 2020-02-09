@@ -110,12 +110,12 @@ namespace neolib
             }
             wrapper& operator+=(difference_type aDelta) override
             {
-                iIterator.operator+=(aDelta);
+                std::advance(iIterator, aDelta);
                 return *this;
             }
             wrapper& operator-=(difference_type aDelta) override
             {
-                iIterator.operator-=(aDelta);
+                std::advance(iIterator, -aDelta);
                 return *this;
             }
             bool operator==(const i_wrapper& aOther) const override
