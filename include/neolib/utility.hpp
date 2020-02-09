@@ -66,12 +66,13 @@ namespace neolib
     }
 
     template <typename T1, typename T2>
-    struct minmax : neolib::pair<T1, T2>
+    struct minmax : pair<T1, T2>
     {
+        typedef pair<T1, T2> base_type;
         minmax() {}
         minmax(const T1& x, const T2& y) : pair<T1, T2>(x, y) {}
         template <typename U, typename V> minmax(const minmax<U, V>& m) : pair<T1, T2>(m.first, m.second) {}
-        template <typename U, typename V> minmax<T1, T2>& operator=(const minmax<U, V>& m) { first = m.first; second = m.second; return *this; }
-        minmax operator-() const { minmax ret(-second, -first); return ret; }
+        template <typename U, typename V> minmax<T1, T2>& operator=(const minmax<U, V>& m) { base_type::first = m.first; base_type::second = m.second; return *this; }
+        minmax operator-() const { minmax ret(-base_type::second, -base_type::first); return ret; }
     };
 }

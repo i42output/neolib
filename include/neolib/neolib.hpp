@@ -62,7 +62,7 @@ namespace neolib
     }
 
     template <typename T1, typename T2>
-    class pair;
+    struct pair;
 
     namespace detail
     {

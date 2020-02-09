@@ -39,8 +39,8 @@
 #include <neolib/neolib.hpp>
 #include <memory>
 #include <iterator>
-#include "vecarray.hpp"
-#include "array_tree.hpp"
+#include <neolib/vecarray.hpp>
+#include <neolib/array_tree.hpp>
 
 namespace neolib
 {
@@ -51,12 +51,12 @@ namespace neolib
     public:
         typedef T value_type;
         typedef Alloc allocator_type;
-        typedef typename allocator_type::reference reference;
-        typedef typename allocator_type::pointer pointer;
-        typedef typename allocator_type::const_reference const_reference;
-        typedef typename allocator_type::const_pointer const_pointer;
-        typedef typename allocator_type::size_type size_type;
-        typedef typename allocator_type::difference_type difference_type;
+        typedef value_type& reference;
+        typedef value_type const& const_reference;
+        typedef typename std::allocator_traits<allocator_type>::pointer pointer;
+        typedef typename std::allocator_traits<allocator_type>::const_pointer const_pointer;
+        typedef typename std::allocator_traits<allocator_type>::size_type size_type;
+        typedef typename std::allocator_traits<allocator_type>::difference_type difference_type;
     private:
         typedef neolib::vecarray<T, SegmentSize, SegmentSize, neolib::nocheck> segment_type;
         class node : public base_type::node
@@ -79,7 +79,7 @@ namespace neolib
         private:
             segment_type iSegment;
         };
-        typedef typename allocator_type:: template rebind<node>::other node_allocator_type;
+        typedef typename std::allocator_traits<allocator_type>:: template rebind_alloc<node> node_allocator_type;
     public:
         class iterator
         {
@@ -418,7 +418,12 @@ namespace neolib
         }
         iterator insert(const_iterator aPosition, const value_type& aValue)
         {
-            return insert(aPosition, 1, aValue);
+            return insert(aPosition, static_cast<size_type>(1), aValue);
+        }
+        template <typename... Args>
+        iterator emplace_insert(const_iterator aPosition, Args&&... aArguments)
+        {
+            return emplace_insert(aPosition, static_cast<size_type>(1), std::forward<Args>(aArguments)...);
         }
         const_reference operator[](size_type aIndex) const
         {
@@ -445,6 +450,20 @@ namespace neolib
             }
             return iterator{*this, pos};
         }
+        template <typename... Args>
+        iterator emplace_insert(const_iterator aPosition, size_type aCount, Args&&... aArguments)
+        {
+            auto pos = aPosition.iContainerPosition;
+            while (aCount > 0)
+            {
+                // todo: shouldn't be creating a temporary for emplace
+                auto const& temp = value_type{ std::forward<Args>(aArguments)... };
+                aPosition = insert(aPosition, &temp, &temp + 1);
+                ++aPosition;
+                --aCount;
+            }
+            return iterator{ *this, pos };
+        }
         void clear()
         {
             erase(begin(), end());
@@ -456,6 +475,16 @@ namespace neolib
         void push_back(const value_type& aValue)
         {
             insert(end(), aValue);
+        }
+        template <typename... Args>
+        void emplace_front(Args&&... aArguments)
+        {
+            emplace_insert(begin(), std::forward<Args>(aArguments)...);
+        }
+        template <typename... Args>
+        void emplace_back(Args&&... aArguments)
+        {
+            emplace_insert(end(), std::forward<Args>(aArguments)...);
         }
         void resize(std::size_t aNewSize, const value_type& aValue = value_type())
         {

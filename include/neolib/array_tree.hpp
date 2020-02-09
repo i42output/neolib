@@ -195,7 +195,7 @@ namespace neolib
             size_type iSize;
         };
     private:
-        typedef typename allocator_type:: template rebind<node>::other node_allocator_type;
+        typedef typename std::allocator_traits<allocator_type>:: template rebind_alloc<node> node_allocator_type;
 
     public:
         array_tree(const Alloc& aAllocator = Alloc()) :

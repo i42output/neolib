@@ -1,33 +1,6 @@
-/build/win32/vs2013/Debug
-/build/win32/vs2013/Release
-/build/win32/vs2013/neolib.sdf
-/build/win32/vs2013/neolib.v12.suo
 /lib/neolib.lib
 /lib/neolibd.lib
-/build/win32/vs2015/neolib.v12.suo
-/build/win32/vs2015/neolib.sdf
-/build/win32/vs2015/Debug
-/build/win32/vs2015/Release
-/build/win32/vs2015/.vs/neolib/v14/.suo
-/build/win32/vs2015/neolib.vcxproj.user
-/build/win32/vs2015/x64/Release
-/build/win32/vs2015/x64/Debug
-/build/win32/vs2015/My Amplifier Results - neolib/*.amplxeproj
-/build/win32/vs2017/Release
-/build/win32/vs2017/neolib.vcxproj.user
-/build/win32/vs2017/Debug
-/build/win32/vs2017/x64/Debug
-/unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/Debug
-/unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/NoFussJSONTest.vcxproj.user
-/unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/.vs
-/build/win32/vs2017/x64/Release
-/unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/My Amplifier Results - NoFussJSONTest/*.amplxeproj
-/unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/Release
-/unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/*.psess
-/unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/*.vspx
-/build/win32/vs2017/.vs
-
-/build/win32/vs2019/x64/Debug
+/build/win32/vs2019/x64
 /build/win32/vs2019/neolib.vcxproj.user
 /build/win32/vs2019/Debug
 /build/win32/vs2019/Release
@@ -35,10 +8,9 @@
 /unit_tests/NoFussJSON/build/win32/vs2019/NoFussJSONTest/.vs
 /unit_tests/NoFussJSON/build/win32/vs2019/NoFussJSONTest/Debug
 /unit_tests/NoFussJSON/build/win32/vs2019/NoFussJSONTest/Release
-/unit_tests/NoFussJSON/build/win32/vs2019/NoFussJSONTest/x64/Release
+/unit_tests/NoFussJSON/build/win32/vs2019/NoFussJSONTest/x64
 /unit_tests/NoFussJSON/build/win32/vs2019/NoFussJSONTest/My Amplifier Results - NoFussJSONTest/My Amplifier Results - NoFussJSONTest.amplxeproj
 /unit_tests/NoFussJSON/build/win32/vs2019/NoFussJSONTest/NoFussJSONTest.vcxproj.user
-/unit_tests/NoFussJSON/build/win32/vs2019/NoFussJSONTest/x64/Debug
-/build/win32/vs2019/x64/Tools
-/build/win32/vs2019/x64/Tools - Debug
-/build/win32/vs2019/x64/Tools_Debug
+/unit_tests/Containers/.vs
+/unit_tests/Containers/x64
+/unit_tests/Containers/Containers.vcxproj.user

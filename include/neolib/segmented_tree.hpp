@@ -1,6 +1,6 @@
 // segmented_tree.h
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2020 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -36,125 +36,538 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include "utility.hpp"
-#include "segmented_array.hpp"
-#include "memory.hpp"
+#include <neolib/utility.hpp>
+#include <neolib/segmented_array.hpp>
 
 namespace neolib 
 {
-    template <typename T, size_t N, typename A = std::allocator<T> >
+    template <typename T, size_t N = 64, typename Alloc = std::allocator<T> >
     class segmented_tree
     {
+        typedef segmented_tree<T, N, Alloc> self_type;
+        typedef self_type tree_type;
     public:
         typedef T value_type;
-        typedef A allocator_type;
-        typedef value_type* pointer;
-        typedef const value_type* const_pointer;
+        typedef Alloc allocator_type;
         typedef value_type& reference;
         typedef const value_type& const_reference;
-        class node;
-        typedef node* node_pointer;
-        typedef const node* const_node_pointer;
-        typedef typename A:: template rebind<node_pointer>::other node_pointer_allocator;
-        typedef segmented_array<node_pointer, N, node_pointer_allocator> node_children;
-        typedef typename node_children::iterator iterator;
-        typedef typename node_children::const_iterator const_iterator;
-    public:
+        typedef typename std::allocator_traits<allocator_type>::pointer pointer;
+        typedef typename std::allocator_traits<allocator_type>::const_pointer const_pointer;
+        typedef typename std::allocator_traits<allocator_type>::difference_type difference_type;
+        typedef typename std::allocator_traits<allocator_type>::size_type size_type;
+    private:
         class node
         {
+            friend class segmented_tree<T, N, Alloc>;
         public:
-            value_type iValue;
-            node_children iChildren;
-        private: 
-            node() {} 
+            typedef typename std::allocator_traits<allocator_type>:: template rebind_alloc<node> node_allocator_type;
+            typedef segmented_array<node, N, node_allocator_type> child_list;
+        private:
+            struct root_place_holder {};
         public:
-            node(const value_type& value) : iValue(value), iChildren() {}
-            node(const node& rhs) : iValue(rhs.iValue), iChildren(rhs.iChildren) {}
-            value_type& value() { return iValue; }
-            node_children& children() { return iChildren; }
-            bool empty() const { return iChildren.empty(); }
+            node() : 
+                iParent{ nullptr }, 
+                iContents{ root_place_holder{} }
+            {}
+            node(const node& other) :
+                iParent{ other.iParent },
+                iChildren( other.iChildren ),
+                iContents{ root_place_holder{} }
+            {
+                if (!is_root())
+                    new (&iContents.value) value_type{ other.iContents.value };
+            }
+            node(node& parent, const value_type& value) :
+                iParent{ &parent }, 
+                iContents { value }
+            {}
+            ~node()
+            {
+                if (!is_root())
+                    iContents.value.~value_type();
+            }
+        public:
+            node& operator=(const node& other)
+            {
+                (*this).~node();
+                iParent = other.iParent;
+                iChildren = other.iChildren;
+                if (!other.is_root())
+                    iContents.value = other.iContents.value;
+                else
+                    iContents.root = other.iContents.root;
+                return *this;
+            }
+        private:
+            bool is_root() const 
+            { 
+                return iParent == nullptr; 
+            }
+            const node& parent() const
+            {
+                if (!is_root())
+                    return *iParent;
+                return *this;
+            }
+            node& parent()
+            {
+                if (!is_root())
+                    return *iParent;
+                return *this;
+            }
+            const value_type& value() const 
+            { 
+                return iContents.value; 
+            }
+            value_type& value() 
+            { 
+                return iContents.value; 
+            }
+            const child_list& children() const 
+            { 
+                return iChildren; 
+            }
+            child_list& children() 
+            { 
+                return iChildren; 
+            }
+            bool empty() const 
+            { 
+                return iChildren.empty(); 
+            }
+            std::size_t depth() const
+            {
+                std::size_t result = 0;
+                node const* n = this;
+                while (!n->is_root())
+                {
+                    ++result;
+                    n = &n->parent();
+                }
+                return result;
+            }
+        private:
+
+        private:
+            node* iParent;
+            child_list iChildren;
+            union contents
+            {
+                value_type value;
+                root_place_holder root;
+                contents(const value_type& value) : value{ value } {}
+                contents(const root_place_holder& root) : root{ root } {}
+                ~contents() {}
+            } iContents;
         };
-        typedef typename A:: template rebind<node>::other node_allocator;
-
-    private:
-        node_pointer iRoot;
-        node_allocator iAllocator;
-
+        typedef typename node::child_list node_child_list;
+        typedef typename node::child_list::const_iterator node_child_list_const_iterator;
+        typedef typename node::child_list::iterator node_child_list_iterator;
     public:
+        enum class iterator_type
+        {
+            Normal,
+            Sibling
+        };
+        template <iterator_type Type>
+        class basic_const_iterator;
+        template <iterator_type Type>
+        class basic_iterator
+        {
+            typedef basic_iterator<Type> self_type;
+            friend class segmented_tree<T, N, Alloc>;
+        public:
+            typedef typename tree_type::value_type value_type;
+            typedef typename tree_type::difference_type difference_type;
+            typedef typename tree_type::pointer pointer;
+            typedef typename tree_type::reference reference;
+        public:
+            basic_iterator() : iParentNode{}, iChildIterator{} {}
+            basic_iterator(node& parentNode, node_child_list_iterator childIterator) : iParentNode{ &parentNode }, iChildIterator{ childIterator } {}
+            template <iterator_type Type2>
+            basic_iterator(basic_iterator<Type2> const& other) : iParentNode{ other.iParentNode }, iChildIterator{ other.iChildIterator } {}
+        public:
+            template <iterator_type Type2>
+            bool operator==(basic_iterator<Type2> const& other)
+            {
+                return iParentNode == other.iParentNode && iChildIterator == other.iChildIterator;
+            }
+            template <iterator_type Type2>
+            bool operator!=(basic_iterator<Type2> const& other)
+            {
+                return !(*this == other);
+            }
+        public:
+            self_type& operator++()
+            {
+                if constexpr (Type == iterator_type::Sibling)
+                {
+                    ++iChildIterator;
+                }
+                else
+                {
+                    if (children().empty())
+                        ++iChildIterator;
+                    else
+                    {
+                        iParentNode = &*base();
+                        iChildIterator = children().begin();
+                    }
+                }
+                return *this;
+            }
+            self_type operator++(int) const
+            {
+                self_type temp = *this;
+                ++temp;
+                return temp;
+            }
+            self_type& operator--()
+            {
+                if constexpr (Type == iterator_type::Sibling)
+                {
+                    --iChildIterator;
+                }
+                else
+                {
+                    // todo
+                }
+                return *this;
+            }
+            self_type operator--(int) const
+            {
+                self_type temp = *this;
+                --temp;
+                return temp;
+            }
+        public:
+            reference operator*() const
+            {
+                return base()->value();
+            }
+            pointer operator->() const
+            {
+                return &(*this);
+            }
+        public:
+            basic_const_iterator<iterator_type::Normal> cbegin() const
+            {
+                return basic_const_iterator<iterator_type::Normal>{ *base(), children().begin() };
+            }
+            basic_const_iterator<iterator_type::Normal> begin() const
+            {
+                return cbegin();
+            }
+            basic_iterator<iterator_type::Normal> begin()
+            {
+                return basic_iterator<iterator_type::Normal>{ *base(), children().begin() };
+            }
+            basic_const_iterator<iterator_type::Normal> cend() const
+            {
+                return basic_const_iterator<iterator_type::Normal>{ *base(), children().end() };
+            }
+            basic_const_iterator<iterator_type::Normal> end() const
+            {
+                return cend();
+            }
+            basic_iterator<iterator_type::Normal> end()
+            {
+                return basic_iterator<iterator_type::Normal>{ *base(), children().end() };
+            }
+            basic_const_iterator<iterator_type::Sibling> csbegin() const
+            {
+                return basic_const_iterator<iterator_type::Sibling>{ *base(), children().begin() };
+            }
+            basic_const_iterator<iterator_type::Sibling> sbegin() const
+            {
+                return csbegin();
+            }
+            basic_iterator<iterator_type::Sibling> sbegin()
+            {
+                return basic_iterator<iterator_type::Sibling>{ *base(), children().begin() };
+            }
+            basic_const_iterator<iterator_type::Sibling> csend() const
+            {
+                return basic_const_iterator<iterator_type::Sibling>{ *base(), children().end() };
+            }
+            basic_const_iterator<iterator_type::Sibling> send() const
+            {
+                return csend();
+            }
+            basic_iterator<iterator_type::Sibling> send()
+            {
+                return basic_iterator<iterator_type::Sibling>{ *base(), children().end() };
+            }
+        public:
+            std::size_t depth() const
+            {
+                return base()->depth();
+            }
+        private:
+            node& parent() const { return *iParentNode; }
+            node_child_list_iterator base() const { return iChildIterator; }
+            node_child_list& children() const { return base()->children(); }
+        private:
+            node* iParentNode;
+            node_child_list_iterator iChildIterator;
+        };
+        template <iterator_type Type>
+        class basic_const_iterator
+        {
+            typedef basic_const_iterator<Type> self_type;
+            friend class segmented_tree<T, N, Alloc>;
+        public:
+            typedef typename tree_type::value_type value_type;
+            typedef typename tree_type::difference_type difference_type;
+            typedef typename tree_type::const_pointer pointer;
+            typedef typename tree_type::const_reference reference;
+        public:
+            basic_const_iterator() : iParentNode{}, iChildIterator{} {}
+            basic_const_iterator(node const& parentNode, node_child_list_const_iterator childIterator) : iParentNode{ &parentNode }, iChildIterator{ childIterator } {}
+            template <iterator_type Type2>
+            basic_const_iterator(basic_const_iterator<Type2> const& other) : iParentNode{ other.iParentNode }, iChildIterator{ other.iChildIterator } {}
+            template <iterator_type Type2>
+            basic_const_iterator(basic_iterator<Type2> const& other) : iParentNode{ other.iParentNode }, iChildIterator{ other.iChildIterator } {}
+        public:
+            template <iterator_type Type2>
+            bool operator==(basic_const_iterator<Type2> const& other)
+            {
+                return iParentNode == other.iParentNode && iChildIterator == other.iChildIterator;
+            }
+            template <iterator_type Type2>
+            bool operator!=(basic_const_iterator<Type2> const& other)
+            {
+                return !(*this == other);
+            }
+        public:
+            self_type& operator++()
+            {
+                if constexpr (Type == iterator_type::Sibling)
+                {
+                    ++iChildIterator;
+                }
+                else
+                {
+                    if (children().empty())
+                        ++iChildIterator;
+                    else
+                    {
+                        iParentNode = &*base();
+                        iChildIterator = children().begin();
+                    }
+                }
+                return *this;
+            }
+            self_type operator++(int) const
+            {
+                self_type temp = *this;
+                ++temp;
+                return temp;
+            }
+            self_type& operator--()
+            {
+                if constexpr (Type == iterator_type::Sibling)
+                {
+                    --iChildIterator;
+                }
+                else
+                {
+                    // todo
+                }
+                return *this;
+            }
+            self_type operator--(int) const
+            {
+                self_type temp = *this;
+                --temp;
+                return temp;
+            }
+        public:
+            reference operator*() const
+            {
+                return base()->value();
+            }
+            pointer operator->() const
+            {
+                return &(*this);
+            }
+        public:
+            basic_const_iterator<iterator_type::Normal> cbegin() const
+            {
+                return basic_const_iterator<iterator_type::Normal>{ *base(), children().begin() };
+            }
+            basic_const_iterator<iterator_type::Normal> begin() const
+            {
+                return cbegin();
+            }
+            basic_const_iterator<iterator_type::Normal> cend() const
+            {
+                return basic_const_iterator<iterator_type::Normal>{ *base(), children().end() };
+            }
+            basic_const_iterator<iterator_type::Normal> end() const
+            {
+                return cend();
+            }
+            basic_const_iterator<iterator_type::Sibling> csbegin() const
+            {
+                return basic_const_iterator<iterator_type::Sibling>{ *base(), children().begin() };
+            }
+            basic_const_iterator<iterator_type::Sibling> sbegin() const
+            {
+                return csbegin();
+            }
+            basic_const_iterator<iterator_type::Sibling> csend() const
+            {
+                return basic_const_iterator<iterator_type::Sibling>{ *base(), children().end() };
+            }
+            basic_const_iterator<iterator_type::Sibling> send() const
+            {
+                return csend();
+            }
+        public:
+            std::size_t depth() const
+            {
+                return base()->depth();
+            }
+        private:
+            node const& parent() const { return *iParentNode; }
+            node_child_list_const_iterator base() const { return iChildIterator; }
+            node_child_list const& children() const { return base()->children(); }
+        private:
+            node const* iParentNode;
+            node_child_list_const_iterator iChildIterator;
+        };
+        typedef basic_iterator<iterator_type::Normal> iterator;
+        typedef basic_const_iterator<iterator_type::Normal> const_iterator;
+        typedef basic_iterator<iterator_type::Sibling> sibling_iterator;
+        typedef basic_const_iterator<iterator_type::Sibling> const_sibling_iterator;
+
         // construction
-        segmented_tree() : iRoot(nullptr) {}
+    public:
+        segmented_tree()
+        {
+        }
         ~segmented_tree() 
         {
-            if (iRoot != nullptr)
-                erase(iRoot); 
         }
 
         // traversals
-        node_pointer root() { if (iRoot == nullptr) new_root(nullptr); return iRoot; }
-        const_node_pointer root() const { return iRoot; }
-        bool empty() const { return iRoot == nullptr || iRoot->iChildren.size() == nullptr; }
-        // modifiers
-        void new_root(node_pointer node)
-        {
-            if (iRoot != nullptr)
-                erase(iRoot);
-            if (node == nullptr)
-                node = buy_node(value_type());
-            iRoot = node;
-        }
-        void push_back(node_pointer parent, const value_type& value) 
-        {            
-            if (parent == nullptr)
-            {
-                if (iRoot == nullptr)
-                    new_root(nullptr);
-                parent = iRoot;
-            }
-            node_pointer new_node = buy_node(value);
-            parent->iChildren.push_back(new_node);
-        }
-        void push_front(node_pointer parent, const value_type& value) 
-        {            
-            if (parent == nullptr)
-            {
-                if (iRoot == nullptr)
-                    iRoot = buy_node(value_type());
-                parent = iRoot;
-            }
-            node_pointer new_node = buy_node(value);
-            parent->iChildren.insert(parent->iChildren.begin(), new_node);
-        } 
-        void erase(node_pointer position, node_pointer parent = nullptr) 
+    public:
+        bool empty() const 
         { 
-            if (position == nullptr)
-                return;
-
-            if (position == iRoot)
-                iRoot = nullptr;
-
-            while(!position->iChildren.empty())
-                erase(static_cast<node_pointer>(*position->iChildren.begin()), position);
-
-            iAllocator.destroy(position);
-            iAllocator.deallocate(reinterpret_cast<node_allocator::pointer>(position), 1);
-            if (parent != nullptr)
-                parent->children().remove(position, false);
+            return root().empty();
         }
-        void erase_children(node_pointer position)
+
+        // modifiers
+    public:
+        const_iterator cbegin() const
         {
-            if (position == nullptr)
-                return;
-            while(!position->children().empty())
-                erase(static_cast<node_pointer>(*position->children().begin()), position);
-            position->children().clear();
+            return const_iterator{ first_node().parent(), first_node().children().begin() };
         }
-    private:
+        const_iterator begin() const
+        {
+            return cbegin();
+        }
+        iterator begin()
+        {
+            return iterator{ first_node().parent(), first_node().children().begin() };
+        }
+        const_iterator cend() const
+        {
+            return const_iterator{ last_node().parent(), last_node().children().end() };
+        }
+        const_iterator end() const
+        {
+            return cend();
+        }
+        iterator end()
+        {
+            return iterator{ last_node().parent(), last_node().children().end() };
+        }
+        const_sibling_iterator csbegin() const
+        {
+            return const_sibling_iterator{ root(), root().children().begin() };
+        }
+        const_sibling_iterator sbegin() const
+        {
+            return csbegin();
+        }
+        sibling_iterator sbegin()
+        {
+            return sibling_iterator{ root(), root().children().begin() };
+        }
+        const_sibling_iterator csend() const
+        {
+            return const_sibling_iterator{ root(), root().children().end() };
+        }
+        const_sibling_iterator send() const
+        {
+            return csend();
+        }
+        sibling_iterator send()
+        {
+            return sibling_iterator{ root(), root().children().end() };
+        }
+        sibling_iterator insert(const_sibling_iterator position, const value_type& value)
+        {
+            auto& parent = const_cast<node&>(position.parent());
+            auto& children = const_cast<node_child_list&>(position.parent().children());
+            return sibling_iterator{ parent, children.emplace_insert(position.base(), parent, value) };
+        }
+        void push_back(const value_type& value)
+        {
+            push_back(send(), value);
+        }
+        void push_back(const_iterator parent, const value_type& value)
+        {
+            auto& parentNode = const_cast<node&>(*parent.base());
+            parentNode.children().emplace_back(parentNode, value);
+        }
+        void push_front(const value_type& value)
+        {
+            push_font(sbegin(), value);
+        }
+        void push_front(const_iterator parent, const value_type& value)
+        {
+            auto& parentNode = const_cast<node&>(*parent.base());
+            parentNode.children().emplace_front(parentNode, value);
+        }
+
         // implementation
-        node_pointer buy_node(const value_type& value)
+    private:
+        node const& root() const
         {
-            node_pointer new_node  = reinterpret_cast<node_pointer>(iAllocator.allocate(1));
-            iAllocator.construct(new_node, node(value));
-            return new_node;
+            return iRoot;
         }
+        node& root()
+        {
+            return iRoot;
+        }
+        node const& first_node() const
+        {
+            auto n = &root();
+            while (!n->empty())
+                n = &n->children()[0];
+            return *n;
+        }
+        node& first_node()
+        {
+            return const_cast<node&>(const_cast<const self_type&>(*this).first_node());
+        }
+        node const& last_node() const
+        {
+            auto n = &root();
+            while (!n->empty())
+                n = &*std::prev(n->children().end());
+            return *n;
+        }
+        node& last_node()
+        {
+            return const_cast<node&>(const_cast<const self_type&>(*this).last_node());
+        }
+
+        // state
+    private:
+        node iRoot;
     };
 }

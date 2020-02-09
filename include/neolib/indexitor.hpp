@@ -40,7 +40,7 @@
 #include <memory>
 #include <iterator>
 #include <type_traits>
-#include "index_array_tree.hpp"
+#include <neolib/index_array_tree.hpp>
 
 namespace neolib
 {
