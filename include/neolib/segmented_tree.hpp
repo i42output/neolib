@@ -36,7 +36,6 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <neolib/utility.hpp>
 #include <neolib/segmented_array.hpp>
 
 namespace neolib 
