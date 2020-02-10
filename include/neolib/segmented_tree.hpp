@@ -188,12 +188,12 @@ namespace neolib
             basic_iterator(basic_iterator<Type2> const& other) : iParentNode{ other.iParentNode }, iBaseIterator{ other.iBaseIterator } {}
         public:
             template <iterator_type Type2>
-            bool operator==(basic_iterator<Type2> const& other)
+            bool operator==(basic_iterator<Type2> const& other) const
             {
                 return iParentNode == other.iParentNode && iBaseIterator == other.iBaseIterator;
             }
             template <iterator_type Type2>
-            bool operator!=(basic_iterator<Type2> const& other)
+            bool operator!=(basic_iterator<Type2> const& other) const
             {
                 return !(*this == other);
             }
@@ -207,8 +207,8 @@ namespace neolib
                     if (children().empty())
                     {
                         ++iBaseIterator;
-                        while (iBaseIterator == parent().children().end() && !parent().is_root())
-                            *this = self_type{ parent().parent(), std::next(parent().parent().children().iter(parent())) };
+                        while (iBaseIterator == parent_node().children().end() && !parent_node().is_root())
+                            *this = self_type{ parent_node().parent(), std::next(parent_node().parent().children().iter(parent_node())) };
                     }
                     else
                         *this = self_type{ *base(), children().begin() };
@@ -227,8 +227,8 @@ namespace neolib
                     --iBaseIterator;
                 else
                 {
-                    if (iBaseIterator == parent().children().begin())
-                        *this = self_type{ parent().parent(), parent().parent().children().iter(parent()) };
+                    if (iBaseIterator == parent_node().children().begin())
+                        *this = self_type{ parent_node().parent(), parent_node().parent().children().iter(parent_node()) };
                     else
                     {
                         --iBaseIterator;
@@ -254,6 +254,18 @@ namespace neolib
                 return &(**this);
             }
         public:
+            basic_const_iterator<iterator_type::Sibling> cparent() const
+            {
+                return basic_const_iterator<iterator_type::Sibling>{ parent_node().parent(), parent_node().parent().children().iter(parent_node()) };
+            }
+            basic_const_iterator<iterator_type::Sibling> parent() const
+            {
+                return cparent();
+            }
+            basic_iterator<iterator_type::Sibling> parent()
+            {
+                return basic_iterator<iterator_type::Sibling>{ parent_node().parent(), parent_node().parent().children().iter(parent_node()) };
+            }
             basic_const_iterator<iterator_type::Sibling> cbegin() const
             {
                 return basic_const_iterator<iterator_type::Sibling>{ *base(), children().begin() };
@@ -308,7 +320,7 @@ namespace neolib
                 return base()->depth();
             }
         private:
-            node& parent() const { return *iParentNode; }
+            node& parent_node() const { return *iParentNode; }
             node_child_list_iterator base() const { return iBaseIterator; }
             node_child_list& children() const { return base()->children(); }
         private:
@@ -335,12 +347,12 @@ namespace neolib
             basic_const_iterator(basic_iterator<Type2> const& other) : iParentNode{ other.iParentNode }, iBaseIterator{ other.iBaseIterator } {}
         public:
             template <iterator_type Type2>
-            bool operator==(basic_const_iterator<Type2> const& other)
+            bool operator==(basic_const_iterator<Type2> const& other) const
             {
                 return iParentNode == other.iParentNode && iBaseIterator == other.iBaseIterator;
             }
             template <iterator_type Type2>
-            bool operator!=(basic_const_iterator<Type2> const& other)
+            bool operator!=(basic_const_iterator<Type2> const& other) const
             {
                 return !(*this == other);
             }
@@ -354,8 +366,8 @@ namespace neolib
                     if (children().empty())
                     {
                         ++iBaseIterator;
-                        while (iBaseIterator == parent().children().end() && !parent().is_root())
-                            *this = self_type{ parent().parent(), std::next(parent().parent().children().iter(parent())) };
+                        while (iBaseIterator == parent_node().children().end() && !parent_node().is_root())
+                            *this = self_type{ parent_node().parent(), std::next(parent_node().parent().children().iter(parent_node())) };
                     }
                     else
                         *this = self_type{ *base(), children().begin() };
@@ -374,8 +386,8 @@ namespace neolib
                     --iBaseIterator;
                 else
                 {
-                    if (iBaseIterator == parent().children().begin())
-                        *this = self_type{ parent().parent(), parent().parent().children().iter(parent()) };
+                    if (iBaseIterator == parent_node().children().begin())
+                        *this = self_type{ parent_node().parent(), parent_node().parent().children().iter(parent_node()) };
                     else
                     {
                         --iBaseIterator;
@@ -401,6 +413,14 @@ namespace neolib
                 return &(**this);
             }
         public:
+            basic_const_iterator<iterator_type::Sibling> cparent() const
+            {
+                return basic_const_iterator<iterator_type::Sibling>{ parent_node().parent(), parent_node().parent().children().iter(parent_node()) };
+            }
+            basic_const_iterator<iterator_type::Sibling> parent() const
+            {
+                return cparent();
+            }
             basic_const_iterator<iterator_type::Sibling> cbegin() const
             {
                 return basic_const_iterator<iterator_type::Sibling>{ *base(), children().begin() };
@@ -439,7 +459,7 @@ namespace neolib
                 return base()->depth();
             }
         private:
-            node const& parent() const { return *iParentNode; }
+            node const& parent_node() const { return *iParentNode; }
             node_child_list_const_iterator base() const { return iBaseIterator; }
             node_child_list const& children() const { return base()->children(); }
         private:
@@ -453,7 +473,8 @@ namespace neolib
 
         // construction
     public:
-        segmented_tree()
+        segmented_tree() :
+            iSize{ 0 }
         {
         }
         ~segmented_tree() 
@@ -466,9 +487,10 @@ namespace neolib
         { 
             return root().empty();
         }
-
-        // modifiers
-    public:
+        std::size_t size() const
+        {
+            return iSize;
+        }
         const_iterator cbegin() const
         {
             return const_iterator{ root(), root().children().begin() };
@@ -565,10 +587,19 @@ namespace neolib
         {
             return std::make_reverse_iterator(sbegin());
         }
+
+        // modifiers
+    public:
+        void clear()
+        {
+            iRoot.~node();
+            new(&iRoot) node{};
+            iSize = 0;
+        }
         sibling_iterator insert(const_sibling_iterator position, const value_type& value)
         {
-            auto& parent = const_cast<node&>(position.parent());
-            auto& children = const_cast<node_child_list&>(position.parent().children());
+            auto& parent = const_cast<node&>(position.parent_node());
+            auto& children = const_cast<node_child_list&>(position.parent_node().children());
             return sibling_iterator{ parent, children.emplace_insert(position.base(), parent, value) };
         }
         void push_back(const value_type& value)
@@ -579,6 +610,7 @@ namespace neolib
         {
             auto& parentNode = const_cast<node&>(*parent.base());
             parentNode.children().emplace_back(parentNode, value);
+            ++iSize;
         }
         void push_front(const value_type& value)
         {
@@ -588,6 +620,19 @@ namespace neolib
         {
             auto& parentNode = const_cast<node&>(*parent.base());
             parentNode.children().emplace_front(parentNode, value);
+            ++iSize;
+        }
+        iterator erase(const_iterator pos)
+        {
+            auto mutablePos = std::next(begin(), std::distance(cbegin(), pos));
+            auto result = iterator{ mutablePos.parent_node(), mutablePos.parent_node().children().erase(mutablePos.base()) };
+            --iSize;
+            return result;
+        }
+        template <typename Predicate>
+        void sort(Predicate pred)
+        {
+            // todo
         }
 
         // implementation
@@ -626,5 +671,6 @@ namespace neolib
         // state
     private:
         node iRoot;
+        std::size_t iSize;
     };
 }
