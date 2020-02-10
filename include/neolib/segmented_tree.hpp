@@ -177,6 +177,7 @@ namespace neolib
             typedef basic_iterator<Type> self_type;
             friend class segmented_tree<T, N, Alloc>;
         public:
+            typedef std::bidirectional_iterator_tag iterator_category; // todo: make iterator random access when logarithmic complexty indexing available
             typedef typename tree_type::value_type value_type;
             typedef typename tree_type::difference_type difference_type;
             typedef typename tree_type::pointer pointer;
@@ -201,26 +202,17 @@ namespace neolib
             self_type& operator++()
             {
                 if constexpr (Type == iterator_type::Sibling)
-                {
                     ++iBaseIterator;
-                }
                 else
                 {
                     if (children().empty())
                     {
                         ++iBaseIterator;
                         while (iBaseIterator == parent().children().end() && !parent().is_root())
-                        {
-                            auto& oldParent = parent();
-                            iParentNode = &parent().parent();
-                            iBaseIterator = std::next(parent().children().iter(oldParent));
-                        }
+                            *this = self_type{ parent().parent(), std::next(parent().parent().children().iter(parent())) };
                     }
                     else
-                    {
-                        iParentNode = &*base();
-                        iBaseIterator = children().begin();
-                    }
+                        *this = self_type{ *base(), children().begin() };
                 }
                 return *this;
             }
@@ -233,12 +225,17 @@ namespace neolib
             self_type& operator--()
             {
                 if constexpr (Type == iterator_type::Sibling)
-                {
                     --iBaseIterator;
-                }
                 else
                 {
-                    // todo
+                    if (iBaseIterator == parent().children().begin())
+                        *this = self_type{ parent().parent(), parent().parent().children().iter(parent()) };
+                    else
+                    {
+                        --iBaseIterator;
+                        while (!children().empty())
+                            *this = self_type{ *base(), std::prev(children().end()) };
+                    }
                 }
                 return *this;
             }
@@ -255,7 +252,7 @@ namespace neolib
             }
             pointer operator->() const
             {
-                return &(*this);
+                return &(**this);
             }
         public:
             basic_const_iterator<iterator_type::Sibling> cbegin() const
@@ -282,6 +279,30 @@ namespace neolib
             {
                 return basic_iterator<iterator_type::Sibling>{ *base(), children().end() };
             }
+            std::reverse_iterator<basic_const_iterator<iterator_type::Sibling>> crbegin() const
+            {
+                return std::make_reverse_iterator(cend());
+            }
+            std::reverse_iterator<basic_const_iterator<iterator_type::Sibling>> rbegin() const
+            {
+                return std::make_reverse_iterator(cend());
+            }
+            std::reverse_iterator<basic_iterator<iterator_type::Sibling>> rbegin()
+            {
+                return std::make_reverse_iterator(end());
+            }
+            std::reverse_iterator<basic_const_iterator<iterator_type::Sibling>> crend() const
+            {
+                return std::make_reverse_iterator(cbegin());
+            }
+            std::reverse_iterator<basic_const_iterator<iterator_type::Sibling>> rend() const
+            {
+                return std::make_reverse_iterator(cbegin());
+            }
+            std::reverse_iterator<basic_iterator<iterator_type::Sibling>> rend()
+            {
+                return std::make_reverse_iterator(begin());
+            }
         public:
             std::size_t depth() const
             {
@@ -301,6 +322,7 @@ namespace neolib
             typedef basic_const_iterator<Type> self_type;
             friend class segmented_tree<T, N, Alloc>;
         public:
+            typedef std::bidirectional_iterator_tag iterator_category; // todo: make iterator random access when logarithmic complexty indexing available
             typedef typename tree_type::value_type value_type;
             typedef typename tree_type::difference_type difference_type;
             typedef typename tree_type::const_pointer pointer;
@@ -327,26 +349,17 @@ namespace neolib
             self_type& operator++()
             {
                 if constexpr (Type == iterator_type::Sibling)
-                {
                     ++iBaseIterator;
-                }
                 else
                 {
                     if (children().empty())
                     {
                         ++iBaseIterator;
                         while (iBaseIterator == parent().children().end() && !parent().is_root())
-                        {
-                            auto& oldParent = parent();
-                            iParentNode = &parent().parent();
-                            iBaseIterator = std::next(parent().children().iter(oldParent));
-                        }
+                            *this = self_type{ parent().parent(), std::next(parent().parent().children().iter(parent())) };
                     }
                     else
-                    {
-                        iParentNode = &*base();
-                        iBaseIterator = children().begin();
-                    }
+                        *this = self_type{ *base(), children().begin() };
                 }
                 return *this;
             }
@@ -359,12 +372,17 @@ namespace neolib
             self_type& operator--()
             {
                 if constexpr (Type == iterator_type::Sibling)
-                {
                     --iBaseIterator;
-                }
                 else
                 {
-                    // todo
+                    if (iBaseIterator == parent().children().begin())
+                        *this = self_type{ parent().parent(), parent().parent().children().iter(parent()) };
+                    else
+                    {
+                        --iBaseIterator;
+                        while (!children().empty())
+                            *this = self_type{ *base(), std::prev(children().end()) };
+                    }
                 }
                 return *this;
             }
@@ -381,7 +399,7 @@ namespace neolib
             }
             pointer operator->() const
             {
-                return &(*this);
+                return &(**this);
             }
         public:
             basic_const_iterator<iterator_type::Sibling> cbegin() const
@@ -399,6 +417,22 @@ namespace neolib
             basic_const_iterator<iterator_type::Sibling> end() const
             {
                 return cend();
+            }
+            std::reverse_iterator<basic_const_iterator<iterator_type::Sibling>> crbegin() const
+            {
+                return std::make_reverse_iterator(cend());
+            }
+            std::reverse_iterator<basic_const_iterator<iterator_type::Sibling>> rbegin() const
+            {
+                return std::make_reverse_iterator(cend());
+            }
+            std::reverse_iterator<basic_const_iterator<iterator_type::Sibling>> crend() const
+            {
+                return std::make_reverse_iterator(cbegin());
+            }
+            std::reverse_iterator<basic_const_iterator<iterator_type::Sibling>> rend() const
+            {
+                return std::make_reverse_iterator(cbegin());
             }
         public:
             std::size_t depth() const
@@ -483,6 +517,54 @@ namespace neolib
         sibling_iterator send()
         {
             return sibling_iterator{ root(), root().children().end() };
+        }
+        std::reverse_iterator<const_iterator> crbegin() const
+        {
+            return std::make_reverse_iterator(cend());
+        }
+        std::reverse_iterator<const_iterator> rbegin() const
+        {
+            return std::make_reverse_iterator(cend());
+        }
+        std::reverse_iterator<iterator> rbegin()
+        {
+            return std::make_reverse_iterator(end());
+        }
+        std::reverse_iterator<const_iterator> crend() const
+        {
+            return std::make_reverse_iterator(cbegin());
+        }
+        std::reverse_iterator<const_iterator> rend() const
+        {
+            return std::make_reverse_iterator(cbegin());
+        }
+        std::reverse_iterator<iterator> rend()
+        {
+            return std::make_reverse_iterator(begin());
+        }
+        std::reverse_iterator<const_sibling_iterator> crsbegin() const
+        {
+            return std::make_reverse_iterator(csend());
+        }
+        std::reverse_iterator<const_sibling_iterator> rsbegin() const
+        {
+            return std::make_reverse_iterator(csend());
+        }
+        std::reverse_iterator<sibling_iterator> rsbegin()
+        {
+            return std::make_reverse_iterator(send());
+        }
+        std::reverse_iterator<const_sibling_iterator> crsend() const
+        {
+            return std::make_reverse_iterator(csbegin());
+        }
+        std::reverse_iterator<const_sibling_iterator> rsend() const
+        {
+            return std::make_reverse_iterator(csbegin());
+        }
+        std::reverse_iterator<sibling_iterator> rsend()
+        {
+            return std::make_reverse_iterator(sbegin());
         }
         sibling_iterator insert(const_sibling_iterator position, const value_type& value)
         {

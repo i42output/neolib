@@ -14,6 +14,7 @@ int main()
     tree.push_back(animals, "Kitten");
     tree.push_back(animals, "Hedgehog");
     tree.push_back(athletes, "Usain Bolt");
+    tree.push_back(athletes, "Usain Bolt");
     tree.push_back(athletes, "Kirani James");
     tree.push_back(athletes, "David Rudisha");
     tree.push_back(athletes, "Taoufik Makhloufi");
@@ -35,6 +36,11 @@ int main()
     std::cout << "Entire tree (with depth):-" << std::endl;
     for (auto i = tree.begin(); i != tree.end(); ++i)
         std::cout << std::string(i.depth() * 4, ' ') << *i << std::endl;
+
+    std::cout << std::endl;
+    std::cout << "Entire tree (reverse iteration, with depth):-" << std::endl;
+    for (auto i = tree.rbegin(); i != tree.rend(); ++i)
+        std::cout << std::string(std::prev(i.base()).depth() * 4, ' ') << *i << std::endl;
 
     std::cout << std::endl;
     std::cout << "Just Animals:-" << std::endl;
