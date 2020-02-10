@@ -368,13 +368,21 @@ namespace neolib
         {
             return iSize == 0;
         }
-        const_iterator begin() const
+        const_iterator cbegin() const
         {
             return const_iterator(*this, static_cast<node*>(base_type::front_node()), 0, 0);
         }
-        const_iterator end() const
+        const_iterator begin() const
+        {
+            return cbegin();
+        }
+        const_iterator cend() const
         {
             return const_iterator(*this, static_cast<node*>(base_type::back_node()), iSize, base_type::back_node() ? static_cast<node*>(base_type::back_node())->segment().size() : 0);
+        }
+        const_iterator end() const
+        {
+            return cend();
         }
         iterator begin()
         {
@@ -399,6 +407,18 @@ namespace neolib
         reverse_iterator rend()
         {
             return reverse_iterator(begin());
+        }
+        const_iterator citer(const value_type& aValue) const
+        {
+            return cbegin() + (&aValue - &(*this)[0]);
+        }
+        const_iterator iter(const value_type& aValue) const
+        {
+            return citer(aValue);
+        }
+        iterator iter(const value_type& aValue)
+        {
+            return begin() + (&aValue - &(*this)[0]);
         }
         const_reference front() const
         {

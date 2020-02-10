@@ -139,7 +139,7 @@ namespace neolib
             {
                 std::size_t result = 0;
                 node const* n = this;
-                while (!n->is_root())
+                while (!n->parent().is_root())
                 {
                     ++result;
                     n = &n->parent();
@@ -182,15 +182,15 @@ namespace neolib
             typedef typename tree_type::pointer pointer;
             typedef typename tree_type::reference reference;
         public:
-            basic_iterator() : iParentNode{}, iChildIterator{} {}
-            basic_iterator(node& parentNode, node_child_list_iterator childIterator) : iParentNode{ &parentNode }, iChildIterator{ childIterator } {}
+            basic_iterator() : iParentNode{}, iBaseIterator{} {}
+            basic_iterator(node& parentNode, node_child_list_iterator childIterator) : iParentNode{ &parentNode }, iBaseIterator{ childIterator } {}
             template <iterator_type Type2>
-            basic_iterator(basic_iterator<Type2> const& other) : iParentNode{ other.iParentNode }, iChildIterator{ other.iChildIterator } {}
+            basic_iterator(basic_iterator<Type2> const& other) : iParentNode{ other.iParentNode }, iBaseIterator{ other.iBaseIterator } {}
         public:
             template <iterator_type Type2>
             bool operator==(basic_iterator<Type2> const& other)
             {
-                return iParentNode == other.iParentNode && iChildIterator == other.iChildIterator;
+                return iParentNode == other.iParentNode && iBaseIterator == other.iBaseIterator;
             }
             template <iterator_type Type2>
             bool operator!=(basic_iterator<Type2> const& other)
@@ -202,16 +202,24 @@ namespace neolib
             {
                 if constexpr (Type == iterator_type::Sibling)
                 {
-                    ++iChildIterator;
+                    ++iBaseIterator;
                 }
                 else
                 {
                     if (children().empty())
-                        ++iChildIterator;
+                    {
+                        ++iBaseIterator;
+                        while (iBaseIterator == parent().children().end() && !parent().is_root())
+                        {
+                            auto& oldParent = parent();
+                            iParentNode = &parent().parent();
+                            iBaseIterator = std::next(parent().children().iter(oldParent));
+                        }
+                    }
                     else
                     {
                         iParentNode = &*base();
-                        iChildIterator = children().begin();
+                        iBaseIterator = children().begin();
                     }
                 }
                 return *this;
@@ -226,7 +234,7 @@ namespace neolib
             {
                 if constexpr (Type == iterator_type::Sibling)
                 {
-                    --iChildIterator;
+                    --iBaseIterator;
                 }
                 else
                 {
@@ -250,51 +258,27 @@ namespace neolib
                 return &(*this);
             }
         public:
-            basic_const_iterator<iterator_type::Normal> cbegin() const
-            {
-                return basic_const_iterator<iterator_type::Normal>{ *base(), children().begin() };
-            }
-            basic_const_iterator<iterator_type::Normal> begin() const
-            {
-                return cbegin();
-            }
-            basic_iterator<iterator_type::Normal> begin()
-            {
-                return basic_iterator<iterator_type::Normal>{ *base(), children().begin() };
-            }
-            basic_const_iterator<iterator_type::Normal> cend() const
-            {
-                return basic_const_iterator<iterator_type::Normal>{ *base(), children().end() };
-            }
-            basic_const_iterator<iterator_type::Normal> end() const
-            {
-                return cend();
-            }
-            basic_iterator<iterator_type::Normal> end()
-            {
-                return basic_iterator<iterator_type::Normal>{ *base(), children().end() };
-            }
-            basic_const_iterator<iterator_type::Sibling> csbegin() const
+            basic_const_iterator<iterator_type::Sibling> cbegin() const
             {
                 return basic_const_iterator<iterator_type::Sibling>{ *base(), children().begin() };
             }
-            basic_const_iterator<iterator_type::Sibling> sbegin() const
+            basic_const_iterator<iterator_type::Sibling> begin() const
             {
-                return csbegin();
+                return cbegin();
             }
-            basic_iterator<iterator_type::Sibling> sbegin()
+            basic_iterator<iterator_type::Sibling> begin()
             {
                 return basic_iterator<iterator_type::Sibling>{ *base(), children().begin() };
             }
-            basic_const_iterator<iterator_type::Sibling> csend() const
+            basic_const_iterator<iterator_type::Sibling> cend() const
             {
                 return basic_const_iterator<iterator_type::Sibling>{ *base(), children().end() };
             }
-            basic_const_iterator<iterator_type::Sibling> send() const
+            basic_const_iterator<iterator_type::Sibling> end() const
             {
-                return csend();
+                return cend();
             }
-            basic_iterator<iterator_type::Sibling> send()
+            basic_iterator<iterator_type::Sibling> end()
             {
                 return basic_iterator<iterator_type::Sibling>{ *base(), children().end() };
             }
@@ -305,11 +289,11 @@ namespace neolib
             }
         private:
             node& parent() const { return *iParentNode; }
-            node_child_list_iterator base() const { return iChildIterator; }
+            node_child_list_iterator base() const { return iBaseIterator; }
             node_child_list& children() const { return base()->children(); }
         private:
             node* iParentNode;
-            node_child_list_iterator iChildIterator;
+            node_child_list_iterator iBaseIterator;
         };
         template <iterator_type Type>
         class basic_const_iterator
@@ -322,17 +306,17 @@ namespace neolib
             typedef typename tree_type::const_pointer pointer;
             typedef typename tree_type::const_reference reference;
         public:
-            basic_const_iterator() : iParentNode{}, iChildIterator{} {}
-            basic_const_iterator(node const& parentNode, node_child_list_const_iterator childIterator) : iParentNode{ &parentNode }, iChildIterator{ childIterator } {}
+            basic_const_iterator() : iParentNode{}, iBaseIterator{} {}
+            basic_const_iterator(node const& parentNode, node_child_list_const_iterator childIterator) : iParentNode{ &parentNode }, iBaseIterator{ childIterator } {}
             template <iterator_type Type2>
-            basic_const_iterator(basic_const_iterator<Type2> const& other) : iParentNode{ other.iParentNode }, iChildIterator{ other.iChildIterator } {}
+            basic_const_iterator(basic_const_iterator<Type2> const& other) : iParentNode{ other.iParentNode }, iBaseIterator{ other.iBaseIterator } {}
             template <iterator_type Type2>
-            basic_const_iterator(basic_iterator<Type2> const& other) : iParentNode{ other.iParentNode }, iChildIterator{ other.iChildIterator } {}
+            basic_const_iterator(basic_iterator<Type2> const& other) : iParentNode{ other.iParentNode }, iBaseIterator{ other.iBaseIterator } {}
         public:
             template <iterator_type Type2>
             bool operator==(basic_const_iterator<Type2> const& other)
             {
-                return iParentNode == other.iParentNode && iChildIterator == other.iChildIterator;
+                return iParentNode == other.iParentNode && iBaseIterator == other.iBaseIterator;
             }
             template <iterator_type Type2>
             bool operator!=(basic_const_iterator<Type2> const& other)
@@ -344,16 +328,24 @@ namespace neolib
             {
                 if constexpr (Type == iterator_type::Sibling)
                 {
-                    ++iChildIterator;
+                    ++iBaseIterator;
                 }
                 else
                 {
                     if (children().empty())
-                        ++iChildIterator;
+                    {
+                        ++iBaseIterator;
+                        while (iBaseIterator == parent().children().end() && !parent().is_root())
+                        {
+                            auto& oldParent = parent();
+                            iParentNode = &parent().parent();
+                            iBaseIterator = std::next(parent().children().iter(oldParent));
+                        }
+                    }
                     else
                     {
                         iParentNode = &*base();
-                        iChildIterator = children().begin();
+                        iBaseIterator = children().begin();
                     }
                 }
                 return *this;
@@ -368,7 +360,7 @@ namespace neolib
             {
                 if constexpr (Type == iterator_type::Sibling)
                 {
-                    --iChildIterator;
+                    --iBaseIterator;
                 }
                 else
                 {
@@ -392,37 +384,21 @@ namespace neolib
                 return &(*this);
             }
         public:
-            basic_const_iterator<iterator_type::Normal> cbegin() const
-            {
-                return basic_const_iterator<iterator_type::Normal>{ *base(), children().begin() };
-            }
-            basic_const_iterator<iterator_type::Normal> begin() const
-            {
-                return cbegin();
-            }
-            basic_const_iterator<iterator_type::Normal> cend() const
-            {
-                return basic_const_iterator<iterator_type::Normal>{ *base(), children().end() };
-            }
-            basic_const_iterator<iterator_type::Normal> end() const
-            {
-                return cend();
-            }
-            basic_const_iterator<iterator_type::Sibling> csbegin() const
+            basic_const_iterator<iterator_type::Sibling> cbegin() const
             {
                 return basic_const_iterator<iterator_type::Sibling>{ *base(), children().begin() };
             }
-            basic_const_iterator<iterator_type::Sibling> sbegin() const
+            basic_const_iterator<iterator_type::Sibling> begin() const
             {
-                return csbegin();
+                return cbegin();
             }
-            basic_const_iterator<iterator_type::Sibling> csend() const
+            basic_const_iterator<iterator_type::Sibling> cend() const
             {
                 return basic_const_iterator<iterator_type::Sibling>{ *base(), children().end() };
             }
-            basic_const_iterator<iterator_type::Sibling> send() const
+            basic_const_iterator<iterator_type::Sibling> end() const
             {
-                return csend();
+                return cend();
             }
         public:
             std::size_t depth() const
@@ -431,11 +407,11 @@ namespace neolib
             }
         private:
             node const& parent() const { return *iParentNode; }
-            node_child_list_const_iterator base() const { return iChildIterator; }
+            node_child_list_const_iterator base() const { return iBaseIterator; }
             node_child_list const& children() const { return base()->children(); }
         private:
             node const* iParentNode;
-            node_child_list_const_iterator iChildIterator;
+            node_child_list_const_iterator iBaseIterator;
         };
         typedef basic_iterator<iterator_type::Normal> iterator;
         typedef basic_const_iterator<iterator_type::Normal> const_iterator;
@@ -462,7 +438,7 @@ namespace neolib
     public:
         const_iterator cbegin() const
         {
-            return const_iterator{ first_node().parent(), first_node().children().begin() };
+            return const_iterator{ root(), root().children().begin() };
         }
         const_iterator begin() const
         {
@@ -470,11 +446,11 @@ namespace neolib
         }
         iterator begin()
         {
-            return iterator{ first_node().parent(), first_node().children().begin() };
+            return iterator{ root(), root().children().begin() };
         }
         const_iterator cend() const
         {
-            return const_iterator{ last_node().parent(), last_node().children().end() };
+            return const_iterator{ root(), root().children().end() };
         }
         const_iterator end() const
         {
@@ -482,7 +458,7 @@ namespace neolib
         }
         iterator end()
         {
-            return iterator{ last_node().parent(), last_node().children().end() };
+            return iterator{ root(), root().children().end() };
         }
         const_sibling_iterator csbegin() const
         {
