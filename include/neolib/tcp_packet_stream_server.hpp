@@ -160,7 +160,7 @@ namespace neolib
         {
             resolver_type resolver(aIoTask.networking_io_service().native_object());
             boost::system::error_code ec;
-            typename resolver_type::iterator result = resolver.resolve(resolver_type::query(aHostname, unsigned_integer_to_string<char>(aPort)), ec);
+            typename resolver_type::iterator result = resolver.resolve(resolver_type::query(aHostname, std::to_string(aPort), ec);
             if (!ec)
             {
                 for (typename resolver_type::iterator i = result; i != resolver_type::iterator(); ++i)

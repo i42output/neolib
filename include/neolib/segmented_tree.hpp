@@ -600,26 +600,28 @@ namespace neolib
         {
             auto& parent = const_cast<node&>(position.parent_node());
             auto& children = const_cast<node_child_list&>(position.parent_node().children());
-            return sibling_iterator{ parent, children.emplace_insert(position.base(), parent, value) };
+            auto result = sibling_iterator{ parent, children.emplace_insert(position.base(), parent, value) };
+            ++iSize;
+            return result;
         }
         void push_back(const value_type& value)
         {
             push_back(send(), value);
         }
-        void push_back(const_iterator parent, const value_type& value)
+        void push_back(const_iterator pos, const value_type& value)
         {
-            auto& parentNode = const_cast<node&>(*parent.base());
-            parentNode.children().emplace_back(parentNode, value);
+            auto mutablePos = std::next(begin(), std::distance(cbegin(), pos));
+            mutablePos.parent_node().children().emplace_back(mutablePos.parent_node(), value);
             ++iSize;
         }
         void push_front(const value_type& value)
         {
             push_font(sbegin(), value);
         }
-        void push_front(const_iterator parent, const value_type& value)
+        void push_front(const_iterator pos, const value_type& value)
         {
-            auto& parentNode = const_cast<node&>(*parent.base());
-            parentNode.children().emplace_front(parentNode, value);
+            auto mutablePos = std::next(begin(), std::distance(cbegin(), pos));
+            mutablePos.parent_node().children().emplace_front(mutablePos.parent_node(), value);
             ++iSize;
         }
         iterator erase(const_iterator pos)

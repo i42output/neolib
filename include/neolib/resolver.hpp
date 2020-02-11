@@ -40,7 +40,7 @@
 #include <vector>
 #include <memory>
 #include <boost/bind.hpp>
-#include "async_task.hpp"
+#include <neolib/async_task.hpp>
 
 namespace neolib
 {
@@ -168,14 +168,14 @@ namespace neolib
         {
             request_pointer newRequest(new request(*this, aRequester, aHostName, aProtocolFamily));
             iRequests.push_back(newRequest);
-            iResolver.async_resolve(typename resolver_type::query(aHostName, unsigned_integer_to_string<char>(0)),
+            iResolver.async_resolve(typename resolver_type::query{ aHostName, "0" },
                 boost::bind(&request::handle_resolve, *newRequest, boost::asio::placeholders::error, boost::asio::placeholders::iterator));
         }
         void remove_requester(requester& aRequester)
         {
-            for (request_list::iterator i = iRequests.begin(); i != iRequests.end(); ++i)
-                if ((*i)->has_requester() && &(*i)->requester() == &aRequester)
-                    (*i)->reset();
+            for (auto& request : iRequests)
+                if (request.has_requester() && request.requester() == &aRequester)
+                    request.reset();
         }
         
         // implementation
@@ -202,7 +202,7 @@ namespace neolib
                 else
                     aRequest.requester().host_not_resolved(aRequest.host_name(), aError);
             }
-            for (request_list::iterator i = iRequests.begin(); i != iRequests.end(); ++i)
+            for (auto i = iRequests.begin(); i != iRequests.end(); ++i)
                 if (&**i == &aRequest)
                 {
                     iRequests.erase(i);

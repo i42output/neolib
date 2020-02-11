@@ -181,7 +181,7 @@ namespace neolib
         orphaned_queue_item remove_packet(const packet_type& aPacket)
         {
             orphaned_queue_item removedPacket;
-            for (send_queue::iterator i = iSendQueue.begin(); i != iSendQueue.end(); ++i)
+            for (auto i = iSendQueue.begin(); i != iSendQueue.end(); ++i)
                 if (&**i == &aPacket)
                 {
                     removedPacket = std::move(*i);

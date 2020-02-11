@@ -87,11 +87,11 @@ namespace neolib
     public:
         token_type token() const
         {
-            return first;
+            return base_type::first;
         }
         const value_type& value() const
         {
-            return second;
+            return base_type::second;
         }
     };
         
@@ -176,7 +176,7 @@ namespace neolib
         scope_type scope() const
         {
             if (std::holds_alternative<scope_type>(iValue))
-                return static_variant_cast<scope_typ>(iValue);
+                return static_variant_cast<scope_type>(iValue);
             else
                 throw not_scope("???");
         }
