@@ -40,6 +40,8 @@
 
 namespace neolib 
 {
+    struct singular_iterator : std::logic_error { singular_iterator() : std::logic_error{ "neolib::singular_iterator" } {} };
+
     template <typename T, size_t N = 64, typename Alloc = std::allocator<T> >
     class segmented_tree
     {
@@ -385,10 +387,10 @@ namespace neolib
             }
         private:
             bool is_singular() const { return iParentNode == nullptr; }
-            node& parent_node() const { return *iParentNode; }
-            node& our_node() const { return *base(); }
-            node_child_list_iterator base() const { return iBaseIterator; }
-            node_child_list& children() const { return our_node().children(); }
+            node& parent_node() const { if (is_singular()) throw singular_iterator(); return *iParentNode; }
+            node& our_node() const { if (is_singular()) throw singular_iterator(); return *base(); }
+            node_child_list_iterator base() const { if (is_singular()) throw singular_iterator(); return iBaseIterator; }
+            node_child_list& children() const { if (is_singular()) throw singular_iterator(); return our_node().children(); }
         private:
             node* iParentNode;
             node_child_list_iterator iBaseIterator;
@@ -530,10 +532,10 @@ namespace neolib
             }
         private:
             bool is_singular() const { return iParentNode == nullptr; }
-            node const& parent_node() const { return *iParentNode; }
-            node const& our_node() const { return *base(); }
-            node_child_list_const_iterator base() const { return iBaseIterator; }
-            node_child_list const& children() const { return our_node().children(); }
+            node const& parent_node() const { if (is_singular()) throw singular_iterator(); return *iParentNode; }
+            node const& our_node() const { if (is_singular()) throw singular_iterator(); return *base(); }
+            node_child_list_const_iterator base() const { if (is_singular()) throw singular_iterator(); return iBaseIterator; }
+            node_child_list const& children() const { if (is_singular()) throw singular_iterator(); return our_node().children(); }
         private:
             node const* iParentNode;
             node_child_list_const_iterator iBaseIterator;
