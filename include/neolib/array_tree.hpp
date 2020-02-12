@@ -199,11 +199,11 @@ namespace neolib
 
     public:
         array_tree(const Alloc& aAllocator = Alloc()) :
-            iAllocator(aAllocator),
-            iRoot(0),
-            iFront(0),
-            iBack(0),
-            iNil(0)
+            iAllocator{ aAllocator },
+            iRoot{ nullptr },
+            iFront{ nullptr },
+            iBack{ nullptr },
+            iNil{ nullptr }
         {
             iNil = std::allocator_traits<node_allocator_type>::allocate(iAllocator, 1);
             try
@@ -216,6 +216,37 @@ namespace neolib
                 throw;
             }
             set_root_node(iNil);
+        }
+        array_tree(const array_tree& aOther) :
+            iAllocator{ aOther.iAllocator },
+            iRoot{ nullptr },
+            iFront{ nullptr },
+            iBack{ nullptr },
+            iNil{ nullptr }
+        {
+            iNil = std::allocator_traits<node_allocator_type>::allocate(iAllocator, 1);
+            try
+            {
+                std::allocator_traits<node_allocator_type>::construct(iAllocator, iNil, node(node::NIL));
+            }
+            catch (...)
+            {
+                std::allocator_traits<node_allocator_type>::deallocate(iAllocator, iNil, 1);
+                throw;
+            }
+            set_root_node(iNil);
+        }
+        array_tree(array_tree&& other) :
+            iAllocator{ std::move(other.iAllocator) },
+            iRoot{ nullptr },
+            iFront{ nullptr },
+            iBack{ nullptr },
+            iNil{ nullptr }
+        {
+            std::swap(iRoot, other.iRoot);
+            std::swap(iFront, other.iFront);
+            std::swap(iBack, other.iBack);
+            std::swap(iNil, other.iNil);
         }
         ~array_tree()
         {

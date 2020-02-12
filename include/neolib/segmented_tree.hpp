@@ -66,24 +66,51 @@ namespace neolib
         public:
             node() : 
                 iParent{ nullptr }, 
+                iDescendentCount{ 0 },
                 iContents{ root_place_holder{} }
             {}
             node(const node& other) :
                 iParent{ other.iParent },
                 iChildren( other.iChildren ),
+                iDescendentCount{ other.iDescendentCount },
                 iContents{ root_place_holder{} }
             {
                 if (!is_root())
+                {
+                    iContents.root.~root_place_holder();
                     new (&iContents.value) value_type{ other.iContents.value };
+                }
+            }
+            node(node&& other) :
+                iParent{},
+                iChildren{},
+                iDescendentCount{ 0 },
+                iContents{ root_place_holder{} }
+            {
+                std::swap(iParent, other.iParent);
+                std::swap(iChildren, other.iChildren);
+                std::swap(iDescendentCount, other.iDescendentCount);
+                if (!is_root())
+                {
+                    iContents.root.~root_place_holder();
+                    new (&iContents.value) value_type{ std::move(other.iContents.value) };
+                }
+                update_parents(*this);
             }
             node(node& parent, const value_type& value) :
                 iParent{ &parent }, 
+                iDescendentCount{ 0 },
                 iContents { value }
-            {}
+            {
+                parent.increment_descendent_count();
+            }
             ~node()
             {
                 if (!is_root())
+                {
                     iContents.value.~value_type();
+                    parent().decrement_descendent_count();
+                }
             }
         public:
             node& operator=(const node& other)
@@ -91,10 +118,21 @@ namespace neolib
                 (*this).~node();
                 iParent = other.iParent;
                 iChildren = other.iChildren;
+                iDescendentCount, other.iDescendentCount;
                 if (!other.is_root())
                     iContents.value = other.iContents.value;
                 else
                     iContents.root = other.iContents.root;
+                return *this;
+            }
+            node& operator=(node&& other)
+            {
+                std::swap(iParent, other.iParent);
+                std::swap(iChildren, other.iChildren);
+                std::swap(iDescendentCount, other.iDescendentCount);
+                if (!is_root())
+                    std::swap(iContents.value, other.iContents.value);
+                update_parents(*this);
                 return *this;
             }
         private:
@@ -146,10 +184,34 @@ namespace neolib
                 return result;
             }
         private:
-
+            std::size_t descendent_count() const
+            {
+                return iDescendentCount;
+            }
+            void increment_descendent_count()
+            {
+                ++iDescendentCount;
+                if (!is_root())
+                    parent().increment_descendent_count();
+            }
+            void decrement_descendent_count()
+            {
+                --iDescendentCount;
+                if (!is_root())
+                    parent().decrement_descendent_count();
+            }
+            void update_parents(node& parent)
+            {
+                for (auto& child : parent.children())
+                {
+                    child.iParent = &parent;
+                    update_parents(child);
+                }
+            }
         private:
             node* iParent;
             child_list iChildren;
+            std::size_t iDescendentCount;
             union contents
             {
                 value_type value;
@@ -611,7 +673,7 @@ namespace neolib
         void push_back(const_iterator pos, const value_type& value)
         {
             auto mutablePos = std::next(begin(), std::distance(cbegin(), pos));
-            mutablePos.parent_node().children().emplace_back(mutablePos.parent_node(), value);
+            mutablePos.children().emplace_back(*mutablePos.base(), value);
             ++iSize;
         }
         void push_front(const value_type& value)
@@ -621,7 +683,7 @@ namespace neolib
         void push_front(const_iterator pos, const value_type& value)
         {
             auto mutablePos = std::next(begin(), std::distance(cbegin(), pos));
-            mutablePos.parent_node().children().emplace_front(mutablePos.parent_node(), value);
+            mutablePos.children().emplace_front(*mutablePos.base(), value);
             ++iSize;
         }
         iterator erase(const_iterator pos)
@@ -631,10 +693,14 @@ namespace neolib
             --iSize;
             return result;
         }
+        void sort()
+        {
+            sort(std::less<value_type>{});
+        }
         template <typename Predicate>
         void sort(Predicate pred)
         {
-            // todo
+            sort(root(), pred);
         }
 
         // implementation
@@ -668,6 +734,22 @@ namespace neolib
         node& last_node()
         {
             return const_cast<node&>(const_cast<const self_type&>(*this).last_node());
+        }
+    private:
+        template <typename Predicate>
+        void sort(node& parent, Predicate pred)
+        {
+            std::sort(parent.children().begin(), parent.children().end(), 
+                [&pred](const node& lhs, const node& rhs) 
+                { 
+                    auto const& lhsValue = lhs.value();
+                    auto const& rhsValue = rhs.value();
+                    auto result = pred(lhsValue, rhsValue);
+                    return result;
+                });
+            if (parent.children().size() != parent.descendent_count())
+                for (auto& child : parent.children())
+                    sort(child, pred);
         }
 
         // state

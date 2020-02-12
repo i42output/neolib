@@ -47,6 +47,7 @@ namespace neolib
     template <typename T, std::size_t SegmentSize = 64, typename Alloc = std::allocator<T> >
     class segmented_array : private array_tree<Alloc>
     {
+        typedef segmented_array<T, SegmentSize, Alloc> self_type;
         typedef array_tree<Alloc> base_type;
     public:
         typedef T value_type;
@@ -329,28 +330,39 @@ namespace neolib
 
     public:
         segmented_array(const Alloc& aAllocator = Alloc()) :
-            iAllocator(aAllocator), iSize(0)
+            iAllocator{ aAllocator }, iSize{ 0 }
         {
         }
         segmented_array(const size_type aCount, const value_type& aValue, const Alloc& aAllocator = Alloc()) :
-            iAllocator(aAllocator), iSize(0)
+            iAllocator{ aAllocator }, iSize{ 0 }
         {
             insert(begin(), aCount, aValue);
         }
         template <typename InputIterator>
         segmented_array(InputIterator aFirst, InputIterator aLast, const Alloc& aAllocator = Alloc()) :
-            iAllocator(aAllocator), iSize(0)
+            iAllocator{ aAllocator }, iSize{ 0 }
         {
             insert(begin(), aFirst, aLast);
         }
         segmented_array(const segmented_array& aOther, const Alloc& aAllocator = Alloc()) :
-            iAllocator(aAllocator), iSize(0)
+            iAllocator{ aAllocator }, iSize{ 0 }
         {
             insert(begin(), aOther.begin(), aOther.end());
+        }
+        segmented_array(segmented_array&& aOther) :
+            base_type{ std::move(aOther) },
+            iAllocator{ std::move(aOther.iAllocator) }, iSize{ aOther.iSize }
+        {
+            aOther.iSize = 0;
         }
         ~segmented_array()
         {
             erase(begin(), end());
+        }
+        segmented_array& operator=(segmented_array&& aOther)
+        {
+            swap(aOther);
+            return *this;
         }
         segmented_array& operator=(const segmented_array& aOther)
         {
