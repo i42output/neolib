@@ -375,23 +375,20 @@ namespace neolib
                 return std::make_reverse_iterator(begin());
             }
         public:
-            bool is_root() const
-            {
-                return iParentNode == nullptr;
-            }
             std::size_t depth() const
             {
-                return base()->depth();
+                return our_node().depth();
             }
             std::size_t descendent_count() const
             {
-                return base()->descendent_count();
+                return our_node().descendent_count();
             }
         private:
+            bool is_singular() const { return iParentNode == nullptr; }
             node& parent_node() const { return *iParentNode; }
             node& our_node() const { return *base(); }
             node_child_list_iterator base() const { return iBaseIterator; }
-            node_child_list& children() const { return base()->children(); }
+            node_child_list& children() const { return our_node().children(); }
         private:
             node* iParentNode;
             node_child_list_iterator iBaseIterator;
@@ -475,7 +472,7 @@ namespace neolib
         public:
             reference operator*() const
             {
-                return base()->value();
+                return our_node().value();
             }
             pointer operator->() const
             {
@@ -523,23 +520,20 @@ namespace neolib
                 return std::make_reverse_iterator(cbegin());
             }
         public:
-            bool is_root() const
-            {
-                return iParentNode == nullptr;
-            }
             std::size_t depth() const
             {
-                return base()->depth();
+                return our_node().depth();
             }
             std::size_t descendent_count() const
             {
-                return base()->descendent_count();
+                return our_node().descendent_count();
             }
         private:
+            bool is_singular() const { return iParentNode == nullptr; }
             node const& parent_node() const { return *iParentNode; }
             node const& our_node() const { return *base(); }
             node_child_list_const_iterator base() const { return iBaseIterator; }
-            node_child_list const& children() const { return base()->children(); }
+            node_child_list const& children() const { return our_node().children(); }
         private:
             node const* iParentNode;
             node_child_list_const_iterator iBaseIterator;
@@ -708,9 +702,9 @@ namespace neolib
         iterator erase(const_iterator pos)
         {
             auto mutablePos = std::next(begin(), std::distance(cbegin(), pos));
-            auto result = iterator{ mutablePos.parent_node(), mutablePos.parent_node().children().erase(mutablePos.base()) };
-            if (!mutablePos.is_root())
-                mutablePos.our_node().decrement_descendent_count();
+            node& parent = mutablePos.parent_node();
+            auto result = iterator{ parent, parent.children().erase(mutablePos.base()) };
+            parent.decrement_descendent_count();
             --iSize;
             return result;
         }
@@ -736,13 +730,13 @@ namespace neolib
         }
         const node& to_node(const_iterator pos) const
         {
-            if (!pos.is_root())
+            if (!pos.is_singular())
                 return pos.our_node();
             return root();
         }
         node& to_node(const_iterator pos)
         {
-            if (!pos.is_root())
+            if (!pos.is_singular())
                 return std::next(begin(), std::distance(cbegin(), pos)).our_node();
             return root();
         }
