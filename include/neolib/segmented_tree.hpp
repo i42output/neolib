@@ -689,22 +689,20 @@ namespace neolib
         }
         void push_back(const_iterator pos, const value_type& value)
         {
-            auto mutablePos = std::next(begin(), std::distance(cbegin(), pos));
-            mutablePos.children().emplace_back(mutablePos.our_node(), value);
-            if (!mutablePos.is_root())
-                mutablePos.our_node().increment_descendent_count();
+            node& parent = to_node(pos);
+            parent.children().emplace_back(parent, value);
+            parent.increment_descendent_count();
             ++iSize;
         }
         void push_front(const value_type& value)
         {
-            push_font(sbegin(), value);
+            push_front(sbegin(), value);
         }
         void push_front(const_iterator pos, const value_type& value)
         {
-            auto mutablePos = std::next(begin(), std::distance(cbegin(), pos));
-            mutablePos.children().emplace_front(mutablePos.our_node(), value);
-            if (!mutablePos.is_root())
-                mutablePos.our_node().increment_descendent_count();
+            node& parent = to_node(pos);
+            parent.children().emplace_front(parent, value);
+            parent.increment_descendent_count();
             ++iSize;
         }
         iterator erase(const_iterator pos)
@@ -735,6 +733,18 @@ namespace neolib
         node& root()
         {
             return iRoot;
+        }
+        const node& to_node(const_iterator pos) const
+        {
+            if (!pos.is_root())
+                return pos.our_node();
+            return root();
+        }
+        node& to_node(const_iterator pos)
+        {
+            if (!pos.is_root())
+                return std::next(begin(), std::distance(cbegin(), pos)).our_node();
+            return root();
         }
         node const& first_node() const
         {
