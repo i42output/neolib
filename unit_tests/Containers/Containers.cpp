@@ -43,10 +43,10 @@ int main()
         std::cout << std::string(std::prev(i.base()).depth() * 4, ' ') << *i << std::endl;
 
     std::cout << std::endl;
-    std::cout << "Entire tree (sorted):-" << std::endl;
+    std::cout << "Entire tree (sorted, with descendent counts):-" << std::endl;
     tree.sort();
     for (auto i = tree.begin(); i != tree.end(); ++i)
-        std::cout << std::string(i.depth() * 4, ' ') << *i << std::endl;
+        std::cout << std::string(i.depth() * 4, ' ') << *i << " (" << i.descendent_count() << ")" << std::endl;
     /*
     std::cout << std::endl;
     std::cout << "Just Animals:-" << std::endl;

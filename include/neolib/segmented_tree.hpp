@@ -102,14 +102,12 @@ namespace neolib
                 iDescendentCount{ 0 },
                 iContents { value }
             {
-                parent.increment_descendent_count();
             }
             ~node()
             {
                 if (!is_root())
                 {
                     iContents.value.~value_type();
-                    parent().decrement_descendent_count();
                 }
             }
         public:
@@ -377,12 +375,21 @@ namespace neolib
                 return std::make_reverse_iterator(begin());
             }
         public:
+            bool is_root() const
+            {
+                return iParentNode == nullptr;
+            }
             std::size_t depth() const
             {
                 return base()->depth();
             }
+            std::size_t descendent_count() const
+            {
+                return base()->descendent_count();
+            }
         private:
             node& parent_node() const { return *iParentNode; }
+            node& our_node() const { return *base(); }
             node_child_list_iterator base() const { return iBaseIterator; }
             node_child_list& children() const { return base()->children(); }
         private:
@@ -516,12 +523,21 @@ namespace neolib
                 return std::make_reverse_iterator(cbegin());
             }
         public:
+            bool is_root() const
+            {
+                return iParentNode == nullptr;
+            }
             std::size_t depth() const
             {
                 return base()->depth();
             }
+            std::size_t descendent_count() const
+            {
+                return base()->descendent_count();
+            }
         private:
             node const& parent_node() const { return *iParentNode; }
+            node const& our_node() const { return *base(); }
             node_child_list_const_iterator base() const { return iBaseIterator; }
             node_child_list const& children() const { return base()->children(); }
         private:
@@ -661,8 +677,9 @@ namespace neolib
         sibling_iterator insert(const_sibling_iterator position, const value_type& value)
         {
             auto& parent = const_cast<node&>(position.parent_node());
-            auto& children = const_cast<node_child_list&>(position.parent_node().children());
+            auto& children = const_cast<node_child_list&>(parent.children());
             auto result = sibling_iterator{ parent, children.emplace_insert(position.base(), parent, value) };
+            parent.increment_descendent_count();
             ++iSize;
             return result;
         }
@@ -674,6 +691,8 @@ namespace neolib
         {
             auto mutablePos = std::next(begin(), std::distance(cbegin(), pos));
             mutablePos.children().emplace_back(*mutablePos.base(), value);
+            if (!mutablePos.is_root())
+                mutablePos.our_node().increment_descendent_count();
             ++iSize;
         }
         void push_front(const value_type& value)
@@ -684,12 +703,16 @@ namespace neolib
         {
             auto mutablePos = std::next(begin(), std::distance(cbegin(), pos));
             mutablePos.children().emplace_front(*mutablePos.base(), value);
+            if (!mutablePos.is_root())
+                mutablePos.our_node().increment_descendent_count();
             ++iSize;
         }
         iterator erase(const_iterator pos)
         {
             auto mutablePos = std::next(begin(), std::distance(cbegin(), pos));
             auto result = iterator{ mutablePos.parent_node(), mutablePos.parent_node().children().erase(mutablePos.base()) };
+            if (!mutablePos.is_root())
+                mutablePos.our_node().decrement_descendent_count();
             --iSize;
             return result;
         }
