@@ -36,12 +36,11 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <neolib/i_iterator.hpp>
 #include <neolib/segmented_array.hpp>
 
 namespace neolib 
 {
-    struct singular_iterator : std::logic_error { singular_iterator() : std::logic_error{ "neolib::singular_iterator" } {} };
-
     template <typename T, size_t N = 64, typename Alloc = std::allocator<T> >
     class segmented_tree
     {
@@ -681,25 +680,19 @@ namespace neolib
         }
         void push_back(const value_type& value)
         {
-            push_back(send(), value);
+            push_back(root(), value);
         }
         void push_back(const_iterator pos, const value_type& value)
         {
-            node& parent = to_node(pos);
-            parent.children().emplace_back(parent, value);
-            parent.increment_descendent_count();
-            ++iSize;
+            push_back(to_node(pos), value);
         }
         void push_front(const value_type& value)
         {
-            push_front(sbegin(), value);
+            push_front(root(), value);
         }
         void push_front(const_iterator pos, const value_type& value)
         {
-            node& parent = to_node(pos);
-            parent.children().emplace_front(parent, value);
-            parent.increment_descendent_count();
-            ++iSize;
+            push_front(to_node(pos), value);
         }
         iterator erase(const_iterator pos)
         {
@@ -763,6 +756,19 @@ namespace neolib
         node& last_node()
         {
             return const_cast<node&>(const_cast<const self_type&>(*this).last_node());
+        }
+    private:
+        void push_back(node& parent, const value_type& value)
+        {
+            parent.children().emplace_back(parent, value);
+            parent.increment_descendent_count();
+            ++iSize;
+        }
+        void push_front(node& parent, const value_type& value)
+        {
+            parent.children().emplace_front(parent, value);
+            parent.increment_descendent_count();
+            ++iSize;
         }
     private:
         template <typename Predicate>
