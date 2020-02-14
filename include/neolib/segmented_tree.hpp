@@ -117,7 +117,7 @@ namespace neolib
                 (*this).~node();
                 iParent = other.iParent;
                 iChildren = other.iChildren;
-                iDescendentCount, other.iDescendentCount;
+                iDescendentCount = other.iDescendentCount;
                 if (!other.is_root())
                     iContents.value = other.iContents.value;
                 else
@@ -376,6 +376,10 @@ namespace neolib
                 return std::make_reverse_iterator(begin());
             }
         public:
+            bool parent_is_root() const
+            {
+                return parent_node().is_root();
+            }
             std::size_t depth() const
             {
                 return our_node().depth();
@@ -521,6 +525,10 @@ namespace neolib
                 return std::make_reverse_iterator(cbegin());
             }
         public:
+            bool parent_is_root() const
+            {
+                return parent_node().is_root();
+            }
             std::size_t depth() const
             {
                 return our_node().depth();
