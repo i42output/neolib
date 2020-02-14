@@ -114,7 +114,6 @@ namespace neolib
         public:
             node& operator=(const node& other)
             {
-                (*this).~node();
                 iParent = other.iParent;
                 iChildren = other.iChildren;
                 iDescendentCount = other.iDescendentCount;
