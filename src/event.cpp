@@ -46,7 +46,6 @@ namespace neolib
                 {
                     if (terminated())
                         return;
-                    std::scoped_lock lock{ iMutex };
                     publish_events();
                     if (!iEvents.empty() && !aTimer.waiting())
                         aTimer.again();
