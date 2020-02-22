@@ -199,7 +199,7 @@ namespace neolib
                 if (!iSkipChildren)
                 {
                     iSkipChildren = true;
-                    increment_skipped_descendent_count(iDescendentCount);
+                    parent().increment_skipped_descendent_count(descendent_count() - skipped_descendent_count());
                 }
             }
             void unskip_children()
@@ -207,7 +207,7 @@ namespace neolib
                 if (iSkipChildren)
                 {
                     iSkipChildren = false;
-                    decrement_skipped_descendent_count(iDescendentCount);
+                    parent().decrement_skipped_descendent_count(descendent_count() - skipped_descendent_count());
                 }
             }
         private:
