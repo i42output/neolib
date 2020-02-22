@@ -67,13 +67,17 @@ namespace neolib
         public:
             node() : 
                 iParent{ nullptr }, 
+                iSkipChildren{ false },
                 iDescendentCount{ 0 },
+                iSkippedDescendentCount{ 0 },
                 iContents{ root_place_holder{} }
             {}
             node(const node& other) :
                 iParent{ other.iParent },
                 iChildren( other.iChildren ),
+                iSkipChildren{ other.iSkipChildren },
                 iDescendentCount{ other.iDescendentCount },
+                iSkippedDescendentCount{ other.iSkippedDescendentCount },
                 iContents{ root_place_holder{} }
             {
                 if (!is_root())
@@ -84,13 +88,16 @@ namespace neolib
             }
             node(node&& other) :
                 iParent{},
-                iChildren{},
+                iSkipChildren{ false },
                 iDescendentCount{ 0 },
+                iSkippedDescendentCount{ 0 },
                 iContents{ root_place_holder{} }
             {
                 std::swap(iParent, other.iParent);
                 std::swap(iChildren, other.iChildren);
+                std::swap(iSkipChildren, other.iSkipChildren);
                 std::swap(iDescendentCount, other.iDescendentCount);
+                std::swap(iSkippedDescendentCount, other.iSkippedDescendentCount);
                 if (!is_root())
                 {
                     iContents.root.~root_place_holder();
@@ -100,7 +107,9 @@ namespace neolib
             }
             node(node& parent, const value_type& value) :
                 iParent{ &parent }, 
+                iSkipChildren{ false },
                 iDescendentCount{ 0 },
+                iSkippedDescendentCount{ 0 },
                 iContents { value }
             {
             }
@@ -181,6 +190,26 @@ namespace neolib
                 }
                 return result;
             }
+            bool children_skipped() const
+            {
+                return iSkipChildren;
+            }
+            void skip_children()
+            {
+                if (!iSkipChildren)
+                {
+                    iSkipChildren = true;
+                    increment_skipped_descendent_count(iDescendentCount);
+                }
+            }
+            void unskip_children()
+            {
+                if (iSkipChildren)
+                {
+                    iSkipChildren = false;
+                    decrement_skipped_descendent_count(iDescendentCount);
+                }
+            }
         private:
             std::size_t descendent_count() const
             {
@@ -198,6 +227,22 @@ namespace neolib
                 if (!is_root())
                     parent().decrement_descendent_count();
             }
+            std::size_t skipped_descendent_count() const
+            {
+                return iSkippedDescendentCount;
+            }
+            void increment_skipped_descendent_count(std::size_t aCount)
+            {
+                iSkippedDescendentCount += aCount;
+                if (!is_root())
+                    parent().increment_skipped_descendent_count(aCount);
+            }
+            void decrement_skipped_descendent_count(std::size_t aCount)
+            {
+                iSkippedDescendentCount -= aCount;
+                if (!is_root())
+                    parent().decrement_skipped_descendent_count(aCount);
+            }
             void update_parents(node& parent)
             {
                 for (auto& child : parent.children())
@@ -209,7 +254,9 @@ namespace neolib
         private:
             node* iParent;
             child_list iChildren;
+            bool iSkipChildren;
             std::size_t iDescendentCount;
+            std::size_t iSkippedDescendentCount;
             union contents
             {
                 value_type value;
@@ -226,7 +273,8 @@ namespace neolib
         enum class iterator_type
         {
             Normal,
-            Sibling
+            Sibling,
+            Skip
         };
         template <iterator_type Type>
         class basic_const_iterator;
@@ -264,7 +312,7 @@ namespace neolib
                     ++iBaseIterator;
                 else
                 {
-                    if (children().empty())
+                    if (children().empty() || (Type == iterator_type::Skip && children_skipped()))
                     {
                         ++iBaseIterator;
                         while (iBaseIterator == parent_node().children().end() && !parent_node().is_root())
@@ -292,7 +340,7 @@ namespace neolib
                     else
                     {
                         --iBaseIterator;
-                        while (!children().empty())
+                        while (!children().empty() && !(Type == iterator_type::Skip && children_skipped()))
                             *this = self_type{ our_node(), std::prev(children().end()) };
                     }
                 }
@@ -387,6 +435,18 @@ namespace neolib
             {
                 return our_node().descendent_count();
             }
+            bool children_skipped() const
+            {
+                return our_node().children_skipped();
+            }
+            void skip_children()
+            {
+                our_node().skip_children();
+            }
+            void unskip_children()
+            {
+                our_node().unskip_children();
+            }
         private:
             bool is_singular() const { return iParentNode == nullptr; }
             node& parent_node() const { if (is_singular()) throw singular_iterator(); return *iParentNode; }
@@ -433,7 +493,7 @@ namespace neolib
                     ++iBaseIterator;
                 else
                 {
-                    if (children().empty())
+                    if (children().empty() || (Type == iterator_type::Skip && children_skipped()))
                     {
                         ++iBaseIterator;
                         while (iBaseIterator == parent_node().children().end() && !parent_node().is_root())
@@ -461,7 +521,7 @@ namespace neolib
                     else
                     {
                         --iBaseIterator;
-                        while (!children().empty())
+                        while (!children().empty() && !(Type == iterator_type::Skip && children_skipped()))
                             *this = self_type{ our_node(), std::prev(children().end()) };
                     }
                 }
@@ -536,6 +596,10 @@ namespace neolib
             {
                 return our_node().descendent_count();
             }
+            bool children_skipped() const
+            {
+                return our_node().children_skipped();
+            }
         private:
             bool is_singular() const { return iParentNode == nullptr; }
             node const& parent_node() const { if (is_singular()) throw singular_iterator(); return *iParentNode; }
@@ -550,11 +614,12 @@ namespace neolib
         typedef basic_const_iterator<iterator_type::Normal> const_iterator;
         typedef basic_iterator<iterator_type::Sibling> sibling_iterator;
         typedef basic_const_iterator<iterator_type::Sibling> const_sibling_iterator;
+        typedef basic_iterator<iterator_type::Skip> skip_iterator;
+        typedef basic_const_iterator<iterator_type::Skip> const_skip_iterator;
 
         // construction
     public:
-        segmented_tree() :
-            iSize{ 0 }
+        segmented_tree()
         {
         }
         ~segmented_tree() 
@@ -569,7 +634,11 @@ namespace neolib
         }
         std::size_t size() const
         {
-            return iSize;
+            return root().descendent_count();
+        }
+        std::size_t ksize() const
+        {
+            return root().descendent_count() - root().skipped_descendent_count();
         }
         const_iterator cbegin() const
         {
@@ -619,6 +688,30 @@ namespace neolib
         {
             return sibling_iterator{ root(), root().children().end() };
         }
+        const_skip_iterator ckbegin() const
+        {
+            return const_skip_iterator{ root(), root().children().begin() };
+        }
+        const_skip_iterator kbegin() const
+        {
+            return ckbegin();
+        }
+        skip_iterator kbegin()
+        {
+            return skip_iterator{ root(), root().children().begin() };
+        }
+        const_skip_iterator ckend() const
+        {
+            return const_skip_iterator{ root(), root().children().end() };
+        }
+        const_skip_iterator kend() const
+        {
+            return cend();
+        }
+        skip_iterator kend()
+        {
+            return skip_iterator{ root(), root().children().end() };
+        }
         std::reverse_iterator<const_iterator> crbegin() const
         {
             return std::make_reverse_iterator(cend());
@@ -667,6 +760,30 @@ namespace neolib
         {
             return std::make_reverse_iterator(sbegin());
         }
+        std::reverse_iterator<const_skip_iterator> crkbegin() const
+        {
+            return std::make_reverse_iterator(ckend());
+        }
+        std::reverse_iterator<const_skip_iterator> rkbegin() const
+        {
+            return std::make_reverse_iterator(ckend());
+        }
+        std::reverse_iterator<skip_iterator> rkbegin()
+        {
+            return std::make_reverse_iterator(kend());
+        }
+        std::reverse_iterator<const_skip_iterator> crkend() const
+        {
+            return std::make_reverse_iterator(ckbegin());
+        }
+        std::reverse_iterator<const_skip_iterator> rkend() const
+        {
+            return std::make_reverse_iterator(ckbegin());
+        }
+        std::reverse_iterator<skip_iterator> rkend()
+        {
+            return std::make_reverse_iterator(kbegin());
+        }
 
         // modifiers
     public:
@@ -674,7 +791,6 @@ namespace neolib
         {
             iRoot.~node();
             new(&iRoot) node{};
-            iSize = 0;
         }
         sibling_iterator insert(const_sibling_iterator position, const value_type& value)
         {
@@ -682,7 +798,6 @@ namespace neolib
             auto& children = const_cast<node_child_list&>(parent.children());
             auto result = sibling_iterator{ parent, children.emplace_insert(position.base(), parent, value) };
             parent.increment_descendent_count();
-            ++iSize;
             return result;
         }
         void push_back(const value_type& value)
@@ -707,7 +822,6 @@ namespace neolib
             node& parent = mutablePos.parent_node();
             auto result = iterator{ parent, parent.children().erase(mutablePos.base()) };
             parent.decrement_descendent_count();
-            --iSize;
             return result;
         }
         void sort()
@@ -769,13 +883,11 @@ namespace neolib
         {
             parent.children().emplace_back(parent, value);
             parent.increment_descendent_count();
-            ++iSize;
         }
         void push_front(node& parent, const value_type& value)
         {
             parent.children().emplace_front(parent, value);
             parent.increment_descendent_count();
-            ++iSize;
         }
     private:
         template <typename Predicate>
@@ -797,6 +909,5 @@ namespace neolib
         // state
     private:
         node iRoot;
-        std::size_t iSize;
     };
 }
