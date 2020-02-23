@@ -125,7 +125,9 @@ namespace neolib
             {
                 iParent = other.iParent;
                 iChildren = other.iChildren;
+                iSkipChildren = other.iSkipChildren;
                 iDescendentCount = other.iDescendentCount;
+                iSkippedDescendentCount = other.iSkippedDescendentCount;
                 if (!other.is_root())
                     iContents.value = other.iContents.value;
                 else
@@ -136,7 +138,9 @@ namespace neolib
             {
                 std::swap(iParent, other.iParent);
                 std::swap(iChildren, other.iChildren);
+                std::swap(iSkipChildren, other.iSkipChildren);
                 std::swap(iDescendentCount, other.iDescendentCount);
+                std::swap(iSkippedDescendentCount, other.iSkippedDescendentCount);
                 if (!is_root())
                     std::swap(iContents.value, other.iContents.value);
                 update_parents(*this);
