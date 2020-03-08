@@ -93,6 +93,22 @@ namespace neolib
         tokens(aLine.begin(), aLine.end(), aDelimeter.begin(), aDelimeter.end(), aTokens, aMaxTokens, aSkipEmptyTokens, aDelimeterIsSubsequence);
     }
 
+    template <typename FwdIter, typename CharT, typename Traits, typename Alloc>
+    inline std::vector<std::basic_string<CharT, Traits, Alloc>> tokens(FwdIter aFirst, FwdIter aLast, const std::basic_string<CharT, Traits, Alloc>& aDelimeter, std::size_t aMaxTokens = 0, bool aSkipEmptyTokens = true, bool aDelimeterIsSubsequence = false)
+    {
+        std::vector<std::basic_string<CharT, Traits, Alloc>> results;
+        tokens(aFirst, aLast, aDelimeter.begin(), aDelimeter.end(), results, aMaxTokens, aSkipEmptyTokens, aDelimeterIsSubsequence);
+        return results;
+    }
+
+    template <typename CharT, typename Traits, typename Alloc>
+    inline std::vector<std::basic_string<CharT, Traits, Alloc>> tokens(const std::basic_string<CharT, Traits, Alloc>& aLine, const std::basic_string<CharT, Traits, Alloc>& aDelimeter, std::size_t aMaxTokens = 0, bool aSkipEmptyTokens = true, bool aDelimeterIsSubsequence = false)
+    {
+        std::vector<std::basic_string<CharT, Traits, Alloc>> results;
+        tokens(aLine.begin(), aLine.end(), aDelimeter.begin(), aDelimeter.end(), results, aMaxTokens, aSkipEmptyTokens, aDelimeterIsSubsequence);
+        return results;
+    }
+
     inline std::string to_string(const std::pair<std::string::const_iterator, std::string::const_iterator>& aIterPair)
     {
         return std::string(aIterPair.first, aIterPair.second);
