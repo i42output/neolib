@@ -43,7 +43,7 @@
 
 namespace neolib
 {
-    template <typename Key, typename T>
+    template <typename Key, typename T, typename Pr = std::less<Key>, typename Alloc = std::allocator<std::pair<const Key, T>>>
     class map : public reference_counted<i_map<abstract_t<Key>, abstract_t<T>>>
     {
         // types
@@ -55,7 +55,9 @@ namespace neolib
         typedef abstract_t<key_type> abstract_key_type;
         typedef abstract_t<mapped_type> abstract_mapped_type;
         typedef i_pair<const abstract_key_type, abstract_mapped_type> abstract_value_type;
-        typedef std::map<key_type, value_type> container_type;
+        typedef Pr key_compare;
+        typedef Alloc allocator_type;
+        typedef std::map<key_type, value_type, key_compare, typename std::allocator_traits<allocator_type>::template rebind_alloc<std::pair<const key_type, value_type>>> container_type;
         typedef typename container_type::value_type container_value_type;
     public:
         using typename abstract_type::size_type;
@@ -170,7 +172,7 @@ namespace neolib
         container_type iMap;
     };
 
-    template <typename Key, typename T>
+    template <typename Key, typename T, typename Pr = std::less<Key>, typename Alloc = std::allocator<std::pair<const Key, T>>>
     class multimap : public reference_counted<i_multimap<abstract_t<Key>, abstract_t<T>>>
     {
         // types
@@ -182,7 +184,9 @@ namespace neolib
         typedef abstract_t<key_type> abstract_key_type;
         typedef abstract_t<mapped_type> abstract_mapped_type;
         typedef i_pair<const abstract_key_type, abstract_mapped_type> abstract_value_type;
-        typedef std::multimap<key_type, value_type> container_type;
+        typedef Pr key_compare;
+        typedef Alloc allocator_type;
+        typedef std::multimap<key_type, value_type, key_compare, typename std::allocator_traits<allocator_type>::template rebind_alloc<std::pair<const key_type, value_type>>> container_type;
         typedef typename container_type::value_type container_value_type;
     public:
         using typename abstract_type::size_type;
