@@ -59,7 +59,7 @@ namespace neolib
         struct packet_too_big : std::runtime_error { packet_too_big() : std::runtime_error("neolib::i_basic_packet::packet_too_big") {} };
         // construction
     public:
-        virtual ~i_basic_packet() {}
+        virtual ~i_basic_packet() = default;
         // interface
     public:
         virtual const_pointer data() const = 0;

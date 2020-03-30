@@ -53,7 +53,7 @@ namespace neolib
         {
             // construction
         public:
-            virtual ~holder_base() {}
+            virtual ~holder_base() = default;
             // operations
         public:
             virtual void operator++() = 0;
@@ -211,7 +211,7 @@ namespace neolib
         {
             // construction
         public:
-            virtual ~holder_base() {}
+            virtual ~holder_base() = default;
             // operations
         public:
             virtual void operator++() = 0;

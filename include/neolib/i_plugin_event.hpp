@@ -34,7 +34,7 @@ namespace neolib
         class i_event_callback
         {
         public:
-            virtual ~i_event_callback() {}
+            virtual ~i_event_callback() = default;
         public:
             std::unique_ptr<i_event_callback<Arguments...>> clone() const
             {
@@ -71,7 +71,7 @@ namespace neolib
             typedef i_event_callback<Arguments...> abstract_callback;
             typedef event_callback<Arguments...> callback;
         public:
-            virtual ~i_event() {}
+            virtual ~i_event() = default;
         public:
             virtual const neolib::i_event& raw_event() const = 0;
             virtual neolib::i_event& raw_event() = 0;

@@ -46,7 +46,7 @@ namespace neolib
     public:
         typedef neolib::cookie cookie_type;
     public:
-        virtual ~i_lifetime_flag() {}
+        virtual ~i_lifetime_flag() = default;
     public:
         virtual cookie_type cookie() const = 0;
     public:
@@ -79,7 +79,7 @@ namespace neolib
     public:
         typedef i_lifetime_flag::cookie_type cookie_type;
     public:
-        virtual ~i_lifetime() {}
+        virtual ~i_lifetime() = default;
     public:
         virtual lifetime_state object_state() const = 0;
         virtual bool is_creating() const = 0;

@@ -44,7 +44,7 @@ namespace neolib
     class i_ref_control_block
     {
     public:
-        virtual ~i_ref_control_block() {}
+        virtual ~i_ref_control_block() = default;
     public:
         virtual i_reference_counted* ptr() const = 0;
         virtual bool expired() const = 0;
@@ -59,7 +59,7 @@ namespace neolib
         struct too_many_references : std::logic_error { too_many_references() : std::logic_error("neolib::i_reference_counted::too_many_references") {} };
         struct release_during_destruction : std::logic_error { release_during_destruction() : std::logic_error("neolib::i_reference_counted::release_during_destruction") {} };
     public:
-        virtual ~i_reference_counted() {}
+        virtual ~i_reference_counted() = default;
     public:
         virtual void add_ref() const = 0;
         virtual void release() const = 0;

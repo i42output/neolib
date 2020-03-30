@@ -55,7 +55,7 @@ namespace neolib
         static constexpr std::size_t kDefaultPollCount = 256;
         // construction
     public:
-        virtual ~i_io_service() {}
+        virtual ~i_io_service() = default;
         // operations
     public:
         virtual bool do_io(bool aProcessEvents = true, std::size_t aMaximumPollCount = kDefaultPollCount) = 0;

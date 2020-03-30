@@ -52,7 +52,7 @@ namespace neolib
         class i_wrapper
         {
         public:
-            virtual ~i_wrapper() {}
+            virtual ~i_wrapper() = default;
         public:
             virtual i_wrapper* clone() const = 0;
             virtual i_wrapper* clone(void* aStorage) const = 0;

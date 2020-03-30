@@ -57,7 +57,7 @@ namespace neolib
     public:
         struct invalid_release : std::logic_error { invalid_release() : std::logic_error("neolib::i_basic_cookie_consumer::invalid_release") {} };
     public:
-        virtual ~i_basic_cookie_consumer() {}
+        virtual ~i_basic_cookie_consumer() = default;
     public:
         virtual void add_ref(cookie_type aCookie) = 0;
         virtual void release(cookie_type aCookie) = 0;

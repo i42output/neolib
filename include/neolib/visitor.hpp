@@ -48,7 +48,7 @@ namespace neolib
     class visitor
     {
     public:
-        virtual ~visitor() {}
+        virtual ~visitor() = default;
     public:
         virtual void visit(const T1& aVisitee) const {}
         virtual void visit(T1& aVisitee) { visit(const_cast<const T1&>(aVisitee)); }

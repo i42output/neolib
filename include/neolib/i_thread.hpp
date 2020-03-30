@@ -46,7 +46,7 @@ namespace neolib
         struct nothing_to_do : std::logic_error { nothing_to_do() : std::logic_error{ "neolib::i_thread::nothing_to_do" } {} };
         // construction
     public:
-        virtual ~i_thread() {}
+        virtual ~i_thread() = default;
         // operations
     public:
         virtual const std::string& name() const = 0;

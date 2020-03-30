@@ -54,7 +54,7 @@ namespace neolib
         {
             // construction
         public:
-            virtual ~holder_base() {}
+            virtual ~holder_base() = default;
             // operations
         public:
             virtual bool operator()(const value_type& aLeft, const value_type& aRight) const = 0;

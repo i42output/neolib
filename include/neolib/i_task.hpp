@@ -44,7 +44,7 @@ namespace neolib
     {
         // construction
     public:
-        virtual ~i_task() {}
+        virtual ~i_task() = default;
         // operations
     public:
         virtual const std::string& name() const = 0;

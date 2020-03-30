@@ -42,7 +42,7 @@ namespace neolib
     class message_queue
     {
     public:
-        virtual ~message_queue() {}
+        virtual ~message_queue() = default;
     public:
         virtual bool have_message() const = 0;
         virtual int get_message() const = 0;

@@ -52,7 +52,7 @@ namespace neolib
     {
         // construction
     public:
-        virtual ~any_const_ref_holder_base() {}
+        virtual ~any_const_ref_holder_base() = default;
         // operations
     public:
         template <typename T>
@@ -98,7 +98,7 @@ namespace neolib
     {
         // construction
     public:
-        virtual ~any_ref_holder_base() {}
+        virtual ~any_ref_holder_base() = default;
         // operations
     public:
         template <typename T>
