@@ -168,6 +168,10 @@ namespace neolib
         }
         abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.find(aKey) }; }
         abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.find(aKey) }; }
+        abstract_const_iterator* do_lower_bound(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.lower_bound(aKey) }; }
+        abstract_iterator* do_lower_bound(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.lower_bound(aKey) }; }
+        abstract_const_iterator* do_upper_bound(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.upper_bound(aKey) }; }
+        abstract_iterator* do_upper_bound(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.upper_bound(aKey) }; }
     private:
         container_type iMap;
     };
@@ -272,6 +276,10 @@ namespace neolib
         }
         abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.find(aKey) }; }
         abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.find(aKey) }; }
+        abstract_const_iterator* do_lower_bound(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.lower_bound(aKey) }; }
+        abstract_iterator* do_lower_bound(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.lower_bound(aKey) }; }
+        abstract_const_iterator* do_upper_bound(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.upper_bound(aKey) }; }
+        abstract_iterator* do_upper_bound(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.upper_bound(aKey) }; }
     private:
         container_type iMap;
     };
