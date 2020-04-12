@@ -58,8 +58,8 @@ namespace neolib
         virtual size_type capacity() const = 0;
         virtual void reserve(size_type aCapacity) = 0;
         virtual void resize(size_type aSize, const value_type& aValue = value_type{}) = 0;
-        iterator insert(const abstract_iterator& aPosition, const value_type& aValue) { return do_insert(const_iterator(aPosition), aValue); }
-        iterator insert(const abstract_const_iterator& aPosition, const value_type& aValue) { return do_insert(aPosition, aValue); }
+        iterator insert(const abstract_iterator& aPosition, const value_type& aValue) { iterator result; return do_insert(result.storage(), const_iterator(aPosition), aValue); }
+        iterator insert(const abstract_const_iterator& aPosition, const value_type& aValue) { iterator result; return do_insert(result.storage(), aPosition, aValue); }
         virtual void push_back(const value_type& aValue) = 0;
         virtual void pop_back() = 0;
         virtual const value_type& back() const = 0;

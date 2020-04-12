@@ -139,8 +139,25 @@ namespace neolib
         const_reverse_iterator crend() const { return const_reverse_iterator{ begin() }; }
         const_reverse_iterator rend() const { return crend(); }
         reverse_iterator rend() { return reverse_iterator{ begin() }; }
-        iterator erase(const const_iterator& aPosition) { auto result = base_type::erase(std::next(base_type::cbegin(), std::distance(cbegin(), aPosition))); return std::next(begin(), std::distance(base_type::begin(), result)); }
+        iterator insert(const const_iterator& aPosition, const value_type& aValue) { return to_iterator(base_type::insert(from_iterator(aPosition), aValue)); }
+        iterator erase(const const_iterator& aPosition) { return to_iterator(base_type::erase(from_iterator(aPosition))); }
     private:
         virtual std::ptrdiff_t iterator_offset() const = 0;
+        typename base_type::const_iterator from_iterator(const_iterator aPosition) const
+        {
+            return std::next(base_type::cbegin(), std::distance(cbegin(), aPosition));
+        }
+        typename base_type::iterator from_iterator(iterator aPosition)
+        {
+            return std::next(base_type::begin(), std::distance(begin(), aPosition));
+        }
+        const_iterator to_iterator(typename base_type::const_iterator aPosition) const
+        {
+            return std::next(cbegin(), std::distance(base_type::cbegin(), aPosition));
+        }
+        iterator to_iterator(typename base_type::iterator aPosition)
+        {
+            return std::next(begin(), std::distance(base_type::begin(), aPosition));
+        }
     };
 }
