@@ -348,7 +348,7 @@ namespace neolib
             if (existing != cache().end())
                 return *existing->second;
             auto& newChild = contents().emplace_back(value_type{});
-            newChild.set_name(aKey.as_string());
+            newChild.set_name(aKey.to_std_string());
             cache().emplace(newChild.name(), &newChild);
             return newChild;
         }
@@ -800,12 +800,13 @@ namespace neolib
         json_document_source_location iDocumentSourceLocation;
     };
 
+    struct json_error : std::runtime_error { json_error(const std::string& aReason) : std::runtime_error(aReason) {} };
+    struct json_path_not_found : std::runtime_error { json_path_not_found(const std::string& aPath) : std::runtime_error("JSON path not found: " + aPath) {} };
+
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
     class basic_json
     {
         typedef basic_json<Syntax, Alloc, CharT, Traits, CharAlloc> self_type;
-    public:
-        struct json_error : std::runtime_error { json_error(const std::string& aReason) : std::runtime_error(aReason) {} };
     public:
         static constexpr json_syntax syntax = Syntax;
         typedef Alloc allocator_type;
@@ -877,6 +878,8 @@ namespace neolib
         bool has_root() const;
         const json_value& root() const;
         json_value& root();
+        const json_value& at(const json_string& aPath) const;
+        json_value& at(const json_string& aPath);
         template <typename Visitor>
         void visit(Visitor&& aVisitor) const;
         template <typename Visitor>

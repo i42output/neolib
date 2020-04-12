@@ -47,6 +47,7 @@
 #include <boost/functional/hash.hpp>
 #include <neolib/string_numeric.hpp>
 #include <neolib/string_utf.hpp>
+#include <neolib/string_utils.hpp>
 #include <neolib/type_traits.hpp>
 
 namespace neolib
@@ -1206,7 +1207,7 @@ namespace neolib
             document().push_back(character_type{ '\n' });
         document().push_back(character_type{ '\0' });
 
-        if (aValidateUtf && !neolib::check_utf8(document().as_view()))
+        if (aValidateUtf && !neolib::check_utf8(document().to_std_string_view()))
         {
             iErrorText = "invalid utf-8";
             return false;
@@ -1367,10 +1368,10 @@ namespace neolib
                                 std::visit([this, &currentElement](auto&& arg)
                                 {
                                     buy_value(currentElement, std::forward<decltype(arg)>(arg));
-                                }, string_to_number(newNumber.as_view()));
+                                }, string_to_number(newNumber.to_std_string_view()));
                             }
                             else
-                                buy_value(currentElement, neolib::string_to_double(newNumber.as_view()));
+                                buy_value(currentElement, neolib::string_to_double(newNumber.to_std_string_view()));
                         }
                         break;
                     case element::Keyword:
@@ -1841,6 +1842,32 @@ namespace neolib
     inline typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::json_value& basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::root()
     {
         return const_cast<json_value&>(to_const(*this).root());
+    }
+
+    template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+    inline const typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::json_value& basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::at(const json_string& aPath) const
+    {
+        auto bitStart = aPath.begin();
+        auto bitEnd = std::find(bitStart, aPath.end(), '.');
+        json_value const* node = &root();
+        if (bitEnd == bitStart)
+            return *node;
+        do
+        {
+            auto existing = std::find_if(node->begin(), node->end(), [&](auto&& child) { return child.name() == std::string_view{ &*bitStart, static_cast<std::string_view::size_type>(std::distance(bitStart, bitEnd)) };  });
+            if (existing == node->end())
+                throw json_path_not_found(aPath.to_std_string());
+            node = &*existing;
+            bitStart = (bitEnd != aPath.end() ? std::next(bitEnd) : bitEnd);
+            bitEnd = std::find(bitStart, aPath.end(), '.');
+        } while (bitStart != aPath.end());
+        return *node;
+    }
+
+    template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+    inline typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::json_value& basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::at(const json_string& aPath)
+    {
+        return const_cast<json_value&>(to_const(*this).at(aPath));
     }
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>

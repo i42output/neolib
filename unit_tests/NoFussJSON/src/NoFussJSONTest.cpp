@@ -143,6 +143,27 @@ int main(int argc, char** argv)
             std::cout << "---------------------------" << std::endl;
         }
 
+        const std::string JSON_at_test =
+        {
+            "{\n"
+            "   \"foo\" : {\n"
+            "       \"bar\" : {\n"
+            "           \"baz\" : {\n"
+            "               \"test\": \"wibble\"\n"
+            "           }\n"
+            "       }\n"
+            "   }\n"
+            "}\n"
+        };
+        std::cout << "----JSON at-input---------------------" << std::endl;
+        std::cout << JSON_at_test;
+        std::cout << "----JSON at-result---------------------" << std::endl;
+        std::istringstream jsonAtStream(JSON_at_test);
+        neolib::json jsonAt{ jsonAtStream };
+        std::cout << ".at(\"foo.bar.baz.test)\" == " << jsonAt.at("foo.bar.baz.test").text() << std::endl;
+        std::cout << std::endl;
+        std::cout << "----JSON at ends-----------------------" << std::endl;
+
         const std::string RJSON_test =
         {
             "{\n"

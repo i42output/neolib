@@ -465,9 +465,9 @@ namespace neolib
         int compare(const basic_quick_string& str) const
         {
             if (is_view())
-                return get_view_string().compare(str.as_view());
+                return get_view_string().compare(str.to_std_string_view());
             else
-                return as_view().compare(str.as_view());
+                return to_std_string_view().compare(str.to_std_string_view());
         }
         int compare(const string_type& str) const
         {
@@ -502,33 +502,29 @@ namespace neolib
         { 
             return std::holds_alternative<view_contents_type>(iContents);
         }
-        string_view_type as_view() const
+        string_view_type to_std_string_view() const
         {
-            if (is_view())
-                return get_view_string();
-            else
-                return get_string();
+            return static_cast<string_view_type>(*this);
         }
-        const string_type& as_string() const
+        string_type to_std_string() const
         {
-            return get_string();
-        }
-        string_type& as_string()
-        {
-            return get_string();
+            return static_cast<string_type>(*this);
         }
     public:
         operator string_type() const
         {
-            return string_type{ as_view().begin(), as_view().end(), get_allocator() };
+            return string_type{ get_view_string().begin(), get_view_string().end(), get_allocator() };
         }
         operator string_type&()
         {
-            return as_string();
+            return get_string();
         }
         operator string_view_type() const
         {
-            return as_view();
+            if (is_view())
+                return get_view_string();
+            else
+                return string_view_type{ get_string() };
         }
     private:
         const string_type& get_string() const
@@ -977,6 +973,6 @@ namespace neolib
     template <typename charT, typename Traits, typename Alloc>
     inline std::size_t hash_value(const neolib::basic_quick_string<charT, Traits, Alloc>& sv) noexcept
     {
-        return neolib::fast_hash(&*sv.as_view().cbegin(), sv.size());
+        return neolib::fast_hash(&*sv.to_std_string_view().cbegin(), sv.size());
     }
 }

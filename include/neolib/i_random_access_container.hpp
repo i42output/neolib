@@ -50,18 +50,17 @@ namespace neolib
     using offset_pointer_t = typename offset_pointer<T>::pointer_type;
 
     template <typename T>
-    class offset_iterator : public std::iterator<std::random_access_iterator_tag, T, std::ptrdiff_t, T*, T&>
+    class offset_iterator
     {
         template <typename T2>
         friend class offset_iterator;
         typedef offset_iterator<T> self_type;
-        typedef std::iterator<std::random_access_iterator_tag, T, std::ptrdiff_t, T*, T&> base_type;
     public:
-        using typename base_type::iterator_category;
-        using typename base_type::value_type;
-        using typename base_type::pointer;
-        using typename base_type::reference;
-        using typename base_type::difference_type;
+        using iterator_category = std::random_access_iterator_tag;
+        using value_type = T;
+        using pointer = T*;
+        using reference = T&;
+        using difference_type = std::ptrdiff_t;
     public:
         offset_iterator(T* aElement, std::ptrdiff_t aOffset) : 
             iElement{ aElement }, iOffset{ aOffset }
