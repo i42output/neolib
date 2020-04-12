@@ -140,6 +140,7 @@ namespace neolib
         const_reverse_iterator crend() const { return const_reverse_iterator{ begin() }; }
         const_reverse_iterator rend() const { return crend(); }
         reverse_iterator rend() { return reverse_iterator{ begin() }; }
+        iterator erase(const const_iterator& aPosition) { auto result = base_type::erase(std::next(base_type::cbegin(), std::distance(cbegin(), aPosition))); return std::next(begin(), std::distance(base_type::begin(), result)); }
     private:
         virtual std::ptrdiff_t iterator_offset() const = 0;
     };
