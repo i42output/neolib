@@ -78,8 +78,8 @@ namespace neolib
     public:
         offset_iterator& operator++() { return *this += 1; }
         offset_iterator& operator--() { return *this -= 1; }
-        offset_iterator operator++(int) { offset_iterator result = *this; result += 1; return result; }
-        offset_iterator operator--(int) { offset_iterator result = *this; result -= 1; return result; }
+        offset_iterator operator++(int) { offset_iterator result = *this; ++(*this); return result; }
+        offset_iterator operator--(int) { offset_iterator result = *this; --(*this); return result; }
         offset_iterator& operator+=(difference_type aDifference) { iElement = reinterpret_cast<T*>(ptr() + aDifference * iOffset); return *this; }
         offset_iterator& operator-=(difference_type aDifference) { iElement = reinterpret_cast<T*>(ptr() - aDifference * iOffset); return *this; }
         offset_iterator operator+(difference_type aDifference) const { offset_iterator result = *this; result += aDifference; return result; }
