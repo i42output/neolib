@@ -1,6 +1,6 @@
 // async_thread.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2020 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -44,7 +44,7 @@ namespace neolib
 {
     class async_event_queue;
 
-    class async_thread : public thread, public async_task
+    class async_thread : public thread
     {
         // types
     private:
@@ -60,13 +60,14 @@ namespace neolib
         };
         // construction
     public:
-        async_thread(const std::string& aName = "", bool aAttachToCurrentThread = false);
+        async_thread(async_task& aTask, const std::string& aName = "", bool aAttachToCurrentThread = false);
         ~async_thread();
         // implemenation
     protected:
         void exec_preamble() override;
         void exec() override;
     private:
+        async_task& iTask;
         std::optional<queue_ref> iEventQueue;
     };
 }

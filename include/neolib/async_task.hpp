@@ -69,20 +69,28 @@ namespace neolib
 
     class async_task : public task<i_async_task>, public lifetime
     {
+        friend class async_thread;
         // events
     public:
         define_declared_event(Destroying, destroying)
         define_declared_event(Destroyed, destroyed)
+        // exceptions
+    public:
+        struct no_thread : std::logic_error { no_thread() : std::logic_error{ "neolib::async_task::no_thread" } {} };
         // types
     private:
         typedef std::unique_ptr<neolib::message_queue> message_queue_pointer;
         // construction
     public:
+        async_task(const std::string& aName = std::string{});
         async_task(i_thread& aThread, const std::string& aName = std::string{});
         ~async_task();
         // operations
     public:
         i_thread& thread() const;
+        bool joined() const;
+        void join(i_thread& aThread);
+        void detach();
         bool do_io(yield_type aYieldIfNoWork = yield_type::NoYield);
         io_service& timer_io_service() { return iTimerIoService; }
         io_service& networking_io_service() { return iNetworkingIoService; }
@@ -104,7 +112,7 @@ namespace neolib
         void do_work() override;
         // attributes
     private:
-        i_thread& iThread;
+        i_thread* iThread;
         io_service iTimerIoService;
         io_service iNetworkingIoService;
         message_queue_pointer iMessageQueue;

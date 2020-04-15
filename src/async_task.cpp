@@ -64,8 +64,14 @@ namespace neolib
         return didSome;
     }
 
+    async_task::async_task(const std::string& aName) :
+        task{ aName }, iThread{ nullptr }, iTimerIoService{ *this }, iNetworkingIoService{ *this }, iHalted{ false }
+    {
+        Destroying.ignore_errors();
+    }
+
     async_task::async_task(i_thread& aThread, const std::string& aName) :
-        task{ aName }, iThread{ aThread }, iTimerIoService{ *this }, iNetworkingIoService{ *this }, iHalted{ false }
+        task{ aName }, iThread{ &aThread }, iTimerIoService{ *this }, iNetworkingIoService{ *this }, iHalted{ false }
     {
         Destroying.ignore_errors();
     }
@@ -73,12 +79,30 @@ namespace neolib
     async_task::~async_task()
     {
         set_destroying();
-        thread().abort();
+        if (joined())
+            thread().abort();
     }
 
     i_thread& async_task::thread() const
     {
-        return iThread;
+        if (iThread != nullptr)
+            return *iThread;
+        throw no_thread();
+    }
+
+    bool async_task::joined() const
+    {
+        return iThread != nullptr;
+    }
+
+    void async_task::join(i_thread& aThread)
+    {
+        iThread = &aThread;
+    }
+
+    void async_task::detach()
+    {
+        iThread = nullptr;
     }
 
     bool async_task::do_io(yield_type aYieldIfNoWork)
@@ -186,7 +210,7 @@ namespace neolib
 
     void async_task::run()
     {
-        while (!iThread.finished())
+        while (!thread().finished())
             do_work();
     }
 

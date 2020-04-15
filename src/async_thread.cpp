@@ -38,27 +38,29 @@
 
 namespace neolib
 {
-    async_thread::async_thread(const std::string& aName, bool aAttachToCurrentThread) : 
-        neolib::thread{ aName, aAttachToCurrentThread }, async_task{ static_cast<i_thread&>(*this) }
+    async_thread::async_thread(async_task& aTask, const std::string& aName, bool aAttachToCurrentThread) :
+        neolib::thread{ aName, aAttachToCurrentThread }, iTask{ aTask }
     {
+        aTask.join(*this);
         if (using_existing_thread())
-            iEventQueue.emplace(async_event_queue::instance(*this));
+            iEventQueue.emplace(async_event_queue::instance(iTask));
     }
 
     async_thread::~async_thread()
     {
-        set_destroying();
+        iTask.detach();
+        iTask.set_destroying();
         if (iEventQueue != std::nullopt && !iEventQueue->queueDestroyed)
             iEventQueue->queue.terminate();
     }
 
     void async_thread::exec_preamble()
     {
-        iEventQueue.emplace(async_event_queue::instance(*this));
+        iEventQueue.emplace(async_event_queue::instance(iTask));
     }
 
     void async_thread::exec()
     {
-        run();
+        iTask.run();
     }
 }
