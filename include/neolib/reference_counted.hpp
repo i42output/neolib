@@ -129,6 +129,10 @@ namespace neolib
                     throw release_during_destruction();
             }
         }
+        int32_t reference_count() const override
+        {
+            return iReferenceCount;
+        }
         const base_type* release_and_take_ownership() const override
         {
             if (iReferenceCount != 1)
@@ -187,8 +191,10 @@ namespace neolib
                 iObject->add_ref();
         }
         ref_ptr(Interface& aObject) :
-            iObject(&aObject), iReferenceCounted(false)
+            iObject(&aObject), iReferenceCounted(aObject.reference_count() > 0)
         {
+            if (reference_counted())
+                iObject->add_ref();
         }
         ref_ptr(const ref_ptr& aOther) :
             iObject(aOther.ptr()), iReferenceCounted(aOther.reference_counted())

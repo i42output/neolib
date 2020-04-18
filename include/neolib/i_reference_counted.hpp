@@ -63,6 +63,7 @@ namespace neolib
     public:
         virtual void add_ref() const = 0;
         virtual void release() const = 0;
+        virtual int32_t reference_count() const = 0;
         virtual const i_reference_counted* release_and_take_ownership() const = 0;
         virtual i_reference_counted* release_and_take_ownership() = 0;
         virtual void pin() const = 0;
