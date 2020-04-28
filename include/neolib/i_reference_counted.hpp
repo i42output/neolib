@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <type_traits>
 
 namespace neolib
 {
@@ -102,6 +103,42 @@ namespace neolib
         template <typename Interface2>
         bool operator<(const i_ref_ptr<Interface2>& aOther) const { return ptr() < aOther.ptr(); }
     };
+
+    template <typename Interface1, typename Interface2>
+    inline bool operator==(const i_ref_ptr<Interface1>& lhs, const Interface2* rhs)
+    {
+        return static_cast<const abstract_t<Interface1>*>(lhs.ptr()) == static_cast<const abstract_t<Interface1>*>(rhs);
+    }
+
+    template <typename Interface1, typename Interface2>
+    inline bool operator==(const Interface2* lhs, const i_ref_ptr<Interface1>& rhs)
+    {
+        return static_cast<const abstract_t<Interface1>*>(lhs) == static_cast<const abstract_t<Interface1>*>(rhs.ptr());
+    }
+
+    template <typename Interface1, typename Interface2>
+    inline bool operator!=(const i_ref_ptr<Interface1>& lhs, const Interface2* rhs)
+    {
+        return !(lhs == rhs);
+    }
+
+    template <typename Interface1, typename Interface2>
+    inline bool operator!=(const Interface2* lhs, const i_ref_ptr<Interface1>& rhs)
+    {
+        return !(lhs == rhs);
+    }
+
+    template <typename Interface1, typename Interface2>
+    inline bool operator<(const i_ref_ptr<Interface1>& lhs, const Interface2* rhs)
+    {
+        return static_cast<const abstract_t<Interface1>*>(lhs.ptr()) < static_cast<const abstract_t<Interface1>*>(rhs);
+    }
+
+    template <typename Interface1, typename Interface2>
+    inline bool operator<(const Interface2* lhs, const i_ref_ptr<Interface1>& rhs)
+    {
+        return static_cast<const abstract_t<Interface1>*>(lhs) < static_cast<const abstract_t<Interface1>*>(rhs.ptr());
+    }
 
     template <typename Interface>
     class i_weak_ref_ptr : public i_ref_ptr<Interface>

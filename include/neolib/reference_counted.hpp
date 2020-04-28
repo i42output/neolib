@@ -214,8 +214,15 @@ namespace neolib
             if (!aDiscoverable.discover(*this))
                 throw interface_not_found();
         }
-        template <typename Interface2>
+        template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr(const ref_ptr<Interface2>& aOther) :
+            iObject(aOther.ptr()), iReferenceCounted(aOther.reference_counted())
+        {
+            if (valid() && iReferenceCounted)
+                iObject->add_ref();
+        }
+        template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
+        ref_ptr(const i_ref_ptr<Interface2>& aOther) :
             iObject(aOther.ptr()), iReferenceCounted(aOther.reference_counted())
         {
             if (valid() && iReferenceCounted)
@@ -232,6 +239,22 @@ namespace neolib
             return *this;
         }
         ref_ptr& operator=(const abstract_type& aOther)
+        {
+            if (&aOther == this)
+                return *this;
+            reset(aOther.ptr(), aOther.reference_counted());
+            return *this;
+        }
+        template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
+        ref_ptr& operator=(const ref_ptr<Interface2>& aOther)
+        {
+            if (&aOther == this)
+                return *this;
+            reset(aOther.ptr(), aOther.reference_counted());
+            return *this;
+        }
+        template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
+        ref_ptr& operator=(const i_ref_ptr<Interface2>& aOther)
         {
             if (&aOther == this)
                 return *this;
