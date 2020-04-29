@@ -177,53 +177,52 @@ namespace neolib
     };
 
     template <typename Interface>
-    class ref_ptr : public i_ref_ptr<Interface>
+    class ref_ptr : public i_ref_ptr<abstract_t<Interface>>
     {
     public:
-        typedef i_ref_ptr<Interface> abstract_type;
+        typedef i_ref_ptr<abstract_t<Interface>> abstract_type;
         typedef typename abstract_type::no_object no_object;
         typedef typename abstract_type::interface_not_found interface_not_found;
     public:
         ref_ptr(Interface* aObject = nullptr) :
-            iObject(aObject), iReferenceCounted(true)
+            iObject{ aObject }, iReferenceCounted{ true }
         {
             if (valid())
                 iObject->add_ref();
         }
         ref_ptr(Interface& aObject) :
-            iObject(&aObject), iReferenceCounted(aObject.reference_count() > 0)
+            iObject{ &aObject }, iReferenceCounted{ aObject.reference_count() > 0 }
         {
             if (reference_counted())
                 iObject->add_ref();
         }
         ref_ptr(const ref_ptr& aOther) :
-            iObject(aOther.ptr()), iReferenceCounted(aOther.reference_counted())
+            iObject{ aOther.ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
             if (valid() && iReferenceCounted)
                 iObject->add_ref();
         }
         ref_ptr(const abstract_type& aOther) :
-            iObject(aOther.ptr()), iReferenceCounted(aOther.reference_counted())
+            iObject{ nullptr }, iReferenceCounted{ true }
         {
-            if (valid() && iReferenceCounted)
-                iObject->add_ref();
+            reset(aOther.ptr(), aOther.reference_counted());
         }
         ref_ptr(i_discoverable& aDiscoverable) :
-            iObject(nullptr), iReferenceCounted(true)
+            iObject{ nullptr }, iReferenceCounted{ true }
         {
             if (!aDiscoverable.discover(*this))
                 throw interface_not_found();
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr(const ref_ptr<Interface2>& aOther) :
-            iObject(aOther.ptr()), iReferenceCounted(aOther.reference_counted())
+            iObject{ aOther.ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
             if (valid() && iReferenceCounted)
                 iObject->add_ref();
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr(const i_ref_ptr<Interface2>& aOther) :
-            iObject(aOther.ptr()), iReferenceCounted(aOther.reference_counted())
+            iObject{ aOther.ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
             if (valid() && iReferenceCounted)
                 iObject->add_ref();
@@ -277,15 +276,12 @@ namespace neolib
         {
             return iReferenceCounted;
         }
-        void reset(Interface* aObject = nullptr, bool aReferenceCounted = true) override
+        void reset(abstract_t<Interface>* aObject, bool aReferenceCounted = true) override
         {
-            ref_ptr copy(*this);
-            if (valid() && iReferenceCounted)
-                iObject->release();
-            iObject = aObject;
-            iReferenceCounted = aReferenceCounted;
-            if (valid() && iReferenceCounted)
-                iObject->add_ref();
+            Interface* compatibleObject = dynamic_cast<Interface*>(aObject);
+            if (aObject != nullptr && compatibleObject == nullptr)
+                throw std::bad_cast();
+            reset<Interface>(compatibleObject, aReferenceCounted);
         }
         Interface* release() override
         {
@@ -315,17 +311,29 @@ namespace neolib
                 throw no_object();
             return *iObject;
         }
+    public:
+        template <typename Interface2 = Interface, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
+        void reset(Interface2* aObject = nullptr, bool aReferenceCounted = true)
+        {
+            ref_ptr copy(*this);
+            if (valid() && iReferenceCounted)
+                iObject->release();
+            iObject = aObject;
+            iReferenceCounted = aReferenceCounted;
+            if (valid() && iReferenceCounted)
+                iObject->add_ref();
+        }
     private:
         Interface* iObject;
         bool iReferenceCounted;
     };
 
     template <typename Interface>
-    class weak_ref_ptr : public i_weak_ref_ptr<Interface>
+    class weak_ref_ptr : public i_weak_ref_ptr<abstract_t<Interface>>
     {
-        typedef i_weak_ref_ptr<Interface> base_type;
+        typedef i_weak_ref_ptr<abstract_t<Interface>> base_type;
     public:
-        typedef i_weak_ref_ptr<Interface> abstract_type;
+        typedef i_weak_ref_ptr<abstract_t<Interface>> abstract_type;
         typedef typename base_type::no_object no_object;
         typedef typename base_type::interface_not_found interface_not_found;
         typedef typename base_type::bad_release bad_release;
@@ -346,7 +354,7 @@ namespace neolib
         {
             update_control_block(aOther.ptr());
         }
-        weak_ref_ptr(const i_ref_ptr<Interface>& aOther) :
+        weak_ref_ptr(const i_ref_ptr<abstract_t<Interface>>& aOther) :
             iControlBlock{ nullptr }
         {
             update_control_block(aOther.ptr());
@@ -367,7 +375,7 @@ namespace neolib
             reset(aOther.ptr());
             return *this;
         }
-        weak_ref_ptr& operator=(const i_ref_ptr<Interface>& aOther)
+        weak_ref_ptr& operator=(const i_ref_ptr<abstract_t<Interface>>& aOther)
         {
             reset(aOther.ptr());
             return *this;
@@ -382,7 +390,7 @@ namespace neolib
         {
             return false;
         }
-        void reset(Interface* aObject = nullptr, bool = false) override
+        void reset(abstract_t<Interface>* aObject = nullptr, bool = false) override
         {
             weak_ref_ptr copy(*this);
             update_control_block(aObject);

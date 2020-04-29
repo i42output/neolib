@@ -44,6 +44,8 @@ namespace neolib
 {
     class i_custom_type : public i_reference_counted
     {
+    public:
+        typedef i_custom_type abstract_type;
         // exceptions
     public:
         struct no_instance : std::logic_error { no_instance() : std::logic_error("neolib::i_custom_type::no_instance") {} };

@@ -46,6 +46,8 @@ namespace neolib
     class i_plugin : public i_discoverable
     {
     public:
+        typedef i_plugin abstract_type;
+    public:
         virtual const uuid& id() const = 0;
         virtual const i_string& name() const = 0;
         virtual const i_string& description() const = 0;
