@@ -39,6 +39,7 @@
 #ifdef _WIN32
 #include <WINNLS.H>
 #include <shellapi.h>
+#include <Shlobj_core.h>
 #endif
 #include <vector>
 #include <string>
@@ -204,6 +205,15 @@ namespace neolib
     std::string program_directory()
     {
         return boost::filesystem::path(program_file()).parent_path().string();
+    }
+
+    std::string user_documents_directory()
+    {
+        PWSTR result;
+        SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &result);
+        auto path = convert_path(result);
+        CoTaskMemFree(result);
+        return path;
     }
 
     simple_file::simple_file() : 

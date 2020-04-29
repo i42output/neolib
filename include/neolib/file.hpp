@@ -67,6 +67,7 @@ namespace neolib
     bool move_file(const std::string& aPathFrom, const std::string& aPathTo);
     std::string program_file();
     std::string program_directory();
+    std::string user_documents_directory();
 
     class simple_file
     {
