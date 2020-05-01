@@ -163,14 +163,11 @@ namespace neolib
             if (halted())
                 return didWork;
             if (have_message_queue())
-            {
                 message_queue().get_message();
-                message_queue().idle();
-            }
+            idle();
             didWork = true;
         }
-        if (have_message_queue())
-            message_queue().idle();
+        idle();
         return didWork;
     }
 
@@ -208,15 +205,20 @@ namespace neolib
         }
     }
 
-    void async_task::run()
+    void async_task::run(yield_type aYieldType)
     {
         while (!thread().finished())
-            do_work();
+            do_work(aYieldType);
     }
 
-    void async_task::do_work()
+    void async_task::do_work(yield_type aYieldType)
     {
-        do_io(yield_type::Sleep);
+        do_io(aYieldType);
     }
 
+    void async_task::idle()
+    {
+        if (have_message_queue())
+            message_queue().idle();
+    }
 } // namespace neolib

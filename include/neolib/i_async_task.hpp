@@ -41,13 +41,6 @@
 
 namespace neolib
 {
-    enum class yield_type
-    {
-        NoYield,
-        Yield,
-        Sleep
-    };
-
     class i_io_service
     {
         // constants
@@ -81,5 +74,6 @@ namespace neolib
         virtual bool pump_messages() = 0;
         virtual bool halted() const = 0;
         virtual void halt() = 0;
+        virtual void idle() = 0;
     };
 }

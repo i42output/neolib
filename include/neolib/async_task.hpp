@@ -108,8 +108,9 @@ namespace neolib
         void set_destroying() override;
         void set_destroyed() override;
         // task
-        void run() override;
-        void do_work() override;
+        void run(yield_type aYieldType = yield_type::NoYield) override;
+        void do_work(yield_type aYieldType = yield_type::NoYield) override;
+        void idle() override;
         // attributes
     private:
         i_thread* iThread;

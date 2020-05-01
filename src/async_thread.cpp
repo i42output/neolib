@@ -59,8 +59,8 @@ namespace neolib
         iEventQueue.emplace(async_event_queue::instance(iTask));
     }
 
-    void async_thread::exec()
+    void async_thread::exec(yield_type aYieldType)
     {
-        iTask.run();
+        iTask.run(aYieldType);
     }
 }

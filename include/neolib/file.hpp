@@ -68,6 +68,7 @@ namespace neolib
     std::string program_file();
     std::string program_directory();
     std::string user_documents_directory();
+    std::string user_settings_directory();
 
     class simple_file
     {

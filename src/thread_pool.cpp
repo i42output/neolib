@@ -57,7 +57,7 @@ namespace neolib
             start();
         }
     public:
-        virtual void exec()
+        virtual void exec(yield_type aYieldType = yield_type::NoYield)
         {
             while (!finished())
             {
@@ -67,7 +67,7 @@ namespace neolib
                 if (iStopped)
                     return;
                 if (!iActiveTask->cancelled())
-                    iActiveTask->run();
+                    iActiveTask->run(aYieldType);
                 std::scoped_lock<std::recursive_mutex> lk2(iPoolMutex);
                 release();
                 next_task();

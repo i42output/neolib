@@ -59,7 +59,7 @@ namespace neolib
         }
         // implementation
     public:
-        void do_work() override
+        void do_work(yield_type aYieldType = yield_type::NoYield) override
         {
         }
         void cancel() override
@@ -94,7 +94,7 @@ namespace neolib
             static std::string sName = "neogfx::function_task";
             return sName;
         }
-        void run() override
+        void run(yield_type) override
         {
             iPromise.set_value(iFunction());
         }
@@ -104,7 +104,7 @@ namespace neolib
     };
 
     template <>
-    inline void function_task<void>::run()
+    inline void function_task<void>::run(yield_type)
     {
         iFunction();
         iPromise.set_value();

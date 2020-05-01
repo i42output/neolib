@@ -109,7 +109,7 @@ namespace neolib
         bool waitable_ready() const override;
         // own
         void exec_preamble() override;
-        void exec() override;
+        void exec(yield_type aYieldType = yield_type::NoYield) override;
         void entry_point();
         // attributes
     private:

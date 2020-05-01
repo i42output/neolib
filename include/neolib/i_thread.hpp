@@ -39,6 +39,13 @@
 
 namespace neolib
 {
+    enum class yield_type
+    {
+        NoYield,
+        Yield,
+        Sleep
+    };
+
     class i_thread
     {
         // exceptions
@@ -55,6 +62,6 @@ namespace neolib
         // implementation
     protected:
         virtual void exec_preamble() = 0;
-        virtual void exec() = 0;
+        virtual void exec(yield_type aYieldType = yield_type::NoYield) = 0;
     };
 }

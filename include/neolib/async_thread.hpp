@@ -65,7 +65,7 @@ namespace neolib
         // implemenation
     protected:
         void exec_preamble() override;
-        void exec() override;
+        void exec(yield_type aYieldType = yield_type::NoYield) override;
     private:
         async_task& iTask;
         std::optional<queue_ref> iEventQueue;

@@ -40,6 +40,10 @@
 #include <WINNLS.H>
 #include <shellapi.h>
 #include <Shlobj_core.h>
+#else
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 #endif
 #include <vector>
 #include <string>
@@ -209,14 +213,33 @@ namespace neolib
 
     std::string user_documents_directory()
     {
+#ifdef _WIN32
         PWSTR result;
         SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &result);
         auto path = convert_path(result);
         CoTaskMemFree(result);
         return path;
+#else
+        struct passwd* pw = getpwuid(getuid());
+        const char* homedir = pw->pw_dir;
+#endif
     }
 
-    simple_file::simple_file() : 
+    std::string user_settings_directory()
+    {
+#ifdef _WIN32
+        PWSTR result;
+        SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &result);
+        auto path = convert_path(result);
+        CoTaskMemFree(result);
+        return path;
+#else
+        struct passwd* pw = getpwuid(getuid());
+        const char* homedir = pw->pw_dir;
+#endif
+    }
+
+    simple_file::simple_file() :
         iError(0)
     {
     }

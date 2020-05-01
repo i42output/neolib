@@ -344,7 +344,7 @@ namespace neolib
     {
     }
 
-    void thread::exec()
+    void thread::exec(yield_type)
     {
         if (iExecFunction != std::nullopt)
             (*iExecFunction)();
