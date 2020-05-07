@@ -249,7 +249,7 @@ namespace neolib
     };
 
     template <typename... Args>
-    class event : public i_event, protected lifetime
+    class event : public i_event, public lifetime
     {
         typedef event<Args...> self_type;
         friend class sink;

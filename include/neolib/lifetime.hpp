@@ -62,6 +62,12 @@ namespace neolib
         typedef Owner* owner_pointer;
     public:
         lifetime_flag(const i_lifetime& aSubject, owner_pointer aOwner = nullptr);
+        template <typename Subject>
+        lifetime_flag(const Subject& aSubject, owner_pointer aOwner = nullptr, std::enable_if_t<std::is_base_of_v<i_lifetime, Subject>, sfinae> = {}) :
+            lifetime_flag{ static_cast<const i_lifetime&>(aSubject), aOwner } {}
+        template <typename Subject>
+        lifetime_flag(const Subject& aSubject, owner_pointer aOwner = nullptr, std::enable_if_t<!std::is_base_of_v<i_lifetime, Subject>, sfinae> = {}) :
+            lifetime_flag{ dynamic_cast<const i_lifetime&>(aSubject), aOwner } {}
         lifetime_flag(const lifetime_flag& aOther);
         ~lifetime_flag();
     public:
@@ -92,7 +98,7 @@ namespace neolib
     typedef std::optional<destroyed_flag> optional_destroyed_flag;
 
     template <typename FlagList>
-    class basic_lifetime : public virtual i_lifetime
+    class basic_lifetime : public i_lifetime
     {
     public:
         typedef neolib::destroyed_flag destroyed_flag;
@@ -123,10 +129,10 @@ namespace neolib
         mutable flag_list_type iFlagList;
     };
 
-    typedef basic_lifetime<jar<i_lifetime_flag*, null_mutex>> single_threaded_lifetime;
-    typedef basic_lifetime<jar<i_lifetime_flag*, std::recursive_mutex>> multi_threaded_lifetime;
+    using single_threaded_lifetime = basic_lifetime<jar<i_lifetime_flag*, null_mutex>> ;
+    using multi_threaded_lifetime = basic_lifetime<jar<i_lifetime_flag*, std::recursive_mutex>>;
 
-    typedef multi_threaded_lifetime lifetime;
+    using lifetime = multi_threaded_lifetime;
 }
 
 #include "lifetime.inl"

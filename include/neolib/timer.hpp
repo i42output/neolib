@@ -125,6 +125,9 @@ namespace neolib
     public:
         callback_timer(async_task& aTask, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true);
         callback_timer(async_task& aTask, const i_lifetime& aContext, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true);
+        template <typename Context>
+        callback_timer(async_task& aTask, const Context& aContext, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true) : 
+            callback_timer{ aTask, dynamic_cast<const i_lifetime&>(aContext), aCallback, aDuration_ms, aInitialWait } {}
         ~callback_timer();
     private:
         virtual void ready();

@@ -50,7 +50,7 @@ namespace neolib
     class tcp_packet_stream_server;
 
     template <typename PacketType>
-    class tcp_packet_stream_server : protected lifetime
+    class tcp_packet_stream_server : public lifetime
     {
     public:
         define_event(PacketStreamAdded, packet_stream_added, packet_stream_added, packet_stream_type&)
