@@ -212,7 +212,9 @@ namespace neolib
                 if (!ec.event().accepted())
                 {
                     didSome = true;
+                    lock.reset();
                     ec.call();
+                    lock.emplace(event_mutex());
                 }
             }
             if (std::next(e) == currentContext.end() || std::next(e)->transaction != *currentTransaction)
