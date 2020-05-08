@@ -222,6 +222,7 @@
     <ClCompile Include="..\..\..\src\application_info.cpp" />
     <ClCompile Include="..\..\..\src\crc.cpp" />
     <ClCompile Include="..\..\..\src\event.cpp" />
+    <ClCompile Include="..\..\..\src\lifetime.cpp" />
     <ClCompile Include="..\..\..\src\waitable_event.cpp" />
     <ClCompile Include="..\..\..\src\file.cpp" />
     <ClCompile Include="..\..\..\src\gunzip.cpp" />
@@ -269,7 +270,6 @@
     <ClInclude Include="..\..\..\include\neolib\event.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_enum.hpp" />
     <ClInclude Include="..\..\..\include\neolib\i_plugin_variant.hpp" />
-    <ClInclude Include="..\..\..\include\neolib\lock.hpp" />
     <ClInclude Include="..\..\..\include\neolib\null_mutex.hpp" />
     <ClInclude Include="..\..\..\include\neolib\plugin_event.hpp" />
     <ClInclude Include="..\..\..\include\neolib\intrusive_sort.hpp" />
@@ -388,7 +388,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\include\neolib\json.inl" />
-    <None Include="..\..\..\include\neolib\lifetime.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

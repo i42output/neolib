@@ -1,6 +1,6 @@
 // lifetime.hpp
 /*
- *  Copyright (c) 2019 Leigh Johnston.
+ *  Copyright (c) 2020 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -36,82 +36,53 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <iostream>
-#include <unordered_set>
-#include <unordered_map>
-#include <mutex>
 #include <atomic>
-#include <optional>
-
-#include <neolib/vecarray.hpp>
-#include <neolib/null_mutex.hpp>
-#include <neolib/allocator.hpp>
 #include <neolib/i_lifetime.hpp>
 
 namespace neolib
 {
-    template <lifetime_state RequiredState, typename Owner = void>
+    class lifetime;
+
+    template <lifetime_state RequiredState>
     class lifetime_flag : public i_lifetime_flag
     {
-        template <typename Mutex>
-        friend class basic_lifetime;
     public:
-        using i_lifetime_flag::cookie_type;
-    private:
-        typedef const i_lifetime* subject_pointer;
-        typedef Owner* owner_pointer;
-    public:
-        lifetime_flag(const i_lifetime& aSubject, owner_pointer aOwner = nullptr);
+        lifetime_flag(const i_lifetime& aSubject);
         template <typename Subject>
-        lifetime_flag(const Subject& aSubject, owner_pointer aOwner = nullptr, std::enable_if_t<std::is_base_of_v<i_lifetime, Subject>, sfinae> = {}) :
-            lifetime_flag{ static_cast<const i_lifetime&>(aSubject), aOwner } {}
+        lifetime_flag(const Subject& aSubject, std::enable_if_t<std::is_base_of_v<i_lifetime, Subject>, sfinae> = {}) :
+            lifetime_flag{ static_cast<const i_lifetime&>(aSubject), } {}
         template <typename Subject>
-        lifetime_flag(const Subject& aSubject, owner_pointer aOwner = nullptr, std::enable_if_t<!std::is_base_of_v<i_lifetime, Subject>, sfinae> = {}) :
-            lifetime_flag{ dynamic_cast<const i_lifetime&>(aSubject), aOwner } {}
+        lifetime_flag(const Subject& aSubject, std::enable_if_t<!std::is_base_of_v<i_lifetime, Subject>, sfinae> = {}) :
+            lifetime_flag{ dynamic_cast<const i_lifetime&>(aSubject), } {}
         lifetime_flag(const lifetime_flag& aOther);
         ~lifetime_flag();
-    public:
-        cookie_type cookie() const final;
     public:
         bool is_creating() const final;
         bool is_alive() const final;
         bool is_destroying() const final;
         bool is_destroyed() const final;
         operator bool() const final;
-        void set_alive() final;
-        void set_destroying() final;
-        void set_destroyed() final;
     public:
         bool debug() const override;
         void set_debug(bool aDebug = true) override;
     private:
-        const i_lifetime& subject() const;
-    private:
-        cookie_type iCookie;
-        subject_pointer iSubject;
-        owner_pointer iOwner;
-        std::atomic<lifetime_state> iState;
+        std::shared_ptr<std::atomic<lifetime_state>> iState;
         bool iDebug;
     };
 
     typedef lifetime_flag<lifetime_state::Destroyed> destroyed_flag;
     typedef std::optional<destroyed_flag> optional_destroyed_flag;
 
-    template <typename FlagList>
-    class basic_lifetime : public i_lifetime
+    class lifetime : public i_lifetime
     {
     public:
         typedef neolib::destroyed_flag destroyed_flag;
-        using i_lifetime::cookie_type;
-    private:
-        typedef FlagList flag_list_type;
-        typedef typename flag_list_type::container_type flags_t;
-        typedef typename flag_list_type::mutex_type mutex_type;
     public:
-        basic_lifetime(lifetime_state aState = lifetime_state::Alive);
-        virtual ~basic_lifetime();
+        lifetime(lifetime_state aState = lifetime_state::Alive);
+        virtual ~lifetime();
     public:
         lifetime_state object_state() const final;
+        std::shared_ptr<std::atomic<lifetime_state>> object_state_ptr() const final;
         bool is_creating() const final;
         bool is_alive() const final;
         bool is_destroying() const final;
@@ -119,20 +90,7 @@ namespace neolib
         void set_alive() override;
         void set_destroying() override;
         void set_destroyed() override;
-    public:
-        cookie_type add_flag(i_lifetime_flag& aFlag) const final;
-        void remove_flag(const i_lifetime_flag& aFlag) const final;
     private:
-        flag_list_type& flags() const;
-    private:
-        std::atomic<lifetime_state> iState;
-        mutable flag_list_type iFlagList;
+        std::shared_ptr<std::atomic<lifetime_state>> iState;
     };
-
-    using single_threaded_lifetime = basic_lifetime<jar<i_lifetime_flag*, null_mutex>> ;
-    using multi_threaded_lifetime = basic_lifetime<jar<i_lifetime_flag*, std::recursive_mutex>>;
-
-    using lifetime = multi_threaded_lifetime;
 }
-
-#include "lifetime.inl"

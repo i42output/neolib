@@ -44,20 +44,13 @@ namespace neolib
     class i_lifetime_flag
     {
     public:
-        typedef neolib::cookie cookie_type;
-    public:
         virtual ~i_lifetime_flag() = default;
-    public:
-        virtual cookie_type cookie() const = 0;
     public:
         virtual bool is_creating() const = 0;
         virtual bool is_alive() const = 0;
         virtual bool is_destroying() const = 0;
         virtual bool is_destroyed() const = 0;
         virtual operator bool() const = 0;
-        virtual void set_alive() = 0;
-        virtual void set_destroying() = 0;
-        virtual void set_destroyed() = 0;
     public:
         virtual bool debug() const = 0;
         virtual void set_debug(bool aDebug = true) = 0;
@@ -77,11 +70,10 @@ namespace neolib
         struct not_creating : std::logic_error { not_creating() : std::logic_error("neolib::i_lifetime::not_creating") {} };
         struct already_destroyed : std::logic_error { already_destroyed() : std::logic_error("neolib::i_lifetime::already_destroyed") {} };
     public:
-        typedef i_lifetime_flag::cookie_type cookie_type;
-    public:
         virtual ~i_lifetime() = default;
     public:
         virtual lifetime_state object_state() const = 0;
+        virtual std::shared_ptr<std::atomic<lifetime_state>> object_state_ptr() const = 0; // todo: not polymorphic; use ref_ptr?
         virtual bool is_creating() const = 0;
         virtual bool is_alive() const = 0;
         virtual bool is_destroying() const = 0;
@@ -89,8 +81,5 @@ namespace neolib
         virtual void set_alive() = 0;
         virtual void set_destroying() = 0;
         virtual void set_destroyed() = 0;
-    public:
-        virtual cookie_type add_flag(i_lifetime_flag& aFlag) const = 0;
-        virtual void remove_flag(const i_lifetime_flag& aFlag) const = 0;
     };
 }

@@ -84,6 +84,9 @@
     <ClCompile Include="..\..\..\src\event.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\lifetime.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\neolib\any.hpp">
@@ -497,9 +500,6 @@
     <ClInclude Include="..\..\..\include\neolib\scoped.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\neolib\lock.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\neolib\i_random_access_container.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -512,9 +512,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\include\neolib\json.inl">
-      <Filter>Header Files</Filter>
-    </None>
-    <None Include="..\..\..\include\neolib\lifetime.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>

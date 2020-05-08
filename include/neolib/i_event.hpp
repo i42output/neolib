@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <neolib/null_mutex.hpp>
 #include <neolib/jar.hpp>
 #include <neolib/i_map.hpp>
 
@@ -27,6 +28,57 @@ namespace neolib
 {
     struct event_destroyed : std::logic_error { event_destroyed() : std::logic_error{ "neolib::event_destroyed" } {} };
     struct event_queue_destroyed : std::logic_error { event_queue_destroyed() : std::logic_error{ "neolib::event_queue_destroyed" } {} };
+
+    namespace detail
+    {
+        class event_mutex
+        {
+        public:
+            event_mutex()
+            {
+                set_multi_threaded();
+            }
+        public:
+            void set_single_threaded()
+            {
+                iActiveMutex.emplace<neolib::null_mutex>();
+            }
+            void set_multi_threaded()
+            {
+                iActiveMutex.emplace<std::recursive_mutex>();
+            }
+        public:
+            void lock()
+            {
+                if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
+                    std::get<std::recursive_mutex>(iActiveMutex).lock();
+                else
+                    std::get<neolib::null_mutex>(iActiveMutex).lock();
+            }
+            void unlock() noexcept
+            {
+                if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
+                    std::get<std::recursive_mutex>(iActiveMutex).unlock();
+                else
+                    std::get<neolib::null_mutex>(iActiveMutex).unlock();
+            }
+            bool try_lock()
+            {
+                if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
+                    return std::get<std::recursive_mutex>(iActiveMutex).try_lock();
+                else
+                    return std::get<neolib::null_mutex>(iActiveMutex).try_lock();
+            }
+        private:
+            std::variant<std::recursive_mutex, neolib::null_mutex> iActiveMutex;
+        };
+    }
+
+    inline detail::event_mutex& event_mutex()
+    {
+        static detail::event_mutex sMutex;
+        return sMutex;
+    }
 
     class i_event : public i_cookie_consumer
     {
