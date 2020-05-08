@@ -69,12 +69,12 @@
 
 namespace neolib
 {
-	struct null_mutex
-	{
-		void lock() noexcept {}
-		void unlock() noexcept {}
+    struct null_mutex
+    {
+        void lock() noexcept {}
+        void unlock() noexcept {}
         bool try_unlock() noexcept { return true; }
-	};
+    };
 
     using boost::fibers::detail::spinlock_status;
 
