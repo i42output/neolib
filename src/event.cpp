@@ -169,9 +169,13 @@ namespace neolib
     void async_event_queue::remove(const i_event& aEvent)
     {
         std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
-        for (auto& e : iEvents)
-            if (e.callback != nullptr && &e.callback->event() == &aEvent)
-                e.callback = nullptr;
+        for (auto e = iEvents.begin(); e != iEvents.end();)
+        {
+            if (e->callback != nullptr && &e->callback->event() == &aEvent)
+                e = iEvents.erase(e);
+            else
+                ++e;
+        }
     }
 
     bool async_event_queue::has(const i_event& aEvent) const

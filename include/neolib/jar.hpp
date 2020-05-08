@@ -42,7 +42,7 @@
 #include <atomic>
 #include <boost/stacktrace.hpp>
 #include <neolib/vector.hpp>
-#include <neolib/null_mutex.hpp>
+#include <neolib/mutex.hpp>
 
 namespace neolib
 {

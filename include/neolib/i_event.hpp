@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <neolib/null_mutex.hpp>
+#include <neolib/mutex.hpp>
 #include <neolib/jar.hpp>
 #include <neolib/i_map.hpp>
 
@@ -45,32 +45,25 @@ namespace neolib
             }
             void set_multi_threaded()
             {
-                iActiveMutex.emplace<std::recursive_mutex>();
+                iActiveMutex.emplace<neolib::recursive_spinlock>();
             }
         public:
             void lock()
             {
-                if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
-                    std::get<std::recursive_mutex>(iActiveMutex).lock();
+                if (std::holds_alternative<neolib::recursive_spinlock>(iActiveMutex))
+                    std::get<neolib::recursive_spinlock>(iActiveMutex).lock();
                 else
                     std::get<neolib::null_mutex>(iActiveMutex).lock();
             }
             void unlock() noexcept
             {
-                if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
-                    std::get<std::recursive_mutex>(iActiveMutex).unlock();
+                if (std::holds_alternative<neolib::recursive_spinlock>(iActiveMutex))
+                    std::get<neolib::recursive_spinlock>(iActiveMutex).unlock();
                 else
                     std::get<neolib::null_mutex>(iActiveMutex).unlock();
             }
-            bool try_lock()
-            {
-                if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
-                    return std::get<std::recursive_mutex>(iActiveMutex).try_lock();
-                else
-                    return std::get<neolib::null_mutex>(iActiveMutex).try_lock();
-            }
         private:
-            std::variant<std::recursive_mutex, neolib::null_mutex> iActiveMutex;
+            std::variant<neolib::recursive_spinlock, neolib::null_mutex> iActiveMutex;
         };
     }
 
