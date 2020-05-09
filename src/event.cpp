@@ -87,7 +87,7 @@ namespace neolib
 
     void async_event_queue::terminate()
     {
-        std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+        std::scoped_lock<switchable_mutex> lock{ event_mutex() };
         if (!terminated())
         {
             iTerminated = true;
@@ -101,13 +101,13 @@ namespace neolib
     public:
         void install_event_filter(i_event_filter& aFilter, const i_event& aEvent) override
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             aEvent.filter_added();
             iFilters.emplace(&aEvent, &aFilter);
         }
         void uninstall_event_filter(i_event_filter& aFilter, const i_event& aEvent) override
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             aEvent.filter_removed();
             for (auto f = iFilters.equal_range(&aEvent).first; f != iFilters.equal_range(&aEvent).second; ++f)
                 if (f->second == &aFilter)
@@ -118,20 +118,20 @@ namespace neolib
         }
         void uninstall_event_filter(const i_event& aEvent) override
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             aEvent.filters_removed();
             iFilters.erase(iFilters.equal_range(&aEvent).first, iFilters.equal_range(&aEvent).second);
         }
     public:
         void pre_filter_event(const i_event& aEvent) const override
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             for (auto f = iFilters.equal_range(&aEvent).first; f != iFilters.equal_range(&aEvent).second; ++f)
                 f->second->pre_filter_event(*f->first);
         }
         void filter_event(const i_event& aEvent) const override
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             for (auto f = iFilters.equal_range(&aEvent).first; f != iFilters.equal_range(&aEvent).second; ++f)
                 f->second->filter_event(*f->first);
         }
@@ -157,7 +157,7 @@ namespace neolib
 
     async_event_queue::transaction async_event_queue::add(callback_ptr aCallback, const optional_transaction& aTransaction)
     {
-        std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+        std::scoped_lock<switchable_mutex> lock{ event_mutex() };
         if (terminated())
             throw async_event_queue_terminated();
         iEvents.push_back(event_list_entry{ aTransaction == std::nullopt ? ++iNextTransaction : *aTransaction, aCallback->event(), std::move(aCallback) });
@@ -168,7 +168,7 @@ namespace neolib
 
     void async_event_queue::remove(const i_event& aEvent)
     {
-        std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+        std::scoped_lock<switchable_mutex> lock{ event_mutex() };
         for (auto e = iEvents.begin(); e != iEvents.end();)
         {
             if (e->callback != nullptr && &e->callback->event() == &aEvent)
@@ -186,7 +186,7 @@ namespace neolib
     bool async_event_queue::publish_events()
     {
         bool didSome = false;
-        std::optional<std::scoped_lock<detail::event_mutex>> lock{ event_mutex() };
+        std::optional<std::scoped_lock<switchable_mutex>> lock{ event_mutex() };
         scoped_counter<std::atomic<uint32_t>> sc{ iPublishNestingLevel };
         if (iPublishNestingLevel > iPublishCache.size())
         {

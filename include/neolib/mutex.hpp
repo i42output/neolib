@@ -63,8 +63,9 @@
 
 #pragma once
 
-#include "neolib.hpp"
-#include <thread>
+#include <neolib/neolib.hpp>
+#include <mutex>
+#include <boost/lockfree/detail/prefix.hpp>
 #include <boost/fiber/detail/spinlock.hpp>
 
 namespace neolib
@@ -80,7 +81,7 @@ namespace neolib
 
     using spinlock = boost::fibers::detail::spinlock;
 
-    class recursive_spinlock
+    class alignas(BOOST_LOCKFREE_CACHELINE_BYTES) recursive_spinlock
     {
     public:
         recursive_spinlock() :
@@ -166,5 +167,48 @@ namespace neolib
         std::atomic<spinlock_status> iState;
         std::atomic<std::thread::id> iLockingThread;
         std::atomic<uint32_t> iLockCount;
+    };
+
+    class alignas(BOOST_LOCKFREE_CACHELINE_BYTES) switchable_mutex
+    {
+    public:
+        switchable_mutex()
+        {
+            set_multi_threaded();
+        }
+    public:
+        void set_single_threaded()
+        {
+            iActiveMutex.emplace<neolib::null_mutex>();
+        }
+        void set_multi_threaded()
+        {
+            iActiveMutex.emplace<std::recursive_mutex>();
+        }
+        void set_multi_threaded_spinlock()
+        {
+            iActiveMutex.emplace<neolib::recursive_spinlock>();
+        }
+    public:
+        void lock()
+        {
+            if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
+                std::get<std::recursive_mutex>(iActiveMutex).lock();
+            else if (std::holds_alternative<neolib::recursive_spinlock>(iActiveMutex))
+                std::get<neolib::recursive_spinlock>(iActiveMutex).lock();
+            else
+                std::get<neolib::null_mutex>(iActiveMutex).lock();
+        }
+        void unlock() noexcept
+        {
+            if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
+                std::get<std::recursive_mutex>(iActiveMutex).unlock();
+            else if (std::holds_alternative<neolib::recursive_spinlock>(iActiveMutex))
+                std::get<neolib::recursive_spinlock>(iActiveMutex).unlock();
+            else
+                std::get<neolib::null_mutex>(iActiveMutex).unlock();
+        }
+    private:
+        std::variant<std::recursive_mutex, neolib::recursive_spinlock, neolib::null_mutex> iActiveMutex;
     };
 }

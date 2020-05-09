@@ -260,7 +260,7 @@ namespace neolib
         friend class sink;
         friend class async_event_queue;
     private:
-        typedef std::optional<std::scoped_lock<detail::event_mutex>> optional_scoped_lock;
+        typedef std::optional<std::scoped_lock<switchable_mutex>> optional_scoped_lock;
         typedef typename event_callback<Args...>::handler callback_handler;
         typedef async_event_queue::optional_transaction optional_async_transaction;
         struct handler
@@ -286,7 +286,7 @@ namespace neolib
                 handleInSameThreadAsEmitter{ handleInSameThreadAsEmitter }
             {}
         };
-        typedef neolib::jar<handler, detail::event_mutex> handler_list_t;
+        typedef neolib::jar<handler, switchable_mutex> handler_list_t;
         struct context
         {
             bool accepted;
@@ -329,7 +329,7 @@ namespace neolib
         {
             if (filtered())
                 async_event_queue::instance().filter_registry().uninstall_event_filter(*this);
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             if (is_controlled())
             {
                 control().reset();
@@ -356,12 +356,12 @@ namespace neolib
     public:
         void push_context() const override
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             instance().contexts.emplace_back();
         }
         void pop_context() const override
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             instance().contexts.pop_back();
         }
     public:
@@ -501,17 +501,17 @@ namespace neolib
         }
         bool accepted() const override
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             return !instance().contexts.empty() ? instance().contexts.back().accepted : false;
         }
         void accept() const override
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             instance().contexts.back().accepted = true;
         }
         void ignore() const override
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             instance().contexts.back().accepted = false;
         }
     public:
@@ -534,7 +534,7 @@ namespace neolib
     public:
         event_handle subscribe(const callback_handler& aCallbackHandler, const void* aUniqueId = nullptr) const
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             invalidate_handler_list();
             return event_handle{ control(), instance().handlers.emplace(async_event_queue::instance(), aUniqueId, aCallbackHandler) };
         }
@@ -564,13 +564,13 @@ namespace neolib
         }
         void unsubscribe(event_handle aHandle) const
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             invalidate_handler_list();
             instance().handlers.remove(aHandle.id());
         }
         void unsubscribe(const void* aClientId) const
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             invalidate_handler_list();
             for (auto h = instance().handlers.begin(); h != instance().handlers.end();)
                 if (h->clientId == aClientId)
@@ -591,24 +591,24 @@ namespace neolib
     private:
         void add_ref(cookie aCookie) override
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             ++instance().handlers[aCookie].referenceCount;
         }
         void release(cookie aCookie) override
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             if (--instance().handlers[aCookie].referenceCount == 0u)
                 instance().handlers.remove(aCookie);
         }
         long use_count(cookie aCookie) const override
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             return instance().handlers[aCookie].referenceCount;
         }
     private:
         void invalidate_handler_list() const
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             instance().handlersChanged = true;
             for (auto& context : instance().contexts)
                 context.handlersChanged = true;
@@ -640,7 +640,7 @@ namespace neolib
         }
         void unqueue() const
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             std::unordered_set<async_event_queue*> queues;
             for (auto const& h : instance().handlers)
                 if (!h.queueDestroyed)
@@ -650,7 +650,7 @@ namespace neolib
         }
         void clear()
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             for (auto& h : instance().handlers)
                 if (!h.queueDestroyed)
                     h.queue->remove(*this);
@@ -663,7 +663,7 @@ namespace neolib
         }
         i_event_control& control() const
         {
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             if (iControl == nullptr)
             {
                 iControl = new event_control{ iAlias };
@@ -679,7 +679,7 @@ namespace neolib
         {
             if (iInstanceDataPtr != nullptr)
                 return *iInstanceDataPtr;
-            std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             iInstanceData.emplace();
             iInstanceDataPtr = &*iInstanceData;
             return *iInstanceDataPtr;

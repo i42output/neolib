@@ -17,6 +17,7 @@
 #pragma warning (disable: 4834 ) // discarding return value of function with 'nodiscard' attribute
 #pragma warning (disable: 4459 ) // declaration of 'attr' hides global declaration
 #pragma warning (disable: 4100 ) // unreferenced formal parameter
+#pragma warning (disable: 4324 ) // structure was padded due to alignment specifier
 
 #define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
 

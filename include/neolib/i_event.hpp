@@ -29,47 +29,9 @@ namespace neolib
     struct event_destroyed : std::logic_error { event_destroyed() : std::logic_error{ "neolib::event_destroyed" } {} };
     struct event_queue_destroyed : std::logic_error { event_queue_destroyed() : std::logic_error{ "neolib::event_queue_destroyed" } {} };
 
-    namespace detail
+    inline switchable_mutex& event_mutex()
     {
-        class event_mutex
-        {
-        public:
-            event_mutex()
-            {
-                set_multi_threaded();
-            }
-        public:
-            void set_single_threaded()
-            {
-                iActiveMutex.emplace<neolib::null_mutex>();
-            }
-            void set_multi_threaded()
-            {
-                iActiveMutex.emplace<neolib::recursive_spinlock>();
-            }
-        public:
-            void lock()
-            {
-                if (std::holds_alternative<neolib::recursive_spinlock>(iActiveMutex))
-                    std::get<neolib::recursive_spinlock>(iActiveMutex).lock();
-                else
-                    std::get<neolib::null_mutex>(iActiveMutex).lock();
-            }
-            void unlock() noexcept
-            {
-                if (std::holds_alternative<neolib::recursive_spinlock>(iActiveMutex))
-                    std::get<neolib::recursive_spinlock>(iActiveMutex).unlock();
-                else
-                    std::get<neolib::null_mutex>(iActiveMutex).unlock();
-            }
-        private:
-            std::variant<neolib::recursive_spinlock, neolib::null_mutex> iActiveMutex;
-        };
-    }
-
-    inline detail::event_mutex& event_mutex()
-    {
-        static detail::event_mutex sMutex;
+        static switchable_mutex sMutex;
         return sMutex;
     }
 
