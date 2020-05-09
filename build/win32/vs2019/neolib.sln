@@ -5,14 +5,30 @@ VisualStudioVersion = 16.0.30002.166
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "neolib", "neolib.vcxproj", "{5BE004BF-A083-422F-8287-E7238B633466}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Event", "..\..\..\unit_tests\Event\build\win32\vs2019\Event\Event.vcxproj", "{9CB6ED14-E94A-4898-9512-FF66F9D95E6E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
 		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{5BE004BF-A083-422F-8287-E7238B633466}.Debug|Win32.ActiveCfg = Debug|x64
+		{5BE004BF-A083-422F-8287-E7238B633466}.Debug|x64.ActiveCfg = Debug|x64
+		{5BE004BF-A083-422F-8287-E7238B633466}.Debug|x64.Build.0 = Debug|x64
 		{5BE004BF-A083-422F-8287-E7238B633466}.Release|Win32.ActiveCfg = Release|x64
+		{5BE004BF-A083-422F-8287-E7238B633466}.Release|x64.ActiveCfg = Release|x64
+		{5BE004BF-A083-422F-8287-E7238B633466}.Release|x64.Build.0 = Release|x64
+		{9CB6ED14-E94A-4898-9512-FF66F9D95E6E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9CB6ED14-E94A-4898-9512-FF66F9D95E6E}.Debug|Win32.Build.0 = Debug|Win32
+		{9CB6ED14-E94A-4898-9512-FF66F9D95E6E}.Debug|x64.ActiveCfg = Debug|x64
+		{9CB6ED14-E94A-4898-9512-FF66F9D95E6E}.Debug|x64.Build.0 = Debug|x64
+		{9CB6ED14-E94A-4898-9512-FF66F9D95E6E}.Release|Win32.ActiveCfg = Release|Win32
+		{9CB6ED14-E94A-4898-9512-FF66F9D95E6E}.Release|Win32.Build.0 = Release|Win32
+		{9CB6ED14-E94A-4898-9512-FF66F9D95E6E}.Release|x64.ActiveCfg = Release|x64
+		{9CB6ED14-E94A-4898-9512-FF66F9D95E6E}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
