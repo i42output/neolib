@@ -166,10 +166,11 @@ namespace neolib
         friend class async_event_queue;
     private:
         typedef std::function<void(Args...)> function_type;
-        typedef std::shared_ptr<function_type> handler_ptr;
+        typedef std::unique_ptr<function_type> handler_owner_ptr;
+        typedef function_type* handler_ref_ptr;
         typedef std::tuple<Args...> argument_pack;
     public:
-        event_callback(const i_event& aEvent, handler_ptr aHandler, Args... aArguments) :
+        event_callback(const i_event& aEvent, handler_ref_ptr aHandler, Args... aArguments) :
             iEvent{ aEvent }, iHandler{ aHandler }, iArguments{ aArguments... }
         {
         }
@@ -184,7 +185,7 @@ namespace neolib
         }
     private:
         const i_event& iEvent;
-        handler_ptr iHandler;
+        handler_ref_ptr iHandler;
         argument_pack iArguments;
     };
 
@@ -263,7 +264,8 @@ namespace neolib
     private:
         typedef std::optional<std::scoped_lock<detail::event_mutex>> optional_scoped_lock;
         typedef typename event_callback<Args...>::function_type function_type;
-        typedef typename event_callback<Args...>::handler_ptr handler_ptr;
+        typedef typename event_callback<Args...>::handler_owner_ptr handler_owner_ptr;
+        typedef typename event_callback<Args...>::handler_ref_ptr handler_ref_ptr;
         typedef async_event_queue::optional_transaction optional_async_transaction;
         struct queue_ref
         {
@@ -281,23 +283,23 @@ namespace neolib
             queue_ref_ptr queueRef;
             uint32_t referenceCount;
             const void* clientId;
-            handler_ptr callback;
+            handler_owner_ptr callback;
             bool handleInSameThreadAsEmitter;
             uint64_t triggerId = 0ull;
 
             handler(
                 async_event_queue& queue, 
                 const void* clientId, 
-                handler_ptr callback,
+                handler_owner_ptr callback,
                 bool handleInSameThreadAsEmitter = false) : 
                 queueRef{ std::make_shared<queue_ref>(queue) },
                 referenceCount{ 0u },
                 clientId{ clientId },
-                callback{ callback },
+                callback{ std::move(callback) },
                 handleInSameThreadAsEmitter{ handleInSameThreadAsEmitter }
             {}
         };
-        typedef neolib::jar<handler, std::recursive_mutex> handler_list_t;
+        typedef neolib::jar<handler, detail::event_mutex> handler_list_t;
         struct context
         {
             bool accepted;
@@ -630,9 +632,8 @@ namespace neolib
             auto& emitterQueue = async_event_queue::instance();
             if (!aAsync && !aHandler.queueRef->queueDestroyed && &aHandler.queueRef->queue == &emitterQueue)
             {
-                auto callback = aHandler.callback;
                 lock = std::nullopt;
-                (*callback)(aArguments...);
+                (*aHandler.callback)(aArguments...);
                 lock.emplace(event_mutex());
             }
             else
