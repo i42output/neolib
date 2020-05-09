@@ -109,7 +109,7 @@ namespace neolib
         {
             std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
             aEvent.filter_removed();
-            for (auto f = iFilters.lower_bound(&aEvent); f != iFilters.upper_bound(&aEvent); ++f)
+            for (auto f = iFilters.equal_range(&aEvent).first; f != iFilters.equal_range(&aEvent).second; ++f)
                 if (f->second == &aFilter)
                 {
                     iFilters.erase(f);
@@ -120,19 +120,19 @@ namespace neolib
         {
             std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
             aEvent.filters_removed();
-            iFilters.erase(iFilters.lower_bound(&aEvent), iFilters.upper_bound(&aEvent));
+            iFilters.erase(iFilters.equal_range(&aEvent).first, iFilters.equal_range(&aEvent).second);
         }
     public:
         void pre_filter_event(const i_event& aEvent) const override
         {
             std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
-            for (auto f = iFilters.lower_bound(&aEvent); f != iFilters.upper_bound(&aEvent); ++f)
+            for (auto f = iFilters.equal_range(&aEvent).first; f != iFilters.equal_range(&aEvent).second; ++f)
                 f->second->pre_filter_event(*f->first);
         }
         void filter_event(const i_event& aEvent) const override
         {
             std::scoped_lock<detail::event_mutex> lock{ event_mutex() };
-            for (auto f = iFilters.lower_bound(&aEvent); f != iFilters.upper_bound(&aEvent); ++f)
+            for (auto f = iFilters.equal_range(&aEvent).first; f != iFilters.equal_range(&aEvent).second; ++f)
                 f->second->filter_event(*f->first);
         }
     private:
