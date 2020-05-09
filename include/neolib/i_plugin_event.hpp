@@ -22,6 +22,7 @@
 #include <neolib/neolib.hpp>
 #include <memory>
 
+#include <neolib/reference_counted.hpp>
 #include <neolib/event.hpp>
 
 namespace neolib
@@ -31,14 +32,17 @@ namespace neolib
         using neolib::sink;
 
         template <typename... Arguments>
-        class i_event_callback
+        class i_event_callback : public i_reference_counted
         {
+            typedef i_event_callback<Arguments...> self_type;
+        public:
+            typedef self_type abstract_type;
         public:
             virtual ~i_event_callback() = default;
         public:
-            std::unique_ptr<i_event_callback<Arguments...>> clone() const
+            ref_ptr<i_event_callback<Arguments...>> clone() const
             {
-                return std::unique_ptr<i_event_callback<Arguments...>>{ do_clone() };
+                return ref_ptr<i_event_callback<Arguments...>>{ do_clone() };
             }
         public:
             virtual void operator()(Arguments... aArguments) const = 0;
@@ -47,7 +51,7 @@ namespace neolib
         };
 
         template <typename... Arguments>
-        class event_callback : public i_event_callback<Arguments...>, public std::function<void(Arguments...)>
+        class event_callback : public reference_counted<i_event_callback<Arguments...>>, public std::function<void(Arguments...)>
         {
             typedef std::function<void(Arguments...)> base_type;
         public:

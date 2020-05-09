@@ -169,20 +169,20 @@ namespace neolib
         typedef std::tuple<Args...> argument_pack;
     public:
         event_callback(const i_event& aEvent, const handler& aHandler, Args... aArguments) :
-            iEvent{ aEvent }, iHandler{ aHandler }, iArguments{ aArguments... }
+            iEvent{ &aEvent }, iHandler{ aHandler }, iArguments{ aArguments... }
         {
         }
     public:
         const i_event& event() const override
         {
-            return iEvent;
+            return *iEvent;
         }
         void call() const override
         {
             std::apply(iHandler, iArguments);
         }
     private:
-        const i_event& iEvent;
+        const i_event* iEvent;
         handler iHandler;
         argument_pack iArguments;
     };
