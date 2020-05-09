@@ -168,7 +168,7 @@ namespace neolib
         typedef std::function<void(Args...)> handler;
         typedef std::tuple<Args...> argument_pack;
     public:
-        event_callback(const i_event& aEvent, handler& aHandler, Args... aArguments) :
+        event_callback(const i_event& aEvent, const handler& aHandler, Args... aArguments) :
             iEvent{ aEvent }, iHandler{ aHandler }, iArguments{ aArguments... }
         {
         }
@@ -183,7 +183,7 @@ namespace neolib
         }
     private:
         const i_event& iEvent;
-        handler& iHandler;
+        handler iHandler;
         argument_pack iArguments;
     };
 
@@ -269,20 +269,20 @@ namespace neolib
             destroyed_flag queueDestroyed;
             uint32_t referenceCount;
             const void* clientId;
-            callback_handler* callback;
+            callback_handler callback;
             bool handleInSameThreadAsEmitter;
             uint64_t triggerId = 0ull;
 
             handler(
                 async_event_queue& queue, 
                 const void* clientId, 
-                callback_handler& callback,
+                const callback_handler& callback,
                 bool handleInSameThreadAsEmitter = false) : 
                 queue{ &queue },
                 queueDestroyed{ queue },
                 referenceCount{ 0u },
                 clientId{ clientId },
-                callback{ &callback },
+                callback{ callback },
                 handleInSameThreadAsEmitter{ handleInSameThreadAsEmitter }
             {}
         };
@@ -620,12 +620,12 @@ namespace neolib
             if (!aAsync && !aHandler.queueDestroyed && aHandler.queue == &emitterQueue)
             {
                 lock = std::nullopt;
-                (*aHandler.callback)(aArguments...);
+                aHandler.callback(aArguments...);
                 lock.emplace(event_mutex());
             }
             else
             {
-                auto ecb = std::make_unique<event_callback<Args...>>(*this, *aHandler.callback, aArguments...);
+                auto ecb = std::make_unique<event_callback<Args...>>(*this, aHandler.callback, aArguments...);
                 if (aHandler.handleInSameThreadAsEmitter)
                     transaction = emitterQueue.enqueue(std::move(ecb), aAsyncTransaction);
                 else
