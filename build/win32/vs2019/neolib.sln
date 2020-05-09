@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "neolib", "neolib.vcxproj", "{5BE004BF-A083-422F-8287-E7238B633466}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Event", "..\..\..\unit_tests\Event\build\win32\vs2019\Event\Event.vcxproj", "{9CB6ED14-E94A-4898-9512-FF66F9D95E6E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5BE004BF-A083-422F-8287-E7238B633466} = {5BE004BF-A083-422F-8287-E7238B633466}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

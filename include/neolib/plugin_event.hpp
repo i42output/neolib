@@ -87,11 +87,10 @@ namespace neolib
         private:
             event_handle do_subscribe(const abstract_callback& aCallback, const void* aUniqueId = nullptr) const override
             {
-                std::shared_ptr<abstract_callback> cb = std::move(aCallback.clone());
                 return event_type::subscribe(
-                        [cb](Args&& ... aArguments)
+                        [&aCallback](Args&& ... aArguments)
                         {
-                            (*cb)(std::forward<Args>(aArguments)...);
+                            aCallback(std::forward<Args>(aArguments)...);
                         },
                         aUniqueId);
             }
