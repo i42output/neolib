@@ -291,7 +291,6 @@ namespace neolib
         friend class sink;
         friend class async_event_queue;
     private:
-        typedef std::optional<std::scoped_lock<switchable_mutex>> optional_scoped_lock;
         typedef event_callback<Args...> callback;
         typedef typename callback::callable callback_callable;
         typedef typename callback_callable::concrete_callable concrete_callable;
@@ -439,7 +438,7 @@ namespace neolib
                 return true;
             if (trigger_type() == event_trigger_type::SynchronousDontQueue)
                 unqueue();
-            optional_scoped_lock lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             if (instance().handlers.empty() && !filtered())
                 return true;
             destroyed_flag destroyed{ *this };
@@ -476,7 +475,7 @@ namespace neolib
                     continue;
                 try
                 {
-                    transaction = enqueue(lock, handler, false, transaction, aArguments...);
+                    transaction = enqueue(handler, false, transaction, aArguments...);
                     if (destroyed)
                         return true;
                 }
@@ -504,7 +503,7 @@ namespace neolib
                 return;
             if (trigger_type() == event_trigger_type::AsynchronousDontQueue)
                 unqueue();
-            optional_scoped_lock lock{ event_mutex() };
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             if (instance().handlers.empty())
                 return;
             destroyed_flag destroyed{ *this };
@@ -525,7 +524,7 @@ namespace neolib
                     handler.triggerId = triggerId;
                 else if (handler.triggerId == triggerId)
                     continue;
-                transaction = enqueue(lock, handler, true, transaction, aArguments...);
+                transaction = enqueue(handler, true, transaction, aArguments...);
                 if (destroyed)
                     return;
                 if (instance().handlersChanged.exchange(false))
@@ -646,17 +645,12 @@ namespace neolib
             for (auto& context : instance().contexts)
                 context.handlersChanged = true;
         }
-        optional_async_transaction enqueue(optional_scoped_lock& lock, handler& aHandler, bool aAsync, const optional_async_transaction& aAsyncTransaction, Args... aArguments) const
+        optional_async_transaction enqueue(handler& aHandler, bool aAsync, const optional_async_transaction& aAsyncTransaction, Args... aArguments) const
         {
             optional_async_transaction transaction;
             auto& emitterQueue = async_event_queue::instance();
             if (!aAsync && !aHandler.queueDestroyed && aHandler.queue == &emitterQueue)
-            {
-                auto cb = aHandler.callable;
-                lock = std::nullopt;                                                                                    
-                (*cb)(aArguments...);
-                lock.emplace(event_mutex());
-            }
+                (*aHandler.callable)(aArguments...);
             else
             {
                 auto ecb = make_ref<callback>(*this, aHandler.callable, aArguments...);
