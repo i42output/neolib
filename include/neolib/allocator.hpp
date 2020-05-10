@@ -38,6 +38,7 @@
 #include <neolib/neolib.hpp>
 #include <memory>
 #include <type_traits>
+#include <ostream>
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/pool/singleton_pool.hpp>
 #include <neolib/memory.hpp>
@@ -136,7 +137,8 @@ namespace neolib
                     iHead = reinterpret_cast<link*>(iChunks->iMem);
                 }
             }
-            void info()
+            template <typename CharT, typename Traits>
+            void info(std::basic_ostream<CharT, Traits&>* aOutput)
             {
                 uint32_t total = 0;
                 uint32_t pct = 0;
@@ -148,9 +150,9 @@ namespace neolib
                     if (reinterpret_cast<char*>(iHead) >= start && reinterpret_cast<char*>(iHead) < last)
                         pct = static_cast<uint32_t>((reinterpret_cast<char*>(iHead) - start) * 100 / (last - start));
                 }
-                std::cout << "Number of chunks: " << total << std::endl;
+                aOutput << "Number of chunks: " << total << std::endl;
                 if constexpr (Omega)
-                    std::cout << "% utilization of last used chunk: " << pct << "%" << std::endl;
+                    aOutput << "% utilization of last used chunk: " << pct << "%" << std::endl;
             }
         private:
             void grow()
