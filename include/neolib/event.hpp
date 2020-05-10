@@ -265,7 +265,7 @@ namespace neolib
         bool has(const i_event& aEvent) const;
         bool publish_events();
     private:
-        async_task* iTask;
+        async_task& iTask;
         std::unique_ptr<callback_timer> iTimer;
         event_list_t iEvents;
         std::atomic<bool> iTerminated;

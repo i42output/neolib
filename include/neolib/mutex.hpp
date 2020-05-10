@@ -74,7 +74,7 @@ namespace neolib
     {
         void lock() noexcept {}
         void unlock() noexcept {}
-        bool try_unlock() noexcept { return true; }
+        bool try_lock() noexcept { return true; }
     };
 
     using boost::fibers::detail::spinlock_status;
@@ -207,6 +207,15 @@ namespace neolib
                 std::get<neolib::recursive_spinlock>(iActiveMutex).unlock();
             else
                 std::get<neolib::null_mutex>(iActiveMutex).unlock();
+        }
+        bool try_lock() noexcept
+        {
+            if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
+                return std::get<std::recursive_mutex>(iActiveMutex).try_lock();
+            else if (std::holds_alternative<neolib::recursive_spinlock>(iActiveMutex))
+                return std::get<neolib::recursive_spinlock>(iActiveMutex).try_lock();
+            else
+                return std::get<neolib::null_mutex>(iActiveMutex).try_lock();
         }
     private:
         std::variant<std::recursive_mutex, neolib::recursive_spinlock, neolib::null_mutex> iActiveMutex;

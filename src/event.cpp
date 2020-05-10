@@ -37,7 +37,7 @@ namespace neolib
     }
 
     async_event_queue::async_event_queue(async_task& aTask) :
-        iTask{ &aTask },
+        iTask{ aTask },
         iTimer
         {
             new callback_timer{
@@ -75,7 +75,7 @@ namespace neolib
             throw async_event_queue_needs_a_task();
         if (aTask == nullptr)
             return tLocalInstance;
-        if (alreadyInstantiated && aTask != tLocalInstance.iTask)
+        if (alreadyInstantiated && aTask != &tLocalInstance.iTask)
             throw async_event_queue_already_instantiated();
         return tLocalInstance;
     }
@@ -88,7 +88,7 @@ namespace neolib
     void async_event_queue::terminate()
     {
         std::scoped_lock<switchable_mutex> lock{ event_mutex() };
-        if (!terminated())
+        if (!iTerminated)
         {
             iTerminated = true;
             iTimer = nullptr;
@@ -147,7 +147,7 @@ namespace neolib
 
     bool async_event_queue::terminated() const
     {
-        return iTerminated;
+        return iTerminated || iTask.thread().finished();
     }
 
     void async_event_queue::unqueue(const i_event& aEvent)
@@ -197,7 +197,7 @@ namespace neolib
         currentContext.clear();
         currentContext.swap(iEvents);
         optional_transaction currentTransaction;
-        for (auto e = currentContext.begin(); e != currentContext.end(); ++e)
+        for (auto e = currentContext.begin(); !terminated() && e != currentContext.end(); ++e)
         {
             lock.reset();
             lock.emplace(event_mutex());
@@ -218,7 +218,14 @@ namespace neolib
                     didSome = true;
                     lock.reset();
                     ec.call();
+                    while (!event_mutex().try_lock())
+                    {
+                        if (terminated())
+                            return didSome;
+                        std::this_thread::sleep_for(std::chrono::microseconds{ 0 });
+                    }
                     lock.emplace(event_mutex());
+                    event_mutex().unlock();
                 }
             }
             if (std::next(e) == currentContext.end() || std::next(e)->transaction != *currentTransaction)
