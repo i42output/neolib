@@ -228,7 +228,6 @@ namespace neolib
     public:
         struct async_event_queue_needs_a_task : std::logic_error { async_event_queue_needs_a_task() : std::logic_error("neogfx::async_event_queue::async_event_queue_needs_a_task") {} };
         struct async_event_queue_already_instantiated : std::logic_error { async_event_queue_already_instantiated() : std::logic_error("neogfx::async_event_queue::async_event_queue_already_instantiated") {} };
-        struct async_event_queue_terminated : std::logic_error { async_event_queue_terminated() : std::logic_error("neogfx::async_event_queue::async_event_queue_terminated") {} };
         struct event_not_found : std::logic_error { event_not_found() : std::logic_error("neogfx::async_event_queue::event_not_found") {} };
     private:
         typedef uint64_t transaction;
@@ -318,7 +317,7 @@ namespace neolib
                 handleInSameThreadAsEmitter{ handleInSameThreadAsEmitter }
             {}
         };
-        typedef neolib::jar<handler, switchable_mutex> handler_list_t;
+        typedef neolib::jar<handler> handler_list_t;
         struct context
         {
             bool accepted;
@@ -383,6 +382,7 @@ namespace neolib
         }
         void handle_in_same_thread_as_emitter(cookie aHandleId) override
         {
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             instance().handlers[aHandleId].handleInSameThreadAsEmitter = true;
         }
     public:

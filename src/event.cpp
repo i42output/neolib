@@ -159,7 +159,7 @@ namespace neolib
     {
         std::scoped_lock<switchable_mutex> lock{ event_mutex() };
         if (terminated())
-            throw async_event_queue_terminated();
+            return {};
         iEvents.push_back(event_list_entry{ aTransaction == std::nullopt ? ++iNextTransaction : *aTransaction, aCallback->event(), std::move(aCallback) });
         if (!iTimer->waiting())
             iTimer->again();

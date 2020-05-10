@@ -35,6 +35,19 @@ namespace neolib
         static switchable_mutex sMutex;
         return sMutex;
     }
+    
+    namespace event_system
+    {
+        inline void set_single_threaded()
+        {
+            event_mutex().set_single_threaded();
+        }
+
+        inline void set_multi_threaded()
+        {
+            event_mutex().set_multi_threaded();
+        }
+    }
 
     class i_event : public i_cookie_consumer
     {
