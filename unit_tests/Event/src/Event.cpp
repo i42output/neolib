@@ -1,6 +1,8 @@
 #include <neolib/event.hpp>
 #include <neolib/async_thread.hpp>
 
+template class neolib::event<int>;
+
 class greetings
 {
 public:

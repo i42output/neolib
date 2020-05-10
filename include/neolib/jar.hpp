@@ -191,6 +191,15 @@ namespace neolib
     struct cookies_exhausted : std::logic_error { cookies_exhausted() : std::logic_error("neolib::cookies_exhausted") {} };
     struct no_pointer_value_type_cookie_lookup : std::logic_error { no_pointer_value_type_cookie_lookup() : std::logic_error("neolib::no_pointer_value_type_cookie_lookup") {} };
 
+    namespace detail
+    {
+        template<typename T> struct is_smart_ptr : std::false_type {};
+        template<typename T> struct is_smart_ptr<std::shared_ptr<T>> : std::true_type {};
+        template<typename T> struct is_smart_ptr<std::unique_ptr<T>> : std::true_type {};
+        template<typename T>
+        inline constexpr bool is_smart_ptr_v = is_smart_ptr<T>::value;
+    }
+
     template <typename T, typename Container = std::vector<T>, typename CookieType = cookie, typename MutexType = null_mutex>
     class basic_jar
     {
@@ -290,7 +299,11 @@ namespace neolib
                 reverse_indices().insert(reverse_indices().end(), (aCookie + 1) - reverse_indices().size(), INVALID_REVERSE_INDEX);
             if (reverse_indices()[aCookie] != INVALID_REVERSE_INDEX)
                 throw cookie_already_added();
-            auto result = items().emplace(items().end(), std::forward<Args>(aArgs)...);
+            iterator result;
+            if constexpr (!detail::is_smart_ptr_v<value_type>)
+                items().emplace(items().end(), std::forward<Args>(aArgs)...);
+            else
+                items().insert(items().end(), value_type{ new typename value_type::element_type{std::forward<Args>(aArgs)...} });
             try
             {
                 allocated_cookies().insert(allocated_cookies().end(), aCookie);
