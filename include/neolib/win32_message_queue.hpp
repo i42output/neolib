@@ -41,6 +41,8 @@
 #include "async_task.hpp"
 #include "message_queue.hpp"
 
+#ifdef _WIN32
+
 namespace neolib
 {
     class win32_message_queue : public message_queue
@@ -64,3 +66,5 @@ namespace neolib
 		bool iInIdle;
     };
 }
+
+#endif //_WIN32

@@ -2,6 +2,8 @@
 #include <neolib/scoped.hpp>
 #include <neolib/win32_message_queue.hpp>
 
+#ifdef _WIN32
+
 namespace neolib
 {
     std::map<UINT_PTR, win32_message_queue*> win32_message_queue::sTimerMap;
@@ -70,3 +72,5 @@ namespace neolib
         instance.idle();
     }
 }
+
+#endif //_WIN32
