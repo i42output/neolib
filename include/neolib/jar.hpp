@@ -301,9 +301,9 @@ namespace neolib
                 throw cookie_already_added();
             iterator result;
             if constexpr (!detail::is_smart_ptr_v<value_type>)
-                items().emplace(items().end(), std::forward<Args>(aArgs)...);
+                result = items().emplace(items().end(), std::forward<Args>(aArgs)...);
             else
-                items().insert(items().end(), value_type{ new typename value_type::element_type{std::forward<Args>(aArgs)...} });
+                result = items().insert(items().end(), value_type{ new typename value_type::element_type{std::forward<Args>(aArgs)...} });
             try
             {
                 allocated_cookies().insert(allocated_cookies().end(), aCookie);
