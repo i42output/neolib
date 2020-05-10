@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <neolib/neolib.hpp>
 #include <neolib/mutex.hpp>
+#include <neolib/i_reference_counted.hpp>
 #include <neolib/jar.hpp>
 #include <neolib/i_map.hpp>
 
@@ -71,8 +72,10 @@ namespace neolib
         virtual void reset() = 0;
     };
 
-    class i_event_callback
+    class i_event_callback : public i_reference_counted
     {
+    public:
+        typedef i_event_callback abstract_type;
     public:
         virtual ~i_event_callback() = default;
     public:

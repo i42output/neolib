@@ -159,17 +159,43 @@ namespace neolib
     };
 
     template <typename... Args>
-    class event_callback : public i_event_callback
+    class i_event_callable : public i_reference_counted
+    {
+        typedef i_event_callable<Args...> self_type;
+    public:
+        typedef self_type abstract_type;
+    };
+
+    template <typename... Args>
+    class event_callable : public std::function<void(Args...)>, public reference_counted<i_event_callable<Args...>>
+    {
+    public:
+        typedef std::function<void(Args...)> concrete_callable;
+    public:
+        template <typename Callable>
+        event_callable(const Callable& aCallable) :
+            concrete_callable{ aCallable }
+        {
+        }
+        event_callable(const concrete_callable& aCallable) :
+            concrete_callable{ aCallable }
+        {
+        }
+    };
+
+    template <typename... Args>
+    class event_callback : public reference_counted<i_event_callback>
     {
         template <typename...>
         friend class event;
         friend class async_event_queue;
     private:
-        typedef std::function<void(Args...)> handler;
+        typedef event_callable<Args...> callable;
+        typedef typename callable::concrete_callable concrete_callable;
         typedef std::tuple<Args...> argument_pack;
     public:
-        event_callback(const i_event& aEvent, const handler& aHandler, Args... aArguments) :
-            iEvent{ &aEvent }, iHandler{ aHandler }, iArguments{ aArguments... }
+        event_callback(const i_event& aEvent, const ref_ptr<callable>& aCallable, Args... aArguments) :
+            iEvent{ &aEvent }, iCallable{ aCallable }, iArguments{ aArguments... }
         {
         }
     public:
@@ -179,11 +205,16 @@ namespace neolib
         }
         void call() const override
         {
-            std::apply(iHandler, iArguments);
+            std::apply(*iCallable, iArguments);
+        }
+    public:
+        ref_ptr<const callable>& get_callable()
+        {
+            return iCallable;
         }
     private:
         const i_event* iEvent;
-        handler iHandler;
+        ref_ptr<callable> iCallable;
         argument_pack iArguments;
     };
 
@@ -202,7 +233,7 @@ namespace neolib
     private:
         typedef uint64_t transaction;
         typedef std::optional<transaction> optional_transaction;
-        typedef std::unique_ptr<i_event_callback> callback_ptr;
+        typedef ref_ptr<i_event_callback> callback_ptr;
         struct event_list_entry
         {
             async_event_queue::transaction transaction;
@@ -261,7 +292,9 @@ namespace neolib
         friend class async_event_queue;
     private:
         typedef std::optional<std::scoped_lock<switchable_mutex>> optional_scoped_lock;
-        typedef typename event_callback<Args...>::handler callback_handler;
+        typedef event_callback<Args...> callback;
+        typedef typename callback::callable callback_callable;
+        typedef typename callback_callable::concrete_callable concrete_callable;
         typedef async_event_queue::optional_transaction optional_async_transaction;
         struct handler
         {
@@ -269,20 +302,20 @@ namespace neolib
             destroyed_flag queueDestroyed;
             uint32_t referenceCount;
             const void* clientId;
-            callback_handler callback;
+            ref_ptr<callback_callable> callable;
             bool handleInSameThreadAsEmitter;
             uint64_t triggerId = 0ull;
 
             handler(
                 async_event_queue& queue, 
                 const void* clientId, 
-                const callback_handler& callback,
+                const ref_ptr<callback_callable>& callable,
                 bool handleInSameThreadAsEmitter = false) : 
                 queue{ &queue },
                 queueDestroyed{ queue },
                 referenceCount{ 0u },
                 clientId{ clientId },
-                callback{ callback },
+                callable{ callable },
                 handleInSameThreadAsEmitter{ handleInSameThreadAsEmitter }
             {}
         };
@@ -532,35 +565,35 @@ namespace neolib
             instance().filterCount = 0u;
         }
     public:
-        event_handle subscribe(const callback_handler& aCallbackHandler, const void* aUniqueId = nullptr) const
+        event_handle subscribe(const concrete_callable& aCallable, const void* aUniqueId = nullptr) const
         {
             std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             invalidate_handler_list();
-            return event_handle{ control(), instance().handlers.emplace(async_event_queue::instance(), aUniqueId, aCallbackHandler) };
+            return event_handle{ control(), instance().handlers.emplace(async_event_queue::instance(), aUniqueId, make_ref<callback_callable>(aCallable)) };
         }
-        event_handle operator()(const callback_handler& aCallbackHandler, const void* aUniqueId = nullptr) const
+        event_handle operator()(const concrete_callable& aCallable, const void* aUniqueId = nullptr) const
         {
-            return subscribe(aCallbackHandler, aUniqueId);
-        }
-        template <typename T>
-        event_handle subscribe(const callback_handler& aCallbackHandler, const T* aClientId) const
-        {
-            return subscribe(aCallbackHandler, static_cast<const void*>(aClientId));
+            return subscribe(aCallable, aUniqueId);
         }
         template <typename T>
-        event_handle operator()(const callback_handler& aCallbackHandler, const T* aClientId) const
+        event_handle subscribe(const concrete_callable& aCallable, const T* aClientId) const
         {
-            return subscribe(aCallbackHandler, static_cast<const void*>(aClientId));
+            return subscribe(aCallable, static_cast<const void*>(aClientId));
         }
         template <typename T>
-        event_handle subscribe(const callback_handler& aCallbackHandler, const T& aClientId) const
+        event_handle operator()(const concrete_callable& aCallable, const T* aClientId) const
         {
-            return subscribe(aCallbackHandler, static_cast<const void*>(&aClientId));
+            return subscribe(aCallable, static_cast<const void*>(aClientId));
         }
         template <typename T>
-        event_handle operator()(const callback_handler& aCallbackHandler, const T& aClientId) const
+        event_handle subscribe(const concrete_callable& aCallable, const T& aClientId) const
         {
-            return subscribe(aCallbackHandler, static_cast<const void*>(&aClientId));
+            return subscribe(aCallable, static_cast<const void*>(&aClientId));
+        }
+        template <typename T>
+        event_handle operator()(const concrete_callable& aCallable, const T& aClientId) const
+        {
+            return subscribe(aCallable, static_cast<const void*>(&aClientId));
         }
         void unsubscribe(event_handle aHandle) const
         {
@@ -619,19 +652,20 @@ namespace neolib
             auto& emitterQueue = async_event_queue::instance();
             if (!aAsync && !aHandler.queueDestroyed && aHandler.queue == &emitterQueue)
             {
-                lock = std::nullopt;
-                aHandler.callback(aArguments...);
+                auto cb = aHandler.callable;
+                lock = std::nullopt;                                                                                    
+                (*cb)(aArguments...);
                 lock.emplace(event_mutex());
             }
             else
             {
-                auto ecb = std::make_unique<event_callback<Args...>>(*this, aHandler.callback, aArguments...);
+                auto ecb = make_ref<callback>(*this, aHandler.callable, aArguments...);
                 if (aHandler.handleInSameThreadAsEmitter)
-                    transaction = emitterQueue.enqueue(std::move(ecb), aAsyncTransaction);
+                    transaction = emitterQueue.enqueue(ecb, aAsyncTransaction);
                 else
                 {
                     if (!aHandler.queueDestroyed)
-                        transaction = aHandler.queue->enqueue(std::move(ecb), aAsyncTransaction);
+                        transaction = aHandler.queue->enqueue(ecb, aAsyncTransaction);
                     else if (!instance().ignoreErrors)
                         throw event_queue_destroyed();
                 }

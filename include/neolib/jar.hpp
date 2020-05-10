@@ -287,7 +287,7 @@ namespace neolib
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
             if (reverse_indices().size() <= aCookie)
-                reverse_indices().resize(aCookie + 1, INVALID_REVERSE_INDEX);
+                reverse_indices().insert(reverse_indices().end(), (aCookie + 1) - reverse_indices().size(), INVALID_REVERSE_INDEX);
             if (reverse_indices()[aCookie] != INVALID_REVERSE_INDEX)
                 throw cookie_already_added();
             auto result = items().emplace(items().end(), std::forward<Args>(aArgs)...);
