@@ -357,6 +357,8 @@ namespace neolib
     {
         {
             std::scoped_lock<std::recursive_mutex> lock{ iMutex };
+            if (iState != Starting)
+                return;
             iState = Started;
             iId = std::this_thread::get_id();
         }
