@@ -154,8 +154,9 @@ namespace neolib
             iState = Aborted;
         }
         lock = std::nullopt;
-        if (aWait)
+        if (aWait && aborted())
             wait();
+        iState = Finished;
     }
 
     void thread::wait() const
