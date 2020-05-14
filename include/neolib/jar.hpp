@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <optional>
 #include <vector>
 #include <set>
 #include <mutex>
