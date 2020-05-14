@@ -56,7 +56,7 @@ namespace neolib
         typedef boost::asio::io_service native_io_service_type;
         // construction
     public:
-        io_service(async_task& aTask) : iTask(aTask) {}
+        io_service(async_task& aTask, bool aMultiThreaded = false);
         // operations
     public:
         bool do_io(bool aProcessEvents = true, std::size_t aMaximumPollCount = kDefaultPollCount) override;

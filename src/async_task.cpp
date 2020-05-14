@@ -44,6 +44,12 @@
 
 namespace neolib
 {
+    io_service::io_service(async_task& aTask, bool aMultiThreaded) :
+        iTask{ aTask },
+        iNativeIoService{ aMultiThreaded ? BOOST_ASIO_CONCURRENCY_HINT_DEFAULT : BOOST_ASIO_CONCURRENCY_HINT_1 }
+    {
+    }
+
     bool io_service::do_io(bool aProcessEvents, std::size_t aMaximumPollCount)
     {
         std::size_t iterationsLeft = aMaximumPollCount;
