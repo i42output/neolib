@@ -57,6 +57,7 @@ namespace neolib
     public:
         virtual void release_control() = 0;
         virtual void handle_in_same_thread_as_emitter(cookie aHandleId) = 0;
+        virtual void handler_is_stateless(cookie aHandleId) = 0;
     public:
         virtual void pre_trigger() const = 0;
     public:
@@ -94,6 +95,7 @@ namespace neolib
         virtual ~i_event_callback() = default;
     public:
         virtual const i_event& event() const = 0;
+        virtual const void* identity() const = 0;
         virtual void call() const = 0;
     };
 

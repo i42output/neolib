@@ -109,6 +109,12 @@ namespace neolib
                 control().get().handle_in_same_thread_as_emitter(id());
             return *this;
         }
+        event_handle& operator!()
+        {
+            if (control().valid())
+                control().get().handler_is_stateless(id());
+            return *this;
+        }
     private:
         i_event_control* iControl;
         cookie_ref_ptr iRef;
@@ -204,6 +210,10 @@ namespace neolib
         {
             return *iEvent;
         }
+        const void* identity() const override
+        {
+            return &*iCallable;
+        }
         void call() const override
         {
             std::apply(*iCallable, iArguments);
@@ -250,10 +260,7 @@ namespace neolib
         static async_event_queue& get_instance(async_task* aTask);
     public:
         bool exec();
-        transaction enqueue(callback_ptr aCallback, const optional_transaction& aTransaction = {})
-        {
-            return add(std::move(aCallback), aTransaction);
-        }
+        transaction enqueue(callback_ptr aCallback, bool aStatelessHandler, const optional_transaction& aTransaction = {});
         void unqueue(const i_event& aEvent);
         void terminate();
     public:
@@ -303,13 +310,15 @@ namespace neolib
             const void* clientId;
             ref_ptr<callback_callable> callable;
             bool handleInSameThreadAsEmitter;
+            bool handlerIsStateless;
             uint64_t triggerId = 0ull;
 
             handler(
                 async_event_queue& queue, 
                 const void* clientId, 
                 const ref_ptr<callback_callable>& callable,
-                bool handleInSameThreadAsEmitter = false) : 
+                bool handleInSameThreadAsEmitter = false,
+                bool handlerIsStateless = false) :
                 queue{ &queue },
                 queueDestroyed{ queue },
                 referenceCount{ 0u },
@@ -385,6 +394,11 @@ namespace neolib
         {
             std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             get_handler(aHandleId).handleInSameThreadAsEmitter = true;
+        }
+        void handler_is_stateless(cookie aHandleId) override
+        {
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
+            get_handler(aHandleId).handlerIsStateless = true;
         }
     public:
         void push_context() const override
@@ -662,11 +676,11 @@ namespace neolib
             {
                 auto ecb = make_ref<callback>(*this, aHandler.callable, aArguments...);
                 if (aHandler.handleInSameThreadAsEmitter)
-                    transaction = emitterQueue.enqueue(ecb, aAsyncTransaction);
+                    transaction = emitterQueue.enqueue(ecb, aHandler.handlerIsStateless, aAsyncTransaction);
                 else
                 {
                     if (!aHandler.queueDestroyed)
-                        transaction = aHandler.queue->enqueue(ecb, aAsyncTransaction);
+                        transaction = aHandler.queue->enqueue(ecb, aHandler.handlerIsStateless, aAsyncTransaction);
                     else if (!instance().ignoreErrors)
                         throw event_queue_destroyed();
                 }

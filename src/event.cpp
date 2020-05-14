@@ -85,6 +85,18 @@ namespace neolib
         return publish_events();
     }
 
+    async_event_queue::transaction async_event_queue::enqueue(callback_ptr aCallback, bool aStatelessHandler, const optional_transaction& aTransaction)
+    {
+        if (aStatelessHandler)
+        {
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
+            for (auto& e : iEvents)
+                if (&e.callback->event() == &aCallback->event() && e.callback->identity() == aCallback->identity())
+                    return {};
+        }
+        return add(std::move(aCallback), aTransaction);
+    }
+
     void async_event_queue::terminate()
     {
         std::scoped_lock<switchable_mutex> lock{ event_mutex() };
