@@ -1,6 +1,6 @@
 // plugin_variant.hpp
 /*
- *  Copyright (c) 2019 Leigh Johnston.
+ *  Copyright (c) 2019, 2020 Leigh Johnston.
  *
  *  All rights reserved.
  *

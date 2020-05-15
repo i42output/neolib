@@ -1,6 +1,6 @@
 // zip_iterator.hpp
 /*
- *  Copyright (c) 2018 Leigh Johnston.
+ *  Copyright (c) 2018, 2020 Leigh Johnston.
  *
  *  All rights reserved.
  *
