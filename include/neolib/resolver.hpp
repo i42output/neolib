@@ -151,7 +151,7 @@ namespace neolib
     public:
         basic_resolver(async_task& aIoTask) :
             iIoTask(aIoTask),
-            iResolver(aIoTask.networking_io_service().native_object())
+            iResolver(aIoTask.io_service().native_object())
         {
         }
         ~basic_resolver()
