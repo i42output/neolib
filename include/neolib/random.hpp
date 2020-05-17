@@ -37,6 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <random>
+#include <thread>
 
 namespace neolib 
 {
@@ -101,6 +102,9 @@ namespace neolib
         }
         template <typename T2>
         basic_random(T2 aSeed) : iGen{ static_cast<generator_result_type>(aSeed) }, iSecure{ false }, iCounter{ 0 }
+        {
+        }
+        basic_random(std::thread::id aSeed) : iGen{ static_cast<generator_result_type>(std::hash<std::thread::id>{}(aSeed)) }, iSecure{ false }, iCounter{ 0 }
         {
         }
         // operations

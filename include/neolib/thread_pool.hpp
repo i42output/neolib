@@ -79,6 +79,8 @@ namespace neolib
         bool idle() const;
         bool busy() const;
         void wait() const;
+        bool stopped() const;
+        void stop();
     public:
         static thread_pool& default_thread_pool();
         std::recursive_mutex& mutex() const;
@@ -87,6 +89,7 @@ namespace neolib
         void thread_gone_idle();
     private:
         mutable std::recursive_mutex iMutex;
+        std::atomic<bool> iStopped;
         std::size_t iMaxThreads;
         thread_list iThreads;
         mutable std::mutex iWaitMutex;
@@ -96,8 +99,45 @@ namespace neolib
     template <typename T>
     inline std::pair<std::future<T>, thread_pool::task_pointer> thread_pool::run(std::function<T()> aFunction, int32_t aPriority)
     {
+        if (stopped())
+            return {};
         auto newTask = std::make_shared<function_task<T>>(aFunction);
         start(newTask, aPriority);
         return std::make_pair(newTask->get_future(), newTask);
+    }
+
+    template <typename Container>
+    inline void parallel_apply(thread_pool& aThreadPool, Container& aContainer, std::function<void(typename Container::value_type& aElement)> aFunction, std::size_t aMinimumParallelismCount = 0)
+    {
+        if (aThreadPool.stopped())
+            return;
+        if (aContainer.size() < aMinimumParallelismCount)
+        {
+            for (auto& e : aContainer)
+                aFunction(e);
+            return;
+        }
+        auto subrange = aContainer.size() / aThreadPool.max_threads();
+        if (subrange < 1)
+            subrange = 1;
+        auto next = aContainer.begin();
+        for (auto left = aContainer.size(); left >= subrange; left -= subrange)
+        {
+            auto end = std::next(next, subrange);
+            auto task = [next, end, &aFunction]()
+            {
+                for (auto i = next; i != end; ++i)
+                    aFunction(*i);
+            };
+            aThreadPool.run(task);
+            next = end;
+        }
+        if (next != aContainer.end())
+            aThreadPool.run([next, &aContainer, &aFunction]()
+            {
+                for (auto i = next; i != aContainer.end(); ++i)
+                    aFunction(*i);
+            });
+        aThreadPool.wait();
     }
 }

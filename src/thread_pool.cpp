@@ -56,6 +56,9 @@ namespace neolib
         {
             start();
         }
+        ~thread_pool_thread()
+        {
+        }
     public:
         virtual void exec(yield_type aYieldType = yield_type::NoYield)
         {
@@ -111,12 +114,15 @@ namespace neolib
         }
         void stop()
         {
+            if (!iStopped)
             {
-                std::scoped_lock<std::mutex> lk(iCondVarMutex);
-                iStopped = true;
+                {
+                    std::scoped_lock<std::mutex> lk2(iCondVarMutex);
+                    iStopped = true;
+                }
+                iConditionVariable.notify_one();
+                wait();
             }
-            iConditionVariable.notify_one();
-            wait();
         }
     private:
         void next_task()
@@ -156,10 +162,10 @@ namespace neolib
         std::condition_variable iConditionVariable;
         task_queue iWaitingTasks;
         task_pointer iActiveTask;
-        bool iStopped;
+        std::atomic<bool> iStopped;
     };
 
-    thread_pool::thread_pool() : iMaxThreads{ 0 }
+    thread_pool::thread_pool() : iStopped{ false }, iMaxThreads { 0 }
     {
         reserve(std::thread::hardware_concurrency());
     }
@@ -217,6 +223,8 @@ namespace neolib
 
     void thread_pool::start(task_pointer aTask, int32_t aPriority)
     {
+        if (stopped())
+            return;
         std::scoped_lock<std::recursive_mutex> lk(iMutex);
         if (iThreads.empty())
             throw no_threads();
@@ -234,6 +242,8 @@ namespace neolib
 
     bool thread_pool::try_start(i_task& aTask, int32_t aPriority)
     {
+        if (stopped())
+            return false;
         if (available_threads() == 0)
             return false;
         start(aTask, aPriority);
@@ -242,6 +252,8 @@ namespace neolib
 
     bool thread_pool::try_start(task_pointer aTask, int32_t aPriority)
     {
+        if (stopped())
+            return false;
         if (available_threads() == 0)
             return false;
         start(aTask, aPriority);
@@ -250,6 +262,8 @@ namespace neolib
 
     std::pair<std::future<void>, thread_pool::task_pointer> thread_pool::run(std::function<void()> aFunction, int32_t aPriority)
     {
+        if (stopped())
+            return {};
         auto newTask = std::make_shared<function_task<void>>(aFunction);
         start(newTask, aPriority);
         return std::make_pair(newTask->get_future(), newTask);
@@ -273,8 +287,31 @@ namespace neolib
 
     void thread_pool::wait() const
     {
+        if (stopped())
+            return;
         std::unique_lock<std::mutex> lk(iWaitMutex);
-        iWaitConditionVariable.wait(lk, [this] { return idle(); });
+        iWaitConditionVariable.wait(lk, [this] { return stopped() || idle(); });
+    }
+
+    bool thread_pool::stopped() const
+    {
+        return iStopped;
+    }
+
+    void thread_pool::stop()
+    {
+        if (!stopped())
+        {
+            for (auto& t : iThreads)
+            {
+                static_cast<thread_pool_thread&>(*t).stop();
+            }
+            {
+                std::unique_lock<std::mutex> lk(iWaitMutex);
+                iStopped = true;
+            }
+            iWaitConditionVariable.notify_one();
+        }
     }
 
     thread_pool& thread_pool::default_thread_pool()
