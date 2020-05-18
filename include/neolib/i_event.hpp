@@ -36,7 +36,7 @@ namespace neolib
         static switchable_mutex sMutex;
         return sMutex;
     }
-    
+
     namespace event_system
     {
         inline void set_single_threaded()

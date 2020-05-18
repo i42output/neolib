@@ -77,6 +77,7 @@ namespace neolib
         std::pair<std::future<T>, task_pointer> run(std::function<T()> aFunction, int32_t aPriority = 0);
     public:
         bool idle() const;
+        void update_idle();
         bool busy() const;
         void wait() const;
         bool stopped() const;
@@ -87,8 +88,10 @@ namespace neolib
     private:
         void steal_work(thread_pool_thread& aIdleThread);
         void thread_gone_idle();
+        void thread_gone_busy();
     private:
         mutable std::recursive_mutex iMutex;
+        std::atomic<bool> iIdle;
         std::atomic<bool> iStopped;
         std::size_t iMaxThreads;
         thread_list iThreads;

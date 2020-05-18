@@ -361,6 +361,7 @@ namespace neolib
             std::atomic<bool> handlersChanged = false;
             std::atomic<uint32_t> filterCount;
         };
+        typedef std::optional<std::scoped_lock<switchable_mutex>> optional_lock;
     public:
         event() : iAlias{ *this }, iControl{ nullptr }, iInstanceDataPtr{ nullptr }
         {
@@ -453,7 +454,7 @@ namespace neolib
                 return true;
             if (trigger_type() == event_trigger_type::SynchronousDontQueue)
                 unqueue();
-            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
+            optional_lock lock{ event_mutex() };
             if (instance().handlers.empty() && !filtered())
                 return true;
             destroyed_flag destroyed{ *this };
@@ -490,7 +491,7 @@ namespace neolib
                     continue;
                 try
                 {
-                    transaction = enqueue(handler, false, transaction, aArguments...);
+                    transaction = enqueue(lock, handler, false, transaction, aArguments...);
                     if (destroyed)
                         return true;
                 }
@@ -518,7 +519,7 @@ namespace neolib
                 return;
             if (trigger_type() == event_trigger_type::AsynchronousDontQueue)
                 unqueue();
-            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
+            optional_lock lock{ event_mutex() };
             if (instance().handlers.empty())
                 return;
             destroyed_flag destroyed{ *this };
@@ -539,7 +540,7 @@ namespace neolib
                     handler.triggerId = triggerId;
                 else if (handler.triggerId == triggerId)
                     continue;
-                transaction = enqueue(handler, true, transaction, aArguments...);
+                transaction = enqueue(lock, handler, true, transaction, aArguments...);
                 if (destroyed)
                     return;
                 if (instance().handlersChanged.exchange(false))
@@ -666,12 +667,19 @@ namespace neolib
             for (auto& context : instance().contexts)
                 context.handlersChanged = true;
         }
-        optional_async_transaction enqueue(handler& aHandler, bool aAsync, const optional_async_transaction& aAsyncTransaction, Args... aArguments) const
+        optional_async_transaction enqueue(optional_lock& aLock, handler& aHandler, bool aAsync, const optional_async_transaction& aAsyncTransaction, Args... aArguments) const
         {
             optional_async_transaction transaction;
             auto& emitterQueue = async_event_queue::instance();
-            if (!aAsync && !aHandler.queueDestroyed && aHandler.queue == &emitterQueue)
-                (*aHandler.callable)(aArguments...);
+            if (!aAsync && (aHandler.handleInSameThreadAsEmitter || (!aHandler.queueDestroyed && aHandler.queue == &emitterQueue)))
+            {
+                auto callable = aHandler.callable;
+                bool wasLocked = !!aLock;
+                aLock.reset();
+                (*callable)(aArguments...);
+                if (wasLocked)
+                    aLock.emplace(event_mutex());
+            }
             else
             {
                 auto ecb = make_ref<callback>(*this, aHandler.callable, aArguments...);
