@@ -127,12 +127,11 @@ namespace neolib
         for (auto left = aContainer.size(); left >= subrange; left -= subrange)
         {
             auto end = std::next(next, subrange);
-            auto task = [next, end, &aFunction]()
+            aThreadPool.run([next, end, &aFunction]()
             {
                 for (auto i = next; i != end; ++i)
                     aFunction(*i);
-            };
-            aThreadPool.run(task);
+            });
             next = end;
         }
         if (next != aContainer.end())
