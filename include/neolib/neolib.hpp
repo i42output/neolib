@@ -132,16 +132,26 @@ namespace neolib
     {
         return static_cast<abstract_t<pair<T1, T2>>&>(aArgument.second);
     }
+
+    template <typename Component>
+    Component& service();
+
+    template <typename Component>
+    void teardown_service();
 }
 
 #ifdef NEOLIB_HOSTED_ENVIRONMENT
+
+// SIMD support
+#define USE_AVX
+#define USE_EMM
 
 #define USING_BOOST
 #define BOOST_ASIO_DISABLE_SMALL_BLOCK_RECYCLING
 #define _SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING
 
 #ifdef _WIN32
-#include "win32.hpp"
+#include <neolib/core/win32/win32.hpp>
 #endif
 
 #ifdef USING_BOOST
