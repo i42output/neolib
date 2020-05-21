@@ -38,6 +38,7 @@
 #include <neolib/ecs/ecs.hpp>
 #include <neolib/ecs/entity_info.hpp>
 #include <neolib/ecs/time.hpp>
+#include <neolib/core/numerical.hpp>
 
 namespace neolib::ecs
 {
