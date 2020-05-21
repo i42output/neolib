@@ -62,11 +62,11 @@ namespace neolib
             using event_type::operator();
             using event_type::unsubscribe;
         public:
-            const i_event<Args...>& raw_event() const override
+            const neolib::i_event& raw_event() const override
             {
                 return *this;
             }
-            i_event<Args...>& raw_event() override
+            neolib::i_event& raw_event() override
             {
                 return *this;
             }

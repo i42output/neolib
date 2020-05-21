@@ -92,8 +92,8 @@ namespace neolib
         public:
             virtual ~i_event() = default;
         public:
-            virtual const i_event& raw_event() const = 0;
-            virtual i_event& raw_event() = 0;
+            virtual const neolib::i_event& raw_event() const = 0;
+            virtual neolib::i_event& raw_event() = 0;
         public:
             virtual void pre_trigger() const = 0;
         public:
