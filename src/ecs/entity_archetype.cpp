@@ -33,8 +33,6 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
 #include <neolib/neolib.hpp>
 #include <neolib/ecs/entity_archetype.hpp>
 #include <neolib/ecs/i_ecs.hpp>

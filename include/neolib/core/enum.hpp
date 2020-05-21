@@ -67,7 +67,7 @@ namespace neolib
         {
         }
         basic_enum(const abstract_type& aOther) :
-            iValue{ aOther.value<enum_type>() }
+            iValue{ aOther.template value<enum_type>() }
         {
         }
         // state

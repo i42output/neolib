@@ -33,8 +33,6 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
 #include <neolib/neolib.hpp>
 #include <neolib/task/thread.hpp>
 #include <neolib/app/i_power.hpp>

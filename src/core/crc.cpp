@@ -35,7 +35,7 @@
 
 #include <neolib/neolib.hpp>
 #include <cstddef>
-#include <zlib/zlib.h>
+#include <zlib.h>
 #include <neolib/core/crc.hpp>
 
 namespace neolib

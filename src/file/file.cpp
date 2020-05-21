@@ -182,7 +182,7 @@ namespace neolib
 #ifdef _WIN32
         return _fseeki64(aStream, aOffset, aOrigin);
 #else
-        return fseek64(aString, aOffset, aOrigin);
+        return fseeko64(aStream, aOffset, aOrigin);
 #endif
     }
 
@@ -202,7 +202,7 @@ namespace neolib
 #else
         char result[PATH_MAX];
         ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
-        return std::string{ result, (count > 0) ? count : 0 };
+        return std::string{ result, static_cast<std::string::size_type>((count > 0) ? count : 0) };
 #endif
     }
 
@@ -222,6 +222,7 @@ namespace neolib
 #else
         struct passwd* pw = getpwuid(getuid());
         const char* homedir = pw->pw_dir;
+        return homedir;
 #endif
     }
 
@@ -236,6 +237,7 @@ namespace neolib
 #else
         struct passwd* pw = getpwuid(getuid());
         const char* homedir = pw->pw_dir;
+        return homedir;
 #endif
     }
 
@@ -249,8 +251,10 @@ namespace neolib
     {
     }
 
+#ifdef _WIN32
     simple_file::simple_file(const std::wstring& aPath, const std::wstring& aMode) : 
         iFile(new handle(_wfopen(aPath.c_str(), aMode.c_str()))), iError(valid() ? 0 : errno) 
     {
     }
+#endif
 }

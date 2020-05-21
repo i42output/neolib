@@ -210,7 +210,7 @@ namespace neolib
         }
         std::string which_as_string() const
         {
-            ids().enumerators().find(which())->second.to_std_string();
+            return ids().enumerators().find(which())->second.to_std_string();
         }
         // implementation
     private:

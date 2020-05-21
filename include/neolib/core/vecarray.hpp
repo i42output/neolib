@@ -686,8 +686,10 @@ namespace neolib
         template <typename Iter>
         void need(size_type aAmount, Iter& aIter)
         {
+            static_assert(std::is_same_v<Iter, const_iterator> || std::is_same_v<Iter, iterator>, "bad usage");
             if (using_array() && size() + aAmount > ArraySize)
             {
+
                 if constexpr (std::is_same_v<Iter, const_iterator>)
                 {
                     size_type index = aIter - cbegin();
@@ -700,8 +702,6 @@ namespace neolib
                     convert(aAmount);
                     aIter = begin() + index;
                 }
-                else
-                    static_assert(false, "bad usage");
             }
         }
         void convert(size_type aExtra)

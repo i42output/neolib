@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <string>
 #include <ostream>
 #include <neolib/core/vecarray.hpp>
 #include <neolib/core/string_utils.hpp>

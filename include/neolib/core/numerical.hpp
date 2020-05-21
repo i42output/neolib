@@ -45,7 +45,6 @@
 #include <boost/math/constants/constants.hpp>
 #include <neolib/core/vecarray.hpp>
 #include <neolib/core/swizzle.hpp>
-#include <neolib/core/swizzle_array.hpp>
 #include <neolib/core/simd.hpp>
 
 namespace neolib
@@ -432,7 +431,6 @@ namespace neolib
             value_type distance(const self_type& right) const { value_type total = 0; for (uint32_t index = 0; index < Size; ++index) total += ((v[index] - right.v[index]) * (v[index] - right.v[index])); return std::sqrt(total); }
             value_type dot(const self_type& right) const
             {
-                aa
                 value_type result = constants::zero<value_type>;
                 for (uint32_t index = 0; index < Size; ++index)
                     result += (v[index] * right[index]);

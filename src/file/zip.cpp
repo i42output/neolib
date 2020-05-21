@@ -36,7 +36,7 @@
 #include <neolib/neolib.hpp>
 #include <fstream>
 #include <string>
-#include <zlib/zlib.h>
+#include <zlib.h>
 #include <boost/filesystem.hpp>
 #include <neolib/core/string_utils.hpp>
 #include <neolib/core/crc.hpp>

@@ -63,7 +63,7 @@ namespace neolib
                     [](const Visitor& aVisitor, Variant& aThis)
                     {
                         typedef std::decay_t<T> type;
-                        aVisitor(aThis.get<type>());
+                        aVisitor(aThis.template get<type>());
                     });
                 return funky_gen_visit<Visitor, Variant, Types...>(aList);
             }

@@ -46,16 +46,16 @@ namespace neolib
             throw unable_to_generate_uuid();
         uuid result{ 
             *reinterpret_cast<const uint32_t*>(&key[0]),
-            *reinterpret_cast<const uint16_t*>(&key[sizeof uint32_t]),
-            *reinterpret_cast<const uint16_t*>(&key[sizeof uint32_t + sizeof uint16_t]),
-            *reinterpret_cast<const uint16_t*>(&key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t]),
+            *reinterpret_cast<const uint16_t*>(&key[sizeof(uint32_t)]),
+            *reinterpret_cast<const uint16_t*>(&key[sizeof(uint32_t) + sizeof(uint16_t)]),
+            *reinterpret_cast<const uint16_t*>(&key[sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t)]),
             {
-                key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 0],
-                key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 1],
-                key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 2],
-                key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 3],
-                key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 4],
-                key[sizeof uint32_t + sizeof uint16_t + sizeof uint16_t + sizeof uint16_t + 5]
+                key[sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t) + 0],
+                key[sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t) + 1],
+                key[sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t) + 2],
+                key[sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t) + 3],
+                key[sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t) + 4],
+                key[sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t) + 5]
             }
         };
         result.part3 = static_cast<uint16_t>((result.part3 & (0x0FFF)) | (0x4 << 12));

@@ -84,7 +84,9 @@ namespace neolib
     public:
         simple_file();
         simple_file(const std::string& aPath, const std::string& aMode);
+#ifdef _WIN32        
         simple_file(const std::wstring& aPath, const std::wstring& aMode);
+#endif
         // operations
     public:
         bool valid() const { return iFile && iFile->iHandle != NULL; }

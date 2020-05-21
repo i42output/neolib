@@ -108,7 +108,6 @@ namespace neolib::ecs
         typedef std::unordered_map<system_id, system_factory> system_factories_t;
         typedef std::unordered_map<system_id, std::unique_ptr<i_system>> systems_t;
     public:
-        typedef id_t handle_id;
         typedef void* handle_t;
     public:
         virtual neolib::i_lockable& mutex() const = 0;

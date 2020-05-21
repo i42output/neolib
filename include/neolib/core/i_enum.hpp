@@ -184,7 +184,7 @@ namespace neolib
     template <typename Enum, typename StringT = string>
     inline StringT enum_to_string(const i_enum_t<Enum>& aEnumerator, bool aMustEnumerate = false)
     {
-        return enum_to_string(aEnumerator.value<Enum>(), aMustEnumerate);
+        return enum_to_string(aEnumerator.template value<Enum>(), aMustEnumerate);
     }
 
     template <typename Enum>

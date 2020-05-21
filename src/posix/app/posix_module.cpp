@@ -34,9 +34,10 @@
 */
 
 #include <neolib/neolib.hpp>
+#include <string>
 #include <dlfcn.h>
-#include <neolib/file.hpp>
-#include <neolib/posix_module.hpp>
+#include <neolib/file/file.hpp>
+#include "posix_module.hpp"
 
 namespace neolib
 {
@@ -55,9 +56,9 @@ namespace neolib
     { 
         try
         {
-            iHandle = dlopen(aPath.c_str());
+            iHandle = dlopen(aPath.c_str(), RTLD_NOW);
             if (iHandle == nullptr)
-                throw std::exception{ dlerror() };
+                throw std::runtime_error{ dlerror() };
         }
         catch (const std::exception& e)
         {

@@ -34,7 +34,7 @@
 */
 
 #include <neolib/neolib.hpp>
-#include <zlib/zlib.h>
+#include <zlib.h>
 #include <neolib/file/gunzip.hpp>
 
 namespace neolib

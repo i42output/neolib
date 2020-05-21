@@ -78,7 +78,7 @@ namespace neolib
             typedef A array_type;
             typedef typename array_type::value_type value_type;
         private:
-            template <uint32_t Index, uint32_t... Indexes>
+            template <uint32_t Index, uint32_t...>
             struct first
             {
                 static constexpr uint32_t value = Index;

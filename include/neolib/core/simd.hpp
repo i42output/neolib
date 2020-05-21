@@ -48,13 +48,35 @@
 
 namespace neolib
 { 
+#ifdef USE_AVX
+    inline double to_scalar(__m256d const& avxRegister, std::size_t index)
+    {
+#ifdef _WIN32
+        return avxRegister.m256d_f64[index];
+#else
+        return avxRegister[index];
+#endif
+    }
+#endif
+
+#ifdef USE_EMM
+    inline uint32_t to_scalar(__m128i const& emmRegister, std::size_t index)
+    {
+#ifdef _WIN32
+        return emmRegister.m128i_u32[index];
+#else
+        return emmRegister[index];
+#endif
+    }
+#endif
+
     inline double simd_fma_4d(double x1, double x2, double y1, double y2, double z1, double z2, double w1, double w2)
     {
 #ifdef USE_AVX
         alignas(32) __m256d lhs = _mm256_set_pd(x1, y1, z1, w1);
         alignas(32) __m256d rhs = _mm256_set_pd(x2, y2, z2, w2);
         alignas(32) __m256d ans = _mm256_mul_pd(lhs, rhs);
-        return ans.m256d_f64[0] + ans.m256d_f64[1] + ans.m256d_f64[2] + ans.m256d_f64[3];
+        return to_scalar(ans, 0) + to_scalar(ans, 1) + to_scalar(ans, 2) + to_scalar(ans, 3);
 #else
         return x1 * x2 + y1 * y2 + z1 * z2 + w1 * w2;
 #endif
@@ -66,10 +88,10 @@ namespace neolib
         alignas(32) __m256d lhs = _mm256_set_pd(x1, y1, z1, w1);
         alignas(32) __m256d rhs = _mm256_set_pd(x2, y2, z2, w2);
         alignas(32) __m256d ans = _mm256_mul_pd(lhs, rhs);
-        a = ans.m256d_f64[0];
-        b = ans.m256d_f64[1];
-        c = ans.m256d_f64[2];
-        d = ans.m256d_f64[3];
+        a = to_scalar(ans, 0);
+        b = to_scalar(ans, 1);
+        c = to_scalar(ans, 2);
+        d = to_scalar(ans, 3);
 #else
         a = x1 * x2;
         b = y1 * y2;
@@ -172,7 +194,7 @@ namespace neolib
         detail::simd_rand_seed() = _mm_add_epi32(detail::simd_rand_seed(), adder);
 
         _mm_storeu_si128(&ans, detail::simd_rand_seed());
-        result = { ans.m128i_u32[0], ans.m128i_u32[1], ans.m128i_u32[2], ans.m128i_u32[3] };
+        result = { to_scalar(ans, 0), to_scalar(ans, 1), to_scalar(ans, 2), to_scalar(ans, 3) };
 #else
         result = { std::rand(), std::rand(), std::rand(), std::rand() };
 #endif
