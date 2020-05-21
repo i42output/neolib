@@ -40,6 +40,7 @@
 #include <neolib/core/i_mutex.hpp>
 #include <neolib/task/thread_pool.hpp>
 #include <neolib/plugin/plugin_event.hpp>
+#include <neolib/app/i_object.hpp>
 #include <neolib/ecs/ecs_ids.hpp>
 #include <neolib/ecs/i_entity_archetype.hpp>
 #include <neolib/ecs/i_component.hpp>
@@ -79,7 +80,7 @@ namespace neolib::ecs
         return aLhs = static_cast<ecs_flags>(static_cast<uint32_t>(aLhs) & static_cast<uint32_t>(aRhs));
     }
 
-    class i_ecs
+    class i_ecs : public i_object
     {
     public:
         declare_event(systems_paused)

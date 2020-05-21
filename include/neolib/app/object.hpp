@@ -44,7 +44,7 @@
 namespace neolib
 {
     template <typename... Bases>
-    class object : public lifetime, public i_object, public Bases...
+    class object : public lifetime, public Bases...
     {
     public:
         define_declared_event(Destroying, destroying);
