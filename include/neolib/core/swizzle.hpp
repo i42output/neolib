@@ -211,9 +211,18 @@ namespace neolib
                 return ~aLhs != ~aRhs;
             }
         }
-        using namespace operators;
     }
-    using namespace math::operators;
 }
-using namespace neolib::math::operators;
+
+using neolib::math::operators::operator~;
+using neolib::math::operators::operator+;
+using neolib::math::operators::operator-;
+using neolib::math::operators::operator*;
+using neolib::math::operators::operator/;
+using neolib::math::operators::operator<;
+using neolib::math::operators::operator>;
+using neolib::math::operators::operator<=;
+using neolib::math::operators::operator>=;
+using neolib::math::operators::operator==;
+using neolib::math::operators::operator!=;
 
