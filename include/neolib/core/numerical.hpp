@@ -1158,6 +1158,8 @@ namespace neolib
         template <typename T, uint32_t D>
         inline basic_vector<T, D, column_vector> operator*(const basic_matrix<T, D, D>& left, const basic_vector<T, D, column_vector>& right)
         {
+            if (&left == &left.identity())
+                return right;
             basic_vector<T, D, column_vector> result;
             for (uint32_t row = 0; row < D; ++row)
                 for (uint32_t index = 0; index < D; ++index)
@@ -1168,6 +1170,8 @@ namespace neolib
         template <typename T>
         inline basic_vector<T, 4u, column_vector> operator*(const basic_matrix<T, 4u, 4u>& left, const basic_vector<T, 4u, column_vector>& right)
         {
+            if (&left == &left.identity())
+                return right;
             basic_vector<T, 4u, column_vector> result;
             for (uint32_t row = 0u; row < 4u; ++row)
                 result[row] = simd_fma_4d(left[0][row], right[0], left[1][row], right[1], left[2][row], right[2], left[3][row], right[3]);
@@ -1177,6 +1181,8 @@ namespace neolib
         template <typename T, uint32_t D>
         inline basic_vector<T, D, row_vector> operator*(const basic_vector<T, D, row_vector>& left, const basic_matrix<T, D, D>& right)
         {
+            if (&right == &right.identity())
+                return left;
             basic_vector<T, D, row_vector> result;
             for (uint32_t column = 0; column < D; ++column)
                 for (uint32_t index = 0; index < D; ++index)
@@ -1187,6 +1193,8 @@ namespace neolib
         template <typename T>
         inline basic_vector<T, 4u, row_vector> operator*(const basic_vector<T, 4u, row_vector>& left, const basic_matrix<T, 4u, 4u>& right)
         {
+            if (&right == &right.identity())
+                return left;
             basic_vector<T, 4u, row_vector> result;
             for (uint32_t column = 0u; column < 4u; ++column)
                 result[column] = simd_fma_4d(left[0], right[column][0], left[1], right[column][1], left[2], right[column][2], left[3], right[column][3]);
@@ -1266,154 +1274,25 @@ namespace neolib
             return aStream;
         }
 
-        struct aabb
-        {
-            vec3 min;
-            vec3 max;
-            aabb() : min{}, max{} {}
-            aabb(const vec3& aMin, const vec3& aMax) : min{ aMin }, max{ aMax } {}
-        };
-
-        inline bool operator==(const aabb& left, const aabb& right)
-        {
-            return left.min == right.min && left.max == right.max;
-        }
-
-        inline bool operator!=(const aabb& left, const aabb& right)
-        {
-            return !(left == right);
-        }
-
-        inline bool operator<(const aabb& left, const aabb& right)
-        {
-            return std::tie(left.min.z, left.min.y, left.min.x, left.max.z, left.max.y, left.max.x) <
-                std::tie(right.min.z, right.min.y, right.min.x, right.max.z, right.max.y, right.max.x);
-        }
-
-        typedef std::optional<aabb> optional_aabb;
-
-        inline aabb aabb_union(const aabb& left, const aabb& right)
-        {
-            return aabb{ left.min.min(right.min), left.max.max(right.max) };
-        }
-
-        inline scalar aabb_volume(const aabb& a)
-        {
-            auto extents = a.max - a.min;
-            return extents.x * extents.y * (extents.z != 0.0 ? extents.z : 1.0);
-        }
-
-        inline bool aabb_contains(const aabb& outer, const aabb& inner)
-        {
-            return inner.min >= outer.min && inner.max <= outer.max;
-        }
-
-        inline bool aabb_contains(const aabb& outer, const vec3& point)
-        {
-            return point >= outer.min && point <= outer.max;
-        }
-
-        inline bool aabb_intersects(const aabb& first, const aabb& second)
-        {
-            if (first.max.x < second.min.x)
-                return false;
-            if (first.min.x > second.max.x)
-                return false;
-            if (first.max.y < second.min.y)
-                return false;
-            if (first.min.y > second.max.y)
-                return false;
-            if (first.max.z < second.min.z)
-                return false;
-            if (first.min.z > second.max.z)
-                return false;
-            return true;
-        }
-
-        struct aabb_2d
-        {
-            vec2 min;
-            vec2 max;
-            aabb_2d() : min{}, max{} {}
-            aabb_2d(const vec2& aMin, const vec2& aMax) : min{ aMin }, max{ aMax } {}
-            aabb_2d(const aabb& aAabb) : min{ aAabb.min.xy }, max{ aAabb.max.xy } {}
-        };
-
-        inline aabb_2d to_aabb_2d(const vertices& vertices)
-        {
-            aabb_2d result = !vertices.empty() ? aabb_2d{ vertices[0].xy, vertices[0].xy } : aabb_2d{};
-            for (auto const& v : vertices)
-            {
-                result.min = result.min.min(v.xy);
-                result.max = result.max.max(v.xy);
-            }
-            return result;
-        }
-
-        inline bool operator==(const aabb_2d& left, const aabb_2d& right)
-        {
-            return left.min == right.min && left.max == right.max;
-        }
-
-        inline bool operator!=(const aabb_2d& left, const aabb_2d& right)
-        {
-            return !(left == right);
-        }
-
-        inline bool operator<(const aabb_2d& left, const aabb_2d& right)
-        {
-            return std::tie(left.min.y, left.min.x, left.max.y, left.max.x) <
-                std::tie(right.min.y, right.min.x, right.max.y, right.max.x);
-        }
-
-        typedef std::optional<aabb_2d> optional_aabb_2d;
-
-        inline aabb_2d aabb_union(const aabb_2d& left, const aabb_2d& right)
-        {
-            return aabb_2d{ left.min.min(right.min), left.max.max(right.max) };
-        }
-
-        inline scalar aabb_volume(const aabb_2d& a)
-        {
-            auto extents = a.max - a.min;
-            return extents.x * extents.y;
-        }
-
-        inline bool aabb_contains(const aabb_2d& outer, const aabb_2d& inner)
-        {
-            return inner.min >= outer.min && inner.max <= outer.max;
-        }
-
-        inline bool aabb_contains(const aabb_2d& outer, const vec2& point)
-        {
-            return point >= outer.min && point <= outer.max;
-        }
-
-        inline bool aabb_intersects(const aabb_2d& first, const aabb_2d& second)
-        {
-            if (first.max.x < second.min.x)
-                return false;
-            if (first.min.x > second.max.x)
-                return false;
-            if (first.max.y < second.min.y)
-                return false;
-            if (first.min.y > second.max.y)
-                return false;
-            return true;
-        }
-
         // 3D helpers
 
         template <typename T>
-        inline basic_vector<T, 3, column_vector> operator*(const basic_matrix<T, 4, 4>& left, const basic_vector<T, 3, column_vector>& right)
+        inline basic_vector<T, 3u, column_vector> operator*(const basic_matrix<T, 4u, 4u>& left, const basic_vector<T, 3u, column_vector>& right)
         {
-            return (left * basic_vector<T, 4, column_vector>{ right.x, right.y, right.z, 1.0 }).xyz;
+            if (&left == &left.identity())
+                return right;
+            basic_vector<T, 3u, column_vector> result;
+            for (uint32_t row = 0u; row < 3u; ++row)
+                result[row] = simd_fma_4d(left[0][row], right[0], left[1][row], right[1], left[2][row], right[2], left[3][row], 1.0);
+            return result;
         }
 
         template <typename T>
-        inline std::vector<basic_vector<T, 3, column_vector>> operator*(const basic_matrix<T, 4, 4>& left, const std::vector<basic_vector<T, 3, column_vector>>& right)
+        inline std::vector<basic_vector<T, 3u, column_vector>> operator*(const basic_matrix<T, 4u, 4u>& left, const std::vector<basic_vector<T, 3u, column_vector>>& right)
         {
-            std::vector<basic_vector<T, 3, column_vector>> result;
+            if (&left == &left.identity())
+                return right;
+            std::vector<basic_vector<T, 3u, column_vector>> result;
             result.reserve(right.size());
             for (auto const& v : right)
                 result.push_back(left * v);
@@ -1495,6 +1374,157 @@ namespace neolib
             aMatrix[1][1] *= aScaling.y;
             aMatrix[2][2] *= aScaling.z;
             return aMatrix;
+        }
+
+        // AABB
+
+        struct aabb
+        {
+            vec3 min;
+            vec3 max;
+            aabb() : min{}, max{} {}
+            aabb(const vec3& aMin, const vec3& aMax) : min{ aMin }, max{ aMax } {}
+        };
+
+        inline aabb to_aabb(const vertices& vertices, const mat44& aTransformation = mat44::identity())
+        {
+            aabb result = !vertices.empty() ? aabb{ (aTransformation * vertices[0]), (aTransformation * vertices[0]) } : aabb{};
+            for (auto const& v : vertices)
+            {
+                auto const tv = aTransformation * v;
+                result.min = result.min.min(tv);
+                result.max = result.max.max(tv);
+            }
+            return result;
+        }
+
+        inline bool operator==(const aabb& left, const aabb& right)
+        {
+            return left.min == right.min && left.max == right.max;
+        }
+
+        inline bool operator!=(const aabb& left, const aabb& right)
+        {
+            return !(left == right);
+        }
+
+        inline bool operator<(const aabb& left, const aabb& right)
+        {
+            return std::tie(left.min.z, left.min.y, left.min.x, left.max.z, left.max.y, left.max.x) <
+                std::tie(right.min.z, right.min.y, right.min.x, right.max.z, right.max.y, right.max.x);
+        }
+
+        typedef std::optional<aabb> optional_aabb;
+
+        inline aabb aabb_union(const aabb& left, const aabb& right)
+        {
+            return aabb{ left.min.min(right.min), left.max.max(right.max) };
+        }
+
+        inline scalar aabb_volume(const aabb& a)
+        {
+            auto extents = a.max - a.min;
+            return extents.x * extents.y * (extents.z != 0.0 ? extents.z : 1.0);
+        }
+
+        inline bool aabb_contains(const aabb& outer, const aabb& inner)
+        {
+            return inner.min >= outer.min && inner.max <= outer.max;
+        }
+
+        inline bool aabb_contains(const aabb& outer, const vec3& point)
+        {
+            return point >= outer.min && point <= outer.max;
+        }
+
+        inline bool aabb_intersects(const aabb& first, const aabb& second)
+        {
+            if (first.max.x < second.min.x)
+                return false;
+            if (first.min.x > second.max.x)
+                return false;
+            if (first.max.y < second.min.y)
+                return false;
+            if (first.min.y > second.max.y)
+                return false;
+            if (first.max.z < second.min.z)
+                return false;
+            if (first.min.z > second.max.z)
+                return false;
+            return true;
+        }
+
+        struct aabb_2d
+        {
+            vec2 min;
+            vec2 max;
+            aabb_2d() : min{}, max{} {}
+            aabb_2d(const vec2& aMin, const vec2& aMax) : min{ aMin }, max{ aMax } {}
+            aabb_2d(const aabb& aAabb) : min{ aAabb.min.xy }, max{ aAabb.max.xy } {}
+        };
+
+        inline aabb_2d to_aabb_2d(const vertices& vertices, const mat44& aTransformation = mat44::identity())
+        {
+            aabb_2d result = !vertices.empty() ? aabb_2d{ (aTransformation * vertices[0]).xy, (aTransformation * vertices[0]).xy } : aabb_2d{};
+            for (auto const& v : vertices)
+            {
+                auto const tv = aTransformation * v;
+                result.min = result.min.min(tv.xy);
+                result.max = result.max.max(tv.xy);
+            }
+            return result;
+        }
+
+        inline bool operator==(const aabb_2d& left, const aabb_2d& right)
+        {
+            return left.min == right.min && left.max == right.max;
+        }
+
+        inline bool operator!=(const aabb_2d& left, const aabb_2d& right)
+        {
+            return !(left == right);
+        }
+
+        inline bool operator<(const aabb_2d& left, const aabb_2d& right)
+        {
+            return std::tie(left.min.y, left.min.x, left.max.y, left.max.x) <
+                std::tie(right.min.y, right.min.x, right.max.y, right.max.x);
+        }
+
+        typedef std::optional<aabb_2d> optional_aabb_2d;
+
+        inline aabb_2d aabb_union(const aabb_2d& left, const aabb_2d& right)
+        {
+            return aabb_2d{ left.min.min(right.min), left.max.max(right.max) };
+        }
+
+        inline scalar aabb_volume(const aabb_2d& a)
+        {
+            auto extents = a.max - a.min;
+            return extents.x * extents.y;
+        }
+
+        inline bool aabb_contains(const aabb_2d& outer, const aabb_2d& inner)
+        {
+            return inner.min >= outer.min && inner.max <= outer.max;
+        }
+
+        inline bool aabb_contains(const aabb_2d& outer, const vec2& point)
+        {
+            return point >= outer.min && point <= outer.max;
+        }
+
+        inline bool aabb_intersects(const aabb_2d& first, const aabb_2d& second)
+        {
+            if (first.max.x < second.min.x)
+                return false;
+            if (first.min.x > second.max.x)
+                return false;
+            if (first.max.y < second.min.y)
+                return false;
+            if (first.min.y > second.max.y)
+                return false;
+            return true;
         }
     }
 
