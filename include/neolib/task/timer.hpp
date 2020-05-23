@@ -76,7 +76,11 @@ namespace neolib
         uint32_t duration() const;
         void set_duration(uint32_t aDuration_ms, bool aEffectiveImmediately = false);
         uint32_t duration_ms() const;
+    public:
+        void set_debug(bool aDebug);
         // implementation
+    protected:
+        void unsubscribe();
     private:
         i_timer_object& timer_object();
         void handler();
@@ -84,15 +88,19 @@ namespace neolib
         // attributes
     private:
         i_async_task& iTask;
+        destroying_flag iTaskDestroying;
         destroyed_flag iTaskDestroyed;
         optional_destroyed_flag iContextDestroyed;
         sink iSink;
         ref_ptr<i_timer_object> iTimerObject;
-        ref_ptr<i_timer_subscriber> iTimerSubcriber;
+        ref_ptr<i_timer_subscriber> iTimerSubscriber;
         uint32_t iDuration_ms;
         bool iEnabled;
         bool iWaiting;
         bool iInReady;
+#if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)
+        bool iDebug = false;
+#endif
     };
 
     class callback_timer : public timer

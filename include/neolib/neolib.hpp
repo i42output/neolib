@@ -61,6 +61,18 @@ namespace neolib
         return const_cast<to_const_reference_t<T>>(object);
     }
 
+    template <typename T, typename... Ts> 
+    struct variadic_index;
+
+    template <typename T, typename... Ts>
+    struct variadic_index<T, T, Ts...> : std::integral_constant<std::size_t, 0> {};
+
+    template <typename T, typename Tail, typename... Ts>
+    struct variadic_index<T, Tail, Ts...> : std::integral_constant<std::size_t, 1 + variadic_index<T, Ts...>::value> {};
+
+    template <typename T, typename... Ts>
+    constexpr std::size_t index_of_v = variadic_index<T, Ts...>::value;
+
     template <typename T1, typename T2>
     class pair;
 

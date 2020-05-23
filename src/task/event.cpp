@@ -173,6 +173,24 @@ namespace neolib
         return sFilterRegistry;
     }
 
+    bool async_event_queue::debug() const
+    {
+#if !defined(NDEBUG) || defined(DEBUG_EVENTS)
+        return iDebug;
+#else
+        return false;
+#endif
+    }
+
+    void async_event_queue::set_debug(bool aDebug)
+    {
+#if !defined(NDEBUG) || defined(DEBUG_EVENTS)
+        iDebug = aDebug;
+        if (iTimer)
+            iTimer->set_debug(aDebug);
+#endif
+    }
+
     bool async_event_queue::terminated() const
     {
         return iTerminated || iTask.thread().finished();
@@ -189,7 +207,7 @@ namespace neolib
         if (terminated())
             return {};
         iEvents.push_back(event_list_entry{ aTransaction == std::nullopt ? ++iNextTransaction : *aTransaction, aCallback->event(), std::move(aCallback) });
-        if (!iTimer->waiting())
+        if (iTimer && !iTimer->waiting())
             iTimer->again();
         return iEvents.back().transaction;
     }

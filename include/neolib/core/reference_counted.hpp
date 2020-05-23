@@ -446,13 +446,23 @@ namespace neolib
             else
                 throw bad_release();
         }
+        Interface* detach() override
+        {
+            weak_ref_ptr copy(*this);
+            update_control_block(nullptr);
+            return copy.ptr();
+        }
+        bool valid() const override
+        {
+            return ptr() != nullptr;
+        }
         bool expired() const override
         {
             return iControlBlock == nullptr || iControlBlock->expired();
         }
         Interface* ptr() const override
         {
-            return iControlBlock != nullptr ? iControlBlock->ptr() : nullptr;
+            return static_cast<Interface*>(iControlBlock != nullptr ? iControlBlock->ptr() : nullptr);
         }
         Interface* operator->() const override
         {

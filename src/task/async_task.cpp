@@ -45,7 +45,8 @@
 namespace neolib
 {
     timer_service::timer_service(async_task& aTask, bool aMultiThreaded) :
-        iTask{ aTask }
+        iTask{ aTask },
+        iTaskDestroying{ aTask }
     {
     }
 
@@ -92,6 +93,8 @@ namespace neolib
 
     i_timer_object& timer_service::create_timer_object()
     {
+        if (iTaskDestroying)
+            throw task_destroying();
         iObjects.push_back(make_ref<timer_object>(*this));
         iDirtyObjectList.dirty();
         return *iObjects.back();

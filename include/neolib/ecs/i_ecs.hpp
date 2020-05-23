@@ -313,62 +313,64 @@ namespace neolib::ecs
     {
     public:
         shared_component_scoped_lock(const i_ecs& aEcs) :
-            iLockGuard{ aEcs.shared_component<Data>().mutex() }
+            iLock{ aEcs.shared_component<Data>().mutex() }
+        {
+        }
+        ~shared_component_scoped_lock()
         {
         }
     private:
-        std::scoped_lock<neolib::i_lockable> iLockGuard;
+        std::scoped_lock<neolib::i_lockable> iLock;
     };
 
-    template <typename Data>
+    template <typename... Data>
     class scoped_component_lock
     {
+    private:
+        template <typename T, typename>
+        static T fwd(T o) { return o; }
+        template <typename Data2>
+        class scoped_lock : std::scoped_lock<neolib::i_lockable>
+        {
+        public:
+            scoped_lock(const i_ecs& aEcs) : 
+                std::scoped_lock<neolib::i_lockable>{ aEcs.component<Data2>().mutex() }
+            {
+            }
+            scoped_lock(i_ecs& aEcs) :
+                std::scoped_lock<neolib::i_lockable>{ aEcs.component<Data2>().mutex() }
+            {
+            }
+        };
     public:
         scoped_component_lock(const i_ecs& aEcs) :
-            iLockGuard{ aEcs.component<Data>().mutex() }
+            iSystemLock{ aEcs.mutex() }, iLocks{ fwd<const i_ecs&, Data>(aEcs)... }
         {
+            iSystemLock.reset();
         }
         scoped_component_lock(i_ecs& aEcs) :
-            iLockGuard{ aEcs.component<Data>().mutex() }
+            iSystemLock{ aEcs.mutex() }, iLocks{ fwd<i_ecs&, Data>(aEcs)... }
         {
+            iSystemLock.reset();
         }
         ~scoped_component_lock()
         {
         }
-    private:
-        std::scoped_lock<neolib::i_lockable> iLockGuard;
-    };
-
-    template <typename... Data>
-    class scoped_component_multi_lock
-    {
-    private:
-        template <typename T, typename>
-        struct fwd
-        {
-            T o;
-            operator T () const { return o; }
-        };
     public:
-        scoped_component_multi_lock(const i_ecs& aEcs) :
-            iLocks{ fwd<const i_ecs&, Data>{aEcs}... }
+        template <typename Data2>
+        void unlock()
         {
-        }
-        scoped_component_multi_lock(i_ecs& aEcs) :
-            iLocks{ fwd<i_ecs&, Data>{aEcs}... }
-        {
-        }
-        ~scoped_component_multi_lock()
-        {
+            std::get<index_of_v<Data2, Data...>>(iLocks).reset();
         }
     private:
-        std::tuple<scoped_component_lock<Data>...> iLocks;
+        std::optional<std::scoped_lock<neolib::i_lockable>> iSystemLock;
+        std::tuple<std::optional<scoped_lock<Data>>...> iLocks;
     };
 
     template <typename... ComponentData>
     inline entity_id i_ecs::create_entity(const entity_archetype_id& aArchetypeId, ComponentData&&... aComponentData)
     {
-        scoped_component_multi_lock<std::decay_t<ComponentData>...> lock{ *this };
+        scoped_component_lock<std::decay_t<ComponentData>...> lock{ *this };
         auto newEntity = create_entity(aArchetypeId);
         populate(newEntity, std::forward<ComponentData>(aComponentData)...);
         archetype(aArchetypeId).populate_default_components(*this, newEntity);
@@ -379,7 +381,6 @@ namespace neolib::ecs
     {
         if (!archetype_registered(aArchetype))
             register_archetype(aArchetype);
-        scoped_component_multi_lock<std::decay_t<ComponentData>...> lock{ *this };
         return create_entity(aArchetype.id(), std::forward<ComponentData>(aComponentData)...);
     }
 }

@@ -70,6 +70,8 @@ namespace neolib
         bool iDebug;
     };
 
+    typedef lifetime_flag<lifetime_state::Destroying> destroying_flag;
+    typedef std::optional<destroying_flag> optional_destroying_flag;
     typedef lifetime_flag<lifetime_state::Destroyed> destroyed_flag;
     typedef std::optional<destroyed_flag> optional_destroyed_flag;
 

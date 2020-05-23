@@ -57,10 +57,16 @@ namespace neolib
         void cancel() override;
     public:
         bool poll() override;
+    public:
+        bool debug() const override;
+        void set_debug(bool aDebug) override;
     private:
         i_timer_service& iService;
         std::optional<std::chrono::steady_clock::time_point> iExpiryTime;
         std::set<ref_ptr<i_timer_subscriber>> iSubscribers;
         dirty_list iDirtySubscriberList;
+#if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)
+        bool iDebug = false;
+#endif
     };
 }

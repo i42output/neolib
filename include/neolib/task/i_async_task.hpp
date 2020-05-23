@@ -66,6 +66,9 @@ namespace neolib
         // types
     public:
         typedef i_timer_service abstract_type;
+        // exceptions
+    public:
+        struct task_destroying : std::logic_error { task_destroying() : std::logic_error("neolib::i_timer_service::task_destroying") {} };
         // operations
     public:
         virtual i_timer_object& create_timer_object() = 0;

@@ -64,6 +64,7 @@ namespace neolib
         // attributes
     private:
         async_task& iTask;
+        destroying_flag iTaskDestroying;
         std::vector<ref_ptr<i_timer_object>> iObjects;
         dirty_list iDirtyObjectList;
     };

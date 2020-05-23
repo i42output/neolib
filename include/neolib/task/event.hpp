@@ -281,6 +281,9 @@ namespace neolib
         void terminate();
     public:
         i_event_filter_registry& filter_registry();
+    public:
+        bool debug() const;
+        void set_debug(bool aDebug);
     private:
         bool terminated() const;
         transaction add(callback_ptr aCallback, const optional_transaction& aTransaction);
@@ -296,6 +299,9 @@ namespace neolib
         std::atomic<uint32_t> iPublishNestingLevel;
         std::vector<std::unique_ptr<event_list_t>> iPublishCache;
         transaction iNextTransaction;
+#if !defined(NDEBUG) || defined(DEBUG_EVENTS)
+        bool iDebug = false;
+#endif
     };
 
     enum class event_trigger_type

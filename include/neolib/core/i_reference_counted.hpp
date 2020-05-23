@@ -149,5 +149,7 @@ namespace neolib
     public:
         struct bad_release : std::logic_error { bad_release() : std::logic_error("i_weak_ref_ptr::bad_release") {} };
         struct wrong_object : std::logic_error { wrong_object() : std::logic_error("i_weak_ref_ptr::wrong_object") {} };
+    public:
+        virtual bool expired() const = 0;
     };
 }

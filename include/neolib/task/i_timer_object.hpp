@@ -36,6 +36,9 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)
+#include <iostream>
+#endif
 #include <neolib/core/reference_counted.hpp>
 
 namespace neolib
@@ -50,6 +53,8 @@ namespace neolib
         virtual ~i_timer_subscriber() = default;
     public:
         virtual void timer_expired(i_timer_object& aTimerObject) = 0;
+        virtual bool attached() const = 0;
+        virtual void detach() = 0;
     public:
         friend bool operator<(const i_timer_subscriber& aLeft, const i_timer_subscriber& aRight)
         {
@@ -67,16 +72,53 @@ namespace neolib
         class subscriber_wrapper : public reference_counted<i_timer_subscriber>
         {
         public:
-            subscriber_wrapper(std::function<void()> aCallback) :
-                iCallback{ aCallback }
+            subscriber_wrapper(i_timer_object& aTimerObject, std::function<void()> aCallback) :
+                iTimerObject{ &aTimerObject }, iCallback { aCallback }
             {
+            }
+            ~subscriber_wrapper()
+            {
+#if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)
+                if (iTimerObject != nullptr)
+                {
+                    if (iTimerObject->debug())
+                    {
+                        std::cerr << "i_timer_object::subscriber_wrapper::~subscriber_wrapper()" << std::endl;
+                    }
+                }
+#endif
             }
         protected:
             void timer_expired(i_timer_object&) override
             {
+#if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)
+                if (attached())
+                {
+                    if (iTimerObject->debug())
+                    {
+                        std::cerr << "i_timer_object::subscriber_wrapper::timer_expired(...)" << std::endl;
+                    }
+                }
+#endif
                 iCallback();
             }
+            bool attached() const override
+            {
+                return iTimerObject != nullptr;
+            }
+            void detach() override
+            {
+                if (attached())
+                {
+                    if (iTimerObject->debug())
+                    {
+                        std::cerr << "i_timer_object::subscriber_wrapper::detach()" << std::endl;
+                    }
+                    iTimerObject = nullptr;
+                }
+            }
         private:
+            i_timer_object* iTimerObject;
             std::function<void()> iCallback;
         };
     public:
@@ -89,6 +131,9 @@ namespace neolib
     public:
         virtual bool poll() = 0;
     public:
+        virtual bool debug() const = 0;
+        virtual void set_debug(bool aDebug) = 0;
+    public:
         template <typename Duration>
         void expires_from_now(const Duration& aDuration)
         {
@@ -96,13 +141,13 @@ namespace neolib
         }
         i_timer_subscriber& async_wait(const std::function<void()>& aSubscriber)
         {
-            auto subscriber = make_ref<subscriber_wrapper>([aSubscriber]() { aSubscriber(); });
+            auto subscriber = make_ref<subscriber_wrapper>(*this, [aSubscriber]() { aSubscriber(); });
             async_wait(*subscriber);
             return *subscriber;
         }
         i_timer_subscriber& async_wait(const std::function<void(i_timer_object&)>& aSubscriber)
         {
-            auto subscriber = make_ref<subscriber_wrapper>([this, aSubscriber]() { aSubscriber(*this); });
+            auto subscriber = make_ref<subscriber_wrapper>(*this, [this, aSubscriber]() { aSubscriber(*this); });
             async_wait(*subscriber);
             return *subscriber;
         }

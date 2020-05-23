@@ -45,16 +45,30 @@ namespace neolib
 
     timer_object::~timer_object()
     {
+#if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)
+        if (iDebug)
+            std::cerr << "timer_object::~timer_object()" << std::endl;
+#endif
+        for (auto& s : iSubscribers)
+            s->detach();
         iService.remove_timer_object(*this);
     }
 
     void timer_object::expires_at(const std::chrono::steady_clock::time_point& aDeadline)
     {
+#if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)
+        if (iDebug)
+            std::cerr << "timer_object::expires_at(...)" << std::endl;
+#endif
         iExpiryTime = aDeadline;
     }
 
     void timer_object::async_wait(i_timer_subscriber& aSubscriber)
     {
+#if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)
+        if (iDebug)
+            std::cerr << "timer_object::async_wait(...)" << std::endl;
+#endif
         bool inserted = iSubscribers.insert(aSubscriber).second;
         if (inserted)
             iDirtySubscriberList.dirty();
@@ -62,20 +76,33 @@ namespace neolib
 
     void timer_object::unsubscribe(i_timer_subscriber& aSubscriber)
     {
+#if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)
+        if (iDebug)
+            std::cerr << "timer_object::unsubscribe(...)" << std::endl;
+#endif
         auto existing = iSubscribers.find(aSubscriber);
         if (existing == iSubscribers.end())
             throw subscriber_not_found();
+        (**existing).detach();
         iSubscribers.erase(existing);
         iDirtySubscriberList.dirty();
     }
 
     void timer_object::cancel()
     {
+#if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)
+        if (iDebug)
+            std::cerr << "timer_object::cancel()" << std::endl;
+#endif
         iExpiryTime = std::nullopt;
     }
 
     bool timer_object::poll()
     {
+#if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)
+        if (iDebug)
+            std::cerr << "timer_object::poll()" << std::endl;
+#endif
         if (!iExpiryTime || std::chrono::steady_clock::now() < *iExpiryTime)
             return false;
         iExpiryTime = std::nullopt;
@@ -93,5 +120,21 @@ namespace neolib
                 ++s;
         }
         return true;
+    }
+
+    bool timer_object::debug() const
+    {
+#if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)
+        return iDebug;
+#else
+        return false;
+#endif
+    }
+
+    void timer_object::set_debug(bool aDebug)
+    {
+#if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)
+        iDebug = aDebug;
+#endif
     }
 }

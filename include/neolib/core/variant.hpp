@@ -214,14 +214,14 @@ namespace std
 namespace neolib
 {
     template<typename T, typename Variant, std::size_t index = 0>
-    constexpr std::size_t index_of()
+    constexpr std::size_t variant_index_of()
     {
         if constexpr (index == std::variant_size_v<Variant>)
             return index - 1;
         else if constexpr (std::is_same_v<std::variant_alternative_t<index, Variant>, T>)
             return index - 1;
         else
-            return index_of<T, Variant, index + 1>();
+            return variant_index_of<T, Variant, index + 1>();
     }
 }
 

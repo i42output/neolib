@@ -40,6 +40,7 @@ namespace neolib
 {
     timer::timer(i_async_task& aTask, uint32_t aDuration_ms, bool aInitialWait) :
         iTask{ aTask },
+        iTaskDestroying{ aTask },
         iTaskDestroyed{ aTask },
         iDuration_ms{ aDuration_ms },
         iEnabled{ true },
@@ -52,6 +53,7 @@ namespace neolib
 
     timer::timer(i_async_task& aTask, const i_lifetime& aContext, uint32_t aDuration_ms, bool aInitialWait) :
         iTask{ aTask },
+        iTaskDestroying{ aTask },
         iTaskDestroyed{ aTask },
         iContextDestroyed{ aContext },
         iDuration_ms{ aDuration_ms },
@@ -65,6 +67,7 @@ namespace neolib
 
     timer::timer(const timer& aOther) :
         iTask{ aOther.iTask },
+        iTaskDestroying{ aOther.iTask },
         iTaskDestroyed{ aOther.iTask },
         iContextDestroyed{ aOther.iContextDestroyed },
         iDuration_ms{ aOther.iDuration_ms },
@@ -90,8 +93,7 @@ namespace neolib
     timer::~timer()
     {
         cancel();
-        if (iTimerObject && iTimerSubcriber)
-            timer_object().unsubscribe(*iTimerSubcriber);
+        unsubscribe();
     }
 
     i_async_task& timer::owner_task() const
@@ -129,17 +131,17 @@ namespace neolib
 
     void timer::again()
     {
-        if (iTaskDestroyed)
+        if (iTaskDestroying || iTaskDestroyed)
             return;
         if (disabled())
             enable(false);
         if (waiting())
             throw already_waiting();
         timer_object().expires_from_now(std::chrono::milliseconds(iDuration_ms));
-        if (iTimerSubcriber)
-            timer_object().async_wait(*iTimerSubcriber);
+        if (iTimerSubscriber)
+            timer_object().async_wait(*iTimerSubscriber);
         else
-            iTimerSubcriber = timer_object().async_wait([this]() { handler(); });
+            iTimerSubscriber = timer_object().async_wait([this]() { handler(); });
         iWaiting = true;
     }
 
@@ -153,7 +155,7 @@ namespace neolib
     {
         if (!waiting())
             return;
-        if (!iTaskDestroyed)
+        if (!iTaskDestroying && !iTaskDestroyed)
             timer_object().cancel();
     }
 
@@ -191,11 +193,32 @@ namespace neolib
         return iDuration_ms;
     }
 
+    void timer::set_debug(bool aDebug)
+    {
+#if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)
+        iDebug = aDebug;
+        if (iTimerObject)
+            timer_object().set_debug(aDebug);
+#endif
+    }
+
+    void timer::unsubscribe()
+    {
+        if (iTimerObject && iTimerSubscriber && iTimerSubscriber->attached())
+        {
+            timer_object().unsubscribe(*iTimerSubscriber);
+        }
+    }
+
     i_timer_object& timer::timer_object()
     {
         if (iTimerObject == nullptr)
         {
             iTimerObject = iTask.timer_service().create_timer_object();
+#if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)
+            if (iDebug)
+                timer_object().set_debug(iDebug);
+#endif
             iSink += iTask.destroying([this]() { iTimerObject = nullptr; });
         }
         return *iTimerObject;
@@ -247,6 +270,7 @@ namespace neolib
     callback_timer::~callback_timer()
     {
         cancel();
+        unsubscribe();
     }
 
     void callback_timer::ready()
