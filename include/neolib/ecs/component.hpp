@@ -356,9 +356,10 @@ namespace neolib::ecs
                 data_meta_type::free_handles(base_type::component_data()[reverseIndex], ecs());
             std::swap(base_type::component_data()[reverseIndex], base_type::component_data().back());
             base_type::component_data().pop_back();
+            auto tailEntity = entities().back();
             std::swap(entities()[reverseIndex], entities().back());
             entities().pop_back();
-            reverse_indices()[entities()[reverseIndex]] = reverseIndex;
+            reverse_indices()[tailEntity] = reverseIndex;
             reverse_indices()[aEntity] = invalid;
             if (have_snapshot())
             {
