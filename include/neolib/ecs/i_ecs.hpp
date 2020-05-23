@@ -169,20 +169,9 @@ namespace neolib::ecs
         // helpers
     public:
         template <typename... ComponentData>
-        entity_id create_entity(const entity_archetype_id& aArchetypeId, ComponentData&&... aComponentData)
-        {
-            auto newEntity = create_entity(aArchetypeId);
-            populate(newEntity, std::forward<ComponentData>(aComponentData)...);
-            archetype(aArchetypeId).populate_default_components(*this, newEntity);
-            return newEntity;
-        }
+        entity_id create_entity(const entity_archetype_id& aArchetypeId, ComponentData&&... aComponentData);
         template <typename Archetype, typename... ComponentData>
-        entity_id create_entity(const Archetype& aArchetype, ComponentData&&... aComponentData)
-        {
-            if (!archetype_registered(aArchetype))
-                register_archetype(aArchetype);
-            return create_entity(aArchetype.id(), std::forward<ComponentData>(aComponentData)...);
-        }
+        entity_id create_entity(const Archetype& aArchetype, ComponentData&&... aComponentData);
     public:
         template <typename ComponentData, typename... ComponentDataRest>
         void populate(entity_id aEntity, ComponentData&& aComponentData, ComponentDataRest&&... aComponentDataRest)
@@ -349,4 +338,48 @@ namespace neolib::ecs
     private:
         std::scoped_lock<neolib::i_lockable> iLockGuard;
     };
+
+    template <typename... Data>
+    class scoped_component_multi_lock
+    {
+    private:
+        template <typename T, typename>
+        struct fwd
+        {
+            T o;
+            operator T () const { return o; }
+        };
+    public:
+        scoped_component_multi_lock(const i_ecs& aEcs) :
+            iLocks{ fwd<const i_ecs&, Data>{aEcs}... }
+        {
+        }
+        scoped_component_multi_lock(i_ecs& aEcs) :
+            iLocks{ fwd<i_ecs&, Data>{aEcs}... }
+        {
+        }
+        ~scoped_component_multi_lock()
+        {
+        }
+    private:
+        std::tuple<scoped_component_lock<Data>...> iLocks;
+    };
+
+    template <typename... ComponentData>
+    inline entity_id i_ecs::create_entity(const entity_archetype_id& aArchetypeId, ComponentData&&... aComponentData)
+    {
+        scoped_component_multi_lock<std::decay_t<ComponentData>...> lock{ *this };
+        auto newEntity = create_entity(aArchetypeId);
+        populate(newEntity, std::forward<ComponentData>(aComponentData)...);
+        archetype(aArchetypeId).populate_default_components(*this, newEntity);
+        return newEntity;
+    }
+    template <typename Archetype, typename... ComponentData>
+    inline entity_id i_ecs::create_entity(const Archetype& aArchetype, ComponentData&&... aComponentData)
+    {
+        if (!archetype_registered(aArchetype))
+            register_archetype(aArchetype);
+        scoped_component_multi_lock<std::decay_t<ComponentData>...> lock{ *this };
+        return create_entity(aArchetype.id(), std::forward<ComponentData>(aComponentData)...);
+    }
 }
