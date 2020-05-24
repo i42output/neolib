@@ -329,42 +329,86 @@ namespace neolib::ecs
     private:
         template <typename T, typename>
         static T fwd(T o) { return o; }
-        template <typename Data2>
-        class scoped_lock : std::scoped_lock<neolib::i_lockable>
+        template <typename Data>
+        class proxy_mutex : public i_lockable
         {
         public:
-            scoped_lock(const i_ecs& aEcs) : 
-                std::scoped_lock<neolib::i_lockable>{ aEcs.component<Data2>().mutex() }
+            struct not_linked : std::logic_error { not_linked() : std::logic_error{"neolib::ecs::scoped_component_lock::proxy_mutex::not_linked"} {} };
+        public:
+            proxy_mutex(const i_ecs& aEcs) :
+                iSubject{ &aEcs.component<Data>().mutex() }
             {
             }
-            scoped_lock(i_ecs& aEcs) :
-                std::scoped_lock<neolib::i_lockable>{ aEcs.component<Data2>().mutex() }
+            proxy_mutex(i_ecs& aEcs) :
+                iSubject{ &aEcs.component<Data>().mutex() }
             {
             }
+        public:
+            void lock() noexcept override
+            {
+                if (linked())
+                    subject().lock();
+            }
+            void unlock() noexcept override
+            {
+                if (linked())
+                    subject().unlock();
+            }
+            bool try_lock() noexcept override
+            {
+                if (linked())
+                    return subject().try_lock();
+                else
+                    return false;
+            }
+        public:
+            i_lockable& subject()
+            {
+                if (linked())
+                    return *iSubject;
+                throw not_linked();
+            }
+        public:
+            bool linked() const
+            {
+                return iSubject != nullptr;
+            }
+            i_lockable& unlink()
+            {
+                if (linked())
+                {
+                    auto& link = *iSubject;
+                    iSubject = nullptr;
+                    return link;
+                }
+                throw not_linked();
+            }
+        private:
+            i_lockable* iSubject;
         };
     public:
         scoped_component_lock(const i_ecs& aEcs) :
-            iSystemLock{ aEcs.mutex() }, iLocks{ fwd<const i_ecs&, Data>(aEcs)... }
+            iProxies{ fwd<const i_ecs&, Data>(aEcs)... },
+            iLock{ std::get<index_of_v<Data, Data...>>(iProxies)... }
         {
-            iSystemLock.reset();
         }
         scoped_component_lock(i_ecs& aEcs) :
-            iSystemLock{ aEcs.mutex() }, iLocks{ fwd<i_ecs&, Data>(aEcs)... }
+            iProxies{ fwd<i_ecs&, Data>(aEcs)... },
+            iLock{ std::get<index_of_v<Data, Data...>>(iProxies)... }
         {
-            iSystemLock.reset();
         }
         ~scoped_component_lock()
         {
         }
     public:
         template <typename Data2>
-        void unlock()
+        i_lockable& mutex()
         {
-            std::get<index_of_v<Data2, Data...>>(iLocks).reset();
+            return std::get<index_of_v<Data2, Data...>>(iProxies).unlink();
         }
     private:
-        std::optional<std::scoped_lock<neolib::i_lockable>> iSystemLock;
-        std::tuple<std::optional<scoped_lock<Data>>...> iLocks;
+        std::tuple<proxy_mutex<Data>...> iProxies;
+        std::scoped_lock<proxy_mutex<Data>...> iLock;
     };
 
     template <typename... ComponentData>
