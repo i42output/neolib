@@ -329,18 +329,18 @@ namespace neolib::ecs
     private:
         template <typename T, typename>
         static T fwd(T o) { return o; }
-        template <typename Data>
+        template <typename Data2>
         class proxy_mutex : public i_lockable
         {
         public:
             struct not_linked : std::logic_error { not_linked() : std::logic_error{"neolib::ecs::scoped_component_lock::proxy_mutex::not_linked"} {} };
         public:
             proxy_mutex(const i_ecs& aEcs) :
-                iSubject{ &aEcs.component<Data>().mutex() }
+                iSubject{ &aEcs.component<Data2>().mutex() }
             {
             }
             proxy_mutex(i_ecs& aEcs) :
-                iSubject{ &aEcs.component<Data>().mutex() }
+                iSubject{ &aEcs.component<Data2>().mutex() }
             {
             }
         public:
