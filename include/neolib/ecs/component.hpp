@@ -236,18 +236,15 @@ namespace neolib::ecs
             scoped_snapshot(self_type& aOwner) :
                 iOwner{ aOwner }
             {
-                std::scoped_lock<neolib::i_lockable> lock{ iOwner.mutex() };
                 ++iOwner.iUsingSnapshot;
             }
             scoped_snapshot(const scoped_snapshot& aOther) :
                 iOwner{ aOther.iOwner }
             {
-                std::scoped_lock<neolib::i_lockable> lock{ iOwner.mutex() };
                 ++iOwner.iUsingSnapshot;
             }
             ~scoped_snapshot()
             {
-                std::scoped_lock<neolib::i_lockable> lock{ iOwner.mutex() };
                 --iOwner.iUsingSnapshot;
             }
         public:

@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <neolib/core/mutex.hpp>
 #include <neolib/task/async_task.hpp>
 #include <neolib/task/timer.hpp>
 #include <neolib/app/object.hpp>
@@ -142,6 +143,7 @@ namespace neolib::ecs
         archetype_registry_t iArchetypeRegistry;
         component_factories_t iComponentFactories;
         mutable components_t iComponents;
+        mutable std::vector<proxy_mutex<i_lockable>> iComponentMutexes;
         shared_component_factories_t iSharedComponentFactories;
         mutable shared_components_t iSharedComponents;
         system_factories_t iSystemFactories;

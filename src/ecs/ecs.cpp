@@ -137,7 +137,11 @@ namespace neolib::ecs
             return *existingComponent->second;
         auto existingFactory = component_factories().find(aComponentId);
         if (existingFactory != component_factories().end())
-            return *iComponents.emplace(aComponentId, existingFactory->second()).first->second;
+        {
+            auto& c = *iComponents.emplace(aComponentId, existingFactory->second()).first->second;
+            iComponentMutexes.emplace_back(c.mutex());
+            return c;
+        }
         throw component_not_found();
     }
 
@@ -276,6 +280,7 @@ namespace neolib::ecs
     {
         if (aNotify)
             EntityDestroyed.trigger(aEntityId);
+        scoped_multi_lock<decltype(iComponentMutexes)> lock{ iComponentMutexes };
         for (auto& component : iComponents)
             if (component.second->has_entity_record(aEntityId))
                 component.second->destroy_entity_record(aEntityId);

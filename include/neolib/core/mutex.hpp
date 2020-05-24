@@ -65,6 +65,7 @@
 
 #include <neolib/neolib.hpp>
 #include <mutex>
+#include <boost/thread/locks.hpp>
 #include <boost/lockfree/detail/prefix.hpp>
 #include <boost/fiber/detail/spinlock.hpp>
 #include <neolib/core/i_mutex.hpp>
@@ -76,6 +77,31 @@ namespace neolib
         void lock() noexcept override {}
         void unlock() noexcept override {}
         bool try_lock() noexcept override { return true; }
+    };
+
+    template <typename Subject>
+    class proxy_mutex : public i_lockable
+    {
+    public:
+        proxy_mutex(Subject& aSubject) :
+            iSubject{ &aSubject }
+        {
+        }
+    public:
+        void lock() noexcept override
+        {
+            iSubject->lock();
+        }
+        void unlock() noexcept override
+        {
+            iSubject->unlock();
+        }
+        bool try_lock() noexcept override
+        {
+            return iSubject->try_lock();
+        }
+    private:
+        Subject* iSubject;
     };
 
     using boost::fibers::detail::spinlock_status;
@@ -156,6 +182,11 @@ namespace neolib
         }
         bool try_lock() noexcept override
         {
+            if (iState.load(std::memory_order_acquire) == spinlock_status::locked && iLockingThread.load(std::memory_order_acquire) == std::this_thread::get_id())
+            {
+                ++iLockCount;
+                return true;
+            }
             bool locked = (spinlock_status::unlocked == iState.exchange(spinlock_status::locked, std::memory_order_acquire));
             if (locked)
             {
@@ -220,5 +251,23 @@ namespace neolib
         }
     private:
         std::variant<std::recursive_mutex, neolib::recursive_spinlock, neolib::null_mutex> iActiveMutex;
+    };
+
+    template <typename Mutexes>
+    class scoped_multi_lock
+    {
+    public:
+        scoped_multi_lock(Mutexes& aMutexes) : 
+            iMutexes{ aMutexes }
+        {
+            boost::lock(iMutexes.begin(), iMutexes.end());
+        }
+        ~scoped_multi_lock()
+        {
+            for (auto& m : iMutexes)
+                m.unlock();
+        }
+    private:
+        Mutexes& iMutexes;
     };
 }
