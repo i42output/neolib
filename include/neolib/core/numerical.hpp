@@ -1386,6 +1386,26 @@ namespace neolib
             aabb(const vec3& aMin, const vec3& aMax) : min{ aMin }, max{ aMax } {}
         };
 
+        inline vec3 aabb_origin(const aabb& aAabb)
+        {
+            return aAabb.min + (aAabb.max - aAabb.min) / 2.0;
+        }
+
+        inline vec3 aabb_extents(const aabb& aAabb)
+        {
+            return aAabb.max - aAabb.min;
+        }
+
+        inline aabb to_aabb(const vec3& aOrigin, scalar aSize)
+        {
+            return aabb{ aOrigin - aSize / 2.0, aOrigin + aSize / 2.0 };
+        }
+
+        inline aabb to_aabb(const vec3& aOrigin, const vec3& aSize)
+        {
+            return aabb{ aOrigin - aSize / 2.0, aOrigin + aSize / 2.0 };
+        }
+
         inline aabb to_aabb(const vertices& vertices, const mat44& aTransformation = mat44::identity())
         {
             aabb result = !vertices.empty() ? aabb{ (aTransformation * vertices[0]), (aTransformation * vertices[0]) } : aabb{};
@@ -1462,6 +1482,26 @@ namespace neolib
             aabb_2d(const vec2& aMin, const vec2& aMax) : min{ aMin }, max{ aMax } {}
             aabb_2d(const aabb& aAabb) : min{ aAabb.min.xy }, max{ aAabb.max.xy } {}
         };
+
+        inline vec2 aabb_origin(const aabb_2d& aAabb)
+        {
+            return aAabb.min + (aAabb.max - aAabb.min) / 2.0;
+        }
+
+        inline vec2 aabb_extents(const aabb_2d& aAabb)
+        {
+            return aAabb.max - aAabb.min;
+        }
+
+        inline aabb_2d to_aabb_2d(const vec3& aOrigin, scalar aSize)
+        {
+            return aabb_2d{ (aOrigin - aSize / 2.0).xy, (aOrigin + aSize / 2.0).xy };
+        }
+
+        inline aabb_2d to_aabb_2d(const vec3& aOrigin, const vec3& aSize)
+        {
+            return aabb_2d{ (aOrigin - aSize / 2.0).xy, (aOrigin + aSize / 2.0).xy };
+        }
 
         inline aabb_2d to_aabb_2d(const vertices& vertices, const mat44& aTransformation = mat44::identity())
         {

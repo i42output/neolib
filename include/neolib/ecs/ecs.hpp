@@ -66,6 +66,8 @@ namespace neolib::ecs
         ecs_flags flags() const override;
         entity_id create_entity(const entity_archetype_id& aArchetypeId) override;
         void destroy_entity(entity_id aEntityId, bool aNotify = true) override;
+        void async_destroy_entity(entity_id aEntityId, bool aNotify = true) override;
+        void commit_async_entity_destruction() override;
     public:
         bool all_systems_paused() const override;
         void pause_all_systems() override;
@@ -148,6 +150,7 @@ namespace neolib::ecs
         mutable shared_components_t iSharedComponents;
         system_factories_t iSystemFactories;
         mutable systems_t iSystems;
+        std::vector<std::pair<entity_id, bool>> iEntitiesToDestroy;
         entity_id iNextEntityId;
         std::vector<entity_id> iFreedEntityIds;
         handle_id iNextHandleId;

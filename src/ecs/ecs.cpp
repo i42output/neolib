@@ -287,6 +287,26 @@ namespace neolib::ecs
         free_entity_id(aEntityId);
     }
 
+    void ecs::async_destroy_entity(entity_id aEntityId, bool aNotify)
+    {
+        scoped_component_lock<entity_info> lock{ *this };
+        component<entity_info>().entity_record(aEntityId).destroyed = true;
+        iEntitiesToDestroy.emplace_back(aEntityId, aNotify);
+    }
+
+    void ecs::commit_async_entity_destruction()
+    {
+        if (iEntitiesToDestroy.empty())
+            return;
+        scoped_multi_lock<decltype(iComponentMutexes)> lock{ iComponentMutexes };
+        while (!iEntitiesToDestroy.empty())
+        {
+            auto next = iEntitiesToDestroy.back();
+            iEntitiesToDestroy.pop_back();
+            destroy_entity(next.first, next.second);
+        }
+    }
+
     bool ecs::all_systems_paused() const
     {
         return iSystemsPaused;

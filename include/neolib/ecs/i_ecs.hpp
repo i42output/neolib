@@ -117,6 +117,8 @@ namespace neolib::ecs
         virtual ecs_flags flags() const = 0;
         virtual entity_id create_entity(const entity_archetype_id& aArchetypeId) = 0;
         virtual void destroy_entity(entity_id aEntityId, bool aNotify = true) = 0;
+        virtual void async_destroy_entity(entity_id aEntityId, bool aNotify = true) = 0;
+        virtual void commit_async_entity_destruction() = 0;
     public:
         virtual bool all_systems_paused() const = 0;
         virtual void pause_all_systems() = 0;

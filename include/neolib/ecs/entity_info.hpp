@@ -48,6 +48,7 @@ namespace neolib::ecs
     {
         neolib::uuid archetypeId;
         i64 creationTime;
+        bool destroyed;
         #ifndef NDEBUG
         bool debug = false;
         #endif
@@ -67,9 +68,9 @@ namespace neolib::ecs
             static uint32_t field_count()
             { 
                 #ifdef NDEBUG
-                return 2;
-                #else
                 return 3;
+                #else
+                return 4;
                 #endif
             }
             static component_data_field_type field_type(uint32_t aFieldIndex)
@@ -80,8 +81,10 @@ namespace neolib::ecs
                     return component_data_field_type::Uuid;
                 case 1:
                     return component_data_field_type::Int64;
-                #ifndef NDEBUG
                 case 2:
+                    return component_data_field_type::Bool;
+                #ifndef NDEBUG
+                case 3:
                     return component_data_field_type::Bool;
                 #endif
                 default:
@@ -94,6 +97,7 @@ namespace neolib::ecs
                 {
                     "Archetype Id",
                     "Creation Time",
+                    "Destroyed",
                     #ifndef NDEBUG
                     "Debug",
                     #endif
