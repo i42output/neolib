@@ -199,7 +199,6 @@ namespace neolib::ecs
 
     entity_id ecs::next_entity_id()
     {
-        std::scoped_lock<neolib::i_lockable> lock{ mutex() };
         if (!iFreedEntityIds.empty())
         {
             auto nextId = iFreedEntityIds.back();
@@ -213,7 +212,6 @@ namespace neolib::ecs
 
     void ecs::free_entity_id(entity_id aId)
     {
-        std::scoped_lock<neolib::i_lockable> lock{ mutex() };
         iFreedEntityIds.push_back(aId);
     }
 
