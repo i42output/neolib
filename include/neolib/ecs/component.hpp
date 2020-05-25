@@ -108,6 +108,12 @@ namespace neolib::ecs
         };
     }
 
+    // Mutex tagged with component data type (visible in debugger) to help debugging multi-threaded issues
+    template <typename Data>
+    struct component_mutex : neolib::recursive_spinlock
+    {
+    };
+
     template <typename Data, typename Base>
     class static_component_base : public Base
     {
@@ -207,7 +213,7 @@ namespace neolib::ecs
             neolib::parallel_apply(ecs().thread_pool(), component_data(), aCallable, aMinimumParallelismCount);
         }
     private:
-        mutable neolib::recursive_spinlock iMutex;
+        mutable component_mutex<Data> iMutex;
         i_ecs& iEcs;
         component_data_t iComponentData;
     };
@@ -361,7 +367,8 @@ namespace neolib::ecs
             if (have_snapshot())
             {
                 auto ss = snapshot();
-                ss.data().destroy_entity_record(aEntity);
+                if (ss.data().has_entity_record(aEntity))
+                    ss.data().destroy_entity_record(aEntity);
             }
         }
         value_type& populate(entity_id aEntity, const value_type& aData)

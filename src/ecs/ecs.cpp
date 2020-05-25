@@ -225,6 +225,7 @@ namespace neolib::ecs
                 aTimer.again();
                 for (auto& system : systems())
                     system.second->apply();
+                commit_async_entity_destruction();
             }, 1, true
         },
         iSystemsPaused{ (flags() & ecs_flags::CreatePaused) == ecs_flags::CreatePaused }
