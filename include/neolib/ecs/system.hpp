@@ -39,41 +39,87 @@
 #include <neolib/core/set.hpp>
 #include <neolib/core/allocator.hpp>
 #include <neolib/ecs/i_system.hpp>
+#include <neolib/ecs/entity_info.hpp>
 
 namespace neolib::ecs
 {
     class i_ecs;
 
+    template <typename... Components>
     class system : public i_system
     {
     private:
         typedef neolib::set<component_id, std::less<component_id>, neolib::fast_pool_allocator<component_id>> component_list;
     public:
-        system(i_ecs& aEcs);
+        system(i_ecs& aEcs) :
+            iEcs{ aEcs }, iPaused{ 0u }
+        {
+            (ecs().component<Components>(), ...);
+        }
+        system(const system& aOther) :
+            iEcs{ aOther.iEcs }, iComponents{ aOther.iComponents }, iPaused{ 0u }
+        {
+            (ecs().component<Components>(), ...);
+        }
+        system(system&& aOther) :
+            iEcs{ aOther.iEcs }, iComponents{ std::move(aOther.iComponents) }, iPaused{ 0u }
+        {
+            (ecs().component<Components>(), ...);
+        }
         template <typename ComponentIdIter>
         system(i_ecs& aEcs, ComponentIdIter aFirstComponent, ComponentIdIter aLastComponent) :
             iEcs{ aEcs }, iComponents{ aFirstComponent, aLastComponent }, iPaused{ 0u }
         {
+            (ecs().component<Components>(), ...);
             if (ecs().all_systems_paused())
                 pause();
         }
-        system(const system& aOther);
-        system(system&& aOther);
     public:
-        i_ecs& ecs() const;
+        i_ecs& ecs() const override
+        {
+            return iEcs;
+        }
     public:
-        const neolib::i_set<component_id>& components() const override;
-        neolib::i_set<component_id>& components() override;
+        const i_set<component_id>& components() const override
+        {
+            return iComponents;
+        }
+        i_set<component_id>& components() override
+        {
+            return iComponents;
+        }
     public:
-        const i_component& component(component_id aComponentId) const override;
-        i_component& component(component_id aComponentId) override;
+        const i_component& component(component_id aComponentId) const override
+        {
+            return ecs().component(aComponentId);
+        }
+        i_component& component(component_id aComponentId) override
+        {
+            return ecs().component(aComponentId);
+        }
     public:
-        bool paused() const override;
-        void pause() override;
-        void resume() override;
-        void terminate() override;
+        bool paused() const override
+        {
+            return iPaused != 0u;
+        }
+        void pause() override
+        {
+            ++iPaused;
+        }
+        void resume() override
+        {
+            --iPaused;
+        }
+        void terminate() override
+        {
+            // do nothing
+        }
     protected:
-        void yield();
+        void yield()
+        {
+            if (service<neolib::i_power>().green_mode_active())
+                neolib::thread::sleep(1);
+        }
     private:
         i_ecs& iEcs;
         component_list iComponents;

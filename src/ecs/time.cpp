@@ -42,7 +42,7 @@
 namespace neolib::ecs
 {
     time::time(ecs::i_ecs& aEcs) :
-        system{ aEcs }
+        system<>{ aEcs }
     {
         if (!ecs().shared_component_registered<clock>())
         {

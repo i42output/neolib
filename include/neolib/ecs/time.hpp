@@ -41,7 +41,7 @@
 
 namespace neolib::ecs
 {
-    class time : public system
+    class time : public system<>
     {
 
     public:

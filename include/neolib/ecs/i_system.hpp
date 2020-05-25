@@ -43,10 +43,14 @@
 
 namespace neolib::ecs
 {
+    class i_ecs;
+
     class i_system
     {
     public:
         virtual ~i_system() = default;
+    public:
+        virtual i_ecs& ecs() const = 0;
     public:
         virtual const system_id& id() const = 0;
         virtual const neolib::i_string& name() const = 0;
