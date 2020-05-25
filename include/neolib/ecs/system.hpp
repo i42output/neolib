@@ -38,6 +38,7 @@
 #include <neolib/neolib.hpp>
 #include <neolib/core/set.hpp>
 #include <neolib/core/allocator.hpp>
+#include <neolib/task/thread.hpp>
 #include <neolib/ecs/i_system.hpp>
 #include <neolib/ecs/entity_info.hpp>
 
