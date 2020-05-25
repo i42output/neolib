@@ -45,32 +45,32 @@ namespace neolib::ecs
 {
     class i_ecs;
 
-    template <typename... Components>
+    template <typename... ComponentData>
     class system : public i_system
     {
     private:
         typedef neolib::set<component_id, std::less<component_id>, neolib::fast_pool_allocator<component_id>> component_list;
     public:
         system(i_ecs& aEcs) :
-            iEcs{ aEcs }, iPaused{ 0u }
+            iEcs{ aEcs }, iComponents{ ComponentData::meta::id()... }, iPaused{ 0u }
         {
-            (ecs().component<Components>(), ...);
+            (ecs().component<ComponentData>(), ...);
         }
         system(const system& aOther) :
             iEcs{ aOther.iEcs }, iComponents{ aOther.iComponents }, iPaused{ 0u }
         {
-            (ecs().component<Components>(), ...);
+            (ecs().component<ComponentData>(), ...);
         }
         system(system&& aOther) :
             iEcs{ aOther.iEcs }, iComponents{ std::move(aOther.iComponents) }, iPaused{ 0u }
         {
-            (ecs().component<Components>(), ...);
+            (ecs().component<ComponentData>(), ...);
         }
         template <typename ComponentIdIter>
         system(i_ecs& aEcs, ComponentIdIter aFirstComponent, ComponentIdIter aLastComponent) :
             iEcs{ aEcs }, iComponents{ aFirstComponent, aLastComponent }, iPaused{ 0u }
         {
-            (ecs().component<Components>(), ...);
+            (ecs().component<ComponentData>(), ...);
             if (ecs().all_systems_paused())
                 pause();
         }
