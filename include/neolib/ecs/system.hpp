@@ -55,23 +55,23 @@ namespace neolib::ecs
         system(i_ecs& aEcs) :
             iEcs{ aEcs }, iComponents{ ComponentData::meta::id()... }, iPaused{ 0u }
         {
-            (ecs().component<ComponentData>(), ...);
+            (ecs().template component<ComponentData>(), ...);
         }
         system(const system& aOther) :
             iEcs{ aOther.iEcs }, iComponents{ aOther.iComponents }, iPaused{ 0u }
         {
-            (ecs().component<ComponentData>(), ...);
+            (ecs().template component<ComponentData>(), ...);
         }
         system(system&& aOther) :
             iEcs{ aOther.iEcs }, iComponents{ std::move(aOther.iComponents) }, iPaused{ 0u }
         {
-            (ecs().component<ComponentData>(), ...);
+            (ecs().template component<ComponentData>(), ...);
         }
         template <typename ComponentIdIter>
         system(i_ecs& aEcs, ComponentIdIter aFirstComponent, ComponentIdIter aLastComponent) :
             iEcs{ aEcs }, iComponents{ aFirstComponent, aLastComponent }, iPaused{ 0u }
         {
-            (ecs().component<ComponentData>(), ...);
+            (ecs().template component<ComponentData>(), ...);
             if (ecs().all_systems_paused())
                 pause();
         }
