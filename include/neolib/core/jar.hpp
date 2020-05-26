@@ -296,6 +296,7 @@ namespace neolib
         iterator add(cookie_type aCookie, Args&&... aArgs)
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
+            assert(std::find(free_cookies().begin(), free_cookies().end(), aCookie) == free_cookies().end());
             if (reverse_indices().size() <= aCookie)
                 reverse_indices().insert(reverse_indices().end(), (aCookie + 1) - reverse_indices().size(), INVALID_REVERSE_INDEX);
             if (reverse_indices()[aCookie] != INVALID_REVERSE_INDEX)
@@ -327,6 +328,7 @@ namespace neolib
         iterator remove(cookie_type aCookie)
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
+            assert(std::find(free_cookies().begin(), free_cookies().end(), aCookie) == free_cookies().end());
             if (aCookie >= reverse_indices().size())
                 throw cookie_invalid();
             auto& reverseIndex = reverse_indices()[aCookie];
@@ -367,11 +369,13 @@ namespace neolib
             auto nextCookie = ++iNextAvailableCookie;
             if (nextCookie == INVALID_COOKIE)
                 throw cookies_exhausted();
+            assert(std::find(free_cookies().begin(), free_cookies().end(), nextCookie) == free_cookies().end());
             return nextCookie;
         }
         void return_cookie(cookie_type aCookie)
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
+            assert(std::find(free_cookies().begin(), free_cookies().end(), aCookie) == free_cookies().end());
             free_cookies().push_back(aCookie);
         }
     public:
@@ -408,6 +412,7 @@ namespace neolib
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
             iNextAvailableCookie = 0ul;
+            allocated_cookies().clear();
             free_cookies().clear();
             items().clear();
             reverse_indices().clear();
