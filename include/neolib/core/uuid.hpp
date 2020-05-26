@@ -118,6 +118,16 @@ namespace neolib
         oss << aId;
         return oss.str();
     }
+
+    struct quick_uuid_hash
+    {
+        typedef neolib::uuid argument_type;
+        typedef std::size_t result_type;
+        result_type operator()(argument_type const& aUuid) const
+        {
+            return aUuid.part1;
+        }
+    };
 }
 
 namespace std

@@ -101,13 +101,13 @@ namespace neolib::ecs
         typedef std::function<std::unique_ptr<i_shared_component>()> shared_component_factory;
         typedef std::function<std::unique_ptr<i_system>()> system_factory;
     protected:
-        typedef std::unordered_map<entity_archetype_id, std::shared_ptr<const i_entity_archetype>> archetype_registry_t;
-        typedef std::unordered_map<component_id, component_factory> component_factories_t;
-        typedef std::unordered_map<component_id, std::unique_ptr<i_component>> components_t;
-        typedef std::unordered_map<component_id, shared_component_factory> shared_component_factories_t;
-        typedef std::unordered_map<component_id, std::unique_ptr<i_shared_component>> shared_components_t;
-        typedef std::unordered_map<system_id, system_factory> system_factories_t;
-        typedef std::unordered_map<system_id, std::unique_ptr<i_system>> systems_t;
+        typedef std::unordered_map<entity_archetype_id, std::shared_ptr<const i_entity_archetype>, quick_uuid_hash> archetype_registry_t;
+        typedef std::unordered_map<component_id, component_factory, quick_uuid_hash> component_factories_t;
+        typedef std::unordered_map<component_id, std::unique_ptr<i_component>, quick_uuid_hash> components_t;
+        typedef std::unordered_map<component_id, shared_component_factory, quick_uuid_hash> shared_component_factories_t;
+        typedef std::unordered_map<component_id, std::unique_ptr<i_shared_component>, quick_uuid_hash> shared_components_t;
+        typedef std::unordered_map<system_id, system_factory, quick_uuid_hash> system_factories_t;
+        typedef std::unordered_map<system_id, std::unique_ptr<i_system>, quick_uuid_hash> systems_t;
     public:
         typedef void* handle_t;
     public:
