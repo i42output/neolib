@@ -455,7 +455,7 @@ namespace neolib
         }
         bool trigger(Args... aArguments) const
         {
-            if (!has_instance()) // no instance date means no subscribers so no point triggering.
+            if (!has_instance()) // no instance means no subscribers so no point triggering.
                 return true;
             switch (trigger_type())
             {
@@ -659,6 +659,13 @@ namespace neolib
         void unsubscribe(const T& aClientId) const
         {
             return unsubscribe(static_cast<const void*>(&aClientId));
+        }
+        bool has_subscribers() const
+        {
+            if (!has_instance())
+                return false;
+            optional_lock lock{ event_mutex() };
+            return !instance().handlers.empty();
         }
     private:
         cookie next_cookie() const 
