@@ -36,6 +36,9 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <vector>
+#include <numeric>
+#include <chrono>
 #include <neolib/core/set.hpp>
 #include <neolib/core/allocator.hpp>
 #include <neolib/task/thread.hpp>
@@ -52,6 +55,12 @@ namespace neolib::ecs
     {
     private:
         typedef neolib::set<component_id, std::less<component_id>, neolib::fast_pool_allocator<component_id>> component_list;
+        struct performance_metrics
+        {
+            std::vector<std::chrono::microseconds> updateTimes;
+            std::size_t updateCounter = 0;
+            std::chrono::high_resolution_clock::time_point updateStartTime;
+        };
     public:
         system(i_ecs& aEcs) :
             iEcs{ aEcs }, iComponents{ ComponentData::meta::id()... }, iPaused{ 0u }
@@ -116,15 +125,63 @@ namespace neolib::ecs
         {
             // do nothing
         }
+    public:
+        bool debug() const override
+        {
+            return iDebug;
+        }
+        void set_debug(bool aDebug) override
+        {
+            if (iDebug != aDebug)
+            {
+                iDebug = aDebug;
+                iPerformanceMetrics.clear();
+            }
+        }
+        std::chrono::microseconds update_time(std::size_t aMetricsIndex = 0) const override
+        {
+            if (iPerformanceMetrics.size() <= aMetricsIndex || iPerformanceMetrics[aMetricsIndex].updateTimes.empty())
+                return std::chrono::microseconds{ 0 };
+            return std::accumulate(iPerformanceMetrics[aMetricsIndex].updateTimes.begin(), iPerformanceMetrics[aMetricsIndex].updateTimes.end(), std::chrono::microseconds{}) / iPerformanceMetrics[aMetricsIndex].updateTimes.size();
+        }
     protected:
         void yield()
         {
             if (service<neolib::i_power>().green_mode_active())
                 neolib::thread::sleep(1);
         }
+        void start_update(std::size_t aMetricsIndex = 0)
+        {
+            if (debug())
+            {
+                if (iPerformanceMetrics.size() <= aMetricsIndex)
+                    iPerformanceMetrics.resize(aMetricsIndex + 1);
+                iPerformanceMetrics[aMetricsIndex].updateStartTime = std::chrono::high_resolution_clock::now();
+            }
+        }
+        void end_update(std::size_t aMetricsIndex = 0)
+        {
+            if (debug())
+            {
+                if (iPerformanceMetrics.size() > aMetricsIndex)
+                {
+                    std::size_t const updateQueueSize = 100;
+                    auto const time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - iPerformanceMetrics[aMetricsIndex].updateStartTime);
+                    if (iPerformanceMetrics[aMetricsIndex].updateTimes.size() < updateQueueSize)
+                        iPerformanceMetrics[aMetricsIndex].updateTimes.push_back(time);
+                    else
+                    {
+                        iPerformanceMetrics[aMetricsIndex].updateTimes[iPerformanceMetrics[aMetricsIndex].updateCounter++] = time;
+                        iPerformanceMetrics[aMetricsIndex].updateCounter %= updateQueueSize;
+                    }
+                }
+            }
+        }
     private:
         i_ecs& iEcs;
         component_list iComponents;
-        std::atomic<uint32_t> iPaused;
+        std::atomic<uint32_t> iPaused = 0u;
+        std::atomic<bool> iDebug = false;
+        std::vector<performance_metrics> iPerformanceMetrics;
     };
 }

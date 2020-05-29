@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <chrono>
 #include <neolib/core/i_set.hpp>
 #include <neolib/core/string.hpp>
 #include <neolib/ecs/ecs_ids.hpp>
@@ -66,5 +67,9 @@ namespace neolib::ecs
         virtual void pause() = 0;
         virtual void resume() = 0;
         virtual void terminate() = 0;
+    public:
+        virtual bool debug() const = 0;
+        virtual void set_debug(bool aDebug) = 0;
+        virtual std::chrono::microseconds update_time(std::size_t aMetricsIndex = 0) const = 0;
     };
 }
