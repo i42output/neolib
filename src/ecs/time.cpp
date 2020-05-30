@@ -47,7 +47,7 @@ namespace neolib::ecs
         if (!ecs().shared_component_registered<clock>())
         {
             ecs().register_shared_component<clock>();
-            ecs().populate_shared<clock>("World Clock", clock{ 0ll, chrono::to_flicks(0.001).count() });
+            ecs().populate_shared<clock>("World Clock", clock{});
             apply();
         }
     }

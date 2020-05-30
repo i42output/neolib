@@ -45,8 +45,10 @@ namespace neolib::ecs
 {
     struct clock
     {
-        i64 time;
-        i64 timeStep;
+        i64 time = 0ll;
+        i64 timeStep = chrono::to_flicks(0.001).count();
+        scalar timeStepGrowth = 1.75;
+        i64 maximumTimeStep = chrono::to_flicks(0.001).count() * 20;
 
         struct meta : i_component_data::meta
         {
@@ -62,7 +64,7 @@ namespace neolib::ecs
             }
             static uint32_t field_count()
             { 
-                return 2; 
+                return 4; 
             }
             static component_data_field_type field_type(uint32_t aFieldIndex)
             {
@@ -70,6 +72,10 @@ namespace neolib::ecs
                 {
                 case 0:
                 case 1:
+                    return component_data_field_type::Int64;
+                case 3:
+                    return component_data_field_type::Float64;
+                case 4:
                     return component_data_field_type::Int64;
                 default:
                     throw invalid_field_index();
@@ -81,6 +87,8 @@ namespace neolib::ecs
                 {
                     "Time",
                     "Time Step",
+                    "Time Step Growth",
+                    "Maximum Time Step",
                 };
                 return sFieldNames[aFieldIndex];
             }
