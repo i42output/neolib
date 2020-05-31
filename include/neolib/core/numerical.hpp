@@ -1396,6 +1396,28 @@ namespace neolib
             return aAabb.max - aAabb.min;
         }
 
+        inline aabb aabb_transform(const aabb& aAabb, const mat44& aTransformation)
+        {
+            std::array<vec3, 8> boxVertices =
+            {
+                aTransformation * vec3{ aAabb.min.x, aAabb.min.y, aAabb.min.z },
+                aTransformation * vec3{ aAabb.max.x, aAabb.min.y, aAabb.min.z },
+                aTransformation * vec3{ aAabb.min.x, aAabb.max.y, aAabb.min.z },
+                aTransformation * vec3{ aAabb.max.x, aAabb.max.y, aAabb.min.z },
+                aTransformation * vec3{ aAabb.min.x, aAabb.min.y, aAabb.max.z },
+                aTransformation * vec3{ aAabb.max.x, aAabb.min.y, aAabb.max.z },
+                aTransformation * vec3{ aAabb.min.x, aAabb.max.y, aAabb.max.z },
+                aTransformation * vec3{ aAabb.max.x, aAabb.max.y, aAabb.max.z }
+            };
+            aabb result{ boxVertices[0], boxVertices[0] };
+            for (auto const& v : boxVertices)
+            {
+                result.min = result.min.min(v);
+                result.max = result.max.max(v);
+            }
+            return result;
+        }
+
         inline aabb to_aabb(const vec3& aOrigin, scalar aSize)
         {
             return aabb{ aOrigin - aSize / 2.0, aOrigin + aSize / 2.0 };
@@ -1408,14 +1430,13 @@ namespace neolib
 
         inline aabb to_aabb(const vertices& vertices, const mat44& aTransformation = mat44::identity())
         {
-            aabb result = !vertices.empty() ? aabb{ (aTransformation * vertices[0]), (aTransformation * vertices[0]) } : aabb{};
+            aabb result = !vertices.empty() ? aabb{ vertices[0], vertices[0] } : aabb{};
             for (auto const& v : vertices)
             {
-                auto const tv = aTransformation * v;
-                result.min = result.min.min(tv);
-                result.max = result.max.max(tv);
+                result.min = result.min.min(v);
+                result.max = result.max.max(v);
             }
-            return result;
+            return aabb_transform(result, aTransformation);
         }
 
         inline bool operator==(const aabb& left, const aabb& right)
@@ -1493,6 +1514,24 @@ namespace neolib
             return aAabb.max - aAabb.min;
         }
 
+        inline aabb_2d aabb_transform(const aabb_2d& aAabb, const mat44& aTransformation)
+        {
+            std::array<vec3, 4> boxVertices =
+            {
+                aTransformation * vec3{ aAabb.min.x, aAabb.min.y, 0.0 },
+                aTransformation * vec3{ aAabb.max.x, aAabb.min.y, 0.0 },
+                aTransformation * vec3{ aAabb.min.x, aAabb.max.y, 0.0 },
+                aTransformation * vec3{ aAabb.max.x, aAabb.max.y, 0.0 }
+            };
+            aabb_2d result{ boxVertices[0].xy, boxVertices[0].xy };
+            for (auto const& v : boxVertices)
+            {
+                result.min = result.min.min(v.xy);
+                result.max = result.max.max(v.xy);
+            }
+            return result;
+        }
+
         inline aabb_2d to_aabb_2d(const vec3& aOrigin, scalar aSize)
         {
             return aabb_2d{ (aOrigin - aSize / 2.0).xy, (aOrigin + aSize / 2.0).xy };
@@ -1505,14 +1544,13 @@ namespace neolib
 
         inline aabb_2d to_aabb_2d(const vertices& vertices, const mat44& aTransformation = mat44::identity())
         {
-            aabb_2d result = !vertices.empty() ? aabb_2d{ (aTransformation * vertices[0]).xy, (aTransformation * vertices[0]).xy } : aabb_2d{};
+            aabb_2d result = !vertices.empty() ? aabb_2d{ vertices[0].xy, vertices[0].xy } : aabb_2d{};
             for (auto const& v : vertices)
             {
-                auto const tv = aTransformation * v;
-                result.min = result.min.min(tv.xy);
-                result.max = result.max.max(tv.xy);
+                result.min = result.min.min(v.xy);
+                result.max = result.max.max(v.xy);
             }
-            return result;
+            return aabb_transform(result, aTransformation);
         }
 
         inline bool operator==(const aabb_2d& left, const aabb_2d& right)
