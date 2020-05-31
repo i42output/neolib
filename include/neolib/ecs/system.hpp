@@ -145,10 +145,12 @@ namespace neolib::ecs
             return std::accumulate(iPerformanceMetrics[aMetricsIndex].updateTimes.begin(), iPerformanceMetrics[aMetricsIndex].updateTimes.end(), std::chrono::microseconds{}) / iPerformanceMetrics[aMetricsIndex].updateTimes.size();
         }
     protected:
-        void yield()
+        void yield(bool aSleep = false)
         {
-            if (service<neolib::i_power>().green_mode_active())
+            if (service<neolib::i_power>().green_mode_active() || aSleep)
                 neolib::thread::sleep(1);
+            else
+                neolib::thread::yield();
         }
         void start_update(std::size_t aMetricsIndex = 0)
         {

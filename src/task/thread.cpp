@@ -290,9 +290,9 @@ namespace neolib
         return *iThreadObject; 
     }
 
-    void thread::sleep(uint32_t aDelayInMilleseconds)
+    void thread::sleep(const std::chrono::duration<double, std::milli>& aDuration)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(aDelayInMilleseconds));
+        std::this_thread::sleep_for(aDuration);
     }
 
     void thread::yield()

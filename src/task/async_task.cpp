@@ -207,7 +207,7 @@ namespace neolib
             if (aYieldIfNoWork == yield_type::Yield)
                 thread::yield();
             else if (aYieldIfNoWork == yield_type::Sleep)
-                thread::sleep(1);
+                thread::sleep(std::chrono::milliseconds{ 1 });
         }
         return didSome;
     }
