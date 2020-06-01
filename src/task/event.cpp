@@ -52,6 +52,36 @@ namespace neolib
         return get_instance(&aTask);
     }
 
+    class queue_list
+    {
+    public:
+        void add(async_event_queue& aQueue)
+        {
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
+            iQueues.push_back(&aQueue);
+        }
+        void remove(async_event_queue& aQueue)
+        {
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
+            auto existing = std::find(iQueues.begin(), iQueues.end(), &aQueue);
+            if (existing != iQueues.end())
+                iQueues.erase(existing);
+        }
+        void unqueue(const i_event& aEvent)
+        {
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
+            for (auto queue : iQueues)
+                queue->unqueue(aEvent);
+        }
+    private:
+        std::vector<async_event_queue*> iQueues;
+    } sQueueList;
+
+    void unqueue_event(const i_event& aEvent)
+    {
+        sQueueList.unqueue(aEvent);
+    }
+
     async_event_queue::async_event_queue(async_task& aTask) :
         iTask{ aTask },
         iTimer
@@ -72,10 +102,12 @@ namespace neolib
         iPublishNestingLevel{ 0u },
         iNextTransaction{ 0ull }
     {
+        sQueueList.add(*this);
     }
 
     async_event_queue::~async_event_queue()
     {
+        sQueueList.remove(*this);
         terminate();
     }
 

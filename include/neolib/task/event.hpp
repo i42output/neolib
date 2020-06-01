@@ -248,6 +248,8 @@ namespace neolib
     class async_task;
     class callback_timer;
 
+    void unqueue_event(const i_event& aEvent);
+
     class async_event_queue : public lifetime
     {
         template <typename...>
@@ -727,19 +729,12 @@ namespace neolib
         void unqueue() const
         {
             std::scoped_lock<switchable_mutex> lock{ event_mutex() };
-            std::unordered_set<async_event_queue*> queues;
-            for (auto const& h : instance().handlers)
-                if (!h.second.queueDestroyed)
-                    queues.insert(h.second.queue);
-            for (auto const& q : queues)
-                q->unqueue(*this);
+            unqueue_event(*this);
         }
         void clear()
         {
             std::scoped_lock<switchable_mutex> lock{ event_mutex() };
-            for (auto& h : instance().handlers)
-                if (!h.second.queueDestroyed)
-                    h.second.queue->remove(*this);
+            unqueue_event(*this);
             iInstanceDataPtr = nullptr;
             iInstanceData = std::nullopt;
         }
