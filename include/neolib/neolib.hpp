@@ -155,8 +155,8 @@ namespace neolib
 #ifdef NEOLIB_HOSTED_ENVIRONMENT
 
 // SIMD support
-#define USE_AVX
-#define USE_EMM
+#define USE_AVX_DYNAMIC
+#define USE_EMM_DYNAMIC
 
 #define USING_BOOST
 #define BOOST_ASIO_DISABLE_SMALL_BLOCK_RECYCLING

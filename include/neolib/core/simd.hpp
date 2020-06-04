@@ -39,16 +39,24 @@
 #include <array>
 #include <thread>
 #include <cstdlib>
-#ifdef USE_AVX
+#if defined(USE_AVX) || defined(USE_AVX_DYNAMIC)
 #include <immintrin.h>
 #endif
-#ifdef USE_EMM
+#if defined(USE_EMM) || defined(USE_EMM_DYNAMIC) 
 #include <emmintrin.h>
 #endif
 
 namespace neolib
-{ 
-#ifdef USE_AVX
+{
+#if defined(USE_AVX_DYNAMIC) || defined(USE_EMM_DYNAMIC) 
+    inline std::atomic<bool>& use_simd()
+    {
+        static std::atomic<bool> sUseSimd = true;
+        return sUseSimd;
+    }
+#endif
+
+#if defined(USE_AVX) || defined(USE_AVX_DYNAMIC)
     inline double to_scalar(__m256d const& avxRegister, std::size_t index)
     {
 #ifdef _WIN32
@@ -59,7 +67,7 @@ namespace neolib
     }
 #endif
 
-#ifdef USE_EMM
+#if defined(USE_EMM) || defined(USE_EMM_DYNAMIC) 
     inline uint32_t to_scalar(__m128i const& emmRegister, std::size_t index)
     {
 #ifdef _WIN32
@@ -70,21 +78,38 @@ namespace neolib
     }
 #endif
 
-    inline double simd_fma_4d(double x1, double x2, double y1, double y2, double z1, double z2, double w1, double w2)
+#if defined(USE_AVX) || defined(USE_AVX_DYNAMIC)
+    inline double avx_simd_fma_4d(double x1, double x2, double y1, double y2, double z1, double z2, double w1, double w2)
     {
-#ifdef USE_AVX
         alignas(32) __m256d lhs = _mm256_set_pd(x1, y1, z1, w1);
         alignas(32) __m256d rhs = _mm256_set_pd(x2, y2, z2, w2);
         alignas(32) __m256d ans = _mm256_mul_pd(lhs, rhs);
         return to_scalar(ans, 0) + to_scalar(ans, 1) + to_scalar(ans, 2) + to_scalar(ans, 3);
-#else
-        return x1 * x2 + y1 * y2 + z1 * z2 + w1 * w2;
+    }
 #endif
+
+    inline double fake_simd_fma_4d(double x1, double x2, double y1, double y2, double z1, double z2, double w1, double w2)
+    {
+        return x1 * x2 + y1 * y2 + z1 * z2 + w1 * w2;
     }
 
-    inline void simd_mul_4d(double x1, double x2, double y1, double y2, double z1, double z2, double w1, double w2, double& a, double& b, double& c, double& d)
+#if defined(USE_AVX)
+    #define simd_fma_4d avx_simd_fma_4d
+#elif defined(USE_AVX_DYNAMIC)
+    inline double simd_fma_4d(double x1, double x2, double y1, double y2, double z1, double z2, double w1, double w2)
     {
-#ifdef USE_AVX
+        if (use_simd())
+            return avx_simd_fma_4d(x1, x2, y1, y2, z1, z2, w1, w2);
+        else
+            return fake_simd_fma_4d(x1, x2, y1, y2, z1, z2, w1, w2);
+    }
+#else
+    #define simd_fma_4d fake_simd_fma_4d
+#endif
+
+#if defined(USE_AVX) || defined(USE_AVX_DYNAMIC)
+    inline void avx_simd_mul_4d(double x1, double x2, double y1, double y2, double z1, double z2, double w1, double w2, double& a, double& b, double& c, double& d)
+    {
         alignas(32) __m256d lhs = _mm256_set_pd(x1, y1, z1, w1);
         alignas(32) __m256d rhs = _mm256_set_pd(x2, y2, z2, w2);
         alignas(32) __m256d ans = _mm256_mul_pd(lhs, rhs);
@@ -92,13 +117,30 @@ namespace neolib
         b = to_scalar(ans, 1);
         c = to_scalar(ans, 2);
         d = to_scalar(ans, 3);
-#else
+    }
+#endif
+
+    inline void fake_simd_mul_4d(double x1, double x2, double y1, double y2, double z1, double z2, double w1, double w2, double& a, double& b, double& c, double& d)
+    {
         a = x1 * x2;
         b = y1 * y2;
         c = z1 * z2;
         d = w1 * w2;
-#endif
     }
+
+#if defined(USE_AVX)
+    #define simd_mul_4d avx_simd_mul_4d
+#elif defined(USE_AVX_DYNAMIC)
+    inline void simd_mul_4d(double x1, double x2, double y1, double y2, double z1, double z2, double w1, double w2, double& a, double& b, double& c, double& d)
+    {
+        if (use_simd())
+            avx_simd_mul_4d(x1, x2, y1, y2, z1, z2, w1, w2, a, b, c, d);
+        else
+            fake_simd_mul_4d(x1, x2, y1, y2, z1, z2, w1, w2, a, b, c, d);
+    }
+#else
+    #define simd_mul_4d fake_simd_mul_4d
+#endif
 
     /////////////////////////////////////////////////////////////////////////////
     // The Software is provided "AS IS" and possibly with faults. 
@@ -128,7 +170,7 @@ namespace neolib
 
     namespace detail
     {
-#ifdef USE_EMM
+#if defined(USE_EMM) || defined(USE_EMM_DYNAMIC)
         inline __m128i& simd_rand_seed()
         {
             alignas(16) thread_local __m128i tSeed;
@@ -137,27 +179,44 @@ namespace neolib
 #endif
     }
 
-    inline void simd_srand(uint32_t seed)
+#if defined(USE_EMM) || defined(USE_EMM_DYNAMIC)
+    inline void emm_simd_srand(uint32_t seed)
     {
-#ifdef USE_EMM
         detail::simd_rand_seed() = _mm_set_epi32(seed, seed + 1, seed, seed + 1);
-#else
-        std::srand(seed);
+    }
 #endif
+
+    inline void fake_simd_srand(uint32_t seed)
+    {
+        std::srand(seed);
     }
 
+#if defined(USE_EMM)
+    #define simd_rand emm_simd_srand
+#elif defined(USE_EMM_DYNAMIC)
+    inline void simd_srand(uint32_t seed)
+    {
+        if (use_simd())
+            emm_simd_srand(seed);
+        else
+            fake_simd_srand(seed);
+    }
+#else
+    #define simd_srand fake_simd_srand
+#endif
+        
     inline void simd_srand(std::thread::id seed)
     {
         simd_srand(static_cast<uint32_t>(std::hash<std::thread::id>{}(seed)));
     }
 
-    inline uint32_t simd_rand()
+#if defined(USE_EMM) || defined(USE_EMM_DYNAMIC)
+    inline uint32_t emm_simd_rand()
     {
         thread_local std::array<uint32_t, 4> result = {};
         thread_local std::size_t resultCounter = 4;
         if (resultCounter < 4)
             return result[resultCounter++];
-#ifdef USE_EMM
         alignas(16) __m128i cur_seed_split;
         alignas(16) __m128i multiplier;
         alignas(16) __m128i adder;
@@ -195,12 +254,35 @@ namespace neolib
 
         _mm_storeu_si128(&ans, detail::simd_rand_seed());
         result = { to_scalar(ans, 0), to_scalar(ans, 1), to_scalar(ans, 2), to_scalar(ans, 3) };
-#else
-        result = { std::rand(), std::rand(), std::rand(), std::rand() };
-#endif
         resultCounter = 0;
         return result[resultCounter];
     }
+#endif
+
+    inline uint32_t fake_simd_rand()
+    {
+        thread_local std::array<uint32_t, 4> result = {};
+        thread_local std::size_t resultCounter = 4;
+        if (resultCounter < 4)
+            return result[resultCounter++];
+        result = { static_cast<uint32_t>(std::rand()), static_cast<uint32_t>(std::rand()), static_cast<uint32_t>(std::rand()), static_cast<uint32_t>(std::rand()) };
+        resultCounter = 0;
+        return result[resultCounter];
+    }
+
+#if defined(USE_EMM)
+    #define simd_rand emm_simd_rand
+#elif defined(USE_EMM_DYNAMIC)
+    inline uint32_t simd_rand()
+    {
+        if (use_simd())
+            return emm_simd_rand();
+        else
+            return fake_simd_rand();
+    }
+#else
+    #define simd_rand fake_simd_srand
+#endif
 
     template <typename T>
     inline T simd_rand(T aUpper)
