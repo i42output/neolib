@@ -192,7 +192,7 @@ namespace neolib
     }
 
 #if defined(USE_EMM)
-    #define simd_rand emm_simd_srand
+    #define simd_srand emm_simd_srand
 #elif defined(USE_EMM_DYNAMIC)
     inline void simd_srand(uint32_t seed)
     {
