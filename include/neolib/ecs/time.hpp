@@ -43,7 +43,8 @@ namespace neolib::ecs
 {
     class time : public system<>
     {
-
+    private:
+        class thread;
     public:
         time(i_ecs& aEcs);
     public:
@@ -69,6 +70,7 @@ namespace neolib::ecs
             }
         };
     private:
+        std::unique_ptr<thread> iThread;
         mutable optional_step_time iSystemTimeOffset;
     };
 }

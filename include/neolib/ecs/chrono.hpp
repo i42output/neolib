@@ -37,6 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <neolib/core/numerical.hpp>
+#include <neolib/ecs/i_ecs.hpp>
 #include <neolib/ecs/3rdparty/facebook/flicks.h>
 
 namespace neolib::ecs

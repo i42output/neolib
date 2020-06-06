@@ -88,6 +88,7 @@ namespace neolib::ecs
         Optional            = 0x01000000,
         Array               = 0x02000000,
         Shared              = 0x04000000,
+        Cache               = 0x40000000,
         Internal            = 0x80000000,
     };
 

@@ -1283,7 +1283,7 @@ namespace neolib
                 return right;
             basic_vector<T, 3u, column_vector> result;
             for (uint32_t row = 0u; row < 3u; ++row)
-                result[row] = simd_fma_4d(left[0][row], right[0], left[1][row], right[1], left[2][row], right[2], left[3][row], 1.0);
+                result[row] = static_cast<T>(simd_fma_4d(left[0][row], right[0], left[1][row], right[1], left[2][row], right[2], left[3][row], 1.0));
             return result;
         }
 

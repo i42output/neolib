@@ -34,6 +34,8 @@
  */
 
 #include <neolib/neolib.hpp>
+#include <neolib/task/async_task.hpp>
+#include <neolib/task/async_thread.hpp>
 #include <neolib/ecs/chrono.hpp>
 #include <neolib/ecs/ecs.hpp>
 #include <neolib/ecs/time.hpp>
@@ -41,6 +43,25 @@
 
 namespace neolib::ecs
 {
+    class time::thread : public async_task, public async_thread
+    {
+    public:
+        thread(time& aOwner) : async_task{ "neolib::ecs::time::thread" }, async_thread{ *this, "neolib::ecs::time::thread" }, iOwner{ aOwner }
+        {
+            start();
+        }
+    public:
+        bool do_work(neolib::yield_type aYieldType = neolib::yield_type::NoYield) override
+        {
+            bool didWork = async_task::do_work(aYieldType);
+            didWork = iOwner.apply() || didWork;
+            iOwner.yield();
+            return didWork;
+        }
+    private:
+        time& iOwner;
+    };
+
     time::time(ecs::i_ecs& aEcs) :
         system<>{ aEcs }
     {
@@ -48,8 +69,8 @@ namespace neolib::ecs
         {
             ecs().register_shared_component<clock>();
             ecs().populate_shared<clock>("World Clock", clock{});
-            apply();
         }
+        iThread = std::make_unique<thread>(*this);
     }
 
     const system_id& time::id() const
@@ -64,13 +85,30 @@ namespace neolib::ecs
 
     bool time::apply()
     {
+        if (!ecs().component_instantiated<entity_info>())
+            return false;
+        else if (paused())
+            return false;
+        else if (!iThread->in()) // ignore ECS apply request (we have our own thread that does this)
+            return false;
+
+        scoped_component_lock<entity_info> lock{ ecs() };
+
+        for (auto entity : ecs().component<entity_info>().entities())
+        {
+            auto const& info = ecs().component<entity_info>().entity_record(entity);
+            if (info.destroyed)
+                continue;
+            if (info.lifeSpan && (world_time() - info.creationTime > *info.lifeSpan))
+                ecs().async_destroy_entity(entity, false);
+        }
+
         return true;
     }
 
     step_time time::system_time() const
     {
-        auto& worldClock = ecs().shared_component<clock>()[0];
-        auto systemTime = to_step_time(chrono::to_seconds(std::chrono::duration_cast<chrono::flicks>(std::chrono::high_resolution_clock::now().time_since_epoch())), worldClock.timeStep);
+        auto systemTime = to_step_time(ecs(), chrono::to_seconds(std::chrono::duration_cast<chrono::flicks>(std::chrono::high_resolution_clock::now().time_since_epoch())));
         if (iSystemTimeOffset == std::nullopt)
             iSystemTimeOffset = systemTime;
         return systemTime - *iSystemTimeOffset;
