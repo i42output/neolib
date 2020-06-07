@@ -1129,9 +1129,9 @@ namespace neolib
         template <typename T, uint32_t D1, uint32_t D2>
         inline basic_matrix<T, D1, D1> operator*(const basic_matrix<T, D1, D2>& left, const basic_matrix<T, D2, D1>& right)
         {
-            if (&left == &left.identity())
+            if (left.is_identity())
                 return right;
-            if (&right == &right.identity())
+            if (right.is_identity())
                 return left;
             basic_matrix<T, D1, D1> result;
             for (uint32_t column = 0u; column < D1; ++column)
@@ -1144,9 +1144,9 @@ namespace neolib
         template <typename T>
         inline basic_matrix<T, 4u, 4u> operator*(const basic_matrix<T, 4u, 4u>& left, const basic_matrix<T, 4u, 4u>& right)
         {
-            if (&left == &left.identity())
+            if (left.is_identity())
                 return right;
-            if (&right == &right.identity())
+            if (right.is_identity())
                 return left;
             basic_matrix<T, 4u, 4u> result;
             for (uint32_t column = 0u; column < 4u; ++column)
@@ -1158,7 +1158,7 @@ namespace neolib
         template <typename T, uint32_t D>
         inline basic_vector<T, D, column_vector> operator*(const basic_matrix<T, D, D>& left, const basic_vector<T, D, column_vector>& right)
         {
-            if (&left == &left.identity())
+            if (left.is_identity())
                 return right;
             basic_vector<T, D, column_vector> result;
             for (uint32_t row = 0; row < D; ++row)
@@ -1170,7 +1170,7 @@ namespace neolib
         template <typename T>
         inline basic_vector<T, 4u, column_vector> operator*(const basic_matrix<T, 4u, 4u>& left, const basic_vector<T, 4u, column_vector>& right)
         {
-            if (&left == &left.identity())
+            if (left.is_identity())
                 return right;
             basic_vector<T, 4u, column_vector> result;
             for (uint32_t row = 0u; row < 4u; ++row)
@@ -1181,7 +1181,7 @@ namespace neolib
         template <typename T, uint32_t D>
         inline basic_vector<T, D, row_vector> operator*(const basic_vector<T, D, row_vector>& left, const basic_matrix<T, D, D>& right)
         {
-            if (&right == &right.identity())
+            if (right.is_identity())
                 return left;
             basic_vector<T, D, row_vector> result;
             for (uint32_t column = 0; column < D; ++column)
@@ -1193,7 +1193,7 @@ namespace neolib
         template <typename T>
         inline basic_vector<T, 4u, row_vector> operator*(const basic_vector<T, 4u, row_vector>& left, const basic_matrix<T, 4u, 4u>& right)
         {
-            if (&right == &right.identity())
+            if (right.is_identity())
                 return left;
             basic_vector<T, 4u, row_vector> result;
             for (uint32_t column = 0u; column < 4u; ++column)
@@ -1279,7 +1279,7 @@ namespace neolib
         template <typename T>
         inline basic_vector<T, 3u, column_vector> operator*(const basic_matrix<T, 4u, 4u>& left, const basic_vector<T, 3u, column_vector>& right)
         {
-            if (&left == &left.identity())
+            if (left.is_identity())
                 return right;
             basic_vector<T, 3u, column_vector> result;
             for (uint32_t row = 0u; row < 3u; ++row)
@@ -1290,7 +1290,7 @@ namespace neolib
         template <typename T>
         inline std::vector<basic_vector<T, 3u, column_vector>> operator*(const basic_matrix<T, 4u, 4u>& left, const std::vector<basic_vector<T, 3u, column_vector>>& right)
         {
-            if (&left == &left.identity())
+            if (left.is_identity())
                 return right;
             std::vector<basic_vector<T, 3u, column_vector>> result;
             result.reserve(right.size());
