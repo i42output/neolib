@@ -227,6 +227,7 @@ namespace neolib::ecs
                     if (system.second->can_apply())
                         system.second->apply();
                 commit_async_entity_destruction();
+                commit_async_entity_creation();
             }, 1, true
         },
         iSystemsPaused{ (flags() & ecs_flags::CreatePaused) == ecs_flags::CreatePaused }
@@ -274,7 +275,26 @@ namespace neolib::ecs
         EntityCreated.trigger(entityId);
         return entityId;
     }
-    
+
+    void ecs::async_create_entity(const std::function<void()>& aCreator)
+    {
+        scoped_component_lock<entity_info> lock{ *this };
+        iEntitiesToCreate.emplace_back(aCreator);
+    }
+
+    void ecs::commit_async_entity_creation()
+    {
+        if (iEntitiesToCreate.empty())
+            return;
+        scoped_multi_lock<decltype(iComponentMutexes)> lock{ iComponentMutexes };
+        while (!iEntitiesToCreate.empty())
+        {
+            auto next = iEntitiesToCreate.back();
+            iEntitiesToCreate.pop_back();
+            next();
+        }
+    }
+
     void ecs::destroy_entity(entity_id aEntityId, bool aNotify)
     {
         if (aNotify)

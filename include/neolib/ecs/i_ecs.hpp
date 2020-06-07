@@ -117,6 +117,8 @@ namespace neolib::ecs
     public:
         virtual ecs_flags flags() const = 0;
         virtual entity_id create_entity(const entity_archetype_id& aArchetypeId) = 0;
+        virtual void async_create_entity(const std::function<void()>& aCreator) = 0; // todo: polymorphic functor
+        virtual void commit_async_entity_creation() = 0;
         virtual void destroy_entity(entity_id aEntityId, bool aNotify = true) = 0;
         virtual void async_destroy_entity(entity_id aEntityId, bool aNotify = true) = 0;
         virtual void commit_async_entity_destruction() = 0;
@@ -176,6 +178,10 @@ namespace neolib::ecs
         entity_id create_entity(const entity_archetype_id& aArchetypeId, ComponentData&&... aComponentData);
         template <typename Archetype, typename... ComponentData>
         entity_id create_entity(const Archetype& aArchetype, ComponentData&&... aComponentData);
+        template <typename... ComponentData>
+        void async_create_entity(entity_archetype_id aArchetypeId, ComponentData... aComponentData);
+        template <typename Archetype, typename... ComponentData>
+        void async_create_entity(const Archetype& aArchetype, ComponentData... aComponentData);
     public:
         template <typename ComponentData, typename... ComponentDataRest>
         void populate(entity_id aEntity, ComponentData&& aComponentData, ComponentDataRest&&... aComponentDataRest)
@@ -424,11 +430,34 @@ namespace neolib::ecs
         archetype(aArchetypeId).populate_default_components(*this, newEntity);
         return newEntity;
     }
+
     template <typename Archetype, typename... ComponentData>
     inline entity_id i_ecs::create_entity(const Archetype& aArchetype, ComponentData&&... aComponentData)
     {
         if (!archetype_registered(aArchetype))
             register_archetype(aArchetype);
         return create_entity(aArchetype.id(), std::forward<ComponentData>(aComponentData)...);
+    }
+
+    template <typename... ComponentData>
+    inline void i_ecs::async_create_entity(entity_archetype_id aArchetypeId, ComponentData... aComponentData)
+    {
+        auto creator = [=]()
+        {
+            create_entity(aArchetypeId, aComponentData...);
+        };
+        async_create_entity(std::function<void()>{ creator });
+    }
+
+    template <typename Archetype, typename... ComponentData>
+    inline void i_ecs::async_create_entity(const Archetype& aArchetype, ComponentData... aComponentData)
+    {
+        auto creator = [=, &aArchetype]()
+        {
+            if (!archetype_registered(aArchetype))
+                register_archetype(aArchetype);
+            create_entity(aArchetype, aComponentData...);
+        };
+        async_create_entity(std::function<void()>{ creator });
     }
 }
