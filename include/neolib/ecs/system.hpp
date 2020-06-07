@@ -42,6 +42,8 @@
 #include <neolib/core/set.hpp>
 #include <neolib/core/allocator.hpp>
 #include <neolib/task/thread.hpp>
+#include <neolib/task/async_task.hpp>
+#include <neolib/task/async_thread.hpp>
 #include <neolib/app/i_power.hpp>
 #include <neolib/ecs/i_system.hpp>
 #include <neolib/ecs/entity_info.hpp>
@@ -53,7 +55,27 @@ namespace neolib::ecs
     template <typename... ComponentData>
     class system : public i_system
     {
+        typedef system<ComponentData...> self_type;
     private:
+        class thread : public async_task, public async_thread
+        {
+        public:
+            thread(self_type& aOwner) : async_task{ "neolib::ecs::system::thread" }, async_thread{ *this, "neolib::ecs::system::thread" }, iOwner{ aOwner }
+            {
+                start();
+            }
+        public:
+            bool do_work(neolib::yield_type aYieldType = neolib::yield_type::NoYield) override
+            {
+                bool didWork = async_task::do_work(aYieldType);
+                if (iOwner.can_apply())
+                    didWork = iOwner.apply() || didWork;
+                iOwner.yield();
+                return didWork;
+            }
+        private:
+            self_type& iOwner;
+        };
         typedef neolib::set<component_id, std::less<component_id>, neolib::fast_pool_allocator<component_id>> component_list;
         struct performance_metrics
         {
@@ -61,6 +83,8 @@ namespace neolib::ecs
             std::size_t updateCounter = 0;
             std::chrono::high_resolution_clock::time_point updateStartTime;
         };
+    public:
+        struct no_thread : std::logic_error { no_thread() : std::logic_error{ "neolib::ecs::system::no_thread" } {} };
     public:
         system(i_ecs& aEcs) :
             iEcs{ aEcs }, iComponents{ ComponentData::meta::id()... }, iPaused{ 0u }
@@ -109,6 +133,10 @@ namespace neolib::ecs
             return ecs().component(aComponentId);
         }
     public:
+        bool can_apply() const override
+        {
+            return !paused() && (!have_thread() || (have_thread() && get_thread().in()));
+        }
         bool paused() const override
         {
             return iPaused != 0u;
@@ -123,7 +151,18 @@ namespace neolib::ecs
         }
         void terminate() override
         {
-            // do nothing
+            if (have_thread() && !get_thread().aborted())
+                get_thread().abort();
+        }
+    public:
+        void start_thread_if() override
+        {
+            if (ecs().run_threaded(id()))
+                start_thread();
+        }
+        void start_thread() override
+        {
+            iThread = std::make_unique<thread>(*this);
         }
     public:
         bool debug() const override
@@ -145,6 +184,16 @@ namespace neolib::ecs
             return std::accumulate(iPerformanceMetrics[aMetricsIndex].updateTimes.begin(), iPerformanceMetrics[aMetricsIndex].updateTimes.end(), std::chrono::microseconds{}) / iPerformanceMetrics[aMetricsIndex].updateTimes.size();
         }
     protected:
+        bool have_thread() const
+        {
+            return iThread != nullptr;
+        }
+        thread& get_thread() const
+        {
+            if (have_thread())
+                return *iThread;
+            throw no_thread();
+        }
         void yield(bool aSleep = false)
         {
             if (service<neolib::i_power>().green_mode_active() || aSleep)
@@ -181,6 +230,7 @@ namespace neolib::ecs
         }
     private:
         i_ecs& iEcs;
+        std::unique_ptr<thread> iThread;
         component_list iComponents;
         std::atomic<uint32_t> iPaused = 0u;
         std::atomic<bool> iDebug = false;

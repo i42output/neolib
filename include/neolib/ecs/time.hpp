@@ -70,7 +70,6 @@ namespace neolib::ecs
             }
         };
     private:
-        std::unique_ptr<thread> iThread;
         mutable optional_step_time iSystemTimeOffset;
     };
 }

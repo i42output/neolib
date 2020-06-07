@@ -224,17 +224,15 @@ namespace neolib::ecs
             {
                 aTimer.again();
                 for (auto& system : systems())
-                    system.second->apply();
+                    if (system.second->can_apply())
+                        system.second->apply();
                 commit_async_entity_destruction();
             }, 1, true
         },
         iSystemsPaused{ (flags() & ecs_flags::CreatePaused) == ecs_flags::CreatePaused }
     {
         if ((flags() & ecs_flags::PopulateEntityInfo) == ecs_flags::PopulateEntityInfo)
-        {
             register_component<entity_info>();
-            register_system<time>();
-        }
 
         if ((flags() & ecs_flags::Turbo) == ecs_flags::Turbo && !all_systems_paused())
             service<i_power>().enable_turbo_mode();
@@ -306,6 +304,11 @@ namespace neolib::ecs
             iEntitiesToDestroy.pop_back();
             destroy_entity(next.first, next.second);
         }
+    }
+
+    bool ecs::run_threaded(const system_id& aSystemId) const
+    {
+        return (flags() & ecs_flags::NoThreads) != ecs_flags::NoThreads;
     }
 
     bool ecs::all_systems_paused() const

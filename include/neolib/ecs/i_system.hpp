@@ -49,6 +49,8 @@ namespace neolib::ecs
     class i_system
     {
     public:
+        struct cannot_apply : std::logic_error { cannot_apply() : std::logic_error{ "neolib::ecs::i_system::cannot_apply" } {} };
+    public:
         virtual ~i_system() = default;
     public:
         virtual i_ecs& ecs() const = 0;
@@ -62,11 +64,15 @@ namespace neolib::ecs
         virtual const i_component& component(component_id aComponentId) const = 0;
         virtual const i_component& component(component_id aComponentId) = 0;
     public:
+        virtual bool can_apply() const = 0;
         virtual bool apply() = 0;
         virtual bool paused() const = 0;
         virtual void pause() = 0;
         virtual void resume() = 0;
         virtual void terminate() = 0;
+    public:
+        virtual void start_thread_if() = 0;
+        virtual void start_thread() = 0;
     public:
         virtual bool debug() const = 0;
         virtual void set_debug(bool aDebug) = 0;

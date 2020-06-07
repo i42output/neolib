@@ -69,6 +69,7 @@ namespace neolib::ecs
         void async_destroy_entity(entity_id aEntityId, bool aNotify = true) override;
         void commit_async_entity_destruction() override;
     public:
+        bool run_threaded(const system_id& aSystemId) const override;
         bool all_systems_paused() const override;
         void pause_all_systems() override;
         void resume_all_systems() override;

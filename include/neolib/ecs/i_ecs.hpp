@@ -56,6 +56,7 @@ namespace neolib::ecs
         PopulateEntityInfo  = 0x0001,
         Turbo               = 0x0002,
         CreatePaused        = 0x0004,
+        NoThreads           = 0x0008,
 
         Default             = PopulateEntityInfo | Turbo
     };
@@ -120,6 +121,7 @@ namespace neolib::ecs
         virtual void async_destroy_entity(entity_id aEntityId, bool aNotify = true) = 0;
         virtual void commit_async_entity_destruction() = 0;
     public:
+        virtual bool run_threaded(const system_id& aSystemId) const = 0;
         virtual bool all_systems_paused() const = 0;
         virtual void pause_all_systems() = 0;
         virtual void resume_all_systems() = 0;
