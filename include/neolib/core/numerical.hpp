@@ -1495,6 +1495,27 @@ namespace neolib
             return true;
         }
 
+        inline bool aabb_intersects(const std::optional<aabb>& first, const std::optional<aabb>& second)
+        {
+            if (first == std::nullopt || second == std::nullopt)
+                return false;
+            return aabb_intersects(*first, *second);
+        }
+            
+        inline bool aabb_intersects(const std::optional<aabb>& first, const aabb& second)
+        {
+            if (first == std::nullopt)
+                return false;
+            return aabb_intersects(*first, second);
+        }
+
+        inline bool aabb_intersects(const aabb& first, const std::optional<aabb>& second)
+        {
+            if (second == std::nullopt)
+                return false;
+            return aabb_intersects(first, *second);
+        }
+
         struct aabb_2d
         {
             vec2 min;
@@ -1603,6 +1624,27 @@ namespace neolib
             if (first.min.y > second.max.y)
                 return false;
             return true;
+        }
+
+        inline bool aabb_intersects(const std::optional<aabb_2d>& first, const std::optional<aabb_2d>& second)
+        {
+            if (first == std::nullopt || second == std::nullopt)
+                return false;
+            return aabb_intersects(*first, *second);
+        }
+
+        inline bool aabb_intersects(const std::optional<aabb_2d>& first, const aabb_2d& second)
+        {
+            if (first == std::nullopt)
+                return false;
+            return aabb_intersects(*first, second);
+        }
+
+        inline bool aabb_intersects(const aabb_2d& first, const std::optional<aabb_2d>& second)
+        {
+            if (second == std::nullopt)
+                return false;
+            return aabb_intersects(first, *second);
         }
     }
 
