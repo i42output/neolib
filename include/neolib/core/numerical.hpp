@@ -1362,6 +1362,7 @@ namespace neolib
 
         inline mat44& apply_translation(mat44& aMatrix, const vec3& aTranslation)
         {
+            // todo: SIMD
             aMatrix[3][0] += aTranslation.x;
             aMatrix[3][1] += aTranslation.y;
             aMatrix[3][2] += aTranslation.z;
@@ -1370,6 +1371,7 @@ namespace neolib
 
         inline mat44& apply_scaling(mat44& aMatrix, const vec3& aScaling)
         {
+            // todo: SIMD
             aMatrix[0][0] *= aScaling.x;
             aMatrix[1][1] *= aScaling.y;
             aMatrix[2][2] *= aScaling.z;
@@ -1396,18 +1398,19 @@ namespace neolib
             return aAabb.max - aAabb.min;
         }
 
-        inline aabb aabb_transform(const aabb& aAabb, const mat44& aTransformation)
+        template <typename... Transforms>
+        inline aabb aabb_transform(const aabb& aAabb, const Transforms&... aTransforms)
         {
             std::array<vec3, 8> boxVertices =
             {
-                aTransformation * vec3{ aAabb.min.x, aAabb.min.y, aAabb.min.z },
-                aTransformation * vec3{ aAabb.max.x, aAabb.min.y, aAabb.min.z },
-                aTransformation * vec3{ aAabb.min.x, aAabb.max.y, aAabb.min.z },
-                aTransformation * vec3{ aAabb.max.x, aAabb.max.y, aAabb.min.z },
-                aTransformation * vec3{ aAabb.min.x, aAabb.min.y, aAabb.max.z },
-                aTransformation * vec3{ aAabb.max.x, aAabb.min.y, aAabb.max.z },
-                aTransformation * vec3{ aAabb.min.x, aAabb.max.y, aAabb.max.z },
-                aTransformation * vec3{ aAabb.max.x, aAabb.max.y, aAabb.max.z }
+                (aTransforms * ... * vec3{ aAabb.min.x, aAabb.min.y, aAabb.min.z }),
+                (aTransforms * ... * vec3{ aAabb.max.x, aAabb.min.y, aAabb.min.z }),
+                (aTransforms * ... * vec3{ aAabb.min.x, aAabb.max.y, aAabb.min.z }),
+                (aTransforms * ... * vec3{ aAabb.max.x, aAabb.max.y, aAabb.min.z }),
+                (aTransforms * ... * vec3{ aAabb.min.x, aAabb.min.y, aAabb.max.z }),
+                (aTransforms * ... * vec3{ aAabb.max.x, aAabb.min.y, aAabb.max.z }),
+                (aTransforms * ... * vec3{ aAabb.min.x, aAabb.max.y, aAabb.max.z }),
+                (aTransforms * ... * vec3{ aAabb.max.x, aAabb.max.y, aAabb.max.z })
             };
             aabb result{ boxVertices[0], boxVertices[0] };
             for (auto const& v : boxVertices)
@@ -1535,14 +1538,15 @@ namespace neolib
             return aAabb.max - aAabb.min;
         }
 
-        inline aabb_2d aabb_transform(const aabb_2d& aAabb, const mat44& aTransformation)
+        template <typename... Transforms>
+        inline aabb_2d aabb_transform(const aabb_2d& aAabb, const Transforms&... aTransforms)
         {
             std::array<vec3, 4> boxVertices =
             {
-                aTransformation * vec3{ aAabb.min.x, aAabb.min.y, 0.0 },
-                aTransformation * vec3{ aAabb.max.x, aAabb.min.y, 0.0 },
-                aTransformation * vec3{ aAabb.min.x, aAabb.max.y, 0.0 },
-                aTransformation * vec3{ aAabb.max.x, aAabb.max.y, 0.0 }
+                (aTransforms * ... * vec3{ aAabb.min.x, aAabb.min.y, 0.0 }),
+                (aTransforms * ... * vec3{ aAabb.max.x, aAabb.min.y, 0.0 }),
+                (aTransforms * ... * vec3{ aAabb.min.x, aAabb.max.y, 0.0 }),
+                (aTransforms * ... * vec3{ aAabb.max.x, aAabb.max.y, 0.0 })
             };
             aabb_2d result{ boxVertices[0].xy, boxVertices[0].xy };
             for (auto const& v : boxVertices)
