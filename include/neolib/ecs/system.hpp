@@ -151,8 +151,7 @@ namespace neolib::ecs
         }
         void terminate() override
         {
-            if (have_thread() && !get_thread().aborted())
-                get_thread().abort();
+            iThread = nullptr;
         }
     public:
         void start_thread_if() override
