@@ -46,9 +46,9 @@ namespace neolib::ecs
     struct clock
     {
         i64 time = 0ll;
-        i64 timeStep = chrono::to_flicks(0.001).count();
-        scalar timeStepGrowth = 1.75;
-        i64 maximumTimeStep = chrono::to_flicks(0.001).count() * 20;
+        i64 timestep = chrono::to_flicks(0.01).count();
+        scalar timestepGrowth = 1.75;
+        i64 maximumTimestep = chrono::to_flicks(0.001).count() * 20;
 
         struct meta : i_component_data::meta
         {
@@ -86,8 +86,8 @@ namespace neolib::ecs
                 static const string sFieldNames[] = 
                 {
                     "Time",
-                    "Time Step",
-                    "Time Step Growth",
+                    "Timestep",
+                    "Timestep Growth",
                     "Maximum Time Step",
                 };
                 return sFieldNames[aFieldIndex];
@@ -98,6 +98,6 @@ namespace neolib::ecs
     inline step_time_interval to_step_time(const i_ecs& aEcs, time_interval aTime)
     {
         auto& worldClock = aEcs.shared_component<clock>()[0];
-        return to_step_time(aTime, worldClock.timeStep);
+        return to_step_time(aTime, worldClock.timestep);
     }
 }
