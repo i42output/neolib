@@ -296,7 +296,7 @@ namespace neolib
 
     void async_task::run(yield_type aYieldType)
     {
-        while (!thread().finished())
+        while (joined() && !thread().finished())
             do_work(aYieldType);
     }
 
