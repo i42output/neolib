@@ -344,9 +344,11 @@ namespace neolib::ecs
                    throw entity_record_not_found();
             return base_type::component_data()[reverseIndex];
         }
-        value_type& entity_record(entity_id aEntity)
+        value_type& entity_record(entity_id aEntity, bool aCreate = false)
         {
             std::scoped_lock<neolib::i_lockable> lock{ mutex() };
+            if (aCreate && !has_entity_record(aEntity))
+                populate(aEntity, value_type{});
             return const_cast<value_type&>(to_const(*this).entity_record(aEntity));
         }
         void destroy_entity_record(entity_id aEntity) override

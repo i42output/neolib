@@ -416,6 +416,23 @@ namespace neolib::ecs
         {
             return std::get<index_of_v<Data2, Data...>>(iProxies).unlink();
         }
+        template <typename Data2>
+        bool controlling() const
+        {
+            return std::get<index_of_v<Data2, Data...>>(iProxies).linked();
+        }
+        template <typename... Data2>
+        void unlock_if()
+        {
+            (unlock_if_impl<Data2>(), ...);
+        }
+    private:
+        template <typename Data2>
+        void unlock_if_impl()
+        {
+            if (controlling<Data2>())
+                mutex<Data2>().unlock();
+        }
     private:
         std::tuple<proxy_mutex<Data>...> iProxies;
         std::scoped_lock<proxy_mutex<Data>...> iLock;
