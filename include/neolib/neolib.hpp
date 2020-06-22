@@ -41,6 +41,8 @@
 #include <utility>
 #include <variant>
 
+#include <neolib/neolib_export.hpp>
+
 #ifdef NDEBUG
 constexpr bool ndebug = true;
 #else

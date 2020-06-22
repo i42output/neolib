@@ -33,13 +33,15 @@ file(GLOB_RECURSE HEADER_FILES include/*.*)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES} ${PLATFORM_SOURCE_FILES} ${HEADER_FILES})
 
 add_definitions(-DNEOLIB_HOSTED_ENVIRONMENT)
-add_library(neolib STATIC ${SOURCE_FILES} ${PLATFORM_SOURCE_FILES} ${HEADER_FILES})
+add_library(neolib ${SOURCE_FILES} ${PLATFORM_SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(neolib PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 set_property(TARGET neolib PROPERTY CXX_STANDARD 17)
 set_property(TARGET neolib PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 set_property(TARGET neolib PROPERTY CXX_VISIBILITY_PRESET hidden)
+set_property(TARGET neolib PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})
+set_property(TARGET neolib PROPERTY VERSION ${PROJECT_VERSION})
 
 include(GenerateExportHeader)
 generate_export_header(neolib EXPORT_FILE_NAME include/neolib/neolib_export.hpp)
