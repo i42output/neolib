@@ -10,7 +10,6 @@ IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 include(GNUInstallDirs)
-set(CMAKE_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
 
 # compiler support
 set(CMAKE_CXX_STANDARD 17)
@@ -49,10 +48,11 @@ target_link_libraries(neolib PRIVATE OpenSSL::SSL)
 find_package(ZLIB REQUIRED)
 target_link_libraries(neolib PRIVATE ZLIB::ZLIB)
 
-include(CMakePackageConfigHelpers)
-configure_package_config_file(neolibConfig.cmake.in neolibConfig.cmake INSTALL_DESTINATION "${CMAKE_INSTALL_CMAKEDIR}")
-write_basic_package_version_file(neolibConfigVersion.cmake COMPATIBILITY AnyNewerVersion)
-
-install(TARGETS neolib DESTINATION "${CMAKE_INSTALL_LIBDIR}" EXPORT neolib)
 install(DIRECTORY include/neolib DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 install(TARGETS neolib DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+
+option(NEOLIB_TESTS "Build neolib tests" ON)
+if(NEOLIB_TESTS)
+  enable_testing()
+  add_subdirectory(unit_tests)
+endif()
