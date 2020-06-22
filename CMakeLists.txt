@@ -39,6 +39,7 @@ target_include_directories(neolib PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 set_property(TARGET neolib PROPERTY CXX_STANDARD 17)
 set_property(TARGET neolib PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+set_property(TARGET neolib PROPERTY CXX_VISIBILITY_PRESET hidden)
 
 include(GenerateExportHeader)
 generate_export_header(neolib EXPORT_FILE_NAME include/neolib/neolib_export.hpp)
