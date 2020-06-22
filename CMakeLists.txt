@@ -40,6 +40,10 @@ target_include_directories(neolib PUBLIC
 set_property(TARGET neolib PROPERTY CXX_STANDARD 17)
 set_property(TARGET neolib PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
+include(GenerateExportHeader)
+generate_export_header(neolib EXPORT_FILE_NAME include/neolib/neolib_export.hpp)
+target_include_directories(neolib PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>")
+
 # dependencies
 find_package(Threads REQUIRED)
 target_link_libraries(neolib PUBLIC Threads::Threads)
@@ -56,7 +60,7 @@ configure_package_config_file(neolibConfig.cmake.in neolibConfig.cmake INSTALL_D
 write_basic_package_version_file(neolibConfigVersion.cmake COMPATIBILITY AnyNewerVersion)
 
 install(TARGETS neolib DESTINATION "${CMAKE_INSTALL_LIBDIR}" EXPORT neolib)
-install(DIRECTORY include/neolib DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+install(DIRECTORY include/neolib "${CMAKE_CURRENT_BINARY_DIR}/include/neolib" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 install(TARGETS neolib DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 install(EXPORT neolib DESTINATION "${CMAKE_INSTALL_CMAKEDIR}" FILE neolibTargets.cmake NAMESPACE neolib)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/neolibConfig.cmake"
