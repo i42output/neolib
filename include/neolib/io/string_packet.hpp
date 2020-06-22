@@ -166,13 +166,13 @@ namespace neolib
     };
 
     template <typename CharType>
-    const CharType basic_string_packet<CharType>::CHAR_CR = '\r';
+    constexpr CharType basic_string_packet<CharType>::CHAR_CR = '\r';
     template <typename CharType>
-    const CharType basic_string_packet<CharType>::CHAR_LF = '\n';
+    constexpr CharType basic_string_packet<CharType>::CHAR_LF = '\n';
     template <>
-    const wchar_t basic_string_packet<wchar_t>::CHAR_CR = L'\r';
+    constexpr wchar_t basic_string_packet<wchar_t>::CHAR_CR = L'\r';
     template <>
-    const wchar_t basic_string_packet<wchar_t>::CHAR_LF = L'\n';
+    constexpr wchar_t basic_string_packet<wchar_t>::CHAR_LF = L'\n';
 
     typedef basic_string_packet<char> string_packet;
 }
