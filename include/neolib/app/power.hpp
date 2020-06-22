@@ -43,7 +43,7 @@
 
 namespace neolib
 {
-    class power : public i_power
+    class NEOLIB_EXPORT power : public i_power
     {
     public:
         define_declared_event(ActivityRegistered, activity_registered)

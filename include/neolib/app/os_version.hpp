@@ -13,6 +13,6 @@
 
 namespace neolib
 {
-    std::string os_name();
-    application_info get_application_info(i_application_info const& aAppInfo);
+    NEOLIB_EXPORT std::string os_name();
+    NEOLIB_EXPORT application_info get_application_info(i_application_info const& aAppInfo);
 }

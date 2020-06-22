@@ -40,7 +40,7 @@
 
 namespace neolib
 {
-    class openssl
+    class NEOLIB_EXPORT openssl
     {
     private:
         static const std::size_t SEED_BUFFER_SIZE = 8;

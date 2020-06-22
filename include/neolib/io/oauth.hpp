@@ -47,7 +47,7 @@
 
 namespace neolib
 {
-    class oauth
+    class NEOLIB_EXPORT oauth
     {
         // events
     public:

@@ -41,7 +41,7 @@
 
 namespace neolib::ecs
 {
-    class entity
+    class NEOLIB_EXPORT entity
     {
     public:
         entity(i_ecs& aEcs, entity_id aId);

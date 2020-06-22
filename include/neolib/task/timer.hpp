@@ -47,7 +47,7 @@
 
 namespace neolib
 {
-    class timer : private noncopyable, public lifetime
+    class NEOLIB_EXPORT timer : private noncopyable, public lifetime
     {
         // types
     public:
@@ -103,7 +103,7 @@ namespace neolib
 #endif
     };
 
-    class callback_timer : public timer
+    class NEOLIB_EXPORT callback_timer : public timer
     {
     public:
         callback_timer(i_async_task& aTask, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true);

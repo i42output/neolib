@@ -49,7 +49,7 @@
 
 namespace neolib
 {
-    class http_packet : public string_packet
+    class NEOLIB_EXPORT http_packet : public string_packet
     {
         // construction
     public:

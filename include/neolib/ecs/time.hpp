@@ -41,7 +41,7 @@
 
 namespace neolib::ecs
 {
-    class time : public system<>
+    class NEOLIB_EXPORT time : public system<>
     {
     private:
         class thread;

@@ -46,7 +46,7 @@
 
 namespace neolib::ecs
 {
-    class ecs : public neolib::object<i_ecs>
+    class NEOLIB_EXPORT ecs : public neolib::object<i_ecs>
     {
     public:
         define_declared_event(SystemsPaused, systems_paused)

@@ -40,7 +40,7 @@
 
 namespace neolib
 {
-    class gunzip
+    class NEOLIB_EXPORT gunzip
     {
         // types
     public:

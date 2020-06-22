@@ -41,7 +41,7 @@
 
 namespace neolib
 {
-    struct any_const_ref_bad_cast : public std::logic_error 
+    struct any_const_ref_bad_cast : public std::logic_error
     { 
         any_const_ref_bad_cast() : std::logic_error("neolib::any_const_ref_bad_cast") 
         {

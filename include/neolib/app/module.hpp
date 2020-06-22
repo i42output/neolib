@@ -43,7 +43,7 @@ namespace neolib
 {
     class os_module;
 
-    class module
+    class NEOLIB_EXPORT module
     {
         // types
     private:

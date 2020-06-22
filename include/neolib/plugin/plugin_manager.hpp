@@ -48,7 +48,7 @@
 
 namespace neolib
 {
-    class plugin_manager : public reference_counted<i_plugin_manager>
+    class NEOLIB_EXPORT plugin_manager : public reference_counted<i_plugin_manager>
     {
         // events
     public:

@@ -95,7 +95,7 @@ namespace neolib
     }
 
     template <typename Id, typename... Types>
-    class plugin_variant : 
+    class plugin_variant :
         public reference_counted<i_plugin_variant<Id, abstract_t<Types>...>>,
         private variant<Types...>
     {

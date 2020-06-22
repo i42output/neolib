@@ -88,7 +88,7 @@ namespace neolib
 
     struct unable_to_generate_uuid : std::runtime_error { unable_to_generate_uuid() : std::runtime_error("neolib::unable_to_generate_uuid") {} };
 
-    uuid generate_uuid();
+    NEOLIB_EXPORT uuid generate_uuid();
 
     inline std::istream& operator>>(std::istream& aStream, uuid& aId)
     {
