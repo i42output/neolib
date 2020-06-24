@@ -48,26 +48,13 @@ namespace neolib
 {
     namespace detail
     {
-        template <bool>
-        struct to_string
+        template <typename T>
+        std::string to_string(const T& aValue)
         {
-            template <typename T>
-            i_string* operator()(const T& aValue)
-            {
-                std::ostringstream oss;
-                oss << aValue;
-                return new string(oss.str());
-            }
-        };
-        template <>
-        struct to_string<false>
-        {
-            template <typename T>
-            i_string* operator()(const T& aValue)
-            {
-                return new string();
-            }
-        };
+            std::ostringstream oss;
+            oss << aValue;
+            return oss.str();
+        }
     }
 
     template <typename T>
@@ -88,10 +75,23 @@ namespace neolib
             iName{ aOther.name() }, iInstance{ aOther.instance_ptr() ? container_type{aOther.instance_as<abstract_value_type>()} : container_type{} } {}
         ~custom_type() {}
     public:
-        virtual const i_string& name() const { return iName; }
-        virtual i_string& name() { return iName; }
-        virtual i_string* to_string() const { if (!!iInstance) return detail::to_string<type_traits::template has_saving_support<abstract_value_type>::value>()(*iInstance); else return new string(); }
-        virtual i_custom_type* clone() const { return new custom_type{ *this }; }
+        using i_custom_type::name;
+        using i_custom_type::to_string;
+        virtual void name(i_string& aName) const
+        { 
+            aName = iName;
+        }
+        virtual void to_string(i_string& aString) const
+        {
+            if (!!iInstance)
+                aString = detail::to_string(*iInstance);
+            else
+                aString.clear();
+        }
+        virtual i_custom_type* clone() const 
+        { 
+            return new custom_type{ *this }; 
+        }
         virtual i_custom_type& assign(const i_custom_type& aRhs)
         {
             if (aRhs.name() != name())
