@@ -70,47 +70,49 @@ namespace neolib
         };
     }
 
-    template <typename AbstractType, typename ConcreteType>
+    template <typename T>
     class custom_type : public reference_counted<i_custom_type>
     {
     public:
         struct type_mismatch : std::logic_error { type_mismatch() : std::logic_error("neolib::custom_type::type_mismatch") {} };
     private:
-        typedef std::optional<ConcreteType> container_type;
+        typedef T value_type;
+        typedef abstract_t<value_type> abstract_value_type;
+        typedef std::optional<value_type> container_type;
     public:
         custom_type(const string& aName) :
             iName{ aName } {}
-        custom_type(const string& aName, const AbstractType& aInstance) :
+        custom_type(const string& aName, const abstract_value_type& aInstance) :
             iName{ aName }, iInstance{ aInstance } {}
         custom_type(const i_custom_type& aOther) :
-            iName{ aOther.name() }, iInstance{ aOther.instance_ptr() ? container_type{aOther.instance_as<AbstractType>()} : container_type{} } {}
+            iName{ aOther.name() }, iInstance{ aOther.instance_ptr() ? container_type{aOther.instance_as<abstract_value_type>()} : container_type{} } {}
         ~custom_type() {}
     public:
         virtual const i_string& name() const { return iName; }
         virtual i_string& name() { return iName; }
-        virtual i_string* to_string() const { if (!!iInstance) return detail::to_string<type_traits::template has_saving_support<AbstractType>::value>()(*iInstance); else return new string(); }
-        virtual i_custom_type* clone() const { return new custom_type(*this); }
+        virtual i_string* to_string() const { if (!!iInstance) return detail::to_string<type_traits::template has_saving_support<abstract_value_type>::value>()(*iInstance); else return new string(); }
+        virtual i_custom_type* clone() const { return new custom_type{ *this }; }
         virtual i_custom_type& assign(const i_custom_type& aRhs)
         {
             if (aRhs.name() != name())
                 throw type_mismatch();
             if (iInstance == std::nullopt)
-                iInstance = ConcreteType(aRhs.instance_as<AbstractType>());
+                iInstance = value_type{ aRhs.instance_as<abstract_value_type>() };
             else
-                *iInstance = aRhs.instance_as<AbstractType>();
+                *iInstance = aRhs.instance_as<abstract_value_type>();
             return *this;
         }
         virtual bool operator==(const i_custom_type& aRhs) const
         {
-            return instance_ptr() == aRhs.instance_ptr() || (instance_ptr() != nullptr && aRhs.instance_ptr() != nullptr && instance_as<AbstractType>() == aRhs.instance_as<AbstractType>());
+            return instance_ptr() == aRhs.instance_ptr() || (instance_ptr() != nullptr && aRhs.instance_ptr() != nullptr && instance_as<abstract_value_type>() == aRhs.instance_as<abstract_value_type>());
         }
         virtual bool operator<(const i_custom_type& aRhs) const
         {
-            return (instance_ptr() != nullptr && aRhs.instance_ptr() != nullptr && instance_as<AbstractType>() < aRhs.instance_as<AbstractType>()) || (instance_ptr() < aRhs.instance_ptr());
+            return (instance_ptr() != nullptr && aRhs.instance_ptr() != nullptr && instance_as<abstract_value_type>() < aRhs.instance_as<abstract_value_type>()) || (instance_ptr() < aRhs.instance_ptr());
         }
     public:
-        virtual const void* instance_ptr() const { return iInstance != std::nullopt ? static_cast<const AbstractType*>(&*iInstance) : static_cast<const AbstractType*>(nullptr); }
-        virtual void* instance_ptr() { return iInstance != std::nullopt ? static_cast<AbstractType*>(&*iInstance) : static_cast<AbstractType*>(nullptr); }
+        virtual const void* instance_ptr() const { return iInstance != std::nullopt ? static_cast<const abstract_value_type*>(&*iInstance) : static_cast<const abstract_value_type*>(nullptr); }
+        virtual void* instance_ptr() { return iInstance != std::nullopt ? static_cast<abstract_value_type*>(&*iInstance) : static_cast<abstract_value_type*>(nullptr); }
     private:
         string iName;
         container_type iInstance;

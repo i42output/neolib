@@ -113,7 +113,7 @@ namespace neolib
             setting_list::iterator iter = iSettings.find(setting::key_type(aExistingSetting.id()));
             if (iter == iSettings.end())
                 throw setting_not_found();
-            notify_observers(i_subscriber::NotifySettingDeleted, *iter);
+            SettingDeleted.trigger(*iter);
             iSettings.erase(iter);
             save();
         }
@@ -126,7 +126,7 @@ namespace neolib
                 if (iter->apply_change())
                     categoriesChanged.insert(iter->category());
             for (std::set<string>::const_iterator iter = categoriesChanged.begin(); iter != categoriesChanged.end(); ++iter)
-                notify_observers(i_subscriber::NotifySettingsChanged, *iter);
+                SettingsChanged.trigger(*iter);
             save();
         }
         virtual void discard_changes()
@@ -168,9 +168,10 @@ namespace neolib
                         category.append(i->name().c_str()).set_attribute("value", to_string(i->value()).c_str());
                     else
                     {
+                        auto const& customType = *i->value().get<i_ref_ptr<i_custom_type>>();
                         xml::element& name = category.append(i->name().c_str());
-                        name.set_attribute("type", i->value().value_as_custom_type().name().c_str());
-                        name.set_attribute("value", i->value().value_as_custom_type().to_std_string());
+                        name.set_attribute("type", customType.name().c_str());
+                        name.set_attribute("value", customType.to_string());
                     }
                 }
                 iStore->write(output);
@@ -216,26 +217,8 @@ namespace neolib
             setting_list::iterator iter = iSettings.find(setting::key_type(aExistingSetting.id()));
             if (iter == iSettings.end())
                 throw setting_not_found();
-            notify_observers(i_subscriber::NotifySettingChanged, *iter);
+            SettingChanged.trigger(*iter);
         }
-    private:
-        virtual void notify_observer(i_subscriber& aObserver, notify_type aType, const void* aParameter, const void* aParameter2)
-        {
-            switch (aType)
-            {
-            case i_subscriber::NotifySettingsChanged:
-                aObserver.settings_changed(*static_cast<const i_string*>(aParameter));
-                break;
-            case i_subscriber::NotifySettingChanged:
-                if (!static_cast<const i_setting*>(aParameter)->dirty() || aObserver.interested_in_dirty_settings())
-                    aObserver.setting_changed(*static_cast<const i_setting*>(aParameter));
-                break;
-            case i_subscriber::NotifySettingDeleted:
-                aObserver.setting_deleted(*static_cast<const i_setting*>(aParameter));
-                break;
-            }
-        }
-
     private:
         string iFileName;
         i_setting::id_type iNextSettingId;

@@ -66,4 +66,26 @@ namespace neolib
     };
 
     typedef i_plugin_variant<simple_variant_type, bool, int64_t, double, i_string, i_ref_ptr<i_enum>, i_ref_ptr<i_custom_type>> i_simple_variant;
+
+    inline std::string to_string(const i_simple_variant& aVariant)
+    {
+        switch (aVariant.which())
+        {
+        case simple_variant_type::Boolean:
+            if (aVariant.get<bool>())
+                return "true";
+            else
+                return "false";
+        case simple_variant_type::Integer:
+            return std::to_string(aVariant.get<int64_t>());
+        case simple_variant_type::Real:
+            return std::to_string(aVariant.get<double>());
+        case simple_variant_type::String:
+            return aVariant.get<i_string>().to_std_string();
+        case simple_variant_type::CustomType:
+            return aVariant.get<i_ref_ptr<i_custom_type>>()->to_string();
+        default:
+            throw std::logic_error("neolib: cannot convert simple variant to string");
+        }
+    }
 }

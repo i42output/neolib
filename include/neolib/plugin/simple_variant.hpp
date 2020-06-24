@@ -40,6 +40,7 @@
 #include <boost/lexical_cast.hpp>
 #include <neolib/core/reference_counted.hpp>
 #include <neolib/core/string.hpp>
+#include <neolib/core/string_numeric.hpp>
 #include <neolib/core/i_enum.hpp>
 #include <neolib/core/i_custom_type.hpp>
 #include <neolib/core/i_simple_variant.hpp>
@@ -48,4 +49,25 @@
 namespace neolib
 {
     typedef plugin_variant<simple_variant_type, bool, int64_t, double, string, ref_ptr<i_enum>, ref_ptr<i_custom_type>> simple_variant;
+
+    inline simple_variant from_string(const std::string& aString, simple_variant_type aType)
+    {
+        switch(aType)
+        {
+        case simple_variant_type::Boolean:
+            if (aString == "true" || aString == "1")
+                return true;
+            else
+                return false;
+        case simple_variant_type::Integer:
+            return string_to_int64(aString);
+        case simple_variant_type::Real:
+            return string_to_double(aString);
+        case simple_variant_type::String:
+            return aString;
+        case simple_variant_type::CustomType:
+        default:
+            throw std::logic_error("neolib: cannot convert string to simple variant");
+        }
+    }
 }

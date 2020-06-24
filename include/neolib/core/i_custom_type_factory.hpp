@@ -46,7 +46,15 @@ namespace neolib
     class i_custom_type_factory : public i_reference_counted
     {
     public:
-        virtual i_custom_type* create(const i_string& aType, const i_string& aValue) const = 0;
+        typedef i_custom_type_factory abstract_type;
+    public:
+        virtual void create(const i_string& aType, const i_string& aValue, i_ref_ptr<i_custom_type>& aObject) const = 0;
+    public:
+        ref_ptr<i_custom_type> create(const i_string& aType, const i_string& aValue) const
+        {
+            ref_ptr<i_custom_type> object;
+            create(aType, aValue, object);
+            return object;
+        }
     };
-
 }
