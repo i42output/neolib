@@ -61,10 +61,10 @@ namespace neolib
     public:
         application_info(
             const program_arguments_t& aArguments = program_arguments_t{},
-            const std::string& aName = "<Program Name>",
-            const std::string& aCompany = "<Company Name>",
+            const std::string& aName = "[neolib default program name]",
+            const std::string& aCompany = "[neolib default company name]",
             const neolib::version& aVersion = neolib::version{},
-            const std::string& aCopyright = "<Copyright>",
+            const std::string& aCopyright = "Copyright (c)",
             const std::string& aApplicationFolder = std::string{},
             const std::string& aSettingsFolder = std::string{},
             const std::string& aDataFolder = std::string{},
