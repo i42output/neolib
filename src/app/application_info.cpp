@@ -34,13 +34,6 @@
 */
 
 #include <neolib/neolib.hpp>
-#ifdef _WIN32
-#include <Shlobj.h>
-#else
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
-#endif
 #include <neolib/app/application_info.hpp>
 #include <neolib/file/file.hpp>
 
@@ -48,21 +41,10 @@ namespace neolib
 {
     std::string settings_folder(const std::string& aApplicationName, const std::string& aCompanyName)
     {
-        std::string settingsFolder;
 #ifdef _WIN32
-        char szPath[MAX_PATH];
-        if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, szPath)))
-        {
-            settingsFolder =  tidy_path(std::string(szPath)) + "/" + aCompanyName + "/" + aApplicationName;
-        }
-        else
-        {
-            throw std::runtime_error("neolib::settings_folder: Cannot get CSIDL_APPDATA folder path");
-        }
+        std::string settingsFolder = user_settings_directory() + "/" + aCompanyName + "/" + aApplicationName;
 #else
-        struct passwd *pw = getpwuid(getuid());
-        const char *homedir = pw->pw_dir;
-        settingsFolder = std::string(homedir) + "/." + aApplicationName;
+        std::string settingsFolder = user_settings_directory() + "/." + aApplicationName;
 #endif
         create_path(settingsFolder);
         return settingsFolder;
