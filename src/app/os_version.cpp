@@ -306,8 +306,8 @@ namespace neolib
                 appCopyright = any_to_utf8(reinterpret_cast<char16_t*>(lpVersion));
             GlobalUnlock(hMem);
             GlobalFree(hMem);
-            return application_info(aAppInfo.arguments(), appName, aAppInfo.company().to_std_string(), appVersion, appCopyright,
-                aAppInfo.application_folder().to_std_string(), aAppInfo.settings_folder().to_std_string(), aAppInfo.data_folder().to_std_string());
+            return application_info{ aAppInfo.arguments(), appName, aAppInfo.company().to_std_string(), appVersion, appCopyright,
+                aAppInfo.application_folder().to_std_string(), aAppInfo.settings_folder().to_std_string(), aAppInfo.data_folder().to_std_string() };
         } // if (dwVerInfoSize)
 #endif // _WIN32
         

@@ -44,7 +44,8 @@
 
 namespace neolib
 {
-    class application : public reference_counted<i_application>
+    template <typename Base = i_application>
+    class application : public reference_counted<Base>
     {
     public:
         application(const i_application_info& aApplicationInfo) :
@@ -55,16 +56,16 @@ namespace neolib
 
     public:
         // from i_discoverable
-        virtual bool discover(const uuid& aId, void*& aObject)
+        bool discover(const uuid& aId, void*& aObject) override
         {
             return iPluginManager.discover(aId, aObject);
         }
         // from i_application
-        virtual const i_application_info& info() const
+        const i_application_info& info() const override
         {
             return iApplicationInfo;
         }
-        virtual i_plugin_manager& plugin_manager()
+        i_plugin_manager& plugin_manager() override
         {
             return iPluginManager;
         }

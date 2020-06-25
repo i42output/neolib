@@ -60,7 +60,29 @@ namespace neolib
     {
     public:
         application_info(
-            const program_arguments_t& aArguments = program_arguments_t{},
+            int argc, char* argv[],
+            const std::string& aName = "[neolib default program name]",
+            const std::string& aCompany = "[neolib default company name]",
+            const neolib::version& aVersion = neolib::version{},
+            const std::string& aCopyright = "Copyright (c)",
+            const std::string& aApplicationFolder = std::string{},
+            const std::string& aSettingsFolder = std::string{},
+            const std::string& aDataFolder = std::string{},
+            const std::string& aPluginExtension = ".plg") :
+            application_info
+            {
+                to_program_arguments(argc, argv),
+                aName,
+                aCompany,
+                aVersion,
+                aCopyright,
+                aApplicationFolder,
+                aSettingsFolder,
+                aDataFolder,
+                aPluginExtension
+            } {}
+        application_info(
+            const program_arguments_t& aArguments,
             const std::string& aName = "[neolib default program name]",
             const std::string& aCompany = "[neolib default company name]",
             const neolib::version& aVersion = neolib::version{},
@@ -112,7 +134,7 @@ namespace neolib
         const i_string& plugin_extension() const override { return iPluginExtension; }
 
     private:
-        vector<string> iArguments;
+        program_arguments_t iArguments;
         string iName;
         string iCompany;
         neolib::version iVersion;
