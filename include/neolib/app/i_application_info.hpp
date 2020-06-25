@@ -42,10 +42,24 @@
 
 namespace neolib
 {
+    class i_program_arguments
+    {
+    public:
+        typedef i_program_arguments abstract_type;
+    public:
+        virtual ~i_program_arguments() = default;
+    public:
+        virtual int argc() const = 0;
+        virtual char** argv() const = 0;
+        virtual const i_vector<i_string>& as_vector() const = 0;
+    };
+
     class i_application_info
     {
     public:
-        virtual const i_vector<i_string>& arguments() const = 0;
+        virtual ~i_application_info() = default;
+    public:
+        virtual const i_program_arguments& arguments() const = 0;
         virtual const i_string& name() const = 0;
         virtual const i_string& company() const = 0;
         virtual const i_version& version() const = 0;

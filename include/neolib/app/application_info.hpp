@@ -47,14 +47,37 @@ namespace neolib
 {
     std::string settings_folder(const std::string& aApplicationName, const std::string& aCompanyName);
 
-    typedef vector<string> program_arguments_t;
-    inline program_arguments_t to_program_arguments(int argc, char* argv[])
+    class program_arguments : public i_program_arguments
     {
-        program_arguments_t result;
-        for (auto arg = 0; arg < argc; ++arg)
-            result.push_back(neolib::string{ argv[arg] });
-        return result;
-    }
+    public:
+        program_arguments(int argc, char* argv[]) :
+            iArgc{ argc }, iArgv{ argv }
+        {
+            for (auto arg = 0; arg < argc; ++arg)
+                iArguments.push_back(neolib::string{ argv[arg] });
+        }
+        program_arguments(const i_program_arguments& aOther) :
+            iArgc{ aOther.argc() }, iArgv{ aOther.argv() }, iArguments{ aOther.as_vector() }
+        {
+        }
+    public:
+        int argc() const override
+        {
+            return iArgc;
+        }
+        char** argv() const override
+        {
+            return iArgv;
+        }
+        const vector<string>& as_vector() const override
+        {
+            return iArguments;
+        }
+    private:
+        int iArgc;
+        char** iArgv;
+        vector<string> iArguments;
+    };
 
     class application_info : public i_application_info
     {
@@ -71,7 +94,7 @@ namespace neolib
             const std::string& aPluginExtension = ".plg") :
             application_info
             {
-                to_program_arguments(argc, argv),
+                program_arguments{ argc, argv },
                 aName,
                 aCompany,
                 aVersion,
@@ -82,7 +105,7 @@ namespace neolib
                 aPluginExtension
             } {}
         application_info(
-            const program_arguments_t& aArguments,
+            const program_arguments& aArguments,
             const std::string& aName = "[neolib default program name]",
             const std::string& aCompany = "[neolib default company name]",
             const neolib::version& aVersion = neolib::version{},
@@ -101,8 +124,8 @@ namespace neolib
             iDataFolder{ aDataFolder },
             iPluginExtension{ aPluginExtension }
         {
-            if (std::find(std::next(iArguments.container().begin()), iArguments.container().end(), neolib::ci_string("/pocket")) != iArguments.container().end() ||
-                std::find(std::next(iArguments.container().begin()), iArguments.container().end(), neolib::ci_string("-pocket")) != iArguments.container().end())
+            if (std::find(std::next(iArguments.as_vector().container().begin()), iArguments.as_vector().container().end(), neolib::ci_string("/pocket")) != iArguments.as_vector().container().end() ||
+                std::find(std::next(iArguments.as_vector().container().begin()), iArguments.as_vector().container().end(), neolib::ci_string("-pocket")) != iArguments.as_vector().container().end())
             {
                 iSettingsFolder = iApplicationFolder;
             }
@@ -123,7 +146,7 @@ namespace neolib
         }
 
     public:
-        const i_vector<i_string>& arguments() const override { return iArguments; }
+        const program_arguments& arguments() const override { return iArguments; }
         const i_string& name() const override { return iName; }
         const i_string& company() const override { return iCompany; }
         const i_version& version() const override { return iVersion; }
@@ -134,7 +157,7 @@ namespace neolib
         const i_string& plugin_extension() const override { return iPluginExtension; }
 
     private:
-        program_arguments_t iArguments;
+        program_arguments iArguments;
         string iName;
         string iCompany;
         neolib::version iVersion;
