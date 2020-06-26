@@ -60,8 +60,8 @@ namespace neolib
         T from_string(const i_string& aValueAsString)
         {
             T result;
-            std::ostringstream oss{ aValueAsString.to_std_string() };
-            oss >> result;
+            std::istringstream iss{ aValueAsString.to_std_string() };
+            iss >> result;
             return result;
         }
     }
