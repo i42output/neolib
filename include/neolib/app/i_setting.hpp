@@ -52,18 +52,23 @@ namespace neolib
         typedef uint32_t id_type;
     public:
         virtual i_settings& manager() const = 0;
-        virtual const id_type id() const = 0;
-        virtual const i_string& category() const = 0;
-        virtual const i_string& name() const = 0;
+        virtual id_type id() const = 0;
+        virtual i_string const& category() const = 0;
+        virtual i_string const& name() const = 0;
         virtual simple_variant_type type() const = 0;
-        virtual const i_setting_constraints& constraints() const = 0;
-        virtual const i_simple_variant& value() const = 0;
-        virtual void set(const i_simple_variant& aNewValue) = 0;
-        virtual const i_simple_variant& new_value() const = 0;
+        virtual i_setting_constraints const& constraints() const = 0;
+        virtual i_simple_variant const& value() const = 0;
+        virtual void set(i_simple_variant const& aNewValue) = 0;
+        virtual i_simple_variant const& new_value() const = 0;
         virtual bool dirty() const = 0;
         virtual bool hidden() const = 0;
     private:
         virtual bool apply_change() = 0;
         virtual bool discard_change() = 0;
+    public:
+        void set(simple_variant const& aNewValue)
+        {
+            set(static_cast<i_simple_variant const&>(aNewValue));
+        }
     };
 }

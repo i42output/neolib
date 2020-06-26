@@ -50,9 +50,9 @@ namespace neolib
 {
     typedef plugin_variant<simple_variant_type, bool, int64_t, double, string, ref_ptr<i_enum>, ref_ptr<i_custom_type>> simple_variant;
 
-    inline simple_variant from_string(const std::string& aString, simple_variant_type aType)
+    inline simple_variant from_string(std::string const& aString, simple_variant_type aType)
     {
-        switch(aType)
+        switch (aType)
         {
         case simple_variant_type::Boolean:
             if (aString == "true" || aString == "1")
@@ -65,9 +65,13 @@ namespace neolib
             return string_to_double(aString);
         case simple_variant_type::String:
             return aString;
-        case simple_variant_type::CustomType:
         default:
             throw std::logic_error("neolib: cannot convert string to simple variant");
         }
+    }
+
+    inline std::string to_string(simple_variant const& aVariant)
+    {
+        return to_string(static_cast<i_simple_variant const&>(aVariant));
     }
 }

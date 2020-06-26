@@ -57,14 +57,15 @@ namespace neolib
             iManager{ aSetting.manager() }, iId{ aSetting.id() }, iCategory{ aSetting.category() }, iName{ aSetting.name() }, iType{ aSetting.type() }, iConstraints{ aSetting.constraints() }, iValue{ aSetting.value() }, iHidden{ aSetting.hidden() } {}
     public:
         i_settings& manager() const override { return iManager; }
-        const id_type id() const override { return iId; }
-        const i_string& category() const override { return iCategory; }
-        const i_string& name() const override { return iName; }
+        id_type id() const override { return iId; }
+        string const& category() const override { return iCategory; }
+        string const& name() const override { return iName; }
         simple_variant_type type() const override { return iType; }
-        const i_setting_constraints& constraints() const override { return iConstraints; }
-        const i_simple_variant& value() const override { return iValue; }
+        setting_constraints const& constraints() const override { return iConstraints; }
+        simple_variant const& value() const override { return iValue; }
+        using i_setting::set;
         void set(const i_simple_variant& aNewValue) override;
-        const i_simple_variant& new_value() const override { if (!iNewValue.empty()) return iNewValue; return iValue; }
+        simple_variant const& new_value() const override { if (!iNewValue.empty()) return iNewValue; return iValue; }
         bool dirty() const override { return !iNewValue.empty(); }
         bool hidden() const override { return iHidden; }
     public:

@@ -69,7 +69,7 @@ namespace neolib
 
     typedef i_plugin_variant<simple_variant_type, bool, int64_t, double, i_string, i_ref_ptr<i_enum>, i_ref_ptr<i_custom_type>> i_simple_variant;
 
-    inline std::string to_string(const i_simple_variant& aVariant)
+    inline std::string to_string(i_simple_variant const& aVariant)
     {
         switch (aVariant.which())
         {
