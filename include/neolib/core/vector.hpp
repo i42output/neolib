@@ -66,10 +66,10 @@ namespace neolib
         // construction
     public:
         vector() {}
-        vector(const vector& aOther) : iVector{ aOther.iVector } {}
-        vector(vector&& aOther) : iVector{ std::move(aOther.iVector) } {}
+        vector(const vector& aOther) : iVector(aOther.iVector) {}
+        vector(vector&& aOther) : iVector(std::move(aOther.iVector)) {}
         vector(const i_vector<abstract_value_type>& aOther) { assign(aOther); }
-        vector(const container_type& aOtherContainer) : iVector{ aOtherContainer } {}
+        vector(const container_type& aOtherContainer) : iVector(aOtherContainer) {}
         template <typename InputIter>
         vector(InputIter aFirst, InputIter aLast) : iVector(aFirst, aLast) {}
         vector& operator=(const vector& aOther) { assign(aOther); return *this; }

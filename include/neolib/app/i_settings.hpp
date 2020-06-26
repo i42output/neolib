@@ -43,6 +43,7 @@
 #include <neolib/plugin/simple_variant.hpp>
 #include <neolib/plugin/i_plugin_event.hpp>
 #include <neolib/app/i_setting.hpp>
+#include <neolib/app/setting_constraints.hpp>
 
 namespace neolib
 {
@@ -58,10 +59,10 @@ namespace neolib
         struct setting_already_registered : std::logic_error { setting_already_registered() : std::logic_error("i_settings::setting_already_registered") {} };
         struct setting_not_found : std::logic_error { setting_not_found() : std::logic_error("i_settings::setting_not_found") {} };
     public:
-        virtual i_setting::id_type register_setting(const i_string& aSettingCategory, const i_string& aSettingName, simple_variant_type aSettingType, const i_simple_variant& aDefaultValue = simple_variant(), bool aHidden = false) = 0;
-        i_setting::id_type register_setting(const string& aSettingCategory, const string& aSettingName, simple_variant_type aSettingType, const simple_variant& aDefaultValue = simple_variant(), bool aHidden = false)
+        virtual i_setting::id_type register_setting(const i_string& aSettingCategory, const i_string& aSettingName, simple_variant_type aSettingType, const i_simple_variant& aDefaultValue = simple_variant{}, const i_setting_constraints& aSettingConstraints = setting_constraints{}, bool aHidden = false) = 0;
+        i_setting::id_type register_setting(const string& aSettingCategory, const string& aSettingName, simple_variant_type aSettingType, const simple_variant& aDefaultValue = simple_variant{}, const setting_constraints& aSettingConstraints = setting_constraints{}, bool aHidden = false)
         {
-            return register_setting(static_cast<const i_string&>(aSettingCategory), static_cast<const i_string&>(aSettingName), aSettingType, static_cast<const i_simple_variant&>(aDefaultValue), aHidden);
+            return register_setting(static_cast<const i_string&>(aSettingCategory), static_cast<const i_string&>(aSettingName), aSettingType, static_cast<const i_simple_variant&>(aDefaultValue), static_cast<const i_setting_constraints&>(aSettingConstraints), aHidden);
         }
         virtual std::size_t count() const = 0;
         virtual i_setting& get_setting(std::size_t aIndex) = 0;

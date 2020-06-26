@@ -52,6 +52,7 @@ namespace neolib
         Integer,
         Real,
         String,
+        Enum,
         CustomType
     };
 
@@ -62,6 +63,7 @@ namespace neolib
         declare_enum_string(simple_variant_type, Integer)
         declare_enum_string(simple_variant_type, Real)
         declare_enum_string(simple_variant_type, String)
+        declare_enum_string(simple_variant_type, Enum)
         declare_enum_string(simple_variant_type, CustomType)
     };
 
@@ -82,6 +84,8 @@ namespace neolib
             return std::to_string(aVariant.get<double>());
         case simple_variant_type::String:
             return aVariant.get<i_string>().to_std_string();
+        case simple_variant_type::Enum:
+            return aVariant.get<i_ref_ptr<i_enum>>()->to_string();
         case simple_variant_type::CustomType:
             return aVariant.get<i_ref_ptr<i_custom_type>>()->to_string();
         default:

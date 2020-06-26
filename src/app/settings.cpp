@@ -52,9 +52,9 @@ namespace neolib
         load();
     }
 
-    i_setting::id_type settings::register_setting(const i_string& aSettingCategory, const i_string& aSettingName, simple_variant_type aSettingType, const i_simple_variant& aDefaultValue, bool aHidden)
+    i_setting::id_type settings::register_setting(const i_string& aSettingCategory, const i_string& aSettingName, simple_variant_type aSettingType, const i_simple_variant& aDefaultValue, const i_setting_constraints& aSettingConstraints, bool aHidden)
     {
-        return do_register_setting(aSettingCategory, aSettingName, aSettingType, aDefaultValue, aHidden);
+        return do_register_setting(aSettingCategory, aSettingName, aSettingType, aDefaultValue, aSettingConstraints, aHidden);
     }
 
     std::size_t settings::count() const
@@ -171,7 +171,7 @@ namespace neolib
         }
     }
 
-    i_setting::id_type settings::do_register_setting(const string& aSettingCategory, const string& aSettingName, simple_variant_type aSettingType, const simple_variant& aDefaultValue, bool aHidden)
+    i_setting::id_type settings::do_register_setting(const string& aSettingCategory, const string& aSettingName, simple_variant_type aSettingType, const simple_variant& aDefaultValue, const i_setting_constraints& aSettingConstraints, bool aHidden)
     {
         setting_by_name_list::iterator iterCheck = iSettingsByName.find(setting_by_name_list::key_type(aSettingCategory, aSettingName));
         if (iterCheck != iSettingsByName.end())
@@ -196,7 +196,7 @@ namespace neolib
                 }
             }
         }
-        setting_list::iterator iter = iSettings.insert(setting(*this, iNextSettingId++, aSettingCategory, aSettingName, aSettingType, currentValue, aHidden));
+        setting_list::iterator iter = iSettings.insert(setting{ *this, iNextSettingId++, aSettingCategory, aSettingName, aSettingType, aSettingConstraints, currentValue, aHidden });
         iSettingsByName[std::pair<string, string>(aSettingCategory, aSettingName)] = iter->id();
         return iter->id();
     }

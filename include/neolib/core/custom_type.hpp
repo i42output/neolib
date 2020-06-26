@@ -49,11 +49,20 @@ namespace neolib
     namespace detail
     {
         template <typename T>
-        std::string to_string(const T& aValue)
+        string to_string(const T& aValue)
         {
             std::ostringstream oss;
             oss << aValue;
             return oss.str();
+        }
+
+        template <typename T>
+        T from_string(const i_string& aValueAsString)
+        {
+            T result;
+            std::ostringstream oss{ aValueAsString.to_std_string() };
+            oss >> result;
+            return result;
         }
     }
 
@@ -69,8 +78,10 @@ namespace neolib
     public:
         custom_type(const string& aName) :
             iName{ aName } {}
-        custom_type(const string& aName, const abstract_value_type& aInstance) :
-            iName{ aName }, iInstance{ aInstance } {}
+        custom_type(const string& aName, const string& aValue) :
+            iName{ aName }, iInstance{ detail::from_string<T>(aValue) } {}
+        custom_type(const string& aName, const abstract_value_type& aValue) :
+            iName{ aName }, iInstance{ aValue } {}
         custom_type(const i_custom_type& aOther) :
             iName{ aOther.name() }, iInstance{ aOther.instance_ptr() ? container_type{aOther.instance_as<abstract_value_type>()} : container_type{} } {}
         ~custom_type() {}
@@ -117,4 +128,19 @@ namespace neolib
         string iName;
         container_type iInstance;
     };
+
+    template <typename T>
+    const std::string custom_type_name_v = T::type_name;
+
+    template <typename T>
+    custom_type<T> make_custom_type()
+    {
+        return custom_type<T>{ custom_type_name_v<T> };
+    }
+
+    template <typename T>
+    custom_type<T> make_custom_type(const abstract_t<T>& aValue)
+    {
+        return custom_type<T>{ custom_type_name_v<T>, aValue };
+    }
 }

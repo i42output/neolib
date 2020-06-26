@@ -41,6 +41,7 @@
 #include <neolib/plugin/simple_variant.hpp>
 #include <neolib/app/i_setting.hpp>
 #include <neolib/app/i_settings.hpp>
+#include <neolib/app/setting_constraints.hpp>
 
 namespace neolib
 {
@@ -50,32 +51,34 @@ namespace neolib
     public:
         typedef id_type key_type;
     public:
-        setting(i_settings& aManager, id_type aId, const i_string& aCategory, const i_string& aName, simple_variant_type aType, const simple_variant& aValue = simple_variant(), bool aHidden = false) :
-            iManager(aManager), iId(aId), iCategory(aCategory), iName(aName), iType(aType), iValue(aValue), iHidden(aHidden) {}
+        setting(i_settings& aManager, id_type aId, const i_string& aCategory, const i_string& aName, simple_variant_type aType, const i_setting_constraints& aConstraints = setting_constraints{}, const simple_variant& aValue = simple_variant{}, bool aHidden = false) :
+            iManager{ aManager }, iId{ aId }, iCategory{ aCategory }, iName{ aName }, iType{ aType }, iConstraints{ aConstraints }, iValue{ aValue }, iHidden{ aHidden } {}
         setting(const i_setting& aSetting) :
-            iManager(aSetting.manager()), iId(aSetting.id()), iCategory(aSetting.category()), iName(aSetting.name()), iType(aSetting.type()), iValue(aSetting.value()), iHidden(aSetting.hidden()) {}
+            iManager{ aSetting.manager() }, iId{ aSetting.id() }, iCategory{ aSetting.category() }, iName{ aSetting.name() }, iType{ aSetting.type() }, iConstraints{ aSetting.constraints() }, iValue{ aSetting.value() }, iHidden{ aSetting.hidden() } {}
     public:
-        virtual i_settings& manager() const { return iManager; }
-        virtual const id_type id() const { return iId; }
-        virtual const i_string& category() const { return iCategory; }
-        virtual const i_string& name() const { return iName; }
-        virtual simple_variant_type type() const { return iType; }
-        virtual const i_simple_variant& value() const { return iValue; }
-        virtual void set(const i_simple_variant& aNewValue);
-        virtual const i_simple_variant& new_value() const { if (!iNewValue.empty()) return iNewValue; return iValue; }
-        virtual bool dirty() const { return !iNewValue.empty(); }
-        virtual bool hidden() const { return iHidden; }
+        i_settings& manager() const override { return iManager; }
+        const id_type id() const override { return iId; }
+        const i_string& category() const override { return iCategory; }
+        const i_string& name() const override { return iName; }
+        simple_variant_type type() const override { return iType; }
+        const i_setting_constraints& constraints() const override { return iConstraints; }
+        const i_simple_variant& value() const override { return iValue; }
+        void set(const i_simple_variant& aNewValue) override;
+        const i_simple_variant& new_value() const override { if (!iNewValue.empty()) return iNewValue; return iValue; }
+        bool dirty() const override { return !iNewValue.empty(); }
+        bool hidden() const override { return iHidden; }
     public:
         operator key_type() const { return key_type(iId); }
     private:
-        virtual bool apply_change();
-        virtual bool discard_change();
+        bool apply_change() override;
+        bool discard_change() override;
     private:
         i_settings& iManager;
         id_type iId;
         string iCategory;
         string iName;
         simple_variant_type iType;
+        setting_constraints iConstraints;
         simple_variant iValue;
         simple_variant iNewValue;
         bool iHidden;

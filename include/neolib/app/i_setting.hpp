@@ -39,6 +39,7 @@
 #include <neolib/core/i_reference_counted.hpp>
 #include <neolib/core/i_string.hpp>
 #include <neolib/core/i_simple_variant.hpp>
+#include <neolib/app/i_setting_constraints.hpp>
 
 namespace neolib
 {
@@ -55,6 +56,7 @@ namespace neolib
         virtual const i_string& category() const = 0;
         virtual const i_string& name() const = 0;
         virtual simple_variant_type type() const = 0;
+        virtual const i_setting_constraints& constraints() const = 0;
         virtual const i_simple_variant& value() const = 0;
         virtual void set(const i_simple_variant& aNewValue) = 0;
         virtual const i_simple_variant& new_value() const = 0;

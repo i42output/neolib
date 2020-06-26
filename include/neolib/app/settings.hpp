@@ -68,7 +68,7 @@ namespace neolib
         settings(const i_application& aApp, const i_string& aFileName = string{ "settings.xml" }, ref_ptr<i_custom_type_factory> aCustomSettingTypeFactory = ref_ptr<i_custom_type_factory>());
     public:
         using i_settings::register_setting;
-        i_setting::id_type register_setting(const i_string& aSettingCategory, const i_string& aSettingName, simple_variant_type aSettingType, const i_simple_variant& aDefaultValue = simple_variant{}, bool aHidden = false) override;
+        i_setting::id_type register_setting(const i_string& aSettingCategory, const i_string& aSettingName, simple_variant_type aSettingType, const i_simple_variant& aDefaultValue = simple_variant{}, const i_setting_constraints& aSettingConstraints = setting_constraints{}, bool aHidden = false) override;
         std::size_t count() const override;
         i_setting& get_setting(std::size_t aIndex) override;
         i_setting& find_setting(i_setting::id_type aId) override;
@@ -84,7 +84,7 @@ namespace neolib
     public:
         static const uuid& id() { static uuid sId = neolib::make_uuid("E19B3C48-04F7-4207-B24A-2967A3523CE7"); return sId; }
     protected:
-        i_setting::id_type do_register_setting(const string& aSettingCategory, const string& aSettingName, simple_variant_type aSettingType, const simple_variant& aDefaultValue, bool aHidden);
+        i_setting::id_type do_register_setting(const string& aSettingCategory, const string& aSettingName, simple_variant_type aSettingType, const simple_variant& aDefaultValue, const i_setting_constraints& aSettingConstraints, bool aHidden);
     private:
         void setting_changed(i_setting& aExistingSetting) override;
     private:

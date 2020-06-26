@@ -1,6 +1,6 @@
-// i_custom_type_factory.hpp
+// i_setting_constraints.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2020 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -36,27 +36,26 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <string>
-#include <neolib/core/i_reference_counted.hpp>
-#include <neolib/core/i_custom_type.hpp>
+#include <neolib/core/i_vector.hpp>
+#include <neolib/core/i_simple_variant.hpp>
 #include <neolib/core/i_string.hpp>
 
 namespace neolib
 {
-    class i_custom_type_factory : public i_reference_counted
+    class i_setting_constraints
     {
     public:
-        struct unsupported_custom_type : std::runtime_error { unsupported_custom_type(const std::string& aType) : std::runtime_error{ "neolib::i_custom_type_factory::unsupported_custom_type: " + aType } {} };
+        virtual ~i_setting_constraints() = default;
     public:
-        typedef i_custom_type_factory abstract_type;
-    public:
-        virtual void create(const i_string& aType, const i_string& aValue, i_ref_ptr<i_custom_type>& aObject) const = 0;
-    public:
-        ref_ptr<i_custom_type> create(const i_string& aType, const i_string& aValue) const
-        {
-            ref_ptr<i_custom_type> object;
-            create(aType, aValue, object);
-            return object;
-        }
+        virtual bool has_minimum_value() const = 0;
+        virtual bool has_maximum_value() const = 0;
+        virtual bool has_allowable_values() const = 0;
+        virtual bool has_step_value() const = 0;
+        virtual bool has_format_string() const = 0;
+        virtual const i_simple_variant& minimum_value() const = 0;
+        virtual const i_simple_variant& maximum_value() const = 0;
+        virtual const i_vector<i_simple_variant>& allowable_values() const = 0;
+        virtual const i_simple_variant& step_value() const = 0;
+        virtual const i_string& format_string() const = 0;
     };
 }
