@@ -62,15 +62,15 @@ namespace neolib
     {
         auto const& key = aGroupSubkey.to_std_string();
         auto const& category = key.substr(0, key.find('.'));
-        iGroupTitles[category][aGroupSubkey] = aGroupTitle;
+        iGroupTitles[string{ category }][aGroupSubkey] = aGroupTitle;
     }
 
     void settings::register_setting(i_setting& aSetting)
     {
         if (iSettings.find(aSetting.key()) != iSettings.end())
             throw setting_already_registered();
+        iSettings[aSetting.key()] = ref_ptr<i_setting>{ aSetting };
         auto const key = aSetting.key().to_std_string();
-        iSettings[key] = ref_ptr<i_setting>{ aSetting };
         thread_local std::vector<std::string> keyBits;
         keyBits.clear();
         keyBits = tokens(key, "."s);
@@ -94,16 +94,9 @@ namespace neolib
         }
     }
 
-    std::size_t settings::category_count() const
+    settings::category_titles const& settings::all_categories() const
     {
-        return iCategoryTitles.size();
-    }
-
-    i_string const& settings::category(std::size_t aCategoryIndex) const
-    {
-        if (aCategoryIndex >= iCategoryTitles.size())
-            throw category_not_found();
-        return std::next(iCategoryTitles.begin(), aCategoryIndex)->first;
+        return iCategoryTitles;
     }
 
     i_string const& settings::category_title(i_string const& aCategorySubkey) const
@@ -111,59 +104,30 @@ namespace neolib
         category_titles::const_iterator iter = iCategoryTitles.find(aCategorySubkey);
         if (iter == iCategoryTitles.end())
             throw category_not_found();
-        return iter->second;
+        return iter->second();
     }
 
-    std::size_t settings::group_count(i_string const& aCategorySubkey) const
+    settings::group_titles const& settings::all_groups() const
     {
-        group_titles::const_iterator iter = iGroupTitles.find(aCategorySubkey);
-        if (iter == iGroupTitles.end())
-            throw group_not_found();
-        return iter->second.size();
-    }
-
-    i_string const& settings::group(i_string const& aCategorySubkey, std::size_t aGroupIndex) const
-    {
-        group_titles::const_iterator iter = iGroupTitles.find(aCategorySubkey);
-        if (iter == iGroupTitles.end() || aGroupIndex >= iter->second.size())
-            throw group_not_found();
-        return std::next(iter->second.begin(), aGroupIndex)->first;
+        return iGroupTitles;
     }
 
     i_string const& settings::group_title(i_string const& aGroupSubkey) const
     {
         auto const& key = aGroupSubkey.to_std_string();
         auto const& category = key.substr(0, key.find('.'));
-        group_titles::const_iterator iter = iGroupTitles.find(category);
+        group_titles::const_iterator iter = iGroupTitles.find(string{ category });
         if (iter == iGroupTitles.end())
             throw group_not_found();
-        auto existing = iter->second.find(aGroupSubkey);
-        if (existing == iter->second.end())
+        auto existing = iter->second().find(aGroupSubkey);
+        if (existing == iter->second().end())
             throw group_not_found();
-        return existing->second;
+        return existing->second();
     }
 
-    std::size_t settings::setting_count() const
+    settings::setting_list const& settings::all_settings() const
     {
-        return iSettings.size();
-    }
-
-    i_setting const& settings::setting(std::size_t aSettingIndex) const
-    {
-        if (aSettingIndex >= iSettings.size())
-            throw setting_not_found();
-        setting_list::const_iterator iter = iSettings.begin();
-        std::advance(iter, aSettingIndex);
-        return *iter->second;
-    }
-
-    i_setting& settings::setting(std::size_t aSettingIndex)
-    {
-        if (aSettingIndex >= iSettings.size())
-            throw setting_not_found();
-        setting_list::iterator iter = iSettings.begin();
-        std::advance(iter, aSettingIndex);
-        return *iter->second;
+        return iSettings;
     }
 
     i_setting const& settings::setting(i_string const& aKey) const
@@ -171,7 +135,7 @@ namespace neolib
         auto existing = iSettings.find(aKey);
         if (existing == iSettings.end())
             throw setting_not_found();
-        return *existing->second;
+        return *existing->second();
     }
 
     i_setting& settings::setting(i_string const& aKey)
@@ -179,7 +143,7 @@ namespace neolib
         auto existing = iSettings.find(aKey);
         if (existing == iSettings.end())
             throw setting_not_found();
-        return *existing->second;
+        return *existing->second();
     }
 
     void settings::change_setting(i_setting& aExistingSetting, const i_setting_value& aValue, bool aApplyNow)
@@ -197,7 +161,7 @@ namespace neolib
         setting_list::iterator iter = iSettings.find(aExistingSetting.key());
         if (iter == iSettings.end())
             throw setting_not_found();
-        SettingDeleted.trigger(*iter->second);
+        SettingDeleted.trigger(*iter->second());
         iSettings.erase(iter);
         save();
     }
@@ -209,8 +173,8 @@ namespace neolib
         std::set<string> categoriesChanged;
         for (auto& setting : iSettings)
         {
-            auto const& key = setting.first.to_std_string();
-            if (setting.second->apply_change())
+            auto const& key = setting.first().to_std_string();
+            if (setting.second()->apply_change())
                 categoriesChanged.insert(key.substr(0, key.find('.')));
         }
         for (auto const& category : categoriesChanged)
@@ -220,14 +184,14 @@ namespace neolib
 
     void settings::discard_changes()
     {
-        for (setting_list::iterator iter = iSettings.begin(); iter != iSettings.end(); ++iter)
-            iter->second->discard_change();
+        for (auto const& setting : iSettings)
+            setting.second()->discard_change();
     }
 
     bool settings::dirty() const
     {
         for (auto const& setting: iSettings)
-            if (setting.second->dirty())
+            if (setting.second()->dirty())
                 return true;
         return false;
     }
@@ -254,7 +218,7 @@ namespace neolib
             iStore->root().name() = "settings";
             for (auto const& setting : iSettings)
             {
-                auto const& key = setting.first.to_std_string();
+                auto const& key = setting.first().to_std_string();
                 thread_local std::vector<std::string> keyBits;
                 keyBits.clear();
                 keyBits = tokens(key, "."s);
@@ -266,7 +230,7 @@ namespace neolib
                     else
                         node = (**node).find_or_append(keyBit);
                 }
-                (**node).set_attribute("value", setting.second->value_as_string());
+                (**node).set_attribute("value", setting.second()->value_as_string());
             }
             iStore->write(output);
         }
@@ -277,6 +241,6 @@ namespace neolib
         setting_list::iterator iter = iSettings.find(aExistingSetting.key());
         if (iter == iSettings.end())
             throw setting_not_found();
-        SettingChanged.trigger(*iter->second);
+        SettingChanged.trigger(*iter->second());
     }
 }

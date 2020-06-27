@@ -39,7 +39,7 @@
 #include <fstream>
 #include <set>
 #include <memory>
-#include <neolib/core/mutable_set.hpp>
+#include <neolib/core/map.hpp>
 #include <neolib/core/vector.hpp>
 #include <neolib/core/reference_counted.hpp>
 #include <neolib/core/string.hpp>
@@ -62,9 +62,9 @@ namespace neolib
         define_declared_event(SettingDeleted, setting_deleted, const i_setting&)
         define_declared_event(InterestedInDirtySettings, interested_in_dirty_settings, bool&)
     private:
-        typedef std::map<string, string> category_titles;
-        typedef std::map<string, std::map<string, string>> group_titles;
-        typedef std::map<string, ref_ptr<i_setting>> setting_list;
+        typedef map<string, string> category_titles;
+        typedef map<string, map<string, string>> group_titles;
+        typedef map<string, ref_ptr<i_setting>> setting_list;
     public:
         settings(const i_string& aFileName);
         settings(const i_application& aApp, const i_string& aFileName = string{ "settings.xml" });
@@ -75,15 +75,11 @@ namespace neolib
         void register_category(i_string const& aCategorySubkey, i_string const& aCategoryTitle = string{}) override;
         void register_group(i_string const& aGroupSubkey, i_string const& aGroupTitle = string{}) override;
         void register_setting(i_setting& aSetting) override;
-        std::size_t category_count() const override;
-        i_string const& category(std::size_t aCategoryIndex) const override;
+        category_titles const& all_categories() const override;
         i_string const& category_title(i_string const& aCategorySubkey) const override;
-        std::size_t group_count(i_string const& aCategorySubkey) const override;
-        i_string const& group(i_string const& aCategorySubkey, std::size_t aGroupIndex) const override;
+        group_titles const& all_groups() const override;
         i_string const& group_title(i_string const& aGroupSubkey) const override;
-        std::size_t setting_count() const override;
-        i_setting const& setting(std::size_t aSettingIndex) const override;
-        i_setting& setting(std::size_t aSettingIndex) override;
+        setting_list const& all_settings() const override;
         i_setting const& setting(i_string const& aKey) const override;
         i_setting& setting(i_string const& aKey) override;
         void change_setting(i_setting& aExistingSetting, const i_setting_value& aValue, bool aApplyNow = true) override;

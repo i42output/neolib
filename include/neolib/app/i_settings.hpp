@@ -37,6 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <neolib/core/vector.hpp>
+#include <neolib/core/map.hpp>
 #include <neolib/core/i_reference_counted.hpp>
 #include <neolib/core/uuid.hpp>
 #include <neolib/core/i_string.hpp>
@@ -65,15 +66,11 @@ namespace neolib
         virtual void register_category(i_string const& aCategorySubkey, i_string const& aCategoryTitle = string{}) = 0;
         virtual void register_group(i_string const& aGroupSubkey, i_string const& aGroupTitle = string{}) = 0;
         virtual void register_setting(i_setting& aSetting) = 0;
-        virtual std::size_t category_count() const = 0;
-        virtual i_string const& category(std::size_t aCategoryIndex) const = 0;
+        virtual i_map<i_string, i_string> const& all_categories() const = 0;
         virtual i_string const& category_title(i_string const& aCategorySubkey) const = 0;
-        virtual std::size_t group_count(i_string const& aCategorySubkey) const = 0;
-        virtual i_string const& group(i_string const& aCategorySubkey, std::size_t aGroupIndex) const = 0;
+        virtual i_map<i_string, i_map<i_string, i_string>> const& all_groups() const = 0;
         virtual i_string const& group_title(i_string const& aGroupSubkey) const = 0;
-        virtual std::size_t setting_count() const = 0;
-        virtual i_setting const& setting(std::size_t aSettingIndex) const = 0;
-        virtual i_setting& setting(std::size_t aSettingIndex) = 0;
+        virtual i_map<i_string, i_ref_ptr<i_setting>> const& all_settings() const = 0;
         virtual i_setting const& setting(i_string const& aKey) const = 0;
         virtual i_setting& setting(i_string const& aKey) = 0;
         virtual void change_setting(i_setting& aExistingSetting, i_setting_value const& aValue, bool aApplyNow = true) = 0;
