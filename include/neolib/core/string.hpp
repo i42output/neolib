@@ -186,15 +186,6 @@ namespace neolib
         return std::strcmp(lhs.c_str(), rhs.c_str()) < 0;
     }
 
-    template <typename T>
-    inline string to_string(const T& aValue)
-    {
-        if constexpr (!std::is_same_v<std::decay_t<T>, uuid>)
-            return std::to_string(aValue);
-        else
-            return uuid_to_string(aValue);
-    }
-
     namespace string_literals
     {
         inline string operator"" _s(const char* str, size_t len)

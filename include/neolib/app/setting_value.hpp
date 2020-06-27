@@ -1,4 +1,4 @@
-// i_setting_constraints.hpp
+// setting_value.hpp
 /*
  *  Copyright (c) 2020 Leigh Johnston.
  *
@@ -36,42 +36,75 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <neolib/core/i_vector.hpp>
-#include <neolib/core/i_string.hpp>
+#include <optional>
 #include <neolib/app/i_setting_value.hpp>
 
 namespace neolib
 {
-    class i_setting_constraints
+    template <typename T>
+    class setting_value : public i_setting_value
     {
+        typedef setting_value<T> self_type;
     public:
-        virtual ~i_setting_constraints() = default;
+        typedef i_setting_value abstract_type;
+        typedef std::optional<T> container_type;
     public:
-        virtual bool has_minimum_value() const = 0;
-        virtual bool has_maximum_value() const = 0;
-        virtual bool has_allowable_values() const = 0;
-        virtual bool has_step_value() const = 0;
-        virtual bool has_format_string() const = 0;
-        virtual i_setting_value& minimum_value() const = 0;
-        virtual i_setting_value& maximum_value() const = 0;
-        virtual const i_vector<i_setting_value>& allowable_values() const = 0;
-        virtual const i_setting_value& step_value() const = 0;
-        virtual i_string const& format_string() const = 0;
+        setting_value() :
+            iValue{}
+        {
+        }
+        setting_value(T const& aDefaultValue) :
+            iValue{ aDefaultValue }
+        {
+        }
+        setting_value(self_type const& aOther) :
+            iValue{ aOther.iValue }
+        {
+        }
+        setting_value(i_setting_value const& aOther) :
+            iValue{ aOther.is_set() ? aOther.get<T> : container_type{} }
+        {
+        }
     public:
-        template <typename T>
-        abstract_t<T>& minimum_value() const
+        setting_type type() const override
         {
-            return minimum_value().get<T>();
+            return setting_type_v<T>;
         }
-        template <typename T>
-        abstract_t<T>& maximum_value() const
+        bool is_set() const override
         {
-            return maximum_value().get<T>();
+            return !!iValue;
         }
-        template <typename T>
-        abstract_t<T>& step_value() const
+        void clear() override
         {
-            return step_value().get<T>();
+            iValue = std::nullopt;
         }
+    public:
+        bool operator==(const i_setting_value& aRhs) const
+        {
+            if (type() != aRhs.type())
+                return false;
+            return get<T>() == aRhs.get<T>();
+        }
+        bool operator<(const i_setting_value& aRhs) const
+        {
+            if (type() != aRhs.type())
+                return type() < aRhs.type();
+            return get<T>() < aRhs.get<T>();
+        }
+    private:
+        void const* data() const override
+        {
+            if (is_set())
+                return &*iValue;
+            throw not_set();
+        }
+        void* data() override
+        {
+            if (!is_set())
+                iValue.emplace();
+            return &*iValue;
+        }
+    private:
+        container_type iValue;
     };
 }

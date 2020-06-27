@@ -40,21 +40,36 @@
 
 namespace neolib
 {
-    settings::settings(const i_string& aFileName, ref_ptr<i_custom_type_factory> aCustomSettingTypeFactory) :
-        iFileName{ aFileName }, iNextSettingId{ 1 }, iCustomSettingTypeFactory{ aCustomSettingTypeFactory }
+    settings::settings(const i_string& aFileName) :
+        iFileName{ aFileName }, iNextSettingId{ 1 }
     {
         load();
     }
 
-    settings::settings(const i_application& aApp, const i_string& aFileName, ref_ptr<i_custom_type_factory> aCustomSettingTypeFactory) :
-        iFileName{ aApp.info().settings_folder() + "/" + aFileName }, iNextSettingId{ 1 }, iCustomSettingTypeFactory{ aCustomSettingTypeFactory }
+    settings::settings(const i_application& aApp, const i_string& aFileName) :
+        iFileName{ aApp.info().settings_folder() + "/" + aFileName }, iNextSettingId{ 1 }
     {
         load();
     }
 
-    i_setting::id_type settings::register_setting(const i_string& aSettingCategory, const i_string& aSettingName, simple_variant_type aSettingType, const i_simple_variant& aDefaultValue, const i_setting_constraints& aSettingConstraints, bool aHidden)
+    i_setting::id_type settings::register_setting(i_setting& aSetting)
     {
-        return do_register_setting(aSettingCategory, aSettingName, aSettingType, aDefaultValue, aSettingConstraints, aHidden);
+        setting_by_name_list::iterator iterCheck = iSettingsByName.find(setting_by_name_list::key_type(aSetting.category(), aSetting.name()));
+        if (iterCheck != iSettingsByName.end())
+            throw setting_already_registered();
+        if (iStore != nullptr)
+        {
+            xml::element::iterator xmlIterCategory = iStore->root().find(aSetting.category().to_std_string());
+            if (xmlIterCategory != iStore->root().end())
+            {
+                xml::element::iterator xmlIterSetting = xmlIterCategory->find(aSetting.name().to_std_string());
+                if (xmlIterSetting != xmlIterCategory->end())
+                    aSetting.set_value_from_string(string{ xmlIterSetting->attribute_value("value") });
+            }
+        }
+        iSettings.insert(std::make_pair(aSetting.id(), ref_ptr<i_setting>{aSetting}));
+        iSettingsByName[std::pair<string, string>(aSetting.category(), aSetting.name())] = aSetting.id();
+        return aSetting.id();
     }
 
     std::size_t settings::count() const
@@ -68,15 +83,15 @@ namespace neolib
             throw setting_not_found();
         setting_list::iterator iter = iSettings.begin();
         std::advance(iter, aIndex);
-        return *iter;
+        return *iter->second;
     }
 
     i_setting& settings::find_setting(i_setting::id_type aId)
     {
-        setting_list::iterator iter = iSettings.find(setting::key_type(aId));
+        setting_list::iterator iter = iSettings.find(aId);
         if (iter == iSettings.end())
             throw setting_not_found();
-        return *iter;
+        return *iter->second;
     }
 
     i_setting& settings::find_setting(const i_string& aSettingCategory, const i_string& aSettingName)
@@ -87,9 +102,9 @@ namespace neolib
         return find_setting(iter->second);
     }
 
-    void settings::change_setting(i_setting& aExistingSetting, const i_simple_variant& aValue, bool aApplyNow)
+    void settings::change_setting(i_setting& aExistingSetting, const i_setting_value& aValue, bool aApplyNow)
     {
-        aExistingSetting.set(aValue);
+        aExistingSetting.set_value(aValue);
         if (aApplyNow)
         {
             aExistingSetting.apply_change();
@@ -99,10 +114,10 @@ namespace neolib
 
     void settings::delete_setting(i_setting& aExistingSetting)
     {
-        setting_list::iterator iter = iSettings.find(setting::key_type(aExistingSetting.id()));
+        setting_list::iterator iter = iSettings.find(aExistingSetting.id());
         if (iter == iSettings.end())
             throw setting_not_found();
-        SettingDeleted.trigger(*iter);
+        SettingDeleted.trigger(*iter->second);
         iSettings.erase(iter);
         save();
     }
@@ -113,8 +128,8 @@ namespace neolib
             return;
         std::set<string> categoriesChanged;
         for (setting_list::iterator iter = iSettings.begin(); iter != iSettings.end(); ++iter)
-            if (iter->apply_change())
-                categoriesChanged.insert(iter->category());
+            if (iter->second->apply_change())
+                categoriesChanged.insert(iter->second->category());
         for (std::set<string>::const_iterator iter = categoriesChanged.begin(); iter != categoriesChanged.end(); ++iter)
             SettingsChanged.trigger(*iter);
         save();
@@ -123,13 +138,13 @@ namespace neolib
     void settings::discard_changes()
     {
         for (setting_list::iterator iter = iSettings.begin(); iter != iSettings.end(); ++iter)
-            iter->discard_change();
+            iter->second->discard_change();
     }
 
     bool settings::dirty() const
     {
         for (setting_list::const_iterator iter = iSettings.begin(); iter != iSettings.end(); ++iter)
-            if (iter->dirty())
+            if (iter->second->dirty())
                 return true;
         return false;
     }
@@ -156,56 +171,23 @@ namespace neolib
             iStore->root().name() = "settings";
             for (setting_list::const_iterator i = iSettings.begin(); i != iSettings.end(); ++i)
             {
-                xml::element& category = static_cast<xml::element&>(*iStore->root().find_or_append(i->category().c_str()));
-                if (i->type() != simple_variant_type::CustomType)
-                    category.append(i->name().c_str()).set_attribute("value", to_string(i->value()).c_str());
-                else
-                {
-                    auto const& customType = *i->value().get<i_ref_ptr<i_custom_type>>();
-                    xml::element& name = category.append(i->name().c_str());
-                    name.set_attribute("type", customType.name().c_str());
-                    name.set_attribute("value", customType.to_string());
-                }
+                xml::element& category = static_cast<xml::element&>(*iStore->root().find_or_append(i->second->category().to_std_string()));
+                category.append(i->second->name().to_std_string()).set_attribute("value", i->second->value_as_string());
             }
             iStore->write(output);
         }
     }
 
-    i_setting::id_type settings::do_register_setting(const string& aSettingCategory, const string& aSettingName, simple_variant_type aSettingType, const simple_variant& aDefaultValue, const i_setting_constraints& aSettingConstraints, bool aHidden)
+    i_setting::id_type settings::next_id()
     {
-        setting_by_name_list::iterator iterCheck = iSettingsByName.find(setting_by_name_list::key_type(aSettingCategory, aSettingName));
-        if (iterCheck != iSettingsByName.end())
-            throw setting_already_registered();
-        simple_variant currentValue = aDefaultValue;
-        if (iStore != nullptr)
-        {
-            xml::element::iterator xmlIterCategory = iStore->root().find(aSettingCategory.c_str());
-            if (xmlIterCategory != iStore->root().end())
-            {
-                xml::element::iterator xmlIterSetting = xmlIterCategory->find(aSettingName.c_str());
-                if (xmlIterSetting != xmlIterCategory->end())
-                {
-                    if (aSettingType != simple_variant_type::CustomType)
-                        currentValue = from_string(xmlIterSetting->attribute_value("value"), aSettingType);
-                    else
-                    {
-                        string valueType = xmlIterSetting->attribute_value("type");
-                        string valueData = xmlIterSetting->attribute_value("value");
-                        currentValue = simple_variant(ref_ptr<i_custom_type>(iCustomSettingTypeFactory->create(valueType, valueData)));
-                    }
-                }
-            }
-        }
-        setting_list::iterator iter = iSettings.insert(setting{ *this, iNextSettingId++, aSettingCategory, aSettingName, aSettingType, aSettingConstraints, currentValue, aHidden });
-        iSettingsByName[std::pair<string, string>(aSettingCategory, aSettingName)] = iter->id();
-        return iter->id();
+        return iNextSettingId++;
     }
 
     void settings::setting_changed(i_setting& aExistingSetting)
     {
-        setting_list::iterator iter = iSettings.find(setting::key_type(aExistingSetting.id()));
+        setting_list::iterator iter = iSettings.find(aExistingSetting.id());
         if (iter == iSettings.end())
             throw setting_not_found();
-        SettingChanged.trigger(*iter);
+        SettingChanged.trigger(*iter->second);
     }
 }

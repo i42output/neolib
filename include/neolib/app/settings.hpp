@@ -54,6 +54,7 @@ namespace neolib
 {
     class settings : public reference_counted<i_settings>
     {
+        template <typename T>
         friend class setting;
     public:
         define_declared_event(SettingsChanged, settings_changed, const i_string&)
@@ -61,19 +62,19 @@ namespace neolib
         define_declared_event(SettingDeleted, setting_deleted, const i_setting&)
         define_declared_event(InterestedInDirtySettings, interested_in_dirty_settings, bool&)
     private:
-        typedef mutable_set<setting> setting_list;
+        typedef std::map<i_setting::id_type, ref_ptr<i_setting>> setting_list;
         typedef std::map<std::pair<string, string>, i_setting::id_type> setting_by_name_list;
     public:
-        settings(const i_string& aFileName, ref_ptr<i_custom_type_factory> aCustomSettingTypeFactory = ref_ptr<i_custom_type_factory>());
-        settings(const i_application& aApp, const i_string& aFileName = string{ "settings.xml" }, ref_ptr<i_custom_type_factory> aCustomSettingTypeFactory = ref_ptr<i_custom_type_factory>());
+        settings(const i_string& aFileName);
+        settings(const i_application& aApp, const i_string& aFileName = string{ "settings.xml" });
     public:
         using i_settings::register_setting;
-        i_setting::id_type register_setting(const i_string& aSettingCategory, const i_string& aSettingName, simple_variant_type aSettingType, const i_simple_variant& aDefaultValue = simple_variant{}, const i_setting_constraints& aSettingConstraints = setting_constraints{}, bool aHidden = false) override;
+        i_setting::id_type register_setting(i_setting& aSetting) override;
         std::size_t count() const override;
         i_setting& get_setting(std::size_t aIndex) override;
         i_setting& find_setting(i_setting::id_type aId) override;
         i_setting& find_setting(const i_string& aSettingCategory, const i_string& aSettingName) override;
-        void change_setting(i_setting& aExistingSetting, const i_simple_variant& aValue, bool aApplyNow = false) override;
+        void change_setting(i_setting& aExistingSetting, const i_setting_value& aValue, bool aApplyNow = false) override;
         void delete_setting(i_setting& aExistingSetting) override;
         void apply_changes() override;
         void discard_changes() override;
@@ -83,14 +84,12 @@ namespace neolib
         void save() const override;
     public:
         static const uuid& id() { static uuid sId = neolib::make_uuid("E19B3C48-04F7-4207-B24A-2967A3523CE7"); return sId; }
-    protected:
-        i_setting::id_type do_register_setting(const string& aSettingCategory, const string& aSettingName, simple_variant_type aSettingType, const simple_variant& aDefaultValue, const i_setting_constraints& aSettingConstraints, bool aHidden);
     private:
+        i_setting::id_type next_id() override;
         void setting_changed(i_setting& aExistingSetting) override;
     private:
         string iFileName;
         i_setting::id_type iNextSettingId;
-        ref_ptr<i_custom_type_factory> iCustomSettingTypeFactory;
         mutable std::unique_ptr<xml> iStore;
         setting_list iSettings;
         setting_by_name_list iSettingsByName;

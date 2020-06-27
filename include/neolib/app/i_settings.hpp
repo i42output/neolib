@@ -42,13 +42,14 @@
 #include <neolib/core/i_string.hpp>
 #include <neolib/plugin/simple_variant.hpp>
 #include <neolib/plugin/i_plugin_event.hpp>
-#include <neolib/app/i_setting.hpp>
+#include <neolib/app/setting.hpp>
 #include <neolib/app/setting_constraints.hpp>
 
 namespace neolib
 {
     class i_settings : public i_reference_counted
     {
+        template <typename T>
         friend class setting;
     public:
         declare_event(settings_changed, const i_string&)
@@ -59,18 +60,13 @@ namespace neolib
         struct setting_already_registered : std::logic_error { setting_already_registered() : std::logic_error("i_settings::setting_already_registered") {} };
         struct setting_not_found : std::logic_error { setting_not_found() : std::logic_error("i_settings::setting_not_found") {} };
     public:
-        virtual i_setting::id_type register_setting(const i_string& aSettingCategory, const i_string& aSettingName, simple_variant_type aSettingType, const i_simple_variant& aDefaultValue = simple_variant{}, const i_setting_constraints& aSettingConstraints = setting_constraints{}, bool aHidden = false) = 0;
-        i_setting::id_type register_setting(const string& aSettingCategory, const string& aSettingName, simple_variant_type aSettingType, const simple_variant& aDefaultValue = simple_variant{}, const setting_constraints& aSettingConstraints = setting_constraints{}, bool aHidden = false)
-        {
-            return register_setting(static_cast<const i_string&>(aSettingCategory), static_cast<const i_string&>(aSettingName), aSettingType, static_cast<const i_simple_variant&>(aDefaultValue), static_cast<const i_setting_constraints&>(aSettingConstraints), aHidden);
-        }
+        virtual i_setting::id_type register_setting(i_setting& aSetting) = 0;
         virtual std::size_t count() const = 0;
         virtual i_setting& get_setting(std::size_t aIndex) = 0;
         virtual i_setting& find_setting(i_setting::id_type aId) = 0;
         virtual i_setting& find_setting(const i_string& aSettingCategory, const i_string& aSettingName) = 0;
         i_setting& find_setting(const string& aSettingCategory, const string& aSettingName) { return find_setting(static_cast<const i_string&>(aSettingCategory), static_cast<const i_string&>(aSettingName)); }
-        virtual void change_setting(i_setting& aExistingSetting, const i_simple_variant& aValue, bool aApplyNow = false) = 0;
-        void change_setting(i_setting& aExistingSetting, const simple_variant& aValue, bool aApplyNow = false) { change_setting(aExistingSetting, static_cast<const i_simple_variant&>(aValue), aApplyNow); }
+        virtual void change_setting(i_setting& aExistingSetting, const i_setting_value& aValue, bool aApplyNow = false) = 0;
         virtual void delete_setting(i_setting& aExistingSetting) = 0;
         virtual void apply_changes() = 0;
         virtual void discard_changes() = 0;
@@ -81,6 +77,20 @@ namespace neolib
     public:
         static const uuid& id() { static uuid sId = neolib::make_uuid("E19B3C48-04F7-4207-B24A-2967A3523CE7"); return sId; }
     private:
+        virtual i_setting::id_type next_id() = 0;
         virtual void setting_changed(i_setting& aExistingSetting) = 0;
+        // helpers
+    public:
+        template <typename T>
+        i_setting::id_type register_setting(const i_string& aSettingCategory, const i_string& aSettingName, const T& aDefaultValue = {}, const i_setting_constraints& aSettingConstraints = setting_constraints<T>{}, bool aHidden = false)
+        {
+            auto newSetting = make_ref<setting<T>>(*this, next_id(), aSettingCategory, aSettingName, aSettingConstraints, aDefaultValue, aHidden);
+            return register_setting(*newSetting);
+        }
+        template <typename T>
+        void change_setting(i_setting& aExistingSetting, const T& aValue, bool aApplyNow = false)
+        {
+            change_setting(aExistingSetting, setting_value{ aValue }, aApplyNow);
+        }
     };
 }

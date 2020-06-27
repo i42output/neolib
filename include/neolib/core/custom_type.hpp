@@ -37,7 +37,6 @@
 
 #include <neolib/neolib.hpp>
 #include <any>
-#include <sstream>
 #include <optional>
 #include <neolib/core/reference_counted.hpp>
 #include <neolib/core/string.hpp>
@@ -46,26 +45,6 @@
 
 namespace neolib
 {
-    namespace detail
-    {
-        template <typename T>
-        string to_string(const T& aValue)
-        {
-            std::ostringstream oss;
-            oss << aValue;
-            return oss.str();
-        }
-
-        template <typename T>
-        T from_string(const i_string& aValueAsString)
-        {
-            T result;
-            std::istringstream iss{ aValueAsString.to_std_string() };
-            iss >> result;
-            return result;
-        }
-    }
-
     template <typename T>
     class custom_type : public reference_counted<i_custom_type>
     {
@@ -79,7 +58,7 @@ namespace neolib
         custom_type(const string& aName) :
             iName{ aName } {}
         custom_type(const string& aName, const string& aValue) :
-            iName{ aName }, iInstance{ detail::from_string<T>(aValue) } {}
+            iName{ aName }, iInstance{ from_string<T>(aValue) } {}
         custom_type(const string& aName, const abstract_value_type& aValue) :
             iName{ aName }, iInstance{ aValue } {}
         custom_type(const i_custom_type& aOther) :
@@ -95,7 +74,7 @@ namespace neolib
         virtual void to_string(i_string& aString) const
         {
             if (!!iInstance)
-                aString = detail::to_string(*iInstance);
+                aString = to_string(*iInstance);
             else
                 aString.clear();
         }

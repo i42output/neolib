@@ -38,11 +38,41 @@
 #include <neolib/neolib.hpp>
 #include <string>
 #include <vector>
+#include <neolib/core/string.hpp>
 #include <neolib/core/string_numeric.hpp>
 #include <neolib/core/string_utf.hpp>
 
 namespace neolib 
 {
+    template <typename T>
+    std::string to_std_string(T const& aValue)
+    {
+        std::ostringstream oss;
+        oss << aValue;
+        return oss.str();
+    }
+
+    template <typename T>
+    T from_std_string(std::string const& aValueAsString)
+    {
+        T result;
+        std::istringstream iss{ aValueAsString };
+        iss >> result;
+        return result;
+
+    }
+    template <typename T>
+    string to_string(T const& aValue)
+    {
+        return to_std_string(aValue);
+    }
+
+    template <typename T>
+    T from_string(i_string const& aValueAsString)
+    {
+        return from_string<T>(aValueAsString.to_std_string());
+    }
+
     template <typename FwdIter1, typename FwdIter2, typename ResultContainer>
     inline FwdIter1 tokens(FwdIter1 aFirst, FwdIter1 aLast, FwdIter2 aDelimeterFirst, FwdIter2 aDelimiterLast, ResultContainer& aTokens, std::size_t aMaxTokens = 0, bool aSkipEmptyTokens = true, bool aDelimeterIsSubsequence = false)
     {

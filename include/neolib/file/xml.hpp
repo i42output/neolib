@@ -244,6 +244,7 @@ namespace neolib
     public:
         // construction
         xml_element() : node(node::Element), iUseEmptyElementTag(true) {}
+        xml_element(const std::string& aName) : node(node::Element), iName(aName), iUseEmptyElementTag(true) {}
         xml_element(const CharT* aName) : node(node::Element), iName(aName), iUseEmptyElementTag(true) {}
 
     public:
@@ -251,6 +252,7 @@ namespace neolib
         const string& name() const { return iName; }
         using node::insert;
         typename node::iterator insert(typename node::iterator aPosition, const CharT* aName) { return node::insert(aPosition, new xml_element(aName)); }
+        xml_element& append(const std::string& aName) { node::push_back(new xml_element(aName)); return static_cast<xml_element&>(node::back()); }
         xml_element& append(const CharT* aName) { node::push_back(new xml_element(aName)); return static_cast<xml_element&>(node::back()); }
         const attribute_list& attributes() const { return iAttributes; }
         bool has_attribute(const string& aAttributeName) const;

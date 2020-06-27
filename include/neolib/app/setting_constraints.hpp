@@ -37,19 +37,23 @@
 
 #include <neolib/neolib.hpp>
 #include <neolib/core/vector.hpp>
-#include <neolib/plugin/simple_variant.hpp>
+#include <neolib/app/setting_value.hpp>
 #include <neolib/app/i_setting_constraints.hpp>
 
 namespace neolib
 {
+    template <typename T>
     class setting_constraints : public i_setting_constraints
     {
     public:
+        typedef T value_type;
+        typedef setting_value<value_type> setting_value_type;
+    public:
         setting_constraints(
-            const i_simple_variant& aMinimumValue = simple_variant{},
-            const i_simple_variant& aMaximumValue = simple_variant{},
-            const i_vector<i_simple_variant>& aAllowableValues = vector<simple_variant>{},
-            const i_simple_variant& aStepValue = simple_variant{},
+            const setting_value_type& aMinimumValue = setting_value_type{},
+            const setting_value_type& aMaximumValue = setting_value_type{},
+            const i_vector<i_setting_value>& aAllowableValues = vector<setting_value_type>{},
+            const setting_value_type& aStepValue = setting_value_type{},
             const i_string& aFormatString = string{}) :
             iMinimumValue{ aMinimumValue },
             iMaximumValue{ aMaximumValue },
@@ -67,37 +71,37 @@ namespace neolib
     public:
         bool has_minimum_value() const override
         {
-            return !iMinimumValue.empty();
+            return iMinimumValue.is_set();
         }
         bool has_maximum_value() const override
         {
-            return !iMaximumValue.empty();
+            return iMaximumValue.is_set();
         }
         bool has_allowable_values() const override
         {
-            return !iAllowableValues.empty();
+            return !!iAllowableValues;
         }
         bool has_step_value() const override
         {
-            return !iStepValue.empty();
+            return iStepValue.is_set();
         }
         bool has_format_string() const override
         {
-            return !iFormatString.empty();
+            return !!iFormatString;
         }
-        const simple_variant& minimum_value() const override
+        const setting_value_type& minimum_value() const override
         {
             return iMinimumValue;
         }
-        const simple_variant& maximum_value() const override
+        const setting_value_type& maximum_value() const override
         {
             return iMaximumValue;
         }
-        const vector<simple_variant>& allowable_values() const override
+        const vector<setting_value_type>& allowable_values() const override
         {
             return iAllowableValues;
         }
-        const simple_variant& step_value() const override
+        const setting_value_type& step_value() const override
         {
             return iStepValue;
         }
@@ -106,10 +110,10 @@ namespace neolib
             return iFormatString;
         }
     private:
-        simple_variant iMinimumValue;
-        simple_variant iMaximumValue;
-        vector<simple_variant> iAllowableValues;
-        simple_variant iStepValue;
-        string iFormatString;
+        setting_value_type iMinimumValue;
+        setting_value_type iMaximumValue;
+        std::optional<vector<setting_value_type>> iAllowableValues;
+        setting_value_type iStepValue;
+        std::optional<string> iFormatString;
     };
 }

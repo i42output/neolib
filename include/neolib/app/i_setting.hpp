@@ -37,8 +37,8 @@
 
 #include <neolib/neolib.hpp>
 #include <neolib/core/i_reference_counted.hpp>
-#include <neolib/core/i_string.hpp>
-#include <neolib/core/i_simple_variant.hpp>
+#include <neolib/core/string.hpp>
+#include <neolib/app/setting_value.hpp>
 #include <neolib/app/i_setting_constraints.hpp>
 
 namespace neolib
@@ -49,26 +49,66 @@ namespace neolib
     {
         friend class settings;
     public:
+        typedef i_setting abstract_type;
         typedef uint32_t id_type;
     public:
         virtual i_settings& manager() const = 0;
         virtual id_type id() const = 0;
         virtual i_string const& category() const = 0;
         virtual i_string const& name() const = 0;
-        virtual simple_variant_type type() const = 0;
         virtual i_setting_constraints const& constraints() const = 0;
-        virtual i_simple_variant const& value() const = 0;
-        virtual void set(i_simple_variant const& aNewValue) = 0;
-        virtual i_simple_variant const& new_value() const = 0;
         virtual bool dirty() const = 0;
         virtual bool hidden() const = 0;
+        virtual i_setting_value const& value() const = 0;
+        virtual i_setting_value const& new_value() const = 0;
+        virtual void value_as_string(i_string& aValue) const = 0;
+        virtual void set_value(i_setting_value const& aNewValue) = 0;
+        virtual void set_value_from_string(i_string const& aNewValue) = 0;
+        virtual void clear() = 0;
     private:
+        virtual void set_id(id_type id) = 0;
         virtual bool apply_change() = 0;
         virtual bool discard_change() = 0;
+    private:
+        virtual void clone(i_ref_ptr<i_setting>& aResult) const = 0;
     public:
-        void set(simple_variant const& aNewValue)
+        template <typename T>
+        T const& value() const
         {
-            set(static_cast<i_simple_variant const&>(aNewValue));
+            return value().get<T>();
+        }
+        template <typename T>
+        T const& new_value() const
+        {
+            return new_value().get<T>();
+        }
+        std::string value_as_string() const
+        {
+            thread_local string result;
+            value_as_string(result);
+            return result.to_std_string();
+        }
+        template <typename T>
+        void set_value(T const& aNewValue)
+        {
+            return set_value(static_cast<i_setting_value const&>(setting_value<T>{ aNewValue }));
+        }
+    public:
+        i_setting& operator=(i_setting const& aRhs)
+        {
+            set_value(aRhs.value());
+            return *this;
+        }
+        i_setting& operator=(i_setting_value const& aRhs)
+        {
+            set_value(aRhs);
+            return *this;
+        }
+        template <typename T>
+        i_setting& operator=(T const& aNewValue)
+        {
+            set_value(aNewValue);
+            return *this;
         }
     };
 }
