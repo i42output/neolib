@@ -1,6 +1,6 @@
 // i_setting.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2007, 2020 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -50,15 +50,13 @@ namespace neolib
         friend class settings;
     public:
         typedef i_setting abstract_type;
-        typedef uint32_t id_type;
     public:
         virtual i_settings& manager() const = 0;
-        virtual id_type id() const = 0;
-        virtual i_string const& category() const = 0;
-        virtual i_string const& name() const = 0;
+        virtual i_string const& key() const = 0;
         virtual i_setting_constraints const& constraints() const = 0;
-        virtual bool dirty() const = 0;
+        virtual i_string const& format() const = 0;
         virtual bool hidden() const = 0;
+        virtual bool dirty() const = 0;
         virtual i_setting_value const& value() const = 0;
         virtual i_setting_value const& new_value() const = 0;
         virtual void value_as_string(i_string& aValue) const = 0;
@@ -66,7 +64,6 @@ namespace neolib
         virtual void set_value_from_string(i_string const& aNewValue) = 0;
         virtual void clear() = 0;
     private:
-        virtual void set_id(id_type id) = 0;
         virtual bool apply_change() = 0;
         virtual bool discard_change() = 0;
     private:

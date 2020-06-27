@@ -1,6 +1,6 @@
 // setting.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2007, 2020 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -55,65 +55,54 @@ namespace neolib
     public:
         typedef T value_type;
         typedef setting_value<T> setting_value_type;
-        typedef id_type key_type;
     public:
-        setting(i_settings& aManager, const i_string& aCategory, const i_string& aName, const i_setting_constraints& aConstraints = setting_constraints<T>{}, const T& aValue = {}, bool aHidden = false) :
+        setting(i_settings& aManager, const i_string& aKey, const i_setting_constraints& aConstraints = setting_constraints<T>{}, const i_string& aFormat = string{}) :
             iManager{ aManager }, 
-            iId{}, 
-            iCategory{ aCategory }, 
-            iName{ aName }, 
-            iConstraints{ aConstraints }, 
-            iValue{ aValue }, 
-            iHidden{ aHidden } 
+            iKey{ aKey }, 
+            iConstraints{ aConstraints },
+            iFormat{ aFormat },
+            iValue{}
         {}
         setting(const self_type& aOther) : 
             base_type{ aOther },
             iManager{ aOther.iManager },
-            iId{ aOther.iId },
-            iCategory{ aOther.iCategory },
-            iName{ aOther.iName },
+            iKey{ aOther.iKey },
             iConstraints{ aOther.iConstraints },
-            iValue{ aOther.iValue },
-            iHidden{ aOther.iHidden }
+            iFormat{ aOther.iFormat },
+            iValue{ aOther.iValue }
         {
         }
         setting(const i_setting& aSetting) :
             iManager{ aSetting.manager() }, 
-            iId{ aSetting.id() }, 
-            iCategory{ aSetting.category() }, 
-            iName{ aSetting.name() }, 
-            iConstraints{ aSetting.constraints() }, 
-            iValue{ aSetting.value() }, 
-            iHidden{ aSetting.hidden() } 
+            iKey{ aSetting.key() }, 
+            iConstraints{ aSetting.constraints() },
+            iFormat{ aSetting.format() },
+            iValue{ aSetting.value() }
         {}
     public:
         i_settings& manager() const override 
         { 
             return iManager; 
         }
-        id_type id() const override 
+        string const& key() const override 
         { 
-            return iId; 
-        }
-        string const& category() const override 
-        { 
-            return iCategory; 
-        }
-        string const& name() const override 
-        { 
-            return iName; 
+            return iKey; 
         }
         setting_constraints<T> const& constraints() const override
         { 
             return iConstraints; 
         }
-        bool dirty() const override 
+        string const& format() const override
+        {
+            return iFormat;
+        }
+        bool hidden() const override
+        {
+            return iFormat.empty();
+        }
+        bool dirty() const override
         { 
             return !iNewValue.empty(); 
-        }
-        bool hidden() const override 
-        { 
-            return iHidden; 
         }
         i_setting_value const& value() const override
         {
@@ -154,10 +143,6 @@ namespace neolib
             set_value(setting_value<T>{});
         }
     private:
-        void set_id(id_type aId) override
-        {
-            iId = aId;
-        }
         bool apply_change() override
         {
             if (iNewValue.is_set())
@@ -186,12 +171,10 @@ namespace neolib
         }
     private:
         i_settings& iManager;
-        id_type iId;
-        string iCategory;
-        string iName;
+        string iKey;
         setting_constraints<T> iConstraints;
+        string iFormat;
         setting_value_type iValue;
         setting_value_type iNewValue;
-        bool iHidden;
     };
 }

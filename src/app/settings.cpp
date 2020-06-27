@@ -1,6 +1,6 @@
 // settings.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2007, 2020 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -36,70 +36,130 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <neolib/core/vecarray.hpp>
 #include <neolib/app/settings.hpp>
 
 namespace neolib
 {
     settings::settings(const i_string& aFileName) :
-        iFileName{ aFileName }, iNextSettingId{ 1 }
+        iFileName{ aFileName }
     {
         load();
     }
 
     settings::settings(const i_application& aApp, const i_string& aFileName) :
-        iFileName{ aApp.info().settings_folder() + "/" + aFileName }, iNextSettingId{ 1 }
+        iFileName{ aApp.info().settings_folder() + "/" + aFileName }
     {
         load();
     }
 
-    i_setting::id_type settings::register_setting(i_setting& aSetting)
+    void settings::register_category(i_string const& aCategorySubkey, i_string const& aCategoryTitle)
     {
-        setting_by_name_list::iterator iterCheck = iSettingsByName.find(setting_by_name_list::key_type(aSetting.category(), aSetting.name()));
-        if (iterCheck != iSettingsByName.end())
-            throw setting_already_registered();
-        if (iStore != nullptr)
-        {
-            xml::element::iterator xmlIterCategory = iStore->root().find(aSetting.category().to_std_string());
-            if (xmlIterCategory != iStore->root().end())
-            {
-                xml::element::iterator xmlIterSetting = xmlIterCategory->find(aSetting.name().to_std_string());
-                if (xmlIterSetting != xmlIterCategory->end())
-                    aSetting.set_value_from_string(string{ xmlIterSetting->attribute_value("value") });
-            }
-        }
-        iSettings.insert(std::make_pair(aSetting.id(), ref_ptr<i_setting>{aSetting}));
-        iSettingsByName[std::pair<string, string>(aSetting.category(), aSetting.name())] = aSetting.id();
-        return aSetting.id();
+        iCategoryTitles[aCategorySubkey] = aCategoryTitle;
     }
 
-    std::size_t settings::count() const
+    void settings::register_group(i_string const& aGroupSubkey, i_string const& aGroupTitle)
+    {
+        auto const& key = aGroupSubkey.to_std_string();
+        auto const& category = key.substr(0, key.find('.'));
+        iGroupTitles[category][aGroupSubkey] = aGroupTitle;
+    }
+
+    void settings::register_setting(i_setting& aSetting)
+    {
+        if (iSettings.find(aSetting.key()) != iSettings.end())
+            throw setting_already_registered();
+        auto const key = aSetting.key().to_std_string();
+        thread_local std::vector<std::string> keyBits;
+        keyBits.clear();
+        keyBits = tokens(key, "."s);
+        if (iStore != nullptr)
+        {
+            std::optional<xml::element::iterator> node;
+            for (auto const& keyBit : keyBits)
+            {
+                if (!node)
+                    node = iStore->root().find(keyBit);
+                else
+                    node = (**node).find(keyBit);
+                if (*node == iStore->root().end())
+                    break;
+            }
+            if (node && *node != iStore->root().end())
+                aSetting.set_value_from_string(string{ (**node).attribute_value("value") });
+        }
+        iSettings[aSetting.key()] = ref_ptr<i_setting>{ aSetting };
+    }
+
+    std::size_t settings::category_count() const
+    {
+        return iCategoryTitles.size();
+    }
+
+    i_string const& settings::category(std::size_t aCategoryIndex) const
+    {
+        if (aCategoryIndex >= iCategoryTitles.size())
+            throw category_not_found();
+        return std::next(iCategoryTitles.begin(), aCategoryIndex)->first;
+    }
+
+    i_string const& settings::category_title(i_string const& aCategorySubkey) const
+    {
+        category_titles::const_iterator iter = iCategoryTitles.find(aCategorySubkey);
+        if (iter == iCategoryTitles.end())
+            throw category_not_found();
+        return iter->second;
+    }
+
+    std::size_t settings::group_count(i_string const& aCategorySubkey) const
+    {
+        group_titles::const_iterator iter = iGroupTitles.find(aCategorySubkey);
+        if (iter == iGroupTitles.end())
+            throw group_not_found();
+        return iter->second.size();
+    }
+
+    i_string const& settings::group(i_string const& aCategorySubkey, std::size_t aGroupIndex) const
+    {
+        group_titles::const_iterator iter = iGroupTitles.find(aCategorySubkey);
+        if (iter == iGroupTitles.end() || aGroupIndex >= iter->second.size())
+            throw group_not_found();
+        return std::next(iter->second.begin(), aGroupIndex)->first;
+    }
+
+    i_string const& settings::group_title(i_string const& aGroupSubkey) const
+    {
+        auto const& key = aGroupSubkey.to_std_string();
+        auto const& category = key.substr(0, key.find('.'));
+        group_titles::const_iterator iter = iGroupTitles.find(category);
+        if (iter == iGroupTitles.end())
+            throw group_not_found();
+        auto existing = iter->second.find(aGroupSubkey);
+        if (existing == iter->second.end())
+            throw group_not_found();
+        return existing->second;
+    }
+
+    std::size_t settings::setting_count() const
     {
         return iSettings.size();
     }
 
-    i_setting& settings::get_setting(std::size_t aIndex)
+    i_setting& settings::setting(std::size_t aSettingIndex)
     {
-        if (aIndex >= iSettings.size())
+        if (aSettingIndex >= iSettings.size())
             throw setting_not_found();
         setting_list::iterator iter = iSettings.begin();
-        std::advance(iter, aIndex);
+        std::advance(iter, aSettingIndex);
         return *iter->second;
     }
 
-    i_setting& settings::find_setting(i_setting::id_type aId)
+    i_setting& settings::setting(i_string const& aKey)
     {
-        setting_list::iterator iter = iSettings.find(aId);
-        if (iter == iSettings.end())
+        auto existing = iSettings.find(aKey);
+        if (existing == iSettings.end())
             throw setting_not_found();
-        return *iter->second;
-    }
-
-    i_setting& settings::find_setting(const i_string& aSettingCategory, const i_string& aSettingName)
-    {
-        setting_by_name_list::iterator iter = iSettingsByName.find(std::pair<string, string>(aSettingCategory, aSettingName));
-        if (iter == iSettingsByName.end())
-            throw setting_not_found();
-        return find_setting(iter->second);
+        return *existing->second;
     }
 
     void settings::change_setting(i_setting& aExistingSetting, const i_setting_value& aValue, bool aApplyNow)
@@ -114,7 +174,7 @@ namespace neolib
 
     void settings::delete_setting(i_setting& aExistingSetting)
     {
-        setting_list::iterator iter = iSettings.find(aExistingSetting.id());
+        setting_list::iterator iter = iSettings.find(aExistingSetting.key());
         if (iter == iSettings.end())
             throw setting_not_found();
         SettingDeleted.trigger(*iter->second);
@@ -127,11 +187,14 @@ namespace neolib
         if (!dirty())
             return;
         std::set<string> categoriesChanged;
-        for (setting_list::iterator iter = iSettings.begin(); iter != iSettings.end(); ++iter)
-            if (iter->second->apply_change())
-                categoriesChanged.insert(iter->second->category());
-        for (std::set<string>::const_iterator iter = categoriesChanged.begin(); iter != categoriesChanged.end(); ++iter)
-            SettingsChanged.trigger(*iter);
+        for (auto& setting : iSettings)
+        {
+            auto const& key = setting.first.to_std_string();
+            if (setting.second->apply_change())
+                categoriesChanged.insert(key.substr(0, key.find('.')));
+        }
+        for (auto const& category : categoriesChanged)
+            SettingsChanged.trigger(category);
         save();
     }
 
@@ -169,23 +232,29 @@ namespace neolib
             std::ofstream output(iFileName.c_str());
             iStore.reset(new xml());
             iStore->root().name() = "settings";
-            for (setting_list::const_iterator i = iSettings.begin(); i != iSettings.end(); ++i)
+            for (auto const& setting : iSettings)
             {
-                xml::element& category = static_cast<xml::element&>(*iStore->root().find_or_append(i->second->category().to_std_string()));
-                category.append(i->second->name().to_std_string()).set_attribute("value", i->second->value_as_string());
+                auto const& key = setting.first.to_std_string();
+                thread_local std::vector<std::string> keyBits;
+                keyBits.clear();
+                keyBits = tokens(key, "."s);
+                std::optional<xml::element::iterator> node;
+                for (auto const& keyBit : keyBits)
+                {
+                    if (!node)
+                        node = iStore->root().find_or_append(keyBit);
+                    else
+                        node = (**node).find_or_append(keyBit);
+                }
+                (**node).set_attribute("value", setting.second->value_as_string());
             }
             iStore->write(output);
         }
     }
 
-    i_setting::id_type settings::next_id()
-    {
-        return iNextSettingId++;
-    }
-
     void settings::setting_changed(i_setting& aExistingSetting)
     {
-        setting_list::iterator iter = iSettings.find(aExistingSetting.id());
+        setting_list::iterator iter = iSettings.find(aExistingSetting.key());
         if (iter == iSettings.end())
             throw setting_not_found();
         SettingChanged.trigger(*iter->second);

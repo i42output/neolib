@@ -44,6 +44,8 @@
 #include <neolib/core/container_iterator.hpp>
 #include <neolib/core/quick_string.hpp>
 
+using namespace std::literals::string_literals;
+
 namespace neolib
 {
     class string : public reference_counted<i_string>

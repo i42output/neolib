@@ -1,6 +1,6 @@
-    // i_settings.hpp
+// i_settings.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2007, 2020 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -58,15 +58,23 @@ namespace neolib
         declare_event(interested_in_dirty_settings, bool&)
     public:
         struct setting_already_registered : std::logic_error { setting_already_registered() : std::logic_error("i_settings::setting_already_registered") {} };
+        struct category_not_found : std::logic_error { category_not_found() : std::logic_error("i_settings::category_not_found") {} };
+        struct group_not_found : std::logic_error { group_not_found() : std::logic_error("i_settings::group_not_found") {} };
         struct setting_not_found : std::logic_error { setting_not_found() : std::logic_error("i_settings::setting_not_found") {} };
     public:
-        virtual i_setting::id_type register_setting(i_setting& aSetting) = 0;
-        virtual std::size_t count() const = 0;
-        virtual i_setting& get_setting(std::size_t aIndex) = 0;
-        virtual i_setting& find_setting(i_setting::id_type aId) = 0;
-        virtual i_setting& find_setting(const i_string& aSettingCategory, const i_string& aSettingName) = 0;
-        i_setting& find_setting(const string& aSettingCategory, const string& aSettingName) { return find_setting(static_cast<const i_string&>(aSettingCategory), static_cast<const i_string&>(aSettingName)); }
-        virtual void change_setting(i_setting& aExistingSetting, const i_setting_value& aValue, bool aApplyNow = false) = 0;
+        virtual void register_category(i_string const& aCategorySubkey, i_string const& aCategoryTitle = string{}) = 0;
+        virtual void register_group(i_string const& aGroupSubkey, i_string const& aGroupTitle = string{}) = 0;
+        virtual void register_setting(i_setting& aSetting) = 0;
+        virtual std::size_t category_count() const = 0;
+        virtual i_string const& category(std::size_t aCategoryIndex) const = 0;
+        virtual i_string const& category_title(i_string const& aCategorySubkey) const = 0;
+        virtual std::size_t group_count(i_string const& aCategorySubkey) const = 0;
+        virtual i_string const& group(i_string const& aCategorySubkey, std::size_t aGroupIndex) const = 0;
+        virtual i_string const& group_title(i_string const& aGroupSubkey) const = 0;
+        virtual std::size_t setting_count() const = 0;
+        virtual i_setting& setting(std::size_t aSettingIndex) = 0;
+        virtual i_setting& setting(i_string const& aKey) = 0;
+        virtual void change_setting(i_setting& aExistingSetting, i_setting_value const& aValue, bool aApplyNow = false) = 0;
         virtual void delete_setting(i_setting& aExistingSetting) = 0;
         virtual void apply_changes() = 0;
         virtual void discard_changes() = 0;
@@ -75,17 +83,17 @@ namespace neolib
         virtual void load() = 0;
         virtual void save() const = 0;
     public:
-        static const uuid& id() { static uuid sId = neolib::make_uuid("E19B3C48-04F7-4207-B24A-2967A3523CE7"); return sId; }
+        static uuid const& id() { static uuid sId = neolib::make_uuid("E19B3C48-04F7-4207-B24A-2967A3523CE7"); return sId; }
     private:
-        virtual i_setting::id_type next_id() = 0;
         virtual void setting_changed(i_setting& aExistingSetting) = 0;
         // helpers
     public:
         template <typename T>
-        i_setting::id_type register_setting(const i_string& aSettingCategory, const i_string& aSettingName, const T& aDefaultValue = {}, const i_setting_constraints& aSettingConstraints = setting_constraints<T>{}, bool aHidden = false)
+        i_setting& register_setting(string const& aKey, setting_constraints<T> const& aSettingConstraints = setting_constraints<T>{}, string const& aFormat = { "%self:subkey%: %self:edit%" })
         {
-            auto newSetting = make_ref<setting<T>>(*this, next_id(), aSettingCategory, aSettingName, aSettingConstraints, aDefaultValue, aHidden);
-            return register_setting(*newSetting);
+            auto newSetting = make_ref<setting<T>>(*this, aKey, aSettingConstraints, aFormat);
+            register_setting(*newSetting);
+            return *newSetting;
         }
         template <typename T>
         void change_setting(i_setting& aExistingSetting, const T& aValue, bool aApplyNow = false)

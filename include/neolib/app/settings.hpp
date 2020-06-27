@@ -1,6 +1,6 @@
 // settings.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2007, 2020 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -62,18 +62,26 @@ namespace neolib
         define_declared_event(SettingDeleted, setting_deleted, const i_setting&)
         define_declared_event(InterestedInDirtySettings, interested_in_dirty_settings, bool&)
     private:
-        typedef std::map<i_setting::id_type, ref_ptr<i_setting>> setting_list;
-        typedef std::map<std::pair<string, string>, i_setting::id_type> setting_by_name_list;
+        typedef std::map<string, string> category_titles;
+        typedef std::map<string, std::map<string, string>> group_titles;
+        typedef std::map<string, ref_ptr<i_setting>> setting_list;
     public:
         settings(const i_string& aFileName);
         settings(const i_application& aApp, const i_string& aFileName = string{ "settings.xml" });
     public:
         using i_settings::register_setting;
-        i_setting::id_type register_setting(i_setting& aSetting) override;
-        std::size_t count() const override;
-        i_setting& get_setting(std::size_t aIndex) override;
-        i_setting& find_setting(i_setting::id_type aId) override;
-        i_setting& find_setting(const i_string& aSettingCategory, const i_string& aSettingName) override;
+        void register_category(i_string const& aCategorySubkey, i_string const& aCategoryTitle = string{}) override;
+        void register_group(i_string const& aGroupSubkey, i_string const& aGroupTitle = string{}) override;
+        void register_setting(i_setting& aSetting) override;
+        std::size_t category_count() const override;
+        i_string const& category(std::size_t aCategoryIndex) const override;
+        i_string const& category_title(i_string const& aCategorySubkey) const override;
+        std::size_t group_count(i_string const& aCategorySubkey) const override;
+        i_string const& group(i_string const& aCategorySubkey, std::size_t aGroupIndex) const override;
+        i_string const& group_title(i_string const& aGroupSubkey) const override;
+        std::size_t setting_count() const override;
+        i_setting& setting(std::size_t aSettingIndex) override;
+        i_setting& setting(i_string const& aKey) override;
         void change_setting(i_setting& aExistingSetting, const i_setting_value& aValue, bool aApplyNow = false) override;
         void delete_setting(i_setting& aExistingSetting) override;
         void apply_changes() override;
@@ -85,13 +93,12 @@ namespace neolib
     public:
         static const uuid& id() { static uuid sId = neolib::make_uuid("E19B3C48-04F7-4207-B24A-2967A3523CE7"); return sId; }
     private:
-        i_setting::id_type next_id() override;
         void setting_changed(i_setting& aExistingSetting) override;
     private:
         string iFileName;
-        i_setting::id_type iNextSettingId;
         mutable std::unique_ptr<xml> iStore;
+        category_titles iCategoryTitles;
+        group_titles iGroupTitles;
         setting_list iSettings;
-        setting_by_name_list iSettingsByName;
     };
 }
