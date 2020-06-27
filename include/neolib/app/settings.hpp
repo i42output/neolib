@@ -82,7 +82,7 @@ namespace neolib
         std::size_t setting_count() const override;
         i_setting& setting(std::size_t aSettingIndex) override;
         i_setting& setting(i_string const& aKey) override;
-        void change_setting(i_setting& aExistingSetting, const i_setting_value& aValue, bool aApplyNow = false, bool aSave = true) override;
+        void change_setting(i_setting& aExistingSetting, const i_setting_value& aValue, bool aApplyNow = true) override;
         void delete_setting(i_setting& aExistingSetting) override;
         void apply_changes() override;
         void discard_changes() override;

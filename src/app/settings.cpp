@@ -162,14 +162,13 @@ namespace neolib
         return *existing->second;
     }
 
-    void settings::change_setting(i_setting& aExistingSetting, const i_setting_value& aValue, bool aApplyNow, bool aSave)
+    void settings::change_setting(i_setting& aExistingSetting, const i_setting_value& aValue, bool aApplyNow)
     {
         aExistingSetting.set_value(aValue);
         if (aApplyNow)
         {
             aExistingSetting.apply_change();
-            if (aSave)
-                save();
+            save();
         }
     }
 
@@ -207,8 +206,8 @@ namespace neolib
 
     bool settings::dirty() const
     {
-        for (setting_list::const_iterator iter = iSettings.begin(); iter != iSettings.end(); ++iter)
-            if (iter->second->dirty())
+        for (auto const& setting: iSettings)
+            if (setting.second->dirty())
                 return true;
         return false;
     }
