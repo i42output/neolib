@@ -51,25 +51,23 @@ namespace neolib
         virtual bool has_maximum_value() const = 0;
         virtual bool has_allowable_values() const = 0;
         virtual bool has_step_value() const = 0;
-        virtual bool has_format_string() const = 0;
-        virtual i_setting_value& minimum_value() const = 0;
-        virtual i_setting_value& maximum_value() const = 0;
-        virtual const i_vector<i_setting_value>& allowable_values() const = 0;
-        virtual const i_setting_value& step_value() const = 0;
-        virtual i_string const& format_string() const = 0;
+        virtual i_setting_value const& minimum_value() const = 0;
+        virtual i_setting_value const& maximum_value() const = 0;
+        virtual i_vector<i_setting_value> const& allowable_values() const = 0;
+        virtual i_setting_value const& step_value() const = 0;
     public:
         template <typename T>
-        abstract_t<T>& minimum_value() const
+        abstract_t<T> const& minimum_value() const
         {
             return minimum_value().get<T>();
         }
         template <typename T>
-        abstract_t<T>& maximum_value() const
+        abstract_t<T> const& maximum_value() const
         {
             return maximum_value().get<T>();
         }
         template <typename T>
-        abstract_t<T>& step_value() const
+        abstract_t<T> const& step_value() const
         {
             return step_value().get<T>();
         }

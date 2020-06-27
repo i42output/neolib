@@ -72,7 +72,9 @@ namespace neolib
         virtual i_string const& group(i_string const& aCategorySubkey, std::size_t aGroupIndex) const = 0;
         virtual i_string const& group_title(i_string const& aGroupSubkey) const = 0;
         virtual std::size_t setting_count() const = 0;
+        virtual i_setting const& setting(std::size_t aSettingIndex) const = 0;
         virtual i_setting& setting(std::size_t aSettingIndex) = 0;
+        virtual i_setting const& setting(i_string const& aKey) const = 0;
         virtual i_setting& setting(i_string const& aKey) = 0;
         virtual void change_setting(i_setting& aExistingSetting, i_setting_value const& aValue, bool aApplyNow = true) = 0;
         virtual void delete_setting(i_setting& aExistingSetting) = 0;
@@ -99,7 +101,7 @@ namespace neolib
         template <typename T>
         i_setting& register_setting(string const& aKey, setting_constraints<T> const& aSettingConstraints, std::optional<T> const& aDefaultValue = {}, string const& aFormat = {})
         {
-            auto newSetting = make_ref<setting<T>>(*this, aKey, aSettingConstraints, aFormat);
+            auto newSetting = make_ref<neolib::setting<T>>(*this, aKey, aSettingConstraints, aFormat);
             register_setting(*newSetting);
             if (!newSetting->value().is_set() && aDefaultValue)
                 change_setting(*newSetting, *aDefaultValue, false);

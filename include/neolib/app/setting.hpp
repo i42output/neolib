@@ -102,7 +102,7 @@ namespace neolib
         }
         bool dirty() const override
         { 
-            return !iNewValue.empty(); 
+            return iNewValue.is_set(); 
         }
         i_setting_value const& value() const override
         {
@@ -114,9 +114,9 @@ namespace neolib
         }
         void value_as_string(i_string& aValue) const override
         {
-            aValue = to_string(iValue);
+            aValue = to_string(iValue.get<T>());
         }
-        void set_value(i_setting_value& aNewValue) override
+        void set_value(i_setting_value const& aNewValue) override
         {
             if (iValue != aNewValue)
             {
@@ -148,7 +148,7 @@ namespace neolib
             if (iNewValue.is_set())
             {
                 iValue = iNewValue;
-                iNewValue = none;
+                iNewValue.clear();
                 iManager.setting_changed(*this);
                 return true;
             }
@@ -158,7 +158,7 @@ namespace neolib
         {
             if (iNewValue.is_set())
             {
-                iNewValue = none;
+                iNewValue.clear();
                 iManager.setting_changed(*this);
                 return true;
             }
@@ -167,7 +167,7 @@ namespace neolib
     private:
         void clone(i_ref_ptr<i_setting>& aResult) const override
         {
-            aResult = new setting<T>{ *this };
+            aResult = make_ref<setting<T>>(*this);
         }
     private:
         i_settings& iManager;

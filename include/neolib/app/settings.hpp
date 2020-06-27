@@ -82,7 +82,9 @@ namespace neolib
         i_string const& group(i_string const& aCategorySubkey, std::size_t aGroupIndex) const override;
         i_string const& group_title(i_string const& aGroupSubkey) const override;
         std::size_t setting_count() const override;
+        i_setting const& setting(std::size_t aSettingIndex) const override;
         i_setting& setting(std::size_t aSettingIndex) override;
+        i_setting const& setting(i_string const& aKey) const override;
         i_setting& setting(i_string const& aKey) override;
         void change_setting(i_setting& aExistingSetting, const i_setting_value& aValue, bool aApplyNow = true) override;
         void delete_setting(i_setting& aExistingSetting) override;

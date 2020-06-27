@@ -70,7 +70,7 @@ namespace neolib
     template <typename T>
     T from_string(i_string const& aValueAsString)
     {
-        return from_string<T>(aValueAsString.to_std_string());
+        return from_std_string<T>(aValueAsString.to_std_string());
     }
 
     template <typename FwdIter1, typename FwdIter2, typename ResultContainer>

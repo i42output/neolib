@@ -53,20 +53,17 @@ namespace neolib
             const setting_value_type& aMinimumValue = setting_value_type{},
             const setting_value_type& aMaximumValue = setting_value_type{},
             const i_vector<i_setting_value>& aAllowableValues = vector<setting_value_type>{},
-            const setting_value_type& aStepValue = setting_value_type{},
-            const i_string& aFormatString = string{}) :
+            const setting_value_type& aStepValue = setting_value_type{}) :
             iMinimumValue{ aMinimumValue },
             iMaximumValue{ aMaximumValue },
             iAllowableValues{ aAllowableValues },
-            iStepValue{ aStepValue },
-            iFormatString{ aFormatString }
+            iStepValue{ aStepValue }
         {}
         setting_constraints(const i_setting_constraints& aOther) :
             iMinimumValue{ aOther.minimum_value() },
             iMaximumValue{ aOther.maximum_value() },
             iAllowableValues{ aOther.allowable_values() },
-            iStepValue{ aOther.step_value() },
-            iFormatString{ aOther.format_string() }
+            iStepValue{ aOther.step_value() }
         {}
     public:
         bool has_minimum_value() const override
@@ -85,35 +82,26 @@ namespace neolib
         {
             return iStepValue.is_set();
         }
-        bool has_format_string() const override
-        {
-            return !!iFormatString;
-        }
-        const setting_value_type& minimum_value() const override
+        setting_value_type const& minimum_value() const override
         {
             return iMinimumValue;
         }
-        const setting_value_type& maximum_value() const override
+        setting_value_type const& maximum_value() const override
         {
             return iMaximumValue;
         }
-        const vector<setting_value_type>& allowable_values() const override
+        vector<setting_value_type> const& allowable_values() const override
         {
-            return iAllowableValues;
+            return *iAllowableValues;
         }
-        const setting_value_type& step_value() const override
+        setting_value_type const& step_value() const override
         {
             return iStepValue;
-        }
-        const string& format_string() const override
-        {
-            return iFormatString;
         }
     private:
         setting_value_type iMinimumValue;
         setting_value_type iMaximumValue;
         std::optional<vector<setting_value_type>> iAllowableValues;
         setting_value_type iStepValue;
-        std::optional<string> iFormatString;
     };
 }

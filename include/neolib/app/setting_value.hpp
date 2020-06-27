@@ -62,7 +62,7 @@ namespace neolib
         {
         }
         setting_value(i_setting_value const& aOther) :
-            iValue{ aOther.is_set() ? aOther.get<T> : container_type{} }
+            iValue{ aOther.is_set() ? aOther.get<T>() : container_type{} }
         {
         }
     public:

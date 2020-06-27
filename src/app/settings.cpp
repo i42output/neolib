@@ -145,6 +145,15 @@ namespace neolib
         return iSettings.size();
     }
 
+    i_setting const& settings::setting(std::size_t aSettingIndex) const
+    {
+        if (aSettingIndex >= iSettings.size())
+            throw setting_not_found();
+        setting_list::const_iterator iter = iSettings.begin();
+        std::advance(iter, aSettingIndex);
+        return *iter->second;
+    }
+
     i_setting& settings::setting(std::size_t aSettingIndex)
     {
         if (aSettingIndex >= iSettings.size())
@@ -152,6 +161,14 @@ namespace neolib
         setting_list::iterator iter = iSettings.begin();
         std::advance(iter, aSettingIndex);
         return *iter->second;
+    }
+
+    i_setting const& settings::setting(i_string const& aKey) const
+    {
+        auto existing = iSettings.find(aKey);
+        if (existing == iSettings.end())
+            throw setting_not_found();
+        return *existing->second;
     }
 
     i_setting& settings::setting(i_string const& aKey)
