@@ -69,6 +69,8 @@ namespace neolib
         settings(const i_string& aFileName);
         settings(const i_application& aApp, const i_string& aFileName = string{ "settings.xml" });
     public:
+        using i_settings::register_category;
+        using i_settings::register_group;
         using i_settings::register_setting;
         void register_category(i_string const& aCategorySubkey, i_string const& aCategoryTitle = string{}) override;
         void register_group(i_string const& aGroupSubkey, i_string const& aGroupTitle = string{}) override;

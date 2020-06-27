@@ -88,6 +88,14 @@ namespace neolib
         virtual void setting_changed(i_setting& aExistingSetting) = 0;
         // helpers
     public:
+        void register_category(string const& aCategorySubkey, string const& aCategoryTitle = string{})
+        {
+            register_category(static_cast<i_string const&>(aCategorySubkey), static_cast<i_string const&>(aCategoryTitle));
+        }
+        void register_group(string const& aGroupSubkey, string const& aGroupTitle = string{})
+        {
+            register_group(static_cast<i_string const&>(aGroupSubkey), static_cast<i_string const&>(aGroupTitle));
+        }
         template <typename T>
         i_setting& register_setting(string const& aKey, setting_constraints<T> const& aSettingConstraints, std::optional<T> const& aDefaultValue = {}, string const& aFormat = {})
         {
