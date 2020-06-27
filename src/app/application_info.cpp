@@ -41,8 +41,13 @@ namespace neolib
 {
     std::string settings_folder(const std::string& aApplicationName, const std::string& aCompanyName)
     {
+        if (aApplicationName.empty())
+            throw unknown_application_name();
 #ifdef _WIN32
-        std::string settingsFolder = user_settings_directory() + "/" + aCompanyName + "/" + aApplicationName;
+        std::string settingsFolder = user_settings_directory();
+        if (!aCompanyName.empty())
+            settingsFolder += ("/" + aCompanyName);
+        settingsFolder += ("/" + aApplicationName);
 #else
         std::string settingsFolder = user_settings_directory() + "/." + aApplicationName;
 #endif

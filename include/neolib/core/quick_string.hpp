@@ -513,7 +513,10 @@ namespace neolib
     public:
         operator string_type() const
         {
-            return string_type{ get_view_string().begin(), get_view_string().end(), get_allocator() };
+            if (is_view())
+                return string_type{ get_view_string().begin(), get_view_string().end(), get_allocator() };
+            else
+                return get_string();
         }
         operator string_type&()
         {

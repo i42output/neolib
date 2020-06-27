@@ -165,9 +165,11 @@ namespace neolib
         iterator begin(type_e aFilter = All);
         iterator end(type_e aFilter = All);
         const_iterator find(const string& aName) const;
+        std::optional<const_iterator> find_maybe(const string& aName) const;
         template <typename Exception>
         const_iterator find_or_throw(const string& aName) const;
         iterator find(const string& aName);
+        std::optional<iterator> find_maybe(const string& aName);
         iterator find_or_append(const string& aName);
         template <typename Exception>
         iterator find_or_throw(const string& aName);

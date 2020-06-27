@@ -248,13 +248,14 @@ namespace neolib
         return result;
     }
 
-    application_info get_application_info(const application_info& aAppInfo)
+    application_info get_application_info(i_application_info const& aAppInfo)
     {
 #ifdef _WIN32
         std::string appName = aAppInfo.name().to_std_string();
         version appVersion = aAppInfo.version();
         std::string appVersionName = aAppInfo.version().version_name().to_std_string();
         std::string appCopyright = aAppInfo.copyright().to_std_string();
+        std::string appCompany = aAppInfo.company().to_std_string();
         wchar_t szFullPath[MAX_PATH];
         GetModuleFileName(NULL, szFullPath, sizeof(szFullPath));
         DWORD dwVerHnd;
@@ -295,19 +296,27 @@ namespace neolib
             bRetCode = VerQueryValue((LPVOID)lpstrVffInfo, L"\\StringFileInfo\\080904B0\\ProductVersionName",
                 (LPVOID *)&lpVersion, (PUINT)&uVersionLen);
             if (bRetCode && uVersionLen && lpVersion)
+            {
                 appVersion = version(appVersion.version_major(), appVersion.version_minor(), appVersion.version_maintenance(), appVersion.version_build(), any_to_utf8(reinterpret_cast<char16_t*>(lpVersion)));
-            if (appVersion.version_build() == 0)
-                appVersion = version(appVersion.version_major(), appVersion.version_minor(), appVersion.version_maintenance(), aAppInfo.version().version_build(), any_to_utf8(reinterpret_cast<char16_t*>(lpVersion)));
+                if (appVersion.version_build() == 0)
+                    appVersion = version(appVersion.version_major(), appVersion.version_minor(), appVersion.version_maintenance(), aAppInfo.version().version_build(), any_to_utf8(reinterpret_cast<char16_t*>(lpVersion)));
+            }
             uVersionLen = 0;
             lpVersion = NULL;
             bRetCode = VerQueryValue((LPVOID)lpstrVffInfo, L"\\StringFileInfo\\080904B0\\LegalCopyright",
                 (LPVOID *)&lpVersion, (PUINT)&uVersionLen);
-            if (bRetCode && uVersionLen && lpVersion)
+            if (appCopyright.empty() && bRetCode && uVersionLen && lpVersion)
                 appCopyright = any_to_utf8(reinterpret_cast<char16_t*>(lpVersion));
+            uVersionLen = 0;
+            lpVersion = NULL;
+            bRetCode = VerQueryValue((LPVOID)lpstrVffInfo, L"\\StringFileInfo\\080904B0\\CompanyName",
+                (LPVOID*)&lpVersion, (PUINT)&uVersionLen);
+            if (appCompany.empty() && bRetCode && uVersionLen && lpVersion)
+                appCompany = any_to_utf8(reinterpret_cast<char16_t*>(lpVersion));
             GlobalUnlock(hMem);
             GlobalFree(hMem);
-            return application_info{ aAppInfo.arguments(), appName, aAppInfo.company().to_std_string(), appVersion, appCopyright,
-                aAppInfo.application_folder().to_std_string(), aAppInfo.settings_folder().to_std_string(), aAppInfo.data_folder().to_std_string() };
+            return application_info{ aAppInfo.arguments(), appName, appCompany, appVersion, appCopyright,
+                aAppInfo.application_folder(false).to_std_string(), aAppInfo.settings_folder(false).to_std_string(), aAppInfo.data_folder(false).to_std_string() };
         } // if (dwVerInfoSize)
 #endif // _WIN32
         

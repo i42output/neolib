@@ -120,10 +120,10 @@ namespace neolib
         {
             if (iValue != aNewValue)
             {
-                if (!iValue.is_set())
-                    iValue = aNewValue;
-                else if (iNewValue != aNewValue)
+                if (iNewValue != aNewValue)
                 {
+                    if (!iValue.is_set())
+                        iValue = aNewValue;
                     iNewValue = aNewValue;
                     iManager.setting_changed(*this);
                 }
@@ -147,9 +147,11 @@ namespace neolib
         {
             if (iNewValue.is_set())
             {
+                bool changed = (iValue != iNewValue);
                 iValue = iNewValue;
                 iNewValue.clear();
-                iManager.setting_changed(*this);
+                if (changed)
+                    iManager.setting_changed(*this);
                 return true;
             }
             return false;

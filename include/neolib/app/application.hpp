@@ -38,6 +38,7 @@
 #include <neolib/neolib.hpp>
 #include <boost/filesystem.hpp>
 #include <neolib/core/reference_counted.hpp>
+#include <neolib/app/os_version.hpp>
 #include <neolib/app/i_application.hpp>
 #include <neolib/app/application_info.hpp>
 #include <neolib/plugin/plugin_manager.hpp>
@@ -49,7 +50,7 @@ namespace neolib
     {
     public:
         application(const i_application_info& aApplicationInfo) :
-            iApplicationInfo{ aApplicationInfo },
+            iApplicationInfo{ get_application_info(aApplicationInfo) },
             iPluginManager{ *this }
         {
         }

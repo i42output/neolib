@@ -42,6 +42,8 @@
 
 namespace neolib
 {
+    struct unknown_application_name : std::logic_error { unknown_application_name() : std::logic_error{ "neolib::unknown_application_name " } {} };
+
     class i_program_arguments
     {
     public:
@@ -64,9 +66,10 @@ namespace neolib
         virtual const i_string& company() const = 0;
         virtual const i_version& version() const = 0;
         virtual const i_string& copyright() const = 0;
-        virtual const i_string& application_folder() const = 0;
-        virtual const i_string& settings_folder() const = 0;
-        virtual const i_string& data_folder() const = 0;
+        virtual const i_string& application_folder(bool aUseDefault = true) const = 0;
+        virtual const i_string& settings_folder(bool aUseDefault = true) const = 0;
+        virtual const i_string& data_folder(bool aUseDefault = true) const = 0;
         virtual const i_string& plugin_extension() const = 0;
+        virtual bool removable() const = 0;
     };
 }

@@ -84,10 +84,10 @@ namespace neolib
     public:
         application_info(
             int argc, char* argv[],
-            const std::string& aName = "[neolib default program name]",
-            const std::string& aCompany = "[neolib default company name]",
+            const std::string& aName = {},
+            const std::string& aCompany = {},
             const neolib::version& aVersion = neolib::version{},
-            const std::string& aCopyright = "Copyright (c)",
+            const std::string& aCopyright = {},
             const std::string& aApplicationFolder = std::string{},
             const std::string& aSettingsFolder = std::string{},
             const std::string& aDataFolder = std::string{},
@@ -106,10 +106,10 @@ namespace neolib
             } {}
         application_info(
             const program_arguments& aArguments,
-            const std::string& aName = "[neolib default program name]",
-            const std::string& aCompany = "[neolib default company name]",
+            const std::string& aName = {},
+            const std::string& aCompany = {},
             const neolib::version& aVersion = neolib::version{},
-            const std::string& aCopyright = "Copyright (c)",
+            const std::string& aCopyright = {},
             const std::string& aApplicationFolder = std::string{},
             const std::string& aSettingsFolder = std::string{},
             const std::string& aDataFolder = std::string{},
@@ -119,18 +119,19 @@ namespace neolib
             iCompany{ aCompany },
             iVersion{ aVersion },
             iCopyright{ aCopyright },
-            iApplicationFolder{ aApplicationFolder.empty() ? boost::filesystem::current_path().generic_string() : aApplicationFolder },
-            iSettingsFolder{ aSettingsFolder.empty() ? neolib::settings_folder(aName, aCompany) : aSettingsFolder },
+            iApplicationFolder{ aApplicationFolder },
+            iSettingsFolder{ aSettingsFolder },
             iDataFolder{ aDataFolder },
-            iPluginExtension{ aPluginExtension }
+            iPluginExtension{ aPluginExtension },
+            iRemovable{ false }
         {
             if (std::find(std::next(iArguments.as_vector().container().begin()), iArguments.as_vector().container().end(), neolib::ci_string("/pocket")) != iArguments.as_vector().container().end() ||
-                std::find(std::next(iArguments.as_vector().container().begin()), iArguments.as_vector().container().end(), neolib::ci_string("-pocket")) != iArguments.as_vector().container().end())
+                std::find(std::next(iArguments.as_vector().container().begin()), iArguments.as_vector().container().end(), neolib::ci_string("-pocket")) != iArguments.as_vector().container().end() ||
+                std::find(std::next(iArguments.as_vector().container().begin()), iArguments.as_vector().container().end(), neolib::ci_string("/removable")) != iArguments.as_vector().container().end() ||
+                std::find(std::next(iArguments.as_vector().container().begin()), iArguments.as_vector().container().end(), neolib::ci_string("-removable")) != iArguments.as_vector().container().end())
             {
-                iSettingsFolder = iApplicationFolder;
+                iRemovable = true;
             }
-            if (iDataFolder.empty())
-                iDataFolder = iSettingsFolder;
         }
         application_info(const i_application_info& aOther) :
             iArguments{ aOther.arguments() },
@@ -141,20 +142,70 @@ namespace neolib
             iApplicationFolder{ aOther.application_folder() },
             iSettingsFolder{ aOther.settings_folder() },
             iDataFolder{ aOther.data_folder() },
-            iPluginExtension{ aOther.plugin_extension() }
+            iPluginExtension{ aOther.plugin_extension() },
+            iRemovable{ aOther.removable() }
         {
         }
 
     public:
-        const program_arguments& arguments() const override { return iArguments; }
-        const i_string& name() const override { return iName; }
-        const i_string& company() const override { return iCompany; }
-        const i_version& version() const override { return iVersion; }
-        const i_string& copyright() const override { return iCopyright; }
-        const i_string& application_folder() const override { return iApplicationFolder; }
-        const i_string& settings_folder() const override { return iSettingsFolder; }
-        const i_string& data_folder() const override { return iDataFolder; }
-        const i_string& plugin_extension() const override { return iPluginExtension; }
+        const program_arguments& arguments() const override 
+        { 
+            return iArguments; 
+        }
+        const i_string& name() const override 
+        { 
+            return iName; 
+        }
+        const i_string& company() const override 
+        { 
+            return iCompany; 
+        }
+        const i_version& version() const override 
+        { 
+            return iVersion; 
+        }
+        const i_string& copyright() const override 
+        { 
+            return iCopyright; 
+        }
+        const i_string& application_folder(bool aUseDefault = true) const override
+        { 
+            if (iApplicationFolder.empty() && aUseDefault)
+            {
+                if (iDefaultApplicationFolder.empty())
+                    iDefaultApplicationFolder = boost::filesystem::current_path().generic_string();
+                return iDefaultApplicationFolder;
+            }
+            return iApplicationFolder;
+        }
+        const i_string& settings_folder(bool aUseDefault = true) const override
+        { 
+            if (iSettingsFolder.empty() && aUseDefault)
+            {
+                if (iDefaultSettingsFolder.empty())
+                    iDefaultSettingsFolder = neolib::settings_folder(name(), company());
+                return iDefaultSettingsFolder;
+            }
+            return iSettingsFolder;
+        }
+        const i_string& data_folder(bool aUseDefault = true) const override
+        { 
+            if (iDataFolder.empty() && aUseDefault)
+            {
+                if (iDefaultDataFolder.empty())
+                    iDefaultDataFolder = settings_folder();
+                return iDefaultDataFolder;
+            }
+            return iDataFolder;
+        }
+        const i_string& plugin_extension() const override 
+        { 
+            return iPluginExtension; 
+        }
+        bool removable() const override
+        {
+            return iRemovable;
+        }
 
     private:
         program_arguments iArguments;
@@ -162,9 +213,13 @@ namespace neolib
         string iCompany;
         neolib::version iVersion;
         string iCopyright;
+        mutable string iDefaultApplicationFolder;
+        mutable string iDefaultSettingsFolder;
+        mutable string iDefaultDataFolder;
         string iApplicationFolder;
         string iSettingsFolder;
         string iDataFolder;
         string iPluginExtension;
+        bool iRemovable;
     };
 }

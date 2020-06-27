@@ -70,6 +70,7 @@ namespace neolib
         if (iSettings.find(aSetting.key()) != iSettings.end())
             throw setting_already_registered();
         auto const key = aSetting.key().to_std_string();
+        iSettings[key] = ref_ptr<i_setting>{ aSetting };
         thread_local std::vector<std::string> keyBits;
         keyBits.clear();
         keyBits = tokens(key, "."s);
@@ -79,16 +80,18 @@ namespace neolib
             for (auto const& keyBit : keyBits)
             {
                 if (!node)
-                    node = iStore->root().find(keyBit);
+                    node = iStore->root().find_maybe(keyBit);
                 else
-                    node = (**node).find(keyBit);
-                if (*node == iStore->root().end())
+                    node = (**node).find_maybe(keyBit);
+                if (!node)
                     break;
             }
-            if (node && *node != iStore->root().end())
+            if (node)
+            {
                 aSetting.set_value_from_string(string{ (**node).attribute_value("value") });
+                aSetting.apply_change();
+            }
         }
-        iSettings[aSetting.key()] = ref_ptr<i_setting>{ aSetting };
     }
 
     std::size_t settings::category_count() const

@@ -83,12 +83,20 @@ namespace neolib
         {
             if (type() != aRhs.type())
                 return false;
+            if (is_set() != aRhs.is_set())
+                return false;
+            if (!is_set())
+                return true;
             return get<T>() == aRhs.get<T>();
         }
         bool operator<(const i_setting_value& aRhs) const
         {
             if (type() != aRhs.type())
                 return type() < aRhs.type();
+            if (is_set() != aRhs.is_set())
+                return is_set() < aRhs.is_set();
+            if (!is_set())
+                return false;
             return get<T>() < aRhs.get<T>();
         }
     private:

@@ -14,5 +14,5 @@
 namespace neolib
 {
     std::string os_name();
-    application_info get_application_info(const application_info& aAppInfo = application_info());
+    application_info get_application_info(i_application_info const& aAppInfo);
 }

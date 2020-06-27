@@ -304,13 +304,23 @@ namespace neolib
         return iterator(*this, iContent.end(), aFilter);
     }
 
-        template <typename CharT, typename Alloc>
+    template <typename CharT, typename Alloc>
     typename xml_node<CharT, Alloc>::const_iterator xml_node<CharT, Alloc>::find(const string& aName) const
     {
         for (typename node::const_iterator i = begin(); i != end(); ++i)
             if (i->type() == node::Element && static_cast<const xml_element<CharT, Alloc>&>(*i).name() == aName)
                 return i;
         return end();
+    }
+
+    template <typename CharT, typename Alloc>
+    std::optional<typename xml_node<CharT, Alloc>::const_iterator> xml_node<CharT, Alloc>::find_maybe(const string& aName) const
+    {
+        auto result = find(aName);
+        if (result != end())
+            return result;
+        else
+            return {};
     }
 
     template <typename CharT, typename Alloc>
@@ -323,12 +333,22 @@ namespace neolib
     }
 
     template <typename CharT, typename Alloc>
+    std::optional<typename xml_node<CharT, Alloc>::iterator> xml_node<CharT, Alloc>::find_maybe(const string& aName)
+    {
+        auto result = find(aName);
+        if (result != end())
+            return result;
+        else
+            return {};
+    }
+
+    template <typename CharT, typename Alloc>
     typename xml_node<CharT, Alloc>::iterator xml_node<CharT, Alloc>::find_or_append(const string& aName)
     {
         for (typename node::iterator i = begin(); i != end(); ++i)
             if (i->type() == node::Element && static_cast<xml_element<CharT, Alloc>&>(*i).name() == aName)
                 return i;
-        insert(end(), new xml_element<CharT, Alloc>(aName.c_str()));
+        insert(end(), new xml_element<CharT, Alloc>(aName));
         typename node::iterator newNode = end();
         return --newNode;
     }
