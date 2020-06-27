@@ -162,13 +162,14 @@ namespace neolib
         return *existing->second;
     }
 
-    void settings::change_setting(i_setting& aExistingSetting, const i_setting_value& aValue, bool aApplyNow)
+    void settings::change_setting(i_setting& aExistingSetting, const i_setting_value& aValue, bool aApplyNow, bool aSave)
     {
         aExistingSetting.set_value(aValue);
         if (aApplyNow)
         {
             aExistingSetting.apply_change();
-            save();
+            if (aSave)
+                save();
         }
     }
 

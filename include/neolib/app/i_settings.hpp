@@ -74,7 +74,7 @@ namespace neolib
         virtual std::size_t setting_count() const = 0;
         virtual i_setting& setting(std::size_t aSettingIndex) = 0;
         virtual i_setting& setting(i_string const& aKey) = 0;
-        virtual void change_setting(i_setting& aExistingSetting, i_setting_value const& aValue, bool aApplyNow = false) = 0;
+        virtual void change_setting(i_setting& aExistingSetting, i_setting_value const& aValue, bool aApplyNow = false, bool aSave = true) = 0;
         virtual void delete_setting(i_setting& aExistingSetting) = 0;
         virtual void apply_changes() = 0;
         virtual void discard_changes() = 0;
@@ -89,16 +89,23 @@ namespace neolib
         // helpers
     public:
         template <typename T>
-        i_setting& register_setting(string const& aKey, setting_constraints<T> const& aSettingConstraints = setting_constraints<T>{}, string const& aFormat = { "%self:subkey%: %self:edit%" })
+        i_setting& register_setting(string const& aKey, setting_constraints<T> const& aSettingConstraints, std::optional<T> const& aDefaultValue = {}, string const& aFormat = {})
         {
             auto newSetting = make_ref<setting<T>>(*this, aKey, aSettingConstraints, aFormat);
             register_setting(*newSetting);
+            if (!newSetting->value().is_set() && aDefaultValue)
+                change_setting(*newSetting, *aDefaultValue, true, false);
             return *newSetting;
         }
         template <typename T>
-        void change_setting(i_setting& aExistingSetting, const T& aValue, bool aApplyNow = false)
+        i_setting& register_setting(string const& aKey, std::optional<T> const& aDefaultValue = {}, string const& aFormat = {})
         {
-            change_setting(aExistingSetting, setting_value{ aValue }, aApplyNow);
+            return register_setting(aKey, {}, aDefaultValue, aFormat);
+        }
+        template <typename T>
+        void change_setting(i_setting& aExistingSetting, const T& aValue, bool aApplyNow = false, bool aSave = true)
+        {
+            change_setting(aExistingSetting, static_cast<i_setting_value const&>(setting_value{ aValue }), aApplyNow, aSave);
         }
     };
 }
