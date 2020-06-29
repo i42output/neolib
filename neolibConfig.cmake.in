@@ -1,0 +1,11 @@
+set(NEOLIB_VERSION @PROJECT_VERSION@)
+
+include("${CMAKE_CURRENT_LIST_DIR}/neolibTargets.cmake")
+
+find_package(Boost COMPONENTS chrono filesystem system REQUIRED)
+if(NOT @BUILD_SHARED_LIBS@)
+    find_package(OpenSSL REQUIRED COMPONENTS SSL)
+    find_package(ZLIB REQUIRED)
+endif()
+
+@PACKAGE_INIT@
