@@ -138,7 +138,7 @@ namespace neolib
                 }
             }
             template <typename CharT, typename Traits>
-            void info(std::basic_ostream<CharT, Traits&>* aOutput)
+            void info(std::basic_ostream<CharT, Traits>& aOutput)
             {
                 uint32_t total = 0;
                 uint32_t pct = 0;
@@ -240,9 +240,10 @@ namespace neolib
             get_pool().omega_recycle();
         }
 
-        static void info()
+        template <typename CharT, typename Traits>
+        static void info(std::basic_ostream<CharT, Traits>& aOutput)
         {
-            get_pool().info();
+            get_pool().info(aOutput);
         }
 
         template <typename U>

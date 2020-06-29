@@ -168,7 +168,7 @@ namespace neolib
 
     void settings::apply_changes()
     {
-        if (!dirty())
+        if (!modified())
             return;
         std::set<string> categoriesChanged;
         for (auto& setting : iSettings)
@@ -188,10 +188,10 @@ namespace neolib
             setting.second()->discard_change();
     }
 
-    bool settings::dirty() const
+    bool settings::modified() const
     {
         for (auto const& setting: iSettings)
-            if (setting.second()->dirty())
+            if (setting.second()->modified())
                 return true;
         return false;
     }
@@ -230,17 +230,21 @@ namespace neolib
                     else
                         node = (**node).find_or_append(keyBit);
                 }
+                (**node).set_attribute("type", setting.second()->value().type_name().to_std_string());
                 (**node).set_attribute("value", setting.second()->value_as_string());
             }
             iStore->write(output);
         }
     }
 
-    void settings::setting_changed(i_setting& aExistingSetting)
+    void settings::setting_updated(i_setting& aExistingSetting)
     {
         setting_list::iterator iter = iSettings.find(aExistingSetting.key());
         if (iter == iSettings.end())
             throw setting_not_found();
-        SettingChanged.trigger(*iter->second());
+        if (!aExistingSetting.modified())
+            SettingChanged.trigger(aExistingSetting);
+        else
+            SettingChanging.trigger(aExistingSetting);
     }
 }

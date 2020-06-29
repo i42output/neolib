@@ -57,10 +57,10 @@ namespace neolib
         template <typename T>
         friend class setting;
     public:
-        define_declared_event(SettingsChanged, settings_changed, const i_string&)
+        define_declared_event(SettingChanging, setting_changing, const i_setting&)
         define_declared_event(SettingChanged, setting_changed, const i_setting&)
         define_declared_event(SettingDeleted, setting_deleted, const i_setting&)
-        define_declared_event(InterestedInDirtySettings, interested_in_dirty_settings, bool&)
+        define_declared_event(SettingsChanged, settings_changed, const i_string&)
     private:
         typedef map<string, string> category_titles;
         typedef map<string, map<string, string>> group_titles;
@@ -86,14 +86,14 @@ namespace neolib
         void delete_setting(i_setting& aExistingSetting) override;
         void apply_changes() override;
         void discard_changes() override;
-        bool dirty() const override;
+        bool modified() const override;
     public:
         void load() override;
         void save() const override;
     public:
         static const uuid& id() { static uuid sId = neolib::make_uuid("E19B3C48-04F7-4207-B24A-2967A3523CE7"); return sId; }
     private:
-        void setting_changed(i_setting& aExistingSetting) override;
+        void setting_updated(i_setting& aExistingSetting) override;
     private:
         string iFileName;
         mutable std::unique_ptr<xml> iStore;

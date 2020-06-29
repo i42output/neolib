@@ -70,6 +70,10 @@ namespace neolib
         {
             return setting_type_v<T>;
         }
+        i_string const& type_name() const override
+        {
+            return setting_type_name_v<T>;
+        }
         bool is_set() const override
         {
             return !!iValue;

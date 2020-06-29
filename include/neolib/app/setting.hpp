@@ -100,7 +100,7 @@ namespace neolib
         {
             return iFormat.empty();
         }
-        bool dirty() const override
+        bool modified() const override
         { 
             return iNewValue.is_set(); 
         }
@@ -125,13 +125,14 @@ namespace neolib
                     if (!iValue.is_set())
                         iValue = aNewValue;
                     iNewValue = aNewValue;
-                    iManager.setting_changed(*this);
+                    iManager.setting_updated(*this);
                 }
             }
             else if (iNewValue.is_set())
             {
+                iNewValue = iValue;
+                iManager.setting_updated(*this);
                 iNewValue.clear();
-                iManager.setting_changed(*this);
             }
         }
         void set_value_from_string(i_string const& aNewValue) override
@@ -151,7 +152,7 @@ namespace neolib
                 iValue = iNewValue;
                 iNewValue.clear();
                 if (changed)
-                    iManager.setting_changed(*this);
+                    iManager.setting_updated(*this);
                 return true;
             }
             return false;
@@ -160,8 +161,9 @@ namespace neolib
         {
             if (iNewValue.is_set())
             {
+                iNewValue = iValue;
+                iManager.setting_updated(*this);
                 iNewValue.clear();
-                iManager.setting_changed(*this);
                 return true;
             }
             return false;

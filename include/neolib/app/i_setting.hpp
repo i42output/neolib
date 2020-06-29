@@ -56,7 +56,7 @@ namespace neolib
         virtual i_setting_constraints const& constraints() const = 0;
         virtual i_string const& format() const = 0;
         virtual bool hidden() const = 0;
-        virtual bool dirty() const = 0;
+        virtual bool modified() const = 0;
         virtual i_setting_value const& value() const = 0;
         virtual i_setting_value const& new_value() const = 0;
         virtual void value_as_string(i_string& aValue) const = 0;

@@ -53,10 +53,10 @@ namespace neolib
         template <typename T>
         friend class setting;
     public:
-        declare_event(settings_changed, const i_string&)
+        declare_event(setting_changing, const i_setting&)
         declare_event(setting_changed, const i_setting&)
         declare_event(setting_deleted, const i_setting&)
-        declare_event(interested_in_dirty_settings, bool&)
+        declare_event(settings_changed, const i_string&)
     public:
         struct setting_already_registered : std::logic_error { setting_already_registered() : std::logic_error("i_settings::setting_already_registered") {} };
         struct category_not_found : std::logic_error { category_not_found() : std::logic_error("i_settings::category_not_found") {} };
@@ -77,14 +77,14 @@ namespace neolib
         virtual void delete_setting(i_setting& aExistingSetting) = 0;
         virtual void apply_changes() = 0;
         virtual void discard_changes() = 0;
-        virtual bool dirty() const = 0;
+        virtual bool modified() const = 0;
     public:
         virtual void load() = 0;
         virtual void save() const = 0;
     public:
         static uuid const& id() { static uuid sId = neolib::make_uuid("E19B3C48-04F7-4207-B24A-2967A3523CE7"); return sId; }
     private:
-        virtual void setting_changed(i_setting& aExistingSetting) = 0;
+        virtual void setting_updated(i_setting& aExistingSetting) = 0;
         // helpers
     public:
         void register_category(string const& aCategorySubkey, string const& aCategoryTitle = string{})

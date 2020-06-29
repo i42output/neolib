@@ -1,8 +1,8 @@
 #include <neolib/neolib.hpp>
 #include <iostream>
 #include <set>
-#include <neolib/thread.hpp>
-#include <neolib/thread_pool.hpp>
+#include <neolib/task/thread.hpp>
+#include <neolib/task/thread_pool.hpp>
 
 void benchmark_thread_pool()
 {

@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include <neolib/tree.hpp>
+#include <neolib/core/tree.hpp>
 
 template class neolib::segmented_tree<std::string, 64, std::allocator<std::string>>;
 

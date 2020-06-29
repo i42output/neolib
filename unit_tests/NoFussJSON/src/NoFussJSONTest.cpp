@@ -2,14 +2,16 @@
 #include <iostream>
 #include <fstream>
 #include <numeric>
-#include <neolib/json.hpp>
+#include <neolib/file/json.hpp>
 #include <chrono>
 
+#ifdef COMPARE_NOFUSSJSON_WITH_RAPIDJSON
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
-
 using namespace rapidjson;
+#endif
+
 
 int main(int argc, char** argv)
 {
@@ -287,7 +289,7 @@ int main(int argc, char** argv)
                         omega_json::json_value::value_allocator().omega_recycle();
                     omega_json json{ inputBenchmark };
                     if (i == 0)
-                        omega_json::json_value::value_allocator().info();
+                        omega_json::json_value::value_allocator().info(std::cout);
                 }
                 auto end_time = std::chrono::high_resolution_clock::now();
                 timings.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count());
@@ -295,6 +297,7 @@ int main(int argc, char** argv)
             auto average = std::accumulate(timings.begin(), timings.end(), 0ull) / timings.size();
             std::cout << "Average: " << average << std::endl;
         }
+#ifdef COMPARE_NOFUSSJSON_WITH_RAPIDJSON
         {
             std::vector<uint64_t> timings;
             for (int i = 0; i < 100; ++i)
@@ -321,6 +324,7 @@ int main(int argc, char** argv)
             auto average = std::accumulate(timings.begin(), timings.end(), 0ull) / timings.size();
             std::cout << "Average: " << average << std::endl;
         }
+#endif
     }
     catch (std::exception& e)
     {

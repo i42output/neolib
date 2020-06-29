@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <neolib/core/string.hpp>
 
 namespace neolib
 {
@@ -88,6 +89,27 @@ namespace neolib
     template<> constexpr setting_type setting_type_v<string> = setting_type::String;
     template<typename T> constexpr setting_type setting_type_v<T, std::enable_if_t<std::is_enum_v<T>, sfinae>> = setting_type::Enum;
 
+    template <typename T, typename = sfinae> struct setting_type_name {};
+    
+    #define define_setting_type(T) template<> struct ::neolib::setting_type_name<T> { static const ::neolib::string& name() { static ::neolib::string sTypeName = #T; return sTypeName; } };
+
+    define_setting_type(bool)
+    define_setting_type(int8_t)
+    define_setting_type(int16_t)
+    define_setting_type(int32_t)
+    define_setting_type(int64_t)
+    define_setting_type(uint8_t)
+    define_setting_type(uint16_t)
+    define_setting_type(uint32_t)
+    define_setting_type(uint64_t)
+    define_setting_type(float)
+    define_setting_type(double)
+    define_setting_type(string)
+    template<typename T> struct setting_type_name<T, std::enable_if_t<std::is_enum_v<T>, sfinae>> { static const neolib::string& name() { static neolib::string sTypeName = "enum"; return sTypeName; } };
+
+    template<typename T>
+    const string setting_type_name_v = setting_type_name<T>::name();
+
     class i_setting_value
     {
     public:
@@ -98,6 +120,7 @@ namespace neolib
         virtual ~i_setting_value() = default;
     public:
         virtual setting_type type() const = 0;
+        virtual i_string const& type_name() const = 0;
         virtual bool is_set() const = 0;
         virtual void clear() = 0;
     public:
