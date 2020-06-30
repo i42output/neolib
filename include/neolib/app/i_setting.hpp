@@ -38,6 +38,7 @@
 #include <neolib/neolib.hpp>
 #include <neolib/core/i_reference_counted.hpp>
 #include <neolib/core/string.hpp>
+#include <neolib/task/i_event.hpp>
 #include <neolib/app/setting_value.hpp>
 #include <neolib/app/i_setting_constraints.hpp>
 
@@ -50,6 +51,9 @@ namespace neolib
         friend class settings;
     public:
         typedef i_setting abstract_type;
+    public:
+        declare_event(changing)
+        declare_event(changed)
     public:
         virtual i_settings& manager() const = 0;
         virtual i_string const& key() const = 0;

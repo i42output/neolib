@@ -39,6 +39,7 @@
 #include <neolib/core/reference_counted.hpp>
 #include <neolib/core/string.hpp>
 #include <neolib/core/string_utils.hpp>
+#include <neolib/task/event.hpp>
 #include <neolib/app/i_setting.hpp>
 #include <neolib/app/i_settings.hpp>
 #include <neolib/app/setting_value.hpp>
@@ -55,6 +56,9 @@ namespace neolib
     public:
         typedef T value_type;
         typedef setting_value<T> setting_value_type;
+    public:
+        define_declared_event(Changing, changing)
+        define_declared_event(Changed, changed)
     public:
         setting(i_settings& aManager, const i_string& aKey, const i_setting_constraints& aConstraints = setting_constraints<T>{}, const i_string& aFormat = string{}) :
             iManager{ aManager }, 
@@ -125,12 +129,14 @@ namespace neolib
                     if (!iValue.is_set())
                         iValue = aNewValue;
                     iNewValue = aNewValue;
+                    Changing.trigger();
                     iManager.setting_updated(*this);
                 }
             }
             else if (iNewValue.is_set())
             {
                 iNewValue = iValue;
+                Changing.trigger();
                 iManager.setting_updated(*this);
                 iNewValue.clear();
             }
@@ -152,7 +158,10 @@ namespace neolib
                 iValue = iNewValue;
                 iNewValue.clear();
                 if (changed)
+                {
+                    Changed.trigger();
                     iManager.setting_updated(*this);
+                }
                 return true;
             }
             return false;
@@ -162,6 +171,7 @@ namespace neolib
             if (iNewValue.is_set())
             {
                 iNewValue = iValue;
+                Changing.trigger();
                 iManager.setting_updated(*this);
                 iNewValue.clear();
                 return true;
