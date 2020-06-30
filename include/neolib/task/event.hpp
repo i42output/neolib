@@ -182,7 +182,7 @@ namespace neolib
     };
 
     template <typename... Args>
-    class NEOLIB_EXPORT i_event_callable : public i_reference_counted
+    class i_event_callable : public i_reference_counted
     {
         typedef i_event_callable<Args...> self_type;
     public:
@@ -316,7 +316,7 @@ namespace neolib
     };
 
     template <typename... Args>
-    class NEOLIB_EXPORT event : public i_event, public lifetime
+    class event : public i_event, public lifetime
     {
         typedef event<Args...> self_type;
         friend class sink;
@@ -784,7 +784,7 @@ namespace neolib
         mutable std::atomic<cookie> iNextCookie{ 0 };
     };
 
-    class sink
+    class sink // todo: make polymorphic
     {
     public:
         sink()
