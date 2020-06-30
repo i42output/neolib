@@ -51,7 +51,7 @@
 
 namespace neolib
 {
-    class sink;
+    class NEOLIB_EXPORT sink;
 
     class event_handle
     {
@@ -182,7 +182,7 @@ namespace neolib
     };
 
     template <typename... Args>
-    class i_event_callable : public i_reference_counted
+    class NEOLIB_EXPORT i_event_callable : public i_reference_counted
     {
         typedef i_event_callable<Args...> self_type;
     public:
@@ -248,9 +248,9 @@ namespace neolib
     class async_task;
     class callback_timer;
 
-    void unqueue_event(const i_event& aEvent);
+    NEOLIB_EXPORT void unqueue_event(const i_event& aEvent);
 
-    class async_event_queue : public lifetime
+    class NEOLIB_EXPORT async_event_queue : public lifetime
     {
         template <typename...>
         friend class event;
@@ -316,7 +316,7 @@ namespace neolib
     };
 
     template <typename... Args>
-    class event : public i_event, public lifetime
+    class NEOLIB_EXPORT event : public i_event, public lifetime
     {
         typedef event<Args...> self_type;
         friend class sink;

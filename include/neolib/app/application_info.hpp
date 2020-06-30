@@ -79,7 +79,7 @@ namespace neolib
         vector<string> iArguments;
     };
 
-    class application_info : public i_application_info
+    class NEOLIB_EXPORT application_info : public i_application_info
     {
     public:
         application_info(

@@ -172,7 +172,7 @@ namespace neolib
         return to_upper(std::basic_string<CharT>(1, aCharacter))[0];
     }
 
-    struct string_span : std::pair<std::size_t, std::size_t>
+    struct NEOLIB_EXPORT string_span : std::pair<std::size_t, std::size_t>
     {
         typedef std::pair<std::size_t, std::size_t> span;
         typedef unsigned int type;

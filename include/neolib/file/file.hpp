@@ -43,34 +43,34 @@
 
 namespace neolib
 {
-    std::string tidy_path(std::string aPath);
-    std::wstring tidy_path(std::wstring aPath);
-    std::string convert_path(const std::wstring& aString);
-    std::wstring convert_path(const std::string& aString);
-    const std::string& create_path(const std::string& aPath);
-    const std::wstring& create_path(const std::wstring& aPath);
-    std::string create_file(const std::string& aFileName);
-    void create_file(const std::wstring& aFileName);
-    bool file_exists(const std::string& aPath);
-    bool file_exists(const std::wstring& aPath);
-    std::time_t file_date(const std::string& aPath);
-    std::time_t file_date(const std::wstring& aPath);
-    std::string file_ext(const std::string& aPath);
-    std::wstring file_ext(const std::wstring& aPath);
-    bool can_read_file(const std::string& aPath);
-    bool can_read_file(const std::wstring& aPath);
-    unsigned long file_size(const std::string& aPath);
-    unsigned long file_size(const std::wstring& aPath);
-    unsigned long long large_file_size(const std::string& aPath);
-    unsigned long long large_file_size(const std::wstring& aPath);
-    int large_file_seek(FILE* aStream, long long aOffset, int aOrigin);
-    bool move_file(const std::string& aPathFrom, const std::string& aPathTo);
-    std::string program_file();
-    std::string program_directory();
-    std::string user_documents_directory();
-    std::string user_settings_directory();
+    NEOLIB_EXPORT std::string tidy_path(std::string aPath);
+    NEOLIB_EXPORT std::wstring tidy_path(std::wstring aPath);
+    NEOLIB_EXPORT std::string convert_path(const std::wstring& aString);
+    NEOLIB_EXPORT std::wstring convert_path(const std::string& aString);
+    NEOLIB_EXPORT const std::string& create_path(const std::string& aPath);
+    NEOLIB_EXPORT const std::wstring& create_path(const std::wstring& aPath);
+    NEOLIB_EXPORT std::string create_file(const std::string& aFileName);
+    NEOLIB_EXPORT void create_file(const std::wstring& aFileName);
+    NEOLIB_EXPORT bool file_exists(const std::string& aPath);
+    NEOLIB_EXPORT bool file_exists(const std::wstring& aPath);
+    NEOLIB_EXPORT std::time_t file_date(const std::string& aPath);
+    NEOLIB_EXPORT std::time_t file_date(const std::wstring& aPath);
+    NEOLIB_EXPORT std::string file_ext(const std::string& aPath);
+    NEOLIB_EXPORT std::wstring file_ext(const std::wstring& aPath);
+    NEOLIB_EXPORT bool can_read_file(const std::string& aPath);
+    NEOLIB_EXPORT bool can_read_file(const std::wstring& aPath);
+    NEOLIB_EXPORT unsigned long file_size(const std::string& aPath);
+    NEOLIB_EXPORT unsigned long file_size(const std::wstring& aPath);
+    NEOLIB_EXPORT unsigned long long large_file_size(const std::string& aPath);
+    NEOLIB_EXPORT unsigned long long large_file_size(const std::wstring& aPath);
+    NEOLIB_EXPORT int large_file_seek(FILE* aStream, long long aOffset, int aOrigin);
+    NEOLIB_EXPORT bool move_file(const std::string& aPathFrom, const std::string& aPathTo);
+    NEOLIB_EXPORT std::string program_file();
+    NEOLIB_EXPORT std::string program_directory();
+    NEOLIB_EXPORT std::string user_documents_directory();
+    NEOLIB_EXPORT std::string user_settings_directory();
 
-    class simple_file
+    class NEOLIB_EXPORT simple_file
     {
         // types
     private:

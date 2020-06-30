@@ -45,7 +45,7 @@
 
 namespace neolib::ecs
 {
-    class entity_archetype : public i_entity_archetype
+    class NEOLIB_EXPORT entity_archetype : public i_entity_archetype
     {
     private:
         typedef neolib::set<component_id, std::less<component_id>, neolib::fast_pool_allocator<component_id>> component_list;

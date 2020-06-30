@@ -52,7 +52,7 @@
 
 namespace neolib
 {
-    class settings : public reference_counted<i_settings>
+    class NEOLIB_EXPORT settings : public reference_counted<i_settings>
     {
         template <typename T>
         friend class setting;

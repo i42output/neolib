@@ -41,7 +41,7 @@
 
 namespace neolib
 {
-    class uri_authority
+    class NEOLIB_EXPORT uri_authority
     {
     public:
         typedef std::string user_information_type;

@@ -47,7 +47,7 @@
 
 namespace neolib
 {
-    class waitable_event
+    class NEOLIB_EXPORT waitable_event
     {
         // constants
     public:

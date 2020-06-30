@@ -49,7 +49,7 @@ namespace neolib
 {
     class async_task;
 
-    class timer_service : public i_timer_service
+    class NEOLIB_EXPORT timer_service : public i_timer_service
     {
         // types
     public:
@@ -69,7 +69,7 @@ namespace neolib
         dirty_list iDirtyObjectList;
     };
 
-    class io_service : public i_async_service
+    class NEOLIB_EXPORT io_service : public i_async_service
     {
         // types
     public:
@@ -87,7 +87,7 @@ namespace neolib
         native_io_service_type iNativeIoService;
     };
 
-    class async_task : public task<i_async_task>, public lifetime
+    class NEOLIB_EXPORT async_task : public task<i_async_task>, public lifetime
     {
         friend class async_thread;
         // events

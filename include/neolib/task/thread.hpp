@@ -48,7 +48,7 @@
 
 namespace neolib
 {
-    class thread : public i_thread, public waitable, private noncopyable
+    class NEOLIB_EXPORT thread : public i_thread, public waitable, private noncopyable
     {
         // types
     public:
