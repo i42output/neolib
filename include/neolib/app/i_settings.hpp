@@ -43,15 +43,16 @@
 #include <neolib/core/i_string.hpp>
 #include <neolib/plugin/simple_variant.hpp>
 #include <neolib/plugin/i_plugin_event.hpp>
-#include <neolib/app/setting.hpp>
+#include <neolib/app/i_setting.hpp>
 #include <neolib/app/setting_constraints.hpp>
 
 namespace neolib
 {
+    template <typename T>
+    class setting;
+
     class i_settings : public i_reference_counted
     {
-        template <typename T>
-        friend class setting;
     public:
         declare_event(setting_changing, const i_setting&)
         declare_event(setting_changed, const i_setting&)
@@ -83,8 +84,6 @@ namespace neolib
         virtual void save() const = 0;
     public:
         static uuid const& id() { static uuid sId = neolib::make_uuid("E19B3C48-04F7-4207-B24A-2967A3523CE7"); return sId; }
-    private:
-        virtual void setting_updated(i_setting& aExistingSetting) = 0;
         // helpers
     public:
         void register_category(string const& aCategorySubkey, string const& aCategoryTitle = string{})
@@ -96,21 +95,21 @@ namespace neolib
             register_group(static_cast<i_string const&>(aGroupSubkey), static_cast<i_string const&>(aGroupTitle));
         }
         template <typename T>
-        i_setting& register_setting(string const& aKey, setting_constraints<T> const& aSettingConstraints, std::optional<T> const& aDefaultValue = {}, string const& aFormat = {})
+        i_setting& register_setting(string const& aKey, setting_constraints<T> const& aSettingConstraints, T const& aDefaultValue, string const& aFormat = {})
         {
             auto newSetting = make_ref<neolib::setting<T>>(*this, aKey, aSettingConstraints, aFormat);
             register_setting(*newSetting);
-            if (!newSetting->value().is_set() && aDefaultValue)
-                change_setting(*newSetting, *aDefaultValue, false);
+            if (!newSetting->value().is_set())
+                change_setting(*newSetting, aDefaultValue, false);
             return *newSetting;
         }
         template <typename T>
-        i_setting& register_setting(string const& aKey, std::optional<T> const& aDefaultValue = {}, string const& aFormat = {})
+        i_setting& register_setting(string const& aKey, T const& aDefaultValue, string const& aFormat = {})
         {
             return register_setting(aKey, {}, aDefaultValue, aFormat);
         }
         template <typename T>
-        void change_setting(i_setting& aExistingSetting, const T& aValue, bool aApplyNow = true)
+        void change_setting(i_setting& aExistingSetting, T const& aValue, bool aApplyNow = true)
         {
             change_setting(aExistingSetting, static_cast<i_setting_value const&>(setting_value{ aValue }), aApplyNow);
         }

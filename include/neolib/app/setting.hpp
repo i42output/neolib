@@ -114,7 +114,9 @@ namespace neolib
         }
         i_setting_value const& new_value() const override
         {
-            return iNewValue;
+            if (iNewValue.is_set())
+                return iNewValue;
+            return iValue;
         }
         void value_as_string(i_string& aValue) const override
         {
@@ -130,15 +132,14 @@ namespace neolib
                         iValue = aNewValue;
                     iNewValue = aNewValue;
                     Changing.trigger();
-                    iManager.setting_updated(*this);
+                    iManager.setting_changing().trigger(*this);
                 }
             }
             else if (iNewValue.is_set())
             {
-                iNewValue = iValue;
-                Changing.trigger();
-                iManager.setting_updated(*this);
                 iNewValue.clear();
+                Changing.trigger();
+                iManager.setting_changing().trigger(*this);
             }
         }
         void set_value_from_string(i_string const& aNewValue) override
@@ -160,7 +161,12 @@ namespace neolib
                 if (changed)
                 {
                     Changed.trigger();
-                    iManager.setting_updated(*this);
+                    iManager.setting_changed().trigger(*this);
+                }
+                else
+                {
+                    Changing.trigger();
+                    iManager.setting_changing().trigger(*this);
                 }
                 return true;
             }
@@ -170,10 +176,9 @@ namespace neolib
         {
             if (iNewValue.is_set())
             {
-                iNewValue = iValue;
-                Changing.trigger();
-                iManager.setting_updated(*this);
                 iNewValue.clear();
+                Changing.trigger();
+                iManager.setting_changing().trigger(*this);
                 return true;
             }
             return false;

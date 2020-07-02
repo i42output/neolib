@@ -236,15 +236,4 @@ namespace neolib
             iStore->write(output);
         }
     }
-
-    void settings::setting_updated(i_setting& aExistingSetting)
-    {
-        setting_list::iterator iter = iSettings.find(aExistingSetting.key());
-        if (iter == iSettings.end())
-            throw setting_not_found();
-        if (!aExistingSetting.modified())
-            SettingChanged.trigger(aExistingSetting);
-        else
-            SettingChanging.trigger(aExistingSetting);
-    }
 }
