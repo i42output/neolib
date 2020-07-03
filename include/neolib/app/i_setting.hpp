@@ -52,6 +52,8 @@ namespace neolib
     public:
         typedef i_setting abstract_type;
     public:
+        struct setting_not_optional : std::logic_error { setting_not_optional() : std::logic_error{ "neolib::i_setting::setting_not_optional" } {} };
+    public:
         declare_event(changing)
         declare_event(changed)
     public:
@@ -60,12 +62,18 @@ namespace neolib
         virtual i_setting_constraints const& constraints() const = 0;
         virtual i_string const& format() const = 0;
         virtual bool hidden() const = 0;
+        virtual bool is_enabled() const = 0;
+        virtual void set_enabled(bool aEnabled) = 0;
+        virtual bool is_default() const = 0;
         virtual bool modified() const = 0;
+        virtual i_setting_value const& default_value() const = 0;
         virtual i_setting_value const& value() const = 0;
         virtual i_setting_value const& new_value() const = 0;
         virtual void value_as_string(i_string& aValue) const = 0;
+        virtual void set_default_value(i_setting_value const& aDefaultValue) = 0;
         virtual void set_value(i_setting_value const& aNewValue) = 0;
         virtual void set_value_from_string(i_string const& aNewValue) = 0;
+        virtual bool cleared() const = 0;
         virtual void clear() = 0;
     private:
         virtual bool apply_change() = 0;
@@ -73,6 +81,22 @@ namespace neolib
     private:
         virtual void clone(i_ref_ptr<i_setting>& aResult) const = 0;
     public:
+        bool enabled() const
+        {
+            return is_enabled();
+        }
+        bool disabled() const
+        {
+            return !enabled();
+        }
+        void enable()
+        {
+            set_enabled(true);
+        }
+        void disabled()
+        {
+            set_enabled(false);
+        }
         template <typename T>
         T const& value() const
         {
@@ -88,6 +112,11 @@ namespace neolib
             thread_local string result;
             value_as_string(result);
             return result.to_std_string();
+        }
+        template <typename T>
+        void set_default_value(T const& aDefaultValue)
+        {
+            return set_default_value(static_cast<i_setting_value const&>(setting_value<T>{ aDefaultValue }));
         }
         template <typename T>
         void set_value(T const& aNewValue)

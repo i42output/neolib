@@ -50,22 +50,36 @@ namespace neolib
         typedef setting_value<value_type> setting_value_type;
     public:
         setting_constraints(
-            const setting_value_type& aMinimumValue = setting_value_type{},
-            const setting_value_type& aMaximumValue = setting_value_type{},
-            const i_vector<i_setting_value>& aAllowableValues = vector<setting_value_type>{},
-            const setting_value_type& aStepValue = setting_value_type{}) :
+            bool aOptional = false,
+            bool aInitiallyDisabled = false,
+            setting_value_type const& aMinimumValue = setting_value_type{},
+            setting_value_type const& aMaximumValue = setting_value_type{},
+            i_vector<i_setting_value> const& aAllowableValues = vector<setting_value_type>{},
+            setting_value_type const& aStepValue = setting_value_type{}) :
+            iInitiallyDisabled{ aInitiallyDisabled },
+            iOptional{ aOptional },
             iMinimumValue{ aMinimumValue },
             iMaximumValue{ aMaximumValue },
             iAllowableValues{ aAllowableValues },
             iStepValue{ aStepValue }
         {}
-        setting_constraints(const i_setting_constraints& aOther) :
+        setting_constraints(i_setting_constraints const& aOther) :
+            iOptional{ aOther.optional() },
+            iInitiallyDisabled{ aOther.initially_disabled() },
             iMinimumValue{ aOther.minimum_value() },
             iMaximumValue{ aOther.maximum_value() },
             iAllowableValues{ aOther.allowable_values() },
             iStepValue{ aOther.step_value() }
         {}
     public:
+        bool optional() const override
+        {
+            return iOptional;
+        }
+        bool initially_disabled() const override
+        {
+            return iInitiallyDisabled;
+        }
         bool has_minimum_value() const override
         {
             return iMinimumValue.is_set();
@@ -99,6 +113,8 @@ namespace neolib
             return iStepValue;
         }
     private:
+        bool iOptional;
+        bool iInitiallyDisabled;
         setting_value_type iMinimumValue;
         setting_value_type iMaximumValue;
         std::optional<vector<setting_value_type>> iAllowableValues;

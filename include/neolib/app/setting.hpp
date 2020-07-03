@@ -60,11 +60,13 @@ namespace neolib
         define_declared_event(Changing, changing)
         define_declared_event(Changed, changed)
     public:
-        setting(i_settings& aManager, const i_string& aKey, const i_setting_constraints& aConstraints = setting_constraints<T>{}, const i_string& aFormat = string{}) :
+        setting(i_settings& aManager, i_string const& aKey, T const& aDefaultValue, i_setting_constraints const& aConstraints = setting_constraints<T>{}, i_string const& aFormat = string{}) :
             iManager{ aManager }, 
             iKey{ aKey }, 
             iConstraints{ aConstraints },
             iFormat{ aFormat },
+            iEnabled{ !aConstraints.initially_disabled() },
+            iDefaultValue{ aDefaultValue },
             iValue{}
         {}
         setting(const self_type& aOther) : 
@@ -73,6 +75,8 @@ namespace neolib
             iKey{ aOther.iKey },
             iConstraints{ aOther.iConstraints },
             iFormat{ aOther.iFormat },
+            iEnabled{ !aOther.iConstraints.initially_disabled() },
+            iDefaultValue{ aOther.iDefaultValue },
             iValue{ aOther.iValue }
         {
         }
@@ -81,6 +85,8 @@ namespace neolib
             iKey{ aSetting.key() }, 
             iConstraints{ aSetting.constraints() },
             iFormat{ aSetting.format() },
+            iEnabled{ !aSetting.constraints().initially_disabled() },
+            iDefaultValue{ aSetting.default_value() },
             iValue{ aSetting.value() }
         {}
     public:
@@ -104,23 +110,59 @@ namespace neolib
         {
             return iFormat.empty();
         }
+        bool is_enabled() const override
+        {
+            return iEnabled;
+        }
+        void set_enabled(bool aEnabled) override
+        {
+            if (iEnabled != aEnabled)
+            {
+                iEnabled = aEnabled;
+                Changed.trigger();
+                iManager.setting_changed().trigger(*this);
+            }
+        }
+        bool is_default() const override
+        {
+            return !iValue.is_set();
+        }
         bool modified() const override
         { 
             return iNewValue.is_set(); 
         }
+        i_setting_value const& default_value() const override
+        {
+            return iDefaultValue;
+        }
         i_setting_value const& value() const override
         {
-            return iValue;
+            if (iValue.is_set())
+                return iValue;
+            else
+                return iDefaultValue;
         }
         i_setting_value const& new_value() const override
         {
             if (iNewValue.is_set())
                 return iNewValue;
-            return iValue;
+            return value();
         }
         void value_as_string(i_string& aValue) const override
         {
             aValue = to_string(iValue.get<T>());
+        }
+        void set_default_value(i_setting_value const& aDefaultValue) override
+        {
+            if (iDefaultValue != aDefaultValue)
+            {
+                iDefaultValue = aDefaultValue;
+                if (is_default())
+                {
+                    Changed.trigger();
+                    iManager.setting_changed().trigger(*this);
+                }
+            }
         }
         void set_value(i_setting_value const& aNewValue) override
         {
@@ -146,9 +188,18 @@ namespace neolib
         {
             set_value(setting_value<T>{ from_string<T>(aNewValue) });
         }
+        bool cleared() const override
+        {
+            return !iValue.is_set();
+        }
         void clear() override
         {
-            set_value(setting_value<T>{});
+            if (!constraints().optional())
+                throw setting_not_optional();
+            iValue.clear();
+            iNewValue.clear();
+            Changed.trigger();
+            iManager.setting_changed().trigger(*this);
         }
     private:
         bool apply_change() override
@@ -193,6 +244,8 @@ namespace neolib
         string iKey;
         setting_constraints<T> iConstraints;
         string iFormat;
+        bool iEnabled;
+        setting_value_type iDefaultValue;
         setting_value_type iValue;
         setting_value_type iNewValue;
     };

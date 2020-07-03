@@ -95,18 +95,16 @@ namespace neolib
             register_group(static_cast<i_string const&>(aGroupSubkey), static_cast<i_string const&>(aGroupTitle));
         }
         template <typename T>
-        i_setting& register_setting(string const& aKey, setting_constraints<T> const& aSettingConstraints, T const& aDefaultValue, string const& aFormat = {})
+        i_setting& register_setting(string const& aKey, T const& aDefaultValue, setting_constraints<T> const& aSettingConstraints, string const& aFormat = {})
         {
-            auto newSetting = make_ref<neolib::setting<T>>(*this, aKey, aSettingConstraints, aFormat);
+            auto newSetting = make_ref<neolib::setting<T>>(*this, aKey, aDefaultValue, aSettingConstraints, aFormat);
             register_setting(*newSetting);
-            if (!newSetting->value().is_set())
-                change_setting(*newSetting, aDefaultValue, false);
             return *newSetting;
         }
         template <typename T>
         i_setting& register_setting(string const& aKey, T const& aDefaultValue, string const& aFormat = {})
         {
-            return register_setting(aKey, {}, aDefaultValue, aFormat);
+            return register_setting(aKey, aDefaultValue, {}, aFormat);
         }
         template <typename T>
         void change_setting(i_setting& aExistingSetting, T const& aValue, bool aApplyNow = true)

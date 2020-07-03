@@ -47,6 +47,8 @@ namespace neolib
     public:
         virtual ~i_setting_constraints() = default;
     public:
+        virtual bool optional() const = 0;
+        virtual bool initially_disabled() const = 0;
         virtual bool has_minimum_value() const = 0;
         virtual bool has_maximum_value() const = 0;
         virtual bool has_allowable_values() const = 0;
