@@ -38,6 +38,8 @@
 #include <neolib/neolib.hpp>
 #include <type_traits>
 #include <stdexcept>
+#include <vector>
+#include <utility>
 #include <array>
 #include <algorithm>
 #include <ostream>
@@ -1376,6 +1378,47 @@ namespace neolib
             aMatrix[1][1] *= aScaling.y;
             aMatrix[2][2] *= aScaling.z;
             return aMatrix;
+        }
+
+        // Function
+
+        template <typename T>
+        inline bool nearly_equal(T lhs, T rhs, scalar epsilon = 0.00001, std::enable_if_t<std::is_floating_point_v<T>, sfinae> = {})
+        {
+            return static_cast<double>(std::abs(lhs - rhs)) < epsilon;
+        }
+        template <typename T>
+        inline bool nearly_equal(T lhs, T rhs, scalar epsilon = 0.00001, std::enable_if_t<std::is_integral_v<T>, sfinae> = {})
+        {
+            return lhs == rhs;
+        }
+        template <typename T, uint32_t Size, typename Type = column_vector>
+        inline bool nearly_equal(basic_vector<T, Size, Type> const& lhs, basic_vector<T, Size, Type> const& rhs, scalar epsilon = 0.00001)
+        {
+            for (uint32_t index = 0; index < Size; ++index)
+                if (!nearly_equal(lhs[index], rhs[index], epsilon))
+                    return false;
+            return true;
+        }
+        template <typename T>
+        inline bool nearly_equal(std::optional<T> const& lhs, std::optional<T> const& rhs, scalar epsilon = 0.00001)
+        {
+            if (!!lhs != !!rhs)
+                return false;
+            if (!lhs)
+                return true;
+            return nearly_equal(*lhs, *rhs, epsilon);
+        }
+        template <typename T1, typename T2>
+        inline bool nearly_equal(std::pair<T1, T2> const& lhs, std::pair<T1, T2> const& rhs, scalar epsilon = 0.00001)
+        {
+            return nearly_equal(lhs.first, rhs.first, epsilon) && nearly_equal(lhs.second, rhs.second, epsilon);
+        }
+        template <typename T>
+        inline bool nearly_equal(std::vector<T> const& lhs, std::vector<T> const& rhs, scalar epsilon = 0.00001)
+        {
+            return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(),
+                [epsilon](auto const& lhs, auto const& rhs) { return nearly_equal(lhs, rhs, epsilon); });
         }
 
         // AABB
