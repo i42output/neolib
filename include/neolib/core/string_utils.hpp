@@ -38,12 +38,24 @@
 #include <neolib/neolib.hpp>
 #include <string>
 #include <vector>
+#include <locale>
 #include <neolib/core/string.hpp>
 #include <neolib/core/string_numeric.hpp>
 #include <neolib/core/string_utf.hpp>
 
 namespace neolib 
 {
+    struct NEOLIB_EXPORT comma_as_whitespace : std::ctype<char>
+    {
+        static const mask* make_table()
+        {
+            static std::vector<mask> v(classic_table(), classic_table() + table_size);
+            v[','] |= space;
+            return &v[0];
+        }
+        comma_as_whitespace(std::size_t refs = 0) : ctype{ make_table(), false, refs } {}
+    };
+
     template <typename T>
     std::string to_std_string(T const& aValue)
     {
