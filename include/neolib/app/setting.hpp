@@ -123,35 +123,46 @@ namespace neolib
                 iManager.setting_changed().trigger(*this);
             }
         }
-        bool is_default() const override
+        bool is_default(bool aUnappliedNew = false) const override
         {
+            if (aUnappliedNew && modified())
+                return !modified_value().is_set();
             return !iValue.is_set();
         }
         bool modified() const override
         { 
-            return iNewValue.is_set(); 
+            return iNewValue != std::nullopt; 
         }
         i_setting_value const& default_value() const override
         {
             return iDefaultValue;
         }
-        i_setting_value const& value() const override
+        using i_setting::value;
+        i_setting_value const& value(bool aUnappliedNew = false) const override
         {
+            if (aUnappliedNew && modified())
+            {
+                if (modified_value().is_set())
+                    return modified_value();
+                return iDefaultValue;
+            }
             if (iValue.is_set())
                 return iValue;
-            else
-                return iDefaultValue;
+            return iDefaultValue;
         }
-        i_setting_value const& new_value() const override
+        using i_setting::modified_value;
+        i_setting_value const& modified_value() const override
         {
-            if (iNewValue.is_set())
-                return iNewValue;
-            return value();
+            if (!modified())
+                throw setting_not_modified();
+            return *iNewValue;
         }
-        void value_as_string(i_string& aValue) const override
+        using i_setting::value_as_string;
+        void value_as_string(i_string& aValue, bool aUnappliedNew = false) const override
         {
-            aValue = to_string(iValue.get<T>());
+            aValue = to_string(value(aUnappliedNew).get<T>());
         }
+        using i_setting::set_default_value;
         void set_default_value(i_setting_value const& aDefaultValue) override
         {
             if (iDefaultValue != aDefaultValue)
@@ -164,22 +175,21 @@ namespace neolib
                 }
             }
         }
+        using i_setting::set_value;
         void set_value(i_setting_value const& aNewValue) override
         {
             if (iValue != aNewValue)
             {
-                if (iNewValue != aNewValue)
+                if (!modified() || modified_value() != aNewValue)
                 {
-                    if (!iValue.is_set())
-                        iValue = aNewValue;
                     iNewValue = aNewValue;
                     Changing.trigger();
                     iManager.setting_changing().trigger(*this);
                 }
             }
-            else if (iNewValue.is_set())
+            else if (modified())
             {
-                iNewValue.clear();
+                iNewValue = std::nullopt;
                 Changing.trigger();
                 iManager.setting_changing().trigger(*this);
             }
@@ -188,27 +198,22 @@ namespace neolib
         {
             set_value(setting_value<T>{ from_string<T>(aNewValue) });
         }
-        bool cleared() const override
-        {
-            return !iValue.is_set();
-        }
         void clear() override
         {
             if (!constraints().optional())
                 throw setting_not_optional();
-            iValue.clear();
-            iNewValue.clear();
-            Changed.trigger();
-            iManager.setting_changed().trigger(*this);
+            iNewValue.emplace();
+            Changing.trigger();
+            iManager.setting_changing().trigger(*this);
         }
     private:
         bool apply_change() override
         {
-            if (iNewValue.is_set())
+            if (modified())
             {
-                bool changed = (iValue != iNewValue);
-                iValue = iNewValue;
-                iNewValue.clear();
+                bool changed = (iValue != *iNewValue);
+                iValue = *iNewValue;
+                iNewValue = std::nullopt;
                 if (changed)
                 {
                     Changed.trigger();
@@ -225,9 +230,9 @@ namespace neolib
         }
         bool discard_change() override
         {
-            if (iNewValue.is_set())
+            if (modified())
             {
-                iNewValue.clear();
+                iNewValue = std::nullopt;
                 Changing.trigger();
                 iManager.setting_changing().trigger(*this);
                 return true;
@@ -247,6 +252,6 @@ namespace neolib
         bool iEnabled;
         setting_value_type iDefaultValue;
         setting_value_type iValue;
-        setting_value_type iNewValue;
+        std::optional<setting_value_type> iNewValue;
     };
 }

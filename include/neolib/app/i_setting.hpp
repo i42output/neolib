@@ -52,6 +52,7 @@ namespace neolib
     public:
         typedef i_setting abstract_type;
     public:
+        struct setting_not_modified : std::logic_error { setting_not_modified() : std::logic_error{ "neolib::i_setting::setting_not_modified" } {} };
         struct setting_not_optional : std::logic_error { setting_not_optional() : std::logic_error{ "neolib::i_setting::setting_not_optional" } {} };
     public:
         declare_event(changing)
@@ -64,16 +65,15 @@ namespace neolib
         virtual bool hidden() const = 0;
         virtual bool is_enabled() const = 0;
         virtual void set_enabled(bool aEnabled) = 0;
-        virtual bool is_default() const = 0;
+        virtual bool is_default(bool aUnappliedNew = false) const = 0;
         virtual bool modified() const = 0;
         virtual i_setting_value const& default_value() const = 0;
-        virtual i_setting_value const& value() const = 0;
-        virtual i_setting_value const& new_value() const = 0;
-        virtual void value_as_string(i_string& aValue) const = 0;
+        virtual i_setting_value const& value(bool aUnappliedNew = false) const = 0;
+        virtual i_setting_value const& modified_value() const = 0;
+        virtual void value_as_string(i_string& aValue, bool aUnappliedNew = false) const = 0;
         virtual void set_default_value(i_setting_value const& aDefaultValue) = 0;
         virtual void set_value(i_setting_value const& aNewValue) = 0;
         virtual void set_value_from_string(i_string const& aNewValue) = 0;
-        virtual bool cleared() const = 0;
         virtual void clear() = 0;
     private:
         virtual bool apply_change() = 0;
@@ -98,28 +98,28 @@ namespace neolib
             set_enabled(false);
         }
         template <typename T>
-        T const& value() const
+        T const& value(bool aUnappliedNew = false) const
         {
-            return value().get<T>();
+            return value(aUnappliedNew).get<T>();
         }
         template <typename T>
-        T const& new_value() const
+        T const& modified_value() const
         {
-            return new_value().get<T>();
+            return modified_value().get<T>();
         }
-        std::string value_as_string() const
+        std::string value_as_string(bool aUnappliedNew = false) const
         {
             thread_local string result;
-            value_as_string(result);
+            value_as_string(result, aUnappliedNew);
             return result.to_std_string();
         }
         template <typename T>
-        void set_default_value(T const& aDefaultValue)
+        void set_default_value(T const& aDefaultValue, std::enable_if_t<!std::is_convertible_v<T&, i_setting_value&>, sfinae> = {})
         {
             return set_default_value(static_cast<i_setting_value const&>(setting_value<T>{ aDefaultValue }));
         }
         template <typename T>
-        void set_value(T const& aNewValue)
+        void set_value(T const& aNewValue, std::enable_if_t<!std::is_convertible_v<T&, i_setting_value&>, sfinae> = {})
         {
             return set_value(static_cast<i_setting_value const&>(setting_value<T>{ aNewValue }));
         }

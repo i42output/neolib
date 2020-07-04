@@ -218,6 +218,8 @@ namespace neolib
             iStore->root().name() = "settings";
             for (auto const& setting : iSettings)
             {
+                if (setting.second()->is_default())
+                    continue;
                 auto const& key = setting.first().to_std_string();
                 thread_local std::vector<std::string> keyBits;
                 keyBits.clear();
