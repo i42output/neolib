@@ -304,9 +304,9 @@ namespace neolib
             std::optional<iterator> result;
             if constexpr (!detail::is_smart_ptr_v<value_type>)
                 result = items().emplace(items().end(), std::forward<Args>(aArgs)...);
-            else if constexpr (std::is_abstract_v<typename value_type::element_type>)
+            else if constexpr (detail::is_smart_ptr_v<value_type> && std::is_abstract_v<typename value_type::element_type>)
                 result = items().emplace(items().end(), std::forward<Args>(aArgs)...);
-            else
+            else if constexpr (detail::is_smart_ptr_v<value_type> && !std::is_abstract_v<typename value_type::element_type>)
                 result = items().insert(items().end(), value_type{ new typename value_type::element_type{std::forward<Args>(aArgs)...} });
             try
             {
