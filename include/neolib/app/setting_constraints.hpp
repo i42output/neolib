@@ -54,22 +54,22 @@ namespace neolib
             bool aInitiallyDisabled = false,
             setting_value_type const& aMinimumValue = setting_value_type{},
             setting_value_type const& aMaximumValue = setting_value_type{},
-            i_vector<i_setting_value> const& aAllowableValues = vector<setting_value_type>{},
-            setting_value_type const& aStepValue = setting_value_type{}) :
+            setting_value_type const& aStepValue = setting_value_type{},
+            i_vector<i_setting_value> const& aAllowableValues = vector<setting_value_type>{}) :
             iInitiallyDisabled{ aInitiallyDisabled },
             iOptional{ aOptional },
             iMinimumValue{ aMinimumValue },
             iMaximumValue{ aMaximumValue },
-            iAllowableValues{ aAllowableValues },
-            iStepValue{ aStepValue }
+            iStepValue{ aStepValue },
+            iAllowableValues{ aAllowableValues }
         {}
         setting_constraints(i_setting_constraints const& aOther) :
             iOptional{ aOther.optional() },
             iInitiallyDisabled{ aOther.initially_disabled() },
             iMinimumValue{ aOther.minimum_value() },
             iMaximumValue{ aOther.maximum_value() },
-            iAllowableValues{ aOther.allowable_values() },
-            iStepValue{ aOther.step_value() }
+            iStepValue{ aOther.step_value() },
+            iAllowableValues{ aOther.allowable_values() }
         {}
     public:
         bool optional() const override
@@ -88,13 +88,13 @@ namespace neolib
         {
             return iMaximumValue.is_set();
         }
-        bool has_allowable_values() const override
-        {
-            return !!iAllowableValues;
-        }
         bool has_step_value() const override
         {
             return iStepValue.is_set();
+        }
+        bool has_allowable_values() const override
+        {
+            return !iAllowableValues.empty();
         }
         setting_value_type const& minimum_value() const override
         {
@@ -104,20 +104,20 @@ namespace neolib
         {
             return iMaximumValue;
         }
-        vector<setting_value_type> const& allowable_values() const override
-        {
-            return *iAllowableValues;
-        }
         setting_value_type const& step_value() const override
         {
             return iStepValue;
+        }
+        vector<setting_value_type> const& allowable_values() const override
+        {
+            return iAllowableValues;
         }
     private:
         bool iOptional;
         bool iInitiallyDisabled;
         setting_value_type iMinimumValue;
         setting_value_type iMaximumValue;
-        std::optional<vector<setting_value_type>> iAllowableValues;
         setting_value_type iStepValue;
+        vector<setting_value_type> iAllowableValues;
     };
 }

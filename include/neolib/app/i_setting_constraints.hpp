@@ -51,12 +51,12 @@ namespace neolib
         virtual bool initially_disabled() const = 0;
         virtual bool has_minimum_value() const = 0;
         virtual bool has_maximum_value() const = 0;
-        virtual bool has_allowable_values() const = 0;
         virtual bool has_step_value() const = 0;
+        virtual bool has_allowable_values() const = 0;
         virtual i_setting_value const& minimum_value() const = 0;
         virtual i_setting_value const& maximum_value() const = 0;
-        virtual i_vector<i_setting_value> const& allowable_values() const = 0;
         virtual i_setting_value const& step_value() const = 0;
+        virtual i_vector<i_setting_value> const& allowable_values() const = 0;
     public:
         template <typename T>
         abstract_t<T> const& minimum_value() const
