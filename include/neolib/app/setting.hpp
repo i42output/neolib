@@ -202,6 +202,8 @@ namespace neolib
         {
             if (!constraints().optional())
                 throw setting_not_optional();
+            if (is_default())
+                return;
             iNewValue.emplace();
             Changing.trigger();
             iManager.setting_changing().trigger(*this);
