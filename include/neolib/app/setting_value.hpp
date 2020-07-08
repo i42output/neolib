@@ -36,18 +36,31 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <type_traits>
 #include <optional>
+#include <neolib/core/enum.hpp>
 #include <neolib/app/i_setting_value.hpp>
 
 namespace neolib
 {
+    template <typename T, typename = sfinae>
+    struct setting_container_type
+    {
+        typedef std::optional<T> type;
+    };
+    template <typename T>
+    struct setting_container_type<T, std::enable_if_t<std::is_enum_v<T>, sfinae>>
+    {
+        typedef std::optional<enum_t<T>> type;
+    };
+
     template <typename T>
     class setting_value : public i_setting_value
     {
         typedef setting_value<T> self_type;
     public:
         typedef i_setting_value abstract_type;
-        typedef std::optional<T> container_type;
+        typedef typename setting_container_type<T>::type container_type;
     public:
         setting_value() :
             iValue{}

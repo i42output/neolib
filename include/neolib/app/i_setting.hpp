@@ -75,6 +75,8 @@ namespace neolib
         virtual void set_value(i_setting_value const& aNewValue) = 0;
         virtual void set_value_from_string(i_string const& aNewValue) = 0;
         virtual void clear() = 0;
+    protected:
+        virtual i_setting_value& temp_setting_value() = 0;
     private:
         virtual bool apply_change() = 0;
         virtual bool discard_change() = 0;
@@ -98,12 +100,12 @@ namespace neolib
             set_enabled(false);
         }
         template <typename T>
-        T const& value(bool aUnappliedNew = false) const
+        abstract_return_t<const T> value(bool aUnappliedNew = false) const
         {
             return value(aUnappliedNew).get<T>();
         }
         template <typename T>
-        T const& modified_value() const
+        abstract_return_t<const T> modified_value() const
         {
             return modified_value().get<T>();
         }
@@ -116,12 +118,16 @@ namespace neolib
         template <typename T>
         void set_default_value(T const& aDefaultValue, std::enable_if_t<!std::is_convertible_v<T&, i_setting_value&>, sfinae> = {})
         {
-            return set_default_value(static_cast<i_setting_value const&>(setting_value<T>{ aDefaultValue }));
+            auto& temp = temp_setting_value();
+            temp.set<T>(aDefaultValue);
+            set_default_value(static_cast<i_setting_value const&>(temp));
         }
         template <typename T>
         void set_value(T const& aNewValue, std::enable_if_t<!std::is_convertible_v<T&, i_setting_value&>, sfinae> = {})
         {
-            return set_value(static_cast<i_setting_value const&>(setting_value<T>{ aNewValue }));
+            auto& temp = temp_setting_value();
+            temp.set<T>(aNewValue);
+            set_value(static_cast<i_setting_value const&>(temp));
         }
     public:
         i_setting& operator=(i_setting const& aRhs)

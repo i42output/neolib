@@ -37,6 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <neolib/core/string.hpp>
+#include <neolib/core/i_enum.hpp>
 
 namespace neolib
 {
@@ -135,14 +136,34 @@ namespace neolib
             return !(*this == aRhs);
         }
         template <typename T>
-        const abstract_t<T>& get() const
+        abstract_return_t<T const> get() const
         {
-            return *static_cast<abstract_t<T> const*>(data());
+            if (type() != setting_type::Enum)
+                return *static_cast<abstract_t<T> const*>(data());
+            else 
+            {
+                if constexpr (std::is_same_v<T, i_enum>)
+                    return *static_cast<i_enum const*>(data());
+                else if constexpr (std::is_scalar_v<T>)
+                    return static_cast<i_enum const*>(data())->value<T>();
+                else
+                    return *static_cast<abstract_t<T> const*>(data());
+            }
         }
         template <typename T>
         void set(T const& aNewValue)
         {
-            *static_cast<abstract_t<T>*>(data()) = aNewValue;
+            if (type() != setting_type::Enum)
+                *static_cast<abstract_t<T>*>(data()) = aNewValue;
+            else
+            {
+                if constexpr (std::is_same_v<T, i_enum>)
+                    *static_cast<i_enum*>(data()) = aNewValue;
+                else if constexpr (std::is_scalar_v<T>)
+                    static_cast<i_enum*>(data())->set_value<T>(aNewValue);
+                else
+                    *static_cast<abstract_t<T>*>(data()) = aNewValue;
+            }
         }
     };
 }

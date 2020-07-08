@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <iostream>
 #include <neolib/core/reference_counted.hpp>
 #include <neolib/core/string.hpp>
 #include <neolib/core/map.hpp>
@@ -109,6 +110,22 @@ namespace neolib
         return try_string_to_enum<Enum>(neolib::string{ aEnumerator });
     }
 
+    template <typename Enum, typename Char, typename Traits, typename = std::enable_if_t<std::is_enum_v<Enum>, sfinae>>
+    inline std::basic_istream<Char, Traits>& operator>>(std::basic_istream<Char, Traits>& aInput, Enum& aEnum)
+    {
+        std::basic_string<Char, Traits> enumString;
+        aInput >> enumString;
+        aEnum = string_to_enum<Enum>(enumString);
+        return aInput;
+    }
+
+    template <typename Enum, typename Char, typename Traits, typename = std::enable_if_t<std::is_enum_v<Enum>, sfinae>>
+    inline std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& aOutput, const Enum& aEnum)
+    {
+        aOutput << enum_to_string<Enum, std::basic_string<Char, Traits>>(aEnum);
+        return aOutput;
+    }
+
     template <typename UnderlyingType>
     class i_basic_enum : public i_reference_counted
     {
@@ -148,12 +165,10 @@ namespace neolib
         // state
     public:
         virtual underlying_type value() const = 0;
-        virtual underlying_type set_value(underlying_type aValue) = 0;
+        virtual void set_value(underlying_type aValue) = 0;
         virtual underlying_type set_value(const i_string& aValue) = 0;
-        underlying_type& set_value(const std::string aValue)
-        {
-            return set_value(string{ aValue });
-        }
+        virtual underlying_type const* data() const = 0;
+        virtual underlying_type* data() = 0;
         // meta
     public:
         virtual void to_string(i_string& aString) const = 0;
@@ -172,9 +187,14 @@ namespace neolib
             return static_cast<Enum>(value());
         }
         template <typename Enum>
-        Enum set_value(Enum aValue)
+        void set_value(Enum aValue)
         {
             set_value(static_cast<underlying_type>(aValue));
+        }
+        template <typename Enum>
+        Enum set_value(const std::string& aValue)
+        {
+            return static_cast<Enum>(set_value(string{ aValue }));
         }
     };
 

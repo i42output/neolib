@@ -144,11 +144,11 @@ namespace neolib
             {
                 if (modified_value().is_set())
                     return modified_value();
-                return iDefaultValue;
+                return default_value();
             }
             if (iValue.is_set())
                 return iValue;
-            return iDefaultValue;
+            return default_value();
         }
         using i_setting::modified_value;
         i_setting_value const& modified_value() const override
@@ -165,7 +165,7 @@ namespace neolib
         using i_setting::set_default_value;
         void set_default_value(i_setting_value const& aDefaultValue) override
         {
-            if (iDefaultValue != aDefaultValue)
+            if (default_value() != aDefaultValue)
             {
                 iDefaultValue = aDefaultValue;
                 if (is_default())
@@ -178,7 +178,7 @@ namespace neolib
         using i_setting::set_value;
         void set_value(i_setting_value const& aNewValue) override
         {
-            if (iValue != aNewValue)
+            if (value() != aNewValue)
             {
                 if (!modified() || modified_value() != aNewValue)
                 {
@@ -207,6 +207,14 @@ namespace neolib
             iNewValue.emplace();
             Changing.trigger();
             iManager.setting_changing().trigger(*this);
+        }
+    protected:
+        i_setting_value& temp_setting_value() override
+        {
+            // why? type erasure; better than allocating a clone on the heap.
+            thread_local setting_value_type temp;
+            temp = setting_value_type{};
+            return temp;
         }
     private:
         bool apply_change() override

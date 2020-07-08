@@ -59,17 +59,17 @@ namespace neolib
         virtual i_vector<i_setting_value> const& allowable_values() const = 0;
     public:
         template <typename T>
-        abstract_t<T> const& minimum_value() const
+        abstract_return_t<const T> minimum_value() const
         {
             return minimum_value().get<T>();
         }
         template <typename T>
-        abstract_t<T> const& maximum_value() const
+        abstract_return_t<const T> maximum_value() const
         {
             return maximum_value().get<T>();
         }
         template <typename T>
-        abstract_t<T> const& step_value() const
+        abstract_return_t<const T> step_value() const
         {
             return step_value().get<T>();
         }

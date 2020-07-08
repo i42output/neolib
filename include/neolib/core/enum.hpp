@@ -63,33 +63,40 @@ namespace neolib
         {
         }
         basic_enum(enum_type aValue) :
-            iValue{ aValue }
+            iValue{ static_cast<underlying_type>(aValue) }
         {
         }
         basic_enum(const abstract_type& aOther) :
-            iValue{ aOther.template value<enum_type>() }
+            iValue{ aOther.value() }
         {
         }
         // state
     public:
         underlying_type value() const override
         {
-            return static_cast<underlying_type>(iValue);
+            return iValue;
         }
-        underlying_type set_value(underlying_type aValue) override
+        void set_value(underlying_type aValue) override
         {
-            iValue = static_cast<enum_type>(aValue);
-            return value();
+            iValue = aValue;
         }
         underlying_type set_value(const i_string& aValue) override
         {
             for (auto const& e : enumerators())
                 if (e.second() == aValue)
                 {
-                    iValue = static_cast<enum_type>(e.first());
+                    iValue = e.first();
                     return value();
                 }
             throw bad_enum_string();
+        }
+        underlying_type const* data() const override
+        {
+            return &iValue;
+        }
+        underlying_type* data() override
+        {
+            return &iValue;
         }
         // meta
     public:
@@ -109,12 +116,12 @@ namespace neolib
         }
         abstract_type& do_assign(const abstract_type& aRhs) override
         {
-            iValue = static_cast<enum_type>(aRhs.value());
+            iValue = aRhs.value();
             return *this;
         }
         // state
-    public:
-        enum_type iValue;
+    private:
+        underlying_type iValue;
     };
 
     template <typename Enum>

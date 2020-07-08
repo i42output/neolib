@@ -74,6 +74,14 @@ namespace neolib
         map() 
         {
         }
+        map(const map& aOther) :
+            iMap{ aOther.iMap }
+        {
+        }
+        map(map&& aOther) :
+            iMap{ std::move(aOther.iMap) }
+        {
+        }
         map(const std::initializer_list<value_type>& aIlist)
         {
             for (auto& value : aIlist)
@@ -87,6 +95,18 @@ namespace neolib
         map(InputIter aFirst, InputIter aLast) :
             iMap(aFirst, aLast)
         {}
+        // assignment
+    public:
+        map& operator=(const map& aOther)
+        {
+            iMap = aOther.iMap;
+            return *this;
+        }
+        map& operator=(map&& aOther)
+        {
+            iMap = std::move(aOther.iMap);
+            return *this;
+        }
         // non-asbtract operations
     public:
         const container_type& container() const
@@ -207,6 +227,14 @@ namespace neolib
         multimap()
         {
         }
+        multimap(const multimap& aOther) :
+            iMap{ aOther.iMap }
+        {
+        }
+        multimap(multimap&& aOther) :
+            iMap{ std::move(aOther.iMap) }
+        {
+        }
         multimap(const std::initializer_list<value_type>& aIlist)
         {
             for (auto& value : aIlist)
@@ -220,6 +248,18 @@ namespace neolib
         multimap(InputIter aFirst, InputIter aLast) :
             iMap(aFirst, aLast)
         {}
+        // assignment
+    public:
+        multimap& operator=(const multimap& aOther)
+        {
+            iMap = aOther.iMap;
+            return *this;
+        }
+        multimap& operator=(multimap&& aOther)
+        {
+            iMap = std::move(aOther.iMap);
+            return *this;
+        }
         // non-asbtract operations
     public:
         const container_type& container() const
