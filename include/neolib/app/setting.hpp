@@ -203,8 +203,14 @@ namespace neolib
             if (!constraints().optional())
                 throw setting_not_optional();
             if (is_default())
-                return;
-            iNewValue.emplace();
+            {
+                if (modified())
+                    iNewValue = std::nullopt;
+                else
+                    return;
+            }
+            else
+                iNewValue.emplace();
             Changing.trigger();
             iManager.setting_changing().trigger(*this);
         }
