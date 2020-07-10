@@ -63,6 +63,7 @@ namespace neolib
         typedef map<string, string> category_titles;
         typedef map<string, map<string, string>> group_titles;
         typedef map<string, ref_ptr<i_setting>> setting_list;
+        typedef vector<ref_ptr<i_setting>> setting_ordered_list;
     public:
         settings(const i_string& aFileName);
         settings(const i_application& aApp, const i_string& aFileName = string{ "settings.xml" });
@@ -78,6 +79,7 @@ namespace neolib
         group_titles const& all_groups() const override;
         i_string const& group_title(i_string const& aGroupSubkey) const override;
         setting_list const& all_settings() const override;
+        setting_ordered_list const& all_settings_ordered() const override;
         i_setting const& setting(i_string const& aKey) const override;
         i_setting& setting(i_string const& aKey) override;
         void change_setting(i_setting& aExistingSetting, const i_setting_value& aValue, bool aApplyNow = true) override;
@@ -96,5 +98,6 @@ namespace neolib
         category_titles iCategoryTitles;
         group_titles iGroupTitles;
         setting_list iSettings;
+        setting_ordered_list iSettingsOrdered;
     };
 }

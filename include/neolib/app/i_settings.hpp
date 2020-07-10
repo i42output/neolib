@@ -72,6 +72,7 @@ namespace neolib
         virtual i_map<i_string, i_map<i_string, i_string>> const& all_groups() const = 0;
         virtual i_string const& group_title(i_string const& aGroupSubkey) const = 0;
         virtual i_map<i_string, i_ref_ptr<i_setting>> const& all_settings() const = 0;
+        virtual i_vector<i_ref_ptr<i_setting>> const& all_settings_ordered() const = 0;
         virtual i_setting const& setting(i_string const& aKey) const = 0;
         virtual i_setting& setting(i_string const& aKey) = 0;
         virtual void change_setting(i_setting& aExistingSetting, i_setting_value const& aValue, bool aApplyNow = true) = 0;

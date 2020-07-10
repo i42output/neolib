@@ -69,7 +69,8 @@ namespace neolib
     {
         if (iSettings.find(aSetting.key()) != iSettings.end())
             throw setting_already_registered();
-        iSettings[aSetting.key()] = ref_ptr<i_setting>{ aSetting };
+        iSettingsOrdered.push_back(ref_ptr<i_setting>{ aSetting });
+        iSettings[aSetting.key()] = iSettingsOrdered.back();
         auto const key = aSetting.key().to_std_string();
         thread_local std::vector<std::string> keyBits;
         keyBits.clear();
@@ -130,6 +131,11 @@ namespace neolib
         return iSettings;
     }
 
+    settings::setting_ordered_list const& settings::all_settings_ordered() const
+    {
+        return iSettingsOrdered;
+    }
+
     i_setting const& settings::setting(i_string const& aKey) const
     {
         auto existing = iSettings.find(aKey);
@@ -158,11 +164,13 @@ namespace neolib
 
     void settings::delete_setting(i_setting& aExistingSetting)
     {
-        setting_list::iterator iter = iSettings.find(aExistingSetting.key());
-        if (iter == iSettings.end())
+        setting_list::iterator existing = iSettings.find(aExistingSetting.key());
+        if (existing == iSettings.end())
             throw setting_not_found();
-        SettingDeleted.trigger(*iter->second());
-        iSettings.erase(iter);
+        SettingDeleted.trigger(*existing->second());
+        iSettings.erase(existing);
+        auto existingOrdered = std::find_if(iSettingsOrdered.begin(), iSettingsOrdered.end(), [&](auto const& s) { return &*s == &aExistingSetting; });
+        iSettingsOrdered.erase(existingOrdered);
         save();
     }
 
