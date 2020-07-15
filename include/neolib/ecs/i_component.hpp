@@ -77,6 +77,7 @@ namespace neolib::ecs
     class i_component : public i_component_base
     {
     public:
+        virtual bool has_entity_record_no_lock(entity_id aEntity) const = 0;
         virtual bool has_entity_record(entity_id aEntity) const = 0;
         virtual void destroy_entity_record(entity_id aEntity) = 0;
     public:

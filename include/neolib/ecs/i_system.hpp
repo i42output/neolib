@@ -49,6 +49,8 @@ namespace neolib::ecs
     class i_system
     {
     public:
+        struct no_thread : std::logic_error { no_thread() : std::logic_error{ "neolib::ecs::i_system::no_thread" } {} };
+        struct wrong_thread : std::logic_error { wrong_thread() : std::logic_error{ "neolib::ecs::i_system::wrong_thread" } {} };
         struct cannot_apply : std::logic_error { cannot_apply() : std::logic_error{ "neolib::ecs::i_system::cannot_apply" } {} };
     public:
         virtual ~i_system() = default;
@@ -70,6 +72,10 @@ namespace neolib::ecs
         virtual void pause() = 0;
         virtual void resume() = 0;
         virtual void terminate() = 0;
+        virtual bool waiting() const = 0;
+        virtual void wait() = 0;
+        virtual void wait_for(scalar aDuration) = 0;
+        virtual void signal() = 0;
     public:
         virtual void start_thread_if() = 0;
         virtual void start_thread() = 0;

@@ -152,7 +152,7 @@ namespace neolib::ecs
             return data_meta_type::id();
         }
     public:
-        neolib::i_lockable& mutex() const override
+        component_mutex<Data>& mutex() const override
         {
             return iMutex;
         }
@@ -202,14 +202,14 @@ namespace neolib::ecs
         template <typename Callable>
         void apply(const Callable& aCallable)
         {
-            std::scoped_lock<neolib::i_lockable> lock{ mutex() };
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             for (auto& data : component_data())
                 aCallable(data);
         }
         template <typename Callable>
         void parallel_apply(const Callable& aCallable, std::size_t aMinimumParallelismCount = 0)
         {
-            std::scoped_lock<neolib::i_lockable> lock{ mutex() };
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             neolib::parallel_apply(ecs().thread_pool(), component_data(), aCallable, aMinimumParallelismCount);
         }
     private:
@@ -324,36 +324,52 @@ namespace neolib::ecs
         {
             return iReverseIndices;
         }
-        reverse_index_t reverse_index(entity_id aEntity) const
+        reverse_index_t reverse_index_no_lock(entity_id aEntity) const
         {
-            std::scoped_lock<neolib::i_lockable> lock{ mutex() };
             if (reverse_indices().size() > aEntity)
                 return reverse_indices()[aEntity];
             return invalid;
         }
+        bool has_entity_record_no_lock(entity_id aEntity) const override
+        {
+            return reverse_index(aEntity) != invalid;
+        }
+        const data_type& entity_record_no_lock(entity_id aEntity) const
+        {
+            auto reverseIndex = reverse_index(aEntity);
+            if (reverseIndex == invalid)
+                throw entity_record_not_found();
+            return base_type::component_data()[reverseIndex];
+        }
+        value_type& entity_record_no_lock(entity_id aEntity, bool aCreate = false)
+        {
+            if (aCreate && !has_entity_record_no_lock(aEntity))
+                populate(aEntity, value_type{});
+            return const_cast<value_type&>(to_const(*this).entity_record_no_lock(aEntity));
+        }
+        reverse_index_t reverse_index(entity_id aEntity) const
+        {
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
+            return reverse_index_no_lock(aEntity);
+        }
         bool has_entity_record(entity_id aEntity) const override
         {
-            std::scoped_lock<neolib::i_lockable> lock{ mutex() };
-            return reverse_index(aEntity) != invalid;
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
+            return has_entity_record_no_lock(aEntity);
         }
         const data_type& entity_record(entity_id aEntity) const
         {
-            std::scoped_lock<neolib::i_lockable> lock{ mutex() };
-            auto reverseIndex = reverse_index(aEntity);
-            if (reverseIndex == invalid)
-                   throw entity_record_not_found();
-            return base_type::component_data()[reverseIndex];
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
+            return entity_record_no_lock(aEntity);
         }
         value_type& entity_record(entity_id aEntity, bool aCreate = false)
         {
-            std::scoped_lock<neolib::i_lockable> lock{ mutex() };
-            if (aCreate && !has_entity_record(aEntity))
-                populate(aEntity, value_type{});
-            return const_cast<value_type&>(to_const(*this).entity_record(aEntity));
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
+            return entity_record_no_lock(aEntity, aCreate);
         }
         void destroy_entity_record(entity_id aEntity) override
         {
-            std::scoped_lock<neolib::i_lockable> lock{ mutex() };
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             auto reverseIndex = reverse_index(aEntity);
             if (reverseIndex == invalid)
                 throw entity_record_not_found();
@@ -375,17 +391,17 @@ namespace neolib::ecs
         }
         value_type& populate(entity_id aEntity, const value_type& aData)
         {
-            std::scoped_lock<neolib::i_lockable> lock{ mutex() };
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             return do_populate(aEntity, aData);
         }
         value_type& populate(entity_id aEntity, value_type&& aData)
         {
-            std::scoped_lock<neolib::i_lockable> lock{ mutex() };
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             return do_populate(aEntity, aData);
         }
         const void* populate(entity_id aEntity, const void* aComponentData, std::size_t aComponentDataSize) override
         {
-            std::scoped_lock<neolib::i_lockable> lock{ mutex() };
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             if ((aComponentData == nullptr && !is_data_optional()) || aComponentDataSize != sizeof(data_type))
                 throw invalid_data();
             if (aComponentData != nullptr)
@@ -400,7 +416,7 @@ namespace neolib::ecs
         }
         void take_snapshot()
         {
-            std::scoped_lock<neolib::i_lockable> lock{ mutex() };
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             if (!iUsingSnapshot)
             {
                 if (iSnapshot == nullptr)
@@ -412,13 +428,13 @@ namespace neolib::ecs
         }
         scoped_snapshot snapshot()
         {
-            std::scoped_lock<neolib::i_lockable> lock{ mutex() };
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             return scoped_snapshot{ *this };
         }
         template <typename Compare>
         void sort(Compare aComparator)
         {
-            std::scoped_lock<neolib::i_lockable> lock{ mutex() };
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             neolib::intrusive_sort(base_type::component_data().begin(), base_type::component_data().end(),
                 [this](auto lhs, auto rhs) 
                 { 
@@ -438,7 +454,7 @@ namespace neolib::ecs
         template <typename T>
         value_type& do_populate(entity_id aEntity, T&& aComponentData)
         {
-            std::scoped_lock<neolib::i_lockable> lock{ mutex() };
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             if (has_entity_record(aEntity))
                 return do_update(aEntity, aComponentData);
             reverse_index_t reverseIndex = invalid;
@@ -469,7 +485,7 @@ namespace neolib::ecs
         template <typename T>
         value_type& do_update(entity_id aEntity, T&& aComponentData)
         {
-            std::scoped_lock<neolib::i_lockable> lock{ mutex() };
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             auto& record = entity_record(aEntity);
             record = aComponentData;
             return record;

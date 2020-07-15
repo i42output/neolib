@@ -64,6 +64,12 @@ namespace neolib::ecs
             {
                 start();
             }
+            ~thread()
+            {
+                set_destroying();
+                if (iOwner.waiting())
+                    iOwner.signal();
+            }
         public:
             bool do_work(neolib::yield_type aYieldType = neolib::yield_type::NoYield) override
             {
@@ -71,6 +77,8 @@ namespace neolib::ecs
                 if (iOwner.can_apply())
                     didWork = iOwner.apply() || didWork;
                 iOwner.yield();
+                if (iOwner.paused() && !iOwner.waiting())
+                    iOwner.wait();
                 return didWork;
             }
         private:
@@ -147,11 +155,52 @@ namespace neolib::ecs
         }
         void resume() override
         {
-            --iPaused;
+            if (--iPaused == 0 && waiting())
+                signal();
         }
         void terminate() override
         {
             iThread = nullptr;
+        }
+        bool waiting() const override
+        {
+            return iWaiting;
+        }
+        void wait() override
+        {
+            if (!have_thread())
+                throw no_thread();
+            if (!get_thread().in())
+                throw wrong_thread();
+            if (!get_thread().is_alive())
+                return;
+            std::unique_lock<std::mutex> lock{ iMutex };
+            iWaiting = true;
+            iCondVar.wait(lock, [&]() { return !iWaiting; });
+        }
+        void wait_for(scalar aDuration) override
+        {
+            if (!have_thread())
+                throw no_thread();
+            if (!get_thread().in())
+                throw wrong_thread();
+            if (!get_thread().is_alive())
+                return;
+            std::unique_lock<std::mutex> lock{ iMutex };
+            iWaiting = true;
+            iCondVar.wait_for(lock, std::chrono::duration<double>(aDuration), [&](){ return !iWaiting; });
+        }
+        void signal() override
+        {
+            if (!have_thread())
+                throw no_thread();
+            if (get_thread().in())
+                throw wrong_thread();
+            {
+                std::unique_lock<std::mutex> lock{ iMutex };
+                iWaiting = false;
+            }
+            iCondVar.notify_one();
         }
     public:
         void start_thread_if() override
@@ -200,6 +249,10 @@ namespace neolib::ecs
             else
                 neolib::thread::yield();
         }
+        std::mutex& waiting_mutex()
+        {
+            return iMutex;
+        }
         void start_update(std::size_t aMetricsIndex = 0)
         {
             if (debug())
@@ -229,9 +282,12 @@ namespace neolib::ecs
         }
     private:
         i_ecs& iEcs;
-        std::unique_ptr<thread> iThread;
         component_list iComponents;
+        std::unique_ptr<thread> iThread;
         std::atomic<uint32_t> iPaused = 0u;
+        std::mutex iMutex;
+        std::condition_variable iCondVar;
+        std::atomic<bool> iWaiting = false;
         std::atomic<bool> iDebug = false;
         std::vector<performance_metrics> iPerformanceMetrics;
     };

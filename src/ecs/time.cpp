@@ -42,7 +42,7 @@
 namespace neolib::ecs
 {
     time::time(ecs::i_ecs& aEcs) :
-        system<>{ aEcs }
+        system{ aEcs }
     {
         if (!ecs().shared_component_registered<clock>())
         {
@@ -66,19 +66,31 @@ namespace neolib::ecs
     {
         if (!can_apply())
             throw cannot_apply();
-        if (!ecs().component_instantiated<entity_info>())
+        if (!ecs().component_instantiated<entity_life_span>())
             return false;
 
-        scoped_component_lock<entity_info> lock{ ecs() };
+        auto waitDuration = std::numeric_limits<i64>::max();
 
-        for (auto entity : ecs().component<entity_info>().entities())
         {
-            auto const& info = ecs().component<entity_info>().entity_record(entity);
-            if (info.destroyed)
-                continue;
-            if (info.lifeSpan && (world_time() - info.creationTime > *info.lifeSpan))
-                ecs().async_destroy_entity(entity, false);
+            scoped_component_lock<entity_info, entity_life_span> lock{ ecs() };
+            auto const& infos = ecs().component<entity_info>();
+            auto const& lifeSpans = ecs().component<entity_life_span>();
+
+            for (auto entity : lifeSpans.entities())
+            {
+                auto const& info = infos.entity_record(entity);
+                if (info.destroyed)
+                    continue;
+                auto const& lifeSpan = lifeSpans.entity_record(entity);
+                auto const age = world_time() - info.creationTime;
+                waitDuration = std::min(waitDuration, lifeSpan.lifeSpan - age);
+                if (age > lifeSpan.lifeSpan)
+                    ecs().async_destroy_entity(entity, false);
+            }
         }
+
+        if (have_thread() && get_thread().in())
+            wait_for(std::max(1.0, from_step_time(waitDuration)));
 
         return true;
     }

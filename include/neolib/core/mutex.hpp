@@ -113,8 +113,9 @@ namespace neolib
     public:
         recursive_spinlock() :
             iState{ spinlock_status::unlocked },
-            iLockingThread{ std::thread::id{} },
-            iLockCount{ 0u }
+            iLockingThread{ nullptr },
+            iLockCount{ 0u },
+            iGenerator{ std::random_device{}() }
         {
         }
         ~recursive_spinlock()
@@ -124,8 +125,7 @@ namespace neolib
     public:
         void lock() noexcept override
         {
-            static thread_local std::minstd_rand generator{ std::random_device{}() };
-            if (iState.load(std::memory_order_acquire) == spinlock_status::locked && iLockingThread.load(std::memory_order_acquire) == std::this_thread::get_id())
+            if (iState.load(std::memory_order_acquire) == spinlock_status::locked && iLockingThread.load(std::memory_order_acquire) == this_thread())
             {
                 ++iLockCount;
                 return;
@@ -157,7 +157,7 @@ namespace neolib
                     {
                         0, static_cast<std::size_t>(1) << (std::min)(collisions, static_cast<std::size_t>(BOOST_FIBERS_CONTENTION_WINDOW_THRESHOLD)) 
                     };
-                    const std::size_t z = distribution(generator);
+                    const std::size_t z = distribution(iGenerator);
                     ++collisions;
                     for (std::size_t i = 0; i < z; ++i) 
                     {
@@ -166,7 +166,7 @@ namespace neolib
                 }
                 else 
                 {
-                    iLockingThread.store(std::this_thread::get_id());
+                    iLockingThread.store(this_thread());
                     ++iLockCount;
                     break;
                 }
@@ -176,13 +176,13 @@ namespace neolib
         {
             if (--iLockCount == 0u)
             {
-                iLockingThread.store(std::thread::id{}, std::memory_order_release);
+                iLockingThread.store(nullptr, std::memory_order_release);
                 iState.store(spinlock_status::unlocked, std::memory_order_release);
             }
         }
         bool try_lock() noexcept override
         {
-            if (iState.load(std::memory_order_acquire) == spinlock_status::locked && iLockingThread.load(std::memory_order_acquire) == std::this_thread::get_id())
+            if (iState.load(std::memory_order_acquire) == spinlock_status::locked && iLockingThread.load(std::memory_order_acquire) == this_thread())
             {
                 ++iLockCount;
                 return true;
@@ -190,15 +190,22 @@ namespace neolib
             bool locked = (spinlock_status::unlocked == iState.exchange(spinlock_status::locked, std::memory_order_acquire));
             if (locked)
             {
-                iLockingThread.store(std::this_thread::get_id());
+                iLockingThread.store(this_thread());
                 ++iLockCount;
             }
             return locked;
         }
     private:
+        static void* this_thread()
+        {
+            thread_local int tThisThread = 42;
+            return &tThisThread;
+        }
+    private:
         std::atomic<spinlock_status> iState;
-        std::atomic<std::thread::id> iLockingThread;
+        std::atomic<void*> iLockingThread;
         std::atomic<uint32_t> iLockCount;
+        std::minstd_rand iGenerator;
     };
 
     class alignas(BOOST_LOCKFREE_CACHELINE_BYTES) switchable_mutex : public i_lockable

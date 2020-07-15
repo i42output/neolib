@@ -38,10 +38,11 @@
 #include <neolib/neolib.hpp>
 #include <neolib/ecs/chrono.hpp>
 #include <neolib/ecs/system.hpp>
+#include <neolib/ecs/entity_life_span.hpp>
 
 namespace neolib::ecs
 {
-    class NEOLIB_EXPORT time : public system<>
+    class NEOLIB_EXPORT time : public system<entity_info, entity_life_span>
     {
     private:
         class thread;

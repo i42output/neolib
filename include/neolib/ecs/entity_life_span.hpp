@@ -1,6 +1,6 @@
-// entity_info.hpp
+// entity_life_span.hpp
 /*
- *  Copyright (c) 2018, 2020 Leigh Johnston.
+ *  Copyright (c) 2020 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -44,49 +44,32 @@
 
 namespace neolib::ecs
 {
-    struct entity_info
+    struct entity_life_span
     {
-        neolib::uuid archetypeId;
-        i64 creationTime;
-        bool destroyed;
-        #ifndef NDEBUG
-        bool debug = false;
-        #endif
+        i64 lifeSpan;
 
         struct meta : i_component_data::meta
         {
             static const neolib::uuid& id()
             {
-                static const neolib::uuid sId = { 0x867e30c2, 0xaf8e, 0x452e, 0xa542, { 0xd, 0xd0, 0xd1, 0x1, 0xe4, 0x2d } };
+                static const neolib::uuid sId = { 0x66736530, 0x521c, 0x4c2b, 0x9c60, { 0x2d, 0xe7, 0x8b, 0xd6, 0x58, 0xed } };
                 return sId;
             }
             static const neolib::i_string& name()
             {
-                static const neolib::string sName = "Entity Info";
+                static const neolib::string sName = "Entity Life Span";
                 return sName;
             }
             static uint32_t field_count()
             { 
-                #ifdef NDEBUG
-                return 3;
-                #else
-                return 4;
-                #endif
+                return 1;
             }
             static component_data_field_type field_type(uint32_t aFieldIndex)
             {
                 switch (aFieldIndex)
                 {
                 case 0:
-                    return component_data_field_type::Uuid;
-                case 1:
                     return component_data_field_type::Int64;
-                case 2:
-                    return component_data_field_type::Bool;
-                #ifndef NDEBUG
-                case 3:
-                    return component_data_field_type::Bool;
-                #endif
                 default:
                     throw invalid_field_index();
                 }
@@ -95,12 +78,7 @@ namespace neolib::ecs
             {
                 static const neolib::string sFieldNames[] =
                 {
-                    "Archetype Id",
-                    "Creation Time",
-                    "Destroyed",
-                    #ifndef NDEBUG
-                    "Debug",
-                    #endif
+                    "Life Span"
                 };
                 return sFieldNames[aFieldIndex];
             }
