@@ -333,6 +333,8 @@ namespace neolib::ecs
         std::scoped_lock<neolib::i_lockable> iLock;
     };
 
+    const struct dont_lock_t {} dont_lock;
+
     template <typename... Data>
     class scoped_component_lock
     {
@@ -398,17 +400,48 @@ namespace neolib::ecs
         };
     public:
         scoped_component_lock(const i_ecs& aEcs) :
-            iProxies{ fwd<const i_ecs&, Data>(aEcs)... },
-            iLock{ std::get<index_of_v<Data, Data...>>(iProxies)... }
+            iProxies{ fwd<const i_ecs&, Data>(aEcs)... }
         {
+            lock();
         }
         scoped_component_lock(i_ecs& aEcs) :
-            iProxies{ fwd<i_ecs&, Data>(aEcs)... },
-            iLock{ std::get<index_of_v<Data, Data...>>(iProxies)... }
+            iProxies{ fwd<i_ecs&, Data>(aEcs)... }
         {
+            lock();
+        }
+        scoped_component_lock(const i_ecs& aEcs, dont_lock_t) :
+            iProxies{ fwd<const i_ecs&, Data>(aEcs)... }
+        {
+            iDontUnlock.emplace();
+        }
+        scoped_component_lock(i_ecs& aEcs, dont_lock_t) :
+            iProxies{ fwd<i_ecs&, Data>(aEcs)... }
+        {
+            iDontUnlock.emplace();
         }
         ~scoped_component_lock()
         {
+            if (!iDontUnlock)
+                unlock();
+        }
+    public:
+        void lock()
+        {
+            if constexpr (sizeof...(Data) >= 2)
+                std::lock(std::get<index_of_v<Data, Data...>>(iProxies)...);
+            else
+                std::get<0>(iProxies).lock();
+        }
+        void unlock()
+        {
+            (std::get<index_of_v<Data, Data...>>(iProxies).unlock(), ...);
+        }
+        bool try_lock()
+        {
+            if constexpr (sizeof...(Data) >= 2)
+                return std::try_lock(std::get<index_of_v<Data, Data...>>(iProxies)...) == -1;
+            else
+                return std::get<0>(iProxies).try_lock();
         }
     public:
         template <typename Data2>
@@ -422,11 +455,22 @@ namespace neolib::ecs
             return std::get<index_of_v<Data2, Data...>>(iProxies).linked();
         }
         template <typename... Data2>
+        void lock_if()
+        {
+            (lock_if_impl<Data2>(), ...);
+        }
+        template <typename... Data2>
         void unlock_if()
         {
             (unlock_if_impl<Data2>(), ...);
         }
     private:
+        template <typename Data2>
+        void lock_if_impl()
+        {
+            if (controlling<Data2>())
+                mutex<Data2>().lock();
+        }
         template <typename Data2>
         void unlock_if_impl()
         {
@@ -435,7 +479,7 @@ namespace neolib::ecs
         }
     private:
         std::tuple<proxy_mutex<Data>...> iProxies;
-        std::scoped_lock<proxy_mutex<Data>...> iLock;
+        std::optional<dont_lock_t> iDontUnlock;
     };
 
     template <typename... ComponentData>
