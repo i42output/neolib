@@ -211,16 +211,16 @@ namespace neolib::ecs
             return component_instantiated(ecs_data_type_t<ComponentData>::meta::id());
         }
         template <typename ComponentData>
-        const static_component<ComponentData>& component() const
+        const neolib::ecs::component<ComponentData>& component() const
         {
-            return static_cast<const static_component<ecs_data_type_t<ComponentData>>&>(component(ecs_data_type_t<ComponentData>::meta::id()));
+            return static_cast<const neolib::ecs::component<ecs_data_type_t<ComponentData>>&>(component(ecs_data_type_t<ComponentData>::meta::id()));
         }
         template <typename ComponentData>
-        static_component<ComponentData>& component()
+        neolib::ecs::component<ComponentData>& component()
         {
             if (!component_registered<ecs_data_type_t<ComponentData>>())
                 register_component<ecs_data_type_t<ComponentData>>();
-            return const_cast<static_component<ecs_data_type_t<ComponentData>>&>(to_const(*this).component<ecs_data_type_t<ComponentData>>());
+            return const_cast<neolib::ecs::component<ecs_data_type_t<ComponentData>>&>(to_const(*this).component<ecs_data_type_t<ComponentData>>());
         }
         template <typename ComponentData>
         bool shared_component_instantiated() const
@@ -228,16 +228,16 @@ namespace neolib::ecs
             return shared_component_instantiated(ecs_data_type_t<ComponentData>::meta::id());
         }
         template <typename ComponentData>
-        const static_shared_component<ComponentData>& shared_component() const
+        const neolib::ecs::shared_component<ComponentData>& shared_component() const
         {
-            return static_cast<const static_shared_component<ecs_data_type_t<ComponentData>>&>(shared_component(ComponentData::meta::id()));
+            return static_cast<const neolib::ecs::shared_component<ecs_data_type_t<ComponentData>>&>(shared_component(ComponentData::meta::id()));
         }
         template <typename ComponentData>
-        static_shared_component<ComponentData>& shared_component()
+        neolib::ecs::shared_component<ComponentData>& shared_component()
         {
             if (!shared_component_registered<ecs_data_type_t<ComponentData>>())
                 register_shared_component<ecs_data_type_t<ComponentData>>();
-            return const_cast<static_shared_component<ecs_data_type_t<ComponentData>>&>(to_const(*this).shared_component<ecs_data_type_t<ComponentData>>());
+            return const_cast<neolib::ecs::shared_component<ecs_data_type_t<ComponentData>>&>(to_const(*this).shared_component<ecs_data_type_t<ComponentData>>());
         }
         template <typename System>
         bool system_instantiated() const
@@ -265,7 +265,7 @@ namespace neolib::ecs
         template <typename ComponentData>
         void register_component()
         {
-            register_component(ecs_data_type_t<ComponentData>::meta::id(), [&]() { return std::unique_ptr<i_component>{std::make_unique<static_component<ecs_data_type_t<ComponentData>>>(*this)}; });
+            register_component(ecs_data_type_t<ComponentData>::meta::id(), [&]() { return std::unique_ptr<i_component>{std::make_unique<neolib::ecs::component<ecs_data_type_t<ComponentData>>>(*this)}; });
         }
         template <typename ComponentData>
         bool shared_component_registered() const
@@ -275,7 +275,7 @@ namespace neolib::ecs
         template <typename ComponentData>
         void register_shared_component()
         {
-            register_shared_component(ecs_data_type_t<ComponentData>::meta::id(), [&]() { return std::unique_ptr<i_shared_component>{std::make_unique<static_shared_component<ecs_data_type_t<ComponentData>>>(*this)}; });
+            register_shared_component(ecs_data_type_t<ComponentData>::meta::id(), [&]() { return std::unique_ptr<i_shared_component>{std::make_unique<neolib::ecs::shared_component<ecs_data_type_t<ComponentData>>>(*this)}; });
         }
         template <typename System>
         bool system_registered() const
@@ -343,7 +343,7 @@ namespace neolib::ecs
         class proxy_mutex : public i_lockable
         {
         public:
-            struct not_linked : std::logic_error { not_linked() : std::logic_error{"neolib::ecs::scoped_component_lock::proxy_mutex::not_linked"} {} };
+            struct not_linked : std::logic_error { not_linked() : std::logic_error{"neolib::neolib::ecs::scoped_component_lock::proxy_mutex::not_linked"} {} };
         public:
             proxy_mutex(const i_ecs& aEcs) :
                 iSubject{ &aEcs.component<Data2>().mutex() }

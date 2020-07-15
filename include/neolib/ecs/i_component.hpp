@@ -63,17 +63,6 @@ namespace neolib::ecs
         virtual const neolib::i_string& field_name(uint32_t aFieldIndex) const = 0;
     };
 
-    class i_shared_component : public i_component_base
-    {
-    public:
-        virtual const void* populate(const std::string& aName, const void* aComponentData, std::size_t aComponentDataSize) = 0;
-        template <typename ComponentData>
-        const void* populate(const std::string& aName, ComponentData&& aComponentData)
-        {
-            return populate(aName, &std::forward<ComponentData>(aComponentData), sizeof(ComponentData));
-        }
-    };
-
     class i_component : public i_component_base
     {
     public:
@@ -89,9 +78,20 @@ namespace neolib::ecs
         }
     };
 
-    template <typename ComponentData>
-    class static_component;
+    class i_shared_component : public i_component_base
+    {
+    public:
+        virtual const void* populate(const std::string& aName, const void* aComponentData, std::size_t aComponentDataSize) = 0;
+        template <typename ComponentData>
+        const void* populate(const std::string& aName, ComponentData&& aComponentData)
+        {
+            return populate(aName, &std::forward<ComponentData>(aComponentData), sizeof(ComponentData));
+        }
+    };
 
     template <typename ComponentData>
-    class static_shared_component;
+    class component;
+
+    template <typename ComponentData>
+    class shared_component;
 }

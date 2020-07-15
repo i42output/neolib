@@ -115,23 +115,23 @@ namespace neolib::ecs
     };
 
     template <typename Data, typename Base>
-    class static_component_base : public Base
+    class component_base : public Base
     {
-        typedef static_component_base<ecs_data_type_t<Data>, Base> self_type;
+        typedef component_base<ecs_data_type_t<Data>, Base> self_type;
     public:
-        struct entity_record_not_found : std::logic_error { entity_record_not_found() : std::logic_error("neolib::static_component::entity_record_not_found") {} };
-        struct invalid_data : std::logic_error { invalid_data() : std::logic_error("neolib::static_component::invalid_data") {} };
+        struct entity_record_not_found : std::logic_error { entity_record_not_found() : std::logic_error("neolib::component::entity_record_not_found") {} };
+        struct invalid_data : std::logic_error { invalid_data() : std::logic_error("neolib::component::invalid_data") {} };
     public:
         typedef typename detail::crack_component_data<Data>::data_type data_type;
         typedef typename data_type::meta data_meta_type;
         typedef typename detail::crack_component_data<Data>::value_type value_type;
         typedef typename detail::crack_component_data<Data>::container_type component_data_t;
     public:
-        static_component_base(i_ecs& aEcs) : 
+        component_base(i_ecs& aEcs) : 
             iEcs{ aEcs }
         {
         }
-        static_component_base(const self_type& aOther) :
+        component_base(const self_type& aOther) :
             iEcs{ aOther.iEcs },
             iComponentData{ aOther.iComponentData }
         {
@@ -198,20 +198,6 @@ namespace neolib::ecs
         {
             return *std::next(component_data().begin(), aIndex);
         }
-    public:
-        template <typename Callable>
-        void apply(const Callable& aCallable)
-        {
-            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
-            for (auto& data : component_data())
-                aCallable(data);
-        }
-        template <typename Callable>
-        void parallel_apply(const Callable& aCallable, std::size_t aMinimumParallelismCount = 0)
-        {
-            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
-            neolib::parallel_apply(ecs().thread_pool(), component_data(), aCallable, aMinimumParallelismCount);
-        }
     private:
         mutable component_mutex<Data> iMutex;
         i_ecs& iEcs;
@@ -219,10 +205,10 @@ namespace neolib::ecs
     };
 
     template <typename Data>
-    class static_component : public static_component_base<Data, i_component>
+    class component : public component_base<Data, i_component>
     {
-        typedef static_component<Data> self_type;
-        typedef static_component_base<Data, i_component> base_type;
+        typedef component<Data> self_type;
+        typedef component_base<Data, i_component> base_type;
     public:
         using typename base_type::entity_record_not_found;
         using typename base_type::invalid_data;
@@ -264,13 +250,13 @@ namespace neolib::ecs
     private:
         static constexpr reverse_index_t invalid = ~reverse_index_t{};
     public:
-        static_component(i_ecs& aEcs) : 
+        component(i_ecs& aEcs) : 
             base_type{ aEcs },
             iHaveSnapshot{ false },
             iUsingSnapshot{ 0u }
         {
         }
-        static_component(const self_type& aOther) :
+        component(const self_type& aOther) :
             base_type{ aOther },
             iEntities{ aOther.iEntities },
             iReverseIndices{ aOther.iReverseIndices },
@@ -301,10 +287,10 @@ namespace neolib::ecs
         using base_type::component_data;
         using base_type::operator[];
     public:
-        entity_id entity(const data_type& aData) const
+        entity_id entity(const value_type& aData) const
         {
-            const data_type* lhs = &aData;
-            const data_type* rhs = &base_type::component_data()[0];
+            const value_type* lhs = &aData;
+            const value_type* rhs = &base_type::component_data()[0];
             auto index = lhs - rhs;
             return entities()[index];
         }
@@ -332,11 +318,11 @@ namespace neolib::ecs
         }
         bool has_entity_record_no_lock(entity_id aEntity) const override
         {
-            return reverse_index(aEntity) != invalid;
+            return reverse_index_no_lock(aEntity) != invalid;
         }
-        const data_type& entity_record_no_lock(entity_id aEntity) const
+        const value_type& entity_record_no_lock(entity_id aEntity) const
         {
-            auto reverseIndex = reverse_index(aEntity);
+            auto reverseIndex = reverse_index_no_lock(aEntity);
             if (reverseIndex == invalid)
                 throw entity_record_not_found();
             return base_type::component_data()[reverseIndex];
@@ -357,7 +343,7 @@ namespace neolib::ecs
             std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             return has_entity_record_no_lock(aEntity);
         }
-        const data_type& entity_record(entity_id aEntity) const
+        const value_type& entity_record(entity_id aEntity) const
         {
             std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             return entity_record_no_lock(aEntity);
@@ -450,6 +436,20 @@ namespace neolib::ecs
                         reverse_indices()[rhsEntity] = rhsIndex;
                 }, aComparator);
         }
+    public:
+        template <typename Callable>
+        void apply(const Callable& aCallable)
+        {
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
+            for (auto& data : component_data())
+                aCallable(*this, data);
+        }
+        template <typename Callable>
+        void parallel_apply(const Callable& aCallable, std::size_t aMinimumParallelismCount = 0)
+        {
+            std::scoped_lock<component_mutex<Data>> lock{ mutex() };
+            neolib::parallel_apply(ecs().thread_pool(), component_data(), [&](value_type& aData) { aCallable(*this, aData); }, aMinimumParallelismCount);
+        }
     private:
         template <typename T>
         value_type& do_populate(entity_id aEntity, T&& aComponentData)
@@ -520,10 +520,10 @@ namespace neolib::ecs
     };
 
     template <typename Data>
-    class static_shared_component : public static_component_base<shared<ecs_data_type_t<Data>>, i_shared_component>
+    class shared_component : public component_base<shared<ecs_data_type_t<Data>>, i_shared_component>
     {
-        typedef static_shared_component<Data> self_type;
-        typedef static_component_base<shared<ecs_data_type_t<Data>>, i_shared_component> base_type;
+        typedef shared_component<Data> self_type;
+        typedef component_base<shared<ecs_data_type_t<Data>>, i_shared_component> base_type;
     public:
         using typename base_type::entity_record_not_found;
         using typename base_type::invalid_data;
@@ -534,7 +534,7 @@ namespace neolib::ecs
         typedef typename base_type::component_data_t component_data_t;
         typedef typename component_data_t::mapped_type mapped_type;
     public:
-        static_shared_component(i_ecs& aEcs) :
+        shared_component(i_ecs& aEcs) :
             base_type{ aEcs }
         {
         }
