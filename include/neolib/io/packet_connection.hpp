@@ -42,6 +42,7 @@
 #include <array>
 #include <algorithm>
 #include <boost/bind.hpp>
+#include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <neolib/core/string_utils.hpp>
 #include <neolib/core/variant.hpp>
@@ -165,7 +166,7 @@ namespace neolib
             iSecure(aSecure),
             iProtocolFamily(aProtocolFamily),
             iError(false),
-            iResolver(aIoTask.io_service().native_object()),
+            iResolver(aIoTask.io_service().native_object<boost::asio::io_service>()),
             iConnected(false),
             iPacketBeingSent(nullptr),
             iReceiveBufferPtr(&iReceiveBuffer[0]),
@@ -189,7 +190,7 @@ namespace neolib
             iSecure(aSecure),
             iProtocolFamily(aProtocolFamily),
             iError(false),
-            iResolver(aIoTask.io_service().native_object()),
+            iResolver(aIoTask.io_service().native_object<boost::asio::io_service>()),
             iConnected(false),
             iPacketBeingSent(nullptr),
             iReceiveBufferPtr(&iReceiveBuffer[0]),
@@ -223,13 +224,13 @@ namespace neolib
                 throw already_open();
             if (!iSecure)
             {
-                iSocketHolder = socket_pointer(new socket_type(iIoTask.io_service().native_object()));
+                iSocketHolder = socket_pointer(new socket_type(iIoTask.io_service().native_object<boost::asio::io_service>()));
             }
             else
             {
                 if (iSecureStreamContext == nullptr)
                     iSecureStreamContext.reset(new secure_stream_context(boost::asio::ssl::context::sslv23));
-                iSocketHolder = secure_stream_pointer(new secure_stream_type(iIoTask.io_service().native_object(), *iSecureStreamContext));
+                iSocketHolder = secure_stream_pointer(new secure_stream_type(iIoTask.io_service().native_object<boost::asio::io_service>(), *iSecureStreamContext));
             }
             if (aAcceptingSocket)
                 return true;

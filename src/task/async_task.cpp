@@ -34,6 +34,7 @@
 */
 
 #include <neolib/neolib.hpp>
+#include <boost/asio.hpp>
 #include <neolib/task/thread.hpp>
 #include <neolib/task/async_task.hpp>
 #include <neolib/task/timer_object.hpp>
@@ -44,6 +45,55 @@
 
 namespace neolib
 {
+    class NEOLIB_EXPORT io_service : public i_async_service
+    {
+        // types
+    public:
+        typedef boost::asio::io_service native_io_service_type;
+        // construction
+    public:
+        io_service(async_task& aTask, bool aMultiThreaded = false);
+        // operations
+    public:
+        bool poll(bool aProcessEvents = true, std::size_t aMaximumPollCount = kDefaultPollCount) override;
+        void* native_object() override;
+        // attributes
+    private:
+        async_task& iTask;
+        native_io_service_type iNativeIoService;
+    };
+
+    io_service::io_service(async_task& aTask, bool aMultiThreaded) :
+        iTask{ aTask },
+        iNativeIoService{ aMultiThreaded ? BOOST_ASIO_CONCURRENCY_HINT_DEFAULT : BOOST_ASIO_CONCURRENCY_HINT_1 }
+    {
+    }
+
+    bool io_service::poll(bool aProcessEvents, std::size_t aMaximumPollCount)
+    {
+        std::size_t iterationsLeft = aMaximumPollCount;
+        bool didSome = false;
+        iNativeIoService.restart();
+        do
+        {
+            if (iTask.halted())
+                return didSome;
+            bool didSomeThisIteration = false;
+            if (aProcessEvents)
+                didSomeThisIteration = (iTask.pump_messages() || didSomeThisIteration);
+            didSomeThisIteration = ((aMaximumPollCount == 0 ? iNativeIoService.poll() : iNativeIoService.poll_one()) != 0 || didSomeThisIteration);
+            if (!didSomeThisIteration)
+                break;
+            didSome = true;
+        } while (aMaximumPollCount != 0 && --iterationsLeft > 0);
+        return didSome;
+    }
+
+    void* io_service::native_object()
+    {
+        return &iNativeIoService;
+    }
+
     timer_service::timer_service(async_task& aTask, bool aMultiThreaded) :
         iTask{ aTask },
         iTaskDestroying{ aTask }
@@ -91,6 +141,11 @@ namespace neolib
         return didSome;
     }
 
+    void* timer_service::native_object()
+    {
+        return nullptr;
+    }
+
     i_timer_object& timer_service::create_timer_object()
     {
         if (iTaskDestroying)
@@ -109,32 +164,6 @@ namespace neolib
             iObjects.erase(existing);
             iDirtyObjectList.dirty();
         }
-    }
-
-    io_service::io_service(async_task& aTask, bool aMultiThreaded) :
-        iTask{ aTask },
-        iNativeIoService{ aMultiThreaded ? BOOST_ASIO_CONCURRENCY_HINT_DEFAULT : BOOST_ASIO_CONCURRENCY_HINT_1 }
-    {
-    }
-
-    bool io_service::poll(bool aProcessEvents, std::size_t aMaximumPollCount)
-    {
-        std::size_t iterationsLeft = aMaximumPollCount;
-        bool didSome = false;
-        iNativeIoService.restart();
-        do
-        {
-            if (iTask.halted())
-                return didSome;
-            bool didSomeThisIteration = false;
-            if (aProcessEvents)
-                didSomeThisIteration = (iTask.pump_messages() || didSomeThisIteration);
-            didSomeThisIteration = ((aMaximumPollCount == 0 ? iNativeIoService.poll() : iNativeIoService.poll_one()) != 0 || didSomeThisIteration);
-            if (!didSomeThisIteration)
-                break;
-            didSome = true;
-        } while (aMaximumPollCount != 0 && --iterationsLeft > 0);
-        return didSome;
     }
 
     async_task::async_task(const std::string& aName) :
@@ -185,10 +214,10 @@ namespace neolib
         return *iTimerService;
     }
 
-    io_service& async_task::io_service()
+    i_async_service& async_task::io_service()
     {
-        if (!iIoService)
-            iIoService.emplace(*this);
+        if (iIoService == nullptr)
+            iIoService = std::make_unique<neolib::io_service>(*this);
         return *iIoService;
     }
 

@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <string>
+
 #pragma warning (disable: 4355 ) // 'this' : used in base member initializer list
 #pragma warning (disable: 4258 ) // definition from the for loop is ignored; the definition from the enclosing scope is used
 #pragma warning (disable: 4503 ) // decorated name length exceeded, name was truncated
@@ -18,6 +20,7 @@
 #pragma warning (disable: 4459 ) // declaration of 'attr' hides global declaration
 #pragma warning (disable: 4100 ) // unreferenced formal parameter
 #pragma warning (disable: 4324 ) // structure was padded due to alignment specifier
+#pragma warning (disable: 4201 ) // nonstandard extension used : nameless struct / union
 
 #define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
 
@@ -47,41 +50,16 @@
 
 #endif
 
-#ifndef WIN32_LEAN_AND_MEAN
-    #undef WIN32_LEAN_AND_MEAN
-#endif
-
-#ifndef _WIN32_WINNT
 #define _WIN32_WINNT _WIN32_WINNT_WINBLUE
-#endif
+
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 
 #ifdef USING_BOOST
-#define BOOST_STACKTRACE_USE_WINDBG_CACHED
-#define BOOST_ASIO_NO_WIN32_LEAN_AND_MEAN
-#include <boost/asio.hpp>
+#define BOOST_USE_WINDOWS_H
 #endif
-
-#include <algorithm> // for min/max
-
-using std::min;
-using std::max;
 
 namespace neolib
 {
-    inline std::string win32_get_last_error_as_string()
-    {
-        DWORD errorMessageID = ::GetLastError();
-        if (errorMessageID == 0)
-            return std::string();
-
-        LPSTR messageBuffer = nullptr;
-        size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-            NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
-
-        std::string message(messageBuffer, size);
-
-        LocalFree(messageBuffer);
-
-        return message;
-    }
+    std::string win32_get_last_error_as_string();
 }

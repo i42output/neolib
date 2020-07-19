@@ -8,6 +8,7 @@
 
 #include <neolib/neolib.hpp>
 #ifdef _WIN32
+#include <windows.h>
 #include <tchar.h> // _tcslen
 #endif // _WIN32
 #include <neolib/core/string_utils.hpp>

@@ -59,6 +59,14 @@ namespace neolib
         // operations
     public:
         virtual bool poll(bool aProcessEvents = true, std::size_t aMaximumPollCount = kDefaultPollCount) = 0;
+        virtual void* native_object() = 0;
+        // helpers
+    public:
+        template <typename NativeObjectType>
+        NativeObjectType& native_object()
+        {
+            return *static_cast<NativeObjectType*>(native_object());
+        }
     };
 
     class i_timer_service : public i_async_service

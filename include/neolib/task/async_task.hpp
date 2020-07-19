@@ -36,7 +36,6 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <boost/asio.hpp>
 #include <neolib/core/lifetime.hpp>
 #include <neolib/core/dirty_list.hpp>
 #include <neolib/task/i_thread.hpp>
@@ -59,6 +58,7 @@ namespace neolib
         // operations
     public:
         bool poll(bool aProcessEvents = true, std::size_t aMaximumPollCount = kDefaultPollCount) override;
+        void* native_object() override;
         i_timer_object& create_timer_object() override;
         void remove_timer_object(i_timer_object& aObject) override;
         // attributes
@@ -67,24 +67,6 @@ namespace neolib
         destroying_flag iTaskDestroying;
         std::vector<ref_ptr<i_timer_object>> iObjects;
         dirty_list iDirtyObjectList;
-    };
-
-    class NEOLIB_EXPORT io_service : public i_async_service
-    {
-        // types
-    public:
-        typedef boost::asio::io_service native_io_service_type;
-        // construction
-    public:
-        io_service(async_task& aTask, bool aMultiThreaded = false);
-        // operations
-    public:
-        bool poll(bool aProcessEvents = true, std::size_t aMaximumPollCount = kDefaultPollCount) override;
-        native_io_service_type& native_object() { return iNativeIoService; }
-        // attributes
-    private:
-        async_task& iTask;
-        native_io_service_type iNativeIoService;
     };
 
     class NEOLIB_EXPORT async_task : public task<i_async_task>, public lifetime
@@ -112,7 +94,7 @@ namespace neolib
         void join(i_thread& aThread) override;
         void detach() override;
         neolib::timer_service& timer_service() override;
-        neolib::io_service& io_service() override;
+        neolib::i_async_service& io_service() override;
         bool have_message_queue() const override;
         bool have_messages() const override;
         i_message_queue& create_message_queue(std::function<bool()> aIdleFunction = std::function<bool()>()) override;
@@ -134,7 +116,7 @@ namespace neolib
     private:
         i_thread* iThread;
         std::optional<neolib::timer_service> iTimerService;
-        std::optional<neolib::io_service> iIoService;
+        std::unique_ptr<i_async_service> iIoService;
         message_queue_pointer iMessageQueue;
         bool iHalted;
     };

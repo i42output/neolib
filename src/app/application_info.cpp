@@ -34,6 +34,7 @@
 */
 
 #include <neolib/neolib.hpp>
+#include <boost/filesystem.hpp>
 #include <neolib/app/application_info.hpp>
 #include <neolib/file/file.hpp>
 
@@ -53,5 +54,167 @@ namespace neolib
 #endif
         create_path(settingsFolder);
         return settingsFolder;
+    }
+
+    program_arguments::program_arguments(int argc, char* argv[]) :
+        iArgc{ argc }, iArgv{ argv }
+    {
+        for (auto arg = 0; arg < argc; ++arg)
+            iArguments.push_back(neolib::string{ argv[arg] });
+    }
+
+    program_arguments::program_arguments(const i_program_arguments& aOther) :
+        iArgc{ aOther.argc() }, iArgv{ aOther.argv() }, iArguments{ aOther.as_vector() }
+    {
+    }
+
+    int program_arguments::argc() const
+    {
+        return iArgc;
+    }
+
+    char** program_arguments::argv() const
+    {
+        return iArgv;
+    }
+
+    const vector<string>& program_arguments::as_vector() const
+    {
+        return iArguments;
+    }
+
+    application_info::application_info(
+        int argc, char* argv[],
+        const std::string& aName,
+        const std::string& aCompany,
+        const neolib::version& aVersion,
+        const std::string& aCopyright,
+        const std::string& aApplicationFolder,
+        const std::string& aSettingsFolder,
+        const std::string& aDataFolder,
+        const std::string& aPluginExtension) :
+        application_info
+        {
+            program_arguments{ argc, argv },
+            aName,
+            aCompany,
+            aVersion,
+            aCopyright,
+            aApplicationFolder,
+            aSettingsFolder,
+            aDataFolder,
+            aPluginExtension
+        } {}
+    
+    application_info::application_info(
+        const program_arguments& aArguments,
+        const std::string& aName,
+        const std::string& aCompany,
+        const neolib::version& aVersion,
+        const std::string& aCopyright,
+        const std::string& aApplicationFolder,
+        const std::string& aSettingsFolder,
+        const std::string& aDataFolder,
+        const std::string& aPluginExtension) :
+        iArguments{ aArguments },
+        iName{ aName },
+        iCompany{ aCompany },
+        iVersion{ aVersion },
+        iCopyright{ aCopyright },
+        iApplicationFolder{ aApplicationFolder },
+        iSettingsFolder{ aSettingsFolder },
+        iDataFolder{ aDataFolder },
+        iPluginExtension{ aPluginExtension },
+        iRemovable{ false }
+    {
+        if (std::find(std::next(iArguments.as_vector().container().begin()), iArguments.as_vector().container().end(), neolib::ci_string("/pocket")) != iArguments.as_vector().container().end() ||
+            std::find(std::next(iArguments.as_vector().container().begin()), iArguments.as_vector().container().end(), neolib::ci_string("-pocket")) != iArguments.as_vector().container().end() ||
+            std::find(std::next(iArguments.as_vector().container().begin()), iArguments.as_vector().container().end(), neolib::ci_string("/removable")) != iArguments.as_vector().container().end() ||
+            std::find(std::next(iArguments.as_vector().container().begin()), iArguments.as_vector().container().end(), neolib::ci_string("-removable")) != iArguments.as_vector().container().end())
+        {
+            iRemovable = true;
+        }
+    }
+
+    application_info::application_info(const i_application_info& aOther) :
+        iArguments{ aOther.arguments() },
+        iName{ aOther.name() },
+        iCompany{ aOther.company() },
+        iVersion{ aOther.version() },
+        iCopyright{ aOther.copyright() },
+        iApplicationFolder{ aOther.application_folder() },
+        iSettingsFolder{ aOther.settings_folder() },
+        iDataFolder{ aOther.data_folder() },
+        iPluginExtension{ aOther.plugin_extension() },
+        iRemovable{ aOther.removable() }
+    {
+    }
+
+    const program_arguments& application_info::arguments() const
+    {
+        return iArguments;
+    }
+
+    const i_string& application_info::name() const
+    {
+        return iName;
+    }
+
+    const i_string& application_info::company() const
+    {
+        return iCompany;
+    }
+
+    const i_version& application_info::version() const
+    {
+        return iVersion;
+    }
+
+    const i_string& application_info::copyright() const
+    {
+        return iCopyright;
+    }
+
+    const i_string& application_info::application_folder(bool aUseDefault) const
+    {
+        if (iApplicationFolder.empty() && aUseDefault)
+        {
+            if (iDefaultApplicationFolder.empty())
+                iDefaultApplicationFolder = boost::filesystem::current_path().generic_string();
+            return iDefaultApplicationFolder;
+        }
+        return iApplicationFolder;
+    }
+
+    const i_string& application_info::settings_folder(bool aUseDefault) const
+    {
+        if (iSettingsFolder.empty() && aUseDefault)
+        {
+            if (iDefaultSettingsFolder.empty())
+                iDefaultSettingsFolder = neolib::settings_folder(name(), company());
+            return iDefaultSettingsFolder;
+        }
+        return iSettingsFolder;
+    }
+
+    const i_string& application_info::data_folder(bool aUseDefault) const
+    {
+        if (iDataFolder.empty() && aUseDefault)
+        {
+            if (iDefaultDataFolder.empty())
+                iDefaultDataFolder = settings_folder();
+            return iDefaultDataFolder;
+        }
+        return iDataFolder;
+    }
+
+    const i_string& application_info::plugin_extension() const
+    {
+        return iPluginExtension;
+    }
+
+    bool application_info::removable() const
+    {
+        return iRemovable;
     }
 }

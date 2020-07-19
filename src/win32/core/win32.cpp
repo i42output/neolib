@@ -1,6 +1,6 @@
-// application.hpp
+// win32.cpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2020 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -31,47 +31,28 @@
  *  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-#pragma once
+*/
 
 #include <neolib/neolib.hpp>
-#include <neolib/core/reference_counted.hpp>
-#include <neolib/app/os_version.hpp>
-#include <neolib/app/i_application.hpp>
-#include <neolib/app/application_info.hpp>
-#include <neolib/plugin/plugin_manager.hpp>
+#include <windows.h>
+#include <neolib/core/win32/win32.hpp>
 
 namespace neolib
 {
-    template <typename Base = i_application>
-    class application : public reference_counted<Base>
+    std::string win32_get_last_error_as_string()
     {
-    public:
-        application(const i_application_info& aApplicationInfo) :
-            iApplicationInfo{ get_application_info(aApplicationInfo) },
-            iPluginManager{ *this }
-        {
-        }
+        DWORD errorMessageID = ::GetLastError();
+        if (errorMessageID == 0)
+            return std::string();
 
-    public:
-        // from i_discoverable
-        bool discover(const uuid& aId, void*& aObject) override
-        {
-            return iPluginManager.discover(aId, aObject);
-        }
-        // from i_application
-        const i_application_info& info() const override
-        {
-            return iApplicationInfo;
-        }
-        i_plugin_manager& plugin_manager() override
-        {
-            return iPluginManager;
-        }
+        LPSTR messageBuffer = nullptr;
+        size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
 
-    private:
-        application_info iApplicationInfo;
-        neolib::plugin_manager iPluginManager;
-    };
+        std::string message(messageBuffer, size);
+
+        LocalFree(messageBuffer);
+
+        return message;
+    }
 }

@@ -40,6 +40,7 @@
 #include <vector>
 #include <memory>
 #include <boost/bind.hpp>
+#include <boost/asio.hpp>
 #include <neolib/task/async_task.hpp>
 
 namespace neolib
