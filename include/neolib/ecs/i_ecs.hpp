@@ -429,7 +429,7 @@ namespace neolib::ecs
         {
             if constexpr (sizeof...(Data) >= 2)
                 std::lock(std::get<index_of_v<Data, Data...>>(iProxies)...);
-            else
+            else if constexpr (sizeof...(Data) == 1)
                 std::get<0>(iProxies).lock();
         }
         void unlock()
@@ -440,7 +440,7 @@ namespace neolib::ecs
         {
             if constexpr (sizeof...(Data) >= 2)
                 return std::try_lock(std::get<index_of_v<Data, Data...>>(iProxies)...) == -1;
-            else
+            else if constexpr (sizeof...(Data) == 1)
                 return std::get<0>(iProxies).try_lock();
         }
     public:
