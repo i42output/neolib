@@ -316,8 +316,16 @@ namespace neolib
                 appCompany = any_to_utf8(reinterpret_cast<char16_t*>(lpVersion));
             GlobalUnlock(hMem);
             GlobalFree(hMem);
-            return application_info{ aAppInfo.arguments(), appName, appCompany, appVersion, appCopyright,
-                aAppInfo.application_folder(false).to_std_string(), aAppInfo.settings_folder(false).to_std_string(), aAppInfo.data_folder(false).to_std_string() };
+            return application_info{ 
+                aAppInfo.arguments(), 
+                appName, 
+                appCompany, 
+                appVersion, 
+                appCopyright,
+                aAppInfo.application_folder(false).to_std_string(), 
+                aAppInfo.settings_folder(false).to_std_string(), 
+                aAppInfo.data_folder(false).to_std_string(),
+                aAppInfo.plugin_extension().to_std_string() };
         } // if (dwVerInfoSize)
 #endif // _WIN32
         

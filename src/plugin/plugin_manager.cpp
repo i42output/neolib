@@ -45,8 +45,11 @@ namespace neolib
         iApplication{ aApplication }
     {
         iPluginFileExtensions.push_back(string{ aApplication.info().plugin_extension() });
-        iPluginFolders.push_back(string{ aApplication.info().application_folder() });
-        iPluginFolders.push_back(string{ boost::dll::program_location().parent_path().string() });
+        std::set<std::string> folders;
+        folders.insert(aApplication.info().application_folder().to_std_string());
+        folders.insert(boost::dll::program_location().parent_path().generic_string());
+        for (auto const& folder : folders)
+            iPluginFolders.push_back(string{ folder });
     }
 
     plugin_manager::~plugin_manager()
