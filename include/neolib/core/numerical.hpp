@@ -197,6 +197,12 @@ namespace neolib
                 return result;
             }
         public:
+            friend void swap(self_type& a, self_type& b)
+            {
+                using std::swap;
+                swap(a.v, b.v);
+            }
+        public:
             union
             {
                 array_type v;
@@ -332,6 +338,12 @@ namespace neolib
                 return result;
             }
         public:
+            friend void swap(self_type& a, self_type& b)
+            {
+                using std::swap;
+                swap(a.v, b.v);
+            }
+        public:
             union
             {
                 array_type v;
@@ -443,6 +455,12 @@ namespace neolib
                 self_type result = *this;
                 result *= right;
                 return result;
+            }
+        public:
+            friend void swap(self_type& a, self_type& b)
+            {
+                using std::swap;
+                swap(a.v, b.v);
             }
         public:
             union
@@ -586,6 +604,46 @@ namespace neolib
 
         template <std::size_t VertexCount>
         using vec2_array = neolib::vecarray<vec2, VertexCount, VertexCount, neolib::check<neolib::vecarray_overflow>, std::allocator<vec2>>;
+
+        typedef std::array<int8_t, 1> avec1i8;
+        typedef std::array<int8_t, 2> avec2i8;
+        typedef std::array<int8_t, 3> avec3i8;
+        typedef std::array<int8_t, 4> avec4i8;
+
+        typedef std::array<int16_t, 1> avec1i16;
+        typedef std::array<int16_t, 2> avec2i16;
+        typedef std::array<int16_t, 3> avec3i16;
+        typedef std::array<int16_t, 4> avec4i16;
+
+        typedef std::array<int32_t, 1> avec1i32;
+        typedef std::array<int32_t, 2> avec2i32;
+        typedef std::array<int32_t, 3> avec3i32;
+        typedef std::array<int32_t, 4> avec4i32;
+
+        typedef std::array<uint8_t, 1> avec1u8;
+        typedef std::array<uint8_t, 2> avec2u8;
+        typedef std::array<uint8_t, 3> avec3u8;
+        typedef std::array<uint8_t, 4> avec4u8;
+
+        typedef std::array<uint16_t, 1> avec1u16;
+        typedef std::array<uint16_t, 2> avec2u16;
+        typedef std::array<uint16_t, 3> avec3u16;
+        typedef std::array<uint16_t, 4> avec4u16;
+
+        typedef std::array<uint32_t, 1> avec1u32;
+        typedef std::array<uint32_t, 2> avec2u32;
+        typedef std::array<uint32_t, 3> avec3u32;
+        typedef std::array<uint32_t, 4> avec4u32;
+
+        typedef std::array<float, 1> avec1f;
+        typedef std::array<float, 2> avec2f;
+        typedef std::array<float, 3> avec3f;
+        typedef std::array<float, 4> avec4f;
+
+        typedef std::array<double, 1> avec1;
+        typedef std::array<double, 2> avec2;
+        typedef std::array<double, 3> avec3;
+        typedef std::array<double, 4> avec4;
 
         typedef std::array<vec3, 3> triangle;
         typedef std::array<vec3, 4> quad;
@@ -882,6 +940,12 @@ namespace neolib
             bool is_identity() const
             {
                 return this == &identity();
+            }
+        public:
+            friend void swap(self_type& a, self_type& b)
+            {
+                using std::swap;
+                swap(a.m, b.m);
             }
         private:
             array_type m;

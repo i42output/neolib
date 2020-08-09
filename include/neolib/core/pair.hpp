@@ -79,6 +79,13 @@ namespace neolib
             else
                 throw std::logic_error("neolib::pair isn't assignable (const value_type)");
         }
+    public:
+        friend void swap(self_type& a, self_type& b)
+        {
+            using std::swap;
+            swap(a.first(), b.first());
+            swap(a.second(), b.second());
+        }
     };
 
     template <typename T1, typename T2>

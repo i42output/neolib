@@ -150,7 +150,7 @@ namespace neolib
     namespace detail
     {
         template <typename T, typename = sfinae>
-        struct abstract_return_type { typedef T& type; };
+        struct abstract_return_type { typedef abstract_t<T>& type; };
         template <typename T>
         struct abstract_return_type<T, std::enable_if_t<std::is_scalar_v<T>, sfinae>> { typedef std::remove_const_t<T> type; };
     }

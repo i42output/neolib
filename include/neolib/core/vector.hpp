@@ -70,6 +70,7 @@ namespace neolib
         vector(vector&& aOther) : iVector(std::move(aOther.iVector)) {}
         vector(const i_vector<abstract_value_type>& aOther) { assign(aOther); }
         vector(const container_type& aOtherContainer) : iVector(aOtherContainer) {}
+        vector(std::initializer_list<value_type> aValues) : iVector{ aValues } {}
         template <typename InputIter>
         vector(InputIter aFirst, InputIter aLast) : iVector(aFirst, aLast) {}
         vector& operator=(const vector& aOther) { assign(aOther); return *this; }
@@ -102,6 +103,8 @@ namespace neolib
         void reserve(size_type aCapacity) override { iVector.reserve(aCapacity); }
         void resize(size_type aSize, const abstract_value_type& aValue) override { iVector.resize(aSize, aValue); }
         void push_back(const abstract_value_type& aValue) override { iVector.push_back(aValue); }
+        template <typename... Args>
+        void emplace_back(Args&&... aArgs) { iVector.emplace_back(std::forward<Args>(aArgs)...); }
         void pop_back() override { iVector.pop_back(); }
         const value_type& back() const override { return iVector.back(); }
         value_type& back() override { return iVector.back(); }

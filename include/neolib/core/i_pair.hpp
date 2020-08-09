@@ -54,5 +54,12 @@ namespace neolib
         virtual first_type& first() = 0;
         virtual const second_type& second() const = 0;
         virtual second_type& second() = 0;
+    public:
+        friend void swap(self_type& a, self_type& b)
+        {
+            using std::swap;
+            swap(a.first(), b.first());
+            swap(a.second(), b.second());
+        }
     };
 }

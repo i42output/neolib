@@ -308,6 +308,12 @@ namespace neolib
         {
             return iReferenceCounted;
         }
+        int32_t reference_count() const override
+        {
+            if (valid() && iReferenceCounted)
+                return iObject->reference_count();
+            return 0;
+        }
         void reset(abstract_t<Interface>* aObject, bool aReferenceCounted = true) override
         {
             Interface* compatibleObject = dynamic_cast<Interface*>(aObject);
@@ -433,6 +439,10 @@ namespace neolib
         bool reference_counted() const override
         {
             return false;
+        }
+        int32_t reference_count() const override
+        {
+            return 0;
         }
         void reset(abstract_t<Interface>* aObject = nullptr, bool = false) override
         {
