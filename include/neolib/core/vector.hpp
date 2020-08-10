@@ -46,6 +46,7 @@ namespace neolib
     template <typename T>
     class vector : public reference_counted<i_vector<abstract_t<T>>>
     {
+        typedef vector<T> self_type;
         typedef reference_counted<i_vector<T>> base_type;
         // types
     public:
@@ -82,6 +83,9 @@ namespace neolib
         const container_type& container() const { return iVector; }
         template <typename... Args>
         iterator emplace(const_iterator aPos, Args&&... aArgs) { auto newPos = iVector.emplace(iVector.begin() + (aPos - abstract_type::cbegin()), std::forward<Args>(aArgs)...); return abstract_type::begin() + (newPos - iVector.begin()); }
+        // comparison
+    public:
+        bool operator<(const self_type& aRhs) const { return container() < aRhs.container(); }
         // implementation
         // from i_container
     public:
