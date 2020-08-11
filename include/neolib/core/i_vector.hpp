@@ -41,7 +41,7 @@
 namespace neolib
 {
     template <typename T>
-    class i_vector : public i_random_access_container<T, true>
+    class i_vector : public i_random_access_container<T>
     {
         typedef i_vector<T> self_type;
     public:

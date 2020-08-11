@@ -40,11 +40,11 @@
 
 namespace neolib
 {
-    template <typename T, typename ConstIteratorType, typename IteratorType, bool DefaultComparisonOperators = true>
-    class i_sequence_container : public i_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators>
+    template <typename T, typename ConstIteratorType, typename IteratorType>
+    class i_sequence_container : public i_container<T, ConstIteratorType, IteratorType>
     {
-        typedef i_sequence_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators> self_type;
-        typedef i_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators> base_type;
+        typedef i_sequence_container<T, ConstIteratorType, IteratorType> self_type;
+        typedef i_container<T, ConstIteratorType, IteratorType> base_type;
     public:
         typedef self_type abstract_type;
     public:

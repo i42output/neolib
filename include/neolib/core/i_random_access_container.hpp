@@ -101,11 +101,11 @@ namespace neolib
         std::ptrdiff_t iOffset;
     };
 
-    template <typename T, bool DefaultComparisonOperators = true>
-    class i_random_access_container : public i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T>, DefaultComparisonOperators>
+    template <typename T>
+    class i_random_access_container : public i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T>>
     {
-        typedef i_random_access_container<T, DefaultComparisonOperators> self_type;
-        typedef i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T>, DefaultComparisonOperators> base_type;
+        typedef i_random_access_container<T> self_type;
+        typedef i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T>> base_type;
     public:
         typedef self_type abstract_type;
     public:

@@ -44,10 +44,10 @@
 
 namespace neolib
 {
-    class i_string : public i_random_access_container<char, false>
+    class i_string : public i_random_access_container<char>
     {
         typedef i_string self_type;
-        typedef i_random_access_container<char, false> base_type;
+        typedef i_random_access_container<char> base_type;
     public:
         typedef self_type abstract_type;
     public:

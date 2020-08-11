@@ -42,11 +42,11 @@
 
 namespace neolib
 {
-    template <typename T, typename ConstIteratorType, typename IteratorType, bool DefaultComparisonOperators = true>
+    template <typename T, typename ConstIteratorType, typename IteratorType>
     class i_container : public i_reference_counted
     {
     protected:
-        typedef i_container<T, ConstIteratorType, IteratorType, DefaultComparisonOperators> generic_container_type;
+        typedef i_container<T, ConstIteratorType, IteratorType> generic_container_type;
     public:
         typedef T value_type;
         typedef size_t size_type;
@@ -85,20 +85,17 @@ namespace neolib
             assign(aRhs);
             return *this;
         }
-        template <bool SFINAE = DefaultComparisonOperators>
-        typename std::enable_if_t<SFINAE, bool>::type operator==(const i_container& aRhs) const
+        friend bool operator==(const i_container& aLhs, const i_container& aRhs)
         {
-            return size() == aRhs.size() && std::equal(begin(), end(), aRhs.begin());
+            return aLhs.size() == aRhs.size() && std::equal(aLhs.begin(), aLhs.end(), aRhs.begin());
         }
-        template <bool SFINAE = DefaultComparisonOperators>
-        typename std::enable_if_t<SFINAE, bool>::type operator!=(const i_container& aRhs) const
+        friend bool operator!=(const i_container& aLhs, const i_container& aRhs)
         {
-            return size() != aRhs.size() && !std::equal(begin(), end(), aRhs.begin());
+            return aLhs.size() != aRhs.size() || !std::equal(aLhs.begin(), aLhs.end(), aRhs.begin());
         }
-        template <bool SFINAE = DefaultComparisonOperators>
-        typename std::enable_if_t<SFINAE, bool>::type operator<(const i_container& aRhs) const
+        friend bool operator<(const i_container& aLhs, const i_container& aRhs)
         {
-            return std::lexicographical_compare(begin(), end(), aRhs.begin(), aRhs.end());
+            return std::lexicographical_compare(aLhs.begin(), aLhs.end(), aRhs.begin(), aRhs.end());
         }
     private:
         virtual abstract_const_iterator* do_begin(void* memory) const = 0;

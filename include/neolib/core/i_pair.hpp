@@ -48,13 +48,25 @@ namespace neolib
         typedef T1 first_type;
         typedef T2 second_type;
     public:
-        virtual self_type& operator=(const self_type& aOther) = 0;
+        virtual self_type& operator=(const self_type& aRhs) = 0;
     public:
         virtual const first_type& first() const = 0;
         virtual first_type& first() = 0;
         virtual const second_type& second() const = 0;
         virtual second_type& second() = 0;
     public:
+        friend bool operator==(const self_type& aLhs, const self_type& aRhs)
+        {
+            return aLhs.first() == aRhs.first() && aLhs.second() == aRhs.second();
+        }
+        friend bool operator!=(const self_type& aLhs, const self_type& aRhs)
+        {
+            return !(aLhs == aRhs);
+        }
+        friend bool operator<(const self_type& aLhs, const self_type& aRhs)
+        {
+            return std::tie(aLhs.first(), aLhs.second()) < std::tie(aRhs.first(), aRhs.second());
+        }
         friend void swap(self_type& a, self_type& b)
         {
             using std::swap;
