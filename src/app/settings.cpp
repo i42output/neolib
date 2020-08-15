@@ -33,8 +33,6 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#pragma once
-
 #include <neolib/neolib.hpp>
 #include <neolib/core/vecarray.hpp>
 #include <neolib/app/settings.hpp>
