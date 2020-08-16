@@ -165,7 +165,7 @@ namespace neolib
                     result = (*static_cast<const comparison_type*>(data()) == *static_cast<const comparison_type*>(aRhs.data()));
                 else
                     throw variant_type_not_equality_comparable();
-            }, *this);
+            }, as_std_variant());
             return result;
         }
         bool operator<(const abstract_type& aRhs) const override
@@ -183,7 +183,7 @@ namespace neolib
                     result = (*static_cast<const comparison_type*>(data()) < *static_cast<const comparison_type*>(aRhs.data()));
                 else
                     throw variant_type_not_less_than_comparable();
-            }, *this);
+            },  as_std_variant());
             return result;
         }
         // state
@@ -204,6 +204,14 @@ namespace neolib
         }
         // meta
     public:
+        const variant_type& as_std_variant() const
+        {
+            return *this;
+        }
+        variant_type& as_std_variant()
+        {
+            return *this;
+        }
         const typename i_enum_t<Id>::enumerators_t& ids() const override
         {
             return iEnum.enumerators();
@@ -221,13 +229,13 @@ namespace neolib
         const void* data() const override
         {
             const void* result = nullptr;
-            std::visit([&result](auto&& v) { result = &v; }, *this);
+            std::visit([&result](auto&& v) { result = &v; }, as_std_variant());
             return result;
         }
         void* data() override
         {
             void* result = nullptr;
-            std::visit([&result](auto&& v) { result = &v; }, *this);
+            std::visit([&result](auto&& v) { result = &v; }, as_std_variant());
             return result;
         }
         abstract_type* do_clone() const override
@@ -265,13 +273,13 @@ namespace std
     template <typename Visitor, typename Id, typename... Types>
     auto visit(Visitor&& vis, const neolib::plugin_variant<Id, Types...>& var)
     {
-        return std::visit(std::forward<Visitor>(vis), static_cast<const neolib::variant<Types...>&>(var));
+        return std::visit(std::forward<Visitor>(vis), var.as_std_variant());
     }
 
     template <typename Visitor, typename Id, typename... Types>
     auto visit(Visitor&& vis, neolib::plugin_variant<Id, Types...>& var)
     {
-        return std::visit(std::forward<Visitor>(vis), static_cast<neolib::variant<Types...>&>(var));
+        return std::visit(std::forward<Visitor>(vis), var.as_std_variant());
     }
 }
 
