@@ -240,14 +240,16 @@ int main(int argc, char** argv)
             {
                 if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, neolib::none_t>)
                     return;
-                else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, neolib::fast_json_object>)
+                else if constexpr(std::is_same_v<std::decay_t<decltype(arg)>, neolib::fast_json_object>)
                     std::cout << "(object)" << std::endl;
-                else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, neolib::fast_json_array>)
+                else if constexpr(std::is_same_v<std::decay_t<decltype(arg)>, neolib::fast_json_array>)
                     std::cout << "(array)" << std::endl;
-                else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, neolib::fast_json_null>)
+                else if constexpr(std::is_same_v<std::decay_t<decltype(arg)>, neolib::fast_json_null>)
                     std::cout << "null" << std::endl;
-                else if constexpr(std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, neolib::fast_json_keyword>)
+                else if constexpr(std::is_same_v<std::decay_t<decltype(arg)>, neolib::fast_json_keyword>)
                     std::cout << "(keyword)" << std::endl;
+                else if constexpr(std::is_same_v<std::decay_t<decltype(arg)>, std::monostate>)
+                    std::cout << "(empty" << std::endl;
                 else
                     std::cout << arg << std::endl;
             });

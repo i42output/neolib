@@ -1,6 +1,6 @@
 // variant.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2007, 2020 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -43,86 +43,23 @@
 
 namespace neolib
 {
-    typedef std::monostate none_t;
+    struct none_t : std::monostate {};
     const none_t none;
-
+    
     template <typename... Types>
-    class variant : public std::variant<none_t, Types...>
+    using variant = std::variant<std::monostate, Types...>;
+    
+    template <typename... Types>
+    inline bool operator==(const variant<Types...>& v, none_t)
     {
-    public:
-        typedef std::variant<none_t, Types...> value_type;
-        typedef std::size_t index_type;
-    public:
-        variant() :
-            value_type()
-        {
-        }
-        variant(const variant& aOther) :
-            value_type{ static_cast<const value_type&>(aOther) }
-        {
-        }
-        variant(variant&& aOther) noexcept :
-            value_type{ static_cast<value_type&&>(std::move(aOther)) }
-        {
-        }
-        template <typename T>
-        variant(T&& aArgument, std::enable_if_t<!std::is_base_of_v<variant, std::decay_t<T>>, sfinae> = sfinae{}) :
-            value_type{ std::forward<T>(aArgument) }
-        {
-        }
-    public:
-        variant& operator=(const variant& aOther)
-        {
-            value_type::operator=(static_cast<const value_type&>(aOther));
-            return *this;
-        }
-        variant& operator=(variant&& aOther) noexcept
-        {
-            value_type::operator=(static_cast<value_type&&>(std::move(aOther)));
-            return *this;
-        }
-        template <typename T>
-        std::enable_if_t<!std::is_base_of_v<variant, std::decay_t<T>>, variant>& operator=(T&& aArgument)
-        {
-            value_type::operator=(std::forward<T>(aArgument));
-            return *this;
-        }
-    public:
-        const value_type& for_visitor() const
-        {
-            return *this;
-        }
-        value_type& for_visitor()
-        {
-            return *this;
-        }
-    public:
-        bool operator==(const none_t) const
-        {
-            return std::holds_alternative<std::monostate>(*this);
-        }
-        bool operator!=(const none_t) const
-        {
-            return !std::holds_alternative<std::monostate>(*this);
-        }
-    };
-
-    namespace variant_visitors
-    {
-        template <typename Visitor, typename... Types>
-        auto visit(Visitor&& vis, const neolib::variant<Types...>& var)
-        {
-            return std::visit(std::forward<Visitor>(vis), var.for_visitor());
-        }
-
-        template <typename Visitor, typename... Types>
-        auto visit(Visitor&& vis, neolib::variant<Types...>& var)
-        {
-            return std::visit(std::forward<Visitor>(vis), var.for_visitor());
-        }
+        return std::holds_alternative<std::monostate>(v);
     }
 
-    using namespace variant_visitors;
+    template <typename... Types>
+    inline bool operator!=(const variant<Types...>& v, none_t)
+    {
+        return !std::holds_alternative<std::monostate>(v);
+    }
 
     // Deprecated, use std::get.
     template <typename T, typename Variant>
@@ -137,33 +74,6 @@ namespace neolib
     { 
         return std::get<std::decay_t<T>>(aVariant);
     }
-
-    template <typename VariantRef>
-    struct auto_variant_caster
-    {
-        VariantRef variant;
-        auto_variant_caster(VariantRef variant) :
-            variant{ variant }
-        {}
-        template <typename T2>
-        operator T2 () const
-        {
-            return static_variant_cast<T2&&>(variant);
-        }
-    };
-
-    template <typename Variant>
-    auto make_auto_variant_caster(const Variant& aVariant)
-    {
-        return auto_variant_caster<const Variant&>{aVariant};
-    }
-
-    template <typename Variant>
-    auto make_auto_variant_caster(Variant& aVariant)
-    {
-        return auto_variant_caster<Variant&>{aVariant};
-    }
-
 
     struct bad_numeric_variant_cast : std::logic_error { bad_numeric_variant_cast() : std::logic_error{ "neolib::bad_numeric_variant_cast" } {} };
 
@@ -196,19 +106,6 @@ namespace neolib
         }, aVariant);
         return static_variant_cast<T>(aVariant);
     }
-}
-
-namespace std
-{
-    template <typename... Types>
-    struct variant_size<neolib::variant<Types...>>
-        : std::integral_constant<std::size_t, sizeof...(Types)> { };
-    
-    template <size_t I, class... Types>
-    struct variant_alternative<I, neolib::variant<Types...>> 
-        { typedef typename std::variant_alternative<I, typename neolib::variant<Types...>::value_type>::type type; };
-
-    using neolib::variant_visitors::visit;
 }
 
 namespace neolib

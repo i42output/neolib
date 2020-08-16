@@ -97,7 +97,7 @@ namespace neolib
     template <typename Id, typename... Types>
     class plugin_variant :
         public reference_counted<i_plugin_variant<Id, abstract_t<Types>...>>,
-        private variant<Types...>
+        public variant<Types...>
     {
         typedef plugin_variant<Id, Types...> self_type;
         typedef reference_counted<i_plugin_variant<Id, abstract_t<Types>...>> base_type;
@@ -140,11 +140,18 @@ namespace neolib
             variant_type::operator=(std::move(aOther));
             return *this;
         }
+        self_type& operator=(none_t)
+        {
+            variant_type::operator=(std::monostate{});
+            return *this;
+        }
         using abstract_type::operator=;
         // comparison
     public:
-        using variant_type::operator==;
-        using variant_type::operator!=;
+        bool operator==(none_t) const
+        {
+            return std::holds_alternative<std::monostate>(*this);
+        }
         bool operator==(const abstract_type& aRhs) const override
         {
             if (index() != aRhs.index())
@@ -158,12 +165,8 @@ namespace neolib
                     result = (*static_cast<const comparison_type*>(data()) == *static_cast<const comparison_type*>(aRhs.data()));
                 else
                     throw variant_type_not_equality_comparable();
-            }, for_visitor());
+            }, *this);
             return result;
-        }
-        bool operator!=(const abstract_type& aRhs) const
-        {
-            return !(*this == aRhs);
         }
         bool operator<(const abstract_type& aRhs) const override
         {
@@ -180,14 +183,14 @@ namespace neolib
                     result = (*static_cast<const comparison_type*>(data()) < *static_cast<const comparison_type*>(aRhs.data()));
                 else
                     throw variant_type_not_less_than_comparable();
-            }, for_visitor());
+            }, *this);
             return result;
         }
         // state
     public:
         void clear() override
         {
-            variant_type::operator=(none);
+            variant_type::operator=(std::monostate{});
         }
         id_t which() const override
         {
@@ -197,11 +200,8 @@ namespace neolib
         }
         bool empty() const override
         {
-            return variant_type::operator==(none);
+            return std::holds_alternative<std::monostate>(*this);
         }
-        // visiting
-    public:
-        using variant_type::for_visitor;
         // meta
     public:
         const typename i_enum_t<Id>::enumerators_t& ids() const override
@@ -221,13 +221,13 @@ namespace neolib
         const void* data() const override
         {
             const void* result = nullptr;
-            visit([&result](auto&& v) { result = &v; }, for_visitor());
+            visit([&result](auto&& v) { result = &v; }, *this);
             return result;
         }
         void* data() override
         {
             void* result = nullptr;
-            visit([&result](auto&& v) { result = &v; }, for_visitor());
+            visit([&result](auto&& v) { result = &v; }, *this);
             return result;
         }
         abstract_type* do_clone() const override
@@ -258,34 +258,20 @@ namespace neolib
     private:
         const enum_t<id_t> iEnum;
     };
-
-    namespace variant_visitors
-    {
-        template <typename Visitor, typename Id, typename... Types>
-        auto visit(Visitor&& vis, const neolib::plugin_variant<Id, Types...>& var)
-        {
-            return std::visit(std::forward<Visitor>(vis), var.for_visitor());
-        }
-
-        template <typename Visitor, typename Id, typename... Types>
-        auto visit(Visitor&& vis, neolib::plugin_variant<Id, Types...>& var)
-        {
-            return std::visit(std::forward<Visitor>(vis), var.for_visitor());
-        }
-    }
-
-    using namespace variant_visitors;
 }
 
 namespace std
 {
-    template <typename Id, typename... Types>
-    struct variant_size<neolib::plugin_variant<Id, Types...>>
-        : std::integral_constant<std::size_t, sizeof...(Types)> { };
+    template <typename Visitor, typename Id, typename... Types>
+    auto visit(Visitor&& vis, const neolib::plugin_variant<Id, Types...>& var)
+    {
+        return std::visit(std::forward<Visitor>(vis), static_cast<const neolib::variant<Types...>&>(var));
+    }
 
-    template <size_t I, typename Id, class... Types>
-    struct variant_alternative<I, neolib::plugin_variant<Id, Types...>>
-        { typedef typename std::variant_alternative<I, typename neolib::plugin_variant<Id, Types...>::variant_type>::type type; };
-
-    using neolib::variant_visitors::visit;
+    template <typename Visitor, typename Id, typename... Types>
+    auto visit(Visitor&& vis, neolib::plugin_variant<Id, Types...>& var)
+    {
+        return std::visit(std::forward<Visitor>(vis), static_cast<neolib::variant<Types...>&>(var));
+    }
 }
+
