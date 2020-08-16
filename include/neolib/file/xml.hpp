@@ -246,7 +246,7 @@ namespace neolib
     public:
         // construction
         xml_element() : node(node::Element), iUseEmptyElementTag(true) {}
-        xml_element(const std::string& aName) : node(node::Element), iName(aName), iUseEmptyElementTag(true) {}
+        xml_element(const string& aName) : node(node::Element), iName(aName), iUseEmptyElementTag(true) {}
         xml_element(const CharT* aName) : node(node::Element), iName(aName), iUseEmptyElementTag(true) {}
 
     public:

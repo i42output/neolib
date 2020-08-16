@@ -160,7 +160,7 @@ namespace neolib
         using i_setting::value_as_string;
         void value_as_string(i_string& aValue, bool aUnappliedNew = false) const override
         {
-            aValue = to_string(value(aUnappliedNew).get<T>());
+            aValue = to_string(value(aUnappliedNew).template get<T>());
         }
         using i_setting::set_default_value;
         void set_default_value(i_setting_value const& aDefaultValue) override

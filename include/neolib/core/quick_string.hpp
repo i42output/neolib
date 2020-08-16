@@ -216,10 +216,13 @@ namespace neolib
             return get_string().back();
         }
         // modifiers
+        basic_quick_string& operator+=(const basic_quick_string& str) { get_string().operator+=(str.to_std_string_view()); return *this; }
         basic_quick_string& operator+=(const string_type& str) { get_string().operator+=(str); return *this; }
         basic_quick_string& operator+=(const charT* s) { get_string().operator+=(s); return *this; }
         basic_quick_string& operator+=(charT c) { get_string().operator+=(c); return *this; }
+        basic_quick_string& append(const basic_quick_string& str) { get_string().append(str.to_std_string_view()); return *this; }
         basic_quick_string& append(const string_type& str) { get_string().append(str); return *this; }
+        basic_quick_string& append(const basic_quick_string& str, size_type pos, size_type n) { get_string().append(str.to_std_string_view(), pos, n); return *this; }
         basic_quick_string& append(const string_type& str, size_type pos, size_type n) { get_string().append(str, pos, n); return *this; }
         basic_quick_string& append(const charT* s, size_type n) { get_string().append(s, n); return *this; }
         basic_quick_string& append(const charT* s) { get_string().append(s); return *this; }
@@ -227,14 +230,18 @@ namespace neolib
         template<class InputIterator>
         basic_quick_string& append(InputIterator first, InputIterator last) { get_string().append(first, last); return *this; }
         void push_back(charT c) { get_string().push_back(c); }
+        basic_quick_string& assign(const basic_quick_string& str) { get_string().assign(str.to_std_string_view()); return *this; }
         basic_quick_string& assign(const string_type& str) { get_string().assign(str); return *this; }
+        basic_quick_string& assign(const basic_quick_string& str, size_type pos, size_type n) { get_string().assign(str.to_std_string_view(), pos, n); return *this; }
         basic_quick_string& assign(const string_type& str, size_type pos, size_type n) { get_string().assign(str, pos, n); return *this; }
         basic_quick_string& assign(const charT* s, size_type n) { get_string().assign(s, n); return *this; }
         basic_quick_string& assign(const charT* s) { get_string().assign(s); return *this; }
         basic_quick_string& assign(size_type n, charT c) { get_string().assign(n, c); return *this; }
         template<class InputIterator>
         basic_quick_string& assign(InputIterator first, InputIterator last) { get_string().assign(first, last); return *this; }
+        basic_quick_string& insert(size_type pos1, const basic_quick_string& str) { get_string().insert(pos1, str.to_std_string_view()); return *this; }
         basic_quick_string& insert(size_type pos1, const string_type& str) { get_string().insert(pos1, str); return *this; }
+        basic_quick_string& insert(size_type pos1, const basic_quick_string& str, size_type pos2, size_type n) { get_string().insert(pos1, str.to_std_string_view(), pos2, n); return *this; }
         basic_quick_string& insert(size_type pos1, const string_type& str, size_type pos2, size_type n) { get_string().insert(pos1, str, pos2, n); return *this; }
         basic_quick_string& insert(size_type pos, const charT* s, size_type n) { get_string().insert(pos, s, n); return *this; }
         basic_quick_string& insert(size_type pos, const charT* s) { get_string().insert(pos, s); return *this; }
@@ -246,11 +253,14 @@ namespace neolib
         basic_quick_string& erase(size_type pos = 0, size_type n = npos) { get_string().erase(pos, n); return *this; }
         iterator erase(iterator p) { return get_string().erase(p); } 
         iterator erase(iterator first, iterator last) { return get_string().erase(first, last); }
+        basic_quick_string& replace(size_type pos1, size_type n1, const basic_quick_string& str) { get_string().replace(pos1, n1, str.to_std_string_view()); return *this; }
         basic_quick_string& replace(size_type pos1, size_type n1, const string_type& str) { get_string().replace(pos1, n1, str); return *this; }
+        basic_quick_string& replace(size_type pos1, size_type n1, const basic_quick_string& str, size_type pos2, size_type n2) { get_string().replace(pos1, n1, str.to_std_string_view(), pos2, n2); return *this; }
         basic_quick_string& replace(size_type pos1, size_type n1, const string_type& str, size_type pos2, size_type n2) { get_string().replace(pos1, n1, str, pos2, n2); return *this; }
         basic_quick_string& replace(size_type pos, size_type n1, const charT* s, size_type n2) { get_string().replace(pos, n1, s, n2); return *this; }
         basic_quick_string& replace(size_type pos, size_type n1, const charT* s) { get_string().replace(pos, n1, s); return *this; }
         basic_quick_string& replace(size_type pos, size_type n1, size_type n2, charT c) { get_string().replace(pos, n1, n2, c); return *this; }
+        basic_quick_string& replace(iterator i1, iterator i2, const basic_quick_string& str) { get_string().replace(i1, i2, str.to_std_string_view()); return *this; }
         basic_quick_string& replace(iterator i1, iterator i2, const string_type& str) { get_string().replace(i1, i2, str); return *this; }
         basic_quick_string& replace(iterator i1, iterator i2, const charT* s, size_type n) { get_string().replace(i1, i2, s, n); return *this; }
         basic_quick_string& replace(iterator i1, iterator i2, const charT* s) { get_string().replace(i1, i2, s); return *this; }
