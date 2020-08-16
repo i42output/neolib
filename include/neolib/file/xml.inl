@@ -432,7 +432,7 @@ namespace neolib
     template <typename CharT, typename Alloc>
     typename basic_xml<CharT, Alloc>::node_writer& basic_xml<CharT, Alloc>::node_writer::operator<<(const string& aData)
     {
-        iStream << static_cast<const typename string::string_type&>(aData);
+        iStream << aData.to_std_string_view();
         if (aData.size() && aData[aData.size() - 1] == characters<CharT>::sNewLineChar)
             iLastWasNewLine = true;
         else

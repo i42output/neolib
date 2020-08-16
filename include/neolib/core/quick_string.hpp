@@ -297,33 +297,47 @@ namespace neolib
             else
                 return get_string().get_allocator(); 
         }
-        size_type find (const string_type& str, size_type pos = 0) const 
+        size_type find(const basic_quick_string& str, size_type pos = 0) const
+        {
+            if (is_view())
+                return get_view_string().find(str.to_std_string_view(), pos);
+            else
+                return get_string().find(str.to_std_string_view(), pos);
+        }
+        size_type find(const string_type& str, size_type pos = 0) const
         { 
             if (is_view())
                 return get_view_string().find(str, pos);
             else
                 return get_string().find(str, pos);
         }
-        size_type find (const charT* s, size_type pos, size_type n) const
+        size_type find(const charT* s, size_type pos, size_type n) const
         { 
             if (is_view())
                 return get_view_string().find(s, pos, n);
             else
                 return get_string().find(s, pos, n);
         }
-        size_type find (const charT* s, size_type pos = 0) const
+        size_type find(const charT* s, size_type pos = 0) const
         { 
             if (is_view())
                 return get_view_string().find(s, pos);
             else
                 return get_string().find(s, pos);
         }
-        size_type find (charT c, size_type pos = 0) const
+        size_type find(charT c, size_type pos = 0) const
         { 
             if (is_view())
                 return get_view_string().find(c, pos);
             else
                 return get_string().find(c, pos);
+        }
+        size_type rfind(const basic_quick_string& str, size_type pos = npos) const
+        {
+            if (is_view())
+                return get_view_string().rfind(str.to_std_string_view(), pos);
+            else
+                return get_string().rfind(str.to_std_string_view(), pos);
         }
         size_type rfind(const string_type& str, size_type pos = npos) const
         { 
@@ -353,6 +367,13 @@ namespace neolib
             else
                 return get_string().rfind(c, pos);
         }
+        size_type find_first_of(const basic_quick_string& str, size_type pos = 0) const
+        {
+            if (is_view())
+                return get_view_string().find_first_of(str.to_std_string_view(), pos);
+            else
+                return get_string().find_first_of(str.to_std_string_view(), pos);
+        }
         size_type find_first_of(const string_type& str, size_type pos = 0) const
         { 
             if (is_view())
@@ -381,33 +402,47 @@ namespace neolib
             else
                 return get_string().find_first_of(c, pos);
         }
-        size_type find_last_of (const string_type& str, size_type pos = npos) const
+        size_type find_last_of(const basic_quick_string& str, size_type pos = npos) const
+        {
+            if (is_view())
+                return get_view_string().find_last_of(str.to_std_string_view(), pos);
+            else
+                return get_string().find_last_of(str.to_std_string_view(), pos);
+        }
+        size_type find_last_of(const string_type& str, size_type pos = npos) const
         {
             if (is_view())
                 return get_view_string().find_last_of(str, pos);
             else
                 return get_string().find_last_of(str, pos);
         }
-        size_type find_last_of (const charT* s, size_type pos, size_type n) const
+        size_type find_last_of(const charT* s, size_type pos, size_type n) const
         {
             if (is_view())
                 return get_view_string().find_last_of(s, pos, n);
             else
                 return get_string().find_last_of(s, pos, n);
         }
-        size_type find_last_of (const charT* s, size_type pos = npos) const
+        size_type find_last_of(const charT* s, size_type pos = npos) const
         {
             if (is_view())
                 return get_view_string().find_last_of(s, pos);
             else
                 return get_string().find_last_of(s, pos);
         }
-        size_type find_last_of (charT c, size_type pos = npos) const
+        size_type find_last_of(charT c, size_type pos = npos) const
         {
             if (is_view())
                 return get_view_string().find_last_of(c, pos);
             else
                 return get_string().find_last_of(c, pos);
+        }
+        size_type find_first_not_of(const basic_quick_string& str, size_type pos = 0) const
+        {
+            if (is_view())
+                return get_view_string().find_first_not_of(str.to_std_string_view(), pos);
+            else
+                return get_string().find_first_not_of(str.to_std_string_view(), pos);
         }
         size_type find_first_not_of(const string_type& str, size_type pos = 0) const
         { 
@@ -437,28 +472,35 @@ namespace neolib
             else
                 return get_string().find_first_not_of(c, pos);
         }
-        size_type find_last_not_of (const string_type& str, size_type pos = npos) const
+        size_type find_last_not_of(const basic_quick_string& str, size_type pos = npos) const
+        {
+            if (is_view())
+                return get_view_string().find_last_of(str.to_std_string_view(), pos);
+            else
+                return get_string().find_last_of(str.to_std_string_view(), pos);
+        }
+        size_type find_last_not_of(const string_type& str, size_type pos = npos) const
         {
             if (is_view())
                 return get_view_string().find_last_of(str, pos);
             else
                 return get_string().find_last_of(str, pos);
         }
-        size_type find_last_not_of (const charT* s, size_type pos, size_type n) const
+        size_type find_last_not_of(const charT* s, size_type pos, size_type n) const
         {
             if (is_view())
                 return get_view_string().find_last_of(s, pos, n);
             else
                 return get_string().find_last_of(s, pos, n);
         }
-        size_type find_last_not_of (const charT* s, size_type pos = npos) const
+        size_type find_last_not_of(const charT* s, size_type pos = npos) const
         {
             if (is_view())
                 return get_view_string().find_last_of(s, pos);
             else
                 return get_string().find_last_of(s, pos);
         }
-        size_type find_last_not_of (charT c, size_type pos = npos) const
+        size_type find_last_not_of(charT c, size_type pos = npos) const
         {
             if (is_view())
                 return get_view_string().find_last_of(c, pos);
