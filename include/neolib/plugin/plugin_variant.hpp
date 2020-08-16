@@ -97,7 +97,7 @@ namespace neolib
     template <typename Id, typename... Types>
     class plugin_variant :
         public reference_counted<i_plugin_variant<Id, abstract_t<Types>...>>,
-        public variant<Types...>
+        public std::variant<std::monostate, Types...>
     {
         typedef plugin_variant<Id, Types...> self_type;
         typedef reference_counted<i_plugin_variant<Id, abstract_t<Types>...>> base_type;
@@ -106,7 +106,7 @@ namespace neolib
         typedef i_plugin_variant<Id, abstract_t<Types>...> abstract_type;
         using typename base_type::id_t;
         using typename base_type::index_type;
-        typedef variant<Types...> variant_type;
+        typedef std::variant<std::monostate, Types...> variant_type;
         // construction/assignment
     public:
         using variant_type::variant_type;
@@ -157,7 +157,7 @@ namespace neolib
             if (index() != aRhs.index())
                 return false;
             bool result = false;
-            visit([this, &aRhs, &result](auto&& v)
+            std::visit([this, &aRhs, &result](auto&& v)
             {
                 typedef std::decay_t<decltype(v)> type;
                 typedef abstract_t<type> comparison_type;
@@ -175,7 +175,7 @@ namespace neolib
             if (index() == 0u)
                 return false;
             bool result = false;
-            visit([this, &aRhs, &result](auto&& v)
+            std::visit([this, &aRhs, &result](auto&& v)
             {
                 typedef std::decay_t<decltype(v)> type;
                 typedef abstract_t<type> comparison_type;
@@ -221,13 +221,13 @@ namespace neolib
         const void* data() const override
         {
             const void* result = nullptr;
-            visit([&result](auto&& v) { result = &v; }, *this);
+            std::visit([&result](auto&& v) { result = &v; }, *this);
             return result;
         }
         void* data() override
         {
             void* result = nullptr;
-            visit([&result](auto&& v) { result = &v; }, *this);
+            std::visit([&result](auto&& v) { result = &v; }, *this);
             return result;
         }
         abstract_type* do_clone() const override
