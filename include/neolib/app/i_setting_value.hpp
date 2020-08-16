@@ -92,7 +92,7 @@ namespace neolib
 
     template <typename T, typename = sfinae> struct setting_type_name {};
     
-    #define define_setting_type(T) template<> struct neolib::setting_type_name<T> { static const neolib::string& name() { static neolib::string sTypeName = #T; return sTypeName; } };
+    #define define_setting_type(T) using neolib::setting_type_name; template<> struct setting_type_name<T> { static const neolib::string& name() { static neolib::string sTypeName = #T; return sTypeName; } };
 
     define_setting_type(bool)
     define_setting_type(int8_t)
