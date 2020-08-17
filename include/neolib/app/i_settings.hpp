@@ -51,6 +51,15 @@ namespace neolib
     template <typename T>
     class setting;
 
+    template <typename T>
+    struct as_setting
+    {
+        typedef T type;
+    };
+
+    template <typename T>
+    using as_setting_t = typename as_setting<T>::type;
+
     class i_settings : public i_reference_counted
     {
     public:
@@ -96,9 +105,9 @@ namespace neolib
             register_group(static_cast<i_string const&>(aGroupSubkey), static_cast<i_string const&>(aGroupTitle));
         }
         template <typename T>
-        i_setting& register_setting(string const& aKey, T const& aDefaultValue, setting_constraints<T> const& aSettingConstraints, string const& aFormat = {})
+        i_setting& register_setting(string const& aKey, T const& aDefaultValue, setting_constraints<as_setting_t<T>> const& aSettingConstraints, string const& aFormat = {})
         {
-            auto newSetting = make_ref<neolib::setting<T>>(*this, aKey, aDefaultValue, aSettingConstraints, aFormat);
+            auto newSetting = make_ref<neolib::setting<as_setting_t<T>>>(*this, aKey, aDefaultValue, aSettingConstraints, aFormat);
             register_setting(*newSetting);
             return *newSetting;
         }
@@ -110,7 +119,7 @@ namespace neolib
         template <typename T>
         void change_setting(i_setting& aExistingSetting, T const& aValue, bool aApplyNow = true)
         {
-            change_setting(aExistingSetting, static_cast<i_setting_value const&>(setting_value{ aValue }), aApplyNow);
+            change_setting(aExistingSetting, static_cast<i_setting_value const&>(setting_value<as_setting_t<T>>{ aValue }), aApplyNow);
         }
     };
 }
