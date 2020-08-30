@@ -202,6 +202,19 @@ namespace neolib
         return false;
     }
 
+    void settings::register_friendly_text(i_setting const& aSetting, i_string const& aText, i_string const& aFriendlyText)
+    {
+        iFriendlyText[std::make_pair(&aSetting, string{ aText })] = aFriendlyText;
+    }
+
+    i_string const& settings::friendly_text(i_setting const& aSetting, i_string const& aText) const
+    {
+        auto existing = iFriendlyText.find(std::make_pair(&aSetting, string{ aText }));
+        if (existing != iFriendlyText.end())
+            return existing->second;
+        return aText;
+    }
+
     void settings::load()
     {
         if (!iFileName.empty())

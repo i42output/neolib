@@ -90,6 +90,9 @@ namespace neolib
         virtual void discard_changes() = 0;
         virtual bool modified() const = 0;
     public:
+        virtual void register_friendly_text(i_setting const& aSetting, i_string const& aText, i_string const& aFriendlyText) = 0;
+        virtual i_string const& friendly_text(i_setting const& aSetting, i_string const& aText) const = 0;
+    public:
         virtual void load() = 0;
         virtual void save() const = 0;
     public:

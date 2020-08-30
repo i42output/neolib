@@ -88,6 +88,9 @@ namespace neolib
         void discard_changes() override;
         bool modified() const override;
     public:
+        void register_friendly_text(i_setting const& aSetting, i_string const& aText, i_string const& aFriendlyText) override;
+        i_string const& friendly_text(i_setting const& aSetting, i_string const& aText) const override;
+    public:
         void load() override;
         void save() const override;
     public:
@@ -99,5 +102,6 @@ namespace neolib
         group_titles iGroupTitles;
         setting_list iSettings;
         setting_ordered_list iSettingsOrdered;
+        std::map<std::pair<i_setting const*, string>, string> iFriendlyText;
     };
 }
