@@ -836,6 +836,10 @@ namespace neolib
             return *this;
         }
     public:
+        bool empty() const
+        {
+            return iHandles.empty();
+        }
         void clear()
         {
             iHandles.clear();
