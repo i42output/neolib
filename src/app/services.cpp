@@ -1,6 +1,6 @@
-// i_application.hpp
+// services.cpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2020 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -31,25 +31,64 @@
  *  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-
-#pragma once
+ */
 
 #include <neolib/neolib.hpp>
-#include <neolib/core/i_discoverable.hpp>
-#include <neolib/core/i_string.hpp>
 #include <neolib/app/services.hpp>
-#include <neolib/app/i_application_info.hpp>
-#include <neolib/plugin/i_plugin_manager.hpp>
 
-namespace neolib
+namespace neolib::services
 {
-    class i_application : public i_discoverable
+    struct service_provider : public i_service_provider
     {
-    public:
-        virtual i_service_provider& service_provider() const = 0;
-    public:
-        virtual const i_application_info& info() const = 0;
-        virtual i_plugin_manager& plugin_manager() = 0;
+        std::unordered_map<uuid, i_service*> services;
+
+        bool service_registered(uuid aServiceIid) const override
+        {
+            return services.find(aServiceIid) != services.end();
+        }
+
+        i_service& service(uuid aServiceIid) override
+        {
+            auto existing = services.find(aServiceIid);
+            if (existing != services.end())
+                return *existing->second;
+            throw service_not_found();
+        }
+
+        void register_service(i_service& aService, uuid aServiceIid) override
+        {
+            services[aServiceIid] = &aService;
+        }
+
+        void unregister_service(uuid aServiceIid) override
+        {
+            auto existing = services.find(aServiceIid);
+            if (existing != services.end())
+            {
+                services.erase(existing);
+                return;
+            }
+            throw service_not_found();
+        }
     };
+
+    std::unique_ptr<service_provider> sServiceProvider;
+    i_service_provider* sServiceProviderAlias;
+
+    i_service_provider& allocate_service_provider()
+    {
+        sServiceProvider = std::make_unique<service_provider>();
+        sServiceProviderAlias = &*sServiceProvider;
+        return *sServiceProviderAlias;
+    }
+
+    i_service_provider& get_service_provider()
+    {
+        return *sServiceProviderAlias;
+    }
+
+    void set_service_provider(i_service_provider& aServiceProvider)
+    {
+        sServiceProviderAlias = &aServiceProvider;
+    }
 }

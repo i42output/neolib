@@ -219,7 +219,7 @@ namespace neolib::ecs
         iFlags{ aCreationFlags }, iNextEntityId { null_entity }, iNextHandleId{ null_id },
         iSystemTimer
         {
-            service<async_task>(),
+            service<i_async_task>(),
             [this](neolib::callback_timer& aTimer)
             {
                 aTimer.again();

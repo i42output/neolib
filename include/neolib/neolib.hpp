@@ -157,12 +157,6 @@ namespace neolib
 
     template <typename T>
     using abstract_return_t = typename detail::abstract_return_type<T>::type;
-
-    template <typename Component>
-    Component& service();
-
-    template <typename Component>
-    void teardown_service();
 }
 
 #ifdef NEOLIB_HOSTED_ENVIRONMENT

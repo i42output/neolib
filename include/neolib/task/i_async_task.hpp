@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <neolib/app/services.hpp>
 #include <neolib/task/i_thread.hpp>
 #include <neolib/task/i_message_queue.hpp>
 #include <neolib/task/i_task.hpp>
@@ -83,7 +84,7 @@ namespace neolib
         virtual void remove_timer_object(i_timer_object& aObject) = 0;
     };
 
-    class i_async_task : public i_task
+    class i_async_task : public i_task, public i_service
     {
         // events
     public:
@@ -110,5 +111,7 @@ namespace neolib
         virtual void halt() = 0;
     public:
         virtual void idle() = 0;
+    public:
+        static uuid const& iid() { static uuid const sIid{ 0x5e572b8a, 0x272a, 0x40d1, 0xa788, { 0xd7, 0x32, 0xf7, 0x74, 0xfc, 0xe5 } }; return sIid; }
     };
 }

@@ -37,6 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <chrono>
+#include <neolib/app/services.hpp>
 #include <neolib/plugin/i_plugin_event.hpp>
 
 namespace neolib
@@ -48,7 +49,7 @@ namespace neolib
         Turbo
     };
 
-    class i_power
+    class i_power : public i_service
     {
     public:
         declare_event(activity_registered)
@@ -93,5 +94,7 @@ namespace neolib
         {
             enable_green_mode();
         }
+    public:
+        static uuid const& iid() { static uuid const sIid{ 0xed9d08d9, 0xc1fd, 0x4ccd, 0x8bab, { 0x9a, 0xd6, 0xe3, 0xaa, 0x71, 0x52 } }; return sIid; }
     };
 }

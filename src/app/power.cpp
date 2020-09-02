@@ -39,14 +39,14 @@
 
 namespace neolib
 {
-    template<> i_power& service<i_power>()
+    template<> i_power& services::start_service<i_power>()
     {
         static power sPower;
         return sPower;
     }
 
     power::power() :
-        iUpdater{ service<async_task>(), [this](neolib::callback_timer& aTimer)
+        iUpdater{ service<i_async_task>(), [this](neolib::callback_timer& aTimer)
         {
             aTimer.again();
             if (is_green_mode_enabled() && std::chrono::steady_clock::now() - iLastActivityTime >= activity_timeout())

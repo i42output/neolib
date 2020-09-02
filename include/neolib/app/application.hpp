@@ -48,12 +48,12 @@ namespace neolib
     class application : public reference_counted<Base>
     {
     public:
-        application(const i_application_info& aApplicationInfo) :
+        application(const i_application_info& aApplicationInfo, i_service_provider& aServiceProvider = allocate_service_provider()) :
+            iServiceProvider{ aServiceProvider },
             iApplicationInfo{ get_application_info(aApplicationInfo) },
             iPluginManager{ *this }
         {
         }
-
     public:
         // from i_discoverable
         bool discover(const uuid& aId, void*& aObject) override
@@ -61,6 +61,12 @@ namespace neolib
             return iPluginManager.discover(aId, aObject);
         }
         // from i_application
+    public:
+        i_service_provider& service_provider() const override
+        {
+            return iServiceProvider;
+        }
+    public:
         const i_application_info& info() const override
         {
             return iApplicationInfo;
@@ -69,8 +75,8 @@ namespace neolib
         {
             return iPluginManager;
         }
-
     private:
+        i_service_provider& iServiceProvider;
         application_info iApplicationInfo;
         neolib::plugin_manager iPluginManager;
     };
