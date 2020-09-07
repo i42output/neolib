@@ -270,16 +270,12 @@ namespace neolib
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr& operator=(const ref_ptr<Interface2>& aOther)
         {
-            if (&aOther == this)
-                return *this;
             reset(aOther.ptr(), aOther.reference_counted());
             return *this;
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr& operator=(ref_ptr<Interface2>&& aOther)
         {
-            if (&aOther == this)
-                return *this;
             iObject = aOther.detach();
             iReferenceCounted = aOther.reference_counted();
             return *this;
@@ -287,8 +283,6 @@ namespace neolib
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr& operator=(const i_ref_ptr<Interface2>& aOther)
         {
-            if (&aOther == this)
-                return *this;
             reset(aOther.ptr(), aOther.reference_counted());
             return *this;
         }
