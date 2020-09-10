@@ -41,8 +41,6 @@
 
 namespace neolib
 {
-    class lifetime;
-
     template <lifetime_state RequiredState>
     class lifetime_flag : public i_lifetime_flag
     {
@@ -75,7 +73,8 @@ namespace neolib
     typedef lifetime_flag<lifetime_state::Destroyed> destroyed_flag;
     typedef std::optional<destroyed_flag> optional_destroyed_flag;
 
-    class lifetime : public i_lifetime
+    template <typename Base = i_lifetime>
+    class lifetime : public Base
     {
     public:
         typedef neolib::destroyed_flag destroyed_flag;
@@ -95,4 +94,86 @@ namespace neolib
     private:
         std::shared_ptr<std::atomic<lifetime_state>> iState;
     };
+
+    template <typename Base>
+    inline lifetime<Base>::lifetime(lifetime_state aState) : iState{ std::make_shared<std::atomic<lifetime_state>>(aState) }
+    {
+    }
+
+    template <typename Base>
+    inline lifetime<Base>::~lifetime()
+    {
+        if (!is_destroyed())
+        {
+            set_destroying();
+            set_destroyed();
+        }
+    }
+
+    template <typename Base>
+    inline lifetime_state lifetime<Base>::object_state() const
+    {
+        return *iState;
+    }
+
+    template <typename Base>
+    inline std::shared_ptr<std::atomic<lifetime_state>> lifetime<Base>::object_state_ptr() const
+    {
+        return iState;
+    }
+
+    template <typename Base>
+    inline bool lifetime<Base>::is_creating() const
+    {
+        return *iState == lifetime_state::Creating;
+    }
+
+    template <typename Base>
+    inline bool lifetime<Base>::is_alive() const
+    {
+        return *iState == lifetime_state::Alive;
+    }
+
+    template <typename Base>
+    inline bool lifetime<Base>::is_destroying() const
+    {
+        return *iState == lifetime_state::Destroying;
+    }
+
+    template <typename Base>
+    inline bool lifetime<Base>::is_destroyed() const
+    {
+        return *iState == lifetime_state::Destroyed;
+    }
+
+    template <typename Base>
+    inline void lifetime<Base>::set_alive()
+    {
+        if (!is_creating())
+            throw not_creating();
+        *iState = lifetime_state::Alive;
+    }
+
+    template <typename Base>
+    inline void lifetime<Base>::set_destroying()
+    {
+        if (!is_destroying())
+        {
+            if (is_destroyed())
+                throw already_destroyed();
+            *iState = lifetime_state::Destroying;
+        }
+    }
+
+    template <typename Base>
+    inline void lifetime<Base>::set_destroyed()
+    {
+        if (!is_destroyed())
+        {
+            if (*iState == lifetime_state::Creating || *iState == lifetime_state::Alive)
+                set_destroying();
+            *iState = lifetime_state::Destroyed;
+        }
+    }
 }
+

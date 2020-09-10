@@ -42,7 +42,7 @@
 
 namespace neolib
 {
-    class i_object
+    class i_object : public i_lifetime
     {
     public:
         declare_event(destroying);

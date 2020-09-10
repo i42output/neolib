@@ -250,7 +250,7 @@ namespace neolib
 
     NEOLIB_EXPORT void unqueue_event(const i_event& aEvent);
 
-    class NEOLIB_EXPORT async_event_queue : public lifetime
+    class NEOLIB_EXPORT async_event_queue : public lifetime<>
     {
         template <typename...>
         friend class event;
@@ -316,7 +316,7 @@ namespace neolib
     };
 
     template <typename... Args>
-    class event : public i_event, public lifetime
+    class event : public i_event, public lifetime<>
     {
         typedef event<Args...> self_type;
         friend class sink;

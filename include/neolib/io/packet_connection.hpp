@@ -77,7 +77,7 @@ namespace neolib
     typedef i_basic_packet_connection_owner<char> packet_connection_owner;
 
     template <typename CharType, typename Protocol, size_t ReceiveBufferSize = 1024>
-    class basic_packet_connection : public lifetime
+    class basic_packet_connection : public lifetime<>
     {
         // types
     public:

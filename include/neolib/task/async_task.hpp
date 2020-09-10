@@ -69,7 +69,7 @@ namespace neolib
         dirty_list iDirtyObjectList;
     };
 
-    class NEOLIB_EXPORT async_task : public task<i_async_task>, public lifetime
+    class NEOLIB_EXPORT async_task : public task<i_async_task>, public lifetime<>
     {
         friend class async_thread;
         // events

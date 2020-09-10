@@ -47,7 +47,7 @@
 
 namespace neolib
 {
-    class NEOLIB_EXPORT timer : private noncopyable, public lifetime
+    class NEOLIB_EXPORT timer : private noncopyable, public lifetime<>
     {
         // types
     public:

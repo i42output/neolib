@@ -43,15 +43,16 @@
 
 namespace neolib
 {
-    template <typename... Bases>
-    class object : public lifetime, public Bases...
+    template <typename Base = i_object>
+    class object : public lifetime<Base>
     {
+        typedef lifetime<Base> base_type;
     public:
         define_declared_event(Destroying, destroying);
         define_declared_event(Destroyed, destroyed);
     public:
         object(lifetime_state aState = lifetime_state::Creating) :
-            lifetime{ aState }
+            base_type{ aState }
         {
         }
         ~object()
@@ -65,7 +66,7 @@ namespace neolib
             if (is_alive())
             {
                 Destroying.trigger();
-                lifetime::set_destroying();
+                base_type::set_destroying();
             }
         }
         void set_destroyed() override
@@ -73,7 +74,7 @@ namespace neolib
             if (!is_destroyed())
             {
                 Destroyed.trigger();
-                lifetime::set_destroyed();
+                base_type::set_destroyed();
             }
         }
     };
