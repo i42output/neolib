@@ -61,6 +61,8 @@ namespace neolib
         }
         // i_lifetime
     public:
+        using base_type::is_alive;
+        using base_type::is_destroyed;
         void set_destroying() override
         {
             if (is_alive())
