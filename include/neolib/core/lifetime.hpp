@@ -77,6 +77,9 @@ namespace neolib
     class lifetime : public Base
     {
     public:
+        using i_lifetime::not_creating;
+        using i_lifetime::already_destroyed;
+    public:
         typedef neolib::destroyed_flag destroyed_flag;
     public:
         lifetime(lifetime_state aState = lifetime_state::Alive);
