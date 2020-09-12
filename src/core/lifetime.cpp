@@ -46,7 +46,7 @@ namespace neolib
 
     template <lifetime_state RequiredState>
     lifetime_flag<RequiredState>::lifetime_flag(const lifetime_flag& aOther) : 
-        iState { aOther.iState }, iDebug{ false }
+        iState{ aOther.iState }, iDebug{ false }
     {
     }
 
