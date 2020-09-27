@@ -81,4 +81,14 @@ namespace neolib
         void ignore() { iIgnore = true; }
     };
 
+    template <typename T>
+    struct scoped_object
+    {
+        T& iObject;
+        T iSaved;
+        bool iIgnore;
+        scoped_object(T& aObject, T aValue = {}) : iObject{ aObject }, iSaved{ aObject }, iIgnore{ false } { iObject = aValue; }
+        ~scoped_object() { if (!iIgnore) iObject = iSaved; }
+        void ignore() { iIgnore = true; }
+    };
 }
