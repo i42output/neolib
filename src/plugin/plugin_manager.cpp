@@ -34,6 +34,7 @@
 */
 
 #include <neolib/neolib.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/dll.hpp>
 #include <neolib/plugin/plugin_manager.hpp>
 
@@ -46,8 +47,8 @@ namespace neolib
     {
         iPluginFileExtensions.push_back(string{ aApplication.info().plugin_extension() });
         std::set<std::string> folders;
-        folders.insert(aApplication.info().application_folder().to_std_string());
-        folders.insert(boost::dll::program_location().parent_path().generic_string());
+        folders.insert(boost::filesystem::canonical(boost::filesystem::path{ aApplication.info().application_folder().to_std_string() }).string());
+        folders.insert(boost::filesystem::canonical(boost::dll::program_location().parent_path()).string());
         for (auto const& folder : folders)
             iPluginFolders.push_back(string{ folder });
     }
