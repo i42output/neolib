@@ -141,6 +141,12 @@ namespace neolib
             for (auto& e : aElements)
                 insert(e);
         }
+        template <typename InputIter>
+        mutable_set(InputIter aFirst, InputIter aLast)
+        {
+            for (auto e = aFirst; e != aLast; ++e)
+                insert(*e);
+        }
     public:
         iterator insert(const typename base_type::value_type& aValue)
         {
@@ -175,6 +181,12 @@ namespace neolib
         {
             for (auto& e : aElements)
                 insert(e);
+        }
+        template <typename InputIter>
+        mutable_multiset(InputIter aFirst, InputIter aLast)
+        {
+            for (auto e = aFirst; e != aLast; ++e)
+                insert(*e);
         }
     public:
         iterator insert(const typename base_type::value_type& aValue)
