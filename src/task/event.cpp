@@ -282,6 +282,8 @@ namespace neolib
             if (e->destroyed || e->callback == nullptr)
                 continue;
             auto const& ec = *e->callback;
+            if (!ec.valid())
+                continue;
             if (currentTransaction == std::nullopt || *currentTransaction != e->transaction)
             {
                 currentTransaction = e->transaction;

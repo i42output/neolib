@@ -43,6 +43,7 @@
 
 namespace neolib
 {
+    struct event_callable_expired : std::logic_error { event_callable_expired() : std::logic_error{ "neolib::event_callable_expired" } {} };
     struct event_destroyed : std::logic_error { event_destroyed() : std::logic_error{ "neolib::event_destroyed" } {} };
     struct event_queue_destroyed : std::logic_error { event_queue_destroyed() : std::logic_error{ "neolib::event_queue_destroyed" } {} };
     struct event_handler_not_found : std::logic_error { event_handler_not_found() : std::logic_error{ "neolib::event_handler_not_found" } {} };
@@ -112,6 +113,7 @@ namespace neolib
     public:
         virtual const i_event& event() const = 0;
         virtual const void* identity() const = 0;
+        virtual bool valid() const = 0;
         virtual void call() const = 0;
     };
 

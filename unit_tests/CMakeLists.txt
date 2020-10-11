@@ -1,6 +1,10 @@
+find_package(Boost COMPONENTS chrono filesystem system REQUIRED)
+
 function(add_neolib_test_executable TARGET)
   add_executable(${TARGET} ${ARGN})
   target_link_libraries(${TARGET} PRIVATE neolib)
+  target_link_libraries(${TARGET} PUBLIC Boost::chrono)
+  target_link_libraries(${TARGET} PRIVATE Boost::filesystem Boost::system)
   add_test(${TARGET} ${TARGET})
 endfunction()
 

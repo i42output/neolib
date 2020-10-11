@@ -256,8 +256,7 @@ namespace neolib
         {
             if (&aOther == this)
                 return *this;
-            iObject = aOther.detach();
-            iReferenceCounted = aOther.reference_counted();
+            reset(aOther.detach(), aOther.reference_counted(), false);
             return *this;
         }
         ref_ptr& operator=(const abstract_type& aOther)
@@ -276,8 +275,7 @@ namespace neolib
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr& operator=(ref_ptr<Interface2>&& aOther)
         {
-            iObject = aOther.detach();
-            iReferenceCounted = aOther.reference_counted();
+            reset(aOther.detach(), aOther.reference_counted(), false);
             return *this;
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
@@ -308,12 +306,12 @@ namespace neolib
                 return iObject->reference_count();
             return 0;
         }
-        void reset(abstract_t<Interface>* aObject, bool aReferenceCounted = true) override
+        void reset(abstract_t<Interface>* aObject = nullptr, bool aReferenceCounted = true, bool aAddRef = true) override
         {
             Interface* compatibleObject = dynamic_cast<Interface*>(aObject);
             if (aObject != nullptr && compatibleObject == nullptr)
                 throw std::bad_cast();
-            reset<Interface>(compatibleObject, aReferenceCounted);
+            reset<Interface>(compatibleObject, aReferenceCounted, aAddRef);
         }
         Interface* release() override
         {
@@ -351,7 +349,7 @@ namespace neolib
         }
     public:
         template <typename Interface2 = Interface, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
-        void reset(Interface2* aObject = nullptr, bool aReferenceCounted = true)
+        void reset(Interface2* aObject = nullptr, bool aReferenceCounted = true, bool aAddRef = true)
         {
             if (iObject == aObject)
                 return;
@@ -364,7 +362,7 @@ namespace neolib
             }
             iObject = aObject;
             iReferenceCounted = aReferenceCounted;
-            if (valid() && iReferenceCounted)
+            if (valid() && iReferenceCounted && aAddRef)
                 iObject->add_ref();
         }
     private:
@@ -438,7 +436,7 @@ namespace neolib
         {
             return 0;
         }
-        void reset(abstract_t<Interface>* aObject = nullptr, bool = false) override
+        void reset(abstract_t<Interface>* aObject = nullptr, bool = false, bool = false) override
         {
             weak_ref_ptr copy(*this);
             update_control_block(aObject);
@@ -481,7 +479,7 @@ namespace neolib
             return *ptr();
         }
     private:
-        void update_control_block(Interface* aObject)
+        void update_control_block(abstract_t<Interface>* aObject)
         {
             auto controlBlock = aObject != nullptr ? &(*aObject).control_block() : nullptr;
             if (iControlBlock != controlBlock)
