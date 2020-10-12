@@ -139,8 +139,12 @@ namespace neolib
         {
             std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             for (auto& e : iEvents)
+            {
+                if (!e.callback->valid())
+                    continue;
                 if (&e.callback->event() == &aCallback->event() && e.callback->identity() == aCallback->identity())
                     return {};
+            }
         }
         return add(std::move(aCallback), aTransaction);
     }
