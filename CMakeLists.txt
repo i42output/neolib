@@ -50,6 +50,10 @@ target_include_directories(neolib PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINA
 # dependencies
 find_package(Threads REQUIRED)
 target_link_libraries(neolib PUBLIC Threads::Threads)
+if (WIN32)
+	set(Boost_USE_STATIC_LIBS   ON)
+	set(Boost_USE_STATIC_RUNTIME ON)
+endif()
 find_package(Boost COMPONENTS chrono filesystem system REQUIRED)
 target_link_libraries(neolib PUBLIC Boost::chrono)
 target_link_libraries(neolib PRIVATE Boost::filesystem Boost::system)
