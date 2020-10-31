@@ -37,57 +37,38 @@
 
 #include <neolib/neolib.hpp>
 #include <ostream>
-#include <neolib/app/i_logger.hpp>
+#include <neolib/app/logger.hpp>
 
 namespace neolib
 {
     namespace logger
     {
         template <typename CharT, typename Traits = std::char_traits<CharT>>
-        class basic_ostream_logger : public i_logger
+        class basic_ostream_logger : public logger
         {
         public:
             basic_ostream_logger(std::basic_ostream<CharT, Traits>& aStream) :
                 iStream{ aStream }
             {
             }
+            ~basic_ostream_logger()
+            {
+                {
+                    std::unique_lock<std::mutex> lk(commit_signal_mutex());
+                    set_destroying();
+                }
+                commit();
+            }
         public:
-            severity filter() const override
+            using logger::commit;
+        protected:
+            void commit(buffer_t const& aBuffer) override
             {
-                return iFilterSeverity;
-            }
-            void set_filter(severity aSeverity) override
-            {
-                iFilterSeverity = aSeverity;
-            }
-        public:
-            i_logger& operator<<(severity aSeverity) override
-            {
-                iMessageSeverity = aSeverity;
-                return *this;
-            }
-            i_logger& operator<<(i_string const& aMessage) override
-            {
-                if (iMessageSeverity >= iFilterSeverity)
-                    iStream << aMessage.to_std_string_view();
-                return *this;
-            }
-            i_logger& operator<<(endl_t) override
-            {
-                if (iMessageSeverity >= iFilterSeverity)
-                    iStream << std::endl;
-                return *this;
-            }
-            i_logger& operator<<(flush_t) override
-            {
-                if (iMessageSeverity >= iFilterSeverity)
-                    iStream << std::flush;
-                return *this;
+                std::lock_guard<std::recursive_mutex> lg{ mutex() };
+                iStream << aBuffer << std::flush;
             }
         private:
             std::basic_ostream<CharT, Traits>& iStream;
-            severity iFilterSeverity = severity::Info;
-            severity iMessageSeverity = severity::Info;
         };
 
         using ostream_logger = basic_ostream_logger<char>;

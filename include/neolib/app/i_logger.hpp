@@ -57,23 +57,85 @@ namespace neolib
         const endl_t endl;
         const flush_t flush;
 
+        class client_logger_buffers
+        {
+        protected:
+            typedef std::ostringstream buffer_t;
+        private:
+            typedef std::map<std::thread::id, buffer_t> buffer_list_t;
+        public:
+            static client_logger_buffers& instance()
+            {
+                static client_logger_buffers sIntance;
+                return sIntance;
+            }
+        public:
+            buffer_t& buffer()
+            {
+                std::lock_guard<std::recursive_mutex> lg{ mutex() };
+                thread_local struct cleanup
+                {
+                    client_logger_buffers& parent;
+                    ~cleanup()
+                    {
+                        std::lock_guard<std::recursive_mutex> lg{ parent.mutex() };
+                        parent.buffers().erase(std::this_thread::get_id());
+                    }
+                } cleanup{ *this };
+                return iBuffers[std::this_thread::get_id()];
+            }
+            buffer_list_t& buffers()
+            {
+                return iBuffers;
+            }
+        private:
+            std::recursive_mutex& mutex() const
+            {
+                return iMutex;
+            }
+        private:
+            mutable std::recursive_mutex iMutex;
+            buffer_list_t iBuffers;
+        };
+
         class i_logger
         {
         public:
             virtual ~i_logger() = default;
         public:
-            virtual severity filter() const = 0;
-            virtual void set_filter(severity aSeverity) = 0;
+            virtual void create_logging_thread() = 0;
+        public:
+            virtual severity filter_severity() const = 0;
+            virtual void set_filter_severity(severity aSeverity) = 0;
         public:
             virtual i_logger& operator<<(severity aSeverity) = 0;
-            virtual i_logger& operator<<(i_string const& aMessage) = 0;
-            virtual i_logger& operator<<(endl_t) = 0;
-            virtual i_logger& operator<<(flush_t) = 0;
         public:
-            i_logger& operator<<(std::string const& aMessage)
+            i_logger& operator<<(endl_t)
             {
-                return (*this) << string{ aMessage };
+                auto& buffer = client_logger_buffers::instance().buffer();
+                buffer << std::endl;
+                flush(string{ buffer.str() });
+                buffer.str({});
+                return *this;
             }
+            i_logger& operator<<(flush_t)
+            {
+                auto& buffer = client_logger_buffers::instance().buffer();
+                buffer << std::flush;
+                flush(string{ buffer.str() });
+                buffer.str({});
+                return *this;
+            }
+            template<typename T>
+            i_logger& operator<<(T const& aValue)
+            {
+                client_logger_buffers::instance().buffer() << aValue;
+                return *this;
+            }
+        public:
+            virtual void commit() = 0;
+        protected:
+            virtual void flush(i_string const& aMessage) = 0;
         };
     }
 }
