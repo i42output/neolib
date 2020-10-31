@@ -28,6 +28,11 @@ int main()
         neolog::ostream_logger<1> logger1{ std::cerr };
         logger1.create_logging_thread();
 
+        /* std::ofstream ofs{ "c:\\tmp\\test.log" };
+        neolog::ostream_logger<2> logger2{ ofs };
+        logger2.create_logging_thread();
+        logger0.copy_to(logger2); */
+
         std::thread thread1{ [&]()
         {
             output_log_messages(logger0, logger1);
