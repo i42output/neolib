@@ -64,7 +64,6 @@ namespace neolib
         protected:
             void commit(buffer_t const& aBuffer) override
             {
-                std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 iStream << aBuffer << std::flush;
             }
         private:

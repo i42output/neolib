@@ -124,16 +124,21 @@ namespace neolib
             {
                 if (!iLoggingThread || std::this_thread::get_id() == iLoggingThread->get_id())
                 {
-                    std::lock_guard<std::recursive_mutex> lg{ mutex() };
-                    for (auto& entry : buffers())
+                    thread_local buffer_t tempBuffer;
                     {
-                        auto& buffer = entry.second;
-                        if (!buffer.empty())
+                        std::lock_guard<std::recursive_mutex> lg{ mutex() };
+                        for (auto& entry : buffers())
                         {
-                            commit(buffer);
-                            buffer = {};
+                            auto& buffer = entry.second;
+                            if (!buffer.empty())
+                            {
+                                tempBuffer += buffer;
+                                buffer.clear();
+                            }
                         }
                     }
+                    commit(tempBuffer);
+                    tempBuffer.clear();
                 }
                 else
                 {
