@@ -25,7 +25,7 @@ int main()
         logger0.set_filter_severity(neolog::severity::Debug);
         logger0.create_logging_thread();
 
-        neolog::ostream_logger<1> logger1{ std::cout };
+        neolog::ostream_logger<1> logger1{ std::cerr };
         logger1.create_logging_thread();
 
         std::thread thread1{ [&]()
