@@ -47,6 +47,7 @@ namespace neolib
 {
     namespace logger
     {
+        template <std::size_t Instance = 0>
         class logger : public i_logger, public lifetime<>
         {
         protected:
