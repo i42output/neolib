@@ -23,10 +23,11 @@ void output_log_messages(neolog::i_logger& logger0, neolog::i_logger& logger1)
 {
     for (int i = 0; i < 1000; ++i)
     {
-        logger0 << Red << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] This is a test of info severity message" << neolog::endl;
-        logger0 << Green << neolog::severity::Debug << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] This is a test of debug severity message" << neolog::endl;
-        logger0 << Blue << neolog::severity::Debug << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] This is a test of debug severity message (2 of 2)" << neolog::endl;
-        logger0 << Black << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] This is a test of info severity message via abstract interface" << neolog::endl;
+        logger0 << Red << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (Red) Info message 1" << neolog::endl;
+        logger0 << Green << neolog::severity::Debug << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (Green) Debug message 1" << neolog::endl;
+        logger0 << Blue << neolog::severity::Debug << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (Blue) Debug message 2" << neolog::endl;
+        logger0 << Black << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (Black) Info message 2" << neolog::endl;
+        logger0 << White << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (White) Info message 3" << neolog::endl;
 
         logger1 << neolog::severity::Info << "**** LOGGER1 MESSAGE ****" << neolog::endl;
     }
@@ -54,7 +55,8 @@ int main()
         logger0.register_category(category::Black);
         logger0.register_category(category::White);
 
-        logger0.disable_category(category::Blue);
+        logger0.disable_category(category::White);
+        // logger2.enable_category(category::White);
 
         std::thread thread1{ [&]()
         {
