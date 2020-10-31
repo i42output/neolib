@@ -127,8 +127,11 @@ namespace neolib
                     for (auto& entry : buffers())
                     {
                         auto& buffer = entry.second;
-                        commit(buffer);
-                        buffer = {};
+                        if (!buffer.empty())
+                        {
+                            commit(buffer);
+                            buffer = {};
+                        }
                     }
                 }
                 else
