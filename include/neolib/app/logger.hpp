@@ -37,6 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <map>
+#include <vector>
 #include <thread>
 #include <mutex>
 #include <string>
@@ -50,10 +51,12 @@ namespace neolib
         template <std::size_t Instance = 0>
         class logger : public i_logger, public lifetime<>
         {
+            typedef logger<Instance> self_type;
         protected:
             typedef std::string buffer_t;
         private:
             typedef std::map<std::thread::id, buffer_t> buffer_list_t;
+            typedef std::vector<i_logger*> copy_list_t;
         public:
             logger()
             {
@@ -63,6 +66,16 @@ namespace neolib
                 set_destroying();
             }
         public:
+            void copy_to(i_logger& aLogger) override
+            {
+                std::lock_guard<std::recursive_mutex> lg{ mutex() };
+                copies().push_back(&aLogger);
+            }
+            void cancel_copy_to(i_logger& aLogger) override
+            {
+                std::lock_guard<std::recursive_mutex> lg{ mutex() };
+                copies().erase(std::remove(copies().begin(), copies().end(), &aLogger), copies().end());
+            }
             void create_logging_thread()
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
@@ -94,6 +107,8 @@ namespace neolib
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 set_message_severity(aSeverity);
+                for (auto& copy : copies())
+                    (*copy) << aSeverity;
                 return *this;
             }
         protected:
@@ -112,12 +127,12 @@ namespace neolib
             severity message_severity() const
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
-                return iMessageSeverity;
+                return message_severity_ref();
             }
             void set_message_severity(severity aMessageSeverity)
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
-                iMessageSeverity = aMessageSeverity;
+                message_severity_ref() = aMessageSeverity;
             }
         public:
             void commit() override
@@ -157,6 +172,8 @@ namespace neolib
                         buffer() += aMessage.to_std_string_view();
                         notify = true;
                     }
+                    for (auto& copy : copies())
+                        copy->flush(aMessage);
                 }
                 if (notify)
                     commit_signal().notify_one();
@@ -164,6 +181,15 @@ namespace neolib
         protected:
             virtual void commit(buffer_t const& aBuffer) = 0;
         private:
+            severity const& message_severity_ref() const
+            {
+                thread_local severity tMessageSeverity = severity::Info;
+                return tMessageSeverity;
+            }
+            severity& message_severity_ref()
+            {
+                return const_cast<severity&>(const_cast<self_type const&>(*this).message_severity_ref());
+            }
             bool any_available() const
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
@@ -202,14 +228,22 @@ namespace neolib
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 return iBuffers;
             }
+            copy_list_t const& copies() const
+            {
+                return iCopies;
+            }
+            copy_list_t& copies()
+            {
+                return iCopies;
+            }
         private:
             mutable std::recursive_mutex iMutex;
             mutable std::mutex iCommitSignalMutex;
             mutable std::condition_variable iCommitSignal;
             std::optional<std::thread> iLoggingThread;
             severity iFilterSeverity = severity::Info;
-            severity iMessageSeverity = severity::Info;
             mutable buffer_list_t iBuffers;
+            copy_list_t iCopies;
         };
     }
 }

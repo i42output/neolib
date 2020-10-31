@@ -100,9 +100,13 @@ namespace neolib
 
         class i_logger
         {
+            template <std::size_t Instance>
+            friend class logger;
         public:
             virtual ~i_logger() = default;
         public:
+            virtual void copy_to(i_logger& aLogger) = 0;
+            virtual void cancel_copy_to(i_logger& aLogger) = 0;
             virtual void create_logging_thread() = 0;
         public:
             virtual severity filter_severity() const = 0;
