@@ -55,6 +55,7 @@ namespace neolib
         protected:
             typedef std::string buffer_t;
         private:
+            typedef std::map<category_id, std::pair<bool, std::string>> category_map_t;
             typedef std::map<std::thread::id, buffer_t> buffer_list_t;
             typedef std::vector<i_logger*> copy_list_t;
         public:
@@ -102,6 +103,38 @@ namespace neolib
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 iFilterSeverity = aSeverity;
             }
+            using i_logger::register_category;
+            using i_logger::category_enabled;
+            using i_logger::enable_category;
+            using i_logger::disable_category;
+            void register_category(category_id aId, i_string const& aName)
+            {
+                iCategories[aId].first = true;
+                iCategories[aId].second = aName.to_std_string_view();
+                for (auto& copy : copies())
+                    copy->register_category(aId, aName);
+            }
+            bool category_enabled(category_id aId) const
+            {
+                auto existing = iCategories.find(aId);
+                return existing != iCategories.end() && existing->second.first;
+            }
+            void enable_category(category_id aId)
+            {
+                auto existing = iCategories.find(aId);
+                if (existing != iCategories.end())
+                    existing->second.first = true;
+                for (auto& copy : copies())
+                    copy->enable_category(aId);
+            }
+            void disable_category(category_id aId)
+            {
+                auto existing = iCategories.find(aId);
+                if (existing != iCategories.end())
+                    existing->second.first = false;
+                for (auto& copy : copies())
+                    copy->disable_category(aId);
+            }
         public:
             i_logger& operator<<(severity aSeverity) override
             {
@@ -109,6 +142,14 @@ namespace neolib
                 set_message_severity(aSeverity);
                 for (auto& copy : copies())
                     (*copy) << aSeverity;
+                return *this;
+            }
+            i_logger& operator<<(category_id aCategory) override
+            {
+                std::lock_guard<std::recursive_mutex> lg{ mutex() };
+                set_message_category(aCategory);
+                for (auto& copy : copies())
+                    (*copy) << aCategory;
                 return *this;
             }
         protected:
@@ -133,6 +174,22 @@ namespace neolib
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 message_severity_ref() = aMessageSeverity;
+            }
+            category_id message_category() const
+            {
+                std::lock_guard<std::recursive_mutex> lg{ mutex() };
+                return message_category_ref();
+            }
+            void set_message_category(category_id aid)
+            {
+                std::lock_guard<std::recursive_mutex> lg{ mutex() };
+                message_category_ref() = aid;
+            }
+            bool message_category_enabled() const
+            {
+                std::lock_guard<std::recursive_mutex> lg{ mutex() };
+                auto existing = iCategories.find(message_category());
+                return existing == iCategories.end() || existing->second.first;
             }
         public:
             void commit() override
@@ -167,7 +224,7 @@ namespace neolib
                 bool notify = false;
                 { 
                     std::scoped_lock lg{ mutex(), commit_signal_mutex() };
-                    if (message_severity() >= filter_severity())
+                    if (message_severity() >= filter_severity() && message_category_enabled())
                     {
                         buffer() += aMessage.to_std_string_view();
                         notify = true;
@@ -189,6 +246,15 @@ namespace neolib
             severity& message_severity_ref()
             {
                 return const_cast<severity&>(const_cast<self_type const&>(*this).message_severity_ref());
+            }
+            category_id const& message_category_ref() const
+            {
+                thread_local category_id tMessageCategory = {};
+                return tMessageCategory;
+            }
+            category_id& message_category_ref()
+            {
+                return const_cast<category_id&>(const_cast<self_type const&>(*this).message_category_ref());
             }
             bool any_available() const
             {
@@ -242,6 +308,7 @@ namespace neolib
             mutable std::condition_variable iCommitSignal;
             std::optional<std::thread> iLoggingThread;
             severity iFilterSeverity = severity::Info;
+            category_map_t iCategories;
             mutable buffer_list_t iBuffers;
             copy_list_t iCopies;
         };

@@ -51,6 +51,18 @@ namespace neolib
             Fatal       = 4
         };
 
+        enum class category_id : int32_t {};
+
+        struct category
+        {
+            category_id id;
+            template <typename IdType>
+            category(IdType aId) :
+                id{ static_cast<category_id>(aId) }
+            {
+            }
+        };
+
         struct endl_t {};
         struct flush_t {};
 
@@ -111,9 +123,39 @@ namespace neolib
         public:
             virtual severity filter_severity() const = 0;
             virtual void set_filter_severity(severity aSeverity) = 0;
+            virtual void register_category(category_id aId, i_string const& aName) = 0;
+            virtual bool category_enabled(category_id aId) const = 0;
+            virtual void enable_category(category_id aId) = 0;
+            virtual void disable_category(category_id aId) = 0;
         public:
             virtual i_logger& operator<<(severity aSeverity) = 0;
+            virtual i_logger& operator<<(category_id aCategory) = 0;
         public:
+            template <typename IdType>
+            void register_category(IdType aId, std::string const& aName = {})
+            {
+                register_category(static_cast<category_id>(aId), string{ aName });
+            }
+            template <typename IdType>
+            void category_enabled(IdType aId)
+            {
+                category_enabled(static_cast<category_id>(aId));
+            }
+            template <typename IdType>
+            void enable_category(IdType aId)
+            {
+                enable_category(static_cast<category_id>(aId));
+            }
+            template <typename IdType>
+            void disable_category(IdType aId)
+            {
+                disable_category(static_cast<category_id>(aId));
+            }
+        public:
+            i_logger& operator<<(category aCategory)
+            {
+                return (*this) << aCategory.id;
+            }
             i_logger& operator<<(endl_t)
             {
                 auto& buffer = client_logger_buffers::instance().buffer();

@@ -4,14 +4,29 @@
 
 namespace neolog = neolib::logger;
 
+enum class category : int32_t
+{
+    Red,
+    Green,
+    Blue,
+    Black,
+    White
+};
+
+const neolog::category Red{ category::Red };
+const neolog::category Green{ category::Green };
+const neolog::category Blue{ category::Blue };
+const neolog::category Black{ category::Black };
+const neolog::category White{ category::White };
+
 void output_log_messages(neolog::i_logger& logger0, neolog::i_logger& logger1)
 {
     for (int i = 0; i < 1000; ++i)
     {
-        logger0 << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] This is a test of info severity message" << neolog::endl;
-        logger0 << neolog::severity::Debug << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] This is a test of debug severity message" << neolog::endl;
-        logger0 << neolog::severity::Debug << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] This is a test of debug severity message (2 of 2)" << neolog::endl;
-        logger0 << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] This is a test of info severity message via abstract interface" << neolog::endl;
+        logger0 << Red << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] This is a test of info severity message" << neolog::endl;
+        logger0 << Green << neolog::severity::Debug << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] This is a test of debug severity message" << neolog::endl;
+        logger0 << Blue << neolog::severity::Debug << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] This is a test of debug severity message (2 of 2)" << neolog::endl;
+        logger0 << Black << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] This is a test of info severity message via abstract interface" << neolog::endl;
 
         logger1 << neolog::severity::Info << "**** LOGGER1 MESSAGE ****" << neolog::endl;
     }
@@ -32,6 +47,14 @@ int main()
         neolog::ostream_logger<2> logger2{ ofs };
         logger2.create_logging_thread();
         logger0.copy_to(logger2); */
+
+        logger0.register_category(category::Red);
+        logger0.register_category(category::Green);
+        logger0.register_category(category::Blue);
+        logger0.register_category(category::Black);
+        logger0.register_category(category::White);
+
+        logger0.disable_category(category::Blue);
 
         std::thread thread1{ [&]()
         {
