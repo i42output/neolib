@@ -41,6 +41,7 @@
 #include <thread>
 #include <mutex>
 #include <string>
+#include <memory>
 #include <neolib/core/lifetime.hpp>
 #include <neolib/app/i_logger.hpp>
 
@@ -155,7 +156,7 @@ namespace neolib
             void set_formatter(i_formatter& aFormatter)
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
-                iFormatter = &aFormatter;
+                iFormatter = std::shared_ptr<i_formatter>{ std::shared_ptr<i_formatter>{}, &aFormatter };
             }
             void clear_formatter()
             {
@@ -344,7 +345,7 @@ namespace neolib
             std::optional<std::thread> iLoggingThread;
             severity iFilterSeverity = severity::Info;
             category_map_t iCategories;
-            i_formatter* iFormatter = nullptr;
+            std::shared_ptr<i_formatter> iFormatter;
             mutable buffer_list_t iBuffers;
             copy_list_t iCopies;
         };
