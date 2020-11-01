@@ -56,17 +56,10 @@ namespace neolib
             }
             ~basic_ostream_logger()
             {
-                commit();
-                wait();
-                {
-                    std::unique_lock<std::mutex> lk(commit_signal_mutex());
-                    set_destroying();
-                }
-                join_logging_thread();
+                finalize();
             }
         public:
-            using base_type::commit;
-            using base_type::wait;
+            using base_type::finalize;
         protected:
             void commit(buffer_t const& aBuffer) override
             {
@@ -74,9 +67,6 @@ namespace neolib
             }
         protected:
             using base_type::set_destroying;
-        protected:
-            using base_type::commit_signal_mutex;
-            using base_type::join_logging_thread;
         private:
             std::basic_ostream<CharT, Traits>& iStream;
         };

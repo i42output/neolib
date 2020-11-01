@@ -80,9 +80,16 @@ namespace neolib
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 copies().erase(std::remove(copies().begin(), copies().end(), &aLogger), copies().end());
             }
-            void create_logging_thread()
+            bool has_logging_thread() const override
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
+                return iLoggingThread != std::nullopt;
+            }
+            void create_logging_thread() override
+            {
+                std::lock_guard<std::recursive_mutex> lg{ mutex() };
+                if (iLoggingThread)
+                    throw logging_thread_already_created();
                 iLoggingThread.emplace([&]()
                 {
                     for(;;)
@@ -261,10 +268,13 @@ namespace neolib
             }
             void wait() const override
             {
-                while(any_available())
+                if (iLoggingThread)
                 {
-                    using namespace std::chrono_literals;               
-                    std::this_thread::sleep_for(10ms);
+                    while (any_available())
+                    {
+                        using namespace std::chrono_literals;
+                        std::this_thread::sleep_for(10ms);
+                    }
                 }
             }
         protected:
@@ -295,6 +305,25 @@ namespace neolib
             }
         protected:
             virtual void commit(buffer_t const& aBuffer) = 0;
+        protected:
+            void finalize()
+            {
+                if (has_logging_thread())
+                {
+                    wait();
+                    {
+                        std::unique_lock<std::mutex> lk(commit_signal_mutex());
+                        set_destroying();
+                    }
+                    commit_signal().notify_one();
+                    join_logging_thread();
+                }
+                else
+                {
+                    set_destroying();
+                    commit();
+                }
+            }
         private:
             severity const& message_severity_ref() const
             {

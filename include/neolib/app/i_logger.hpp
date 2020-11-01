@@ -131,12 +131,14 @@ namespace neolib
             template <std::size_t Instance>
             friend class logger;
         public:
+            struct logging_thread_already_created : std::logic_error { logging_thread_already_created() : std::logic_error{ "neolib::logger::i_logger::logging_thread_already_created" } {} };
             struct no_formatter : std::logic_error { no_formatter() : std::logic_error{ "neolib::logger::i_logger::no_formatter" } {} };
         public:
             virtual ~i_logger() = default;
         public:
             virtual void copy_to(i_logger& aLogger) = 0;
             virtual void cancel_copy_to(i_logger& aLogger) = 0;
+            virtual bool has_logging_thread() const = 0;
             virtual void create_logging_thread() = 0;
         public:
             virtual severity filter_severity() const = 0;
