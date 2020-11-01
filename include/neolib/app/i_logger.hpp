@@ -36,6 +36,8 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <functional>
+#include <sstream>
 #include <neolib/core/string.hpp>
 
 namespace neolib
@@ -111,10 +113,22 @@ namespace neolib
             buffer_list_t iBuffers;
         };
 
+        class i_logger;
+
+        class i_formatter
+        {
+        public:
+            virtual ~i_formatter() = default;
+        public:
+            virtual void format(i_logger const& aLogger, i_string const& aUnformattedMessage, i_string& aFormattedMessage) = 0;
+        };
+
         class i_logger
         {
             template <std::size_t Instance>
             friend class logger;
+        public:
+            struct no_formatter : std::logic_error { no_formatter() : std::logic_error{ "neolib::logger::i_logger::no_formatter" } {} };
         public:
             virtual ~i_logger() = default;
         public:
@@ -128,6 +142,11 @@ namespace neolib
             virtual bool category_enabled(category_id aId) const = 0;
             virtual void enable_category(category_id aId) = 0;
             virtual void disable_category(category_id aId) = 0;
+        public:
+            virtual bool has_formatter() const = 0;
+            virtual i_formatter& formatter() const = 0;
+            virtual void set_formatter(i_formatter& aFormatter) = 0;
+            virtual void clear_formatter() = 0;
         public:
             virtual i_logger& operator<<(severity aSeverity) = 0;
             virtual i_logger& operator<<(category_id aCategory) = 0;
@@ -183,6 +202,24 @@ namespace neolib
             virtual void commit() = 0;
         protected:
             virtual void flush(i_string const& aMessage) = 0;
+        };
+
+        class formatter : public i_formatter
+        {
+        public:
+            typedef std::function<void(i_logger const&, i_string const&, i_string&)> function_type;
+        public:
+            formatter(function_type aFormattingFunction) :
+                iFormattingFunction{ aFormattingFunction }
+            {
+            }
+        public:
+            void format(i_logger const& aLogger, i_string const& aUnformattedMessage, i_string& aFormattedMessage) override
+            {
+                iFormattingFunction(aLogger, aUnformattedMessage, aFormattedMessage);
+            }
+        private:
+            function_type iFormattingFunction;
         };
     }
 }

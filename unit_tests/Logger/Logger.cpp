@@ -29,7 +29,7 @@ void output_log_messages(neolog::i_logger& logger0, neolog::i_logger& logger1)
         logger0 << Black << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (Black) Info message 2" << neolog::endl;
         logger0 << White << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (White) Info message 3" << neolog::endl;
 
-        logger1 << neolog::severity::Info << "**** LOGGER1 MESSAGE ****" << neolog::endl;
+        logger1 << neolog::severity::Info << "LOGGER1 MESSAGE" << neolog::flush;
     }
 }
 
@@ -43,6 +43,14 @@ int main()
 
         neolog::ostream_logger<1> logger1{ std::cerr };
         logger1.create_logging_thread();
+
+        neolog::formatter logger1Formmatter{ [](neolog::i_logger const& /* aLogger */, neolib::i_string const& aUnformattedMessage, neolib::i_string& aFormattedMessage)
+        {
+            thread_local std::string temp;
+            temp = "OoOo " + aUnformattedMessage.to_std_string() + " oOoO\n";
+            aFormattedMessage = temp;
+        } };
+        logger1.set_formatter(logger1Formmatter);
 
         /* std::ofstream ofs{ "c:\\tmp\\test.log" };
         neolog::ostream_logger<2> logger2{ ofs };
