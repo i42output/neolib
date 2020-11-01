@@ -36,13 +36,19 @@
 #pragma once
 
 #include <stdexcept>
-#include <unordered_map>
-#include <typeindex>
+#include <atomic>
 #include <neolib/core/uuid.hpp>
 
 namespace neolib::services
 {
     struct service_not_found : std::logic_error { service_not_found() : std::logic_error{ "neolib::services::service_not_found" } {} };
+
+    template <typename Service>
+    inline std::atomic<Service*>& service_ptr()
+    {
+        static std::atomic<Service*> sService;
+        return sService;
+    }
 
     class i_service
     {
@@ -81,31 +87,24 @@ namespace neolib::services
     inline void unregister_service(Service& aService)
     {
         get_service_provider().unregister_service(Service::iid());
-    }
-
-    inline std::unordered_map<std::type_index, i_service*>& service_cache()
-    {
-        static std::unordered_map<std::type_index, i_service*> sCache;
-        return sCache;
+        service_ptr<Service>() = nullptr;
     }
 
     template <typename Service>
     Service& start_service();
 
     template <typename Service>
-    inline void teardown_service();
+    void teardown_service();
 
     template <typename Service>
     inline Service& service()
     {
-        auto& cache = service_cache();
-        auto existing = cache.find(std::type_index(typeid(Service)));
-        if (existing != cache.end())
-            return static_cast<Service&>(*existing->second);
+        if (service_ptr<Service>() != nullptr)
+            return *service_ptr<Service>();
         if (!service_registered<Service>())
             register_service(start_service<Service>());
-        cache[std::type_index(typeid(Service))] = &get_service_provider().service(Service::iid());
-        return static_cast<Service&>(*cache[std::type_index(typeid(Service))]);
+        service_ptr<Service>() = static_cast<Service*>(&get_service_provider().service(Service::iid()));
+        return *service_ptr<Service>();
     }
 }
 
