@@ -42,13 +42,14 @@ namespace neolib
 {
     namespace logger
     {
-        enum class severity
+        enum class severity : uint32_t
         {
-            Debug       = 0,
-            Info        = 1,
-            Warning     = 2,
-            Critical    = 3,
-            Fatal       = 4
+            Trace       = 0,
+            Debug       = 1,
+            Info        = 2,
+            Warning     = 3,
+            Error       = 4,
+            Fatal       = 5
         };
 
         enum class category_id : int32_t {};
