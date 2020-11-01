@@ -148,8 +148,8 @@ namespace neolib
             virtual void set_formatter(i_formatter& aFormatter) = 0;
             virtual void clear_formatter() = 0;
         public:
-            virtual uint32_t line_id() const = 0;
-            virtual void reset_line_id(uint32_t aLineId = 1u) = 0;
+            virtual uint64_t line_id() const = 0;
+            virtual void reset_line_id(uint64_t aLineId = 1ull) = 0;
         public:
             virtual i_logger& operator<<(severity aSeverity) = 0;
             virtual i_logger& operator<<(category_id aCategory) = 0;

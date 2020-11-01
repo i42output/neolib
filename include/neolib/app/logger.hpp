@@ -164,11 +164,11 @@ namespace neolib
                 iFormatter = nullptr;
             }
         public:
-            uint32_t line_id() const override
+            uint64_t line_id() const override
             {
                 return iLineId;
             }
-            void reset_line_id(uint32_t aLineId = 1u) override
+            void reset_line_id(uint64_t aLineId = 1ull) override
             {
                 iLineId = aLineId;
             }
@@ -356,7 +356,7 @@ namespace neolib
             severity iFilterSeverity = severity::Info;
             category_map_t iCategories;
             std::shared_ptr<i_formatter> iFormatter;
-            uint32_t iLineId = 1u;
+            uint64_t iLineId = 1ull;
             mutable buffer_list_t iBuffers;
             copy_list_t iCopies;
         };
