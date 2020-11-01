@@ -403,7 +403,7 @@ namespace neolib
             mutable buffer_list_t iBuffers;
             copy_list_t iCopies;
         public:
-            static uuid const& iid() { static uuid const sIid{ Instance ^ 0x442ed95b, 0x215c, 0x4b6e, 0xb945, { 0xf9, 0x61, 0xc4, 0xca, 0xd8, 0x7b } }; return sIid; }
+            static uuid const& iid() { static uuid const sIid{ Instance + 0x442ed95b, 0x215c, 0x4b6e, 0xb945, { 0xf9, 0x61, 0xc4, 0xca, 0xd8, 0x7b } }; return sIid; }
         };
     }
 }
