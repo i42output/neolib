@@ -39,6 +39,7 @@
 #include <functional>
 #include <sstream>
 #include <neolib/core/string.hpp>
+#include <neolib/app/services.hpp>
 
 namespace neolib
 {
@@ -126,7 +127,7 @@ namespace neolib
             virtual void format(i_logger const& aLogger, i_string const& aUnformattedMessage, i_string& aFormattedMessage) = 0;
         };
 
-        class i_logger
+        class i_logger : public i_service
         {
             template <std::size_t Instance>
             friend class logger;

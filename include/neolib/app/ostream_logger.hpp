@@ -43,7 +43,7 @@ namespace neolib
 {
     namespace logger
     {
-        template <std::size_t Instance = 0, typename CharT = char, typename Traits = std::char_traits<CharT>>
+        template <uint32_t Instance = 0u, typename CharT = char, typename Traits = std::char_traits<CharT>>
         class basic_ostream_logger : public logger<Instance>
         {
             typedef logger<Instance> base_type;
@@ -71,7 +71,7 @@ namespace neolib
             std::basic_ostream<CharT, Traits>& iStream;
         };
 
-        template <std::size_t Instance = 0>
+        template <uint32_t Instance = 0u>
         using ostream_logger = basic_ostream_logger<Instance>;
     }
 }
