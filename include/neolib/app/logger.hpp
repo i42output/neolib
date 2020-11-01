@@ -182,6 +182,7 @@ namespace neolib
                 iLineId = aLineId;
             }
         public:
+            using i_logger::operator<<;
             i_logger& operator<<(severity aSeverity) override
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
