@@ -65,6 +65,12 @@ namespace neolib::services
         virtual i_service& service(uuid aServiceIid) = 0;
         virtual void register_service(i_service& aService, uuid aServiceIid) = 0;
         virtual void unregister_service(uuid aServiceIid) = 0;
+    public:
+        template <typename Service>
+        Service& service()
+        {
+            return static_cast<Service&>(service(Service::iid()));
+        }
     };
 
     i_service_provider& allocate_service_provider();
@@ -81,6 +87,7 @@ namespace neolib::services
     inline void register_service(Service& aService)
     {
         get_service_provider().register_service(aService, Service::iid());
+        service_ptr<Service>() = &aService;
     }
 
     template <typename Service>
@@ -103,7 +110,8 @@ namespace neolib::services
             return *service_ptr<Service>();
         if (!service_registered<Service>())
             register_service(start_service<Service>());
-        service_ptr<Service>() = static_cast<Service*>(&get_service_provider().service(Service::iid()));
+        else
+            service_ptr<Service>() = &get_service_provider().service<Service>();
         return *service_ptr<Service>();
     }
 }
