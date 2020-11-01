@@ -206,6 +206,7 @@ namespace neolib
             }
         public:
             virtual void commit() = 0;
+            virtual void wait() const = 0;
         protected:
             virtual void flush(i_string const& aMessage) = 0;
         };

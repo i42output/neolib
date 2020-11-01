@@ -46,6 +46,9 @@ namespace neolib
         template <std::size_t Instance = 0, typename CharT = char, typename Traits = std::char_traits<CharT>>
         class basic_ostream_logger : public logger<Instance>
         {
+            typedef logger<Instance> base_type;
+        protected:
+            using typename base_type::buffer_t;
         public:
             basic_ostream_logger(std::basic_ostream<CharT, Traits>& aStream) :
                 iStream{ aStream }
@@ -53,19 +56,27 @@ namespace neolib
             }
             ~basic_ostream_logger()
             {
+                commit();
+                wait();
                 {
                     std::unique_lock<std::mutex> lk(commit_signal_mutex());
                     set_destroying();
                 }
-                commit();
+                join_logging_thread();
             }
         public:
-            using logger::commit;
+            using base_type::commit;
+            using base_type::wait;
         protected:
             void commit(buffer_t const& aBuffer) override
             {
                 iStream << aBuffer << std::flush;
             }
+        protected:
+            using base_type::set_destroying;
+        protected:
+            using base_type::commit_signal_mutex;
+            using base_type::join_logging_thread;
         private:
             std::basic_ostream<CharT, Traits>& iStream;
         };

@@ -41,9 +41,6 @@ int main()
         logger0.set_filter_severity(neolog::severity::Debug);
         logger0.create_logging_thread();
 
-        neolog::ostream_logger<1> logger1{ std::cerr };
-        logger1.create_logging_thread();
-
         neolog::formatter logger1Formmatter{ [](neolog::i_logger const& aLogger, neolib::i_string const& aUnformattedMessage, neolib::i_string& aFormattedMessage)
         {
             thread_local std::ostringstream temp;
@@ -51,6 +48,10 @@ int main()
             aFormattedMessage = temp.str();
             temp.str({});
         } };
+
+        neolog::ostream_logger<1> logger1{ std::cerr };
+        logger1.create_logging_thread();
+
         logger1.set_formatter(logger1Formmatter);
 
         /* std::ofstream ofs{ "c:\\tmp\\test.log" };

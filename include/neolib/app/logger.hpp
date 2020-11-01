@@ -40,8 +40,10 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 #include <string>
 #include <memory>
+#include <chrono>
 #include <neolib/core/lifetime.hpp>
 #include <neolib/app/i_logger.hpp>
 
@@ -202,6 +204,11 @@ namespace neolib
             {
                 return iCommitSignal;
             }
+            void join_logging_thread()
+            {
+                if (iLoggingThread)
+                    iLoggingThread->join();
+            }
             severity message_severity() const
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
@@ -250,9 +257,14 @@ namespace neolib
                     tempBuffer.clear();
                 }
                 else
-                {
                     commit_signal().notify_one();
-                    iLoggingThread->join();
+            }
+            void wait() const override
+            {
+                while(any_available())
+                {
+                    using namespace std::chrono_literals;               
+                    std::this_thread::sleep_for(10ms);
                 }
             }
         protected:
@@ -324,6 +336,7 @@ namespace neolib
                     {
                         if (!parentDestroyed)
                         {
+                            parent.wait();
                             std::lock_guard<std::recursive_mutex> lg{ parent.mutex() };
                             parent.buffers().erase(std::this_thread::get_id());
                         }
