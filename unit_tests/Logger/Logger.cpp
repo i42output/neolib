@@ -44,11 +44,12 @@ int main()
         neolog::ostream_logger<1> logger1{ std::cerr };
         logger1.create_logging_thread();
 
-        neolog::formatter logger1Formmatter{ [](neolog::i_logger const& /* aLogger */, neolib::i_string const& aUnformattedMessage, neolib::i_string& aFormattedMessage)
+        neolog::formatter logger1Formmatter{ [](neolog::i_logger const& aLogger, neolib::i_string const& aUnformattedMessage, neolib::i_string& aFormattedMessage)
         {
-            thread_local std::string temp;
-            temp = "OoOo " + aUnformattedMessage.to_std_string() + " oOoO\n";
-            aFormattedMessage = temp;
+            thread_local std::ostringstream temp;
+            temp << "[" << aLogger.line_id() << "] OoOo " << aUnformattedMessage.to_std_string_view() << " oOoO" << std::endl;
+            aFormattedMessage = temp.str();
+            temp.str({});
         } };
         logger1.set_formatter(logger1Formmatter);
 

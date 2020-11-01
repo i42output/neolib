@@ -164,6 +164,15 @@ namespace neolib
                 iFormatter = nullptr;
             }
         public:
+            uint32_t line_id() const override
+            {
+                return iLineId;
+            }
+            void reset_line_id(uint32_t aLineId = 1u) override
+            {
+                iLineId = aLineId;
+            }
+        public:
             i_logger& operator<<(severity aSeverity) override
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
@@ -263,6 +272,7 @@ namespace neolib
                             buffer() += tempFormattedMessage.to_std_string_view();
                             tempFormattedMessage.clear();
                         }
+                        ++iLineId;
                         notify = true;
                     }
                     for (auto& copy : copies())
@@ -346,6 +356,7 @@ namespace neolib
             severity iFilterSeverity = severity::Info;
             category_map_t iCategories;
             std::shared_ptr<i_formatter> iFormatter;
+            uint32_t iLineId = 1u;
             mutable buffer_list_t iBuffers;
             copy_list_t iCopies;
         };
