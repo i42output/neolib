@@ -66,6 +66,9 @@ namespace neolib
             }
         };
 
+        typedef uint64_t line_id_t;
+        constexpr line_id_t DefaultInitialLineId = 1ull;
+
         struct endl_t {};
         struct flush_t {};
 
@@ -148,8 +151,8 @@ namespace neolib
             virtual void set_formatter(i_formatter& aFormatter) = 0;
             virtual void clear_formatter() = 0;
         public:
-            virtual uint64_t line_id() const = 0;
-            virtual void reset_line_id(uint64_t aLineId = 1ull) = 0;
+            virtual line_id_t line_id() const = 0;
+            virtual void reset_line_id(line_id_t aLineId = DefaultInitialLineId) = 0;
         public:
             virtual i_logger& operator<<(severity aSeverity) = 0;
             virtual i_logger& operator<<(category_id aCategory) = 0;
