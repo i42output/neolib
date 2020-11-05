@@ -59,7 +59,7 @@ namespace neolib
             typedef std::string buffer_t;
         private:
             typedef std::map<category_id, std::pair<bool, std::string>> category_map_t;
-            typedef std::map<std::thread::id, buffer_t> buffer_list_t;
+            typedef std::map<std::thread::id, std::pair<std::shared_ptr<buffer_t>, std::shared_ptr<buffer_t>>> buffer_list_t;
             typedef std::vector<i_logger*> copy_list_t;
         public:
             logger()
@@ -248,17 +248,22 @@ namespace neolib
             {
                 if (!iLoggingThread || std::this_thread::get_id() == iLoggingThread->get_id())
                 {
-                    thread_local buffer_t tempBuffer;
                     {
                         std::lock_guard<std::recursive_mutex> lg{ mutex() };
                         for (auto& entry : buffers())
                         {
-                            auto& buffer = entry.second;
-                            if (!buffer.empty())
-                            {
-                                tempBuffer += buffer;
-                                buffer.clear();
-                            }
+                            auto& buffers = entry.second;
+                            std::swap(buffers.first, buffers.second);
+                        }
+                    }
+                    thread_local buffer_t tempBuffer;
+                    for (auto& entry : buffers())
+                    {
+                        auto& buffer = *entry.second.second;
+                        if (!buffer.empty())
+                        {
+                            tempBuffer += buffer;
+                            buffer.clear();
                         }
                     }
                     commit(tempBuffer);
@@ -349,7 +354,7 @@ namespace neolib
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 for (auto& entry : buffers())
                 {
-                    auto& buffer = entry.second;
+                    auto& buffer = *entry.second.first;
                     if (!buffer.empty())
                         return true;
                 }
@@ -372,7 +377,11 @@ namespace neolib
                         }
                     }
                 } cleanup{ *this, *this };
-                return iBuffers[std::this_thread::get_id()];
+                auto existing = iBuffers.find(std::this_thread::get_id());
+                if (existing != iBuffers.end())
+                    return *existing->second.first;
+                existing = iBuffers.insert(buffer_list_t::value_type{ std::this_thread::get_id(), buffer_list_t::mapped_type{ std::make_shared<buffer_t>(), std::make_shared<buffer_t>() } }).first;
+                return *existing->second.first;
             }
             buffer_t& buffer()
             {
