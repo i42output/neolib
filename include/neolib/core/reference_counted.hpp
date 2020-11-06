@@ -215,7 +215,7 @@ namespace neolib
                 iManagedPtr->add_ref();
         }
         ref_ptr(abstract_type const& aOther) :
-            iPtr{ aOther.ptr() }, iManagedPtr{ aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
+            iPtr{ static_cast<Interface*>(aOther.ptr()) }, iManagedPtr{ static_cast<Interface*>(aOther.managed_ptr()) }, iReferenceCounted{ aOther.reference_counted() }
         {
         }
         ref_ptr(i_discoverable& aDiscoverable) :
@@ -226,20 +226,20 @@ namespace neolib
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr(ref_ptr<Interface2> const& aOther) :
-            iPtr{ aOther.ptr() }, iManagedPtr{ aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
+            iPtr{ static_cast<Interface*>(aOther.ptr()) }, iManagedPtr{ static_cast<Interface*>(aOther.managed_ptr()) }, iReferenceCounted{ aOther.reference_counted() }
         {
             if (iManagedPtr && iReferenceCounted)
                 iManagedPtr->add_ref();
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr(ref_ptr<Interface2>&& aOther) :
-            iPtr{ aOther.ptr() }, iManagedPtr { aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
+            iPtr{ static_cast<Interface*>(aOther.ptr()) }, iManagedPtr { static_cast<Interface*>(aOther.managed_ptr()) }, iReferenceCounted{ aOther.reference_counted() }
         {
             aOther.detach();
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr(i_ref_ptr<Interface2> const& aOther) :
-            iPtr{ aOther.ptr() }, iManagedPtr{ aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
+            iPtr{ static_cast<Interface*>(aOther.ptr()) }, iManagedPtr{ static_cast<Interface*>(aOther.managed_ptr()) }, iReferenceCounted{ aOther.reference_counted() }
         {
             if (iManagedPtr && iReferenceCounted)
                 iManagedPtr->add_ref();
@@ -273,8 +273,8 @@ namespace neolib
             if (&aOther == this)
                 return *this;
             reset();
-            iPtr = aOther.ptr();
-            iManagedPtr = aOther.managed_ptr();
+            iPtr = static_cast<Interface*>(aOther.ptr());
+            iManagedPtr = static_cast<Interface*>(aOther.managed_ptr());
             iReferenceCounted = aOther.reference_counted();
             if (iManagedPtr && iReferenceCounted)
                 iManagedPtr->add_ref();
@@ -289,8 +289,8 @@ namespace neolib
         ref_ptr& operator=(ref_ptr<Interface2>&& aOther)
         {
             reset();
-            iPtr = aOther.ptr();
-            iManagedPtr = aOther.managed_ptr();
+            iPtr = static_cast<Interface*>(aOther.ptr());
+            iManagedPtr = static_cast<Interface*>(aOther.managed_ptr());
             iReferenceCounted = aOther.reference_counted();
             aOther.detach();
             return *this;
@@ -299,8 +299,8 @@ namespace neolib
         ref_ptr& operator=(i_ref_ptr<Interface2> const& aOther)
         {
             reset();
-            iPtr = aOther.ptr();
-            iManagedPtr = aOther.managed_ptr();
+            iPtr = static_cast<Interface*>(aOther.ptr());
+            iManagedPtr = static_cast<Interface*>(aOther.managed_ptr());
             iReferenceCounted = aOther.reference_counted();
             if (iManagedPtr && iReferenceCounted)
                 iManagedPtr->add_ref();
