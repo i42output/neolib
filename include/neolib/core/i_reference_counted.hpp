@@ -79,6 +79,7 @@ namespace neolib
         typedef i_ref_ptr<Interface> self_type;
     public:
         struct no_object : std::logic_error { no_object() : std::logic_error("i_ref_ptr::no_object") {} };
+        struct no_managed_object : std::logic_error { no_managed_object() : std::logic_error("i_ref_ptr::no_managed_object") {} };
         struct interface_not_found : std::logic_error { interface_not_found() : std::logic_error("i_ref_ptr::interface_not_found") {} };
     public:
         typedef self_type abstract_type;
@@ -91,7 +92,9 @@ namespace neolib
         virtual Interface* release() = 0;
         virtual Interface* detach() = 0;
         virtual bool valid() const = 0;
+        virtual bool managing() const = 0;
         virtual Interface* ptr() const = 0;
+        virtual Interface* managed_ptr() const = 0;
         virtual Interface* operator->() const = 0;
         virtual Interface& operator*() const = 0;
         i_ref_ptr& operator=(const i_ref_ptr& aOther) { reset(aOther.ptr(), aOther.reference_counted()); return *this; }

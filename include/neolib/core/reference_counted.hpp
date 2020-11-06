@@ -50,19 +50,19 @@ namespace neolib
         template <typename, bool>
         friend class reference_counted;
     public:
-        ref_control_block(i_reference_counted& aObject) :
-            iObject{ &aObject },
+        ref_control_block(i_reference_counted& aManagedPtr) :
+            iManagedPtr{ &aManagedPtr },
             iWeakUseCount{ 0 }
         {
         }
     public:
         i_reference_counted* ptr() const override
         {
-            return iObject;
+            return iManagedPtr;
         }
         bool expired() const override
         {
-            return iObject == nullptr;
+            return iManagedPtr == nullptr;
         }
         int32_t weak_use_count() const override
         {
@@ -80,12 +80,12 @@ namespace neolib
     private:
         void set_expired()
         {
-            iObject = nullptr;
+            iManagedPtr = nullptr;
             if (weak_use_count() <= 0)
                 delete this;
         }
     private:
-        i_reference_counted* iObject;
+        i_reference_counted* iManagedPtr;
         int32_t iWeakUseCount;
     };
 
@@ -182,106 +182,128 @@ namespace neolib
     public:
         typedef i_ref_ptr<abstract_t<Interface>> abstract_type;
         typedef typename abstract_type::no_object no_object;
+        typedef typename abstract_type::no_managed_object no_managed_object;
         typedef typename abstract_type::interface_not_found interface_not_found;
     public:
-        ref_ptr(Interface* aObject = nullptr) :
-            iObject{ aObject }, iReferenceCounted{ true }
+        ref_ptr(Interface* aManagedPtr = nullptr) :
+            iPtr{ aManagedPtr }, iManagedPtr{ aManagedPtr }, iReferenceCounted{ true }
         {
-            if (valid())
-                iObject->add_ref();
+            if (iManagedPtr)
+                iManagedPtr->add_ref();
         }
-        ref_ptr(Interface& aObject) :
-            iObject{ &aObject }, iReferenceCounted{ aObject.reference_count() > 0 }
+        ref_ptr(Interface& aManagedPtr) :
+            iPtr{ &aManagedPtr }, iManagedPtr{ &aManagedPtr }, iReferenceCounted{ aManagedPtr.reference_count() > 0 }
         {
-            if (reference_counted())
-                iObject->add_ref();
+            if (iReferenceCounted)
+                iManagedPtr->add_ref();
         }
         ref_ptr(const ref_ptr& aOther) :
-            iObject{ aOther.ptr() }, iReferenceCounted{ aOther.reference_counted() }
+            iPtr{ aOther.ptr() }, iManagedPtr{ aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
-            if (valid() && iReferenceCounted)
-                iObject->add_ref();
+            if (iManagedPtr && iReferenceCounted)
+                iManagedPtr->add_ref();
         }
         ref_ptr(ref_ptr&& aOther) :
-            iObject{ aOther.detach() }, iReferenceCounted{ aOther.reference_counted() }
+            iPtr{ aOther.ptr() }, iManagedPtr { aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
+            aOther.detach();
+        }
+        ref_ptr(const ref_ptr& aOther, Interface* aPtr) :
+            iPtr{ aPtr }, iManagedPtr{ aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
+        {
+            if (iManagedPtr && iReferenceCounted)
+                iManagedPtr->add_ref();
         }
         ref_ptr(const abstract_type& aOther) :
-            iObject{ nullptr }, iReferenceCounted{ true }
+            iPtr{ aOther.ptr() }, iManagedPtr{ aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
-            reset(aOther.ptr(), aOther.reference_counted());
         }
         ref_ptr(i_discoverable& aDiscoverable) :
-            iObject{ nullptr }, iReferenceCounted{ true }
+            iPtr{ nullptr }, iManagedPtr { nullptr }, iReferenceCounted{ true }
         {
             if (!aDiscoverable.discover(*this))
                 throw interface_not_found();
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr(const ref_ptr<Interface2>& aOther) :
-            iObject{ aOther.ptr() }, iReferenceCounted{ aOther.reference_counted() }
+            iPtr{ aOther.ptr() }, iManagedPtr{ aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
-            if (valid() && iReferenceCounted)
-                iObject->add_ref();
+            if (iManagedPtr && iReferenceCounted)
+                iManagedPtr->add_ref();
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr(ref_ptr<Interface2>&& aOther) :
-            iObject{ aOther.detach() }, iReferenceCounted{ aOther.reference_counted() }
+            iPtr{ aOther.ptr() }, iManagedPtr { aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
+            aOther.detach();
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr(const i_ref_ptr<Interface2>& aOther) :
-            iObject{ aOther.ptr() }, iReferenceCounted{ aOther.reference_counted() }
+            iPtr{ aOther.ptr() }, iManagedPtr{ aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
-            if (valid() && iReferenceCounted)
-                iObject->add_ref();
+            if (iManagedPtr && iReferenceCounted)
+                iManagedPtr->add_ref();
         }
         ~ref_ptr()
         {
-            if (valid() && iReferenceCounted)
+            if (iManagedPtr && iReferenceCounted)
             {
-                auto releasingObject = iObject;
-                iObject = nullptr;
+                auto releasingObject = iManagedPtr;
+                iManagedPtr = nullptr;
                 releasingObject->release();
             }
         }
         ref_ptr& operator=(const ref_ptr& aOther)
         {
-            if (&aOther == this)
-                return *this;
-            reset(aOther.ptr(), aOther.reference_counted());
-            return *this;
+            return (*this = static_cast<abstract_type&>(aOther));
         }
         ref_ptr& operator=(ref_ptr&& aOther)
         {
             if (&aOther == this)
                 return *this;
-            reset(aOther.detach(), aOther.reference_counted(), false);
+            reset();
+            iPtr = aOther.ptr();
+            iManagedPtr = aOther.managed_ptr();
+            iReferenceCounted = aOther.reference_counted();
+            aOther.detach();
             return *this;
         }
         ref_ptr& operator=(const abstract_type& aOther)
         {
             if (&aOther == this)
                 return *this;
-            reset(aOther.ptr(), aOther.reference_counted());
+            reset();
+            iPtr = aOther.ptr();
+            iManagedPtr = aOther.managed_ptr();
+            iReferenceCounted = aOther.reference_counted();
+            if (iManagedPtr && iReferenceCounted)
+                iManagedPtr->add_ref();
             return *this;
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr& operator=(const ref_ptr<Interface2>& aOther)
         {
-            reset(aOther.ptr(), aOther.reference_counted());
-            return *this;
+            return (*this = static_cast<const i_ref_ptr<Interface2>&>(aOther));
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr& operator=(ref_ptr<Interface2>&& aOther)
         {
-            reset(aOther.detach(), aOther.reference_counted(), false);
+            reset();
+            iPtr = aOther.ptr();
+            iManagedPtr = aOther.managed_ptr();
+            iReferenceCounted = aOther.reference_counted();
+            aOther.detach();
             return *this;
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr& operator=(const i_ref_ptr<Interface2>& aOther)
         {
-            reset(aOther.ptr(), aOther.reference_counted());
+            reset();
+            iPtr = aOther.ptr();
+            iManagedPtr = aOther.managed_ptr();
+            iReferenceCounted = aOther.reference_counted();
+            if (iManagedPtr && iReferenceCounted)
+                iManagedPtr->add_ref();
             return *this;
         }
         ref_ptr& operator=(nullptr_t)
@@ -302,71 +324,82 @@ namespace neolib
         }
         int32_t reference_count() const override
         {
-            if (valid() && iReferenceCounted)
-                return iObject->reference_count();
+            if (iManagedPtr && iReferenceCounted)
+                return iManagedPtr->reference_count();
             return 0;
         }
-        void reset(abstract_t<Interface>* aObject = nullptr, bool aReferenceCounted = true, bool aAddRef = true) override
+        void reset(abstract_t<Interface>* aManagedPtr = nullptr, bool aReferenceCounted = true, bool aAddRef = true) override
         {
-            Interface* compatibleObject = dynamic_cast<Interface*>(aObject);
-            if (aObject != nullptr && compatibleObject == nullptr)
+            Interface* compatibleObject = dynamic_cast<Interface*>(aManagedPtr);
+            if (aManagedPtr != nullptr && compatibleObject == nullptr)
                 throw std::bad_cast();
             reset<Interface>(compatibleObject, aReferenceCounted, aAddRef);
         }
         Interface* release() override
         {
-            if (iObject == nullptr)
-                throw no_object();
-            Interface* releasedObject = static_cast<Interface*>(iObject->release_and_take_ownership());
-            iObject = nullptr;
+            if (iManagedPtr == nullptr)
+                throw no_managed_object();
+            Interface* releasedObject = static_cast<Interface*>(iManagedPtr->release_and_take_ownership());
+            iManagedPtr = nullptr;
             return releasedObject;
         }
         Interface* detach() override
         {
-            auto detached = iObject;
-            iObject = nullptr;
+            auto detached = iManagedPtr;
+            iManagedPtr = nullptr;
+            iReferenceCounted = false;
             return detached;
         }
         bool valid() const override
         {
-            return iObject != nullptr;
+            return iPtr != nullptr;
+        }
+        bool managing() const override
+        {
+            return iManagedPtr != nullptr;
         }
         Interface* ptr() const override
         {
-            return iObject;
+            return iPtr;
+        }
+        Interface* managed_ptr() const override
+        {
+            return iManagedPtr;
         }
         Interface* operator->() const override
         {
-            if (iObject == nullptr)
+            if (iPtr == nullptr)
                 throw no_object();
-            return iObject;
+            return iPtr;
         }
         Interface& operator*() const override
         {
-            if (iObject == nullptr)
+            if (iPtr == nullptr)
                 throw no_object();
-            return *iObject;
+            return *iPtr;
         }
     public:
         template <typename Interface2 = Interface, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
-        void reset(Interface2* aObject = nullptr, bool aReferenceCounted = true, bool aAddRef = true)
+        void reset(Interface2* aManagedPtr = nullptr, bool aReferenceCounted = true, bool aAddRef = true)
         {
-            if (iObject == aObject)
+            if (iManagedPtr == aManagedPtr)
                 return;
-            ref_ptr copy(*this);
-            if (valid() && iReferenceCounted)
+            ref_ptr copy{ *this };
+            if (iManagedPtr && iReferenceCounted)
             {
-                auto releasingObject = iObject;
-                iObject = nullptr;
+                auto releasingObject = iManagedPtr;
+                iManagedPtr = nullptr;
                 releasingObject->release();
             }
-            iObject = aObject;
+            iManagedPtr = aManagedPtr;
+            iPtr = aManagedPtr;
             iReferenceCounted = aReferenceCounted;
-            if (valid() && iReferenceCounted && aAddRef)
-                iObject->add_ref();
+            if (iManagedPtr && iReferenceCounted && aAddRef)
+                iManagedPtr->add_ref();
         }
     private:
-        Interface* iObject;
+        Interface* iPtr;
+        Interface* iManagedPtr;
         bool iReferenceCounted;
     };
 
@@ -381,15 +414,15 @@ namespace neolib
         typedef typename base_type::bad_release bad_release;
         typedef typename base_type::wrong_object wrong_object;
     public:
-        weak_ref_ptr(Interface* aObject = nullptr) :
+        weak_ref_ptr(Interface* aManagedPtr = nullptr) :
             iControlBlock{ nullptr }
         {
-            update_control_block(aObject);
+            update_control_block(aManagedPtr);
         }
-        weak_ref_ptr(Interface& aObject) :
+        weak_ref_ptr(Interface& aManagedPtr) :
             iControlBlock{ nullptr }
         {
-            update_control_block(&aObject);
+            update_control_block(&aManagedPtr);
         }
         weak_ref_ptr(const weak_ref_ptr& aOther) :
             iControlBlock{ nullptr }
@@ -399,7 +432,7 @@ namespace neolib
         weak_ref_ptr(const i_ref_ptr<abstract_t<Interface>>& aOther) :
             iControlBlock{ nullptr }
         {
-            update_control_block(aOther.ptr());
+            update_control_block(aOther.managed_ptr());
         }
         weak_ref_ptr(i_discoverable& aDiscoverable) :
             iControlBlock{ nullptr }
@@ -419,7 +452,7 @@ namespace neolib
         }
         weak_ref_ptr& operator=(const i_ref_ptr<abstract_t<Interface>>& aOther)
         {
-            reset(aOther.ptr());
+            reset(aOther.managed_ptr());
             return *this;
         }
         weak_ref_ptr& operator=(nullptr_t)
@@ -436,10 +469,10 @@ namespace neolib
         {
             return 0;
         }
-        void reset(abstract_t<Interface>* aObject = nullptr, bool = false, bool = false) override
+        void reset(abstract_t<Interface>* aManagedPtr = nullptr, bool = false, bool = false) override
         {
             weak_ref_ptr copy(*this);
-            update_control_block(aObject);
+            update_control_block(aManagedPtr);
         }
         Interface* release() override
         {
@@ -458,6 +491,10 @@ namespace neolib
         {
             return ptr() != nullptr;
         }
+        bool managing() const
+        {
+            return valid();
+        }
         bool expired() const override
         {
             return iControlBlock == nullptr || iControlBlock->expired();
@@ -465,6 +502,10 @@ namespace neolib
         Interface* ptr() const override
         {
             return static_cast<Interface*>(iControlBlock != nullptr ? iControlBlock->ptr() : nullptr);
+        }
+        Interface* managed_ptr() const override
+        {
+            return ptr();
         }
         Interface* operator->() const override
         {
@@ -479,9 +520,9 @@ namespace neolib
             return *ptr();
         }
     private:
-        void update_control_block(abstract_t<Interface>* aObject)
+        void update_control_block(abstract_t<Interface>* aManagedPtr)
         {
-            auto controlBlock = aObject != nullptr ? &(*aObject).control_block() : nullptr;
+            auto controlBlock = aManagedPtr != nullptr ? &(*aManagedPtr).control_block() : nullptr;
             if (iControlBlock != controlBlock)
             {
                 if (iControlBlock != nullptr)
