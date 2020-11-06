@@ -197,7 +197,7 @@ namespace neolib
             if (iReferenceCounted)
                 iManagedPtr->add_ref();
         }
-        ref_ptr(const ref_ptr& aOther) :
+        ref_ptr(ref_ptr const& aOther) :
             iPtr{ aOther.ptr() }, iManagedPtr{ aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
             if (iManagedPtr && iReferenceCounted)
@@ -208,13 +208,13 @@ namespace neolib
         {
             aOther.detach();
         }
-        ref_ptr(const ref_ptr& aOther, Interface* aPtr) :
+        ref_ptr(ref_ptr const& aOther, Interface* aPtr) :
             iPtr{ aPtr }, iManagedPtr{ aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
             if (iManagedPtr && iReferenceCounted)
                 iManagedPtr->add_ref();
         }
-        ref_ptr(const abstract_type& aOther) :
+        ref_ptr(abstract_type const& aOther) :
             iPtr{ aOther.ptr() }, iManagedPtr{ aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
         }
@@ -225,7 +225,7 @@ namespace neolib
                 throw interface_not_found();
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
-        ref_ptr(const ref_ptr<Interface2>& aOther) :
+        ref_ptr(ref_ptr<Interface2> const& aOther) :
             iPtr{ aOther.ptr() }, iManagedPtr{ aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
             if (iManagedPtr && iReferenceCounted)
@@ -238,7 +238,7 @@ namespace neolib
             aOther.detach();
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
-        ref_ptr(const i_ref_ptr<Interface2>& aOther) :
+        ref_ptr(i_ref_ptr<Interface2> const& aOther) :
             iPtr{ aOther.ptr() }, iManagedPtr{ aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
             if (iManagedPtr && iReferenceCounted)
@@ -253,9 +253,9 @@ namespace neolib
                 releasingObject->release();
             }
         }
-        ref_ptr& operator=(const ref_ptr& aOther)
+        ref_ptr& operator=(ref_ptr const& aOther)
         {
-            return (*this = static_cast<abstract_type&>(aOther));
+            return (*this = static_cast<abstract_type const&>(aOther));
         }
         ref_ptr& operator=(ref_ptr&& aOther)
         {
@@ -268,7 +268,7 @@ namespace neolib
             aOther.detach();
             return *this;
         }
-        ref_ptr& operator=(const abstract_type& aOther)
+        ref_ptr& operator=(abstract_type const& aOther)
         {
             if (&aOther == this)
                 return *this;
@@ -281,9 +281,9 @@ namespace neolib
             return *this;
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
-        ref_ptr& operator=(const ref_ptr<Interface2>& aOther)
+        ref_ptr& operator=(ref_ptr<Interface2> const& aOther)
         {
-            return (*this = static_cast<const i_ref_ptr<Interface2>&>(aOther));
+            return (*this = static_cast<i_ref_ptr<Interface2> const&>(aOther));
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr& operator=(ref_ptr<Interface2>&& aOther)
@@ -296,7 +296,7 @@ namespace neolib
             return *this;
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
-        ref_ptr& operator=(const i_ref_ptr<Interface2>& aOther)
+        ref_ptr& operator=(i_ref_ptr<Interface2> const& aOther)
         {
             reset();
             iPtr = aOther.ptr();
@@ -445,12 +445,12 @@ namespace neolib
             if (iControlBlock != nullptr)
                 iControlBlock->release();
         }
-        weak_ref_ptr& operator=(const weak_ref_ptr& aOther)
+        weak_ref_ptr& operator=(weak_ref_ptr const& aOther)
         {
             reset(aOther.ptr());
             return *this;
         }
-        weak_ref_ptr& operator=(const i_ref_ptr<abstract_t<Interface>>& aOther)
+        weak_ref_ptr& operator=(i_ref_ptr<abstract_t<Interface>> const& aOther)
         {
             reset(aOther.managed_ptr());
             return *this;
@@ -537,7 +537,7 @@ namespace neolib
     };
 
     template <typename Interface>
-    inline bool operator<(const ref_ptr<Interface>& lhs, const ref_ptr<Interface>& rhs)
+    inline bool operator<(ref_ptr<Interface> const& lhs, ref_ptr<Interface> const& rhs)
     {
         if (lhs == rhs)
             return false;
