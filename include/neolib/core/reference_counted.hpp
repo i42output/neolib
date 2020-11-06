@@ -260,6 +260,7 @@ namespace neolib
             if (&aOther == this)
                 return *this;
             reset(aOther.ptr(), aOther.managed_ptr(), aOther.reference_counted());
+            return *this;
         }
         ref_ptr& operator=(ref_ptr&& aOther)
         {
