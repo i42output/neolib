@@ -88,7 +88,9 @@ namespace neolib
     public:
         virtual bool reference_counted() const = 0;
         virtual int32_t reference_count() const = 0;
-        virtual void reset(Interface* aObject = nullptr, bool aReferenceCounted = true, bool aAddRef = true) = 0;
+        virtual void reset() = 0;
+        virtual void reset(Interface* aPtr, bool aReferenceCounted = true, bool aAddRef = true) = 0;
+        virtual void reset(Interface* aPtr, Interface* aManagedPtr, bool aReferenceCounted = true, bool aAddRef = true) = 0;
         virtual Interface* release() = 0;
         virtual Interface* detach() = 0;
         virtual bool valid() const = 0;
