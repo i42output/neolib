@@ -220,6 +220,12 @@ namespace neolib
         {
             aOther.detach();
         }
+        ref_ptr(abstract_type const& aOther, Interface* aPtr) noexcept :
+            iPtr{ aPtr }, iManagedPtr{ aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
+        {
+            if (iManagedPtr && iReferenceCounted)
+                iManagedPtr->add_ref();
+        }
         ref_ptr(abstract_type const& aOther) noexcept :
             iPtr{ static_cast<Interface*>(aOther.ptr()) }, iManagedPtr{ static_cast<Interface*>(aOther.managed_ptr()) }, iReferenceCounted{ aOther.reference_counted() }
         {
@@ -248,6 +254,26 @@ namespace neolib
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr(i_ref_ptr<Interface2> const& aOther) noexcept :
             iPtr{ static_cast<Interface*>(aOther.ptr()) }, iManagedPtr{ static_cast<Interface*>(aOther.managed_ptr()) }, iReferenceCounted{ aOther.reference_counted() }
+        {
+            if (iManagedPtr && iReferenceCounted)
+                iManagedPtr->add_ref();
+        }
+        template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
+        ref_ptr(ref_ptr<Interface2> const& aOther, Interface* aPtr) noexcept :
+            iPtr{ aPtr }, iManagedPtr{ static_cast<Interface*>(aOther.managed_ptr()) }, iReferenceCounted{ aOther.reference_counted() }
+        {
+            if (iManagedPtr && iReferenceCounted)
+                iManagedPtr->add_ref();
+        }
+        template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
+        ref_ptr(ref_ptr<Interface2>&& aOther, Interface* aPtr) noexcept :
+            iPtr{ aPtr }, iManagedPtr{ static_cast<Interface*>(aOther.managed_ptr()) }, iReferenceCounted{ aOther.reference_counted() }
+        {
+            aOther.detach();
+        }
+        template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
+        ref_ptr(i_ref_ptr<Interface2> const& aOther, Interface* aPtr) noexcept :
+            iPtr{ aPtr }, iManagedPtr{ static_cast<Interface*>(aOther.managed_ptr()) }, iReferenceCounted{ aOther.reference_counted() }
         {
             if (iManagedPtr && iReferenceCounted)
                 iManagedPtr->add_ref();
