@@ -267,6 +267,7 @@ namespace neolib
             if (&aOther == this)
                 return *this;
             reset(aOther.ptr(), aOther.managed_ptr(), aOther.reference_counted(), false);
+            aOther.detach();
             return *this;
         }
         ref_ptr& operator=(abstract_type const& aOther)
