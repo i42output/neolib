@@ -580,7 +580,7 @@ namespace neolib
     }
 
     template <class T, class U>
-    ref_ptr<T> static_pointer_cast(const ref_ptr<U>& aOther) noexcept 
+    ref_ptr<T> static_pointer_cast(ref_ptr<U> const& aOther) noexcept 
     {
         auto const ptr = static_cast<typename ref_ptr<T>::element_type*>(aOther.ptr());
         return ref_ptr<T>{ aOther, ptr };
@@ -594,7 +594,7 @@ namespace neolib
     }
 
     template <class T, class U>
-    ref_ptr<T> const_pointer_cast(const ref_ptr<U>& aOther) noexcept 
+    ref_ptr<T> const_pointer_cast(ref_ptr<U> const& aOther) noexcept 
     {
         auto const ptr = const_cast<typename ref_ptr<T>::element_type*>(aOther.ptr());
         return ref_ptr<T>{ aOther, ptr };
@@ -608,7 +608,7 @@ namespace neolib
     }
 
     template <class T, class U>
-    ref_ptr<T> reinterpret_pointer_cast(const ref_ptr<U>& aOther) noexcept 
+    ref_ptr<T> reinterpret_pointer_cast(ref_ptr<U> const& aOther) noexcept 
     {
         auto const ptr = reinterpret_cast<typename ref_ptr<T>::element_type*>(aOther.ptr());
         return ref_ptr<T>{ aOther, ptr };
@@ -639,4 +639,63 @@ namespace neolib
         return ref_ptr<T>{};
     }
 
+    template <class T, class U>
+    ref_ptr<T> static_pointer_cast(i_ref_ptr<U> const& aOther) noexcept
+    {
+        auto const ptr = static_cast<typename ref_ptr<T>::element_type*>(aOther.ptr());
+        return ref_ptr<T>{ aOther, ptr };
+    }
+
+    template <class T, class U>
+    ref_ptr<T> static_pointer_cast(i_ref_ptr<U>&& aOther) noexcept
+    {
+        auto const ptr = static_cast<typename ref_ptr<T>::element_type*>(aOther.ptr());
+        return ref_ptr<T>{ std::move(aOther), ptr };
+    }
+
+    template <class T, class U>
+    ref_ptr<T> const_pointer_cast(i_ref_ptr<U> const& aOther) noexcept
+    {
+        auto const ptr = const_cast<typename ref_ptr<T>::element_type*>(aOther.ptr());
+        return ref_ptr<T>{ aOther, ptr };
+    }
+
+    template <class T, class U>
+    ref_ptr<T> const_pointer_cast(i_ref_ptr<U>&& aOther) noexcept
+    {
+        auto const ptr = const_cast<typename ref_ptr<T>::element_type*>(aOther.ptr());
+        return ref_ptr<T>{ std::move(aOther), ptr };
+    }
+
+    template <class T, class U>
+    ref_ptr<T> reinterpret_pointer_cast(i_ref_ptr<U> const& aOther) noexcept
+    {
+        auto const ptr = reinterpret_cast<typename ref_ptr<T>::element_type*>(aOther.ptr());
+        return ref_ptr<T>{ aOther, ptr };
+    }
+
+    template <class T, class U>
+    ref_ptr<T> reinterpret_pointer_cast(i_ref_ptr<U>&& aOther) noexcept
+    {
+        auto const ptr = reinterpret_cast<typename ref_ptr<T>::element_type*>(aOther.ptr());
+        return ref_ptr<T>{ std::move(aOther), ptr };
+    }
+
+    template <class T, class U>
+    ref_ptr<T> dynamic_pointer_cast(i_ref_ptr<U> const& aOther) noexcept
+    {
+        auto const ptr = dynamic_cast<typename ref_ptr<T>::element_type*>(aOther.ptr());
+        if (ptr)
+            return ref_ptr<T>{ aOther, ptr };
+        return ref_ptr<T>{};
+    }
+
+    template <class T, class U>
+    ref_ptr<T> dynamic_pointer_cast(i_ref_ptr<U>&& aOther) noexcept
+    {
+        auto const ptr = dynamic_cast<typename ref_ptr<T>::element_type*>(aOther.ptr());
+        if (ptr)
+            return ref_ptr<T>{ std::move(aOther), ptr };
+        return ref_ptr<T>{};
+    }
 }
