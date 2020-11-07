@@ -47,10 +47,10 @@ namespace neolib
     public:
         virtual ~i_ref_control_block() = default;
     public:
-        virtual i_reference_counted* ptr() const = 0;
-        virtual bool expired() const = 0;
-        virtual int32_t weak_use_count() const = 0;
-        virtual void add_ref() = 0;
+        virtual i_reference_counted* ptr() const noexcept = 0;
+        virtual bool expired() const noexcept = 0;
+        virtual int32_t weak_use_count() const noexcept = 0;
+        virtual void add_ref() noexcept = 0;
         virtual void release() = 0;
     };
 
@@ -62,12 +62,12 @@ namespace neolib
     public:
         virtual ~i_reference_counted() = default;
     public:
-        virtual void add_ref() const = 0;
+        virtual void add_ref() const noexcept = 0;
         virtual void release() const = 0;
-        virtual int32_t reference_count() const = 0;
+        virtual int32_t reference_count() const noexcept = 0;
         virtual const i_reference_counted* release_and_take_ownership() const = 0;
         virtual i_reference_counted* release_and_take_ownership() = 0;
-        virtual void pin() const = 0;
+        virtual void pin() const noexcept = 0;
         virtual void unpin() const = 0;
     public:
         virtual i_ref_control_block& control_block() = 0;
@@ -86,65 +86,65 @@ namespace neolib
     public:
         virtual ~i_ref_ptr() = default;
     public:
-        virtual bool reference_counted() const = 0;
-        virtual int32_t reference_count() const = 0;
+        virtual bool reference_counted() const noexcept = 0;
+        virtual int32_t reference_count() const noexcept = 0;
         virtual void reset() = 0;
         virtual void reset(Interface* aPtr, bool aReferenceCounted = true, bool aAddRef = true) = 0;
         virtual void reset(Interface* aPtr, Interface* aManagedPtr, bool aReferenceCounted = true, bool aAddRef = true) = 0;
         virtual Interface* release() = 0;
         virtual Interface* detach() = 0;
-        virtual bool valid() const = 0;
-        virtual bool managing() const = 0;
-        virtual Interface* ptr() const = 0;
-        virtual Interface* managed_ptr() const = 0;
+        virtual bool valid() const noexcept = 0;
+        virtual bool managing() const noexcept = 0;
+        virtual Interface* ptr() const noexcept = 0;
+        virtual Interface* managed_ptr() const noexcept = 0;
         virtual Interface* operator->() const = 0;
         virtual Interface& operator*() const = 0;
         i_ref_ptr& operator=(const i_ref_ptr& aOther) { reset(aOther.ptr(), aOther.reference_counted()); return *this; }
         template <typename Interface2>
         i_ref_ptr& operator=(const i_ref_ptr<Interface2>& aOther) { reset(aOther.ptr(), aOther.reference_counted()); return *this; }
-        explicit operator bool() const { return valid(); }
-        bool operator==(nullptr_t) const { return !valid(); }
-        bool operator!=(nullptr_t) const { return valid(); }
+        explicit operator bool() const noexcept { return valid(); }
+        bool operator==(nullptr_t) const noexcept { return !valid(); }
+        bool operator!=(nullptr_t) const noexcept { return valid(); }
         template <typename Interface2>
-        bool operator==(const i_ref_ptr<Interface2>& aOther) const { return ptr() == aOther.ptr(); }
+        bool operator==(const i_ref_ptr<Interface2>& aOther) const noexcept { return ptr() == aOther.ptr(); }
         template <typename Interface2>
-        bool operator!=(const i_ref_ptr<Interface2>& aOther) const { return ptr() != aOther.ptr(); }
+        bool operator!=(const i_ref_ptr<Interface2>& aOther) const noexcept { return ptr() != aOther.ptr(); }
         template <typename Interface2>
-        bool operator<(const i_ref_ptr<Interface2>& aOther) const { return ptr() < aOther.ptr(); }
+        bool operator<(const i_ref_ptr<Interface2>& aOther) const noexcept { return ptr() < aOther.ptr(); }
     };
 
     template <typename Interface1, typename Interface2>
-    inline bool operator==(const i_ref_ptr<Interface1>& lhs, const Interface2* rhs)
+    inline bool operator==(const i_ref_ptr<Interface1>& lhs, const Interface2* rhs) noexcept
     {
         return static_cast<const abstract_t<Interface1>*>(lhs.ptr()) == static_cast<const abstract_t<Interface1>*>(rhs);
     }
 
     template <typename Interface1, typename Interface2>
-    inline bool operator==(const Interface2* lhs, const i_ref_ptr<Interface1>& rhs)
+    inline bool operator==(const Interface2* lhs, const i_ref_ptr<Interface1>& rhs) noexcept
     {
         return static_cast<const abstract_t<Interface1>*>(lhs) == static_cast<const abstract_t<Interface1>*>(rhs.ptr());
     }
 
     template <typename Interface1, typename Interface2>
-    inline bool operator!=(const i_ref_ptr<Interface1>& lhs, const Interface2* rhs)
+    inline bool operator!=(const i_ref_ptr<Interface1>& lhs, const Interface2* rhs) noexcept
     {
         return !(lhs == rhs);
     }
 
     template <typename Interface1, typename Interface2>
-    inline bool operator!=(const Interface2* lhs, const i_ref_ptr<Interface1>& rhs)
+    inline bool operator!=(const Interface2* lhs, const i_ref_ptr<Interface1>& rhs) noexcept
     {
         return !(lhs == rhs);
     }
 
     template <typename Interface1, typename Interface2>
-    inline bool operator<(const i_ref_ptr<Interface1>& lhs, const Interface2* rhs)
+    inline bool operator<(const i_ref_ptr<Interface1>& lhs, const Interface2* rhs) noexcept
     {
         return static_cast<const abstract_t<Interface1>*>(lhs.ptr()) < static_cast<const abstract_t<Interface1>*>(rhs);
     }
 
     template <typename Interface1, typename Interface2>
-    inline bool operator<(const Interface2* lhs, const i_ref_ptr<Interface1>& rhs)
+    inline bool operator<(const Interface2* lhs, const i_ref_ptr<Interface1>& rhs) noexcept
     {
         return static_cast<const abstract_t<Interface1>*>(lhs) < static_cast<const abstract_t<Interface1>*>(rhs.ptr());
     }
@@ -156,6 +156,6 @@ namespace neolib
         struct bad_release : std::logic_error { bad_release() : std::logic_error("i_weak_ref_ptr::bad_release") {} };
         struct wrong_object : std::logic_error { wrong_object() : std::logic_error("i_weak_ref_ptr::wrong_object") {} };
     public:
-        virtual bool expired() const = 0;
+        virtual bool expired() const noexcept = 0;
     };
 }

@@ -56,19 +56,19 @@ namespace neolib
         {
         }
     public:
-        i_reference_counted* ptr() const override
+        i_reference_counted* ptr() const noexcept override
         {
             return iManagedPtr;
         }
-        bool expired() const override
+        bool expired() const noexcept override
         {
             return iManagedPtr == nullptr;
         }
-        int32_t weak_use_count() const override
+        int32_t weak_use_count() const noexcept override
         {
             return iWeakUseCount;
         }
-        void add_ref() override
+        void add_ref() noexcept override
         {
             ++iWeakUseCount;
         }
@@ -97,10 +97,10 @@ namespace neolib
         using typename base_type::release_during_destruction;
         using typename base_type::too_many_references;
     public:
-        reference_counted() : iDestroying{ false }, iReferenceCount{ 0 }, iPinned{ false }, iControlBlock{ nullptr }
+        reference_counted() noexcept : iDestroying{ false }, iReferenceCount{ 0 }, iPinned{ false }, iControlBlock{ nullptr }
         {
         }
-        reference_counted(const reference_counted& aOther) : iDestroying{ false }, iReferenceCount{ 0 }, iPinned{ aOther.iPinned }, iControlBlock{ nullptr }
+        reference_counted(const reference_counted& aOther) noexcept : iDestroying{ false }, iReferenceCount{ 0 }, iPinned{ aOther.iPinned }, iControlBlock{ nullptr }
         {
         }
         ~reference_counted()
@@ -115,7 +115,7 @@ namespace neolib
             return *this;
         }
     public:
-        void add_ref() const override
+        void add_ref() const noexcept override
         {
             ++iReferenceCount;
         }
@@ -129,7 +129,7 @@ namespace neolib
                     throw release_during_destruction();
             }
         }
-        int32_t reference_count() const override
+        int32_t reference_count() const noexcept override
         {
             return iReferenceCount;
         }
@@ -144,7 +144,7 @@ namespace neolib
         {
             return const_cast<base_type*>(to_const(*this).release_and_take_ownership());
         }
-        void pin() const override
+        void pin() const noexcept override
         {
             iPinned = true;
         }
@@ -185,36 +185,36 @@ namespace neolib
         typedef typename abstract_type::no_managed_object no_managed_object;
         typedef typename abstract_type::interface_not_found interface_not_found;
     public:
-        ref_ptr(Interface* aManagedPtr = nullptr) :
+        ref_ptr(Interface* aManagedPtr = nullptr) noexcept :
             iPtr{ aManagedPtr }, iManagedPtr{ aManagedPtr }, iReferenceCounted{ true }
         {
             if (iManagedPtr)
                 iManagedPtr->add_ref();
         }
-        ref_ptr(Interface& aManagedPtr) :
+        ref_ptr(Interface& aManagedPtr) noexcept :
             iPtr{ &aManagedPtr }, iManagedPtr{ &aManagedPtr }, iReferenceCounted{ aManagedPtr.reference_count() > 0 }
         {
             if (iReferenceCounted)
                 iManagedPtr->add_ref();
         }
-        ref_ptr(ref_ptr const& aOther) :
+        ref_ptr(ref_ptr const& aOther) noexcept :
             iPtr{ aOther.ptr() }, iManagedPtr{ aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
             if (iManagedPtr && iReferenceCounted)
                 iManagedPtr->add_ref();
         }
-        ref_ptr(ref_ptr&& aOther) :
+        ref_ptr(ref_ptr&& aOther) noexcept :
             iPtr{ aOther.ptr() }, iManagedPtr { aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
             aOther.detach();
         }
-        ref_ptr(ref_ptr const& aOther, Interface* aPtr) :
+        ref_ptr(ref_ptr const& aOther, Interface* aPtr) noexcept :
             iPtr{ aPtr }, iManagedPtr{ aOther.managed_ptr() }, iReferenceCounted{ aOther.reference_counted() }
         {
             if (iManagedPtr && iReferenceCounted)
                 iManagedPtr->add_ref();
         }
-        ref_ptr(abstract_type const& aOther) :
+        ref_ptr(abstract_type const& aOther) noexcept :
             iPtr{ static_cast<Interface*>(aOther.ptr()) }, iManagedPtr{ static_cast<Interface*>(aOther.managed_ptr()) }, iReferenceCounted{ aOther.reference_counted() }
         {
             if (iManagedPtr && iReferenceCounted)
@@ -227,20 +227,20 @@ namespace neolib
                 throw interface_not_found();
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
-        ref_ptr(ref_ptr<Interface2> const& aOther) :
+        ref_ptr(ref_ptr<Interface2> const& aOther) noexcept :
             iPtr{ static_cast<Interface*>(aOther.ptr()) }, iManagedPtr{ static_cast<Interface*>(aOther.managed_ptr()) }, iReferenceCounted{ aOther.reference_counted() }
         {
             if (iManagedPtr && iReferenceCounted)
                 iManagedPtr->add_ref();
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
-        ref_ptr(ref_ptr<Interface2>&& aOther) :
+        ref_ptr(ref_ptr<Interface2>&& aOther) noexcept :
             iPtr{ static_cast<Interface*>(aOther.ptr()) }, iManagedPtr { static_cast<Interface*>(aOther.managed_ptr()) }, iReferenceCounted{ aOther.reference_counted() }
         {
             aOther.detach();
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
-        ref_ptr(i_ref_ptr<Interface2> const& aOther) :
+        ref_ptr(i_ref_ptr<Interface2> const& aOther) noexcept :
             iPtr{ static_cast<Interface*>(aOther.ptr()) }, iManagedPtr{ static_cast<Interface*>(aOther.managed_ptr()) }, iReferenceCounted{ aOther.reference_counted() }
         {
             if (iManagedPtr && iReferenceCounted)
@@ -308,11 +308,11 @@ namespace neolib
             return ref_ptr<Interface2>{ *this };
         }
     public:
-        bool reference_counted() const override
+        bool reference_counted() const noexcept override
         {
             return iReferenceCounted;
         }
-        int32_t reference_count() const override
+        int32_t reference_count() const noexcept override
         {
             if (iManagedPtr && iReferenceCounted)
                 return iManagedPtr->reference_count();
@@ -349,7 +349,7 @@ namespace neolib
             iReferenceCounted = false;
             return releasedObject;
         }
-        Interface* detach() override
+        Interface* detach() noexcept override
         {
             auto detached = iManagedPtr;
             iPtr = nullptr;
@@ -357,19 +357,19 @@ namespace neolib
             iReferenceCounted = false;
             return detached;
         }
-        bool valid() const override
+        bool valid() const noexcept override
         {
             return iPtr != nullptr;
         }
-        bool managing() const override
+        bool managing() const noexcept override
         {
             return iManagedPtr != nullptr;
         }
-        Interface* ptr() const override
+        Interface* ptr() const noexcept override
         {
             return iPtr;
         }
-        Interface* managed_ptr() const override
+        Interface* managed_ptr() const noexcept override
         {
             return iManagedPtr;
         }
@@ -422,22 +422,22 @@ namespace neolib
         typedef typename base_type::bad_release bad_release;
         typedef typename base_type::wrong_object wrong_object;
     public:
-        weak_ref_ptr(Interface* aManagedPtr = nullptr) :
+        weak_ref_ptr(Interface* aManagedPtr = nullptr) noexcept :
             iControlBlock{ nullptr }
         {
             update_control_block(aManagedPtr);
         }
-        weak_ref_ptr(Interface& aManagedPtr) :
+        weak_ref_ptr(Interface& aManagedPtr) noexcept :
             iControlBlock{ nullptr }
         {
             update_control_block(&aManagedPtr);
         }
-        weak_ref_ptr(const weak_ref_ptr& aOther) :
+        weak_ref_ptr(const weak_ref_ptr& aOther) noexcept :
             iControlBlock{ nullptr }
         {
             update_control_block(aOther.ptr());
         }
-        weak_ref_ptr(const i_ref_ptr<abstract_t<Interface>>& aOther) :
+        weak_ref_ptr(const i_ref_ptr<abstract_t<Interface>>& aOther) noexcept :
             iControlBlock{ nullptr }
         {
             update_control_block(aOther.managed_ptr());
@@ -469,11 +469,11 @@ namespace neolib
             return *this;
         }
     public:
-        bool reference_counted() const override
+        bool reference_counted() const noexcept override
         {
             return false;
         }
-        int32_t reference_count() const override
+        int32_t reference_count() const noexcept override
         {
             return 0;
         }
@@ -505,23 +505,23 @@ namespace neolib
             update_control_block(nullptr);
             return copy.ptr();
         }
-        bool valid() const override
+        bool valid() const noexcept override
         {
             return ptr() != nullptr;
         }
-        bool managing() const
+        bool managing() const noexcept
         {
             return valid();
         }
-        bool expired() const override
+        bool expired() const noexcept override
         {
             return iControlBlock == nullptr || iControlBlock->expired();
         }
-        Interface* ptr() const override
+        Interface* ptr() const noexcept override
         {
             return static_cast<Interface*>(iControlBlock != nullptr ? iControlBlock->ptr() : nullptr);
         }
-        Interface* managed_ptr() const override
+        Interface* managed_ptr() const noexcept override
         {
             return ptr();
         }
@@ -555,7 +555,7 @@ namespace neolib
     };
 
     template <typename Interface>
-    inline bool operator<(ref_ptr<Interface> const& lhs, ref_ptr<Interface> const& rhs)
+    inline bool operator<(ref_ptr<Interface> const& lhs, ref_ptr<Interface> const& rhs) noexcept
     {
         if (lhs == rhs)
             return false;
@@ -572,4 +572,23 @@ namespace neolib
     {
         return ref_ptr<ConcreteType>{ new ConcreteType{ std::forward<Args>(args)... } };
     }
+
+    template <class T, class U>
+    ref_ptr<T> dynamic_pointer_cast(ref_ptr<U> const& aOther) noexcept
+    {
+        auto const ptr = dynamic_cast<typename ref_ptr<T>::element_type*>(aOther.ptr());
+        if (ptr)
+            return ref_ptr<T>{ aOther };
+        return ref_ptr<T>{};
+    }
+
+    template <class T, class U>
+    ref_ptr<T> dynamic_pointer_cast(ref_ptr<U>&& aOther) noexcept 
+    {
+        auto const ptr = dynamic_cast<typename ref_ptr<T>::element_type*>(aOther.ptr());
+        if (ptr)
+            return ref_ptr<T>{ std::move(aOther) };
+        return ref_ptr<T>{};
+    }
+
 }
