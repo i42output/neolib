@@ -258,20 +258,20 @@ namespace neolib
             if (iManagedPtr && iReferenceCounted)
                 iManagedPtr->add_ref();
         }
-        template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
+        template <typename Interface2>
         ref_ptr(ref_ptr<Interface2> const& aOther, Interface* aPtr) noexcept :
             iPtr{ aPtr }, iManagedPtr{ static_cast<Interface*>(aOther.managed_ptr()) }, iReferenceCounted{ aOther.reference_counted() }
         {
             if (iManagedPtr && iReferenceCounted)
                 iManagedPtr->add_ref();
         }
-        template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
+        template <typename Interface2>
         ref_ptr(ref_ptr<Interface2>&& aOther, Interface* aPtr) noexcept :
             iPtr{ aPtr }, iManagedPtr{ static_cast<Interface*>(aOther.managed_ptr()) }, iReferenceCounted{ aOther.reference_counted() }
         {
             aOther.detach();
         }
-        template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
+        template <typename Interface2>
         ref_ptr(i_ref_ptr<Interface2> const& aOther, Interface* aPtr) noexcept :
             iPtr{ aPtr }, iManagedPtr{ static_cast<Interface*>(aOther.managed_ptr()) }, iReferenceCounted{ aOther.reference_counted() }
         {
