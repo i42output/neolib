@@ -375,7 +375,7 @@ namespace neolib
         {
             if (iManagedPtr == nullptr)
                 throw no_managed_object();
-            Interface* releasedObject = static_cast<Interface*>(iManagedPtr->release_and_take_ownership());
+            Interface* releasedObject = dynamic_cast<Interface*>(iManagedPtr->release_and_take_ownership());
             iPtr = nullptr;
             iManagedPtr = nullptr;
             iReferenceCounted = false;
