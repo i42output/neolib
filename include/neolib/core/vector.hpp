@@ -110,6 +110,8 @@ namespace neolib
         template <typename... Args>
         void emplace_back(Args&&... aArgs) { iVector.emplace_back(std::forward<Args>(aArgs)...); }
         void pop_back() override { iVector.pop_back(); }
+        const value_type& front() const override { return iVector.front(); }
+        value_type& front() override { return iVector.front(); }
         const value_type& back() const override { return iVector.back(); }
         value_type& back() override { return iVector.back(); }
         // from i_random_access_container

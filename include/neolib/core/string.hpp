@@ -101,6 +101,8 @@ namespace neolib
         void resize(size_type aSize, const value_type& aValue) override { iString.resize(aSize, aValue); }
         void push_back(const value_type& aValue) override { iString.push_back(aValue); }
         void pop_back() override { iString.erase(iString.end() - 1); }
+        const value_type& front() const override { return iString.front(); }
+        value_type& front() override { return iString.front(); }
         const value_type& back() const override { return iString.back(); }
         value_type& back() override { return iString.back(); }
     private:

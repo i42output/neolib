@@ -62,6 +62,8 @@ namespace neolib
         iterator insert(const abstract_const_iterator& aPosition, const value_type& aValue) { iterator result; return do_insert(result.storage(), aPosition, aValue); }
         virtual void push_back(const value_type& aValue) = 0;
         virtual void pop_back() = 0;
+        virtual const value_type& front() const = 0;
+        virtual value_type& front() = 0;
         virtual const value_type& back() const = 0;
         virtual value_type& back() = 0;
     private:
