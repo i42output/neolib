@@ -187,7 +187,7 @@ namespace neolib
         typedef typename abstract_type::interface_not_found interface_not_found;
     public:
         ref_ptr(Interface* aManagedPtr = nullptr) noexcept :
-            iPtr{ aManagedPtr }, iManagedPtr{ aManagedPtr }, iReferenceCounted{ true }
+            iPtr{ aManagedPtr }, iManagedPtr{ aManagedPtr }, iReferenceCounted{ aManagedPtr != nullptr }
         {
             if (iManagedPtr)
                 iManagedPtr->add_ref();
