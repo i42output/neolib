@@ -291,7 +291,7 @@ namespace neolib
         {
             if (&aOther == this)
                 return *this;
-            reset(aOther.ptr(), aOther.managed_ptr(), aOther.reference_counted());
+            reset(aOther.ptr(), aOther.managed_ptr(), aOther.reference_counted(), true);
             return *this;
         }
         ref_ptr& operator=(ref_ptr&& aOther)
@@ -306,13 +306,13 @@ namespace neolib
         {
             if (&aOther == this)
                 return *this;
-            reset(aOther.ptr(), aOther.managed_ptr(), aOther.reference_counted());
+            reset(aOther.ptr(), aOther.managed_ptr(), aOther.reference_counted(), true);
             return *this;
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr& operator=(ref_ptr<Interface2> const& aOther)
         {
-            reset(aOther.ptr(), aOther.managed_ptr(), aOther.reference_counted());
+            reset(aOther.ptr(), aOther.managed_ptr(), aOther.reference_counted(), true);
             return *this;
         }
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
@@ -325,7 +325,7 @@ namespace neolib
         template <typename Interface2, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
         ref_ptr& operator=(i_ref_ptr<Interface2> const& aOther)
         {
-            reset(aOther.ptr(), aOther.managed_ptr(), aOther.reference_counted());
+            reset(aOther.ptr(), aOther.managed_ptr(), aOther.reference_counted(), true);
             return *this;
         }
         ref_ptr& operator=(nullptr_t)
@@ -352,24 +352,19 @@ namespace neolib
         }
         void reset() override
         {
-            reset<Interface>(nullptr, nullptr);
+            reset<Interface>(nullptr, nullptr, false, false);
         }
-        void reset(abstract_t<Interface>* aPtr, bool aReferenceCounted = true, bool aAddRef = true) override
+        void reset(abstract_t<Interface>* aPtr) override
         {
-            Interface* compatiblePtr = dynamic_cast<Interface*>(aPtr);
-            if (aPtr != nullptr && compatiblePtr == nullptr)
-                throw std::bad_cast();
-            reset<Interface>(compatiblePtr, compatiblePtr, aReferenceCounted, aAddRef);
+            reset<abstract_t<Interface>>(aPtr, aPtr, aPtr != nullptr, true);
         }
-        void reset(abstract_t<Interface>* aPtr, abstract_t<Interface>* aManagedPtr, bool aReferenceCounted = true, bool aAddRef = true) override
+        void reset(abstract_t<Interface>* aPtr, abstract_t<Interface>* aManagedPtr) override
         {
-            Interface* compatiblePtr = dynamic_cast<Interface*>(aPtr);
-            if (aPtr != nullptr && compatiblePtr == nullptr)
-                throw std::bad_cast();
-            Interface* compatibleManagedPtr = dynamic_cast<Interface*>(aManagedPtr);
-            if (aManagedPtr != nullptr && compatibleManagedPtr == nullptr)
-                throw std::bad_cast();
-            reset<Interface>(compatiblePtr, compatibleManagedPtr, aReferenceCounted, aAddRef);
+            reset<abstract_t<Interface>>(aPtr, aManagedPtr, aManagedPtr != nullptr, true);
+        }
+        void reset(abstract_t<Interface>* aPtr, abstract_t<Interface>* aManagedPtr, bool aReferenceCounted, bool aAddRef) override
+        {
+            reset<abstract_t<Interface>>(aPtr, aManagedPtr, aReferenceCounted, aAddRef);
         }
         Interface* release() override
         {
@@ -418,11 +413,17 @@ namespace neolib
             return *iPtr;
         }
     public:
-        template <typename Interface2 = Interface, typename = std::enable_if_t<std::is_base_of_v<Interface, Interface2>, sfinae>>
-        void reset(Interface2* aPtr, Interface2* aManagedPtr, bool aReferenceCounted = true, bool aAddRef = true)
+        template <typename Interface2 = Interface, typename = std::enable_if_t<std::is_base_of_v<Interface2, Interface>, sfinae>>
+        void reset(Interface2* aPtr, Interface2* aManagedPtr, bool aReferenceCounted, bool aAddRef)
         {
             if (iPtr == aPtr && iManagedPtr == aManagedPtr)
                 return;
+            Interface* compatiblePtr = dynamic_cast<Interface*>(aPtr);
+            if (aPtr != nullptr && compatiblePtr == nullptr)
+                throw std::bad_cast();
+            Interface* compatibleManagedPtr = dynamic_cast<Interface*>(aManagedPtr);
+            if (aManagedPtr != nullptr && compatibleManagedPtr == nullptr)
+                throw std::bad_cast();
             ref_ptr copy{ *this };
             iPtr = nullptr;
             if (iManagedPtr && iReferenceCounted)
@@ -431,8 +432,8 @@ namespace neolib
                 iManagedPtr = nullptr;
                 releasingObject->release();
             }
-            iPtr = aPtr;
-            iManagedPtr = aManagedPtr;
+            iPtr = compatiblePtr;
+            iManagedPtr = compatibleManagedPtr;
             iReferenceCounted = aReferenceCounted;
             if (iManagedPtr && iReferenceCounted && aAddRef)
                 iManagedPtr->add_ref();
@@ -514,12 +515,17 @@ namespace neolib
             weak_ref_ptr copy(*this);
             update_control_block(nullptr);
         }
-        void reset(abstract_t<Interface>* aPtr, bool = false, bool = false) override
+        void reset(abstract_t<Interface>* aPtr) override
         {
             weak_ref_ptr copy(*this);
             update_control_block(aPtr);
         }
-        void reset(abstract_t<Interface>*, abstract_t<Interface>* aManagedPtr, bool = false, bool = false) override
+        void reset(abstract_t<Interface>*, abstract_t<Interface>* aManagedPtr) override
+        {
+            weak_ref_ptr copy(*this);
+            update_control_block(aManagedPtr);
+        }
+        void reset(abstract_t<Interface>*, abstract_t<Interface>* aManagedPtr, bool, bool) override
         {
             weak_ref_ptr copy(*this);
             update_control_block(aManagedPtr);

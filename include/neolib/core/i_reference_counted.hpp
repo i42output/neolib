@@ -89,8 +89,9 @@ namespace neolib
         virtual bool reference_counted() const noexcept = 0;
         virtual int32_t reference_count() const noexcept = 0;
         virtual void reset() = 0;
-        virtual void reset(Interface* aPtr, bool aReferenceCounted = true, bool aAddRef = true) = 0;
-        virtual void reset(Interface* aPtr, Interface* aManagedPtr, bool aReferenceCounted = true, bool aAddRef = true) = 0;
+        virtual void reset(Interface* aPtr) = 0;
+        virtual void reset(Interface* aPtr, Interface* aManagedPtr) = 0;
+        virtual void reset(Interface* aPtr, Interface* aManagedPtr, bool aReferenceCounted, bool aAddRef) = 0;
         virtual Interface* release() = 0;
         virtual Interface* detach() = 0;
         virtual bool valid() const noexcept = 0;
@@ -99,9 +100,9 @@ namespace neolib
         virtual Interface* managed_ptr() const noexcept = 0;
         virtual Interface* operator->() const = 0;
         virtual Interface& operator*() const = 0;
-        i_ref_ptr& operator=(const i_ref_ptr& aOther) { reset(aOther.ptr(), aOther.reference_counted()); return *this; }
+        i_ref_ptr& operator=(const i_ref_ptr& aOther) { reset(aOther.ptr(), aOther.managed_ptr(), aOther.reference_counted(), true); return *this; }
         template <typename Interface2>
-        i_ref_ptr& operator=(const i_ref_ptr<Interface2>& aOther) { reset(aOther.ptr(), aOther.reference_counted()); return *this; }
+        i_ref_ptr& operator=(const i_ref_ptr<Interface2>& aOther) { reset(aOther.ptr(), aOther.managed_ptr(), aOther.reference_counted(), true); return *this; }
         explicit operator bool() const noexcept { return valid(); }
         bool operator==(nullptr_t) const noexcept { return !valid(); }
         bool operator!=(nullptr_t) const noexcept { return valid(); }
