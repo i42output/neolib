@@ -95,6 +95,7 @@ namespace neolib
         // from i_sequence_container
         size_type capacity() const override { return iList.max_size(); }
         void reserve(size_type aCapacity) override { /* do nothing */ }
+        void resize(size_type aSize) override { iList.resize(aSize); }
         void resize(size_type aSize, const abstract_value_type& aValue) override { iList.resize(aSize, aValue); }
         void push_back(const abstract_value_type& aValue) override { iList.push_back(aValue); }
         void pop_back() override { iList.pop_back(); }

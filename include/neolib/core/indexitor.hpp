@@ -458,7 +458,7 @@ namespace neolib
         {
             insert(end(), aValue, aSkip);
         }
-        void resize(std::size_t aNewSize, const value_type& aValue = value_type(), const skip_type& aSkip = skip_type{})
+        void resize(std::size_t aNewSize, const value_type& aValue = value_type{}, const skip_type& aSkip = skip_type{})
         {
             if (size() < aNewSize)
                 insert(end(), aNewSize - size(), aValue, aSkip);

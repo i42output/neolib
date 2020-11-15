@@ -105,6 +105,7 @@ namespace neolib
     public:
         size_type capacity() const override { return iVector.capacity(); }
         void reserve(size_type aCapacity) override { iVector.reserve(aCapacity); }
+        void resize(size_type aSize) override { iVector.resize(aSize); }
         void resize(size_type aSize, const abstract_value_type& aValue) override { iVector.resize(aSize, aValue); }
         void push_back(const abstract_value_type& aValue) override { iVector.push_back(aValue); }
         template <typename... Args>

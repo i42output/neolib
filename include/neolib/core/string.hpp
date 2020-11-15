@@ -98,6 +98,7 @@ namespace neolib
     public:
         size_type capacity() const override { return iString.size(); }
         void reserve(size_type aCapacity) override { iString.reserve(aCapacity); }
+        void resize(size_type aSize) override { iString.resize(aSize); }
         void resize(size_type aSize, const value_type& aValue) override { iString.resize(aSize, aValue); }
         void push_back(const value_type& aValue) override { iString.push_back(aValue); }
         void pop_back() override { iString.erase(iString.end() - 1); }

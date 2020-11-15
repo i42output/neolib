@@ -606,12 +606,12 @@ namespace neolib
                 if (size() > n)
                     erase(begin() + n, end());
                 else if (size() < n)
-                    insert(end(), n - size(), value_type());
+                    insert(end(), n - size(), value_type{});
             }
             else
                 vector().resize(n);
         }
-        void resize(size_type n, value_type value)
+        void resize(size_type n, const value_type& value)
         {
             if (using_array())
             {

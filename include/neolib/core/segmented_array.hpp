@@ -518,7 +518,7 @@ namespace neolib
         {
             emplace_insert(end(), std::forward<Args>(aArguments)...);
         }
-        void resize(std::size_t aNewSize, const value_type& aValue = value_type())
+        void resize(std::size_t aNewSize, const value_type& aValue = value_type{})
         {
             if (size() < aNewSize)
                 insert(end(), aNewSize - size(), aValue);
