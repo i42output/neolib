@@ -63,6 +63,8 @@ namespace neolib
 
     bool module::load()
     {
+        if (loaded())
+            return true;
         iOsModule.reset();
         if (iPath.empty())
             return false;
