@@ -106,7 +106,7 @@ namespace neolib
         }
         const typename base_type::enumerators_t& enumerators() const override
         {
-            return enum_enumerators_v<enum_type>;
+            return enum_enumerators<enum_type>();
         }
         // implementation
     private:

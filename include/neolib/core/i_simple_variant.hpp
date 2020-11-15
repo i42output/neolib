@@ -56,16 +56,14 @@ namespace neolib
         CustomType
     };
 
-    template <>
-    const enum_enumerators_t<simple_variant_type> enum_enumerators_v<simple_variant_type>
-    { 
-        declare_enum_string(simple_variant_type, Boolean)
-        declare_enum_string(simple_variant_type, Integer)
-        declare_enum_string(simple_variant_type, Real)
-        declare_enum_string(simple_variant_type, String)
-        declare_enum_string(simple_variant_type, Enum)
-        declare_enum_string(simple_variant_type, CustomType)
-    };
+    begin_declare_enum(simple_variant_type)
+    declare_enum_string(simple_variant_type, Boolean)
+    declare_enum_string(simple_variant_type, Integer)
+    declare_enum_string(simple_variant_type, Real)
+    declare_enum_string(simple_variant_type, String)
+    declare_enum_string(simple_variant_type, Enum)
+    declare_enum_string(simple_variant_type, CustomType)
+    end_declare_enum(simple_variant_type)
 
     typedef i_plugin_variant<simple_variant_type, bool, int64_t, double, i_string, i_ref_ptr<i_enum>, i_ref_ptr<i_custom_type>> i_simple_variant;
 

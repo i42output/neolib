@@ -46,10 +46,23 @@ namespace neolib
     template <typename Enum>
     using enum_enumerators_t = multimap<std::underlying_type_t<Enum>, string>;
     template <typename Enum>
-    const enum_enumerators_t<Enum> enum_enumerators_v;
+    enum_enumerators_t<Enum> const& enum_enumerators();
+
+    // todo: rewrite and/or get rid of this guff when C++ finally gets static reflection
+    #define begin_declare_enum( enumName ) \
+    template <> \
+    inline neolib::enum_enumerators_t<enumName> const& neolib::enum_enumerators<enumName>() \
+    { \
+        static neolib::enum_enumerators_t<enumName> const sEnumerators = \
+        {
 
     #define declare_enum_string( enumName, enumEnumerator ) { static_cast<std::underlying_type_t<enumName>>(enumName::enumEnumerator), neolib::string{ #enumEnumerator } },
     #define declare_enum_string_explicit( enumName, enumEnumerator, enumString ) { static_cast<std::underlying_type_t<enumName>>(enumName::enumEnumerator), neolib::string{ #enumString } },
+
+    #define end_declare_enum( enumName ) \
+        }; \
+        return sEnumerators; \
+    } 
 
     struct bad_enum_value : std::runtime_error { bad_enum_value(const std::string& aString) : std::runtime_error{ "neolib: bad enum value '" + aString + "'" } {} };
 
@@ -64,8 +77,8 @@ namespace neolib
     template <typename Enum, typename StringT = string>
     inline StringT enum_to_string(Enum aEnumerator, bool aMustEnumerate = false)
     {
-        auto const e = enum_enumerators_v<Enum>.find(static_cast<std::underlying_type_t<Enum>>(aEnumerator));
-        if (e != enum_enumerators_v<Enum>.end())
+        auto const e = enum_enumerators<Enum>().find(static_cast<std::underlying_type_t<Enum>>(aEnumerator));
+        if (e != enum_enumerators<Enum>().end())
         {
             if constexpr (std::is_same_v<StringT, std::string>)
                 return e->second().to_std_string();
@@ -84,7 +97,7 @@ namespace neolib
     inline Enum string_to_enum(const i_string& aEnumerator)
     {
         // todo: use bimap.
-        for (auto const& e : enum_enumerators_v<Enum>)
+        for (auto const& e : enum_enumerators<Enum>())
             if (e.second() == aEnumerator)
                 return static_cast<Enum>(e.first());
         throw bad_enum_string(aEnumerator.to_std_string());
@@ -99,7 +112,7 @@ namespace neolib
     inline std::optional<Enum> try_string_to_enum(const i_string& aEnumerator)
     {
         // todo: use bimap.
-        for (auto const& e : enum_enumerators_v<Enum>)
+        for (auto const& e : enum_enumerators<Enum>())
             if (e.second() == aEnumerator)
                 return static_cast<Enum>(e.first());
         return {};
