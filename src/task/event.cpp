@@ -35,8 +35,7 @@
 
 #include <neolib/neolib.hpp>
 #include <neolib/core/scoped.hpp>
-#include <neolib/task/async_thread.hpp>
-#include <neolib/task/async_task.hpp>
+#include <neolib/task/i_async_task.hpp>
 #include <neolib/task/timer.hpp>
 #include <neolib/task/event.hpp>
 
@@ -47,7 +46,7 @@ namespace neolib
         return get_instance(nullptr);
     }
 
-    async_event_queue& async_event_queue::instance(async_task& aTask)
+    async_event_queue& async_event_queue::instance(i_async_task& aTask)
     {
         return get_instance(&aTask);
     }
@@ -82,7 +81,7 @@ namespace neolib
         sQueueList.unqueue(aEvent);
     }
 
-    async_event_queue::async_event_queue(async_task& aTask) :
+    async_event_queue::async_event_queue(i_async_task& aTask) :
         iTask{ aTask },
         iTimer
         {
@@ -111,7 +110,7 @@ namespace neolib
         terminate();
     }
 
-    async_event_queue& async_event_queue::get_instance(async_task* aTask)
+    async_event_queue& async_event_queue::get_instance(i_async_task* aTask)
     {
         thread_local bool tInstantiated = false;
         bool const alreadyInstantiated = tInstantiated;

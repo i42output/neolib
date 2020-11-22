@@ -49,9 +49,7 @@ namespace neolib
         {
             void* result = nullptr;
             if (discover(Interface::iid(), result))
-            {
                 aObject.reset(static_cast<Interface*>(result));
-            }
             return result != nullptr;
         }
         virtual bool discover(const uuid& aId, void*& aObject) = 0;

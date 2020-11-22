@@ -258,7 +258,7 @@ namespace neolib
         argument_pack iArguments;
     };
 
-    class async_task;
+    class i_async_task;
     class callback_timer;
 
     NEOLIB_EXPORT void unqueue_event(const i_event& aEvent);
@@ -284,11 +284,11 @@ namespace neolib
         typedef std::deque<event_list_entry> event_list_t;
     public:
         static async_event_queue& instance();
-        static async_event_queue& instance(async_task& aTask);
+        static async_event_queue& instance(i_async_task& aTask);
         ~async_event_queue();
     private:
-        async_event_queue(async_task& aTask);
-        static async_event_queue& get_instance(async_task* aTask);
+        async_event_queue(i_async_task& aTask);
+        static async_event_queue& get_instance(i_async_task* aTask);
     public:
         bool exec();
         transaction enqueue(callback_ptr aCallback, bool aStatelessHandler, const optional_transaction& aTransaction = {});
@@ -306,7 +306,7 @@ namespace neolib
         bool has(const i_event& aEvent) const;
         bool publish_events();
     private:
-        async_task& iTask;
+        i_async_task& iTask;
         std::unique_ptr<callback_timer> iTimer;
         event_list_t iEvents;
         std::atomic<bool> iTerminated;

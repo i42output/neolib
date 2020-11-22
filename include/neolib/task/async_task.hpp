@@ -69,7 +69,7 @@ namespace neolib
         dirty_list iDirtyObjectList;
     };
 
-    class NEOLIB_EXPORT async_task : public task<i_async_task>, public lifetime<>
+    class NEOLIB_EXPORT async_task : public task<reference_counted<i_async_task>>, public lifetime<>
     {
         friend class async_thread;
         // events
@@ -80,6 +80,8 @@ namespace neolib
     public:
         struct no_thread : std::logic_error { no_thread() : std::logic_error{ "neolib::async_task::no_thread" } {} };
         // types
+    public:
+        typedef i_async_task abstract_type;
     private:
         typedef std::unique_ptr<i_message_queue> message_queue_pointer;
         // construction

@@ -84,7 +84,7 @@ namespace neolib
         virtual void remove_timer_object(i_timer_object& aObject) = 0;
     };
 
-    class i_async_task : public i_task, public i_service
+    class i_async_task : public i_task, public i_service, public i_reference_counted
     {
         // events
     public:
@@ -93,6 +93,9 @@ namespace neolib
         // exceptions
     public:
         struct no_message_queue : std::logic_error { no_message_queue() : std::logic_error("i_async_task::no_message_queue") {} };
+        // types
+    public:
+        typedef i_async_task abstract_type;
         // operations
     public:
         virtual i_thread& thread() const = 0;
