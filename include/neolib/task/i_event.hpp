@@ -111,6 +111,8 @@ namespace neolib
     public:
         virtual ~i_event_callback() = default;
     public:
+        virtual bool operator==(const i_event_callback& aRhs) const = 0;
+    public:
         virtual const i_event& event() const = 0;
         virtual const void* identity() const = 0;
         virtual bool valid() const = 0;

@@ -141,7 +141,7 @@ namespace neolib
             {
                 if (!e.callback->valid())
                     continue;
-                if (&e.callback->event() == &aCallback->event() && e.callback->identity() == aCallback->identity())
+                if (*e.callback == *aCallback)
                     return {};
             }
         }

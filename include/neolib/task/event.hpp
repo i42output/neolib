@@ -233,6 +233,11 @@ namespace neolib
         {
         }
     public:
+        bool operator==(const i_event_callback& aRhs) const override
+        {
+            return &event() == &aRhs.event() && identity() == aRhs.identity();
+        }
+    public:
         const i_event& event() const override
         {
             return *iEvent;
@@ -364,7 +369,8 @@ namespace neolib
                 referenceCount{ 0u },
                 clientId{ clientId },
                 callable{ callable },
-                handleInSameThreadAsEmitter{ handleInSameThreadAsEmitter }
+                handleInSameThreadAsEmitter{ handleInSameThreadAsEmitter },
+                handlerIsStateless{ handlerIsStateless }
             {}
         };
         typedef std::vector<handler> handler_list_t;
