@@ -40,55 +40,74 @@
 
 namespace neolib
 {
-    struct scoped_flag
+    class scoped_flag
     {
+    public:
+        scoped_flag(bool& aFlag, bool aValue = true) : iFlag{ aFlag }, iSaved{ aFlag }, iIgnore{ false } { iFlag = aValue; }
+        ~scoped_flag() { if (!iIgnore) iFlag = iSaved; }
+    public:
+        bool saved() const { return iSaved; }
+        void ignore() { iIgnore = true; }
+    private:
         bool& iFlag;
         bool iSaved;
         bool iIgnore;
-        scoped_flag(bool& aFlag, bool aValue = true) : iFlag{ aFlag }, iSaved{ aFlag }, iIgnore{ false } { iFlag = aValue; }
-        ~scoped_flag() { if (!iIgnore) iFlag = iSaved; }
-        void ignore() { iIgnore = true; }
     };
 
-    struct scoped_atomic_flag
+    class scoped_atomic_flag
     {
+    public:
+        scoped_atomic_flag(std::atomic<bool>& aFlag, bool aValue = true) : iFlag{ aFlag }, iSaved{ aFlag }, iIgnore{ false } { iFlag = aValue; }
+        ~scoped_atomic_flag() { if (!iIgnore) iFlag = iSaved; }
+    public:
+        bool saved() const { return iSaved; }
+        void ignore() { iIgnore = true; }
+    private:
         std::atomic<bool>& iFlag;
         bool iSaved;
         bool iIgnore;
-        scoped_atomic_flag(std::atomic<bool>& aFlag, bool aValue = true) : iFlag{ aFlag }, iSaved{ aFlag }, iIgnore{ false } { iFlag = aValue; }
-        ~scoped_atomic_flag() { if (!iIgnore) iFlag = iSaved; }
-        void ignore() { iIgnore = true; }
     };
 
     template <typename T>
-    struct scoped_counter
+    class scoped_counter
     {
-        T& iCounter;
-        bool iIgnore;
+    public:
         scoped_counter(T& aCounter) : iCounter(aCounter), iIgnore{ false } { ++iCounter; }
         ~scoped_counter() { if (!iIgnore) --iCounter; }
+    public:
         void ignore() { iIgnore = true; }
+    private:
+        T& iCounter;
+        bool iIgnore;
     };
 
     template <typename T>
-    struct scoped_pointer
+    class scoped_pointer
     {
+    public:
+        scoped_pointer(T*& aPointer, T* aValue) : iPointer{ aPointer }, iSaved{ aPointer }, iIgnore{ false } { iPointer = aValue; }
+        ~scoped_pointer() { if (!iIgnore) iPointer = iSaved; }
+    public:
+        T const& saved() const { return iSaved; }
+        void ignore() { iIgnore = true; }
+    private:
         T*& iPointer;
         T* iSaved;
         bool iIgnore;
-        scoped_pointer(T*& aPointer, T* aValue) : iPointer{ aPointer }, iSaved{ aPointer }, iIgnore{ false } { iPointer = aValue; }
-        ~scoped_pointer() { if (!iIgnore) iPointer = iSaved; }
-        void ignore() { iIgnore = true; }
     };
 
     template <typename T>
-    struct scoped_object
+    class scoped_object
     {
+    public:
+        scoped_object(T& aObject, T aValue = {}) : iObject{ aObject }, iSaved{ aObject }, iIgnore{ false } { iObject = aValue; }
+        ~scoped_object() { if (!iIgnore) iObject = iSaved; }
+    public:
+        T const& saved() const { return iSaved; }
+        void ignore() { iIgnore = true; }
+    private:
         T& iObject;
         T iSaved;
         bool iIgnore;
-        scoped_object(T& aObject, T aValue = {}) : iObject{ aObject }, iSaved{ aObject }, iIgnore{ false } { iObject = aValue; }
-        ~scoped_object() { if (!iIgnore) iObject = iSaved; }
-        void ignore() { iIgnore = true; }
     };
 }

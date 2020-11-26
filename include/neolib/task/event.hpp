@@ -514,9 +514,8 @@ namespace neolib
             if (handlers.empty())
                 return true;
             scoped_flag sf{ instance().triggering };
-            if (!instance().triggering)
+            if (!sf.saved())
             {
-                instance().triggering = true;
                 instance().triggerId = 0ull;
                 for (auto& handler : handlers)
                     handler.triggerId = 0ull;
@@ -566,9 +565,8 @@ namespace neolib
                 return;
             destroyed_flag destroyed{ *this };
             scoped_flag sf{ instance().triggering };
-            if (!instance().triggering)
+            if (!sf.saved())
             {
-                instance().triggering = true;
                 instance().triggerId = 0ull;
                 for (auto& handler : handlers)
                     handler.triggerId = 0ull;
