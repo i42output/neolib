@@ -58,11 +58,11 @@ namespace neolib
         typedef i_event_handle abstract_type;
     public:
         event_handle() noexcept : 
-            iControl{ nullptr }, iId{ invalid_cookie<cookie> }
+            iControl{ nullptr }, iId{ invalid_cookie<cookie> }, iActive{ false }
         {
         }
         event_handle(i_event_control& aControl, cookie aId) noexcept :
-            iControl{ &aControl }, iId{ aId }
+            iControl{ &aControl }, iId{ aId }, iActive{ false }
         {
             if (have_control())
                 control().add_ref();
@@ -76,19 +76,19 @@ namespace neolib
         {
         }
         event_handle(i_event_handle const& aOther) noexcept :
-            iControl{ aOther.have_control() ? &aOther.control() : nullptr }, iId{ aOther.id() }
+            iControl{ aOther.have_control() ? &aOther.control() : nullptr }, iId{ aOther.id() }, iActive{ aOther.active() }
         {
             if (have_control())
                 control().add_ref();
         }
         event_handle(i_event_handle&& aOther) noexcept :
-            iControl{ aOther.have_control() ? &aOther.control() : nullptr }, iId{ aOther.id() }
+            iControl{ aOther.have_control() ? &aOther.control() : nullptr }, iId{ aOther.id() }, iActive{ aOther.active() }
         {
             aOther.detach();
         }
         ~event_handle() noexcept
         {
-            if (have_control())
+            if (have_control() && active())
             {
                 if (control().valid())
                     control().get().remove_handler(id());
@@ -111,6 +111,7 @@ namespace neolib
             auto oldControl = iControl;
             iControl = aRhs.have_control() ? &aRhs.control() : nullptr;
             iId = aRhs.id();
+            iActive = aRhs.active();
             if (have_control())
                 control().add_ref();
             if (oldControl != nullptr)
@@ -124,6 +125,7 @@ namespace neolib
             auto oldControl = iControl;
             iControl = aRhs.have_control() ? &aRhs.control() : nullptr;
             iId = aRhs.id();
+            iActive = aRhs.active();
             aRhs.detach();
             if (oldControl != nullptr)
                 oldControl->release();
@@ -144,6 +146,14 @@ namespace neolib
         {
             return iId;
         }
+        bool active() const noexcept
+        {
+            return iActive;
+        }
+        void set_active() noexcept
+        {
+            iActive = true;
+        }
     public:
         event_handle& operator~() noexcept
         {
@@ -161,10 +171,13 @@ namespace neolib
         void detach() noexcept override
         {
             iControl = nullptr;
+            iId = invalid_cookie<cookie>;
+            iActive = false;
         }
     private:
         i_event_control* iControl;
         cookie iId;
+        bool iActive;
     };
 
     class event_control : public i_event_control
@@ -868,12 +881,12 @@ namespace neolib
         }
         sink& operator+=(i_event_handle const& aHandle) override
         {
-            iHandles.container().insert(iHandles.container().end(), aHandle);
+            iHandles.container().insert(iHandles.container().end(), aHandle)->set_active();
             return *this;
         }
         sink& operator+=(i_event_handle&& aHandle) override
         {
-            iHandles.container().insert(iHandles.container().end(), std::move(aHandle));
+            iHandles.container().insert(iHandles.container().end(), std::move(aHandle))->set_active();
             return *this;
         }
     public:

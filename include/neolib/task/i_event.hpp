@@ -97,6 +97,8 @@ namespace neolib
         virtual bool have_control() const noexcept = 0;
         virtual i_event_control& control() const = 0;
         virtual cookie id() const noexcept = 0;
+        virtual bool active() const noexcept = 0;
+        virtual void set_active() noexcept = 0;
     public:
         virtual i_event_handle& operator~() noexcept = 0;
         virtual i_event_handle& operator!() noexcept = 0;
