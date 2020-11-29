@@ -44,7 +44,7 @@ namespace neolib
 {
     namespace plugin_events
     {
-        using neolib::sink;
+        using neolib::i_sink;
 
         template <typename... Arguments>
         class i_event_callback : public i_reference_counted
@@ -151,8 +151,14 @@ namespace neolib
                 return do_unsubscribe(static_cast<const void*>(&aUniqueIdObject));
             }
         private:
-            virtual event_handle do_subscribe(const abstract_callback& aCallback, const void* aUniqueId = nullptr) const = 0;
-            virtual void do_unsubscribe(event_handle aHandle) const = 0;
+            event_handle do_subscribe(const abstract_callback& aCallback, const void* aUniqueId = nullptr) const
+            {
+                event_handle result;
+                do_subscribe(result, aCallback, aUniqueId);
+                return result;
+            }
+            virtual void do_subscribe(i_event_handle& aHandle, const abstract_callback& aCallback, const void* aUniqueId = nullptr) const = 0;
+            virtual void do_unsubscribe(i_event_handle& aHandle) const = 0;
             virtual void do_unsubscribe(const void* aUniqueId) const = 0;
         };
 

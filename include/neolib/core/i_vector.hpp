@@ -44,8 +44,13 @@ namespace neolib
     class i_vector : public i_random_access_container<T>
     {
         typedef i_vector<T> self_type;
+        typedef i_random_access_container<T> base_type;
     public:
         typedef self_type abstract_type;
+        using typename base_type::const_iterator;
+        using typename base_type::iterator;
+        using typename base_type::const_reverse_iterator;
+        using typename base_type::reverse_iterator;
     public:
         // todo abstract push_back et al
     };

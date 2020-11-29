@@ -129,7 +129,7 @@ namespace neolib
                     throw release_during_destruction();
             }
         }
-        int32_t reference_count() const noexcept override
+        int32_t use_count() const noexcept override
         {
             return iReferenceCount;
         }
@@ -193,7 +193,7 @@ namespace neolib
                 iManagedPtr->add_ref();
         }
         ref_ptr(Interface& aManagedPtr) noexcept :
-            iPtr{ &aManagedPtr }, iManagedPtr{ &aManagedPtr }, iReferenceCounted{ aManagedPtr.reference_count() > 0 }
+            iPtr{ &aManagedPtr }, iManagedPtr{ &aManagedPtr }, iReferenceCounted{ aManagedPtr.use_count() > 0 }
         {
             if (iReferenceCounted)
                 iManagedPtr->add_ref();
@@ -344,10 +344,10 @@ namespace neolib
         {
             return iReferenceCounted;
         }
-        int32_t reference_count() const noexcept override
+        int32_t use_count() const noexcept override
         {
             if (iManagedPtr && iReferenceCounted)
-                return iManagedPtr->reference_count();
+                return iManagedPtr->use_count();
             return 0;
         }
         void reset() override
@@ -506,7 +506,7 @@ namespace neolib
         {
             return false;
         }
-        int32_t reference_count() const noexcept override
+        int32_t use_count() const noexcept override
         {
             return 0;
         }

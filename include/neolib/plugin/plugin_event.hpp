@@ -101,17 +101,17 @@ namespace neolib
                 event_type::ignore();
             }
         private:
-            event_handle do_subscribe(const abstract_callback& aCallback, const void* aUniqueId = nullptr) const override
+            void do_subscribe(i_event_handle& aHandle, const abstract_callback& aCallback, const void* aUniqueId = nullptr) const override
             {
                 auto callback = aCallback.clone();
-                return event_type::subscribe(
+                aHandle = event_type::subscribe(
                         [callback](Args&& ... aArguments)
                         {
                             (*callback)(std::forward<Args>(aArguments)...);
                         },
                         aUniqueId);
             }
-            void do_unsubscribe(event_handle aHandle) const override
+            void do_unsubscribe(i_event_handle& aHandle) const override
             {
                 return event_type::unsubscribe(aHandle);
             }

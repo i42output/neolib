@@ -45,74 +45,92 @@
 #include <atomic>
 
 #include <neolib/core/scoped.hpp>
+#include <neolib/core/reference_counted.hpp>
 #include <neolib/core/lifetime.hpp>
 #include <neolib/core/jar.hpp>
 #include <neolib/task/i_event.hpp>
 
 namespace neolib
 {
-    class NEOLIB_EXPORT sink;
-
-    class event_handle
+    class event_handle : public i_event_handle
     {
     public:
-        struct no_control : std::logic_error { no_control() : std::logic_error{ "neolib::event_handle::no_control" } {} };
+        typedef i_event_handle abstract_type;
     public:
-        event_handle(i_event_control& aControl, cookie aId) : 
-            iControl{ &aControl }, iRef{ aControl.get(), aId }, iPrimary{ true }
+        event_handle() noexcept : 
+            iControl{ nullptr }, iId{ invalid_cookie<cookie> }
+        {
+        }
+        event_handle(i_event_control& aControl, cookie aId) noexcept :
+            iControl{ &aControl }, iId{ aId }
         {
             if (have_control())
                 control().add_ref();
         }
-        event_handle(const event_handle& aOther) :
-            iControl{ aOther.iControl }, iRef{ aOther.iRef }, iPrimary{ false }
+        event_handle(event_handle const& aOther) noexcept :
+            event_handle{ static_cast<i_event_handle const&>(aOther) }
+        {
+        }
+        event_handle(event_handle&& aOther) noexcept :
+            event_handle{ static_cast<i_event_handle&&>(aOther) }
+        {
+        }
+        event_handle(i_event_handle const& aOther) noexcept :
+            iControl{ aOther.have_control() ? &aOther.control() : nullptr }, iId{ aOther.id() }
         {
             if (have_control())
                 control().add_ref();
         }
-        event_handle(event_handle&& aOther) :
-            iControl{ aOther.iControl }, iRef{ std::move(aOther.iRef) }, iPrimary{ false }
+        event_handle(i_event_handle&& aOther) noexcept :
+            iControl{ aOther.have_control() ? &aOther.control() : nullptr }, iId{ aOther.id() }
         {
-            aOther.iControl = nullptr;
-            aOther.iPrimary = false;
+            aOther.detach();
         }
-        ~event_handle()
+        ~event_handle() noexcept
         {
             if (have_control())
             {
-                if (!control().valid() || primary())
-                    iRef.reset();
+                if (control().valid())
+                    control().get().remove_handler(id());
                 control().release();
             }
         }
     public:
-        event_handle& operator=(const event_handle& aRhs)
+        event_handle& operator=(event_handle const& aRhs) noexcept
+        {
+            return *this = static_cast<i_event_handle const&>(aRhs);
+        }
+        event_handle& operator=(event_handle&& aRhs) noexcept
+        {
+            return *this = static_cast<i_event_handle&&>(aRhs);
+        }
+        event_handle& operator=(i_event_handle const& aRhs) noexcept override
         {
             if (&aRhs == this)
                 return *this;
             auto oldControl = iControl;
-            iControl = aRhs.iControl;
+            iControl = aRhs.have_control() ? &aRhs.control() : nullptr;
+            iId = aRhs.id();
             if (have_control())
                 control().add_ref();
             if (oldControl != nullptr)
                 oldControl->release();
-            iRef = aRhs.iRef;
             return *this;
         }
-        event_handle& operator=(event_handle&& aRhs)
+        event_handle& operator=(i_event_handle&& aRhs) noexcept override
         {
             if (&aRhs == this)
                 return *this;
             auto oldControl = iControl;
-            iControl = aRhs.iControl;
-            aRhs.iControl = nullptr;
+            iControl = aRhs.have_control() ? &aRhs.control() : nullptr;
+            iId = aRhs.id();
+            aRhs.detach();
             if (oldControl != nullptr)
                 oldControl->release();
-            iRef = std::move(aRhs.iRef);
             return *this;
         }
     public:
-        bool have_control() const
+        bool have_control() const noexcept
         {
             return iControl != nullptr;
         }
@@ -122,30 +140,31 @@ namespace neolib
                 return *iControl;
             throw no_control();
         }
-        cookie id() const
+        cookie id() const noexcept override
         {
-            return iRef.cookie();
+            return iId;
         }
-        bool primary() const
-        {
-            return iPrimary;
-        }
-        event_handle& operator~()
+    public:
+        event_handle& operator~() noexcept
         {
             if (control().valid())
                 control().get().handle_in_same_thread_as_emitter(id());
             return *this;
-        }
-        event_handle& operator!()
+        } 
+        event_handle& operator!() noexcept
         {
             if (control().valid())
                 control().get().handler_is_stateless(id());
             return *this;
         }
+    public:
+        void detach() noexcept override
+        {
+            iControl = nullptr;
+        }
     private:
         i_event_control* iControl;
-        cookie_ref_ptr iRef;
-        bool iPrimary;
+        cookie iId;
     };
 
     class event_control : public i_event_control
@@ -153,26 +172,26 @@ namespace neolib
     public:
         struct no_event : std::logic_error { no_event() : std::logic_error{ "neolib::event_control::no_event" } {} };
     public:
-        event_control(i_event& aEvent) :
+        event_control(i_event& aEvent) noexcept :
             iEvent{ &aEvent }, iRefCount{ 0u }
         {
         }
-        ~event_control()
+        ~event_control() noexcept
         {
             if (valid())
                 get().release_control();
         }
     public:
-        void add_ref() override
+        void add_ref() noexcept override
         {
             ++iRefCount;
         }
-        void release() override
+        void release() noexcept override
         {
             if (--iRefCount == 0u)
                 delete this;
         }
-        bool valid() const override
+        bool valid() const noexcept override
         {
             return iEvent != nullptr;
         }
@@ -183,7 +202,7 @@ namespace neolib
             throw no_event();
         }
     public:
-        void reset() override
+        void reset() noexcept override
         {
             iEvent = nullptr;
         }
@@ -346,7 +365,7 @@ namespace neolib
         typedef async_event_queue::optional_transaction optional_async_transaction;
         struct handler
         {
-            cookie id;
+            typedef handler abstract_type;
             async_event_queue* queue;
             destroyed_flag queueDestroyed;
             uint32_t referenceCount;
@@ -357,13 +376,11 @@ namespace neolib
             uint64_t triggerId = 0ull;
 
             handler(
-                cookie id,
                 async_event_queue& queue, 
                 const void* clientId, 
                 const ref_ptr<callback_callable>& callable,
                 bool handleInSameThreadAsEmitter = false,
                 bool handlerIsStateless = false) :
-                id { id },
                 queue{ &queue },
                 queueDestroyed{ queue },
                 referenceCount{ 0u },
@@ -373,7 +390,7 @@ namespace neolib
                 handlerIsStateless{ handlerIsStateless }
             {}
         };
-        typedef std::vector<handler> handler_list_t;
+        typedef jar<handler> handler_list_t;
         struct context
         {
             bool accepted;
@@ -437,15 +454,20 @@ namespace neolib
                 iControl.store(nullptr);
             }
         }
-        void handle_in_same_thread_as_emitter(cookie aHandleId) override
+        void remove_handler(cookie aHandlerId) override
         {
             std::scoped_lock<switchable_mutex> lock{ event_mutex() };
-            get_handler(aHandleId).handleInSameThreadAsEmitter = true;
+            instance().handlers.remove(aHandlerId);
         }
-        void handler_is_stateless(cookie aHandleId) override
+        void handle_in_same_thread_as_emitter(cookie aHandlerId) override
         {
             std::scoped_lock<switchable_mutex> lock{ event_mutex() };
-            get_handler(aHandleId).handlerIsStateless = true;
+            get_handler(aHandlerId).handleInSameThreadAsEmitter = true;
+        }
+        void handler_is_stateless(cookie aHandlerId) override
+        {
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
+            get_handler(aHandlerId).handlerIsStateless = true;
         }
     public:
         void push_context() const override
@@ -611,7 +633,7 @@ namespace neolib
     public:
         bool filtered() const override
         {
-            return instance().filterCount > 0u;
+            return has_instance() && instance().filterCount > 0u;
         }
         void filter_added() const override
         {
@@ -630,8 +652,7 @@ namespace neolib
         {
             std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             invalidate_handler_list();
-            auto id = next_cookie();
-            instance().handlers.emplace_back(handler{ id, async_event_queue::instance(), aUniqueId, make_ref<callback_callable>(aCallable) });
+            auto id = instance().handlers.emplace(async_event_queue::instance(), aUniqueId, make_ref<callback_callable>(aCallable));
             return event_handle{ control(), id };
         }
         event_handle operator()(const concrete_callable& aCallable, const void* aUniqueId = nullptr) const
@@ -697,35 +718,9 @@ namespace neolib
             return !instance().handlers.empty();
         }
     private:
-        cookie next_cookie() const 
-        {
-            return ++iNextCookie;
-        }
-        void add_ref(cookie aCookie) override
-        {
-            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
-            ++get_handler(aCookie).referenceCount;
-        }
-        void release(cookie aCookie) override
-        {
-            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
-            auto existing = find_handler(aCookie);
-            if (existing != instance().handlers.end())
-            {
-                if (--existing->referenceCount == 0u)
-                    erase_handler(existing);
-            }
-            else
-                throw event_handler_not_found();
-        }
-        long use_count(cookie aCookie) const override
-        {
-            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
-            return get_handler(aCookie).referenceCount;
-        }
-    private:
         typename handler_list_t::iterator erase_handler(typename handler_list_t::const_iterator aHandler) const
         {
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             auto& handlers = instance().handlers;
             auto callable = aHandler->callable;
             return handlers.erase(aHandler);
@@ -804,14 +799,16 @@ namespace neolib
             iInstanceDataPtr = &*iInstanceData;
             return *iInstanceDataPtr;
         }
-        typename handler_list_t::iterator find_handler(cookie aHandleId) const
+        typename handler_list_t::iterator find_handler(cookie aHandlerId) const
         {
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
             auto& handlers = instance().handlers;
-            return std::find_if(handlers.begin(), handlers.end(), [aHandleId](auto const& h) { return h.id == aHandleId; });
+            return handlers.find(aHandlerId);
         }
-        handler& get_handler(cookie aHandleId) const
+        handler& get_handler(cookie aHandlerId) const
         {
-            auto existing = find_handler(aHandleId);
+            std::scoped_lock<switchable_mutex> lock{ event_mutex() };
+            auto existing = find_handler(aHandlerId);
             if (existing != instance().handlers.end())
                 return *existing;
             throw event_handler_not_found();
@@ -821,25 +818,20 @@ namespace neolib
         mutable std::atomic<i_event_control*> iControl;
         mutable std::optional<instance_data> iInstanceData;
         mutable std::atomic<instance_data*> iInstanceDataPtr;
-        mutable std::atomic<cookie> iNextCookie{ 0 };
     };
 
-    class sink // todo: make polymorphic
+    class sink : public i_sink
     {
     public:
         sink()
         {
         }
-        sink(const event_handle& aHandle)
-        {
-            iHandles.push_back(aHandle);
-        }
-        sink(event_handle&& aHandle)
-        {
-            iHandles.push_back(std::move(aHandle));
-        }
-        sink(const sink& aSink) :
+        sink(sink const& aSink) :
             iHandles{ aSink.iHandles }
+        {
+        }
+        sink(i_sink const& aSink) :
+            iHandles{ aSink.handles() }
         {
         }
         virtual ~sink()
@@ -847,44 +839,61 @@ namespace neolib
             clear();
         }
     public:
-        sink& operator=(const sink& aSink)
+        sink& operator=(i_sink const& aSink) override
         {
             if (this == &aSink)
                 return *this;
-            iHandles = aSink.iHandles;
+            iHandles = aSink.handles();
+            return *this;
+        }
+        sink& operator=(i_sink&& aSink) override
+        {
+            if (this == &aSink)
+                return *this;
+            iHandles = std::move(aSink.handles());
             return *this;
         }
     public:
-        sink& operator=(const event_handle& aHandle)
+        sink& operator=(i_event_handle const& aHandle) override
         {
-            return *this = sink{ aHandle };
-        }
-        sink& operator=(event_handle&& aHandle)
-        {
-            return *this = sink{ std::move(aHandle) };
-        }
-        sink& operator+=(const event_handle& aHandle)
-        {
-            sink s{ aHandle };
-            iHandles.insert(iHandles.end(), s.iHandles.begin(), s.iHandles.end());
+            clear();
+            (*this) += aHandle;
             return *this;
         }
-        sink& operator+=(event_handle&& aHandle)
+        sink& operator=(i_event_handle&& aHandle) override
         {
-            sink s{ std::move(aHandle) };
-            iHandles.insert(iHandles.end(), s.iHandles.begin(), s.iHandles.end());
+            clear();
+            (*this) += std::move(aHandle);
+            return *this;
+        }
+        sink& operator+=(i_event_handle const& aHandle) override
+        {
+            iHandles.container().insert(iHandles.container().end(), aHandle);
+            return *this;
+        }
+        sink& operator+=(i_event_handle&& aHandle) override
+        {
+            iHandles.container().insert(iHandles.container().end(), std::move(aHandle));
             return *this;
         }
     public:
-        bool empty() const
+        bool empty() const override
         {
             return iHandles.empty();
         }
-        void clear()
+        void clear() override
         {
             iHandles.clear();
         }
+        vector<event_handle> const& handles() const override
+        {
+            return iHandles;
+        }
+        vector<event_handle>& handles() override
+        {
+            return iHandles;
+        }
     private:
-        mutable std::vector<event_handle> iHandles;
+        mutable vector<event_handle> iHandles;
     };
 }

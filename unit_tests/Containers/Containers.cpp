@@ -1,11 +1,33 @@
 #include <iostream>
 #include <string>
 #include <neolib/core/tree.hpp>
+#include <neolib/core/jar.hpp>
+
+struct i_foo
+{
+    typedef i_foo abstract_type;
+};
+
+struct foo : i_foo
+{
+    int n;
+    foo() {};
+    foo(i_foo const&) {}
+};
+
+template class neolib::basic_jar<foo>;
 
 template class neolib::segmented_tree<std::string, 64, std::allocator<std::string>>;
 
 int main()
 {
+    neolib::basic_jar<foo> jar;
+    jar.emplace();
+    jar.emplace();
+    jar.emplace();
+
+    jar.item_cookie(jar.at_index(1));
+
     neolib::tree<std::string> tree;
     auto entities = tree.insert(tree.send(), "Entity");
     auto components = tree.insert(tree.send(), "Component");

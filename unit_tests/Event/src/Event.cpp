@@ -64,6 +64,8 @@ int main()
 		{
 			neolib::sink localSink;
 			localSink += c.new_integer([](int n) { std::cout << n << std::endl; });
+			localSink += c.new_integer([](int n) { std::cout << n << std::endl; });
+			localSink += c.new_integer([](int n) { std::cout << n << std::endl; });
 			c.count(10);
 		}
 		c.count(10); // shouldn't print anything as 'localSink' has been destroyed deregistering the handler

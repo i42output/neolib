@@ -67,14 +67,62 @@ namespace neolib
         }
     }
 
-    class i_event : public i_cookie_consumer
+    class i_event;
+
+    class i_event_control
+    {
+    public:
+        virtual ~i_event_control() = default;
+    public:
+        virtual void add_ref() noexcept = 0;
+        virtual void release() noexcept = 0;
+        virtual bool valid() const noexcept = 0;
+        virtual i_event& get() const = 0;
+    public:
+        virtual void reset() noexcept = 0;
+    };
+
+    class i_event_handle
+    {
+    public:
+        struct no_control : std::logic_error { no_control() : std::logic_error{ "neolib::i_event_handle::no_control" } {} };
+    public:
+        typedef i_event_handle abstract_type;
+    public:
+        virtual ~i_event_handle() noexcept = default;
+    public:
+        virtual i_event_handle& operator=(const i_event_handle& aRhs) noexcept = 0;
+        virtual i_event_handle& operator=(i_event_handle&& aRhs) noexcept = 0;
+    public:
+        virtual bool have_control() const noexcept = 0;
+        virtual i_event_control& control() const = 0;
+        virtual cookie id() const noexcept = 0;
+    public:
+        virtual i_event_handle& operator~() noexcept = 0;
+        virtual i_event_handle& operator!() noexcept = 0;
+    public:
+        virtual void detach() noexcept = 0;
+    };
+
+    inline i_event_handle& i_event_handle::operator=(const i_event_handle& aRhs) noexcept
+    {
+        return *this;
+    }
+
+    inline i_event_handle& i_event_handle::operator=(i_event_handle&& aRhs) noexcept
+    {
+        return *this;
+    }
+
+    class i_event
     {
     public:
         virtual ~i_event() = default;
     public:
         virtual void release_control() = 0;
-        virtual void handle_in_same_thread_as_emitter(cookie aHandleId) = 0;
-        virtual void handler_is_stateless(cookie aHandleId) = 0;
+        virtual void remove_handler(cookie aHandlerId) = 0;
+        virtual void handle_in_same_thread_as_emitter(cookie aHandlerId) = 0;
+        virtual void handler_is_stateless(cookie aHandlerId) = 0;
     public:
         virtual void pre_trigger() const = 0;
     public:
@@ -89,19 +137,6 @@ namespace neolib
         virtual void filter_added() const = 0;
         virtual void filter_removed() const = 0;
         virtual void filters_removed() const = 0;
-    };
-
-    class i_event_control
-    {
-    public:
-        virtual ~i_event_control() = default;
-    public:
-        virtual void add_ref() = 0;
-        virtual void release() = 0;
-        virtual bool valid() const = 0;
-        virtual i_event& get() const = 0;
-    public:
-        virtual void reset() = 0;
     };
 
     class i_event_callback : public i_reference_counted
@@ -138,4 +173,33 @@ namespace neolib
         virtual void pre_filter_event(const i_event& aEvent) const = 0;
         virtual void filter_event(const i_event& aEvent) const = 0;
     };
+
+    class i_sink
+    {
+    public:
+        virtual ~i_sink() = default;
+    public:
+        virtual i_sink& operator=(i_sink const& aSink) = 0;
+        virtual i_sink& operator=(i_sink&& aSink) = 0;
+    public:
+        virtual i_sink& operator=(i_event_handle const& aHandle) = 0;
+        virtual i_sink& operator=(i_event_handle&& aHandle) = 0;
+        virtual i_sink& operator+=(i_event_handle const& aHandle) = 0;
+        virtual i_sink& operator+=(i_event_handle&& aHandle) = 0;
+    public:
+        virtual bool empty() const = 0;
+        virtual void clear() = 0;
+        virtual i_vector<i_event_handle> const& handles() const = 0;
+        virtual i_vector<i_event_handle>& handles() = 0;
+    };
+
+    inline i_sink& i_sink::operator=(i_sink const& aSink) 
+    {
+        return *this;
+    }
+
+    inline i_sink& i_sink::operator=(i_sink&& aSink)
+    {
+        return *this;
+    }
 }
