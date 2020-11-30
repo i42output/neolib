@@ -37,7 +37,7 @@ add_library(neolib ${SOURCE_FILES} ${PLATFORM_SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(neolib PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
-set_property(TARGET neolib PROPERTY CXX_STANDARD 17)
+set_property(TARGET neolib PROPERTY CXX_STANDARD 20)
 set_property(TARGET neolib PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 set_property(TARGET neolib PROPERTY CXX_VISIBILITY_PRESET hidden)
 set_property(TARGET neolib PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})

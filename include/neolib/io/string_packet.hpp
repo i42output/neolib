@@ -47,8 +47,8 @@ namespace neolib
         typedef i_basic_packet<CharType> base_type;
         // constants
     public:
-        static const CharType CHAR_CR;
-        static const CharType CHAR_LF;
+        static constexpr CharType CHAR_CR = static_cast<CharType>('\r');
+        static constexpr CharType CHAR_LF = static_cast<CharType>('\n');
         // types
     public:
         typedef typename base_type::character_type character_type;
@@ -164,15 +164,6 @@ namespace neolib
     private:
         contents_type iContents;
     };
-
-    template <typename CharType>
-    constexpr CharType basic_string_packet<CharType>::CHAR_CR = '\r';
-    template <typename CharType>
-    constexpr CharType basic_string_packet<CharType>::CHAR_LF = '\n';
-    template <>
-    constexpr wchar_t basic_string_packet<wchar_t>::CHAR_CR = L'\r';
-    template <>
-    constexpr wchar_t basic_string_packet<wchar_t>::CHAR_LF = L'\n';
 
     typedef basic_string_packet<char> string_packet;
 }

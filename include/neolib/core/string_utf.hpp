@@ -300,12 +300,14 @@ namespace neolib
     }
 
     template <typename Callback>
-    inline std::u32string utf8_to_utf32(std::string::const_iterator aBegin, std::string::const_iterator aEnd, Callback aCallback, bool aCodePageFallback = false)
+    inline std::u32string utf8_to_utf32(std::string_view const& aStringView, Callback aCallback, bool aCodePageFallback = false)
     {
+        auto begin = aStringView.begin();
+        auto end = aStringView.end();
         std::u32string utf32String;
-        for (auto i = aBegin; i != aEnd; ++i)
+        for (auto i = begin; i != end; ++i)
         {
-            aCallback(i - aBegin, utf32String.size());
+            aCallback(i - begin, utf32String.size());
 
             unsigned char nch = static_cast<unsigned char>(*i);
             unicode_char_t uch = 0;
@@ -317,11 +319,11 @@ namespace neolib
                 if (nch == 0xC0 || nch == 0xC1)
                     uch = INVALID_CHAR32;
                 else if ((nch & 0xE0) == 0xC0)
-                    uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xE0), 1, i, aEnd);
+                    uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xE0), 1, i, end);
                 else if ((nch & 0xF0) == 0xE0)
-                    uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF0), 2, i, aEnd);
+                    uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF0), 2, i, end);
                 else if ((nch & 0xF8) == 0xF0)
-                    uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF8), 3, i, aEnd);
+                    uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF8), 3, i, end);
                 else
                     uch = INVALID_CHAR32;
                 if (i == old && aCodePageFallback)
@@ -338,6 +340,12 @@ namespace neolib
             utf32String.append(1, uch);
         }
         return utf32String;
+    }
+
+    template <typename Callback>
+    inline std::u32string utf8_to_utf32(std::string::const_iterator aBegin, std::string::const_iterator aEnd, Callback aCallback, bool aCodePageFallback = false)
+    {
+        return utf8_to_utf32(std::string_view{ aBegin, aEnd }, aCallback, aCodePageFallback);
     }
 
     template <typename Callback>
