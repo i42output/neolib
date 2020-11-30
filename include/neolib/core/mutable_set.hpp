@@ -123,9 +123,9 @@ namespace neolib
     };
 
     template <typename T, typename Pr = std::less<typename crack_key<T>::key_type>, typename Alloc = std::allocator<std::pair<typename crack_key<T>::key_type const, T> > >
-    class mutable_set : public mutable_base<std::map<typename crack_key<T>::key_type, T, Pr, typename Alloc::template rebind<std::pair<typename crack_key<T>::key_type const, T>>::other>>
+    class mutable_set : public mutable_base<std::map<typename crack_key<T>::key_type, T, Pr, typename std::allocator_traits<Alloc>::template rebind_alloc<std::pair<typename crack_key<T>::key_type const, T>>>>
     {
-        typedef mutable_base<std::map<typename crack_key<T>::key_type, T, Pr, typename Alloc::template rebind<std::pair<typename crack_key<T>::key_type const, T>>::other>> base_type;
+        typedef mutable_base<std::map<typename crack_key<T>::key_type, T, Pr, typename std::allocator_traits<Alloc>::template rebind_alloc<std::pair<typename crack_key<T>::key_type const, T>>>> base_type;
     public:
         typedef typename crack_key<T>::key_type key_type;
         using typename base_type::const_iterator;
@@ -164,9 +164,9 @@ namespace neolib
     };
 
     template <typename T, typename Pr = std::less<typename crack_key<T>::key_type>, typename Alloc = std::allocator<std::pair<typename crack_key<T>::key_type const, T> > >
-    class mutable_multiset : public mutable_base<std::multimap<typename crack_key<T>::key_type, T, Pr, typename Alloc::template rebind<std::pair<typename crack_key<T>::key_type const, T>>::other>>
+    class mutable_multiset : public mutable_base<std::multimap<typename crack_key<T>::key_type, T, Pr, typename std::allocator_traits<Alloc>::template rebind_alloc<std::pair<typename crack_key<T>::key_type const, T>>>>
     {
-        typedef mutable_base<std::multimap<typename crack_key<T>::key_type, T, Pr, typename Alloc::template rebind<std::pair<typename crack_key<T>::key_type const, T>>::other>> base_type;
+        typedef mutable_base<std::multimap<typename crack_key<T>::key_type, T, Pr, typename std::allocator_traits<Alloc>::template rebind_alloc<std::pair<typename crack_key<T>::key_type const, T>>>> base_type;
     public:
         typedef typename crack_key<T>::key_type key_type;
         using typename base_type::const_iterator;

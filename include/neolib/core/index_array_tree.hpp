@@ -230,7 +230,7 @@ namespace neolib
             foreign_index_type iForeignIndex;
         };
     private:
-        typedef typename allocator_type:: template rebind<node>::other node_allocator_type;
+        typedef typename std::allocator_traits<allocator_type>:: template rebind_alloc<node> node_allocator_type;
 
     public:
         index_array_tree(const Alloc& aAllocator = Alloc()) :

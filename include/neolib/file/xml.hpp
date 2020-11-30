@@ -66,7 +66,7 @@ namespace neolib
         typedef node* node_ptr;
     private:
         // types
-        typedef std::list<node_ptr, typename allocator_type::template rebind<node_ptr>::other> node_list;
+        typedef std::list<node_ptr, typename std::allocator_traits<allocator_type>::template rebind_alloc<node_ptr>> node_list;
         /* Why std::list of pointers instead of std::vector of pointers?  std::vector is not compatible with chunk allocator
         and timings indicate performance benefit of std::list with chunk allocator compared to std::vector when parsing large (~10MB) XML files. */
     public:
@@ -217,8 +217,8 @@ namespace neolib
     {
     public:
         // allocation
-        static void* operator new(std::size_t) { return typename Alloc::template rebind<xml_element>::other().allocate(1); }
-        static void operator delete(void* ptr) { return typename Alloc::template rebind<xml_element>::other().deallocate(static_cast<xml_element*>(ptr), 1); }
+        static void* operator new(std::size_t) { return typename std::allocator_traits<Alloc>::template rebind_alloc<xml_element>().allocate(1); }
+        static void operator delete(void* ptr) { return typename std::allocator_traits<Alloc>::template rebind_alloc<xml_element>().deallocate(static_cast<xml_element*>(ptr), 1); }
 
     public:
         // types
@@ -226,7 +226,7 @@ namespace neolib
         typedef typename node::allocator_type allocator_type;
         typedef typename node::string string;
         typedef std::pair<const string, string> attribute;
-        typedef std::map<string, string, std::less<string>, typename allocator_type::template rebind<attribute>::other> attribute_list;
+        typedef std::map<string, string, std::less<string>, typename std::allocator_traits<allocator_type>::template rebind_alloc<attribute>> attribute_list;
         class iterator : public node::iterator
         {
         public:
@@ -285,8 +285,8 @@ namespace neolib
     {
     public:
         // allocation
-        static void* operator new(std::size_t) { return typename Alloc::template rebind<xml_text>::other().allocate(1); }
-        static void operator delete(void* ptr) { return typename Alloc::template rebind<xml_text>::other().deallocate(static_cast<xml_text*>(ptr), 1); }
+        static void* operator new(std::size_t) { return typename std::allocator_traits<Alloc>::template rebind_alloc<xml_text>().allocate(1); }
+        static void operator delete(void* ptr) { return typename std::allocator_traits<Alloc>::template rebind_alloc<xml_text>().deallocate(static_cast<xml_text*>(ptr), 1); }
 
     public:
         // types
@@ -312,8 +312,8 @@ namespace neolib
     {
     public:
         // allocation
-        static void* operator new(std::size_t) { return typename Alloc::template rebind<xml_comment>::other().allocate(1); }
-        static void operator delete(void* ptr) { return typename Alloc::template rebind<xml_comment>::other().deallocate(static_cast<xml_comment*>(ptr), 1); }
+        static void* operator new(std::size_t) { return typename std::allocator_traits<Alloc>::template rebind_alloc<xml_comment>().allocate(1); }
+        static void operator delete(void* ptr) { return typename std::allocator_traits<Alloc>::template rebind_alloc<xml_comment>().deallocate(static_cast<xml_comment*>(ptr), 1); }
 
     public:
         // types
@@ -339,8 +339,8 @@ namespace neolib
     {
     public:
         // allocation
-        static void* operator new(std::size_t) { return typename Alloc::template rebind<xml_declaration>::other().allocate(1); }
-        static void operator delete(void* ptr) { return typename Alloc::template rebind<xml_declaration>::other().deallocate(static_cast<xml_declaration*>(ptr), 1); }
+        static void* operator new(std::size_t) { return typename std::allocator_traits<Alloc>::template rebind_alloc<xml_declaration>().allocate(1); }
+        static void operator delete(void* ptr) { return typename std::allocator_traits<Alloc>::template rebind_alloc<xml_declaration>().deallocate(static_cast<xml_declaration*>(ptr), 1); }
 
     public:
         // types
@@ -366,8 +366,8 @@ namespace neolib
     {
     public:
         // allocation
-        static void* operator new(std::size_t) { return typename Alloc::template rebind<xml_cdata>::other().allocate(1); }
-        static void operator delete(void* ptr) { return typename Alloc::template rebind<xml_cdata>::other().deallocate(static_cast<xml_cdata*>(ptr), 1); }
+        static void* operator new(std::size_t) { return typename std::allocator_traits<Alloc>::template rebind_alloc<xml_cdata>().allocate(1); }
+        static void operator delete(void* ptr) { return typename std::allocator_traits<Alloc>::template rebind_alloc<xml_cdata>().deallocate(static_cast<xml_cdata*>(ptr), 1); }
 
     public:
         // types
@@ -393,8 +393,8 @@ namespace neolib
     {
     public:
         // allocation
-        static void* operator new(std::size_t) { return typename Alloc::template rebind<xml_dtd>::other().allocate(1); }
-        static void operator delete(void* ptr) { return typename Alloc::template rebind<xml_dtd>::other().deallocate(static_cast<xml_dtd*>(ptr), 1); }
+        static void* operator new(std::size_t) { return typename std::allocator_traits<Alloc>::template rebind_alloc<xml_dtd>().allocate(1); }
+        static void operator delete(void* ptr) { return typename std::allocator_traits<Alloc>::template rebind_alloc<xml_dtd>().deallocate(static_cast<xml_dtd*>(ptr), 1); }
 
     public:
         // types
@@ -433,7 +433,7 @@ namespace neolib
         typedef xml_cdata<CharT, allocator_type> cdata;
         typedef xml_dtd<CharT, allocator_type> dtd;
         typedef std::pair<string, string> entity;
-        typedef std::list<entity, typename allocator_type::template rebind<entity>::other> entity_list;
+        typedef std::list<entity, typename std::allocator_traits<allocator_type>::template rebind_alloc<entity>> entity_list;
 
         // exceptions
     public:
