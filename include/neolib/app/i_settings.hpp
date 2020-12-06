@@ -96,7 +96,7 @@ namespace neolib
         virtual void load() = 0;
         virtual void save() const = 0;
     public:
-        static uuid const& id() { static uuid sId = neolib::make_uuid("E19B3C48-04F7-4207-B24A-2967A3523CE7"); return sId; }
+        static uuid const& iid() { static uuid sId = neolib::make_uuid("E19B3C48-04F7-4207-B24A-2967A3523CE7"); return sId; }
         // helpers
     public:
         void register_category(string const& aCategorySubkey, string const& aCategoryTitle = string{})

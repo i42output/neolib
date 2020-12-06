@@ -93,8 +93,6 @@ namespace neolib
     public:
         void load() override;
         void save() const override;
-    public:
-        static const uuid& id() { static uuid sId = neolib::make_uuid("E19B3C48-04F7-4207-B24A-2967A3523CE7"); return sId; }
     private:
         string iFileName;
         mutable std::unique_ptr<xml> iStore;
