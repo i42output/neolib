@@ -754,4 +754,16 @@ namespace neolib
         node_allocator_type iAllocator;
         size_type iSize;
     };
+
+    template <typename T, std::size_t SegmentSize, typename Alloc>
+    inline bool operator==(segmented_array<T, SegmentSize, Alloc> const& lhs, segmented_array<T, SegmentSize, Alloc> const& rhs)
+    {
+        return lhs.size() == rhs.size() && std::equal(lhs.cbegin(), lhs.cend(), rhs.cbegin());
+    }
+
+    template <typename T, std::size_t SegmentSize, typename Alloc>
+    inline bool operator!=(segmented_array<T, SegmentSize, Alloc> const& lhs, segmented_array<T, SegmentSize, Alloc> const& rhs)
+    {
+        return !(lhs == rhs);
+    }
 }
