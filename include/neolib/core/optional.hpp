@@ -43,7 +43,7 @@
 namespace neolib
 {
     template<typename T>
-    class optional : public reference_counted<i_optional<abstract_t<T>>>, public std::optional<T>
+    class optional : public reference_counted<i_optional<abstract_t<T>>>
     {
         typedef optional<T> self_type;
         typedef reference_counted<i_optional<abstract_t<T>>> base_type;
@@ -66,17 +66,17 @@ namespace neolib
         typedef typename base_type::const_reference abstract_const_reference;
         // construction
     public:
-        optional() : container_type{} {}
-        optional(const abstract_type& rhs) : container_type{ rhs.valid() ? container_type{ rhs.get() } : container_type{} } {}
-        optional(const container_type& rhs) : container_type{ rhs } {}
-        optional(const_reference value) : container_type{ value } {}
+        optional() : iValue{ std::nullopt } {}
+        optional(const abstract_type& rhs) : iValue{ rhs.valid() ? container_type{ rhs.get() } : container_type{ std::nullopt } } {}
+        optional(const container_type& rhs) : iValue{ rhs } {}
+        optional(const_reference value) : iValue{ value } {}
         template <typename SFINAE = sfinae>
-        optional(abstract_const_reference value, std::enable_if_t<!std::is_same_v<value_type, abstract_value_type>, SFINAE> = sfinae{}) : container_type{ value } {}
+        optional(abstract_const_reference value, std::enable_if_t<!std::is_same_v<value_type, abstract_value_type>, SFINAE> = sfinae{}) : iValue{ value } {}
         // state
     public:
         bool valid() const override
         {
-            return static_cast<const container_type&>(*this) != std::nullopt;
+            return iValue != std::nullopt;
         }
         bool invalid() const override
         {
@@ -91,13 +91,13 @@ namespace neolib
         reference get() override
         {
             if (valid())
-                return container_type::value();
+                return iValue.value();
             throw not_valid();
         }
         const_reference get() const override
         {
             if (valid())
-                return container_type::value();
+                return iValue.value();
             throw not_valid();
         }
         reference operator*() override
@@ -120,11 +120,11 @@ namespace neolib
     public:
         void reset() override
         { 
-            static_cast<container_type&>(*this) = std::nullopt;
+            iValue = std::nullopt;
         }
         optional& operator=(const std::nullopt_t&) override
         {
-            static_cast<container_type&>(*this) = std::nullopt;
+            iValue = std::nullopt;
             return *this;
         }
         optional& operator=(const abstract_type& rhs) override
@@ -134,13 +134,15 @@ namespace neolib
         }
         optional& operator=(const abstract_value_type& value) override
         {
-            static_cast<container_type&>(*this) = value;
+            iValue = value;
             return *this;
         }
         void swap(optional& rhs)
         {
-            container_type::swap(rhs);
+            iValue.swap(rhs.iValue);
         }
+    private:
+        container_type iValue;
     };
 
     template <typename T>
