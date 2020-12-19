@@ -39,6 +39,7 @@
 #include <string>
 #include <string_view>
 #include <iostream>
+#include <boost/algorithm/string.hpp>
 #include <neolib/core/fwd_abstract.hpp>
 #include <neolib/core/i_random_access_container.hpp>
 
@@ -93,6 +94,22 @@ namespace neolib
     {
         return std::strcmp(lhs.c_str(), rhs.c_str()) < 0;
     }
+
+    struct ci_equal_to
+    {
+        bool operator()(const i_string& lhs, const i_string& rhs) const
+        {
+            return boost::iequals(lhs.to_std_string_view(), rhs.to_std_string_view());
+        }
+    };
+
+    struct ci_less
+    {
+        bool operator()(const i_string& lhs, const i_string& rhs) const
+        {
+            return boost::ilexicographical_compare(lhs.to_std_string_view(), rhs.to_std_string_view());
+        }
+    };
 
     inline std::ostream& operator<<(std::ostream& aStream, const i_string& aString)
     {
