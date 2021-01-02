@@ -69,6 +69,10 @@ namespace neolib
             constexpr T one = static_cast<T>(1.0);
             template <typename T>
             constexpr T two = static_cast<T>(2.0);
+            template <typename T>
+            constexpr T three = static_cast<T>(3.0);
+            template <typename T>
+            constexpr T four = static_cast<T>(4.0);
         }
 
         template <typename T, typename SFINAE = std::enable_if_t<std::is_scalar_v<T>, sfinae>>
@@ -1756,6 +1760,39 @@ namespace neolib
             if (second == std::nullopt)
                 return false;
             return aabb_intersects(first, *second);
+        }
+
+        inline vec2 bezier_cubic(vec2 const& p0, vec2 const& p1, vec2 const& p2, vec2 const& p3, scalar t)
+        {
+            return std::pow(1.0 - t, 3.0) * p0 + 3.0 * std::pow(1.0 - t, 2.0) * t * p1 + 3 * (1.0 - t) * std::pow(t, 2.0) * p2 + std::pow(t, 3.0) * p3;
+        }
+
+        inline vec2 bezier_cubic_x(vec2 const& p0, vec2 const& p1, vec2 const& p2, vec2 const& p3, scalar x)
+        {
+            return bezier_cubic(p0, p1, p2, p3, x / (p3.x - p0.x));
+        }
+
+        inline vec2 bezier_cubic_y(vec2 const& p0, vec2 const& p1, vec2 const& p2, vec2 const& p3, scalar y)
+        {
+            return bezier_cubic(p0, p1, p2, p3, y / (p3.y - p0.y));
+        }
+
+        template <typename T>
+        inline basic_vector<T, 2> bezier_cubic(basic_vector<T, 2> const& p0, basic_vector<T, 2> const& p1, basic_vector<T, 2> const& p2, basic_vector<T, 2> const& p3, T t)
+        {
+            return bezier_cubic(p0.as<scalar>(), p1.as<scalar>(), p2.as<scalar>(), p3.as<scalar>(), static_cast<scalar>(t)).as<T>();
+        }
+
+        template <typename T>
+        inline basic_vector<T, 2> bezier_cubic_x(basic_vector<T, 2> const& p0, basic_vector<T, 2> const& p1, basic_vector<T, 2> const& p2, basic_vector<T, 2> const& p3, T x)
+        {
+            return bezier_cubic_x(p0.as<scalar>(), p1.as<scalar>(), p2.as<scalar>(), p3.as<scalar>(), static_cast<scalar>(x)).as<T>();
+        }
+
+        template <typename T>
+        inline basic_vector<T, 2> bezier_cubic_y(basic_vector<T, 2> const& p0, basic_vector<T, 2> const& p1, basic_vector<T, 2> const& p2, basic_vector<T, 2> const& p3, T y)
+        {
+            return bezier_cubic_y(p0.as<scalar>(), p1.as<scalar>(), p2.as<scalar>(), p3.as<scalar>(), static_cast<scalar>(y)).as<T>();
         }
     }
 
