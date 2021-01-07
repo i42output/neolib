@@ -137,7 +137,7 @@ namespace neolib
         template <typename Duration>
         void expires_from_now(const Duration& aDuration)
         {
-            expires_at(std::chrono::steady_clock::now() + aDuration);
+            expires_at(std::chrono::steady_clock::now() + std::chrono::duration_cast<std::chrono::nanoseconds>(aDuration));
         }
         i_timer_subscriber& async_wait(const std::function<void()>& aSubscriber)
         {

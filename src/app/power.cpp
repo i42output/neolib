@@ -51,7 +51,7 @@ namespace neolib
             aTimer.again();
             if (is_green_mode_enabled() && std::chrono::steady_clock::now() - iLastActivityTime >= activity_timeout())
                 set_active_mode(power_mode::Green);
-        }, 1000u },
+        }, std::chrono::milliseconds{1000} },
         iActiveMode{ power_mode::Normal },
         iActivityTimeout{ 5 },
         iGreenModeEnabled{ true },

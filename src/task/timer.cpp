@@ -38,11 +38,11 @@
 
 namespace neolib
 {
-    timer::timer(i_async_task& aTask, uint32_t aDuration_ms, bool aInitialWait) :
+    timer::timer(i_async_task& aTask, const duration_type& aDuration_s, bool aInitialWait) :
         iTask{ aTask },
         iTaskDestroying{ aTask },
         iTaskDestroyed{ aTask },
-        iDuration_ms{ aDuration_ms },
+        iDuration_s{ aDuration_s },
         iEnabled{ true },
         iWaiting{ false },
         iInReady{ false }
@@ -51,12 +51,12 @@ namespace neolib
             again();
     }
 
-    timer::timer(i_async_task& aTask, const i_lifetime& aContext, uint32_t aDuration_ms, bool aInitialWait) :
+    timer::timer(i_async_task& aTask, const i_lifetime& aContext, const duration_type& aDuration_s, bool aInitialWait) :
         iTask{ aTask },
         iTaskDestroying{ aTask },
         iTaskDestroyed{ aTask },
         iContextDestroyed{ aContext },
-        iDuration_ms{ aDuration_ms },
+        iDuration_s{ aDuration_s },
         iEnabled{ true },
         iWaiting{ false },
         iInReady{ false }
@@ -70,7 +70,7 @@ namespace neolib
         iTaskDestroying{ aOther.iTask },
         iTaskDestroyed{ aOther.iTask },
         iContextDestroyed{ aOther.iContextDestroyed },
-        iDuration_ms{ aOther.iDuration_ms },
+        iDuration_s{ aOther.iDuration_s },
         iEnabled{ aOther.iEnabled },
         iWaiting{ false },
         iInReady{ false }
@@ -83,7 +83,7 @@ namespace neolib
     {
         if (waiting())
             cancel();
-        iDuration_ms = aOther.iDuration_ms;
+        iDuration_s = aOther.iDuration_s;
         iEnabled = aOther.iEnabled;
         if (aOther.waiting())
             again();
@@ -137,7 +137,7 @@ namespace neolib
             enable(false);
         if (waiting())
             throw already_waiting();
-        timer_object().expires_from_now(std::chrono::milliseconds(iDuration_ms));
+        timer_object().expires_from_now(iDuration_s);
         if (iTimerSubscriber)
             timer_object().async_wait(*iTimerSubscriber);
         else
@@ -170,14 +170,14 @@ namespace neolib
         return iWaiting;
     }
 
-    uint32_t timer::duration() const
+    const timer::duration_type& timer::duration() const
     {
-        return iDuration_ms;
+        return iDuration_s;
     }
 
-    void timer::set_duration(uint32_t aDuration_ms, bool aEffectiveImmediately)
+    void timer::set_duration(const duration_type& aDuration_s, bool aEffectiveImmediately)
     {
-        iDuration_ms = aDuration_ms;
+        iDuration_s = aDuration_s;
         if (aEffectiveImmediately && waiting())
         {
             destroyed_flag destroyed{ *this };
@@ -186,11 +186,6 @@ namespace neolib
                 return;
             again();
         }
-    }
-
-    uint32_t timer::duration_ms() const
-    {
-        return iDuration_ms;
     }
 
     void timer::set_debug(bool aDebug)
@@ -255,14 +250,14 @@ namespace neolib
         }
     }
 
-    callback_timer::callback_timer(i_async_task& aTask, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait) :
-        timer{ aTask, aDuration_ms, aInitialWait },
+    callback_timer::callback_timer(i_async_task& aTask, std::function<void(callback_timer&)> aCallback, const duration_type& aDuration_s, bool aInitialWait) :
+        timer{ aTask, aDuration_s, aInitialWait },
         iCallback{ aCallback }
     {
     }
 
-    callback_timer::callback_timer(i_async_task& aTask, const i_lifetime& aContext, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait) :
-        timer{ aTask, aContext, aDuration_ms, aInitialWait },
+    callback_timer::callback_timer(i_async_task& aTask, const i_lifetime& aContext, std::function<void(callback_timer&)> aCallback, const duration_type& aDuration_s, bool aInitialWait) :
+        timer{ aTask, aContext, aDuration_s, aInitialWait },
         iCallback{ aCallback }
     {
     }

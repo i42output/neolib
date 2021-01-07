@@ -51,13 +51,16 @@ namespace neolib
     {
         // types
     public:
+        typedef std::chrono::duration<double> duration_type;
+        // exceptions
+    public:
         struct already_waiting : std::logic_error { already_waiting() : std::logic_error("neolib::timer::already_waiting") {} };
         struct already_enabled : std::logic_error { already_enabled() : std::logic_error("neolib::timer::already_enabled") {} };
         struct already_disabled : std::logic_error { already_disabled() : std::logic_error("neolib::timer::already_disabled") {} };
         // construction
     public:
-        timer(i_async_task& aTask, uint32_t aDuration_ms, bool aInitialWait = true);
-        timer(i_async_task& aTask, const i_lifetime& aContext, uint32_t aDuration_ms, bool aInitialWait = true);
+        timer(i_async_task& aTask, const duration_type& aDuration_s, bool aInitialWait = true);
+        timer(i_async_task& aTask, const i_lifetime& aContext, const duration_type& aDuration_s, bool aInitialWait = true);
         timer(const timer& aOther);
         timer& operator=(const timer& aOther);
         virtual ~timer();
@@ -73,9 +76,8 @@ namespace neolib
         void cancel();
         void reset();
         bool waiting() const;
-        uint32_t duration() const;
-        void set_duration(uint32_t aDuration_ms, bool aEffectiveImmediately = false);
-        uint32_t duration_ms() const;
+        const duration_type& duration() const;
+        void set_duration(const duration_type& aDuration_s, bool aEffectiveImmediately = false);
     public:
         void set_debug(bool aDebug);
         // implementation
@@ -94,7 +96,7 @@ namespace neolib
         sink iSink;
         ref_ptr<i_timer_object> iTimerObject;
         ref_ptr<i_timer_subscriber> iTimerSubscriber;
-        uint32_t iDuration_ms;
+        duration_type iDuration_s;
         bool iEnabled;
         bool iWaiting;
         bool iInReady;
@@ -106,11 +108,11 @@ namespace neolib
     class NEOLIB_EXPORT callback_timer : public timer
     {
     public:
-        callback_timer(i_async_task& aTask, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true);
-        callback_timer(i_async_task& aTask, const i_lifetime& aContext, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true);
+        callback_timer(i_async_task& aTask, std::function<void(callback_timer&)> aCallback, const duration_type& aDuration_s, bool aInitialWait = true);
+        callback_timer(i_async_task& aTask, const i_lifetime& aContext, std::function<void(callback_timer&)> aCallback, const duration_type& aDuration_s, bool aInitialWait = true);
         template <typename Context>
-        callback_timer(i_async_task& aTask, const Context& aContext, std::function<void(callback_timer&)> aCallback, uint32_t aDuration_ms, bool aInitialWait = true) :
-            callback_timer{ aTask, dynamic_cast<const i_lifetime&>(aContext), aCallback, aDuration_ms, aInitialWait } {}
+        callback_timer(i_async_task& aTask, const Context& aContext, std::function<void(callback_timer&)> aCallback, const duration_type& aDuration_s, bool aInitialWait = true) :
+            callback_timer{ aTask, dynamic_cast<const i_lifetime&>(aContext), aCallback, aDuration_s, aInitialWait } {}
         ~callback_timer();
     private:
         virtual void ready();

@@ -94,7 +94,7 @@ namespace neolib
                     publish_events();
                     if (!iEvents.empty() && !aTimer.waiting())
                         aTimer.again();
-                }, 1, false}
+                }, std::chrono::milliseconds{1}, false}
         },
         iTerminated { false },
         iTaskDestroyed{ aTask },

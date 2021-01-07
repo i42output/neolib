@@ -228,7 +228,7 @@ namespace neolib::ecs
                         system.second->apply();
                 commit_async_entity_destruction();
                 commit_async_entity_creation();
-            }, 1, true
+            }, std::chrono::milliseconds{1}, true
         },
         iSystemsPaused{ (flags() & ecs_flags::CreatePaused) == ecs_flags::CreatePaused }
     {
