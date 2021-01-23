@@ -503,7 +503,7 @@ namespace neolib::ecs
     template <typename... ComponentData>
     inline void i_ecs::async_create_entity(entity_archetype_id aArchetypeId, ComponentData... aComponentData)
     {
-        auto creator = [=]()
+        auto creator = [=, this]()
         {
             create_entity(aArchetypeId, aComponentData...);
         };
@@ -513,7 +513,7 @@ namespace neolib::ecs
     template <typename Archetype, typename... ComponentData>
     inline void i_ecs::async_create_entity(const Archetype& aArchetype, ComponentData... aComponentData)
     {
-        auto creator = [=, &aArchetype]()
+        auto creator = [=, this, &aArchetype]()
         {
             if (!archetype_registered(aArchetype))
                 register_archetype(aArchetype);
