@@ -1780,19 +1780,19 @@ namespace neolib
         template <typename T>
         inline basic_vector<T, 2> bezier_cubic(basic_vector<T, 2> const& p0, basic_vector<T, 2> const& p1, basic_vector<T, 2> const& p2, basic_vector<T, 2> const& p3, T t)
         {
-            return bezier_cubic(p0.as<scalar>(), p1.as<scalar>(), p2.as<scalar>(), p3.as<scalar>(), static_cast<scalar>(t)).as<T>();
+            return bezier_cubic(p0.template as<scalar>(), p1.template as<scalar>(), p2.template as<scalar>(), p3.template as<scalar>(), static_cast<scalar>(t)).template as<T>();
         }
 
         template <typename T>
         inline basic_vector<T, 2> bezier_cubic_x(basic_vector<T, 2> const& p0, basic_vector<T, 2> const& p1, basic_vector<T, 2> const& p2, basic_vector<T, 2> const& p3, T x)
         {
-            return bezier_cubic_x(p0.as<scalar>(), p1.as<scalar>(), p2.as<scalar>(), p3.as<scalar>(), static_cast<scalar>(x)).as<T>();
+            return bezier_cubic_x(p0.template as<scalar>(), p1.template as<scalar>(), p2.template as<scalar>(), p3.template as<scalar>(), static_cast<scalar>(x)).template as<T>();
         }
 
         template <typename T>
         inline basic_vector<T, 2> bezier_cubic_y(basic_vector<T, 2> const& p0, basic_vector<T, 2> const& p1, basic_vector<T, 2> const& p2, basic_vector<T, 2> const& p3, T y)
         {
-            return bezier_cubic_y(p0.as<scalar>(), p1.as<scalar>(), p2.as<scalar>(), p3.as<scalar>(), static_cast<scalar>(y)).as<T>();
+            return bezier_cubic_y(p0.template as<scalar>(), p1.template as<scalar>(), p2.template as<scalar>(), p3.template as<scalar>(), static_cast<scalar>(y)).template as<T>();
         }
     }
 
