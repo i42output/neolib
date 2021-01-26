@@ -44,6 +44,9 @@ namespace neolib
 {
     class any : private std::any
     {
+    public:
+        typedef any abstract_type; // todo
+    private:
         template<class T>
         friend T any_cast(const any& operand);
         template<class T>
