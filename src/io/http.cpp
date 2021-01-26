@@ -203,7 +203,7 @@ namespace neolib
         return false;
     }
 
-    void http::request(const std::string& aUrl, type_e aType, const headers_t& aRequestHeaders, const neolib::variant<body_t, std::string>& aRequestBody)
+    void http::request(const std::string& aUrl, type_e aType, const headers_t& aRequestHeaders, const std::variant<body_t, std::string>& aRequestBody)
     {
         bool secure = false;
         if (make_ci_string(aUrl).find("http://") == 0)
@@ -240,7 +240,7 @@ namespace neolib
         request(address, resource, aType, port ? *port : secure ? 443 : 80, secure, aRequestHeaders, aRequestBody);
     }
 
-    void http::request(const std::string& aHost, const std::string& aResource, type_e aType, unsigned short aPort, bool aSecure, const headers_t& aRequestHeaders, const neolib::variant<body_t, std::string>& aRequestBody)
+    void http::request(const std::string& aHost, const std::string& aResource, type_e aType, unsigned short aPort, bool aSecure, const headers_t& aRequestHeaders, const std::variant<body_t, std::string>& aRequestBody)
     {
         reset();
         iHost = aHost;

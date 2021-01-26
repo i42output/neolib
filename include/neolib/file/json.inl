@@ -1354,7 +1354,7 @@ namespace neolib
                         }
                         break;
                     case element::Name:
-                        if (context() == json_type::Object && currentElement.name == none)
+                        if (context() == json_type::Object && std::holds_alternative<std::monostate>(currentElement.name))
                         {
                             json_string newString{ currentElement.start, currentElement.start == nextOutputCh ? nextInputCh - 1 : nextOutputCh };
                             currentElement.name = newString;
@@ -1386,7 +1386,7 @@ namespace neolib
                             auto keyword = sJsonKeywords.find(keywordText);
                             if (keyword != sJsonKeywords.end())
                             {
-                                if (context() == json_type::Object && currentElement.name == none)
+                                if (context() == json_type::Object && std::holds_alternative<std::monostate>(currentElement.name))
                                 {
                                     create_parse_error("bad object field name");
                                     return false;
@@ -1411,7 +1411,7 @@ namespace neolib
                                     create_parse_error("keywords unavailable");
                                     return false;
                                 }
-                                if (context() == json_type::Object && currentElement.name == none)
+                                if (context() == json_type::Object && std::holds_alternative<std::monostate>(currentElement.name))
                                 {
                                     currentElement.name = json_keyword{ keywordText };
                                     currentElement.type = element::Name;
@@ -1429,7 +1429,7 @@ namespace neolib
                     case json_type::Object:
                         if constexpr (syntax == json_syntax::Standard)
                         {
-                            if (currentElement.name == none)
+                            if (std::holds_alternative<std::monostate>(currentElement.name))
                             {
                                 if (nextState == json_detail::state::Close)
                                     nextState = json_detail::state::NeedObjectValueSeparator;
@@ -1443,7 +1443,7 @@ namespace neolib
                         }
                         else
                         {
-                            if (currentElement.name == none)
+                            if (std::holds_alternative<std::monostate>(currentElement.name))
                                 nextState = json_detail::state::Object;
                             else
                                 nextState = *nextInputCh != ':' ? json_detail::state::EndName : json_detail::state::NeedValue;
@@ -1477,7 +1477,7 @@ namespace neolib
                     currentElement.start = (nextOutputCh = nextInputCh + 1);
                     break;
                 case json_detail::state::EndName:
-                    if (currentElement.name == none)
+                    if (std::holds_alternative<std::monostate>(currentElement.name))
                     {
                         json_string newName
                         {
@@ -1994,7 +1994,7 @@ namespace neolib
                     newObject->set_name(std::get<json_string>(aCurrentElement.name));
                 else
                     newObject->set_name(std::get<json_keyword>(aCurrentElement.name));
-                aCurrentElement.name = none;
+                aCurrentElement.name = std::monostate{};
                 return newObject;
             }
         default:

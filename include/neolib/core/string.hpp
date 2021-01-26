@@ -65,6 +65,8 @@ namespace neolib
     public:
         string(const char* aString) : iString{ aString } {}
         string(const char* aString, std::size_t aLength) : iString{ aString, aLength } {}
+        template <std::size_t N>
+        string(const char(&aString)[N]) : iString{ aString, N } {}
         string(const std::string& aString = {}) : iString{ aString } {}
         string(const std::string_view& aStringView) : iString{ aStringView } {}
         string(const neolib::quick_string& aOther) : iString{ aOther } {}

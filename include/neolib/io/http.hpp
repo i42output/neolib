@@ -40,8 +40,8 @@
 #include <string>
 #include <deque>
 #include <optional>
+#include <variant>
 #include <chrono>
-#include <neolib/core/variant.hpp>
 #include <neolib/core/string_ci.hpp>
 #include <neolib/plugin/plugin_event.hpp>
 #include <neolib/io/packet_stream.hpp>
@@ -92,8 +92,8 @@ namespace neolib
 
         // operations
     public:
-        void request(const std::string& aUrl, type_e aType = Get, const headers_t& aRequestHeaders = headers_t(), const variant<body_t, std::string>& aRequestBody = std::string());
-        void request(const std::string& aHost, const std::string& aResource, type_e aType = Get, unsigned short aPort = 80, bool aSecure = false, const headers_t& aRequestHeaders = headers_t(), const variant<body_t, std::string>& aRequestBody = std::string());
+        void request(const std::string& aUrl, type_e aType = Get, const headers_t& aRequestHeaders = headers_t(), const std::variant<body_t, std::string>& aRequestBody = std::string());
+        void request(const std::string& aHost, const std::string& aResource, type_e aType = Get, unsigned short aPort = 80, bool aSecure = false, const headers_t& aRequestHeaders = headers_t(), const std::variant<body_t, std::string>& aRequestBody = std::string());
         bool ok() const { return iOk; }
         uint32_t status_code() const { return iStatusCode; }
         uint64_t body_length() const { return iBodyLength ? *iBodyLength : iBody.size(); }

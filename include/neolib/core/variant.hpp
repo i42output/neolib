@@ -40,6 +40,7 @@
 #include <optional>
 #include <variant>
 #include <neolib/core/variadic.hpp>
+#include <neolib/core/i_variant.hpp>
 
 namespace neolib
 {
@@ -47,8 +48,37 @@ namespace neolib
     const none_t none;
     
     template <typename... Types>
-    using variant = std::variant<std::monostate, Types...>;
-    
+    class variant : public i_variant<abstract_t<Types>...>, public std::variant<std::monostate, Types...>
+    {
+        typedef variant<Types...> self_type;
+        typedef std::variant<std::monostate, Types...> base_type;
+    public:
+        typedef self_type abstract_type; // todo
+    public:
+        using base_type::base_type;
+    public:
+        using base_type::operator=;
+    public:
+        std::size_t index() const override
+        {
+            return base_type::index();
+        }
+    private:
+        void const* ptr() const override
+        {
+            void const* result = nullptr;
+            std::visit([&](auto&& arg)
+            {
+                result = &arg;
+            }, *this);
+            return result;
+        }
+        void* ptr() override
+        {
+            return const_cast<void*>(to_const(*this).ptr());
+        }
+    };
+
     template <typename... Types>
     inline bool operator==(const variant<Types...>& v, none_t)
     {

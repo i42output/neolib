@@ -50,9 +50,9 @@
 #include <memory>
 #include <exception>
 #include <optional>
+#include <variant>
 #include <boost/functional/hash.hpp>
 #include <neolib/core/allocator.hpp>
-#include <neolib/core/variant.hpp>
 #include <neolib/core/quick_string.hpp>
 
 namespace neolib
@@ -513,11 +513,11 @@ namespace neolib
         typedef basic_json_null<self_type> json_null;
         typedef basic_json_keyword<self_type> json_keyword;
     public:
-        typedef neolib::variant<json_string, json_keyword> name_t;
+        typedef std::variant<std::monostate, json_string, json_keyword> name_t;
     public:
         typedef std::optional<json_string> optional_json_string;
     public:
-        typedef variant<json_object, json_array, json_double, json_int64, json_uint64, json_int, json_uint, json_string, json_bool, json_null, json_keyword> value_type;
+        typedef std::variant<std::monostate, json_object, json_array, json_double, json_int64, json_uint64, json_int, json_uint, json_string, json_bool, json_null, json_keyword> value_type;
     private:
         typedef json_detail::basic_json_node<basic_json_value> node_type;
     public:
@@ -540,22 +540,22 @@ namespace neolib
         template <typename T>
         std::enable_if_t<!std::is_arithmetic_v<T>, const T&> as() const
         {
-            return static_variant_cast<const T&>(iValue);
+            return std::get<T>(iValue);
         }
         template <typename T>
         std::enable_if_t<!std::is_arithmetic_v<T>, T&> as()
         {
-            return static_variant_cast<T&>(iValue);
+            return std::get<T>(iValue);
         }
         template <typename T>
         std::enable_if_t<std::is_arithmetic_v<T>, T> as() const
         {
-            return static_numeric_variant_cast<T>(iValue);
+            return std::get<T>(iValue);
         }
         template <typename T>
         std::enable_if_t<std::is_arithmetic_v<T>, T&> as()
         {
-            return static_numeric_variant_cast<T&>(iValue);
+            return std::get<T>(iValue);
         }
         const value_type& operator*() const
         {
@@ -603,7 +603,7 @@ namespace neolib
         }
         bool has_name() const
         {
-            return iName != none;
+            return !std::holds_alternative<std::monostate>(iName);
         }
         bool name_is_keyword() const
         {
@@ -712,7 +712,7 @@ namespace neolib
         {
             std::visit([&aVisitor](auto&& arg) 
             { 
-                if constexpr(!std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, none_t>)
+                if constexpr(!std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, std::monostate>)
                     aVisitor(std::forward<decltype(arg)>(arg)); 
             }, iValue);
             switch (type())
@@ -730,7 +730,7 @@ namespace neolib
         {
             std::visit([&aVisitor](auto&& arg)
             {
-                if constexpr(!std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, none_t>)
+                if constexpr(!std::is_same_v<typename std::remove_cv<typename std::remove_reference<decltype(arg)>::type>::type, std::monostate>)
                     aVisitor(std::forward<decltype(arg)>(arg));
             }, iValue);
             switch (type())

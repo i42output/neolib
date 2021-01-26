@@ -46,7 +46,6 @@
 #include <stdexcept>
 #include <iostream>
 #include <string_view>
-#include <neolib/core/variant.hpp>
 #include <neolib/core/fast_hash.hpp>
 
 namespace neolib 
@@ -77,7 +76,7 @@ namespace neolib
         static const size_type npos;
     private:
         typedef std::pair<string_view_type, Alloc> view_contents_type;
-        typedef neolib::variant<string_type, view_contents_type> contents_type;
+        typedef std::variant<std::monostate, string_type, view_contents_type> contents_type;
     public:
         struct not_view_string : std::logic_error { not_view_string() : std::logic_error("neolib::basic_quick_string::not_view_string") {} };
     public:
@@ -586,7 +585,7 @@ namespace neolib
         {
             if (is_view())
                 iContents = string_type{ get_view_string().begin(), get_view_string().end(), get_allocator() };
-            return static_variant_cast<const string_type&>(iContents);
+            return std::get<string_type>(iContents);
         }
         string_type& get_string()
         { 
@@ -595,7 +594,7 @@ namespace neolib
         const string_view_type& get_view_string() const
         {
             if (is_view())
-                return static_variant_cast<const view_contents_type&>(iContents).first;
+                return std::get<view_contents_type>(iContents).first;
             throw not_view_string();
         }
         string_view_type& get_view_string()

@@ -41,7 +41,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <vector>
-#include <neolib/core/variant.hpp>
+#include <variant>
 #include <neolib/task/i_message_queue.hpp>
 #include <neolib/task/waitable.hpp>
 
@@ -82,7 +82,7 @@ namespace neolib
     struct wait_result_event { wait_result_event(const waitable_event& aEvent) : iEvent(aEvent) {} const waitable_event& iEvent; };
     struct wait_result_message {};
     struct wait_result_waitable {};
-    typedef variant<wait_result_event, wait_result_message, wait_result_waitable> wait_result;
+    typedef std::variant<wait_result_event, wait_result_message, wait_result_waitable> wait_result;
 
     class waitable_event_list
     {

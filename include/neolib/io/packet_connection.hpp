@@ -41,11 +41,11 @@
 #include <deque>
 #include <array>
 #include <algorithm>
+#include <variant>
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <neolib/core/string_utils.hpp>
-#include <neolib/core/variant.hpp>
 #include <neolib/core/lifetime.hpp>
 #include <neolib/task/async_task.hpp>
 #include <neolib/io/resolver.hpp> // protocol_family
@@ -92,7 +92,7 @@ namespace neolib
         typedef std::shared_ptr<socket_type> socket_pointer;
         typedef boost::asio::ssl::stream<tcp_protocol::socket> secure_stream_type;
         typedef std::shared_ptr<secure_stream_type> secure_stream_pointer;
-        typedef variant<socket_pointer, secure_stream_pointer> socket_holder_type;
+        typedef std::variant<std::monostate, socket_pointer, secure_stream_pointer> socket_holder_type;
         typedef boost::asio::ssl::context secure_stream_context;
         typedef std::unique_ptr<secure_stream_context> secure_stream_context_pointer;
         typedef typename protocol_type::endpoint endpoint_type;
@@ -247,7 +247,7 @@ namespace neolib
         {
             iHandlerProxy->orphan();
             iResolver.cancel();
-            if (iSocketHolder != none)
+            if (!std::holds_alternative<std::monostate>(iSocketHolder))
                 socket().close();
             iSocketHolder = none;
             bool wasConnected = iConnected;
@@ -265,11 +265,11 @@ namespace neolib
         {
             if (!iSecure)
             {
-                return iSocketHolder != none && static_variant_cast<const socket_pointer&>(iSocketHolder) != nullptr;
+                return std::holds_alternative<socket_pointer>(iSocketHolder) && std::get<socket_pointer>(iSocketHolder) != nullptr;
             }
             else
             {
-                return iSocketHolder != none && static_variant_cast<const secure_stream_pointer&>(iSocketHolder) != nullptr;
+                return std::holds_alternative<secure_stream_pointer>(iSocketHolder) && std::get<secure_stream_pointer>(iSocketHolder) != nullptr;
             }
         }
         bool closed() const
@@ -320,13 +320,13 @@ namespace neolib
         {
             if (closed())
                 throw no_socket();
-            return *static_variant_cast<const secure_stream_pointer&>(iSocketHolder);
+            return *std::get<secure_stream_pointer>(iSocketHolder);
         }
         secure_stream_type& secure_stream()
         {
             if (closed())
                 throw no_socket();
-            return *static_variant_cast<secure_stream_pointer&>(iSocketHolder);
+            return *std::get<secure_stream_pointer>(iSocketHolder);
         }
         void server_accept()
         {
@@ -441,7 +441,7 @@ namespace neolib
                 }
                 else
                 {
-                      static_variant_cast<secure_stream_pointer>(iSocketHolder)->async_handshake(
+                      std::get<secure_stream_pointer>(iSocketHolder)->async_handshake(
                           boost::asio::ssl::stream_base::client, 
                           boost::bind(&handler_proxy::handle_handshake, iHandlerProxy, boost::asio::placeholders::error));
                 }
@@ -631,28 +631,18 @@ namespace neolib
             throw typename connection_type::no_socket();
         if (!aConnection.iSecure)
         {
-            return *static_variant_cast<const typename connection_type::socket_pointer&>(aConnection.iSocketHolder);
+            return *std::get<typename connection_type::socket_pointer>(aConnection.iSocketHolder);
         }
         else
         {
-            return static_cast<const typename connection_type::socket_type&>(static_variant_cast<const typename connection_type::secure_stream_pointer&>(aConnection.iSocketHolder)->lowest_layer());
+            return static_cast<const typename connection_type::socket_type&>(std::get<typename connection_type::secure_stream_pointer>(aConnection.iSocketHolder)->lowest_layer());
         }
     }
 
     template <typename CharType, size_t ReceiveBufferSize>
     inline typename basic_packet_connection<CharType, tcp_protocol, ReceiveBufferSize>::socket_type& do_socket(basic_packet_connection<CharType, tcp_protocol, ReceiveBufferSize>& aConnection) 
     {
-        typedef basic_packet_connection<CharType, tcp_protocol, ReceiveBufferSize> connection_type;
-        if (aConnection.closed())
-            throw typename connection_type::no_socket();
-        if (!aConnection.iSecure)
-        {
-            return *static_variant_cast<typename connection_type::socket_pointer&>(aConnection.iSocketHolder);
-        }
-        else
-        {
-            return static_cast<typename connection_type::socket_type&>(static_variant_cast<typename connection_type::secure_stream_pointer&>(aConnection.iSocketHolder)->lowest_layer());
-        }
+        return const_cast<typename basic_packet_connection<CharType, tcp_protocol, ReceiveBufferSize>::socket_type&>(do_socket(const_cast<const basic_packet_connection<CharType, tcp_protocol, ReceiveBufferSize>&>(aConnection)));
     }
 
     template <typename CharType, size_t ReceiveBufferSize>
@@ -661,15 +651,12 @@ namespace neolib
         typedef basic_packet_connection<CharType, udp_protocol, ReceiveBufferSize> connection_type;
         if (aConnection.closed())
             throw typename connection_type::no_socket();
-        return *static_variant_cast<const typename connection_type::socket_pointer&>(aConnection.iSocketHolder);
+        return *std::get<typename connection_type::socket_pointer>(aConnection.iSocketHolder);
     }
 
     template <typename CharType, size_t ReceiveBufferSize>
     inline typename basic_packet_connection<CharType, udp_protocol, ReceiveBufferSize>::socket_type& do_socket(basic_packet_connection<CharType, udp_protocol, ReceiveBufferSize>& aConnection) 
     {
-        typedef basic_packet_connection<CharType, udp_protocol, ReceiveBufferSize> connection_type;
-        if (aConnection.closed())
-            throw typename connection_type::no_socket();
-        return *static_variant_cast<typename connection_type::socket_pointer&>(aConnection.iSocketHolder);
+        return const_cast<typename basic_packet_connection<CharType, udp_protocol, ReceiveBufferSize>::socket_type&>(do_socket(const_cast<const basic_packet_connection<CharType, udp_protocol, ReceiveBufferSize>&>(aConnection)));
     }
 }
