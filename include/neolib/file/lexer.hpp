@@ -109,7 +109,7 @@ namespace neolib
         typedef std::vector<lexer_atom_function> function_list;
         typedef std::pair<token_type, function_list> function_type;
         typedef std::pair<scope_type, bool> scope_change_type;
-        typedef variant<char_type, range_type, string_type, lexer_atom_match_any, token_type, function_type, scope_type, scope_change_type> value_type;
+        typedef std::variant<std::monostate, char_type, range_type, string_type, lexer_atom_match_any, token_type, function_type, scope_type, scope_change_type> value_type;
         typedef string_type token_value_type;
     public:
         struct not_token : std::logic_error { not_token(const std::string& aBadToken) : std::logic_error("Invalid token: '" + aBadToken + "'") {} };
