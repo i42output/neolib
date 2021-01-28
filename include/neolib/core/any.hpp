@@ -40,12 +40,15 @@
 #include <stdexcept>
 #include <typeinfo>
 
+#include <neolib/core/i_any.hpp>
+#include <neolib/core/variant.hpp>
+
 namespace neolib
 {
-    class any : private std::any
+    // todo: casts in this implementation of a polymorphic any mean this is not yet a solved problem (for passing across plugin boundaries)
+
+    class any : public i_any, private std::any
     {
-    public:
-        typedef any abstract_type; // todo
     private:
         template<class T>
         friend T any_cast(const any& operand);
@@ -67,7 +70,15 @@ namespace neolib
             ptr{ nullptr }
         {
         }
-        any(const any& aOther) : 
+        any(const i_any& aOther) :
+            any{ static_cast<const any&>(aOther) } // todo - is it doable?
+        {
+        }
+        any(i_any&& aOther) :
+            any{ static_cast<any&>(aOther) } // todo - is it doable?
+        {
+        }
+        any(const any& aOther) :
             std::any{ aOther.as_std_any() }, 
             cptr{ aOther.cptr }, 
             ptr{ aOther.ptr }
@@ -81,14 +92,31 @@ namespace neolib
             aOther.cptr = nullptr;
             aOther.ptr = nullptr;
         }
-        template <typename ValueType, typename SFINAE = void>
-        any(ValueType&& aValue, typename std::enable_if<!std::is_same<std::decay_t<ValueType>, any>::value, SFINAE>::type* = nullptr) :
+        template <typename ValueType>
+        any(ValueType&& aValue) :
             std::any{ std::decay_t<ValueType>{aValue} },
             cptr{ &any::do_cptr<std::decay_t<ValueType>> },
             ptr{ &any::do_ptr<std::decay_t<ValueType>> }
         {
         }
+        template <template <typename... Types> class Variant, typename... Types>
+        explicit any(Variant<Types...>&& aVariant, std::enable_if_t<std::is_same_v<Variant<Types...>, variant<Types...>>, sfinae> = {}) :
+            std::any{ std::decay_t<decltype(aVariant)>{aVariant} },
+            cptr{ &any::do_cptr<std::decay_t<decltype(aVariant)>> },
+            ptr{ &any::do_ptr<std::decay_t<decltype(aVariant)>> }
+        {
+        }
     public:
+        any& operator=(const i_any& aRhs)
+        {
+            // todo - is it doable?
+            return *this = static_cast<const any&>(aRhs);
+        }
+        any& operator=(i_any&& aRhs)
+        {
+            // todo - is it doable?
+            return *this = static_cast<any&>(aRhs);
+        }
         any& operator=(const any& aRhs)
         {
             std::any::operator=(aRhs.as_std_any());
@@ -114,7 +142,7 @@ namespace neolib
             return *this;
         }
     public:
-        template<class ValueType, class... Args >
+        template<class ValueType, class... Args>
         std::decay_t<ValueType>& emplace(Args&&... args)
         {
             auto& result = std::any::emplace<ValueType>(std::forward<Args...>(args...));
@@ -122,7 +150,7 @@ namespace neolib
             ptr = &any::do_ptr<std::decay_t<ValueType>>;
             return result;
         }
-        template<class ValueType, class U, class... Args >
+        template<class ValueType, class U, class... Args>
         std::decay_t<ValueType>& emplace(std::initializer_list<U> il, Args&&... args)
         {
             auto& result = std::any::emplace<ValueType>(il, std::forward<Args...>(args...));
@@ -130,7 +158,7 @@ namespace neolib
             ptr = &any::do_ptr<std::decay_t<ValueType>>;
             return result;
         }
-        void reset()
+        void reset() override
         {
             std::any::reset();
             cptr = nullptr;
@@ -143,9 +171,27 @@ namespace neolib
             std::swap(ptr, aOther.ptr);
         }
     public:
-        using std::any::has_value;
-        using std::any::type;
+        bool has_value() const override
+        {
+            return std::any::has_value();
+        }
+        type_info const& type() const override
+        {
+            return std::any::type();
+        }
     public:
+        bool operator==(const i_any& aOther) const override
+        {
+            return *this == static_cast<const any&>(aOther);
+        }
+        bool operator!=(const i_any& aOther) const override
+        {
+            return *this != static_cast<const any&>(aOther);
+        }
+        bool operator<(const i_any& aOther) const override
+        {
+            return *this < static_cast<const any&>(aOther);
+        }
         bool operator==(const any& aOther) const
         {
             if (cptr != nullptr && aOther.cptr != nullptr)
@@ -168,22 +214,22 @@ namespace neolib
                 return cptr < aOther.cptr;
         }
     private:
-        const std::any& as_std_any() const
+        const std::any& as_std_any() const override
         {
             return *this;
         }
-        std::any& as_std_any()
+        std::any& as_std_any() override
         {
             return *this;
         }
-        const void* unsafe_ptr() const
+        const void* unsafe_ptr() const override
         {
             if (cptr != nullptr)
                 return cptr(*this);
             else
                 return nullptr;
         }
-        void* unsafe_ptr()
+        void* unsafe_ptr() override
         {
             if (cptr != nullptr)
                 return ptr(*this);
