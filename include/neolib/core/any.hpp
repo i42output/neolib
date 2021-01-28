@@ -47,6 +47,13 @@ namespace neolib
 {
     // todo: casts in this implementation of a polymorphic any mean this is not yet a solved problem (for passing across plugin boundaries)
 
+    template <typename T>
+    struct is_variant { static constexpr bool value = false; };
+    template <typename... Types>
+    struct is_variant<variant<Types...>> { static constexpr bool value = true; };
+    template <typename T>
+    constexpr bool is_variant_v = is_variant<T>::value;
+
     class any : public i_any, private std::any
     {
     private:
@@ -93,14 +100,14 @@ namespace neolib
             aOther.ptr = nullptr;
         }
         template <typename ValueType>
-        any(ValueType&& aValue) :
+        any(ValueType&& aValue, std::enable_if_t<!is_variant_v<ValueType>, sfinae> = {}) :
             std::any{ std::decay_t<ValueType>{aValue} },
             cptr{ &any::do_cptr<std::decay_t<ValueType>> },
             ptr{ &any::do_ptr<std::decay_t<ValueType>> }
         {
         }
-        template <template <typename... Types> class Variant, typename... Types>
-        explicit any(Variant<Types...>&& aVariant, std::enable_if_t<std::is_same_v<Variant<Types...>, variant<Types...>>, sfinae> = {}) :
+        template <typename ValueType>
+        explicit any(ValueType&& aVariant, std::enable_if_t<is_variant_v<ValueType>, sfinae> = {}) :
             std::any{ std::decay_t<decltype(aVariant)>{aVariant} },
             cptr{ &any::do_cptr<std::decay_t<decltype(aVariant)>> },
             ptr{ &any::do_ptr<std::decay_t<decltype(aVariant)>> }
