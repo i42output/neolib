@@ -47,6 +47,19 @@ namespace neolib
     struct none_t : std::monostate {};
     const none_t none;
     
+    template <typename AbstractT, typename Type>
+    constexpr bool is_variant_convertible_v = std::is_base_of_v<AbstractT, Type> && std::is_abstract_v<AbstractT>;
+    template <bool, typename AbstractT, typename Type, typename... Rest>
+    struct from_abstract;
+    template <typename AbstractT, typename Type>
+    struct from_abstract<true, AbstractT, Type> { typedef Type result_type; };
+    template <typename AbstractT, typename Type, typename... Rest>
+    struct from_abstract<true, AbstractT, Type, Rest...> { typedef Type result_type; };
+    template <typename AbstractT, typename Type, typename... Rest>
+    struct from_abstract<false, AbstractT, Type, Rest...> { typedef typename from_abstract<is_variant_convertible_v<AbstractT, Type>, AbstractT, Rest...>::result_type result_type; };
+    template <typename AbstractT, typename Type, typename... Rest>
+    using from_abstract_t = typename from_abstract<is_variant_convertible_v<AbstractT, Type>, AbstractT, Type, Rest...>::result_type;
+        
     template <typename... Types>
     class variant : public i_variant<abstract_t<Types>...>, public std::variant<std::monostate, Types...>
     {
@@ -56,6 +69,16 @@ namespace neolib
         typedef self_type abstract_type; // todo
     public:
         using base_type::base_type;
+        template <typename T, typename = std::enable_if_t<std::is_abstract_v<T>, void>>
+        variant(const T& aValue) :
+            base_type{ static_cast<from_abstract_t<T, Types...> const&>(aValue) }
+        {
+        }
+        template <typename T, typename = std::enable_if_t<std::is_abstract_v<T>, void>>
+        variant(T&& aValue) :
+            base_type{ static_cast<from_abstract_t<T, Types...> &&>(aValue) }
+        {
+        }
     public:
         using base_type::operator=;
     public:
