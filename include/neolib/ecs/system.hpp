@@ -117,6 +117,9 @@ namespace neolib::ecs
             if (ecs().all_systems_paused())
                 pause();
         }
+        ~system()
+        {
+        }
     public:
         i_ecs& ecs() const override
         {
@@ -192,15 +195,19 @@ namespace neolib::ecs
         }
         void signal() override
         {
-            if (!have_thread())
-                throw no_thread();
-            if (get_thread().in())
+            if (have_thread() && get_thread().in())
                 throw wrong_thread();
+            bool doIt = false;
             {
                 std::unique_lock<std::mutex> lock{ iMutex };
-                iWaiting = false;
+                if (iWaiting)
+                {
+                    iWaiting = false;
+                    doIt = true;
+                }
             }
-            iCondVar.notify_one();
+            if (doIt)
+                iCondVar.notify_one();
         }
     public:
         void start_thread_if() override
@@ -283,12 +290,12 @@ namespace neolib::ecs
     private:
         i_ecs& iEcs;
         component_list iComponents;
-        std::unique_ptr<thread> iThread;
         std::atomic<uint32_t> iPaused = 0u;
         std::mutex iMutex;
         std::condition_variable iCondVar;
         std::atomic<bool> iWaiting = false;
         std::atomic<bool> iDebug = false;
         std::vector<performance_metrics> iPerformanceMetrics;
+        std::unique_ptr<thread> iThread;
     };
 }

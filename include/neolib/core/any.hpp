@@ -100,14 +100,14 @@ namespace neolib
             aOther.ptr = nullptr;
         }
         template <typename ValueType>
-        any(ValueType&& aValue, std::enable_if_t<!is_variant_v<ValueType>, sfinae> = {}) :
+        any(ValueType&& aValue, std::enable_if_t<!is_variant_v<std::decay_t<ValueType>>, sfinae> = {}) :
             std::any{ std::decay_t<ValueType>{aValue} },
             cptr{ &any::do_cptr<std::decay_t<ValueType>> },
             ptr{ &any::do_ptr<std::decay_t<ValueType>> }
         {
         }
         template <typename ValueType>
-        explicit any(ValueType&& aVariant, std::enable_if_t<is_variant_v<ValueType>, sfinae> = {}) :
+        explicit any(ValueType&& aVariant, std::enable_if_t<is_variant_v<std::decay_t<ValueType>>, sfinae> = {}) :
             std::any{ std::decay_t<decltype(aVariant)>{aVariant} },
             cptr{ &any::do_cptr<std::decay_t<decltype(aVariant)>> },
             ptr{ &any::do_ptr<std::decay_t<decltype(aVariant)>> }
