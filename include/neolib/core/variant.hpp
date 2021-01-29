@@ -46,17 +46,25 @@ namespace neolib
 {
     struct none_t : std::monostate {};
     const none_t none;
-    
+
     template <typename AbstractT, typename Type>
     constexpr bool is_variant_convertible_v = std::is_base_of_v<AbstractT, Type> && std::is_abstract_v<AbstractT>;
-    template <bool, typename AbstractT, typename Type, typename... Rest>
+    template <bool, typename AbstractT, typename... Rest>
     struct from_abstract;
+    template <typename AbstractT, typename... Types>
+    struct from_abstract_next;
+    template <typename AbstractT, typename Type>
+    struct from_abstract_next<AbstractT, Type> { typedef typename from_abstract<is_variant_convertible_v<AbstractT, Type>, AbstractT, Type>::result_type result_type; };
+    template <typename AbstractT, typename Type, typename Rest>
+    struct from_abstract_next<AbstractT, Type, Rest> { typedef typename from_abstract<is_variant_convertible_v<AbstractT, Type>, AbstractT, Type, Rest>::result_type result_type; };
     template <typename AbstractT, typename Type, typename... Rest>
-    struct from_abstract_next { typedef typename from_abstract<is_variant_convertible_v<AbstractT, Type>, AbstractT, Type, Rest...>::result_type result_type; };
+    struct from_abstract_next<AbstractT, Type, Rest...> { typedef typename from_abstract<is_variant_convertible_v<AbstractT, Type>, AbstractT, Type, Rest...>::result_type result_type; };
     template <typename AbstractT, typename Type>
     struct from_abstract<true, AbstractT, Type> { typedef Type result_type; };
     template <typename AbstractT, typename Type, typename... Rest>
     struct from_abstract<true, AbstractT, Type, Rest...> { typedef Type result_type; };
+    template <typename AbstractT, typename Type>
+    struct from_abstract<false, AbstractT, Type> {};
     template <typename AbstractT, typename Type, typename... Rest>
     struct from_abstract<false, AbstractT, Type, Rest...> { typedef typename from_abstract_next<AbstractT, Rest...>::result_type result_type; };
     template <typename AbstractT, typename Type, typename... Rest>
