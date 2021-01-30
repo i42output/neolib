@@ -65,17 +65,17 @@ namespace neolib
     public:
         string(const char* aString) : iString{ aString } {}
         string(const char* aString, std::size_t aLength) : iString{ aString, aLength } {}
-        template <std::size_t N>
-        string(const char(&aString)[N]) : iString{ aString, N } {}
         string(const std::string& aString = {}) : iString{ aString } {}
         string(const std::string_view& aStringView) : iString{ aStringView } {}
         string(const neolib::quick_string& aOther) : iString{ aOther } {}
         string(const string& aOther) : iString{ aOther.to_std_string() } {}
+        string(string&& aOther) : iString{ std::move(aOther.to_std_string()) } {}
         string(const i_string& aOther) : iString{ aOther.to_std_string() } {}
         template <typename Iter>
         string(Iter aBegin, Iter aEnd) : iString{ aBegin, aEnd } {}
         ~string() {}
         string& operator=(const string& aOther) { assign(aOther); return *this; }
+        string& operator=(string&& aOther) { assign(std::move(aOther)); return *this; }
         string& operator=(const i_string& aOther) override { assign(aOther); return *this; }
         // operations
     public:
@@ -132,6 +132,11 @@ namespace neolib
         void append(const char* aSource, size_type aSourceLength) override { iString.append(aSource, aSourceLength); }
     public:
         void replace_all(const i_string& aSearch, const i_string& aReplace) override { boost::replace_all(iString, aSearch.to_std_string_view(), aReplace.to_std_string_view()); }
+    public:
+        using i_string::assign;
+        void assign(string&& aOther) { if (&aOther == this) return; iString.assign(std::move(aOther.to_std_string())); }
+        using i_string::to_std_string;
+        std::string& to_std_string() { return iString; }
         // attributes
     private:
         std::string iString;

@@ -79,14 +79,14 @@ namespace neolib
         typedef self_type abstract_type; // todo
     public:
         using base_type::base_type;
-        template <typename T, typename = std::enable_if_t<std::is_abstract_v<T>, void>>
-        variant(const T& aValue) :
+        template <typename T, typename = std::enable_if_t<std::is_abstract_v<T>>>
+        variant(T const& aValue) :
             base_type{ static_cast<from_abstract_t<T, Types...> const&>(aValue) }
         {
         }
-        template <typename T, typename = std::enable_if_t<std::is_abstract_v<T>, void>>
+        template <typename T, typename = std::enable_if_t<std::is_abstract_v<T>>>
         variant(T&& aValue) :
-            base_type{ static_cast<from_abstract_t<T, Types...> &&>(aValue) }
+            base_type{ static_cast<from_abstract_t<T, Types...>&&>(aValue) }
         {
         }
     public:
