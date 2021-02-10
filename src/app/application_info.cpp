@@ -56,6 +56,11 @@ namespace neolib
         return settingsFolder;
     }
 
+    program_arguments::program_arguments() :
+        iArgc{ 0 }, iArgv{ nullptr }
+    {
+    }
+
     program_arguments::program_arguments(int argc, char* argv[]) :
         iArgc{ argc }, iArgv{ argv }
     {
@@ -83,6 +88,28 @@ namespace neolib
         return iArguments;
     }
 
+    application_info::application_info(
+        const std::string& aName,
+        const std::string& aCompany,
+        const neolib::version& aVersion,
+        const std::string& aCopyright,
+        const std::string& aApplicationFolder,
+        const std::string& aSettingsFolder,
+        const std::string& aDataFolder,
+        const std::string& aPluginExtension) :
+        application_info
+        {
+            program_arguments{},
+            aName,
+            aCompany,
+            aVersion,
+            aCopyright,
+            aApplicationFolder,
+            aSettingsFolder,
+            aDataFolder,
+            aPluginExtension
+        } {}
+    
     application_info::application_info(
         int argc, char* argv[],
         const std::string& aName,
@@ -127,13 +154,14 @@ namespace neolib
         iPluginExtension{ aPluginExtension },
         iRemovable{ false }
     {
-        if (std::find(std::next(iArguments.as_vector().container().begin()), iArguments.as_vector().container().end(), neolib::ci_string("/pocket")) != iArguments.as_vector().container().end() ||
-            std::find(std::next(iArguments.as_vector().container().begin()), iArguments.as_vector().container().end(), neolib::ci_string("-pocket")) != iArguments.as_vector().container().end() ||
-            std::find(std::next(iArguments.as_vector().container().begin()), iArguments.as_vector().container().end(), neolib::ci_string("/removable")) != iArguments.as_vector().container().end() ||
-            std::find(std::next(iArguments.as_vector().container().begin()), iArguments.as_vector().container().end(), neolib::ci_string("-removable")) != iArguments.as_vector().container().end())
-        {
-            iRemovable = true;
-        }
+        if (!arguments().as_vector().empty())
+            if (std::find(std::next(arguments().as_vector().container().begin()), arguments().as_vector().container().end(), neolib::ci_string("/pocket")) != arguments().as_vector().container().end() ||
+                std::find(std::next(arguments().as_vector().container().begin()), arguments().as_vector().container().end(), neolib::ci_string("-pocket")) != arguments().as_vector().container().end() ||
+                std::find(std::next(arguments().as_vector().container().begin()), arguments().as_vector().container().end(), neolib::ci_string("/removable")) != arguments().as_vector().container().end() ||
+                std::find(std::next(arguments().as_vector().container().begin()), arguments().as_vector().container().end(), neolib::ci_string("-removable")) != arguments().as_vector().container().end())
+            {
+                iRemovable = true;
+            }
     }
 
     application_info::application_info(const i_application_info& aOther) :

@@ -62,7 +62,15 @@ namespace neolib
         using reference = T&;
         using difference_type = std::ptrdiff_t;
     public:
-        offset_iterator(T* aElement, std::ptrdiff_t aOffset) : 
+        offset_iterator() :
+            iElement{}, iOffset{}
+        {
+        }
+        offset_iterator(std::nullptr_t) :
+            iElement{}, iOffset{}
+        {
+        }
+        offset_iterator(T* aElement, std::ptrdiff_t aOffset) :
             iElement{ aElement }, iOffset{ aOffset }
         {
         }

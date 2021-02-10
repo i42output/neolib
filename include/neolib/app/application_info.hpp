@@ -49,6 +49,7 @@ namespace neolib
     class program_arguments : public i_program_arguments
     {
     public:
+        program_arguments();
         program_arguments(int argc, char* argv[]);
         program_arguments(const i_program_arguments& aOther);
     public:
@@ -64,6 +65,15 @@ namespace neolib
     class NEOLIB_EXPORT application_info : public i_application_info
     {
     public:
+        application_info(
+            const std::string& aName = {},
+            const std::string& aCompany = {},
+            const neolib::version& aVersion = neolib::version{},
+            const std::string& aCopyright = {},
+            const std::string& aApplicationFolder = std::string{},
+            const std::string& aSettingsFolder = std::string{},
+            const std::string& aDataFolder = std::string{},
+            const std::string& aPluginExtension = ".plg");
         application_info(
             int argc, char* argv[],
             const std::string& aName = {},
