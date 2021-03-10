@@ -487,7 +487,7 @@ namespace neolib
             // state::Escaping
             std::array<state, TOKEN_COUNT>
             {{//TXXX  TOBJ  TCLO  TARR  TCLA  TCOL  TCOM  TQOT  TCHA  TESC  TESU  TECH  TPLU  TMIN  TDIG  THEX  TEHX  TDEC  TEXP  TAST  TFWD  TSYM  TSPA  TWSP  TZZZ
-                SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SESD, SXXX, SESD, SEUN, SESD, SXXX, SXXX, SXXX, SXXX, SESD, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX
+                SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SXXX, SESD, SXXX, SESD, SEUN, SESD, SXXX, SXXX, SXXX, SXXX, SESD, SXXX, SXXX, SXXX, SESD, SXXX, SXXX, SXXX, SXXX
             }},
             // state::Escaped
             std::array<state, TOKEN_COUNT>
