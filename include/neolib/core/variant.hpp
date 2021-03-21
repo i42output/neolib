@@ -202,7 +202,7 @@ namespace std
     template <typename R, typename Visitor, typename Variant>
     constexpr R visit(Visitor&& vis, Variant&& var, enable_if_t<neolib::detail::is_neolib_variant_v<Variant>, neolib::sfinae> = {})
     {
-        if constexpr (std::is_rvalue_reference<Variant>)
+        if constexpr (std::is_rvalue_reference_v<Variant>)
             return visit(std::forward<Visitor>(vis), static_cast<typename Variant::base_type&&>(var));
         else if constexpr (std::is_const_v<std::remove_reference<Variant>>)
             return visit(std::forward<Visitor>(vis), static_cast<typename Variant::base_type const&>(var));
