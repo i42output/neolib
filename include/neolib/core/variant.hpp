@@ -193,8 +193,8 @@ namespace neolib
         struct is_neolib_variant<variant<Type>> { static constexpr bool value = true; };
         template <typename... Types>
         struct is_neolib_variant<variant<Types...>> { static constexpr bool value = true; };
-        template <typename... Types>
-        constexpr bool is_neolib_variant_v = is_neolib_variant<Types...>::value;
+        template <typename T>
+        constexpr bool is_neolib_variant_v = is_neolib_variant<std::decay_t<T>>::value;
 
         template <typename Variant, typename... Rest>
         struct any_neolib_variants { static constexpr bool value = is_neolib_variant_v<Variant> || any_neolib_variants<Rest...>::value; };
@@ -214,7 +214,7 @@ namespace neolib
         template <typename Variant>
         struct from_neolib_variant<Variant, true, false, false> { typedef typename Variant::base_type& type; };
         template <typename Variant>
-        using from_neolib_variant_t = typename from_neolib_variant<Variant, is_neolib_variant_v<std::decay_t<Variant>>, std::is_rvalue_reference_v<Variant>, std::is_const_v<std::remove_reference<Variant>>>::type;
+        using from_neolib_variant_t = typename from_neolib_variant<std::decay_t<Variant>, is_neolib_variant_v<std::decay_t<Variant>>, std::is_rvalue_reference_v<Variant>, std::is_const_v<std::remove_reference<Variant>>>::type;
     }
 }
 
