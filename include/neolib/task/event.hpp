@@ -132,11 +132,11 @@ namespace neolib
             return *this;
         }
     public:
-        bool have_control() const noexcept
+        bool have_control() const noexcept override
         {
             return iControl != nullptr;
         }
-        i_event_control& control() const
+        i_event_control& control() const override
         {
             if (have_control())
                 return *iControl;
@@ -146,22 +146,22 @@ namespace neolib
         {
             return iId;
         }
-        bool active() const noexcept
+        bool active() const noexcept override
         {
             return iActive;
         }
-        void set_active() noexcept
+        void set_active() noexcept override
         {
             iActive = true;
         }
     public:
-        event_handle& operator~() noexcept
+        event_handle& operator~() noexcept override
         {
             if (control().valid())
                 control().get().handle_in_same_thread_as_emitter(id());
             return *this;
         } 
-        event_handle& operator!() noexcept
+        event_handle& operator!() noexcept override
         {
             if (control().valid())
                 control().get().handler_is_stateless(id());

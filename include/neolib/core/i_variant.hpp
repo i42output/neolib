@@ -60,7 +60,7 @@ namespace neolib
         template <typename T>
         bool holds_alternative() const
         {
-            return index() == variadic::index_v<T, Types> + 1;
+            return index() == variadic::index_v<T, Types...> + 1;
         }
         template <typename T>
         T const* get_if() const

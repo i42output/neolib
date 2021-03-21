@@ -117,7 +117,7 @@ namespace neolib
             using i_logger::category_enabled;
             using i_logger::enable_category;
             using i_logger::disable_category;
-            void register_category(category_id aId, i_string const& aName)
+            void register_category(category_id aId, i_string const& aName) override
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 iCategories[aId].first = true;
@@ -125,13 +125,13 @@ namespace neolib
                 for (auto& copy : copies())
                     copy->register_category(aId, aName);
             }
-            bool category_enabled(category_id aId) const
+            bool category_enabled(category_id aId) const override
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 auto existing = iCategories.find(aId);
                 return existing != iCategories.end() && existing->second.first;
             }
-            void enable_category(category_id aId)
+            void enable_category(category_id aId) override
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 auto existing = iCategories.find(aId);
@@ -140,7 +140,7 @@ namespace neolib
                 for (auto& copy : copies())
                     copy->enable_category(aId);
             }
-            void disable_category(category_id aId)
+            void disable_category(category_id aId) override
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 auto existing = iCategories.find(aId);
@@ -150,24 +150,24 @@ namespace neolib
                     copy->disable_category(aId);
             }
         public:
-            bool has_formatter() const
+            bool has_formatter() const override
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 return iFormatter != nullptr;
             }
-            i_formatter& formatter() const
+            i_formatter& formatter() const override
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 if (iFormatter != nullptr)
                     return *iFormatter;
                 throw no_formatter();
             }
-            void set_formatter(i_formatter& aFormatter)
+            void set_formatter(i_formatter& aFormatter) override
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 iFormatter = std::shared_ptr<i_formatter>{ std::shared_ptr<i_formatter>{}, &aFormatter };
             }
-            void clear_formatter()
+            void clear_formatter() override
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 iFormatter = nullptr;

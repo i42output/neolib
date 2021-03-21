@@ -346,6 +346,8 @@ namespace neolib
                             add_response_header(iResponseLine);
                             iResponseLine.clear();
                             break;
+                        default:
+                            break;
                         }
                         break;
                     default:

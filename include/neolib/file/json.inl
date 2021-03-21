@@ -1421,6 +1421,8 @@ namespace neolib
                             }
                         }
                         break;
+                    default:
+                        break;
                     }
                     if (nextState == json_detail::state::Close)
                         iCompositeValueStack.pop_back();
@@ -1554,6 +1556,8 @@ namespace neolib
                         case 't':
                             (*nextOutputCh++) = '\t';
                             break;
+                        default:
+                            break;
                         }
                         nextState = currentElement.type == element::String ? json_detail::state::String : json_detail::state::Name;
                     }
@@ -1582,12 +1586,12 @@ namespace neolib
                                 switch (encoding())
                                 {
                                 case json_encoding::Utf8:
-                                {
-                                    char16_t surrogatePair[] = { *iUtf16HighSurrogate, u16ch };
-                                    auto utf8 = utf16_to_utf8(std::u16string(&surrogatePair[0], 2));
-                                    nextOutputCh = std::copy(utf8.begin(), utf8.end(), nextOutputCh);
-                                }
-                                break;
+                                    {
+                                        char16_t surrogatePair[] = { *iUtf16HighSurrogate, u16ch };
+                                        auto utf8 = utf16_to_utf8(std::u16string(&surrogatePair[0], 2));
+                                        nextOutputCh = std::copy(utf8.begin(), utf8.end(), nextOutputCh);
+                                    }
+                                    break;
                                 case json_encoding::Utf16LE:
                                 case json_encoding::Utf16BE:
                                     (*nextOutputCh++) = static_cast<character_type>(*iUtf16HighSurrogate);
@@ -1595,11 +1599,13 @@ namespace neolib
                                     break;
                                 case json_encoding::Utf32LE:
                                 case json_encoding::Utf32BE:
-                                {
-                                    char16_t surrogatePair[] = { *iUtf16HighSurrogate, u16ch };
-                                    (*nextOutputCh++) = static_cast<character_type>(utf8_to_utf32(utf16_to_utf8(std::u16string{ &surrogatePair[0], 2 }))[0]);
-                                }
-                                break;
+                                    {
+                                        char16_t surrogatePair[] = { *iUtf16HighSurrogate, u16ch };
+                                        (*nextOutputCh++) =  static_cast<character_type>(utf8_to_utf32(utf16_to_utf8(std::u16string{ &surrogatePair[0], 2 }))[0]);
+                                    }
+                                    break;
+                                default:
+                                    break;
                                 }
                                 iUtf16HighSurrogate = std::nullopt;
                             }
@@ -1608,11 +1614,11 @@ namespace neolib
                                 switch (encoding())
                                 {
                                 case json_encoding::Utf8:
-                                {
-                                    auto utf8 = utf16_to_utf8(std::u16string(1, u16ch));
-                                    nextOutputCh = std::copy(utf8.begin(), utf8.end(), nextOutputCh);
-                                }
-                                break;
+                                    {
+                                        auto utf8 = utf16_to_utf8(std::u16string(1, u16ch));
+                                        nextOutputCh = std::copy(utf8.begin(), utf8.end(), nextOutputCh);
+                                    }
+                                    break;
                                 case json_encoding::Utf16LE:
                                 case json_encoding::Utf16BE:
                                     *(nextOutputCh++) = static_cast<character_type>(u16ch);
@@ -1620,6 +1626,8 @@ namespace neolib
                                 case json_encoding::Utf32LE:
                                 case json_encoding::Utf32BE:
                                     *(nextOutputCh++) = static_cast<character_type>(u16ch);
+                                    break;
+                                default:
                                     break;
                                 }
                             }
@@ -1631,6 +1639,8 @@ namespace neolib
                             nextState = json_detail::state::EscapingUnicode;
                         }
                     }
+                    break;
+                default:
                     break;
                 }
                 if (currentState != nextState)
@@ -1765,6 +1775,8 @@ namespace neolib
                 break;
             case json_type::Keyword:
                 aOutput << static_variant_cast<json_keyword>(v).text;
+                break;
+            default:
                 break;
             }
             

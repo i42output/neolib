@@ -34,6 +34,7 @@
  */
 
 #include <neolib/neolib.hpp>
+#include <unordered_map>
 #include <neolib/app/services.hpp>
 
 namespace neolib::services

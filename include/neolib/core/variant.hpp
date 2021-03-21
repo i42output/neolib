@@ -67,8 +67,8 @@ namespace neolib
     struct from_abstract<false, AbstractT, Type> {};
     template <typename AbstractT, typename Type, typename... Rest>
     struct from_abstract<false, AbstractT, Type, Rest...> { typedef typename from_abstract_next<AbstractT, Rest...>::result_type result_type; };
-    template <typename AbstractT, typename Type, typename... Rest>
-    using from_abstract_t = typename from_abstract_next<AbstractT, Type, Rest...>::result_type;
+    template <typename AbstractT, typename... Type>
+    using from_abstract_t = typename from_abstract_next<AbstractT, Type...>::result_type;
         
     template <typename... Types>
     class variant : public i_variant<abstract_t<Types>...>, public std::variant<std::monostate, Types...>
@@ -79,13 +79,13 @@ namespace neolib
         typedef self_type abstract_type; // todo
     public:
         using base_type::base_type;
-        template <typename T, typename = std::enable_if_t<std::is_abstract_v<T>>>
-        variant(T const& aValue) :
+        template <typename T>
+        variant(T const& aValue,  std::enable_if_t<std::is_abstract_v<T>, sfinae> = {}) :
             base_type{ static_cast<from_abstract_t<T, Types...> const&>(aValue) }
         {
         }
-        template <typename T, typename = std::enable_if_t<std::is_abstract_v<T>>>
-        variant(T&& aValue) :
+        template <typename T>
+        variant(T&& aValue,  std::enable_if_t<std::is_abstract_v<T>, sfinae> = {}) :
             base_type{ static_cast<from_abstract_t<T, Types...>&&>(aValue) }
         {
         }

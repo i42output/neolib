@@ -55,16 +55,19 @@ namespace neolib
         Enum,
         CustomType
     };
+}
 
-    begin_declare_enum(simple_variant_type)
-    declare_enum_string(simple_variant_type, Boolean)
-    declare_enum_string(simple_variant_type, Integer)
-    declare_enum_string(simple_variant_type, Real)
-    declare_enum_string(simple_variant_type, String)
-    declare_enum_string(simple_variant_type, Enum)
-    declare_enum_string(simple_variant_type, CustomType)
-    end_declare_enum(simple_variant_type)
+begin_declare_enum(neolib::simple_variant_type)
+declare_enum_string(neolib::simple_variant_type, Boolean)
+declare_enum_string(neolib::simple_variant_type, Integer)
+declare_enum_string(neolib::simple_variant_type, Real)
+declare_enum_string(neolib::simple_variant_type, String)
+declare_enum_string(neolib::simple_variant_type, Enum)
+declare_enum_string(neolib::simple_variant_type, CustomType)
+end_declare_enum(neolib::simple_variant_type)
 
+namespace neolib
+{
     typedef i_plugin_variant<simple_variant_type, bool, int64_t, double, i_string, i_ref_ptr<i_enum>, i_ref_ptr<i_custom_type>> i_simple_variant;
 
     inline std::string to_string(i_simple_variant const& aVariant)

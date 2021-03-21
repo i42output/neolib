@@ -41,7 +41,6 @@
 #include <set>
 #include <mutex>
 #include <atomic>
-#include <boost/stacktrace.hpp>
 #include <neolib/core/vector.hpp>
 #include <neolib/core/mutex.hpp>
 #include <neolib/core/reference_counted.hpp>

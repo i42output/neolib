@@ -182,7 +182,7 @@ namespace neolib
 #ifdef _WIN32
         return _fseeki64(aStream, aOffset, aOrigin);
 #else
-        return fseeko64(aStream, aOffset, aOrigin);
+        return fseeko(aStream, aOffset, aOrigin);
 #endif
     }
 

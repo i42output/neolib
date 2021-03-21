@@ -741,6 +741,8 @@ namespace neolib
                     for (auto i = begin(); i != end(); ++i)
                         i.value().visit(std::forward<Visitor>(aVisitor));
                 break;
+            default:
+                break;
             }
         }
     public:

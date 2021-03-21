@@ -133,8 +133,8 @@ namespace neolib
         public:
             operator container_iterator() const { return base_type::iContainerIterator; }
         public:
-            abstract_iterator& operator+=(difference_type aDifference) { base_type::iContainerIterator += aDifference; return *this; }
-            abstract_iterator& operator-=(difference_type aDifference) { base_type::iContainerIterator -= aDifference; return *this; }
+            abstract_iterator& operator+=(difference_type aDifference) override { base_type::iContainerIterator += aDifference; return *this; }
+            abstract_iterator& operator-=(difference_type aDifference) override { base_type::iContainerIterator -= aDifference; return *this; }
             reference operator[](difference_type aDifference) const override { return base_type::iContainerIterator[aDifference]; }
             difference_type operator-(const abstract_random_access_iterator& aOther) const override { return base_type::iContainerIterator - static_cast<const self_type&>(aOther).base_type::iContainerIterator; }
             bool operator<(const abstract_random_access_iterator& aOther) const override { return base_type::iContainerIterator < static_cast<const self_type&>(aOther).base_type::iContainerIterator; }

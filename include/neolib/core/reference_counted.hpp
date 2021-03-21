@@ -547,7 +547,7 @@ namespace neolib
         {
             return ptr() != nullptr;
         }
-        bool managing() const noexcept
+        bool managing() const noexcept override
         {
             return valid();
         }

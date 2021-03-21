@@ -42,8 +42,21 @@
 #include <vector>
 #include <sstream>
 #include <cstdlib>
-#include <cwchar>
+#ifndef __clang__
 #include <cuchar>
+#else
+#include <uchar.h>
+namespace std
+{
+	using ::mbstate_t;
+	using ::size_t;
+	using ::mbrtoc16;
+	using ::c16rtomb;
+	using ::mbrtoc32;
+	using ::c32rtomb;
+}
+#endif
+#include <cwchar>
 #include <cctype>
 #include <cwctype>
 #include <cassert>
@@ -345,7 +358,8 @@ namespace neolib
     template <typename Callback>
     inline std::u32string utf8_to_utf32(std::string::const_iterator aBegin, std::string::const_iterator aEnd, Callback aCallback, bool aCodePageFallback = false)
     {
-        return utf8_to_utf32(std::string_view{ aBegin, aEnd }, aCallback, aCodePageFallback);
+    	/// @todo use std::string_view ctor that takes iterators when LLVM libcxx fixes its C++20 non-conformance
+        return utf8_to_utf32(std::string_view{ &*aBegin, static_cast<std::string_view::size_type>(std::distance(aBegin, aEnd)) }, aCallback, aCodePageFallback);
     }
 
     template <typename Callback>
