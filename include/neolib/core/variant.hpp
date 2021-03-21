@@ -214,7 +214,7 @@ namespace neolib
         template <typename Variant>
         struct from_neolib_variant<Variant, true, false, false> { typedef typename Variant::base_type& type; };
         template <typename Variant>
-        using from_neolib_variant_t = typename from_neolib_variant<Variant, is_neolib_variant_v<Variant>, std::is_rvalue_reference_v<Variant>, std::is_const_v<std::remove_reference<Variant>>>::type;
+        using from_neolib_variant_t = typename from_neolib_variant<Variant, is_neolib_variant_v<std::decay_t<Variant>>, std::is_rvalue_reference_v<Variant>, std::is_const_v<std::remove_reference<Variant>>>::type;
     }
 }
 
@@ -227,7 +227,7 @@ namespace std
     struct variant_size<neolib::variant<Types...>> : variant_size<std::variant<std::monostate, Types...>> {};
 
     template <typename R, typename Visitor, typename... Variants>
-    constexpr R visit(Visitor&& vis, Variants&&... vars, std::enable_if_t<neolib::detail::any_neolib_variants_v<Variants...>, neolib::sfinae> = {})
+    constexpr R visit(Visitor&& vis, Variants&&... vars, std::enable_if_t<neolib::detail::any_neolib_variants_v<std::decay_t<Variants>...>, neolib::sfinae> = {})
     {
         return visit(vis, static_cast<neolib::detail::from_neolib_variant_t<Variants>>(vars)...);
     }
