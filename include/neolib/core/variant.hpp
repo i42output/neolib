@@ -76,7 +76,8 @@ namespace neolib
         typedef variant<Types...> self_type;
         typedef std::variant<std::monostate, Types...> base_type;
     public:
-        typedef self_type abstract_type; // todo
+        typedef i_variant<abstract_t<Types>...> abstract_type;
+        typedef base_type std_type;
     public:
         using base_type::base_type;
         template <typename T>
@@ -206,13 +207,13 @@ namespace neolib
         template <typename Variant, bool IsNeolibVariant, bool IsRvalueReference, bool IsConstReference>
         struct from_neolib_variant { typedef Variant type; };
         template <typename Variant>
-        struct from_neolib_variant<Variant, true, true, false> { typedef typename Variant::base_type&& type; };
+        struct from_neolib_variant<Variant, true, true, false> { typedef typename Variant::std_type&& type; };
         template <typename Variant>
-        struct from_neolib_variant<Variant, true, true, true> { typedef typename Variant::base_type&& type; };
+        struct from_neolib_variant<Variant, true, true, true> { typedef typename Variant::std_type&& type; };
         template <typename Variant>
-        struct from_neolib_variant<Variant, true, false, true> { typedef typename Variant::base_type const& type; };
+        struct from_neolib_variant<Variant, true, false, true> { typedef typename Variant::std_type const& type; };
         template <typename Variant>
-        struct from_neolib_variant<Variant, true, false, false> { typedef typename Variant::base_type& type; };
+        struct from_neolib_variant<Variant, true, false, false> { typedef typename Variant::std_type& type; };
         template <typename Variant>
         using from_neolib_variant_t = typename from_neolib_variant<std::decay_t<Variant>, is_neolib_variant_v<std::decay_t<Variant>>, std::is_rvalue_reference_v<Variant>, std::is_const_v<std::remove_reference<Variant>>>::type;
     }
