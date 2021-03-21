@@ -44,6 +44,39 @@
 
 namespace neolib
 {
+    template <typename... Types>
+    class variant;
+}
+
+namespace std
+{
+    template <typename Type>
+    struct variant_size<neolib::variant<Type>> : variant_size<std::variant<std::monostate, Type>> {};
+
+    template <typename... Types>
+    struct variant_size<neolib::variant<Types...>> : variant_size<std::variant<std::monostate, Types...>> {};
+
+    template <typename Visitor, typename... Types>
+    constexpr decltype(auto) visit(Visitor&& vis, neolib::variant<Types...>&& var)
+    {
+        return visit(std::forward<Visitor>(vis), static_cast<std::variant<std::monostate, Types...>&&>(std::move(var)));
+    }
+    
+    template <typename Visitor, typename... Types>
+    constexpr decltype(auto) visit(Visitor&& vis, neolib::variant<Types...> const& var)
+    {
+        return visit(std::forward<Visitor>(vis), static_cast<std::variant<std::monostate, Types...> const&>(var));
+    }
+    
+    template <typename Visitor, typename... Types>
+    constexpr decltype(auto) visit(Visitor&& vis, neolib::variant<Types...>& var)
+    {
+        return visit(std::forward<Visitor>(vis), static_cast<std::variant<std::monostate, Types...>&>(var));
+    }
+}
+
+namespace neolib
+{
     struct none_t : std::monostate {};
     const none_t none;
 
@@ -180,57 +213,6 @@ namespace neolib
             return index - 1;
         else
             return variant_index_of<T, Variant, index + 1>();
-    }
-
-    namespace detail
-    {
-        template <typename T>
-        struct is_neolib_variant {};
-        template <typename Type>
-        struct is_neolib_variant<std::variant<Type>> { static constexpr bool value = false; };
-        template <typename... Types>
-        struct is_neolib_variant<std::variant<Types...>> { static constexpr bool value = false; };
-        template <typename Type>
-        struct is_neolib_variant<variant<Type>> { static constexpr bool value = true; };
-        template <typename... Types>
-        struct is_neolib_variant<variant<Types...>> { static constexpr bool value = true; };
-        template <typename T>
-        constexpr bool is_neolib_variant_v = is_neolib_variant<std::decay_t<T>>::value;
-
-        template <typename Variant, typename... Rest>
-        struct any_neolib_variants { static constexpr bool value = is_neolib_variant_v<Variant> || any_neolib_variants<Rest...>::value; };
-        template <typename Variant>
-        struct any_neolib_variants<Variant> { static constexpr bool value = is_neolib_variant_v<Variant>; };
-        template <typename... Variants>
-        constexpr bool any_neolib_variants_v = any_neolib_variants<Variants...>::value;
-
-        template <typename Variant, bool IsNeolibVariant, bool IsRvalueReference, bool IsConstReference>
-        struct from_neolib_variant { typedef Variant type; };
-        template <typename Variant>
-        struct from_neolib_variant<Variant, true, true, false> { typedef typename Variant::std_type&& type; };
-        template <typename Variant>
-        struct from_neolib_variant<Variant, true, true, true> { typedef typename Variant::std_type&& type; };
-        template <typename Variant>
-        struct from_neolib_variant<Variant, true, false, true> { typedef typename Variant::std_type const& type; };
-        template <typename Variant>
-        struct from_neolib_variant<Variant, true, false, false> { typedef typename Variant::std_type& type; };
-        template <typename Variant>
-        using from_neolib_variant_t = typename from_neolib_variant<std::decay_t<Variant>, is_neolib_variant_v<std::decay_t<Variant>>, std::is_rvalue_reference_v<Variant>, std::is_const_v<std::remove_reference<Variant>>>::type;
-    }
-}
-
-namespace std
-{
-    template <typename Type>
-    struct variant_size<neolib::variant<Type>> : variant_size<std::variant<std::monostate, Type>> {};
-
-    template <typename... Types>
-    struct variant_size<neolib::variant<Types...>> : variant_size<std::variant<std::monostate, Types...>> {};
-
-    template <typename R, typename Visitor, typename... Variants>
-    constexpr R visit(Visitor&& vis, Variants&&... vars, std::enable_if_t<neolib::detail::any_neolib_variants_v<Variants...>, neolib::sfinae> = {})
-    {
-        return visit(std::forward<Visitor>(vis), static_cast<neolib::detail::from_neolib_variant_t<Variants>>(vars)...);
     }
 }
 
