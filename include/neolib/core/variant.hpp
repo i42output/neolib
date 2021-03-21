@@ -193,7 +193,7 @@ namespace neolib
         constexpr bool is_neolib_variant_v = is_neolib_variant<Types...>::value;
 
         template <typename Variant, typename... Rest>
-        struct any_neolib_variants { static constexpr bool value = is_neolib_variant_v<Variant> || any_neolib_variants_v<Rest...>; };
+        struct any_neolib_variants { static constexpr bool value = is_neolib_variant_v<Variant> || any_neolib_variants<Rest...>::value; };
         template <typename Variant>
         struct any_neolib_variants<Variant> { static constexpr bool value = is_neolib_variant_v<Variant>; };
         template <typename... Variants>
