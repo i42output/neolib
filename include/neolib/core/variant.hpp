@@ -169,10 +169,7 @@ namespace neolib
         }, aVariant);
         return static_variant_cast<T>(aVariant);
     }
-}
 
-namespace neolib
-{
     template<typename T, typename Variant, std::size_t index = 0>
     constexpr std::size_t variant_index_of()
     {
@@ -182,6 +179,35 @@ namespace neolib
             return index - 1;
         else
             return variant_index_of<T, Variant, index + 1>();
+    }
+
+    namespace detail
+    {
+        template <typename T>
+        struct is_neolib_variant {};
+        template <typename... Types>
+        struct is_neolib_variant<std::variant<Types...>> { static constexpr bool value = false; };
+        template <typename... Types>
+        struct is_neolib_variant<variant<Types...>> { static constexpr bool value = true; };
+        template <typename... Types>
+        constexpr bool is_neolib_variant_v = is_neolib_variant<Types...>::value;
+    }
+}
+
+namespace std
+{
+    template <typename... Types>
+    struct variant_size<neolib::variant<Types...>> : variant_size<std::variant<std::monostate, Types...>> {};
+
+    template <typename R, typename Visitor, typename Variant>
+    constexpr R visit(Visitor&& vis, Variant&& var, enable_if_t<neolib::detail::is_neolib_variant_v<Variant>, neolib::sfinae> = {})
+    {
+        if constexpr (std::is_rvalue_reference<Variant>)
+            return visit(std::forward<Visitor>(vis), static_cast<typename Variant::base_type&&>(var));
+        else if constexpr (std::is_const_v<std::remove_reference<Variant>>)
+            return visit(std::forward<Visitor>(vis), static_cast<typename Variant::base_type const&>(var));
+        else
+            return visit(std::forward<Visitor>(vis), static_cast<typename Variant::base_type&>(var));
     }
 }
 
