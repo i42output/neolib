@@ -212,6 +212,9 @@ namespace neolib
 
 namespace std
 {
+    template <typename Type>
+    struct variant_size<neolib::variant<Type>> : variant_size<std::variant<std::monostate, Type>> {};
+
     template <typename... Types>
     struct variant_size<neolib::variant<Types...>> : variant_size<std::variant<std::monostate, Types...>> {};
 
