@@ -185,8 +185,12 @@ namespace neolib
     {
         template <typename T>
         struct is_neolib_variant {};
+        template <typename Type>
+        struct is_neolib_variant<std::variant<Type>> { static constexpr bool value = false; };
         template <typename... Types>
         struct is_neolib_variant<std::variant<Types...>> { static constexpr bool value = false; };
+        template <typename Type>
+        struct is_neolib_variant<variant<Type>> { static constexpr bool value = true; };
         template <typename... Types>
         struct is_neolib_variant<variant<Types...>> { static constexpr bool value = true; };
         template <typename... Types>
