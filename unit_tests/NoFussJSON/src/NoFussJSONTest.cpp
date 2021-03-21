@@ -216,10 +216,10 @@ int main(int argc, char** argv)
         json.root().as<neolib::json_object>()["answer"] = 42;
         for (auto& c : json.root())
             ;
-        json.write(std::cout);
-        double arithmeticConversionCheck = json.root().as<neolib::json_object>()["answer"].as<double>();
+        double arithmeticConversionCheck = json.croot().as<neolib::json_object>().at("answer").as<double>();
         json.write(std::cout);
         std::cout << "\n------------------" << std::endl;
+        std::cout << "arithmeticConversionCheck: " << arithmeticConversionCheck << std::endl;
 
         std::string input;
         if (argc < 2)

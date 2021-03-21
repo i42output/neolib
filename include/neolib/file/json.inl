@@ -1843,11 +1843,17 @@ namespace neolib
     }
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
-    inline const typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::json_value& basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::root() const
+    inline const typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::json_value& basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::croot() const
     {
         if (iRoot == std::nullopt)
             iRoot.emplace();
         return *iRoot;
+    }
+
+    template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
+    inline const typename basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::json_value& basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::root() const
+    {
+        return croot();
     }
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>

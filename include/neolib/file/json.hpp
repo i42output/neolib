@@ -479,6 +479,7 @@ namespace neolib
         friend class json_detail::basic_json_node;
     public:
         struct no_name : std::logic_error { no_name() : std::logic_error("neolib::basic_json_value::no_name") {} };
+        struct bad_conversion : std::runtime_error { bad_conversion() : std::runtime_error("neolib::basic_json_value::bad_conversion") {} };
     public:
         static constexpr json_syntax syntax = Syntax;
         typedef Alloc allocator_type;
@@ -550,7 +551,15 @@ namespace neolib
         template <typename T>
         std::enable_if_t<std::is_arithmetic_v<T>, T> as() const
         {
-            return std::get<T>(iValue);
+            T result = {};
+            std::visit([&result](auto&& v)
+            {
+                if constexpr (std::is_convertible_v<std::decay_t<decltype(v)>, std::decay_t<T>>)
+                    result = v;
+                else
+                    throw bad_conversion();
+            }, iValue);
+            return result;
         }
         template <typename T>
         std::enable_if_t<std::is_arithmetic_v<T>, T&> as()
@@ -878,6 +887,7 @@ namespace neolib
         const string_type& error_text() const;
     public:
         bool has_root() const;
+        const json_value& croot() const;
         const json_value& root() const;
         json_value& root();
         const json_value& at(const json_string& aPath) const;
