@@ -191,6 +191,22 @@ namespace neolib
         struct is_neolib_variant<variant<Types...>> { static constexpr bool value = true; };
         template <typename... Types>
         constexpr bool is_neolib_variant_v = is_neolib_variant<Types...>::value;
+
+        template <typename T, typename... Variants>
+        constexpr bool any_neolib_variants_v = is_neolib_variant_v<T> || any_neolib_variants_v<Variants>;
+
+        template <typename Variant, bool IsNeolibVariant, bool IsRvalueReference, bool IsConstReference>
+        struct from_neolib_variant { typedef Variant type; };
+        template <typename Variant>
+        struct from_neolib_variant<Variant, true, true, false> { typedef typename Variant::base_type&& type; };
+        template <typename Variant>
+        struct from_neolib_variant<Variant, true, true, true> { typedef typename Variant::base_type&& type; };
+        template <typename Variant>
+        struct from_neolib_variant<Variant, true, false, true> { typedef typename Variant::base_type const& type; };
+        template <typename Variant>
+        struct from_neolib_variant<Variant, true, false, false> { typedef typename Variant::base_type& type; };
+        template <typename Variant>
+        using from_neolib_variant_t = typename from_neolib_variant<Variant, is_neolib_variant_v<Variant>, std::is_rvalue_reference_v<Variant>, std::is_const_v<std::remove_reference<Variant>>>::type;
     }
 }
 
@@ -199,15 +215,10 @@ namespace std
     template <typename... Types>
     struct variant_size<neolib::variant<Types...>> : variant_size<std::variant<std::monostate, Types...>> {};
 
-    template <typename R, typename Visitor, typename Variant>
-    constexpr R visit(Visitor&& vis, Variant&& var, enable_if_t<neolib::detail::is_neolib_variant_v<Variant>, neolib::sfinae> = {})
+    template <typename R, typename Visitor, typename... Variants>
+    constexpr R visit(Visitor&& vis, Variants&&... vars, std::enable_if_t<neolib::detail::any_neolib_variants_v<Variants...>, neolib::sfinae> = {})
     {
-        if constexpr (std::is_rvalue_reference_v<Variant>)
-            return visit(std::forward<Visitor>(vis), static_cast<typename Variant::base_type&&>(var));
-        else if constexpr (std::is_const_v<std::remove_reference<Variant>>)
-            return visit(std::forward<Visitor>(vis), static_cast<typename Variant::base_type const&>(var));
-        else
-            return visit(std::forward<Visitor>(vis), static_cast<typename Variant::base_type&>(var));
+        return visit(vis, static_cast<neolib::detail::from_neolib_variant_t<Variants>>(vars)...);
     }
 }
 
