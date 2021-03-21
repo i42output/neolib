@@ -193,7 +193,7 @@ namespace neolib
         constexpr bool is_neolib_variant_v = is_neolib_variant<Types...>::value;
 
         template <typename T, typename... Variants>
-        constexpr bool any_neolib_variants_v = is_neolib_variant_v<T> || any_neolib_variants_v<Variants>;
+        constexpr bool any_neolib_variants_v = is_neolib_variant_v<T> || any_neolib_variants_v<Variants...>;
 
         template <typename Variant, bool IsNeolibVariant, bool IsRvalueReference, bool IsConstReference>
         struct from_neolib_variant { typedef Variant type; };
