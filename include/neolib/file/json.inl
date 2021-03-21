@@ -1716,23 +1716,23 @@ namespace neolib
                     aOutput << ']';
                 break;
             case json_type::Double:
-                aOutput << static_variant_cast<json_double>(v);
+                aOutput << std::get<json_double>(v);
                 break;
             case json_type::Int64:
-                aOutput << static_variant_cast<json_int64>(v);
+                aOutput << std::get<json_int64>(v);
                 break;
             case json_type::Uint64:
-                aOutput << static_variant_cast<json_uint64>(v);
+                aOutput << std::get<json_uint64>(v);
                 break;
             case json_type::Int:
-                aOutput << static_variant_cast<json_int>(v);
+                aOutput << std::get<json_int>(v);
                 break;
             case json_type::Uint:
-                aOutput << static_variant_cast<json_uint>(v);
+                aOutput << std::get<json_uint>(v);
                 break;
             case json_type::String:
                 aOutput << '\"';
-                for (auto const& ch : static_variant_cast<const json_string&>(v))
+                for (auto const& ch : std::get<json_string>(v))
                     switch (ch)
                     {
                     case '\"':
@@ -1768,13 +1768,13 @@ namespace neolib
                 aOutput << '\"';
                 break;
             case json_type::Bool:
-                aOutput << (static_variant_cast<json_bool>(v) ? trueString : falseString);
+                aOutput << (std::get<json_bool>(v) ? trueString : falseString);
                 break;
             case json_type::Null:
                 aOutput << nullString;
                 break;
             case json_type::Keyword:
-                aOutput << static_variant_cast<json_keyword>(v).text;
+                aOutput << std::get<json_keyword>(v).text;
                 break;
             default:
                 break;
