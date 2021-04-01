@@ -67,8 +67,8 @@ namespace neolib
         // construction
     public:
         optional() : iValue{ std::nullopt } {}
-        optional(const abstract_type& rhs) : iValue{ rhs.valid() ? container_type{ rhs.get() } : container_type{ std::nullopt } } {}
-        optional(const container_type& rhs) : iValue{ rhs } {}
+        optional(abstract_type const& rhs) : iValue{ rhs.valid() ? container_type{ rhs.get() } : container_type{ std::nullopt } } {}
+        optional(container_type const& rhs) : iValue{ rhs } {}
         optional(const_reference value) : iValue{ value } {}
         template <typename SFINAE = sfinae>
         optional(abstract_const_reference value, std::enable_if_t<!std::is_same_v<value_type, abstract_value_type>, SFINAE> = sfinae{}) : iValue{ value } {}
@@ -118,21 +118,26 @@ namespace neolib
         }
         // modifiers
     public:
+        template <typename... Args>
+        reference emplace(Args&&... aArgs)
+        {
+            return iValue.emplace(std::forward<Args>(aArgs)...);
+        }
         void reset() override
         { 
             iValue = std::nullopt;
         }
-        optional& operator=(const std::nullopt_t&) override
+        optional& operator=(std::nullopt_t const&) override
         {
             iValue = std::nullopt;
             return *this;
         }
-        optional& operator=(const abstract_type& rhs) override
+        optional& operator=(abstract_type const& rhs) override
         { 
             *this = rhs.get();
             return *this;
         }
-        optional& operator=(const abstract_value_type& value) override
+        optional& operator=(abstract_value_type const& value) override
         {
             iValue = value;
             return *this;
@@ -141,12 +146,22 @@ namespace neolib
         {
             iValue.swap(rhs.iValue);
         }
+        // container
+    public:
+        container_type const& container() const
+        {
+            return iValue;
+        }
+        container_type& container()
+        {
+            return iValue;
+        }
     private:
         container_type iValue;
     };
 
     template <typename T>
-    inline bool operator<(const optional<T>& lhs, const optional<T>& rhs)
+    inline bool operator<(optional<T> const& lhs, optional<T> const& rhs)
     {
         if (lhs.valid() != rhs.valid())
             return lhs.valid() < rhs.valid();
@@ -156,7 +171,7 @@ namespace neolib
     }
 
     template <typename T>
-    inline bool operator==(const optional<T>& lhs, const optional<T>& rhs)
+    inline bool operator==(optional<T> const& lhs, optional<T> const& rhs)
     {
         if (lhs.valid() != rhs.valid())
             return false;
@@ -167,7 +182,7 @@ namespace neolib
     }
 
     template <typename T>
-    inline bool operator!=(const optional<T>& lhs, const optional<T>& rhs)
+    inline bool operator!=(optional<T> const& lhs, optional<T> const& rhs)
     {
         return !operator==(lhs, rhs);
     }
