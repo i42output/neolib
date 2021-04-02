@@ -359,6 +359,8 @@ namespace neolib
     inline std::u32string utf8_to_utf32(std::string::const_iterator aBegin, std::string::const_iterator aEnd, Callback aCallback, bool aCodePageFallback = false)
     {
     	/// @todo use std::string_view ctor that takes iterators when LLVM libcxx fixes its C++20 non-conformance
+        if (aBegin == aEnd)
+            return std::u32string{};
         return utf8_to_utf32(std::string_view{ &*aBegin, static_cast<std::string_view::size_type>(std::distance(aBegin, aEnd)) }, aCallback, aCodePageFallback);
     }
 
