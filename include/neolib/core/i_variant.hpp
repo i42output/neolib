@@ -39,12 +39,13 @@
 #include <type_traits>
 #include <optional>
 #include <variant>
+#include <neolib/core/reference_counted.hpp>
 #include <neolib/core/variadic.hpp>
 
 namespace neolib
 {
     template <typename... Types>
-    class i_variant
+    class i_variant : public i_reference_counted
     {
         typedef i_variant<Types...> self_type;
     public:

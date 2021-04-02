@@ -57,16 +57,16 @@ namespace neolib
         typedef i_pair<const abstract_key_type, abstract_mapped_type> abstract_value_type;
         typedef Pr key_compare;
         typedef Alloc allocator_type;
-        typedef std::map<key_type, value_type, key_compare, typename std::allocator_traits<allocator_type>::template rebind_alloc<std::pair<const key_type, value_type>>> container_type;
-        typedef typename container_type::value_type container_value_type;
+        typedef std::map<key_type, value_type, key_compare, typename std::allocator_traits<allocator_type>::template rebind_alloc<std::pair<const key_type, value_type>>> std_type;
+        typedef typename std_type::value_type container_value_type;
     public:
         using typename abstract_type::size_type;
         using typename abstract_type::const_iterator;
         using typename abstract_type::iterator;
         using typename abstract_type::generic_container_type;
     protected:
-        typedef container::const_iterator<value_type, typename container_type::const_iterator> container_const_iterator;
-        typedef container::iterator<value_type, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
+        typedef container::const_iterator<value_type, typename std_type::const_iterator> container_const_iterator;
+        typedef container::iterator<value_type, typename std_type::iterator, typename std_type::const_iterator> container_iterator;
         typedef typename abstract_type::abstract_const_iterator abstract_const_iterator;
         typedef typename abstract_type::abstract_iterator abstract_iterator;
         // construction
@@ -109,11 +109,11 @@ namespace neolib
         }
         // non-asbtract operations
     public:
-        const container_type& container() const
+        const std_type& to_std_map() const
         {
             return iMap;
         }
-        container_type& container()
+        std_type& to_std_map()
         {
             return iMap;
         }
@@ -151,9 +151,9 @@ namespace neolib
             if (existing == iMap.end())
             {
                 existing = iMap.insert(
-                    typename container_type::value_type{
-                        typename container_type::key_type{aKey},
-                        typename container_type::mapped_type{
+                    typename std_type::value_type{
+                        typename std_type::key_type{aKey},
+                        typename std_type::mapped_type{
                             key_type{aKey},
                             mapped_type{}} }).first;
             }
@@ -173,16 +173,16 @@ namespace neolib
         value_type& emplace(Key2&& aKey, Args&&... aArgs)
         {
             auto result = iMap.emplace(std::forward<Key2>(aKey), 
-                typename container_type::mapped_type{ aKey, mapped_type{ std::forward<Args>(aArgs)... } });
+                typename std_type::mapped_type{ aKey, mapped_type{ std::forward<Args>(aArgs)... } });
             return result.first->second;
         }
     private:
         abstract_iterator* do_insert(void* memory, const abstract_key_type& aKey, const abstract_mapped_type& aMapped) override
         { 
             return new (memory) container_iterator{ iMap.insert(
-                typename container_type::value_type{
-                    typename container_type::key_type{aKey},
-                    typename container_type::mapped_type{
+                typename std_type::value_type{
+                    typename std_type::key_type{aKey},
+                    typename std_type::mapped_type{
                         key_type{aKey},
                         mapped_type{aMapped}} }).first };
         }
@@ -193,7 +193,7 @@ namespace neolib
         abstract_const_iterator* do_upper_bound(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.upper_bound(aKey) }; }
         abstract_iterator* do_upper_bound(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.upper_bound(aKey) }; }
     private:
-        container_type iMap;
+        std_type iMap;
     };
 
     template <typename Key, typename T, typename Pr = std::less<Key>, typename Alloc = std::allocator<std::pair<const Key, T>>>
@@ -210,16 +210,16 @@ namespace neolib
         typedef i_pair<const abstract_key_type, abstract_mapped_type> abstract_value_type;
         typedef Pr key_compare;
         typedef Alloc allocator_type;
-        typedef std::multimap<key_type, value_type, key_compare, typename std::allocator_traits<allocator_type>::template rebind_alloc<std::pair<const key_type, value_type>>> container_type;
-        typedef typename container_type::value_type container_value_type;
+        typedef std::multimap<key_type, value_type, key_compare, typename std::allocator_traits<allocator_type>::template rebind_alloc<std::pair<const key_type, value_type>>> std_type;
+        typedef typename std_type::value_type container_value_type;
     public:
         using typename abstract_type::size_type;
         using typename abstract_type::const_iterator;
         using typename abstract_type::iterator;
         using typename abstract_type::generic_container_type;
     protected:
-        typedef container::const_iterator<value_type, typename container_type::const_iterator> container_const_iterator;
-        typedef container::iterator<value_type, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
+        typedef container::const_iterator<value_type, typename std_type::const_iterator> container_const_iterator;
+        typedef container::iterator<value_type, typename std_type::iterator, typename std_type::const_iterator> container_iterator;
         typedef typename abstract_type::abstract_const_iterator abstract_const_iterator;
         typedef typename abstract_type::abstract_iterator abstract_iterator;
         // construction
@@ -262,11 +262,11 @@ namespace neolib
         }
         // non-asbtract operations
     public:
-        const container_type& container() const
+        const std_type& to_std_multimap() const
         {
             return iMap;
         }
-        container_type& container()
+        std_type& to_std_multimap()
         {
             return iMap;
         }
@@ -301,16 +301,16 @@ namespace neolib
         template <typename Key2, typename... Args>
         void emplace(Key2&& aKey, Args&&... aArgs)
         {
-            iMap.emplace(std::forward<Key2>(aKey), typename container_type::mapped_type{ aKey, mapped_type{ std::forward<Args>(aArgs)... } });
+            iMap.emplace(std::forward<Key2>(aKey), typename std_type::mapped_type{ aKey, mapped_type{ std::forward<Args>(aArgs)... } });
         }
         // from i_multimap
     private:
         abstract_iterator* do_insert(void* memory, const abstract_key_type& aKey, const abstract_mapped_type& aMapped) override
         {
             return new (memory) container_iterator{ iMap.insert(
-                typename container_type::value_type{
-                    typename container_type::key_type{aKey},
-                    typename container_type::mapped_type{
+                typename std_type::value_type{
+                    typename std_type::key_type{aKey},
+                    typename std_type::mapped_type{
                         key_type{aKey},
                         mapped_type{aMapped}} }) };
         }
@@ -321,6 +321,6 @@ namespace neolib
         abstract_const_iterator* do_upper_bound(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.upper_bound(aKey) }; }
         abstract_iterator* do_upper_bound(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.upper_bound(aKey) }; }
     private:
-        container_type iMap;
+        std_type iMap;
     };
 }

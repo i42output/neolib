@@ -81,9 +81,9 @@ namespace neolib
             const event* iEvent;
             const interlockable* iFrom;
         };
-        typedef std::list<entry> container_type;
-        typedef typename container_type::const_iterator const_iterator;
-        typedef typename container_type::iterator iterator;
+        typedef std::list<entry> std_type;
+        typedef typename std_type::const_iterator const_iterator;
+        typedef typename std_type::iterator iterator;
         typedef std::vector<iterator> working_list;
         // construction
     public:
@@ -256,7 +256,7 @@ namespace neolib
         }
         // attributes
     private:
-        container_type iItems;
+        std_type iItems;
         working_list iWorkingList;
         event iNewItemEvent;
         event iProcessedItemEvent;

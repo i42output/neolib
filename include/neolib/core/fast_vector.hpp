@@ -48,12 +48,12 @@ namespace neolib
         typedef small_buffer_allocator<T, SmallBufferSize> allocator_type;
     private:
         typedef typename small_buffer_allocator<T, SmallBufferSize>::small_buffer small_buffer_type;
-        typedef std::vector<T, small_buffer_allocator<T, SmallBufferSize>> container_type;
+        typedef std::vector<T, small_buffer_allocator<T, SmallBufferSize>> std_type;
     public:
         fast_vector() :
-            container_type{ allocator_type{ *this } }
+            std_type{ allocator_type{ *this } }
         {
-            container_type::reserve(SmallBufferSize);
+            std_type::reserve(SmallBufferSize);
         }
     public:
         bool using_small_buffer() const

@@ -54,7 +54,6 @@ namespace neolib
         typedef const value_type* const_pointer;
         typedef value_type& reference;
         typedef const value_type& const_reference;
-        struct not_valid : std::logic_error { not_valid() : std::logic_error("i_optional::not_valid") {} };
         // state
     public:
         virtual bool valid() const = 0;
@@ -71,7 +70,7 @@ namespace neolib
         // modifiers
     public:
         virtual void reset() = 0;
-        virtual i_optional<T>& operator=(const std::nullopt_t&) = 0;
+        virtual i_optional<T>& operator=(std::nullopt_t) noexcept = 0;
         virtual i_optional<T>& operator=(const i_optional<T>& rhs) = 0;
         virtual i_optional<T>& operator=(const T& value) = 0;
     };
@@ -99,7 +98,35 @@ namespace neolib
     }
 
     template <typename T>
+    inline bool operator==(const i_optional<T>& lhs, const T& rhs)
+    {
+        if (!lhs.valid())
+            return false;
+        return lhs.get() == rhs;
+    }
+
+    template <typename T>
+    inline bool operator==(const T& lhs, const i_optional<T>& rhs)
+    {
+        if (!rhs.valid())
+            return false;
+        return lhs == rhs.get();
+    }
+
+    template <typename T>
     inline bool operator!=(const i_optional<T>& lhs, const i_optional<T>& rhs)
+    {
+        return !(lhs == rhs);
+    }
+
+    template <typename T>
+    inline bool operator!=(const i_optional<T>& lhs, const T& rhs)
+    {
+        return !(lhs == rhs);
+    }
+
+    template <typename T>
+    inline bool operator!=(const T& lhs, const i_optional<T>& rhs)
     {
         return !(lhs == rhs);
     }
@@ -112,5 +139,21 @@ namespace neolib
         if (!lhs.valid())
             return false;
         return lhs.get() < rhs.get();
+    }
+
+    template <typename T>
+    inline bool operator<(const i_optional<T>& lhs, const T& rhs)
+    {
+        if (!lhs.valid())
+            return true;
+        return lhs.get() < rhs;
+    }
+
+    template <typename T>
+    inline bool operator<(const T& lhs, const i_optional<T>& rhs)
+    {
+        if (!rhs.valid())
+            return false;
+        return lhs < rhs.get();
     }
 }

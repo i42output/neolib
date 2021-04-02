@@ -43,11 +43,11 @@
 #include <array>
 #include <algorithm>
 #include <ostream>
-#include <optional>
 #include <boost/math/constants/constants.hpp>
 #include <neolib/core/vecarray.hpp>
 #include <neolib/core/swizzle.hpp>
 #include <neolib/core/simd.hpp>
+#include <neolib/core/optional.hpp>
 
 namespace neolib
 { 
@@ -535,31 +535,31 @@ namespace neolib
         typedef basic_vector<double, 3, row_vector> row_vec3;
         typedef basic_vector<double, 4, row_vector> row_vec4;
 
-        typedef std::optional<vector1> optional_vector1;
-        typedef std::optional<vector2> optional_vector2;
-        typedef std::optional<vector3> optional_vector3;
-        typedef std::optional<vector4> optional_vector4;
+        typedef optional<vector1> optional_vector1;
+        typedef optional<vector2> optional_vector2;
+        typedef optional<vector3> optional_vector3;
+        typedef optional<vector4> optional_vector4;
 
-        typedef std::optional<vec1> optional_vec1;
-        typedef std::optional<vec2> optional_vec2;
-        typedef std::optional<vec3> optional_vec3;
-        typedef std::optional<vec4> optional_vec4;
+        typedef optional<vec1> optional_vec1;
+        typedef optional<vec2> optional_vec2;
+        typedef optional<vec3> optional_vec3;
+        typedef optional<vec4> optional_vec4;
 
-        typedef std::optional<col_vec1> optional_col_vec1;
-        typedef std::optional<col_vec2> optional_col_vec2;
-        typedef std::optional<col_vec3> optional_col_vec3;
-        typedef std::optional<col_vec4> optional_col_vec4;
+        typedef optional<col_vec1> optional_col_vec1;
+        typedef optional<col_vec2> optional_col_vec2;
+        typedef optional<col_vec3> optional_col_vec3;
+        typedef optional<col_vec4> optional_col_vec4;
 
-        typedef std::optional<row_vec1> optional_row_vec1;
-        typedef std::optional<row_vec2> optional_row_vec2;
-        typedef std::optional<row_vec3> optional_row_vec3;
-        typedef std::optional<row_vec4> optional_row_vec4;
+        typedef optional<row_vec1> optional_row_vec1;
+        typedef optional<row_vec2> optional_row_vec2;
+        typedef optional<row_vec3> optional_row_vec3;
+        typedef optional<row_vec4> optional_row_vec4;
 
         typedef std::vector<vec2> vec2_list;
         typedef std::vector<vec3> vec3_list;
 
-        typedef std::optional<vec2_list> optional_vec2_list;
-        typedef std::optional<vec3_list> optional_vec3_list;
+        typedef optional<vec2_list> optional_vec2_list;
+        typedef optional<vec3_list> optional_vec3_list;
 
         typedef vec2_list vertices_2d;
         typedef vec3_list vertices;
@@ -999,49 +999,49 @@ namespace neolib
         typedef mat33 mat3;
         typedef mat44 mat4;
 
-        typedef std::optional<matrix11> optional_matrix11;
-        typedef std::optional<matrix22> optional_matrix22;
-        typedef std::optional<matrix21> optional_matrix21;
-        typedef std::optional<matrix12> optional_matrix12;
-        typedef std::optional<matrix33> optional_matrix33;
-        typedef std::optional<matrix31> optional_matrix31;
-        typedef std::optional<matrix32> optional_matrix32;
-        typedef std::optional<matrix13> optional_matrix13;
-        typedef std::optional<matrix23> optional_matrix23;
-        typedef std::optional<matrix44> optional_matrix44;
-        typedef std::optional<matrix41> optional_matrix41;
-        typedef std::optional<matrix42> optional_matrix42;
-        typedef std::optional<matrix43> optional_matrix43;
-        typedef std::optional<matrix14> optional_matrix14;
-        typedef std::optional<matrix24> optional_matrix24;
-        typedef std::optional<matrix34> optional_matrix34;
+        typedef optional<matrix11> optional_matrix11;
+        typedef optional<matrix22> optional_matrix22;
+        typedef optional<matrix21> optional_matrix21;
+        typedef optional<matrix12> optional_matrix12;
+        typedef optional<matrix33> optional_matrix33;
+        typedef optional<matrix31> optional_matrix31;
+        typedef optional<matrix32> optional_matrix32;
+        typedef optional<matrix13> optional_matrix13;
+        typedef optional<matrix23> optional_matrix23;
+        typedef optional<matrix44> optional_matrix44;
+        typedef optional<matrix41> optional_matrix41;
+        typedef optional<matrix42> optional_matrix42;
+        typedef optional<matrix43> optional_matrix43;
+        typedef optional<matrix14> optional_matrix14;
+        typedef optional<matrix24> optional_matrix24;
+        typedef optional<matrix34> optional_matrix34;
 
-        typedef std::optional<matrix11> optional_matrix1;
-        typedef std::optional<matrix22> optional_matrix2;
-        typedef std::optional<matrix33> optional_matrix3;
-        typedef std::optional<matrix44> optional_matrix4;
+        typedef optional<matrix11> optional_matrix1;
+        typedef optional<matrix22> optional_matrix2;
+        typedef optional<matrix33> optional_matrix3;
+        typedef optional<matrix44> optional_matrix4;
 
-        typedef std::optional<mat11> optional_mat11;
-        typedef std::optional<mat22> optional_mat22;
-        typedef std::optional<mat21> optional_mat21;
-        typedef std::optional<mat12> optional_mat12;
-        typedef std::optional<mat33> optional_mat33;
-        typedef std::optional<mat31> optional_mat31;
-        typedef std::optional<mat32> optional_mat32;
-        typedef std::optional<mat13> optional_mat13;
-        typedef std::optional<mat23> optional_mat23;
-        typedef std::optional<mat44> optional_mat44;
-        typedef std::optional<mat41> optional_mat41;
-        typedef std::optional<mat42> optional_mat42;
-        typedef std::optional<mat43> optional_mat43;
-        typedef std::optional<mat14> optional_mat14;
-        typedef std::optional<mat24> optional_mat24;
-        typedef std::optional<mat34> optional_mat34;
+        typedef optional<mat11> optional_mat11;
+        typedef optional<mat22> optional_mat22;
+        typedef optional<mat21> optional_mat21;
+        typedef optional<mat12> optional_mat12;
+        typedef optional<mat33> optional_mat33;
+        typedef optional<mat31> optional_mat31;
+        typedef optional<mat32> optional_mat32;
+        typedef optional<mat13> optional_mat13;
+        typedef optional<mat23> optional_mat23;
+        typedef optional<mat44> optional_mat44;
+        typedef optional<mat41> optional_mat41;
+        typedef optional<mat42> optional_mat42;
+        typedef optional<mat43> optional_mat43;
+        typedef optional<mat14> optional_mat14;
+        typedef optional<mat24> optional_mat24;
+        typedef optional<mat34> optional_mat34;
 
-        typedef std::optional<mat11> optional_mat1;
-        typedef std::optional<mat22> optional_mat2;
-        typedef std::optional<mat33> optional_mat3;
-        typedef std::optional<mat44> optional_mat4;
+        typedef optional<mat11> optional_mat1;
+        typedef optional<mat22> optional_mat2;
+        typedef optional<mat33> optional_mat3;
+        typedef optional<mat44> optional_mat4;
 
         typedef basic_matrix<float, 1, 1> matrix11f;
         typedef basic_matrix<float, 2, 2> matrix22f;
@@ -1082,49 +1082,49 @@ namespace neolib
         typedef matrix33f mat3f;
         typedef matrix44f mat4f;
 
-        typedef std::optional<matrix11f> optional_matrix11f;
-        typedef std::optional<matrix22f> optional_matrix22f;
-        typedef std::optional<matrix21f> optional_matrix21f;
-        typedef std::optional<matrix12f> optional_matrix12f;
-        typedef std::optional<matrix33f> optional_matrix33f;
-        typedef std::optional<matrix31f> optional_matrix31f;
-        typedef std::optional<matrix32f> optional_matrix32f;
-        typedef std::optional<matrix13f> optional_matrix13f;
-        typedef std::optional<matrix23f> optional_matrix23f;
-        typedef std::optional<matrix44f> optional_matrix44f;
-        typedef std::optional<matrix41f> optional_matrix41f;
-        typedef std::optional<matrix42f> optional_matrix42f;
-        typedef std::optional<matrix43f> optional_matrix43f;
-        typedef std::optional<matrix14f> optional_matrix14f;
-        typedef std::optional<matrix24f> optional_matrix24f;
-        typedef std::optional<matrix34f> optional_matrix34f;
+        typedef optional<matrix11f> optional_matrix11f;
+        typedef optional<matrix22f> optional_matrix22f;
+        typedef optional<matrix21f> optional_matrix21f;
+        typedef optional<matrix12f> optional_matrix12f;
+        typedef optional<matrix33f> optional_matrix33f;
+        typedef optional<matrix31f> optional_matrix31f;
+        typedef optional<matrix32f> optional_matrix32f;
+        typedef optional<matrix13f> optional_matrix13f;
+        typedef optional<matrix23f> optional_matrix23f;
+        typedef optional<matrix44f> optional_matrix44f;
+        typedef optional<matrix41f> optional_matrix41f;
+        typedef optional<matrix42f> optional_matrix42f;
+        typedef optional<matrix43f> optional_matrix43f;
+        typedef optional<matrix14f> optional_matrix14f;
+        typedef optional<matrix24f> optional_matrix24f;
+        typedef optional<matrix34f> optional_matrix34f;
 
-        typedef std::optional<matrix11f> optional_matrix1f;
-        typedef std::optional<matrix22f> optional_matrix2f;
-        typedef std::optional<matrix33f> optional_matrix3f;
-        typedef std::optional<matrix44f> optional_matrix4f;
+        typedef optional<matrix11f> optional_matrix1f;
+        typedef optional<matrix22f> optional_matrix2f;
+        typedef optional<matrix33f> optional_matrix3f;
+        typedef optional<matrix44f> optional_matrix4f;
 
-        typedef std::optional<mat11f> optional_mat11f;
-        typedef std::optional<mat22f> optional_mat22f;
-        typedef std::optional<mat21f> optional_mat21f;
-        typedef std::optional<mat12f> optional_mat12f;
-        typedef std::optional<mat33f> optional_mat33f;
-        typedef std::optional<mat31f> optional_mat31f;
-        typedef std::optional<mat32f> optional_mat32f;
-        typedef std::optional<mat13f> optional_mat13f;
-        typedef std::optional<mat23f> optional_mat23f;
-        typedef std::optional<mat44f> optional_mat44f;
-        typedef std::optional<mat41f> optional_mat41f;
-        typedef std::optional<mat42f> optional_mat42f;
-        typedef std::optional<mat43f> optional_mat43f;
-        typedef std::optional<mat14f> optional_mat14f;
-        typedef std::optional<mat24f> optional_mat24f;
-        typedef std::optional<mat34f> optional_mat34f;
+        typedef optional<mat11f> optional_mat11f;
+        typedef optional<mat22f> optional_mat22f;
+        typedef optional<mat21f> optional_mat21f;
+        typedef optional<mat12f> optional_mat12f;
+        typedef optional<mat33f> optional_mat33f;
+        typedef optional<mat31f> optional_mat31f;
+        typedef optional<mat32f> optional_mat32f;
+        typedef optional<mat13f> optional_mat13f;
+        typedef optional<mat23f> optional_mat23f;
+        typedef optional<mat44f> optional_mat44f;
+        typedef optional<mat41f> optional_mat41f;
+        typedef optional<mat42f> optional_mat42f;
+        typedef optional<mat43f> optional_mat43f;
+        typedef optional<mat14f> optional_mat14f;
+        typedef optional<mat24f> optional_mat24f;
+        typedef optional<mat34f> optional_mat34f;
 
-        typedef std::optional<mat11f> optional_mat1f;
-        typedef std::optional<mat22f> optional_mat2f;
-        typedef std::optional<mat33f> optional_mat3f;
-        typedef std::optional<mat44f> optional_mat4f;
+        typedef optional<mat11f> optional_mat1f;
+        typedef optional<mat22f> optional_mat2f;
+        typedef optional<mat33f> optional_mat3f;
+        typedef optional<mat44f> optional_mat4f;
 
         template <typename T, uint32_t Rows, uint32_t Columns>
         inline basic_matrix<T, Rows, Columns> operator+(const basic_matrix<T, Rows, Columns>& left, typename basic_matrix<T, Rows, Columns>::value_type right)
@@ -1335,6 +1335,16 @@ namespace neolib
         }
 
         template <typename Elem, typename Traits, typename T, uint32_t Rows, uint32_t Columns>
+        inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const optional<basic_matrix<T, Rows, Columns>>& aMatrix)
+        {
+            if (aMatrix != std::nullopt)
+                aStream << *aMatrix;
+            else
+                aStream << "[null]";
+            return aStream;
+        }
+
+        template <typename Elem, typename Traits, typename T, uint32_t Rows, uint32_t Columns>
         inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const std::optional<basic_matrix<T, Rows, Columns>>& aMatrix)
         {
             if (aMatrix != std::nullopt)
@@ -1469,6 +1479,15 @@ namespace neolib
             return true;
         }
         template <typename T>
+        inline bool nearly_equal(optional<T> const& lhs, optional<T> const& rhs, scalar epsilon = 0.00001)
+        {
+            if (!!lhs != !!rhs)
+                return false;
+            if (!lhs)
+                return true;
+            return nearly_equal(*lhs, *rhs, epsilon);
+        }
+        template <typename T>
         inline bool nearly_equal(std::optional<T> const& lhs, std::optional<T> const& rhs, scalar epsilon = 0.00001)
         {
             if (!!lhs != !!rhs)
@@ -1493,6 +1512,8 @@ namespace neolib
 
         struct aabb
         {
+            typedef aabb abstract_type;
+
             vec3 min;
             vec3 max;
             aabb() : min{}, max{} {}
@@ -1569,7 +1590,7 @@ namespace neolib
                 std::tie(right.min.z, right.min.y, right.min.x, right.max.z, right.max.y, right.max.x);
         }
 
-        typedef std::optional<aabb> optional_aabb;
+        typedef optional<aabb> optional_aabb;
 
         inline aabb aabb_union(const aabb& left, const aabb& right)
         {
@@ -1609,14 +1630,14 @@ namespace neolib
             return true;
         }
 
-        inline bool aabb_intersects(const std::optional<aabb>& first, const std::optional<aabb>& second)
+        inline bool aabb_intersects(const optional<aabb>& first, const std::optional<aabb>& second)
         {
             if (first == std::nullopt || second == std::nullopt)
                 return false;
             return aabb_intersects(*first, *second);
         }
             
-        inline bool aabb_intersects(const std::optional<aabb>& first, const aabb& second)
+        inline bool aabb_intersects(const optional<aabb>& first, const aabb& second)
         {
             if (first == std::nullopt)
                 return false;
@@ -1632,6 +1653,8 @@ namespace neolib
 
         struct aabb_2d
         {
+            typedef aabb_2d abstract_type;
+
             vec2 min;
             vec2 max;
             aabb_2d() : min{}, max{} {}
@@ -1705,7 +1728,7 @@ namespace neolib
                 std::tie(right.min.y, right.min.x, right.max.y, right.max.x);
         }
 
-        typedef std::optional<aabb_2d> optional_aabb_2d;
+        typedef optional<aabb_2d> optional_aabb_2d;
 
         inline aabb_2d aabb_union(const aabb_2d& left, const aabb_2d& right)
         {
@@ -1741,14 +1764,14 @@ namespace neolib
             return true;
         }
 
-        inline bool aabb_intersects(const std::optional<aabb_2d>& first, const std::optional<aabb_2d>& second)
+        inline bool aabb_intersects(const optional<aabb_2d>& first, const std::optional<aabb_2d>& second)
         {
             if (first == std::nullopt || second == std::nullopt)
                 return false;
             return aabb_intersects(*first, *second);
         }
 
-        inline bool aabb_intersects(const std::optional<aabb_2d>& first, const aabb_2d& second)
+        inline bool aabb_intersects(const optional<aabb_2d>& first, const aabb_2d& second)
         {
             if (first == std::nullopt)
                 return false;

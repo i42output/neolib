@@ -55,7 +55,7 @@ namespace neolib
     public:
         typedef i_string abstract_type;
         typedef char value_type;
-        typedef std::string container_type;
+        typedef std::string std_type;
     protected:
         typedef container::random_access_const_iterator<char, std::string::const_iterator> container_const_iterator;
         typedef container::random_access_iterator<char, std::string::iterator, std::string::const_iterator> container_iterator;
@@ -79,8 +79,8 @@ namespace neolib
         string& operator=(const i_string& aOther) override { assign(aOther); return *this; }
         // operations
     public:
-        const container_type& container() const { return iString; }
-        container_type& container() { return iString; }
+        const std_type& to_std_string() const { return iString; }
+        std_type& to_std_string() { return iString; }
         // implementation
         // from i_container
     public:
@@ -135,8 +135,6 @@ namespace neolib
     public:
         using i_string::assign;
         void assign(string&& aOther) { if (&aOther == this) return; iString.assign(std::move(aOther.to_std_string())); }
-        using i_string::to_std_string;
-        std::string& to_std_string() { return iString; }
         // attributes
     private:
         std::string iString;
@@ -144,12 +142,12 @@ namespace neolib
 
     inline string operator+(const string& lhs, const string& rhs)
     {
-        return lhs.container() + rhs.container();
+        return lhs.to_std_string() + rhs.to_std_string();
     }
 
     inline string& operator+=(string& lhs, const i_string& rhs)
     {
-        lhs.container() += rhs.to_std_string_view();
+        lhs.to_std_string() += rhs.to_std_string_view();
         return lhs;
     }
 

@@ -1,6 +1,6 @@
-// optional.hpp - v1.3
+// optional.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2007, 2021 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -43,125 +43,176 @@
 namespace neolib
 {
     template<typename T>
-    class optional : public reference_counted<i_optional<abstract_t<T>>>
+    class optional : public reference_counted<i_optional<abstract_t<T>>>, public std::optional<T>
     {
         typedef optional<T> self_type;
-        typedef reference_counted<i_optional<abstract_t<T>>> base_type;
-        typedef std::optional<T> container_type;
-        // exceptions
-    public:
-        using typename base_type::not_valid;
+        typedef std::optional<T> base_type;
         // types
     public:
         typedef i_optional<abstract_t<T>> abstract_type;
+        typedef base_type std_type;
         typedef T value_type;
         typedef value_type* pointer;
         typedef const value_type* const_pointer;
         typedef value_type& reference;
         typedef const value_type& const_reference;
-        typedef typename base_type::value_type abstract_value_type;
-        typedef typename base_type::pointer abstract_pointer;
-        typedef typename base_type::const_pointer abstract_const_pointer;
-        typedef typename base_type::reference abstract_reference;
-        typedef typename base_type::const_reference abstract_const_reference;
-        // construction
     public:
-        optional() : iValue{ std::nullopt } {}
-        optional(abstract_type const& rhs) : iValue{ rhs.valid() ? container_type{ rhs.get() } : container_type{ std::nullopt } } {}
-        optional(container_type const& rhs) : iValue{ rhs } {}
-        optional(const_reference value) : iValue{ value } {}
-        template <typename SFINAE = sfinae>
-        optional(abstract_const_reference value, std::enable_if_t<!std::is_same_v<value_type, abstract_value_type>, SFINAE> = sfinae{}) : iValue{ value } {}
+        using base_type::base_type;
+        optional(abstract_type const& other) :
+            base_type{ other.get() }
+        {
+        }
+    public:
+        using base_type::operator=;
         // state
     public:
-        bool valid() const override
+        bool valid() const
         {
-            return iValue != std::nullopt;
+            return static_cast<bool>(*this);
         }
-        bool invalid() const override
+        bool invalid() const
         {
             return !valid();
         }
-        operator bool() const override
-        { 
-            return valid();
+        operator bool() const
+        {
+            return base_type::operator bool();
         }
         // element access
     public:
         reference get() override
         {
-            if (valid())
-                return iValue.value();
-            throw not_valid();
+            return base_type::value();
         }
         const_reference get() const override
         {
-            if (valid())
-                return iValue.value();
-            throw not_valid();
+            return base_type::value();
         }
         reference operator*() override
-        { 
-            return get();
+        {
+            return base_type::operator*();
         }
         const_reference operator*() const override
-        { 
-            return get();
+        {
+            return base_type::operator*();
         }
         pointer operator->() override
-        { 
-            return &get(); 
+        {
+            return base_type::operator->();
         }
         const_pointer operator->() const override
-        { 
-            return &get(); 
+        {
+            return base_type::operator->();
         }
         // modifiers
     public:
-        template <typename... Args>
-        reference emplace(Args&&... aArgs)
-        {
-            return iValue.emplace(std::forward<Args>(aArgs)...);
-        }
         void reset() override
-        { 
-            iValue = std::nullopt;
-        }
-        optional& operator=(std::nullopt_t const&) override
         {
-            iValue = std::nullopt;
+            base_type::reset();
+        }
+        self_type& operator=(std::nullopt_t) noexcept override
+        {
+            base_type::operator=(std::nullopt);
             return *this;
         }
-        optional& operator=(abstract_type const& rhs) override
-        { 
-            *this = rhs.get();
+        self_type& operator=(const abstract_type& rhs) override
+        {
+            base_type::operator=(T{ rhs.get() });
             return *this;
         }
-        optional& operator=(abstract_value_type const& value) override
+        self_type& operator=(const abstract_t<T>& value) override
         {
-            iValue = value;
+            base_type::operator=(T{ value });
             return *this;
         }
-        void swap(optional& rhs)
-        {
-            iValue.swap(rhs.iValue);
-        }
-        // container
-    public:
-        container_type const& container() const
-        {
-            return iValue;
-        }
-        container_type& container()
-        {
-            return iValue;
-        }
-    private:
-        container_type iValue;
     };
 
     template <typename T>
-    inline bool operator<(optional<T> const& lhs, optional<T> const& rhs)
+    inline bool operator==(const optional<T>& lhs, std::nullopt_t)
+    {
+        return !lhs.valid();
+    }
+
+    template <typename T>
+    inline bool operator!=(const optional<T>& lhs, std::nullopt_t)
+    {
+        return lhs.valid();
+    }
+
+    template <typename T>
+    inline bool operator==(const optional<T>& lhs, const optional<T>& rhs)
+    {
+        if (lhs.valid() != rhs.valid())
+            return false;
+        if (!lhs.valid())
+            return true;
+        return lhs.get() == rhs.get();
+    }
+
+    template <typename T>
+    inline bool operator==(const optional<T>& lhs, const T& rhs)
+    {
+        if (!lhs.valid())
+            return false;
+        return lhs.get() == rhs;
+    }
+
+    template <typename T>
+    inline bool operator==(const T& lhs, const optional<T>& rhs)
+    {
+        if (!rhs.valid())
+            return false;
+        return lhs == rhs.get();
+    }
+
+    template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_t<T>>, int> = 0>
+    inline bool operator==(const optional<T>& lhs, const abstract_t<T>& rhs)
+    {
+        if (!lhs.valid())
+            return false;
+        return lhs.get() == rhs;
+    }
+
+    template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_t<T>>, int> = 0>
+    inline bool operator==(const abstract_t<T>& lhs, const optional<T>& rhs)
+    {
+        if (!rhs.valid())
+            return false;
+        return lhs == rhs.get();
+    }
+
+    template <typename T>
+    inline bool operator!=(const optional<T>& lhs, const optional<T>& rhs)
+    {
+        return !(lhs == rhs);
+    }
+
+    template <typename T>
+    inline bool operator!=(const optional<T>& lhs, const T& rhs)
+    {
+        return !(lhs == rhs);
+    }
+
+    template <typename T>
+    inline bool operator!=(const T& lhs, const optional<T>& rhs)
+    {
+        return !(lhs == rhs);
+    }
+
+    template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_t<T>>, int> = 0>
+    inline bool operator!=(const optional<T>& lhs, const abstract_t<T>& rhs)
+    {
+        return !(lhs == rhs);
+    }
+
+    template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_t<T>>, int> = 0>
+    inline bool operator!=(const abstract_t<T>& lhs, const optional<T>& rhs)
+    {
+        return !(lhs == rhs);
+    }
+
+    template <typename T>
+    inline bool operator<(const optional<T>& lhs, const optional<T>& rhs)
     {
         if (lhs.valid() != rhs.valid())
             return lhs.valid() < rhs.valid();
@@ -171,20 +222,35 @@ namespace neolib
     }
 
     template <typename T>
-    inline bool operator==(optional<T> const& lhs, optional<T> const& rhs)
+    inline bool operator<(const optional<T>& lhs, const T& rhs)
     {
-        if (lhs.valid() != rhs.valid())
-            return false;
-        if (lhs.valid())
-            return *lhs == *rhs;
-        else
+        if (!lhs.valid())
             return true;
+        return lhs.get() < rhs;
     }
 
     template <typename T>
-    inline bool operator!=(optional<T> const& lhs, optional<T> const& rhs)
+    inline bool operator<(const T& lhs, const optional<T>& rhs)
     {
-        return !operator==(lhs, rhs);
+        if (!rhs.valid())
+            return false;
+        return lhs < rhs.get();
+    }
+
+    template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_t<T>>, int> = 0>
+    inline bool operator<(const optional<T>& lhs, const abstract_t<T>& rhs)
+    {
+        if (!lhs.valid())
+            return true;
+        return lhs.get() < rhs;
+    }
+
+    template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_t<T>>, int> = 0>
+    inline bool operator<(const abstract_t<T>& lhs, const optional<T>& rhs)
+    {
+        if (!rhs.valid())
+            return false;
+        return lhs < rhs.get();
     }
 
     template <typename T>

@@ -104,7 +104,7 @@ namespace neolib
     using from_abstract_t = typename from_abstract_next<AbstractT, Type...>::result_type;
         
     template <typename... Types>
-    class variant : public i_variant<abstract_t<Types>...>, public std::variant<std::monostate, Types...>
+    class variant : public reference_counted<i_variant<abstract_t<Types>...>>, public std::variant<std::monostate, Types...>
     {
         typedef variant<Types...> self_type;
         typedef std::variant<std::monostate, Types...> base_type;

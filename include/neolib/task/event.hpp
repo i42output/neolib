@@ -881,12 +881,12 @@ namespace neolib
         }
         sink& operator+=(i_event_handle const& aHandle) override
         {
-            iHandles.container().insert(iHandles.container().end(), aHandle)->set_active();
+            iHandles.to_std_vector().insert(iHandles.to_std_vector().end(), aHandle)->set_active();
             return *this;
         }
         sink& operator+=(i_event_handle&& aHandle) override
         {
-            iHandles.container().insert(iHandles.container().end(), std::move(aHandle))->set_active();
+            iHandles.to_std_vector().insert(iHandles.to_std_vector().end(), std::move(aHandle))->set_active();
             return *this;
         }
     public:

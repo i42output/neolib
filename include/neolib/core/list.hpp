@@ -52,7 +52,7 @@ namespace neolib
         typedef i_list<abstract_t<T>> abstract_type;
         typedef T value_type;
         typedef abstract_t<T> abstract_value_type;
-        typedef std::list<value_type> container_type;
+        typedef std::list<value_type> std_type;
         using typename abstract_type::size_type;
         using typename abstract_type::const_iterator;
         using typename abstract_type::iterator;
@@ -61,8 +61,8 @@ namespace neolib
         using typename abstract_type::abstract_const_iterator;
         using typename abstract_type::abstract_iterator;
     protected:
-        typedef container::const_iterator<T, typename container_type::const_iterator> container_const_iterator;
-        typedef container::iterator<T, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
+        typedef container::const_iterator<T, typename std_type::const_iterator> container_const_iterator;
+        typedef container::iterator<T, typename std_type::iterator, typename std_type::const_iterator> container_iterator;
         // construction
     public:
         list() {}
@@ -89,11 +89,11 @@ namespace neolib
         }
         // operations
     public:
-        container_type& container() 
+        std_type& to_std_list() 
         { 
             return iList; 
         }
-        const container_type& container() const 
+        const std_type& to_std_list() const 
         { 
             return iList; 
         }

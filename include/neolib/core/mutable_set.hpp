@@ -51,11 +51,11 @@ namespace neolib
     class mutable_base : public Container
     {
     public:
-        typedef Container container_type;
-        typedef typename container_type::key_type key_type;
-        typedef typename container_type::mapped_type value_type;
+        typedef Container std_type;
+        typedef typename std_type::key_type key_type;
+        typedef typename std_type::mapped_type value_type;
     public:
-        class iterator : public container_type::iterator
+        class iterator : public std_type::iterator
         {
         public:
             typedef typename mutable_base::value_type value_type;
@@ -63,11 +63,11 @@ namespace neolib
             typedef value_type& reference;
         public:
             iterator() {}
-            iterator(typename container_type::iterator aIterator) : container_type::iterator(aIterator) {}
-            pointer operator->() const { return &container_type::iterator::operator*().second; }
-            reference operator*() const { return container_type::iterator::operator*().second; }
+            iterator(typename std_type::iterator aIterator) : std_type::iterator(aIterator) {}
+            pointer operator->() const { return &std_type::iterator::operator*().second; }
+            reference operator*() const { return std_type::iterator::operator*().second; }
         };
-        class const_iterator : public container_type::const_iterator
+        class const_iterator : public std_type::const_iterator
         {
         public:
             typedef typename mutable_base::value_type value_type;
@@ -75,12 +75,12 @@ namespace neolib
             typedef const value_type& reference;
         public:
             const_iterator() {}
-            const_iterator(typename container_type::const_iterator aIterator) : container_type::const_iterator(aIterator) {}
-            const_iterator(typename container_type::iterator aIterator) : container_type::const_iterator(aIterator) {}
-            pointer operator->() const { return &container_type::const_iterator::operator*().second; }
-            reference operator*() const { return container_type::const_iterator::operator*().second; }
+            const_iterator(typename std_type::const_iterator aIterator) : std_type::const_iterator(aIterator) {}
+            const_iterator(typename std_type::iterator aIterator) : std_type::const_iterator(aIterator) {}
+            pointer operator->() const { return &std_type::const_iterator::operator*().second; }
+            reference operator*() const { return std_type::const_iterator::operator*().second; }
         };
-        class reverse_iterator : public container_type::reverse_iterator
+        class reverse_iterator : public std_type::reverse_iterator
         {
         public:
             typedef typename mutable_base::value_type value_type;
@@ -88,11 +88,11 @@ namespace neolib
             typedef value_type& reference;
         public:
             reverse_iterator() {}
-            reverse_iterator(typename container_type::reverse_iterator aIterator) : container_type::reverse_iterator(aIterator) {}
-            pointer operator->() const { return &container_type::reverse_iterator::operator*().second; }
-            reference operator*() const { return container_type::reverse_iterator::operator*().second; }
+            reverse_iterator(typename std_type::reverse_iterator aIterator) : std_type::reverse_iterator(aIterator) {}
+            pointer operator->() const { return &std_type::reverse_iterator::operator*().second; }
+            reference operator*() const { return std_type::reverse_iterator::operator*().second; }
         };
-        class const_reverse_iterator : public container_type::const_reverse_iterator
+        class const_reverse_iterator : public std_type::const_reverse_iterator
         {
         public:
             typedef typename mutable_base::value_type value_type;
@@ -100,26 +100,26 @@ namespace neolib
             typedef const value_type& reference;
         public:
             const_reverse_iterator() {}
-            const_reverse_iterator(typename container_type::const_reverse_iterator aIterator) : container_type::const_reverse_iterator(aIterator) {}
-            const_reverse_iterator(typename container_type::reverse_iterator aIterator) : container_type::const_reverse_iterator(aIterator) {}
-            pointer operator->() const { return &container_type::const_reverse_iterator::operator*().second; }
-            reference operator*() const { return container_type::const_reverse_iterator::operator*().second; }
+            const_reverse_iterator(typename std_type::const_reverse_iterator aIterator) : std_type::const_reverse_iterator(aIterator) {}
+            const_reverse_iterator(typename std_type::reverse_iterator aIterator) : std_type::const_reverse_iterator(aIterator) {}
+            pointer operator->() const { return &std_type::const_reverse_iterator::operator*().second; }
+            reference operator*() const { return std_type::const_reverse_iterator::operator*().second; }
         };
     public:
-        const_iterator cbegin() const { return container_type::cbegin(); }
-        const_iterator begin() const { return container_type::begin(); }
-        iterator begin() { return container_type::begin(); }
-        const_iterator cend() const { return container_type::cend(); }
-        const_iterator end() const { return container_type::end(); }
-        iterator end() { return container_type::end(); }
-        const_reverse_iterator crbegin() const { return container_type::crbegin(); }
-        const_reverse_iterator rbegin() const { return container_type::rbegin(); }
-        reverse_iterator rbegin() { return container_type::rbegin(); }
-        const_reverse_iterator crend() const { return container_type::crend(); }
-        const_reverse_iterator rend() const { return container_type::rend(); }
-        reverse_iterator rend() { return container_type::rend(); }
-        iterator find(const key_type& aKey) { return container_type::find(aKey); }
-        const_iterator find(const key_type& aKey) const { return container_type::find(aKey); }
+        const_iterator cbegin() const { return std_type::cbegin(); }
+        const_iterator begin() const { return std_type::begin(); }
+        iterator begin() { return std_type::begin(); }
+        const_iterator cend() const { return std_type::cend(); }
+        const_iterator end() const { return std_type::end(); }
+        iterator end() { return std_type::end(); }
+        const_reverse_iterator crbegin() const { return std_type::crbegin(); }
+        const_reverse_iterator rbegin() const { return std_type::rbegin(); }
+        reverse_iterator rbegin() { return std_type::rbegin(); }
+        const_reverse_iterator crend() const { return std_type::crend(); }
+        const_reverse_iterator rend() const { return std_type::rend(); }
+        reverse_iterator rend() { return std_type::rend(); }
+        iterator find(const key_type& aKey) { return std_type::find(aKey); }
+        const_iterator find(const key_type& aKey) const { return std_type::find(aKey); }
     };
 
     template <typename T, typename Pr = std::less<typename crack_key<T>::key_type>, typename Alloc = std::allocator<std::pair<typename crack_key<T>::key_type const, T> > >

@@ -54,13 +54,13 @@ namespace neolib
         typedef T value_type;
         typedef Pred compare_type;
         typedef Alloc allocator_type;
-        typedef mutable_set<value_type, compare_type, allocator_type> container_type;
+        typedef mutable_set<value_type, compare_type, allocator_type> std_type;
     private:
         typedef typename abstract_type::abstract_container abstract_container;
     public:
         typedef typename abstract_type::size_type size_type;
-        typedef container::const_iterator<value_type, typename container_type::const_iterator> container_const_iterator;
-        typedef container::iterator<value_type, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
+        typedef container::const_iterator<value_type, typename std_type::const_iterator> container_const_iterator;
+        typedef container::iterator<value_type, typename std_type::iterator, typename std_type::const_iterator> container_iterator;
     protected:
         typedef typename abstract_type::abstract_const_iterator abstract_const_iterator;
         typedef typename abstract_type::abstract_iterator abstract_iterator;
@@ -85,8 +85,8 @@ namespace neolib
         {}
         // operations
     public:
-        const container_type& container() const { return iSet; }
-        container_type& container() { return iSet; }
+        const std_type& to_std_set() const { return iSet; }
+        std_type& to_std_set() { return iSet; }
         // implementation
     public:
         // from i_container
@@ -115,7 +115,7 @@ namespace neolib
         abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator(iSet.find(value_type{ aKey })); }
         abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator(iSet.find(value_type{ aKey })); }
     private:
-        container_type iSet;
+        std_type iSet;
     };
 
     template <typename T, typename Pred = std::less<typename crack_key<T>::key_type>, typename Alloc = std::allocator<T>>
@@ -130,13 +130,13 @@ namespace neolib
         typedef T value_type;
         typedef Pred compare_type;
         typedef Alloc allocator_type;
-        typedef mutable_multiset<value_type, compare_type, allocator_type> container_type;
+        typedef mutable_multiset<value_type, compare_type, allocator_type> std_type;
     private:
         typedef typename abstract_type::base_type abstract_container;
     public:
         typedef typename abstract_type::size_type size_type;
-        typedef container::const_iterator<abstract_value_type, typename container_type::const_iterator> container_const_iterator;
-        typedef container::iterator<abstract_value_type, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
+        typedef container::const_iterator<abstract_value_type, typename std_type::const_iterator> container_const_iterator;
+        typedef container::iterator<abstract_value_type, typename std_type::iterator, typename std_type::const_iterator> container_iterator;
     protected:
         typedef typename abstract_type::abstract_const_iterator abstract_const_iterator;
         typedef typename abstract_type::abstract_iterator abstract_iterator;
@@ -160,8 +160,8 @@ namespace neolib
         {}
         // operations
     public:
-        const container_type& container() const { return iSet; }
-        container_type& container() { return iSet; }
+        const std_type& to_std_multiset() const { return iSet; }
+        std_type& to_std_multiset() { return iSet; }
         // implementation
     public:
         // from i_container
@@ -190,6 +190,6 @@ namespace neolib
         abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator(iSet.find(value_type{ aKey })); }
         abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator(iSet.find(value_type{ aKey })); }
     private:
-        container_type iSet;
+        std_type iSet;
     };
 }

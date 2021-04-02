@@ -53,7 +53,7 @@ namespace neolib
         typedef i_vector<abstract_t<T>> abstract_type;
         typedef T value_type;
         typedef abstract_t<T> abstract_value_type;
-        typedef std::vector<value_type> container_type;
+        typedef std::vector<value_type> std_type;
         using typename abstract_type::size_type;
         using typename abstract_type::const_iterator;
         using typename abstract_type::iterator;
@@ -62,8 +62,8 @@ namespace neolib
         using typename abstract_type::abstract_const_iterator;
         using typename abstract_type::abstract_iterator;
     protected:
-        typedef container::random_access_const_iterator<T, typename container_type::const_iterator> container_const_iterator;
-        typedef container::random_access_iterator<T, typename container_type::iterator, typename container_type::const_iterator> container_iterator;
+        typedef container::random_access_const_iterator<T, typename std_type::const_iterator> container_const_iterator;
+        typedef container::random_access_iterator<T, typename std_type::iterator, typename std_type::const_iterator> container_iterator;
         // construction
     public:
         vector() {}
@@ -75,7 +75,7 @@ namespace neolib
         { 
             assign(aOther); 
         }
-        vector(const container_type& aOtherContainer) : 
+        vector(const std_type& aOtherContainer) : 
             iVector(aOtherContainer) {}
         vector(std::initializer_list<value_type> aValues) : 
             iVector{ aValues } {}
@@ -99,11 +99,11 @@ namespace neolib
         }
         // operations
     public:
-        container_type& container() 
+        std_type& to_std_vector()
         { 
             return iVector; 
         }
-        const container_type& container() const 
+        const std_type& to_std_vector() const
         { 
             return iVector; 
         }
@@ -117,7 +117,7 @@ namespace neolib
     public:
         bool operator<(const self_type& aRhs) const 
         { 
-            return container() < aRhs.container(); 
+            return to_std_vector() < aRhs.to_std_vector();
         }
         // implementation
         // from i_container
