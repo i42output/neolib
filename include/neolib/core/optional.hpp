@@ -59,8 +59,9 @@ namespace neolib
     public:
         using base_type::base_type;
         optional(abstract_type const& other) :
-            base_type{ other.get() }
+            base_type{}
         {
+            *this = other;
         }
     public:
         using base_type::operator=;
@@ -117,7 +118,10 @@ namespace neolib
         }
         self_type& operator=(const abstract_type& rhs) override
         {
-            base_type::operator=(T{ rhs.get() });
+            if (rhs.valid())
+                base_type::operator=(T{ rhs.get() });
+            else
+                base_type::operator=(std::nullopt);
             return *this;
         }
         self_type& operator=(const abstract_t<T>& value) override
