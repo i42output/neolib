@@ -56,9 +56,9 @@ namespace neolib
         typedef const value_type& const_reference;
         // state
     public:
-        virtual bool valid() const = 0;
-        virtual bool invalid() const = 0;
-        virtual operator bool() const = 0;
+        virtual bool valid() const noexcept = 0;
+        virtual bool invalid() const noexcept = 0;
+        virtual operator bool() const noexcept = 0;
         // element access
     public:
         virtual reference get() = 0;
@@ -76,13 +76,13 @@ namespace neolib
     };
 
     template <typename T>
-    inline bool operator==(const i_optional<T>& lhs, std::nullopt_t)
+    inline bool operator==(const i_optional<T>& lhs, std::nullopt_t) noexcept
     {
         return !lhs.valid();
     }
         
     template <typename T>
-    inline bool operator!=(const i_optional<T>& lhs, std::nullopt_t)
+    inline bool operator!=(const i_optional<T>& lhs, std::nullopt_t) noexcept
     {
         return lhs.valid();
     }

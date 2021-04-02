@@ -66,15 +66,15 @@ namespace neolib
         using base_type::operator=;
         // state
     public:
-        bool valid() const
+        bool valid() const noexcept override
         {
             return static_cast<bool>(*this);
         }
-        bool invalid() const
+        bool invalid() const noexcept override
         {
             return !valid();
         }
-        operator bool() const
+        operator bool() const noexcept override
         {
             return base_type::operator bool();
         }
@@ -128,13 +128,13 @@ namespace neolib
     };
 
     template <typename T>
-    inline bool operator==(const optional<T>& lhs, std::nullopt_t)
+    inline bool operator==(const optional<T>& lhs, std::nullopt_t) noexcept
     {
         return !lhs.valid();
     }
 
     template <typename T>
-    inline bool operator!=(const optional<T>& lhs, std::nullopt_t)
+    inline bool operator!=(const optional<T>& lhs, std::nullopt_t) noexcept
     {
         return lhs.valid();
     }
