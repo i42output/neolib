@@ -864,17 +864,18 @@ namespace neolib
         public:
             basic_matrix() : m{ {} } {}
             basic_matrix(std::initializer_list<std::initializer_list<value_type>> aColumns) { std::copy(aColumns.begin(), aColumns.end(), m.begin()); }
-            basic_matrix(const self_type& other) : m{ other.m } {}
-            basic_matrix(self_type&& other) : m{ std::move(other.m) } {}
+            basic_matrix(const self_type& other) : m{ other.m }, isIdentity{ other.isIdentity } {}
+            basic_matrix(self_type&& other) : m{ std::move(other.m) }, isIdentity{ other.isIdentity } {}
             template <typename T2>
             basic_matrix(const basic_matrix<T2, Rows, Columns>& other)
             {
                 for (uint32_t column = 0; column < Columns; ++column)
                     for (uint32_t row = 0; row < Rows; ++row)
                         (*this)[column][row] = static_cast<value_type>(other[column][row]);
+                isIdentity = other.maybe_identity();
             }
-            self_type& operator=(const self_type& other) { m = other.m; return *this; }
-            self_type& operator=(self_type&& other) { m = std::move(other.m); return *this; }
+            self_type& operator=(const self_type& other) { m = other.m; isIdentity = other.isIdentity; return *this; }
+            self_type& operator=(self_type&& other) { m = std::move(other.m); isIdentity = other.isIdentity; return *this; }
         public:
             template <typename T2>
             basic_matrix<T2, Rows, Columns> as() const
@@ -884,20 +885,20 @@ namespace neolib
         public:
             std::pair<uint32_t, uint32_t> size() const { return std::make_pair(Rows, Columns); }
             const column_type& operator[](uint32_t aColumn) const { return m[aColumn]; }
-            column_type& operator[](uint32_t aColumn) { return m[aColumn]; }
+            column_type& operator[](uint32_t aColumn) { isIdentity = std::nullopt; return m[aColumn]; }
             const value_type* data() const { return &m[0].v[0]; }
         public:
             bool operator==(const self_type& right) const { return m == right.m; }
             bool operator!=(const self_type& right) const { return m != right.m; }
-            self_type& operator+=(const self_type& right) { for (uint32_t column = 0; column < Columns; ++column) m[column] += right.m[column]; return *this; }
-            self_type& operator-=(const self_type& right) { for (uint32_t column = 0; column < Columns; ++column) m[column] -= right.m[column]; return *this; }
+            self_type& operator+=(const self_type& right) { for (uint32_t column = 0; column < Columns; ++column) (*this)[column] += right[column]; return *this; }
+            self_type& operator-=(const self_type& right) { for (uint32_t column = 0; column < Columns; ++column) (*this)[column] -= right[column]; return *this; }
             self_type& operator*=(const self_type& right)
             {
                 self_type result;
                 for (uint32_t column = 0; column < Columns; ++column)
                     for (uint32_t row = 0; row < Rows; ++row)
                         for (uint32_t index = 0; index < Columns; ++index)
-                            result[column][row] += (m[index][row] * right[column][index]);
+                            result[column][row] += ((*this)[index][row] * right[column][index]);
                 *this = result;
                 return *this;
             }
@@ -925,7 +926,7 @@ namespace neolib
                 basic_matrix<T, Columns, Rows> result;
                 for (uint32_t column = 0; column < Columns; ++column)
                     for (uint32_t row = 0; row < Rows; ++row)
-                        result[row][column] = m[column][row];
+                        result[row][column] = (*this)[column][row];
                 return result;
             }
             template <typename SFINAE = self_type>
@@ -936,6 +937,7 @@ namespace neolib
                     self_type result;
                     for (uint32_t diag = 0; diag < Rows; ++diag)
                         result[diag][diag] = static_cast<value_type>(1.0);
+                    result.isIdentity = true;
                     return result;
                 };
                 static self_type const sIdentity = make_identity();
@@ -943,16 +945,25 @@ namespace neolib
             }
             bool is_identity() const
             {
-                return this == &identity();
+                if (isIdentity)
+                    return *isIdentity;
+                else
+                    return *(isIdentity = ((*this) == identity()));
+            }
+            const std::optional<bool>& maybe_identity() const
+            {
+                return isIdentity;
             }
         public:
             friend void swap(self_type& a, self_type& b)
             {
                 using std::swap;
                 swap(a.m, b.m);
+                swap(a.isIdentity, b.isIdentity);
             }
         private:
             array_type m;
+            mutable std::optional<bool> isIdentity;
         };
 
         typedef basic_matrix<double, 1, 1> matrix11;
