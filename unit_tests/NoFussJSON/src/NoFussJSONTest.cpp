@@ -286,6 +286,20 @@ int main(int argc, char** argv)
             {
                 auto start_time = std::chrono::high_resolution_clock::now();
                 {
+                    neolib::json json{ inputBenchmark };
+                }
+                auto end_time = std::chrono::high_resolution_clock::now();
+                timings.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count());
+            }
+            auto average = std::accumulate(timings.begin(), timings.end(), 0ull) / timings.size();
+            std::cout << "Average (NoFussJSON default): " << average << std::endl;
+        }
+        {
+            std::vector<uint64_t> timings;
+            for (int i = 0; i < 100; ++i)
+            {
+                auto start_time = std::chrono::high_resolution_clock::now();
+                {
                     typedef neolib::basic_json<neolib::json_syntax::Standard, neolib::omega_pool_allocator<neolib::json_type, 3 * 20 * 1024 * 1024>> omega_json;
                     if (i > 0)
                         omega_json::json_value::value_allocator().omega_recycle();
@@ -297,7 +311,21 @@ int main(int argc, char** argv)
                 timings.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count());
             }
             auto average = std::accumulate(timings.begin(), timings.end(), 0ull) / timings.size();
-            std::cout << "Average: " << average << std::endl;
+            std::cout << "Average (NoFussJSON omega): " << average << std::endl;
+        }
+        {
+            std::vector<uint64_t> timings;
+            for (int i = 0; i < 100; ++i)
+            {
+                auto start_time = std::chrono::high_resolution_clock::now();
+                {
+                    neolib::fast_json json{ inputBenchmark };
+                }
+                auto end_time = std::chrono::high_resolution_clock::now();
+                timings.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count());
+            }
+            auto average = std::accumulate(timings.begin(), timings.end(), 0ull) / timings.size();
+            std::cout << "Average (NoFussJSON fast): " << average << std::endl;
         }
 #ifdef COMPARE_NOFUSSJSON_WITH_RAPIDJSON
         {
@@ -324,7 +352,7 @@ int main(int argc, char** argv)
                 timings.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count());
             }
             auto average = std::accumulate(timings.begin(), timings.end(), 0ull) / timings.size();
-            std::cout << "Average: " << average << std::endl;
+            std::cout << "Average (RapidJSON): " << average << std::endl;
         }
 #endif
     }
