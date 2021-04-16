@@ -1741,9 +1741,6 @@ namespace neolib
                     case '\\':
                         aOutput << "\\\\";
                         break;
-                    case '/':
-                        aOutput << "\\/";
-                        break;
                     case '\b':
                         aOutput << "\\b";
                         break;
