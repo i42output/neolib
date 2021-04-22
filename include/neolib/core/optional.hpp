@@ -75,7 +75,7 @@ namespace neolib
         {
             return !valid();
         }
-        operator bool() const noexcept override
+        explicit operator bool() const noexcept override
         {
             return base_type::operator bool();
         }

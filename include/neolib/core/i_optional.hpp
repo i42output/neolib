@@ -58,7 +58,7 @@ namespace neolib
     public:
         virtual bool valid() const noexcept = 0;
         virtual bool invalid() const noexcept = 0;
-        virtual operator bool() const noexcept = 0;
+        virtual explicit operator bool() const noexcept = 0;
         // element access
     public:
         virtual reference get() = 0;
