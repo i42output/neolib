@@ -43,28 +43,49 @@
 namespace neolib
 {
     template<typename T>
-    class optional : public reference_counted<i_optional<abstract_t<T>>>, public std::optional<T>
+    class optional;
+
+    template <typename T>
+    struct is_optional<optional<T>> { static constexpr bool value = true; };
+
+    template<typename T>
+    class optional : public reference_counted<i_optional<abstract_t<T>>>
     {
         typedef optional<T> self_type;
-        typedef std::optional<T> base_type;
+        typedef std::optional<T> std_type;
         // types
     public:
         typedef i_optional<abstract_t<T>> abstract_type;
-        typedef base_type std_type;
+        typedef std_type std_type;
         typedef T value_type;
         typedef value_type* pointer;
         typedef const value_type* const_pointer;
         typedef value_type& reference;
         typedef const value_type& const_reference;
+        // construction
     public:
-        using base_type::base_type;
+        optional() :
+            iData{}
+        {
+        }
+        optional(std::nullopt_t) :
+            iData{ std::nullopt }
+        {
+        }
+        optional(value_type const& other) :
+            iData{ other }
+        {
+        }
         optional(abstract_type const& other) :
-            base_type{}
+            iData{}
         {
             *this = other;
         }
-    public:
-        using base_type::operator=;
+        template <typename U, typename = std::enable_if_t<std::is_constructible_v<T, U>, sfinae>>
+        optional(U const& value) :
+            iData{ value }
+        {
+        }
         // state
     public:
         bool valid() const noexcept override
@@ -77,58 +98,84 @@ namespace neolib
         }
         explicit operator bool() const noexcept override
         {
-            return base_type::operator bool();
+            return iData.operator bool();
+        }
+        // std
+    public:
+        std_type& to_std_optional()
+        {
+            return iData;
+        }
+        const std_type& to_std_optional() const
+        {
+            return iData;
         }
         // element access
     public:
         reference get() override
         {
-            return base_type::value();
+            return iData.value();
         }
         const_reference get() const override
         {
-            return base_type::value();
+            return iData.value();
         }
         reference operator*() override
         {
-            return base_type::operator*();
+            return iData.operator*();
         }
         const_reference operator*() const override
         {
-            return base_type::operator*();
+            return iData.operator*();
         }
         pointer operator->() override
         {
-            return base_type::operator->();
+            return iData.operator->();
         }
         const_pointer operator->() const override
         {
-            return base_type::operator->();
+            return iData.operator->();
         }
         // modifiers
     public:
+        template <typename... Args>
+        reference& emplace(Args&&... args)
+        {
+            iData.emplace(std::forward<Args>(args)...);
+            return get();
+        }
         void reset() override
         {
-            base_type::reset();
+            iData.reset();
         }
         self_type& operator=(std::nullopt_t) noexcept override
         {
-            base_type::operator=(std::nullopt);
+            iData = std::nullopt;
+            return *this;
+        }
+        self_type& operator=(const self_type& rhs)
+        {
+            if (rhs.valid())
+                iData = rhs.get();
+            else
+                iData = std::nullopt;
             return *this;
         }
         self_type& operator=(const abstract_type& rhs) override
         {
             if (rhs.valid())
-                base_type::operator=(T{ rhs.get() });
+                iData = T{ rhs.get() };
             else
-                base_type::operator=(std::nullopt);
+                iData = std::nullopt;
             return *this;
         }
         self_type& operator=(const abstract_t<T>& value) override
         {
-            base_type::operator=(T{ value });
+            iData = T{ value };
             return *this;
         }
+    private:
+        std::optional<T> iData;
     };
 
     template <typename T>
@@ -153,32 +200,16 @@ namespace neolib
         return lhs.get() == rhs.get();
     }
 
-    template <typename T>
-    inline bool operator==(const optional<T>& lhs, const T& rhs)
+    template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
+    inline bool operator==(const optional<T>& lhs, const U& rhs)
     {
         if (!lhs.valid())
             return false;
         return lhs.get() == rhs;
     }
 
-    template <typename T>
-    inline bool operator==(const T& lhs, const optional<T>& rhs)
-    {
-        if (!rhs.valid())
-            return false;
-        return lhs == rhs.get();
-    }
-
-    template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_t<T>>, int> = 0>
-    inline bool operator==(const optional<T>& lhs, const abstract_t<T>& rhs)
-    {
-        if (!lhs.valid())
-            return false;
-        return lhs.get() == rhs;
-    }
-
-    template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_t<T>>, int> = 0>
-    inline bool operator==(const abstract_t<T>& lhs, const optional<T>& rhs)
+    template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
+    inline bool operator==(const U& lhs, const optional<T>& rhs)
     {
         if (!rhs.valid())
             return false;
@@ -191,26 +222,14 @@ namespace neolib
         return !(lhs == rhs);
     }
 
-    template <typename T>
-    inline bool operator!=(const optional<T>& lhs, const T& rhs)
+    template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
+    inline bool operator!=(const optional<T>& lhs, const U& rhs)
     {
         return !(lhs == rhs);
     }
 
-    template <typename T>
-    inline bool operator!=(const T& lhs, const optional<T>& rhs)
-    {
-        return !(lhs == rhs);
-    }
-
-    template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_t<T>>, int> = 0>
-    inline bool operator!=(const optional<T>& lhs, const abstract_t<T>& rhs)
-    {
-        return !(lhs == rhs);
-    }
-
-    template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_t<T>>, int> = 0>
-    inline bool operator!=(const abstract_t<T>& lhs, const optional<T>& rhs)
+    template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
+    inline bool operator!=(const U& lhs, const optional<T>& rhs)
     {
         return !(lhs == rhs);
     }
@@ -225,16 +244,16 @@ namespace neolib
         return lhs.get() < rhs.get();
     }
 
-    template <typename T>
-    inline bool operator<(const optional<T>& lhs, const T& rhs)
+    template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
+    inline bool operator<(const optional<T>& lhs, const U& rhs)
     {
         if (!lhs.valid())
             return true;
         return lhs.get() < rhs;
     }
 
-    template <typename T>
-    inline bool operator<(const T& lhs, const optional<T>& rhs)
+    template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
+    inline bool operator<(const U& lhs, const optional<T>& rhs)
     {
         if (!rhs.valid())
             return false;
@@ -258,26 +277,12 @@ namespace neolib
     }
 
     template <typename T>
-    struct optional_type
-    {
-        typedef T type;
-        static constexpr bool optional = false;
-    };
+    struct optional_type { typedef T type; };
     template <typename T>
-    struct optional_type<std::optional<T>>
-    {
-        typedef T type;
-        static constexpr bool optional = true;
-    };
+    struct optional_type<std::optional<T>> { typedef T type; };
     template <typename T>
-    struct optional_type<optional<T>>
-    {
-        typedef T type;
-        static constexpr bool optional = true;
-    };
+    struct optional_type<optional<T>> { typedef T type; };
 
     template <typename T>
     using optional_t = typename optional_type<T>::type;
-    template <typename T>
-    inline constexpr bool is_optional_v = optional_type<T>::optional;
 }

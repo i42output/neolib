@@ -57,21 +57,51 @@ namespace std
     struct variant_size<neolib::variant<Types...>> : variant_size<std::variant<std::monostate, Types...>> {};
 
     template <typename Visitor, typename... Types>
-    constexpr decltype(auto) visit(Visitor&& vis, neolib::variant<Types...>&& var)
+    inline constexpr decltype(auto) visit(Visitor&& vis, neolib::variant<Types...>&& var)
     {
-        return visit(std::forward<Visitor>(vis), static_cast<std::variant<std::monostate, Types...>&&>(std::move(var)));
+        return visit(std::forward<Visitor>(vis), static_cast<std::variant<std::monostate, Types...>&&>(std::move(var.to_std_variant())));
     }
     
     template <typename Visitor, typename... Types>
-    constexpr decltype(auto) visit(Visitor&& vis, neolib::variant<Types...> const& var)
+    inline constexpr decltype(auto) visit(Visitor&& vis, neolib::variant<Types...> const& var)
     {
-        return visit(std::forward<Visitor>(vis), static_cast<std::variant<std::monostate, Types...> const&>(var));
+        return visit(std::forward<Visitor>(vis), static_cast<std::variant<std::monostate, Types...> const&>(var.to_std_variant()));
     }
     
     template <typename Visitor, typename... Types>
-    constexpr decltype(auto) visit(Visitor&& vis, neolib::variant<Types...>& var)
+    inline constexpr decltype(auto) visit(Visitor&& vis, neolib::variant<Types...>& var)
     {
-        return visit(std::forward<Visitor>(vis), static_cast<std::variant<std::monostate, Types...>&>(var));
+        return visit(std::forward<Visitor>(vis), static_cast<std::variant<std::monostate, Types...>&>(var.to_std_variant()));
+    }
+
+    template <typename T, typename... Types>
+    inline constexpr bool holds_alternative(neolib::variant<Types...> const& var) noexcept
+    {
+        return holds_alternative<T>(var.to_std_variant());
+    }
+
+    template<typename T, typename... Types>
+    inline constexpr T& get(neolib::variant<Types...>& v)
+    {
+        return get<T>(v.to_std_variant());
+    }
+
+    template<typename T, typename... Types>
+    inline constexpr T&& get(neolib::variant<Types...>&& v)
+    {
+        return get<T>(std::move(v.to_std_variant()));
+    }
+
+    template<typename T, typename... Types>
+    inline constexpr const T& get(const neolib::variant<Types...>& v)
+    {
+        return get<T>(v.to_std_variant());
+    }
+
+    template<typename T, typename... Types>
+    inline constexpr const T&& get(const neolib::variant<Types...>&& v)
+    {
+        return get<T>(std::move(v.to_std_variant()));
     }
 }
 
@@ -102,34 +132,92 @@ namespace neolib
     struct from_abstract<false, AbstractT, Type, Rest...> { typedef typename from_abstract_next<AbstractT, Rest...>::result_type result_type; };
     template <typename AbstractT, typename... Type>
     using from_abstract_t = typename from_abstract_next<AbstractT, Type...>::result_type;
-        
+
     template <typename... Types>
-    class variant : public reference_counted<i_variant<abstract_t<Types>...>>, public std::variant<std::monostate, Types...>
+    class variant : public reference_counted<i_variant<abstract_t<Types>...>>, private std::variant<std::monostate, Types...>
     {
         typedef variant<Types...> self_type;
-        typedef std::variant<std::monostate, Types...> base_type;
+        typedef std::variant<std::monostate, Types...> std_type;
+        // types
     public:
         typedef i_variant<abstract_t<Types>...> abstract_type;
-        typedef base_type std_type;
+        typedef std_type std_type;
+        // construction
     public:
-        using base_type::base_type;
-        template <typename T>
-        variant(T const& aValue,  std::enable_if_t<std::is_abstract_v<T>, sfinae> = {}) :
-            base_type{ static_cast<from_abstract_t<T, Types...> const&>(aValue) }
+        using std_type::std_type;
+        variant(abstract_type const& aOther) :
+            std_type{ static_cast<self_type const&>(aOther) } // todo: not plugin-safe
         {
         }
-        template <typename T>
-        variant(T&& aValue,  std::enable_if_t<std::is_abstract_v<T>, sfinae> = {}) :
-            base_type{ static_cast<from_abstract_t<T, Types...>&&>(aValue) }
+        variant(abstract_type&& aOther) :
+            std_type{ static_cast<self_type&&>(aOther) } // todo: not plugin-safe
         {
         }
+        template <typename T, typename = std::enable_if_t<!std::is_base_of_v<T, self_type>, sfinae>>
+        variant(T const& aValue, std::enable_if_t<std::is_abstract_v<T>, sfinae> = {}) :
+            std_type{ static_cast<from_abstract_t<T, Types...> const&>(aValue) }
+        {
+        }
+        template <typename T, typename = std::enable_if_t<!std::is_base_of_v<T, self_type>, sfinae>>
+        variant(T&& aValue, std::enable_if_t<std::is_abstract_v<T>, sfinae> = {}) :
+            std_type{ static_cast<from_abstract_t<T, Types...>&&>(aValue) }
+        {
+        }
+        // assignment
     public:
-        using base_type::operator=;
+        using std_type::operator=;
+        using std_type::emplace;
+        // comparison
+    public:
+        bool operator==(none_t) const
+        {
+            return std::holds_alternative<std::monostate>(*this);
+        }
+        bool operator!=(none_t) const
+        {
+            return !std::holds_alternative<std::monostate>(*this);
+        }
+        bool operator==(const variant<Types...>& rhs) const
+        {
+            return to_std_variant() == rhs.to_std_variant();
+        }
+        bool operator!=(const variant<Types...>& rhs) const
+        {
+            return to_std_variant() != rhs.to_std_variant();
+        }
+        bool operator<(const variant<Types...>& rhs) const
+        {
+            return to_std_variant() < rhs.to_std_variant();
+        }
+        bool operator<=(const variant<Types...>& rhs) const
+        {
+            return to_std_variant() <= rhs.to_std_variant();
+        }
+        bool operator>(const variant<Types...>& rhs) const
+        {
+            return to_std_variant() > rhs.to_std_variant();
+        }
+        bool operator>=(const variant<Types...>& rhs) const
+        {
+            return to_std_variant() >= rhs.to_std_variant();
+        }
+        // std
+    public:
+        std_type& to_std_variant()
+        {
+            return static_cast<std_type&>(*this);
+        }
+        std_type const& to_std_variant() const
+        {
+            return static_cast<std_type const&>(*this);
+        }
+        // meta
     public:
         std::size_t index() const override
         {
-            return base_type::index();
+            return std_type::index();
         }
+        // impl
     private:
         void const* ptr() const override
         {
@@ -145,18 +233,6 @@ namespace neolib
             return const_cast<void*>(to_const(*this).ptr());
         }
     };
-
-    template <typename... Types>
-    inline bool operator==(const variant<Types...>& v, none_t)
-    {
-        return std::holds_alternative<std::monostate>(v);
-    }
-
-    template <typename... Types>
-    inline bool operator!=(const variant<Types...>& v, none_t)
-    {
-        return !std::holds_alternative<std::monostate>(v);
-    }
 
     // Deprecated, use std::get.
     template <typename T, typename Variant>

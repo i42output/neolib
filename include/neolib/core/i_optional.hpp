@@ -43,6 +43,17 @@
 namespace neolib
 {
     template<typename T>
+    class i_optional;
+        
+    template <typename T>
+    struct is_optional { static constexpr bool value = false; };
+    template <typename T>
+    struct is_optional<i_optional<T>> { static constexpr bool value = true; };
+
+    template <typename T>
+    constexpr bool is_optional_v = is_optional<T>::value;
+
+    template<typename T>
     class i_optional : public i_reference_counted
     {
         typedef i_optional<T> self_type;
@@ -97,16 +108,16 @@ namespace neolib
         return lhs.get() == rhs.get();
     }
 
-    template <typename T>
-    inline bool operator==(const i_optional<T>& lhs, const T& rhs)
+    template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
+    inline bool operator==(const i_optional<T>& lhs, const U& rhs)
     {
         if (!lhs.valid())
             return false;
         return lhs.get() == rhs;
     }
 
-    template <typename T>
-    inline bool operator==(const T& lhs, const i_optional<T>& rhs)
+    template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
+    inline bool operator==(const U& lhs, const i_optional<T>& rhs)
     {
         if (!rhs.valid())
             return false;
@@ -119,14 +130,14 @@ namespace neolib
         return !(lhs == rhs);
     }
 
-    template <typename T>
-    inline bool operator!=(const i_optional<T>& lhs, const T& rhs)
+    template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
+    inline bool operator!=(const i_optional<T>& lhs, const U& rhs)
     {
         return !(lhs == rhs);
     }
 
-    template <typename T>
-    inline bool operator!=(const T& lhs, const i_optional<T>& rhs)
+    template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
+    inline bool operator!=(const U& lhs, const i_optional<T>& rhs)
     {
         return !(lhs == rhs);
     }
@@ -141,16 +152,16 @@ namespace neolib
         return lhs.get() < rhs.get();
     }
 
-    template <typename T>
-    inline bool operator<(const i_optional<T>& lhs, const T& rhs)
+    template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
+    inline bool operator<(const i_optional<T>& lhs, const U& rhs)
     {
         if (!lhs.valid())
             return true;
         return lhs.get() < rhs;
     }
 
-    template <typename T>
-    inline bool operator<(const T& lhs, const i_optional<T>& rhs)
+    template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
+    inline bool operator<(const U& lhs, const i_optional<T>& rhs)
     {
         if (!rhs.valid())
             return false;
