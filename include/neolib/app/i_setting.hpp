@@ -129,6 +129,14 @@ namespace neolib
             temp.set<T>(aNewValue);
             set_value(static_cast<i_setting_value const&>(temp));
         }
+        template <typename T>
+        void apply_value(T const& aNewValue, std::enable_if_t<!std::is_convertible_v<T&, i_setting_value&>, sfinae> = {})
+        {
+            auto& temp = temp_setting_value();
+            temp.set<T>(aNewValue);
+            set_value(static_cast<i_setting_value const&>(temp));
+            apply_change();
+        }
     public:
         i_setting& operator=(i_setting const& aRhs)
         {
