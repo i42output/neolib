@@ -299,9 +299,9 @@ namespace neolib
         // own
     public:
         template <typename Key2, typename... Args>
-        void emplace(Key2&& aKey, Args&&... aArgs)
+        value_type& emplace(Key2&& aKey, Args&&... aArgs)
         {
-            iMap.emplace(std::forward<Key2>(aKey), typename std_type::mapped_type{ aKey, mapped_type{ std::forward<Args>(aArgs)... } });
+            return iMap.emplace(std::forward<Key2>(aKey), typename std_type::mapped_type{ aKey, mapped_type{ std::forward<Args>(aArgs)... } })->second;
         }
         // from i_multimap
     private:
