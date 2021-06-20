@@ -137,11 +137,10 @@ namespace neolib
     class variant : public reference_counted<i_variant<abstract_t<Types>...>>, private std::variant<std::monostate, Types...>
     {
         typedef variant<Types...> self_type;
-        typedef std::variant<std::monostate, Types...> std_type;
         // types
     public:
         typedef i_variant<abstract_t<Types>...> abstract_type;
-        typedef std_type std_type;
+        typedef std::variant<std::monostate, Types...> std_type;
         // construction
     public:
         using std_type::std_type;
