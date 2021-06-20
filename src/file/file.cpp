@@ -1,4 +1,5 @@
 // file.cpp - v1.3.1
+/// @deprecacted Just use std::filesystem directly.
 /*
  *  Copyright (c) 2007 Leigh Johnston.
  *
@@ -100,13 +101,22 @@ namespace neolib
 
     std::string create_file(const std::string& aFileName)
     {
+#ifdef _WIN32
         std::ofstream newFile(convert_path(aFileName), std::ios::out | std::ios_base::app | std::ios_base::binary);
         return std::filesystem::path(convert_path(aFileName)).generic_string();
+#else
+        std::ofstream newFile(aFileName, std::ios::out | std::ios_base::app | std::ios_base::binary);
+        return aFileName;
+#endif
     }
 
     void create_file(const std::wstring& aFileName)
     {
+#ifdef _WIN32
         std::ofstream newFile(aFileName, std::ios::out | std::ios_base::app | std::ios_base::binary);
+#else
+        std::ofstream newFile(std::filesystem::path{aFileName}.string(), std::ios::out | std::ios_base::app | std::ios_base::binary);
+#endif
     }
 
     bool file_exists(const std::string& aPath)
@@ -133,13 +143,23 @@ namespace neolib
 
     bool can_read_file(const std::string& aPath)
     {
+#ifdef _WIN32
         return can_read_file(convert_path(aPath));
+#else
+        std::ifstream test(std::filesystem::path{ aPath }.string());
+        return !!test;
+#endif
     }
 
     bool can_read_file(const std::wstring& aPath)
     {
+#ifdef _WIN32
         std::ifstream test(aPath);
         return !!test;
+#else
+        std::ifstream test(std::filesystem::path{ aPath }.string());
+        return !!test;
+#endif
     }
 
     unsigned long file_size(const std::string& aPath)
