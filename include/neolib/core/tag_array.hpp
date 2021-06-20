@@ -689,7 +689,7 @@ namespace neolib
         node* allocate_node(const tag_type& aTag, node* aAfter)
         {
             node* newNode = iAllocator.allocate(1);
-            iAllocator.construct(newNode, node(aTag));
+            std::allocator_traits<decltype(iAllocator)>::construct(iAllocator, newNode, node(aTag));
             if (aAfter == nullptr)
             {
                 base_type::set_front_node(newNode);
@@ -723,7 +723,7 @@ namespace neolib
                     base_type::set_front_node(aNode->next());
                 base_type::delete_node(aNode);
             }
-            iAllocator.destroy(aNode);
+            std::allocator_traits<decltype(iAllocator)>::destroy(iAllocator, aNode);
             iAllocator.deallocate(aNode, 1);
         }
 
