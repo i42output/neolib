@@ -1,5 +1,5 @@
 // file.cpp - v1.3.1
-/// @deprecacted Just use std::filesystem directly.
+/// @deprecated Just use std::filesystem directly.
 /*
  *  Copyright (c) 2007 Leigh Johnston.
  *
