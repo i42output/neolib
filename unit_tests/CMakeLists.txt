@@ -1,11 +1,12 @@
 set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_USE_STATIC_RUNTIME ON)
-find_package(Boost COMPONENTS system chrono filesystem REQUIRED)
+find_package(Boost COMPONENTS system chrono filesystem thread REQUIRED)
 
 function(add_neolib_test_executable TARGET)
   add_executable(${TARGET} ${ARGN})
   target_include_directories(${TARGET} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include"
+#    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"   # for some reason not working with CMake 3.20.4 on Windows
     "${CMAKE_INSTALL_PREFIX}/include")
   set_property(TARGET ${TARGET} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
   set_property(TARGET ${TARGET} PROPERTY CXX_STANDARD 20)
