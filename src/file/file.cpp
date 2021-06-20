@@ -34,8 +34,7 @@
 */
 
 #include <neolib/neolib.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
+#include <filesystem>
 #ifdef _WIN32
 #include <WINNLS.H>
 #include <shellapi.h>
@@ -78,56 +77,58 @@ namespace neolib
 
     std::string convert_path(const std::wstring& aString)
     {
-        return boost::filesystem::path(aString).generic_string();
+        return std::filesystem::path(aString).generic_string();
     }
 
     std::wstring convert_path(const std::string& aString)
     {
         auto utf16 = utf8_to_utf16(aString);
-        return boost::filesystem::path(reinterpret_cast<const wchar_t*>(utf16.c_str())).generic_wstring();
+        return std::filesystem::path(reinterpret_cast<const wchar_t*>(utf16.c_str())).generic_wstring();
     }
 
     const std::wstring& create_path(const std::wstring& aPath)
     {
-        boost::filesystem::create_directories(aPath);
+        std::filesystem::create_directories(aPath);
         return aPath;
     }
 
     const std::string& create_path(const std::string& aPath)
     {
-        boost::filesystem::create_directories(aPath);
+        std::filesystem::create_directories(aPath);
         return aPath;
     }
 
     std::string create_file(const std::string& aFileName)
     {
-        boost::filesystem::ofstream newFile(convert_path(aFileName), std::ios::out | std::ios_base::app | std::ios_base::binary);
-        return boost::filesystem::path(convert_path(aFileName)).generic_string();
+        std::ofstream newFile(convert_path(aFileName), std::ios::out | std::ios_base::app | std::ios_base::binary);
+        return std::filesystem::path(convert_path(aFileName)).generic_string();
     }
 
     void create_file(const std::wstring& aFileName)
     {
-        boost::filesystem::ofstream newFile(aFileName, std::ios::out | std::ios_base::app | std::ios_base::binary);
+        std::ofstream newFile(aFileName, std::ios::out | std::ios_base::app | std::ios_base::binary);
     }
 
     bool file_exists(const std::string& aPath)
     {
-        return boost::filesystem::exists(convert_path(aPath));
+        return std::filesystem::exists(convert_path(aPath));
     }
 
     bool file_exists(const std::wstring& aPath)
     {
-        return boost::filesystem::exists(aPath);
+        return std::filesystem::exists(aPath);
     }
 
     std::time_t file_date(const std::string& aPath)
     {
-        return boost::filesystem::last_write_time(convert_path(aPath));
+        auto const fileDate = std::filesystem::last_write_time(convert_path(aPath));
+        return std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() + (fileDate - std::chrono::file_clock::now()));
     }
 
     std::time_t file_date(const std::wstring& aPath)
     {
-        return boost::filesystem::last_write_time(aPath);
+        auto const fileDate = std::filesystem::last_write_time(aPath);
+        return std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() + (fileDate - std::chrono::file_clock::now()));
     }
 
     bool can_read_file(const std::string& aPath)
@@ -137,28 +138,28 @@ namespace neolib
 
     bool can_read_file(const std::wstring& aPath)
     {
-        boost::filesystem::ifstream test(aPath);
+        std::ifstream test(aPath);
         return !!test;
     }
 
     unsigned long file_size(const std::string& aPath)
     {
-        return static_cast<unsigned long>(boost::filesystem::file_size(convert_path(aPath)));
+        return static_cast<unsigned long>(std::filesystem::file_size(convert_path(aPath)));
     }
 
     unsigned long file_size(const std::wstring& aPath)
     {
-        return static_cast<unsigned long>(boost::filesystem::file_size(aPath));
+        return static_cast<unsigned long>(std::filesystem::file_size(aPath));
     }
 
     unsigned long long large_file_size(const std::string& aPath)
     {
-        return boost::filesystem::file_size(convert_path(aPath));
+        return std::filesystem::file_size(convert_path(aPath));
     }
 
     unsigned long long large_file_size(const std::wstring& aPath)
     {
-        return boost::filesystem::file_size(aPath);
+        return std::filesystem::file_size(aPath);
     }
 
     std::string file_ext(const std::string& aPath)
@@ -188,9 +189,9 @@ namespace neolib
 
     bool move_file(const std::string& aPathFrom, const std::string& aPathTo)
     {
-        boost::system::error_code ec;
-        boost::filesystem::create_directories(boost::filesystem::path(convert_path(aPathTo)).parent_path());
-        boost::filesystem::rename(convert_path(aPathFrom), convert_path(aPathTo), ec);
+        std::error_code ec;
+        std::filesystem::create_directories(std::filesystem::path(convert_path(aPathTo)).parent_path());
+        std::filesystem::rename(convert_path(aPathFrom), convert_path(aPathTo), ec);
         return !ec;
     }
 
@@ -208,7 +209,7 @@ namespace neolib
 
     std::string program_directory()
     {
-        return boost::filesystem::path(program_file()).parent_path().string();
+        return std::filesystem::path(program_file()).parent_path().string();
     }
 
     std::string user_documents_directory()

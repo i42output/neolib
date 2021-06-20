@@ -38,7 +38,7 @@
 #include <neolib/neolib.hpp>
 #include <map>
 #include <memory>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <neolib/core/vector.hpp>
 #include <neolib/core/reference_counted.hpp>
 #include <neolib/app/module.hpp>

@@ -34,7 +34,7 @@
 */
 
 #include <neolib/neolib.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <boost/dll.hpp>
 #include <neolib/plugin/plugin_manager.hpp>
 
@@ -47,8 +47,8 @@ namespace neolib
     {
         iPluginFileExtensions.push_back(string{ aApplication.info().plugin_extension() });
         std::set<std::string> folders;
-        folders.insert(boost::filesystem::canonical(boost::filesystem::path{ aApplication.info().application_folder().to_std_string() }).string());
-        folders.insert(boost::filesystem::canonical(boost::dll::program_location().parent_path()).string());
+        folders.insert(std::filesystem::canonical(std::filesystem::path{ aApplication.info().application_folder().to_std_string() }).string());
+        folders.insert(std::filesystem::canonical(boost::dll::program_location().parent_path().string()).string());
         for (auto i = folders.begin(); i != folders.end();)
         {
             auto next = std::next(i);
@@ -94,9 +94,9 @@ namespace neolib
     {
         for (auto const& folder : plugin_folders())
         {
-            if (!boost::filesystem::is_directory(folder.to_std_string()))
+            if (!std::filesystem::is_directory(folder.to_std_string()))
                 continue;
-            for (boost::filesystem::recursive_directory_iterator i(folder.to_std_string()); i != boost::filesystem::recursive_directory_iterator(); ++i)
+            for (std::filesystem::recursive_directory_iterator i(folder.to_std_string()); i != std::filesystem::recursive_directory_iterator(); ++i)
                 if (find(plugin_file_extensions().begin(), plugin_file_extensions().end(), i->path().extension().string()) != plugin_file_extensions().end())
                     create_plugin(string(i->path().generic_string()));
         }
@@ -191,7 +191,7 @@ namespace neolib
             entry_point entryPoint = pm->procedure<entry_point>("entry_point");
             if (entryPoint == nullptr)
                 return tNewPlugin;
-            entryPoint(iApplication, string(boost::filesystem::path(aPluginPath.to_std_string()).parent_path().generic_string()), tNewPlugin);
+            entryPoint(iApplication, string(std::filesystem::path(aPluginPath.to_std_string()).parent_path().generic_string()), tNewPlugin);
             if (tNewPlugin == nullptr)
                 return tNewPlugin;
             iPlugins.push_back(tNewPlugin);

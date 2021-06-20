@@ -34,7 +34,7 @@
 */
 
 #include <neolib/neolib.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <neolib/app/application_info.hpp>
 #include <neolib/file/file.hpp>
 
@@ -208,7 +208,7 @@ namespace neolib
         if (iApplicationFolder.empty() && aUseDefault)
         {
             if (iDefaultApplicationFolder.empty())
-                iDefaultApplicationFolder = boost::filesystem::current_path().generic_string();
+                iDefaultApplicationFolder = std::filesystem::current_path().generic_string();
             return iDefaultApplicationFolder;
         }
         return iApplicationFolder;

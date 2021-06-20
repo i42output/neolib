@@ -37,7 +37,7 @@
 #include <fstream>
 #include <string>
 #include <zlib.h>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <neolib/core/string_utils.hpp>
 #include <neolib/core/crc.hpp>
 #include <neolib/file/zip.hpp>
@@ -110,7 +110,7 @@ namespace neolib
 
     zip::zip(const std::string& aZipFilePath) : iZipFileData{}, iZipFileDataLength{}, iError{false}
     {
-        auto fileSize = boost::filesystem::file_size(aZipFilePath);
+        auto fileSize = std::filesystem::file_size(aZipFilePath);
         if (fileSize > iZipFile.max_size())
             throw zip_file_too_big();
         iZipFile.resize(static_cast<std::size_t>(fileSize));
