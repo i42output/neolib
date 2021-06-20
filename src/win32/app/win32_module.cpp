@@ -45,9 +45,33 @@ namespace neolib
         load(aPath); 
     }
 
+    os_module::os_module(const os_module& aOther) :
+        iHandle{ aOther.iHandle }
+    {
+    }
+
+    os_module::os_module(os_module&& aOther) :
+        iHandle{ aOther.iHandle }
+    {
+        aOther.iHandle = NULL;
+    }
+
     os_module::~os_module() 
     { 
         unload(); 
+    }
+
+    os_module& os_module::operator=(const os_module& aOther)
+    {
+        iHandle = aOther.iHandle;
+        return *this;
+    }
+
+    os_module& os_module::operator=(os_module&& aOther)
+    {
+        iHandle = aOther.iHandle;
+        aOther.iHandle = NULL;
+        return *this;
     }
 
     bool os_module::load(const std::string& aPath)
@@ -69,7 +93,9 @@ namespace neolib
 
     void os_module::unload() 
     { 
-        ::FreeLibrary(iHandle); iHandle = NULL; 
+        if (iHandle != NULL)
+            ::FreeLibrary(iHandle); 
+        iHandle = NULL; 
     }
 
     bool os_module::loaded() const 

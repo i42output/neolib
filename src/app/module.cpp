@@ -49,16 +49,40 @@ namespace neolib
     {
     }
 
-    module::module(const module& aOther) : iPath(aOther.iPath), iOsModule(aOther.loaded() ? new os_module(iPath) : 0)
+    module::module(const module& aOther) :
+        iPath{ aOther.iPath },
+        iOsModule{ aOther.loaded() ? std::make_unique<os_module>(iPath) : nullptr }
     {
     }
-    
-    module::module(const std::string& aPath) : iPath(aPath), iOsModule(new os_module(iPath))
+
+    module::module(module&& aOther) :
+        iPath{ std::move(aOther.iPath) },
+        iOsModule{ std::move(aOther.iOsModule) }
+    {
+    }
+
+    module::module(const std::string& aPath) : 
+        iPath{ aPath },
+        iOsModule{ std::make_unique<os_module>(iPath) }
     {
     }
 
     module::~module()
     {
+    }
+
+    module& module::operator=(const module& aOther)
+    {
+        iPath = aOther.iPath;
+        iOsModule = aOther.loaded() ? std::make_unique<os_module>(iPath) : nullptr;
+        return *this;
+    }
+
+    module& module::operator=(module&& aOther)
+    {
+        iPath = std::move(aOther.iPath);
+        iOsModule = std::move(aOther.iOsModule);
+        return *this;
     }
 
     bool module::load()
@@ -68,7 +92,7 @@ namespace neolib
         iOsModule.reset();
         if (iPath.empty())
             return false;
-        os_module_ptr osModule = std::make_unique<os_module>(iPath);
+        auto osModule = std::make_unique<os_module>(iPath);
         if (!osModule->loaded())
             return false;
         iOsModule = std::move(osModule);

@@ -49,6 +49,13 @@ namespace neolib
         std::set<std::string> folders;
         folders.insert(boost::filesystem::canonical(boost::filesystem::path{ aApplication.info().application_folder().to_std_string() }).string());
         folders.insert(boost::filesystem::canonical(boost::dll::program_location().parent_path()).string());
+        for (auto i = folders.begin(); i != folders.end();)
+        {
+            auto next = std::next(i);
+            while (next != folders.end() && next->find(*i) == 0)
+                next = folders.erase(next);
+            i = next;
+        }
         for (auto const& folder : folders)
             iPluginFolders.push_back(string{ folder });
     }
@@ -190,6 +197,8 @@ namespace neolib
             iPlugins.push_back(tNewPlugin);
             auto& newPlugin = iPlugins.back();
             tNewPlugin = nullptr;
+            if (iModules.find(newPlugin->id()) != iModules.end())
+                throw duplicate_plugin{};
             iModules[newPlugin->id()] = std::move(pm);
             return newPlugin;
         }

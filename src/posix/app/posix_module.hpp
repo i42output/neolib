@@ -42,7 +42,13 @@ namespace neolib
         // construction
     public:
         os_module(const std::string& aPath);
+        os_module(const os_module& aOther);
+        os_module(os_module&& aOther);
         ~os_module();
+        // assignment
+    public:
+        os_module& operator=(const os_module& aOther);
+        os_module& operator=(os_module&& aOther);
         // operations
     public:
         bool load(const std::string& aPath);

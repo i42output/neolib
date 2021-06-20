@@ -45,6 +45,8 @@
 
 namespace neolib
 {
+    struct duplicate_plugin : std::runtime_error { duplicate_plugin() : std::runtime_error{ "neolib::duplicate_plugin" } {} };
+
     class i_plugin_manager : public i_discoverable
     {
         // events

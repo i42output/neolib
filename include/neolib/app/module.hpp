@@ -52,8 +52,13 @@ namespace neolib
     public:
         module();
         module(const module& aOther);
+        module(module&& aOther);
         module(const std::string& aPath);
         ~module();
+        // assignment
+    public:
+        module& operator=(const module& aOther);
+        module& operator=(module&& aOther);
         // operations
     public:
         const std::string& path() const { return iPath; }

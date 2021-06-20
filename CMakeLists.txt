@@ -46,7 +46,7 @@ set_property(TARGET neolib PROPERTY VERSION ${PROJECT_VERSION})
 
 include(GenerateExportHeader)
 generate_export_header(neolib EXPORT_FILE_NAME include/neolib/neolib_export.hpp)
-target_include_directories(neolib PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>")
+target_include_directories(neolib PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>") # for neolib_export.hpp
 
 # dependencies
 find_package(Threads REQUIRED)
@@ -55,9 +55,8 @@ if (WIN32)
 	set(Boost_USE_STATIC_LIBS   ON)
 	set(Boost_USE_STATIC_RUNTIME ON)
 endif()
-find_package(Boost COMPONENTS chrono filesystem system REQUIRED)
-target_link_libraries(neolib PUBLIC Boost::chrono)
-target_link_libraries(neolib PRIVATE Boost::filesystem Boost::system)
+find_package(Boost COMPONENTS system REQUIRED)
+target_link_libraries(neolib PRIVATE Boost::system)
 find_package(OpenSSL REQUIRED COMPONENTS SSL)
 target_link_libraries(neolib PRIVATE OpenSSL::SSL)
 find_package(ZLIB REQUIRED)
