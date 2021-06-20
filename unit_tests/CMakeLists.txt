@@ -1,6 +1,6 @@
 set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_USE_STATIC_RUNTIME ON)
-find_package(Boost COMPONENTS system REQUIRED)
+find_package(Boost COMPONENTS system chrono REQUIRED)
 
 function(add_neolib_test_executable TARGET)
   add_executable(${TARGET} ${ARGN})

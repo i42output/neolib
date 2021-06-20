@@ -52,11 +52,10 @@ namespace neolib
     class optional : public reference_counted<i_optional<abstract_t<T>>>
     {
         typedef optional<T> self_type;
-        typedef std::optional<T> std_type;
         // types
     public:
         typedef i_optional<abstract_t<T>> abstract_type;
-        typedef std_type std_type;
+        typedef std::optional<T> std_type;
         typedef T value_type;
         typedef value_type* pointer;
         typedef const value_type* const_pointer;
