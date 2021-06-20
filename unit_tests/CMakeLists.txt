@@ -5,8 +5,8 @@ find_package(Boost COMPONENTS system REQUIRED)
 function(add_neolib_test_executable TARGET)
   add_executable(${TARGET} ${ARGN})
   target_include_directories(${TARGET} PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include"
+    "${CMAKE_INSTALL_PREFIX}/include")
   set_property(TARGET ${TARGET} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
   set_property(TARGET ${TARGET} PROPERTY CXX_STANDARD 20)
   target_link_libraries(${TARGET} PRIVATE neolib)
