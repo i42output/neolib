@@ -36,9 +36,8 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES} ${PLATFORM_S
 add_definitions(-DNEOLIB_HOSTED_ENVIRONMENT)
 add_library(neolib ${SOURCE_FILES} ${PLATFORM_SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(neolib PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-#    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"   # for some reason not working with CMake 3.20.4 on Windows
-    "${CMAKE_INSTALL_PREFIX}/include")
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
 set_property(TARGET neolib PROPERTY CXX_STANDARD 20)
 set_property(TARGET neolib PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 set_property(TARGET neolib PROPERTY CXX_VISIBILITY_PRESET hidden)
@@ -47,7 +46,7 @@ set_property(TARGET neolib PROPERTY VERSION ${PROJECT_VERSION})
 
 include(GenerateExportHeader)
 generate_export_header(neolib EXPORT_FILE_NAME include/neolib/neolib_export.hpp)
-target_include_directories(neolib PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>") # for neolib_export.hpp
+target_include_directories(neolib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>) # for neolib_export.hpp
 
 # dependencies
 find_package(Threads REQUIRED)
@@ -56,11 +55,11 @@ if (WIN32)
 	set(Boost_USE_STATIC_LIBS   ON)
 	set(Boost_USE_STATIC_RUNTIME ON)
 endif()
-find_package(Boost COMPONENTS system chrono filesystem thread REQUIRED)
+find_package(Boost COMPONENTS system chrono filesystem thread fiber locale REQUIRED)
 target_link_libraries(neolib PRIVATE Boost::system )
-# need Boost::chrono for neolib::thread::elasped_ns()
+# need Boost::chrono and Boost::thread for neolib::thread::elasped_ns()
 # need Boost::filesystem for boost dll API
-target_link_libraries(neolib PUBLIC Boost::chrono Boost::filesystem)
+target_link_libraries(neolib PUBLIC Boost::chrono Boost::filesystem Boost::thread Boost::fiber Boost::locale)
 find_package(OpenSSL REQUIRED COMPONENTS SSL)
 target_link_libraries(neolib PRIVATE OpenSSL::SSL)
 find_package(ZLIB REQUIRED)
@@ -80,6 +79,23 @@ install(FILES "LICENSE" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/licenses/${PRO
 
 option(NEOLIB_TESTS "Build neolib tests" ON)
 if(NEOLIB_TESTS)
+
   enable_testing()
-  add_subdirectory(unit_tests)
+
+  function(add_neolib_test_executable TARGET)
+    add_executable(${TARGET} ${ARGN})
+    target_include_directories(${TARGET} PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
+    set_property(TARGET ${TARGET} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    set_property(TARGET ${TARGET} PROPERTY CXX_STANDARD 20)
+    target_link_libraries(${TARGET} PRIVATE neolib)
+    add_test(${TARGET} ${TARGET})
+  endfunction()
+
+  add_neolib_test_executable(NoFussJSON unit_tests/NoFussJSON/src/NoFussJSONTest.cpp)
+  add_neolib_test_executable(Event unit_tests/Event/src/Event.cpp)
+  add_neolib_test_executable(Containers unit_tests/Containers/Containers.cpp)
+  add_neolib_test_executable(Logger unit_tests/Logger/Logger.cpp)
+
 endif()
