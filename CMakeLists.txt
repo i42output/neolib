@@ -56,7 +56,7 @@ if (WIN32)
 	set(Boost_USE_STATIC_LIBS   ON)
 	set(Boost_USE_STATIC_RUNTIME ON)
 endif()
-find_package(Boost COMPONENTS system chrono filesystem REQUIRED)
+find_package(Boost COMPONENTS system chrono filesystem thread REQUIRED)
 target_link_libraries(neolib PRIVATE Boost::system )
 # need Boost::chrono for neolib::thread::elasped_ns()
 # need Boost::filesystem for boost dll API
