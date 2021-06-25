@@ -344,6 +344,7 @@ namespace neolib
         iState = async_task_state::Running;
         while (!finished() && !cancelled())
             do_work(aYieldType);
+        detach();
         iState = async_task_state::Finished;
     }
 
