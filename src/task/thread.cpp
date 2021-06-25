@@ -46,7 +46,7 @@ namespace neolib
     thread::thread(const std::string& aName, bool aAttachToCurrentThread) : 
         iName(aName), 
         iUsingExistingThread(aAttachToCurrentThread), 
-        iState(ReadyToStart), 
+        iState(thread_state::ReadyToStart), 
         iId{ aAttachToCurrentThread ? std::this_thread::get_id() : std::thread::id{} },
         iBlockedCount(0)
     {
@@ -66,12 +66,12 @@ namespace neolib
             thread_object().join();
     }
 
-    const std::string& thread::name() const
+    const std::string& thread::name() const noexcept
     {
         return iName;
     }
 
-    bool thread::using_existing_thread() const
+    bool thread::using_existing_thread() const noexcept
     {
         return iUsingExistingThread;
     }
@@ -85,7 +85,7 @@ namespace neolib
         }
         try
         {
-            iState = Starting;
+            iState = thread_state::Starting;
             if (!iUsingExistingThread)
             {
                 iThreadObject = std::make_unique<std::thread>(std::bind(&thread::entry_point, this));
@@ -99,13 +99,13 @@ namespace neolib
         }
         catch(const std::exception& aException)
         {
-            iState = Error;
+            iState = thread_state::Error;
             std::cerr << std::string("Error starting thread due to exception being thrown (") + aException.what() + ")." << std::endl;
             throw;
         }
         catch(...)
         {
-            iState = Error;
+            iState = thread_state::Error;
             std::cerr << std::string("Error starting thread due to exception of unknown type being thrown.") << std::endl;
             throw;
         }
@@ -128,7 +128,7 @@ namespace neolib
         lock.emplace(iMutex);
         if (started())
         {
-            iState = Cancelled;
+            iState = thread_state::Cancelled;
             canCancel = true;
         }
         if (canCancel)
@@ -151,12 +151,12 @@ namespace neolib
         lock.emplace(iMutex);
         if (started())
         {
-            iState = Aborted;
+            iState = thread_state::Aborted;
         }
         lock = std::nullopt;
         if (aWait && aborted())
             wait();
-        iState = Finished;
+        iState = thread_state::Finished;
     }
 
     void thread::wait() const
@@ -231,54 +231,59 @@ namespace neolib
             throw cancellation();
     }
 
-    bool thread::started() const 
-    { 
-        return iState != ReadyToStart; 
+    thread_state thread::state() const noexcept
+    {
+        return iState;
     }
 
-    bool thread::running() const
+    bool thread::started() const noexcept
+    { 
+        return iState != thread_state::ReadyToStart;
+    }
+
+    bool thread::running() const noexcept
     {
-        return iState == Started;
+        return iState == thread_state::Started;
     }
     
-    bool thread::finished() const 
+    bool thread::finished() const noexcept
     { 
-        return iState != ReadyToStart && iState != Starting && iState != Started; 
+        return iState != thread_state::ReadyToStart && iState != thread_state::Starting && iState != thread_state::Started;
     }
     
-    bool thread::aborted() const 
+    bool thread::aborted() const noexcept
     { 
-        return iState == Aborted; 
+        return iState == thread_state::Aborted;
     }
     
-    bool thread::cancelled() const 
+    bool thread::cancelled() const noexcept
     { 
-        return iState == Cancelled; 
+        return iState == thread_state::Cancelled;
     }
     
-    bool thread::error() const 
+    bool thread::error() const noexcept
     { 
-        return iState == Error; 
+        return iState == thread_state::Error;
     }
     
-    thread::id_type thread::id() const 
+    thread::id_type thread::id() const noexcept
     { 
         return iId; 
     }
 
-    bool thread::in() const 
+    bool thread::in() const
     {
         if (!started() && !using_existing_thread())
             throw thread_not_started();
         return std::this_thread::get_id() == iId;
     }
 
-    bool thread::blocked() const 
+    bool thread::blocked() const noexcept
     { 
         return iBlockedCount != 0; 
     }
 
-    bool thread::has_thread_object() const
+    bool thread::has_thread_object() const noexcept
     {
         return iThreadObject != nullptr;
     }
@@ -300,28 +305,28 @@ namespace neolib
         std::this_thread::yield();
     }
 
-    uint64_t thread::elapsed_ms()
+    uint64_t thread::elapsed_ms() noexcept
     {
         return elapsed_us() / 1000;
     }
 
-    uint64_t thread::elapsed_us()
+    uint64_t thread::elapsed_us() noexcept
     {
         return elapsed_ns() / 1000;
     }
 
-    uint64_t thread::elapsed_ns()
+    uint64_t thread::elapsed_ns() noexcept
     {
         using namespace boost::chrono;
         return duration_cast<nanoseconds>(thread_clock::time_point(thread_clock::now()).time_since_epoch()).count();
     }
 
-    uint64_t thread::program_elapsed_ms()
+    uint64_t thread::program_elapsed_ms() noexcept
     {
         return program_elapsed_us() / 1000;
     }
 
-    uint64_t thread::program_elapsed_us()
+    uint64_t thread::program_elapsed_us() noexcept
     {
         return program_elapsed_ns() / 1000;
     }
@@ -331,12 +336,12 @@ namespace neolib
         uint64_t sProgramStartTime_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::time_point(std::chrono::high_resolution_clock::now()).time_since_epoch()).count();
     }
 
-    uint64_t thread::program_elapsed_ns()
+    uint64_t thread::program_elapsed_ns() noexcept
     {
         return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::time_point(std::chrono::high_resolution_clock::now()).time_since_epoch()).count() - sProgramStartTime_ns;
     }
 
-    bool thread::waitable_ready() const
+    bool thread::waitable_ready() const noexcept
     {
         return thread_object().get_id() == std::thread::id();
     }
@@ -357,9 +362,9 @@ namespace neolib
     {
         {
             std::scoped_lock<std::recursive_mutex> lock{ iMutex };
-            if (iState != Starting)
+            if (iState != thread_state::Starting)
                 return;
-            iState = Started;
+            iState = thread_state::Started;
             iId = std::this_thread::get_id();
         }
         try
@@ -369,13 +374,13 @@ namespace neolib
             if (!iUsingExistingThread)
             {
                 std::scoped_lock<std::recursive_mutex> lock{ iMutex };
-                if (iState == Started)
-                    iState = Finished;
+                if (iState == thread_state::Started)
+                    iState = thread_state::Finished;
             }
         }
         catch(const std::exception& aException)
         {
-            std::cerr << std::string("Thread terminating due to an uncaught exception was being thrown (") + aException.what() + ")." << std::endl;
+            std::cerr << std::string("Thread terminating due to an uncaught exception being thrown (") + aException.what() + ")." << std::endl;
             throw;
         }
         catch(...)

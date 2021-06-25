@@ -46,6 +46,17 @@ namespace neolib
         Sleep
     };
 
+    enum class thread_state
+    { 
+        ReadyToStart, 
+        Starting, 
+        Started, 
+        Finished, 
+        Aborted, 
+        Cancelled, 
+        Error 
+    };
+
     class i_thread
     {
         // exceptions
@@ -56,8 +67,9 @@ namespace neolib
         virtual ~i_thread() = default;
         // operations
     public:
-        virtual const std::string& name() const = 0;
-        virtual bool finished() const = 0;
+        virtual const std::string& name() const noexcept = 0;
+        virtual thread_state state() const noexcept = 0;
+        virtual bool finished() const noexcept = 0;
         virtual void abort(bool aWait = true) = 0;
         // implementation
     protected:

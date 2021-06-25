@@ -167,13 +167,13 @@ namespace neolib
     }
 
     async_task::async_task(const std::string& aName) :
-        task{ aName }, iThread{ nullptr }, iHalted{ false }
+        task{ aName }, iThread{ nullptr }, iState{ async_task_state::Init }
     {
         Destroying.ignore_errors();
     }
 
     async_task::async_task(i_thread& aThread, const std::string& aName) :
-        task{ aName }, iThread{ &aThread }, iHalted{ false }
+        task{ aName }, iThread{ &aThread }, iState{ async_task_state::Init }
     {
         Destroying.ignore_errors();
     }
@@ -223,7 +223,7 @@ namespace neolib
 
     bool async_task::do_work(yield_type aYieldIfNoWork)
     {
-        if (iHalted)
+        if (halted())
             return false;
         bool didSome = false;
         didSome = (pump_messages() || didSome);
@@ -289,14 +289,30 @@ namespace neolib
         return didWork;
     }
 
-    bool async_task::halted() const
+    bool async_task::running() const noexcept
     {
-        return iHalted;
+        return iState == async_task_state::Running;
+    }
+
+    bool async_task::halted() const noexcept
+    {
+        return iState == async_task_state::Halted;
     }
 
     void async_task::halt()
     {
-        iHalted = true;
+        iState = async_task_state::Halted;
+    }
+
+    bool async_task::finished() const noexcept
+    {
+        return iState == async_task_state::Finished;
+    }
+
+    void async_task::wait() const noexcept
+    {
+        while (!finished() && !cancelled())
+            std::this_thread::yield();
     }
 
     void async_task::set_destroying()
@@ -325,8 +341,17 @@ namespace neolib
 
     void async_task::run(yield_type aYieldType)
     {
-        while (joined() && !thread().finished())
+        iState = async_task_state::Running;
+        while (!finished() && !cancelled())
             do_work(aYieldType);
+        iState = async_task_state::Finished;
+    }
+
+    void async_task::cancel() noexcept
+    {
+        base_type::cancel();
+        if (!running())
+            iState = async_task_state::Finished;
     }
 
     void async_task::idle()

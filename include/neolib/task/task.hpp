@@ -63,7 +63,7 @@ namespace neolib
         {
             return false;
         }
-        void cancel() override
+        void cancel() noexcept override
         {
             iCancelled = true;
         }

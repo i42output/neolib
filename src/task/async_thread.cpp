@@ -48,10 +48,12 @@ namespace neolib
 
     async_thread::~async_thread()
     {
-        iTask.detach();
+        iTask.cancel();
         iTask.set_destroying();
         if (iEventQueue != std::nullopt && !iEventQueue->queueDestroyed)
             iEventQueue->queue.terminate();
+        iTask.wait();
+        cancel();
     }
 
     void async_thread::exec_preamble()

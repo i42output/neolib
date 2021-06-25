@@ -49,26 +49,32 @@ namespace neolib
     public:
         void enter_scope()
         {
+            std::unique_lock lock{ iMutex };
             iDirtyFlags.emplace_back();
         }
         void leave_scope()
         {
+            std::unique_lock lock{ iMutex };
             iDirtyFlags.pop_back();
         }
         bool is_dirty() const
         {
+            std::unique_lock lock{ iMutex };
             return !iDirtyFlags.empty() && iDirtyFlags.back();
         }
         void dirty()
         {
+            std::unique_lock lock{ iMutex };
             std::fill(iDirtyFlags.begin(), iDirtyFlags.end(), true);
         }
         void clean()
         {
+            std::unique_lock lock{ iMutex };
             if (!iDirtyFlags.empty())
                 iDirtyFlags.back() = false;
         }
     private:
+        mutable std::recursive_mutex iMutex;
         std::vector<bool> iDirtyFlags;
     };
 

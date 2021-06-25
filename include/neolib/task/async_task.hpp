@@ -69,9 +69,18 @@ namespace neolib
         dirty_list iDirtyObjectList;
     };
 
+    enum class async_task_state
+    {
+        Init,
+        Running,
+        Halted,
+        Finished
+    };
+
     class NEOLIB_EXPORT async_task : public task<reference_counted<i_async_task>>, public lifetime<>
     {
         friend class async_thread;
+        typedef task<reference_counted<i_async_task>> base_type;
         // events
     public:
         define_declared_event(Destroying, destroying)
@@ -103,8 +112,11 @@ namespace neolib
         const i_message_queue& message_queue() const override;
         i_message_queue& message_queue() override;
         bool pump_messages() override;
-        bool halted() const override;
+        bool running() const noexcept override;
+        bool halted() const noexcept override;
         void halt() override;
+        bool finished() const noexcept override;
+        void wait() const noexcept override;
         // implementation
     protected:
         // i_lifetime
@@ -113,13 +125,15 @@ namespace neolib
         // task
         void run(yield_type aYieldType = yield_type::NoYield) override;
         bool do_work(yield_type aYieldType = yield_type::NoYield) override;
+        void cancel() noexcept override;
         void idle() override;
         // attributes
     private:
-        i_thread* iThread;
+        std::recursive_mutex iMutex;
+        std::atomic<i_thread*> iThread;
         std::optional<neolib::timer_service> iTimerService;
         std::unique_ptr<i_async_service> iIoService;
         message_queue_pointer iMessageQueue;
-        bool iHalted;
+        std::atomic<async_task_state> iState;
     };
 }

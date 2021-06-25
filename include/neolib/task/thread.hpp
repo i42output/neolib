@@ -63,7 +63,6 @@ namespace neolib
         struct not_in_thread : public std::logic_error { not_in_thread() : std::logic_error("neolib::thread::not_in_thread") {} };
     private:
         typedef std::unique_ptr<thread_object_type> thread_object_pointer;
-        enum state_e { ReadyToStart, Starting, Started, Finished, Aborted, Cancelled, Error };
     protected:
         struct cancellation {};
         // construction
@@ -73,8 +72,8 @@ namespace neolib
         virtual ~thread();
         // operations
     public:
-        const std::string& name() const override;
-        bool using_existing_thread() const;
+        const std::string& name() const noexcept override;
+        bool using_existing_thread() const noexcept;
         void start();
         void cancel();
         void abort(bool aWait = true) override;
@@ -84,29 +83,30 @@ namespace neolib
         wait_result msg_wait(const i_message_queue& aMessageQueue, const waitable_event_list& aEventList) const;
         void block();
         void unblock();
-        bool started() const;
-        bool running() const;
-        bool finished() const override;
-        bool aborted() const;
-        bool cancelled() const;
-        bool error() const;
-        id_type id() const;
+        thread_state state() const noexcept override;
+        bool started() const noexcept;
+        bool running() const noexcept;
+        bool finished() const noexcept override;
+        bool aborted() const noexcept;
+        bool cancelled() const noexcept;
+        bool error() const noexcept;
+        id_type id() const noexcept;
         bool in() const;
-        bool blocked() const;
-        bool has_thread_object() const;
+        bool blocked() const noexcept;
+        bool has_thread_object() const noexcept;
         thread_object_type& thread_object() const;
         static void sleep(const std::chrono::duration<double, std::milli>& aDuration);
         static void yield();
-        static uint64_t elapsed_ms();
-        static uint64_t elapsed_us();
-        static uint64_t elapsed_ns();
-        static uint64_t program_elapsed_ms();
-        static uint64_t program_elapsed_us();
-        static uint64_t program_elapsed_ns();
+        static uint64_t elapsed_ms() noexcept;
+        static uint64_t elapsed_us() noexcept;
+        static uint64_t elapsed_ns() noexcept;
+        static uint64_t program_elapsed_ms() noexcept;
+        static uint64_t program_elapsed_us() noexcept;
+        static uint64_t program_elapsed_ns() noexcept;
         // implementation
     private:
         // from waitable
-        bool waitable_ready() const override;
+        bool waitable_ready() const noexcept override;
         // own
         void exec_preamble() override;
         void exec(yield_type aYieldType = yield_type::NoYield) override;
@@ -117,7 +117,7 @@ namespace neolib
         const std::string iName;
         bool iUsingExistingThread;
         std::optional<std::function<void()>> iExecFunction;
-        std::atomic<state_e> iState;
+        std::atomic<thread_state> iState;
         thread_object_pointer iThreadObject;
         id_type iId;
         std::atomic<std::size_t> iBlockedCount;

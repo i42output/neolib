@@ -110,8 +110,11 @@ namespace neolib
         virtual const i_message_queue& message_queue() const = 0;
         virtual i_message_queue& message_queue() = 0;
         virtual bool pump_messages() = 0;
-        virtual bool halted() const = 0;
+        virtual bool running() const noexcept = 0;
+        virtual bool halted() const noexcept = 0;
         virtual void halt() = 0;
+        virtual bool finished() const noexcept = 0;
+        virtual void wait() const noexcept = 0;
     public:
         virtual void idle() = 0;
     public:
