@@ -13,7 +13,10 @@ namespace test
 		void exec_preamble() override
 		{
 			neolib::async_thread::exec_preamble();
-			timer.emplace(*this, [&](neolib::callback_timer&) { end = std::chrono::steady_clock::now(); }, std::chrono::milliseconds{ 100 });
+			timer.emplace(*this, [&](neolib::callback_timer&) 
+			{ 
+				end = std::chrono::steady_clock::now(); 
+			}, std::chrono::milliseconds{ 100 });
 		}
 		std::atomic<std::optional<std::chrono::steady_clock::time_point>> end;
 		std::optional<neolib::callback_timer> timer;
@@ -25,13 +28,15 @@ int main()
 	std::optional<std::pair<double, double>> stats;
 	for (int32_t i = 1; i <= 200; ++i)
 	{
-		test::thread thread;
-		while (thread.state() != neolib::thread_state::Started)
+		std::optional<test::thread> thread;
+		thread.emplace();
+		while (thread->state() != neolib::thread_state::Started)
 			std::this_thread::yield();
 		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-		while (thread.end.load() == std::nullopt)
+		while (thread->end.load() == std::nullopt)
 			std::this_thread::yield();
-		auto time = std::chrono::duration<double>(*thread.end.load() - start).count();
+		auto time = std::chrono::duration<double>(*thread->end.load() - start).count();
+		thread = std::nullopt;
 		if (stats == std::nullopt)
 			stats.emplace(time, time);
 		else
