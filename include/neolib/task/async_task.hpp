@@ -65,6 +65,7 @@ namespace neolib
     private:
         async_task& iTask;
         destroying_flag iTaskDestroying;
+        mutable std::recursive_mutex iMutex;
         std::vector<ref_ptr<i_timer_object>> iObjects;
         dirty_list iDirtyObjectList;
     };

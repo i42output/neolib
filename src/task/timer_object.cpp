@@ -39,7 +39,7 @@
 namespace neolib
 {
     timer_object::timer_object(i_timer_service& aService) : 
-        iService{ aService }
+        iService{ aService }, iDirtySubscriberList{ iMutex }
     {
     }
 
@@ -49,6 +49,7 @@ namespace neolib
         if (iDebug)
             std::cerr << "timer_object::~timer_object()" << std::endl;
 #endif
+        std::unique_lock lock{ iMutex };
         for (auto& s : iSubscribers)
             s->detach();
         iService.remove_timer_object(*this);
@@ -69,6 +70,7 @@ namespace neolib
         if (iDebug)
             std::cerr << "timer_object::async_wait(...)" << std::endl;
 #endif
+        std::unique_lock lock{ iMutex };
         bool inserted = iSubscribers.insert(aSubscriber).second;
         if (inserted)
             iDirtySubscriberList.dirty();
@@ -80,6 +82,7 @@ namespace neolib
         if (iDebug)
             std::cerr << "timer_object::unsubscribe(...)" << std::endl;
 #endif
+        std::unique_lock lock{ iMutex };
         auto existing = iSubscribers.find(aSubscriber);
         if (existing == iSubscribers.end())
             throw subscriber_not_found();
@@ -106,6 +109,7 @@ namespace neolib
         if (!iExpiryTime || std::chrono::steady_clock::now() < *iExpiryTime)
             return false;
         iExpiryTime = std::nullopt;
+        std::unique_lock lock{ iMutex };
         scoped_dirty sd{ iDirtySubscriberList };
         for (auto s = iSubscribers.begin(); s != iSubscribers.end();)
         {

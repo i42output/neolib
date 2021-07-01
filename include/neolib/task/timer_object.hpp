@@ -63,6 +63,7 @@ namespace neolib
     private:
         i_timer_service& iService;
         std::optional<std::chrono::steady_clock::time_point> iExpiryTime;
+        mutable std::recursive_mutex iMutex;
         std::set<ref_ptr<i_timer_subscriber>> iSubscribers;
         dirty_list iDirtySubscriberList;
 #if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)

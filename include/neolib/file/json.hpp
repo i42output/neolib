@@ -409,7 +409,17 @@ namespace neolib
         {
             auto& newChild = contents().emplace_back(aValue);
             cache().emplace_back(&newChild);
-            return newChild;
+            return back();
+        }
+        json_value& push_back(value_type&& aValue)
+        {
+            auto& newChild = contents().emplace_back(std::move(aValue));
+            cache().emplace_back(&newChild);
+            return back();
+        }
+        json_value& back()
+        {
+            return *cache().back();
         }
         json_value& operator[](std::size_t aIndex)
         {
@@ -429,13 +439,17 @@ namespace neolib
             iContents = &aOwner;
         }
     private:
+        json_value& contents()
+        {
+            return *iContents;
+        }
         const array_type& cache() const
         {
             if (iLazyArray != nullptr)
                 return *iLazyArray;
             iLazyArray = std::make_unique<array_type>(); // todo: use allocator_type
-            for (auto & e : contents())
-                cache().emplace_back(&e);
+            for (auto& e : *iContents)
+                iLazyArray->emplace_back(&e);
             return *iLazyArray;
         }
         array_type& cache()

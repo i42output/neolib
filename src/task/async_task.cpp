@@ -96,7 +96,8 @@ namespace neolib
 
     timer_service::timer_service(async_task& aTask, bool aMultiThreaded) :
         iTask{ aTask },
-        iTaskDestroying{ aTask }
+        iTaskDestroying{ aTask },
+        iDirtyObjectList{ iMutex }
     {
     }
 
@@ -104,6 +105,7 @@ namespace neolib
     {
         std::size_t iterationsLeft = aMaximumPollCount;
         bool didSome = false;
+        std::unique_lock lock{ iMutex };
         scoped_dirty sd{ iDirtyObjectList };
         do
         {
@@ -150,6 +152,7 @@ namespace neolib
     {
         if (iTaskDestroying)
             throw task_destroying();
+        std::unique_lock lock{ iMutex };
         iObjects.push_back(make_ref<timer_object>(*this));
         iDirtyObjectList.dirty();
         return *iObjects.back();
@@ -157,6 +160,7 @@ namespace neolib
 
     void timer_service::remove_timer_object(i_timer_object& aObject)
     {
+        std::unique_lock lock{ iMutex };
         auto existing = std::find_if(iObjects.begin(), iObjects.end(), [&aObject](auto&& o) { return o == &aObject; });
         if (existing != iObjects.end())
         {

@@ -47,6 +47,11 @@ namespace neolib
     class dirty_list
     {
     public:
+        dirty_list(std::recursive_mutex& aMutex) : 
+            iMutex{ aMutex }
+        {
+        }
+    public:
         void enter_scope()
         {
             std::unique_lock lock{ iMutex };
@@ -74,7 +79,7 @@ namespace neolib
                 iDirtyFlags.back() = false;
         }
     private:
-        mutable std::recursive_mutex iMutex;
+        std::recursive_mutex& iMutex;
         std::vector<bool> iDirtyFlags;
     };
 
