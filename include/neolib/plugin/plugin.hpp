@@ -89,6 +89,7 @@ namespace neolib
         }
         bool unload() override
         {
+            iContents.reset();
             iLoaded = false;
             return true;
         }
