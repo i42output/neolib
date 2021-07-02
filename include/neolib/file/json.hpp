@@ -57,6 +57,10 @@
 
 namespace neolib
 {
+    struct json_error : std::runtime_error { json_error(const std::string& aReason) : std::runtime_error{ aReason } {} };
+    struct json_path_not_found : std::runtime_error { json_path_not_found(const std::string& aPath) : std::runtime_error{ "JSON path not found: " + aPath } {} };
+    struct json_no_owning_node : std::logic_error { json_no_owning_node() : std::logic_error{ "JSON no owning node" } {} };
+
     enum class json_syntax
     {
         Standard,
@@ -355,6 +359,8 @@ namespace neolib
     public:
         json_value& contents() const
         {
+            if (iContents == nullptr)
+                throw json_no_owning_node();
             return *iContents;
         }
         void set_contents(json_value& aOwner)
@@ -401,7 +407,7 @@ namespace neolib
         {
         }
         basic_json_array(json_value& aOwner) :
-            iContents{ aOwner }
+            iContents{ &aOwner }
         {
         }
     public:
@@ -426,12 +432,10 @@ namespace neolib
             return *cache().at(aIndex);
         }
     public:
-        json_value& owner() const
+        json_value& contents() const
         {
-            return *iContents;
-        }
-        const json_value& contents() const
-        {
+            if (iContents == nullptr)
+                throw json_no_owning_node();
             return *iContents;
         }
         void set_contents(json_value& aOwner)
@@ -439,16 +443,12 @@ namespace neolib
             iContents = &aOwner;
         }
     private:
-        json_value& contents()
-        {
-            return *iContents;
-        }
         const array_type& cache() const
         {
             if (iLazyArray != nullptr)
                 return *iLazyArray;
             iLazyArray = std::make_unique<array_type>(); // todo: use allocator_type
-            for (auto& e : *iContents)
+            for (auto& e : contents())
                 iLazyArray->emplace_back(&e);
             return *iLazyArray;
         }
@@ -543,10 +543,12 @@ namespace neolib
         basic_json_value(reference aParent, const value_type& aValue) :
             iNode{ aParent }, iValue{ aValue }, iDocumentSourceLocation{}
         {
+            update_contents();
         }
         basic_json_value(reference aParent, value_type&& aValue) :
             iNode{ aParent }, iValue{ std::move(aValue) }, iDocumentSourceLocation{}
         {
+            update_contents();
         }
     public:
         basic_json_value(const basic_json_value&) = delete;
@@ -824,9 +826,6 @@ namespace neolib
         value_type iValue;
         json_document_source_location iDocumentSourceLocation;
     };
-
-    struct json_error : std::runtime_error { json_error(const std::string& aReason) : std::runtime_error(aReason) {} };
-    struct json_path_not_found : std::runtime_error { json_path_not_found(const std::string& aPath) : std::runtime_error("JSON path not found: " + aPath) {} };
 
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
     class basic_json
