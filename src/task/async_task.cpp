@@ -111,7 +111,15 @@ namespace neolib
             bool didSomeThisIteration = false;
             if (aProcessEvents)
                 didSomeThisIteration = (iTask.pump_messages() || didSomeThisIteration);
-            thread_local std::vector<decltype(iObjects)::value_type> workList;
+
+            typedef std::vector<decltype(iObjects)::value_type> work_list_t;
+            thread_local std::vector<std::unique_ptr<work_list_t>> workListStack;
+            thread_local std::size_t stack;
+            scoped_counter<std::size_t> stackCounter{ stack };
+            if (workListStack.size() < stack)
+                workListStack.push_back(std::make_unique<work_list_t>());
+            work_list_t& workList = *workListStack[stack - 1];
+
             std::unique_lock lock{ iMutex };
             iObjects.erase(std::remove_if(iObjects.begin(), iObjects.end(), [](auto const& o) { return o == nullptr; }), iObjects.end());
             std::copy(iObjects.begin(), iObjects.end(), std::back_inserter(workList));
