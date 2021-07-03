@@ -67,7 +67,6 @@ namespace neolib
         destroying_flag iTaskDestroying;
         mutable std::recursive_mutex iMutex;
         std::vector<ref_ptr<i_timer_object>> iObjects;
-        dirty_list iDirtyObjectList;
     };
 
     enum class async_task_state

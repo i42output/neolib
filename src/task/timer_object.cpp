@@ -39,7 +39,7 @@
 namespace neolib
 {
     timer_object::timer_object(i_timer_service& aService) : 
-        iService{ aService }, iDirtySubscriberList{ iMutex }
+        iService{ aService }
     {
     }
 
@@ -49,10 +49,9 @@ namespace neolib
         if (iDebug)
             std::cerr << "timer_object::~timer_object()" << std::endl;
 #endif
-        std::unique_lock lock{ iMutex };
+        std::unique_lock lock{ iSubscribersMutex };
         for (auto& s : iSubscribers)
             s->detach();
-        iService.remove_timer_object(*this);
     }
 
     void timer_object::expires_at(const std::chrono::steady_clock::time_point& aDeadline)
@@ -70,10 +69,8 @@ namespace neolib
         if (iDebug)
             std::cerr << "timer_object::async_wait(...)" << std::endl;
 #endif
-        std::unique_lock lock{ iMutex };
-        bool inserted = iSubscribers.insert(aSubscriber).second;
-        if (inserted)
-            iDirtySubscriberList.dirty();
+        std::unique_lock lock{ iSubscribersMutex };
+        iSubscribers.insert(aSubscriber).second;
     }
 
     void timer_object::unsubscribe(i_timer_subscriber& aSubscriber)
@@ -82,13 +79,12 @@ namespace neolib
         if (iDebug)
             std::cerr << "timer_object::unsubscribe(...)" << std::endl;
 #endif
-        std::unique_lock lock{ iMutex };
+        std::unique_lock lock{ iSubscribersMutex };
         auto existing = iSubscribers.find(aSubscriber);
         if (existing == iSubscribers.end())
             throw subscriber_not_found();
         (**existing).detach();
         iSubscribers.erase(existing);
-        iDirtySubscriberList.dirty();
     }
 
     void timer_object::cancel()
@@ -109,20 +105,17 @@ namespace neolib
         if (!iExpiryTime || std::chrono::steady_clock::now() < *iExpiryTime)
             return false;
         iExpiryTime = std::nullopt;
-        std::unique_lock lock{ iMutex };
-        scoped_dirty sd{ iDirtySubscriberList };
-        for (auto s = iSubscribers.begin(); s != iSubscribers.end();)
+        thread_local std::vector<decltype(iSubscribers)::value_type> workList;
+        std::unique_lock lock{ iSubscribersMutex };
+        std::copy(iSubscribers.begin(), iSubscribers.end(), std::back_inserter(workList));
+        lock.unlock();
+        for (auto const& s : workList)
         {
-            auto& subscriber = **s;
+            auto& subscriber = *s;
             subscriber.timer_expired(*this);
-            if (iDirtySubscriberList.is_dirty())
-            {
-                iDirtySubscriberList.clean();
-                s = iSubscribers.begin();
-            }
-            else
-                ++s;
         }
+        lock.lock();
+        workList.clear();
         return true;
     }
 

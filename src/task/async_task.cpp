@@ -96,8 +96,7 @@ namespace neolib
 
     timer_service::timer_service(async_task& aTask, bool aMultiThreaded) :
         iTask{ aTask },
-        iTaskDestroying{ aTask },
-        iDirtyObjectList{ iMutex }
+        iTaskDestroying{ aTask }
     {
     }
 
@@ -105,8 +104,6 @@ namespace neolib
     {
         std::size_t iterationsLeft = aMaximumPollCount;
         bool didSome = false;
-        std::unique_lock lock{ iMutex };
-        scoped_dirty sd{ iDirtyObjectList };
         do
         {
             if (iTask.halted())
@@ -114,28 +111,23 @@ namespace neolib
             bool didSomeThisIteration = false;
             if (aProcessEvents)
                 didSomeThisIteration = (iTask.pump_messages() || didSomeThisIteration);
-            for (auto o = iObjects.begin(); o != iObjects.end();)
+            thread_local std::vector<decltype(iObjects)::value_type> workList;
+            std::unique_lock lock{ iMutex };
+            iObjects.erase(std::remove_if(iObjects.begin(), iObjects.end(), [](auto const& o) { return o == nullptr; }), iObjects.end());
+            std::copy(iObjects.begin(), iObjects.end(), std::back_inserter(workList));
+            lock.unlock();
+            for (auto const& o : workList)
             {
-                if (!*o)
-                {
-                    o = iObjects.erase(o);
-                    continue;
-                }
-                auto& object = **o;
+                auto& object = *o;
                 if (object.poll())
                 {
                     didSomeThisIteration = true;
                     if (aMaximumPollCount != 0 && --iterationsLeft == 0)
                         break;
                 }
-                if (!iDirtyObjectList.is_dirty())
-                    ++o;
-                else
-                {
-                    o = iObjects.begin();
-                    iDirtyObjectList.clean();
-                }
             }
+            lock.lock();
+            workList.clear();
             if (!didSomeThisIteration)
                 break;
             didSome = true;
@@ -154,7 +146,6 @@ namespace neolib
             throw task_destroying();
         std::unique_lock lock{ iMutex };
         iObjects.push_back(make_ref<timer_object>(*this));
-        iDirtyObjectList.dirty();
         return *iObjects.back();
     }
 
@@ -166,7 +157,6 @@ namespace neolib
         {
             auto existingRef = std::move(*existing);
             iObjects.erase(existing);
-            iDirtyObjectList.dirty();
         }
     }
 

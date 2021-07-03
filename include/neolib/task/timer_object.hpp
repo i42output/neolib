@@ -39,7 +39,6 @@
 #include <optional>
 #include <set>
 #include <chrono>
-#include <neolib/core/dirty_list.hpp>
 #include <neolib/task/i_async_task.hpp>
 #include <neolib/task/i_timer_object.hpp>
 
@@ -63,9 +62,8 @@ namespace neolib
     private:
         i_timer_service& iService;
         std::optional<std::chrono::steady_clock::time_point> iExpiryTime;
-        mutable std::recursive_mutex iMutex;
+        mutable std::recursive_mutex iSubscribersMutex;
         std::set<ref_ptr<i_timer_subscriber>> iSubscribers;
-        dirty_list iDirtySubscriberList;
 #if !defined(NDEBUG) || defined(DEBUG_TIMER_OBJECTS)
         bool iDebug = false;
 #endif

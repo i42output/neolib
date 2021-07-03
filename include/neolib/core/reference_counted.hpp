@@ -100,14 +100,15 @@ namespace neolib
         reference_counted() noexcept : iDestroying{ false }, iReferenceCount{ 0 }, iPinned{ false }, iControlBlock{ nullptr }
         {
         }
-        reference_counted(const reference_counted& aOther) noexcept : iDestroying{ false }, iReferenceCount{ 0 }, iPinned{ aOther.iPinned }, iControlBlock{ nullptr }
+        reference_counted(const reference_counted& aOther) noexcept : iDestroying{ false }, iReferenceCount{ 0 }, iPinned{ aOther.iPinned.load() }, iControlBlock{ nullptr }
         {
         }
         ~reference_counted()
         {
             iDestroying = true;
-            if (iControlBlock != nullptr)
-                iControlBlock->set_expired();
+            bool expected = true;
+            if (iControlled.compare_exchange_strong(expected, false))
+                iControlBlock.load()->set_expired();
         }
         reference_counted& operator=(const reference_counted&)
         {
@@ -157,7 +158,8 @@ namespace neolib
     public:
         i_ref_control_block& control_block() override
         {
-            if (iControlBlock == nullptr)
+            bool expected = false;
+            if (iControlled.compare_exchange_strong(expected, true))
                 iControlBlock = new ref_control_block{ *this };
             return *iControlBlock;
         }
@@ -170,10 +172,11 @@ namespace neolib
                 (*this).~reference_counted();
         }
     private:
-        bool iDestroying;
-        mutable int32_t iReferenceCount;
-        mutable bool iPinned;
-        mutable ref_control_block* iControlBlock;
+        std::atomic<bool> iDestroying;
+        mutable std::atomic<int32_t> iReferenceCount;
+        mutable std::atomic<bool> iPinned;
+        mutable std::atomic<bool> iControlled;
+        mutable std::atomic<ref_control_block*> iControlBlock;
     };
 
     template <typename Interface>
