@@ -402,6 +402,11 @@ namespace neolib
                 handleInSameThreadAsEmitter{ handleInSameThreadAsEmitter },
                 handlerIsStateless{ handlerIsStateless }
             {}
+
+            handler(handler const& aOther) = default;
+            handler(handler&& aOther) = default;
+            handler& operator=(handler const& aOther) = default;
+            handler& operator=(handler&& aOther) = default;
         };
         typedef jar<handler> handler_list_t;
         struct context

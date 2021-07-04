@@ -51,8 +51,28 @@ namespace neolib
     }
 
     template <lifetime_state RequiredState>
+    lifetime_flag<RequiredState>::lifetime_flag(lifetime_flag&& aOther) :
+        iState{ std::move(aOther.iState) }, iDebug{ false }
+    {
+    }
+
+    template <lifetime_state RequiredState>
     lifetime_flag<RequiredState>::~lifetime_flag()
     {
+    }
+
+    template <lifetime_state RequiredState>
+    lifetime_flag<RequiredState>& lifetime_flag<RequiredState>::operator=(const lifetime_flag& aOther)
+    {
+        iState = aOther.iState;
+        return *this;
+    }
+
+    template <lifetime_state RequiredState>
+    lifetime_flag<RequiredState>& lifetime_flag<RequiredState>::operator=(lifetime_flag&& aOther)
+    {
+        iState = std::move(aOther.iState);
+        return *this;
     }
 
     template <lifetime_state RequiredState>

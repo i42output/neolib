@@ -53,7 +53,11 @@ namespace neolib
         lifetime_flag(const Subject& aSubject, std::enable_if_t<!std::is_base_of_v<i_lifetime, Subject>, sfinae> = {}) :
             lifetime_flag{ dynamic_cast<const i_lifetime&>(aSubject), } {}
         lifetime_flag(const lifetime_flag& aOther);
+        lifetime_flag(lifetime_flag&& aOther);
         ~lifetime_flag();
+    public:
+        lifetime_flag& operator=(const lifetime_flag& aOther);
+        lifetime_flag& operator=(lifetime_flag&& aOther);
     public:
         bool is_creating() const final;
         bool is_alive() const final;
