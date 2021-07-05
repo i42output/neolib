@@ -346,6 +346,34 @@ namespace neolib
         {
             return const_cast<json_value&>(to_const(*this).at(aKey));
         }
+        template <typename U>
+        std::enable_if_t<!std::is_arithmetic_v<U>, const U&> at_or(const json_string& aKey, const U& aDefault) const
+        {
+            if (has(aKey))
+                return at(aKey).template as<U>();
+            return aDefault;
+        }
+        template <typename U>
+        std::enable_if_t<!std::is_arithmetic_v<U>, U&> at_or(const json_string& aKey, U& aDefault)
+        {
+            if (has(aKey))
+                return at(aKey).template as<U>();
+            return aDefault;
+        }
+        template <typename U>
+        std::enable_if_t<std::is_arithmetic_v<U>, U> at_or(const json_string& aKey, const U& aDefault) const
+        {
+            if (has(aKey))
+                return at(aKey).template as<U>();
+            return aDefault;
+        }
+        template <typename U>
+        std::enable_if_t<std::is_arithmetic_v<U>, U&> at_or(const json_string& aKey, U& aDefault)
+        {
+            if (has(aKey))
+                return at(aKey).template as<U>();
+            return aDefault;
+        }
         json_value& operator[](const json_string& aKey)
         {
             auto existing = cache().find(aKey);
