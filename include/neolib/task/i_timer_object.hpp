@@ -40,12 +40,13 @@
 #include <iostream>
 #endif
 #include <neolib/core/reference_counted.hpp>
+#include <neolib/core/i_lifetime.hpp>
 
 namespace neolib
 {
     class i_timer_object;
 
-    class i_timer_subscriber : public i_reference_counted
+    class i_timer_subscriber : public i_reference_counted, public i_lifetime
     {
     public:
         typedef i_timer_subscriber abstract_type;
@@ -62,14 +63,14 @@ namespace neolib
         }
     };
 
-    class i_timer_object : public i_reference_counted
+    class i_timer_object : public i_reference_counted, public i_lifetime
     {
     public:
         typedef i_timer_object abstract_type;
     public:
         struct subscriber_not_found : std::logic_error { subscriber_not_found() : std::logic_error{ "i_timer_object::subscriber_not_found" } {} };
     private:
-        class subscriber_wrapper : public reference_counted<i_timer_subscriber>
+        class subscriber_wrapper : public lifetime<reference_counted<i_timer_subscriber>>
         {
         public:
             subscriber_wrapper(i_timer_object& aTimerObject, std::function<void()> aCallback) :

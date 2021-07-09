@@ -105,13 +105,23 @@ namespace neolib
         if (!iExpiryTime || std::chrono::steady_clock::now() < *iExpiryTime)
             return false;
         iExpiryTime = std::nullopt;
-        thread_local std::vector<decltype(iSubscribers)::value_type> workList;
+
+        typedef std::vector<std::pair<decltype(iSubscribers)::value_type, destroyed_flag>> work_list_t;
+        thread_local std::vector<std::unique_ptr<work_list_t>> workListStack;
+        thread_local std::size_t stack;
+        scoped_counter<std::size_t> stackCounter{ stack };
+        if (workListStack.size() < stack)
+            workListStack.push_back(std::make_unique<work_list_t>());
+        work_list_t& workList = *workListStack[stack - 1];
+
         std::unique_lock lock{ iSubscribersMutex };
-        std::copy(iSubscribers.begin(), iSubscribers.end(), std::back_inserter(workList));
+        std::transform(iSubscribers.begin(), iSubscribers.end(), std::back_inserter(workList), [](auto const& s) { return std::make_pair(s, destroyed_flag{ *s }); });
         lock.unlock();
         for (auto const& s : workList)
         {
-            auto& subscriber = *s;
+            if (!s.second.is_alive())
+                continue;
+            auto& subscriber = *s.first;
             subscriber.timer_expired(*this);
         }
         lock.lock();

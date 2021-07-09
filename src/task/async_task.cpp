@@ -112,7 +112,7 @@ namespace neolib
             if (aProcessEvents)
                 didSomeThisIteration = (iTask.pump_messages() || didSomeThisIteration);
 
-            typedef std::vector<decltype(iObjects)::value_type> work_list_t;
+            typedef std::vector<std::pair<decltype(iObjects)::value_type, destroyed_flag>> work_list_t;
             thread_local std::vector<std::unique_ptr<work_list_t>> workListStack;
             thread_local std::size_t stack;
             scoped_counter<std::size_t> stackCounter{ stack };
@@ -122,11 +122,13 @@ namespace neolib
 
             std::unique_lock lock{ iMutex };
             iObjects.erase(std::remove_if(iObjects.begin(), iObjects.end(), [](auto const& o) { return o == nullptr; }), iObjects.end());
-            std::copy(iObjects.begin(), iObjects.end(), std::back_inserter(workList));
+            std::transform(iObjects.begin(), iObjects.end(), std::back_inserter(workList), [](auto const& s) { return std::make_pair(s, destroyed_flag{ *s }); });
             lock.unlock();
             for (auto const& o : workList)
             {
-                auto& object = *o;
+                if (!o.second.is_alive())
+                    continue;
+                auto& object = *o.first;
                 if (object.poll())
                 {
                     didSomeThisIteration = true;

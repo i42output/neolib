@@ -44,7 +44,7 @@
 
 namespace neolib
 {
-    class NEOLIB_EXPORT timer_object : public reference_counted<i_timer_object>
+    class NEOLIB_EXPORT timer_object : public lifetime<reference_counted<i_timer_object>>
     {
     public:
         timer_object(i_timer_service& aService);
