@@ -37,6 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <atomic>
+#include <neolib/core/optional.hpp>
 
 namespace neolib
 {
@@ -72,7 +73,7 @@ namespace neolib
     class scoped_counter
     {
     public:
-        scoped_counter(T& aCounter) : iCounter(aCounter), iIgnore{ false } { ++iCounter; }
+        scoped_counter(T& aCounter) : iCounter{ aCounter }, iIgnore{ false } { ++iCounter; }
         ~scoped_counter() { if (!iIgnore) --iCounter; }
     public:
         void ignore() { iIgnore = true; }
@@ -108,6 +109,34 @@ namespace neolib
     private:
         T& iObject;
         T iSaved;
+        bool iIgnore;
+    };
+
+    template <typename T>
+    class scoped_optional
+    {
+    public:
+        scoped_optional(i_optional<abstract_t<T>>& aOptional, T aValue) : iOptional{ aOptional }, iSaved{ aOptional }, iIgnore{ false } { iOptional = aValue; }
+        ~scoped_optional() { if (!iIgnore) iOptional = iSaved; }
+    public:
+        void ignore() { iIgnore = true; }
+    private:
+        i_optional<abstract_t<T>>& iOptional;
+        optional<T> iSaved;
+        bool iIgnore;
+    };
+
+    template <typename T>
+    class scoped_optional_if
+    {
+    public:
+        scoped_optional_if(i_optional<abstract_t<T>>& aOptional, T aValue) : iOptional{ aOptional }, iSaved{ aOptional }, iIgnore{ false } { if (iOptional == std::nullopt) iOptional = aValue; }
+        ~scoped_optional_if() { if (!iIgnore) iOptional = iSaved; }
+    public:
+        void ignore() { iIgnore = true; }
+    private:
+        i_optional<abstract_t<T>>& iOptional;
+        optional<T> iSaved;
         bool iIgnore;
     };
 }
