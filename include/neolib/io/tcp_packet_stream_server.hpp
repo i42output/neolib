@@ -49,21 +49,23 @@ namespace neolib
     class tcp_packet_stream_server;
 
     template <typename PacketType>
-    class tcp_packet_stream_server : public lifetime
+    class tcp_packet_stream_server : public lifetime<>
     {
-    public:
-        define_event(PacketStreamAdded, packet_stream_added, packet_stream_added, packet_stream_type&)
-        define_event(PacketStreamRemoved, packet_stream_removed, packet_stream_removed, packet_stream_type&)
-        define_event(FailedToAcceptPacketStream, failed_to_accept_packet_stream, failed_to_accept_packet_stream, const boost::system::error_code&)
+        typedef tcp_packet_stream_server<PacketType> self_type;
         // types
     public:
-        typedef tcp_packet_stream_server<PacketType> our_type;
         typedef PacketType packet_type;
         typedef tcp_protocol protocol_type;
-        typedef i_tcp_packet_stream_server_observer<packet_type> observer_type;
         typedef packet_stream<packet_type, protocol_type> packet_stream_type;
+        // events
+    public:
+        define_event(PacketStreamAdded, packet_stream_added, packet_stream_type&)
+        define_event(PacketStreamRemoved, packet_stream_removed, packet_stream_type&)
+        define_event(FailedToAcceptPacketStream, failed_to_accept_packet_stream, const boost::system::error_code&)
+        // types
+    private:
         typedef typename packet_stream_type::pointer packet_stream_pointer;
-        typedef std::vector<packet_stream_type*> stream_list;
+        typedef std::vector<packet_stream_pointer> stream_list;
         typedef protocol_type::endpoint endpoint_type;
         typedef protocol_type::resolver resolver_type;
         typedef protocol_type::acceptor acceptor_type;
@@ -71,7 +73,7 @@ namespace neolib
         class handler_proxy
         {
         public:
-            handler_proxy(our_type& aParent) : iParent(aParent), iOrphaned(false)
+            handler_proxy(self_type& aParent) : iParent(aParent), iOrphaned(false)
             {
             }
         public:
@@ -89,7 +91,7 @@ namespace neolib
                     iParent.iHandlerProxy.reset();
             }
         private:
-            our_type& iParent;
+            self_type& iParent;
             bool iOrphaned;
         };
 
@@ -100,18 +102,18 @@ namespace neolib
 
         // construction
     public:
-        tcp_packet_stream_server(async_task& aIoTask, unsigned short aLocalPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4) :
+        tcp_packet_stream_server(i_async_task& aIoTask, unsigned short aLocalPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4) :
             iIoTask(aIoTask),
             iHandlerProxy(new handler_proxy(*this)),
             iLocalPort(aLocalPort),
             iSecure(aSecure),
             iProtocolFamily(aProtocolFamily & IPv4 ? protocol_type::v4() : protocol_type::v6()),
             iLocalEndpoint(iProtocolFamily, iLocalPort),
-            iAcceptor(aIoTask.io_service().native_object(), iLocalEndpoint)
+            iAcceptor(aIoTask.io_service().native_object<boost::asio::io_service>(), iLocalEndpoint)
         {
             accept_connection();
         }
-        tcp_packet_stream_server(async_task& aIoTask, const std::string& aLocalHostName, unsigned short aLocalPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4) :
+        tcp_packet_stream_server(i_async_task& aIoTask, const std::string& aLocalHostName, unsigned short aLocalPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4) :
             iIoTask(aIoTask),
             iHandlerProxy(new handler_proxy(*this)),
             iLocalHostName(aLocalHostName),
@@ -119,15 +121,15 @@ namespace neolib
             iSecure(aSecure),
             iProtocolFamily(aProtocolFamily & IPv4 ? protocol_type::v4() : protocol_type::v6()),
             iLocalEndpoint(resolve(aIoTask, iLocalHostName, iLocalPort, iProtocolFamily)),
-            iAcceptor(aIoTask.io_service().native_object(), iLocalEndpoint)
+            iAcceptor(aIoTask.io_service().native_object<boost::asio::io_service>(), iLocalEndpoint)
         {
             accept_connection();
         }
         ~tcp_packet_stream_server()
         {
             set_destroying();
-            for (stream_list::iterator i = iStreamList.begin(); i != iStreamList.end(); ++i)
-                delete *i;
+            for (typename stream_list::iterator i = iStreamList.begin(); i != iStreamList.end(); ++i)
+                *i = nullptr;
             iStreamList.clear();
             iHandlerProxy->orphan();
             iAcceptor.close();
@@ -141,7 +143,7 @@ namespace neolib
         }
         packet_stream_pointer take_ownership(packet_stream_type& aStream)
         {
-            for (stream_list::iterator i = iStreamList.begin(); i != iStreamList.end(); ++i)
+            for (typename stream_list::iterator i = iStreamList.begin(); i != iStreamList.end(); ++i)
                 if (*i == &aStream)
                 {
                     packet_stream_pointer found(*i);
@@ -159,7 +161,7 @@ namespace neolib
         {
             resolver_type resolver(aIoTask.io_service().native_object());
             boost::system::error_code ec;
-            typename resolver_type::iterator result = resolver.resolve(resolver_type::query(aHostname, std::to_string(aPort), ec);
+            typename resolver_type::iterator result = resolver.resolve(resolver_type::query(aHostname, std::to_string(aPort), ec));
             if (!ec)
             {
                 for (typename resolver_type::iterator i = result; i != resolver_type::iterator(); ++i)
@@ -176,16 +178,16 @@ namespace neolib
         {
             if (iAcceptingStream != nullptr)
                 return;
-            iAcceptingStream = packet_stream_pointer(new packet_stream_type(iIoTask, iSecure, iLocalEndpoint.protocol() == protocol_type::v4() ? IPv4 : IPv6));
+            iAcceptingStream = std::make_unique<packet_stream_type>(iIoTask, iSecure, iLocalEndpoint.protocol() == protocol_type::v4() ? IPv4 : IPv6);
             auto acceptingStream = &*iAcceptingStream;
-            iAcceptingStream->connection_closed([this, acceptingStream]
+            iAcceptingStream->connection_closed([this, acceptingStream]()
             {
                 if (is_alive())
                 {
                     for (typename stream_list::iterator i = iStreamList.begin(); i != iStreamList.end(); ++i)
                         if (&**i == acceptingStream)
                         {
-                            packet_stream_pointer keepObjectAlive(*i);
+                            packet_stream_pointer keepObjectAlive{ std::move(*i) };
                             iStreamList.erase(i);
                             PacketStreamRemoved.trigger(*acceptingStream);
                             break;
@@ -193,9 +195,8 @@ namespace neolib
                 }
                 else
                     PacketStreamRemoved.trigger(*acceptingStream);
-            }
+            });
 
-            iAcceptingStream->add_observer(*this);
             iAcceptingStream->connection().open(true);
             iAcceptor.async_accept(iAcceptingStream->connection().socket(), boost::bind(&handler_proxy::operator(), iHandlerProxy, boost::asio::placeholders::error));
         }
@@ -204,21 +205,17 @@ namespace neolib
             if (!aError)
             {
                 iAcceptingStream->connection().server_accept();
-                iStreamList.push_back(iAcceptingStream.get());
-                iAcceptingStream.release();
-                notify_observers(observer_type::NotifyPacketStreamAdded, *iStreamList.back());
+                iStreamList.push_back(std::move(iAcceptingStream));
+                PacketStreamAdded.trigger(*iStreamList.back());
                 accept_connection();
             }
             else
-            {
-                std::string m = aError.message();
-                notify_observers(observer_type::NotifyFailedToAcceptPacketStream, aError);
-            }
+                FailedToAcceptPacketStream.trigger(aError);
         }
         
         // attributes
     private:
-        async_task& iIoTask;
+        i_async_task& iIoTask;
         std::shared_ptr<handler_proxy> iHandlerProxy;
         std::string iLocalHostName;
         unsigned short iLocalPort;
