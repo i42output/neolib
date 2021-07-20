@@ -38,7 +38,7 @@
 #include <neolib/neolib.hpp>
 #include <stdexcept>
 #include <vector>
-#include <neolib/task/async_task.hpp>
+#include <neolib/task/i_async_task.hpp>
 #include <neolib/plugin/plugin_event.hpp>
 #include <neolib/io/i_packet.hpp>
 #include <neolib/io/binary_packet.hpp>
@@ -76,11 +76,11 @@ namespace neolib
 
         // construction
     public:
-        packet_stream(async_task& aIoTask, bool aSecure = false, protocol_family aProtocolFamily = IPv4) : 
+        packet_stream(i_async_task& aIoTask, bool aSecure = false, protocol_family aProtocolFamily = IPv4) :
             iConnection(aIoTask, *this, aSecure, aProtocolFamily)
         {
         }
-        packet_stream(async_task& aIoTask, const std::string& aHostName, unsigned short aPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4) :
+        packet_stream(i_async_task& aIoTask, const std::string& aHostName, unsigned short aPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4) :
             iConnection(aIoTask, *this, aHostName, aPort, aSecure, aProtocolFamily)
         {
         }

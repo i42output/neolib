@@ -152,7 +152,7 @@ namespace neolib
         // construction
     public:
         basic_packet_connection(
-            async_task& aIoTask, 
+            i_async_task& aIoTask,
             owner_type& aOwner,
             bool aSecure = false,
             protocol_family aProtocolFamily = IPv4) :
@@ -174,7 +174,7 @@ namespace neolib
         {
         }
         basic_packet_connection(
-            async_task& aIoTask, 
+            i_async_task& aIoTask,
             owner_type& aOwner, 
             const std::string& aRemoteHostName, 
             unsigned short aRemotePort,
@@ -599,7 +599,7 @@ namespace neolib
         
         // attibutes
     private:
-        async_task& iIoTask;
+        i_async_task& iIoTask;
         owner_type& iOwner;
         std::shared_ptr<handler_proxy> iHandlerProxy;
         std::string iLocalHostName;
