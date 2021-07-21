@@ -65,8 +65,11 @@ namespace neolib
         unload_plugins();
     }
 
-    bool plugin_manager::discover(const uuid&, void*&)
+    bool plugin_manager::discover(const uuid& aId, void*& aResult)
     {
+        for (plugins_t::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
+            if ((*i)->discover(aId, aResult))
+                return true;
         return false;
     }
 
