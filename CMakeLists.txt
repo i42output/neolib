@@ -96,6 +96,7 @@ if(NEOLIB_TESTS)
   endfunction()
 
   add_neolib_test_executable(Task unit_tests/Task/Task.cpp)
+  add_neolib_test_executable(StringUtils unit_tests/StringUtils/src/StringUtils.cpp)
   add_neolib_test_executable(NoFussJSON unit_tests/NoFussJSON/src/NoFussJSONTest.cpp)
   add_neolib_test_executable(Event unit_tests/Event/src/Event.cpp)
   add_neolib_test_executable(Containers unit_tests/Containers/Containers.cpp)

@@ -38,6 +38,9 @@
 #include <neolib/neolib.hpp>
 #include <string>
 #include <vector>
+#include <list>
+#include <set>
+#include <variant>
 #include <locale>
 #include <neolib/core/string.hpp>
 #include <neolib/core/string_numeric.hpp>
@@ -163,7 +166,7 @@ namespace neolib
         return results;
     }
 
-    inline std::string to_string(const std::pair<std::string::const_iterator, std::string::const_iterator>& aIterPair)
+    inline std::string to_string(const std::pair<char const*, char const*>& aIterPair)
     {
         return std::string(aIterPair.first, aIterPair.second);
     }
@@ -431,4 +434,27 @@ namespace neolib
         return do_wildcard_match<CharT, Traits, std::basic_string<CharT, Traits, Alloc>::const_iterator>(aText.begin(), aText.end(), aPattern.begin(), aPattern.end());
     }
 
+    class string_search_fsa
+    {
+    private:
+        typedef std::function<void(char const*, char const*)> action_t;
+        struct state
+        {
+            std::map<char, state> match;
+            std::list<action_t> actions;
+        };
+        typedef std::tuple<const action_t*, char const*, char const*> result_t;
+        typedef std::set<result_t> results_t;
+    public:
+        string_search_fsa();
+    public:
+        void add_pattern(std::string const& aPattern, action_t aAction);
+        void search(std::string const& aText) const;
+    private:
+        void search(state const& aState, char const* aStart, char const* aNext, char const* aEnd, bool aSearchingWildcard, results_t& aResults) const;
+        void rebuild();
+    private:
+        std::map<std::string, action_t> iPatterns;
+        state iRoot;
+    };
 }
