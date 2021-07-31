@@ -58,6 +58,10 @@ namespace neolib
         const optional_host& host() const;
         const optional_port& port() const;
     private:
+        std::string parse_user_information(const std::string& aRest);
+        std::string parse_host(const std::string& aRest);
+        void parse_port(const std::string& aRest);
+    private:
         optional_user_information iUserInformation;
         optional_host iHost;
         optional_port iPort;

@@ -46,8 +46,7 @@ namespace neolib
 
     uri_authority::uri_authority(const std::string& aAuthority)
     {
-        /* todo */
-        (void)aAuthority;
+        parse_port(parse_host(parse_user_information(aAuthority)));
     }
     
     const uri_authority::optional_user_information& uri_authority::user_information() const
@@ -63,6 +62,43 @@ namespace neolib
     const uri_authority::optional_port& uri_authority::port() const
     {
         return iPort;
+    }
+
+    std::string uri_authority::parse_user_information(const std::string& aRest)
+    {
+        neolib::vecarray<std::pair<std::string::const_iterator, std::string::const_iterator>, 2> bits;
+        std::string sep("@");
+        neolib::tokens(aRest.begin(), aRest.end(), sep.begin(), sep.end(), bits, 2, false, false);
+        if (bits.size() == 2)
+        {
+            iUserInformation = std::string{ bits[0].first, bits[0].second };
+            return std::string{ bits[1].first, bits[1].second };
+        }
+        else if (bits.size() == 1)
+            return std::string{ bits[0].first, bits[0].second };
+        else
+            return {};
+    }
+
+    std::string uri_authority::parse_host(const std::string& aRest)
+    {
+        neolib::vecarray<std::pair<std::string::const_iterator, std::string::const_iterator>, 2> bits;
+        std::string sep(":");
+        neolib::tokens(aRest.begin(), aRest.end(), sep.begin(), sep.end(), bits, 2, false, false);
+        if (bits.size() == 2)
+        {
+            iHost = std::string{ bits[0].first, bits[0].second };
+            return std::string(bits[1].first, bits[1].second);
+        }
+        else if (bits.size() == 1)
+            iHost = std::string(bits[0].first, bits[0].second);
+        return {};
+    }
+
+    void uri_authority::parse_port(const std::string& aRest)
+    {
+        if (!aRest.empty())
+            iPort = static_cast<port_type>(std::stoi(aRest));
     }
 
     uri::uri()
@@ -162,7 +198,7 @@ namespace neolib
                 escaped += *i;
             else if (i < aString.end() - 3)
             {
-                escaped += static_cast<char>(string_to_uint32(std::string(i + 1, i + 3), 16));
+                escaped += static_cast<char>(string_to_uint32(std::string{ i + 1, i + 3 }, 16));
                 i += 2;
             }
         return escaped;
@@ -171,17 +207,17 @@ namespace neolib
     std::string uri::parse_path(const std::string& aRest)
     {
         neolib::vecarray<std::pair<std::string::const_iterator, std::string::const_iterator>, 2> bits;
-        std::string sep("/");
+        std::string sep{ "/" };
         neolib::tokens(aRest.begin(), aRest.end(), sep.begin(), sep.end(), bits, 2, false, false);
         if (bits.size() == 2)
-            iPath = unescaped(std::string(bits[1].first, aRest.end()));
-        return std::string(bits.front().first, bits.front().second);
+            iPath = unescaped(std::string{ bits[1].first, aRest.end() });
+        return std::string{ bits[0].first, bits[0].second };
     }
 
     std::string uri::parse_query(const std::string& aRest)
     {
         neolib::vecarray<std::string, 2> bits;
-        neolib::tokens(aRest, std::string("?"), bits, 2, false, false);
+        neolib::tokens(aRest, std::string{ "?" }, bits, 2, false, false);
         if (bits.size() == 2)
             iQuery = unescaped(bits[1]);
         return bits.front();
@@ -190,7 +226,7 @@ namespace neolib
     std::string uri::parse_fragment(const std::string& aRest)
     {
         neolib::vecarray<std::string, 2> bits;
-        neolib::tokens(aRest, std::string("#"), bits, 2, false, false);
+        neolib::tokens(aRest, std::string{ "#" }, bits, 2, false, false);
         if (bits.size() == 2)
             iFragment = unescaped(bits[1]);
         return bits.front();
@@ -199,7 +235,7 @@ namespace neolib
     std::string uri::parse_scheme(const std::string& aRest)
     {
         neolib::vecarray<std::string, 2> bits;
-        neolib::tokens(aRest, std::string("://"), bits, 2, false, true);
+        neolib::tokens(aRest, std::string{ "://" }, bits, 2, false, true);
         if (bits.size() == 2)
             iScheme = unescaped(bits[0]);
         return bits.back();
