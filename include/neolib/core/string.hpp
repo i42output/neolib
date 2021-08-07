@@ -63,6 +63,7 @@ namespace neolib
         typedef typename container_iterator::abstract_iterator abstract_iterator;
         // construction
     public:
+        string(size_type aCount, value_type aChar) : iString(aCount, aChar) {}
         string(const char* aString) : iString{ aString } {}
         string(const char* aString, std::size_t aLength) : iString{ aString, aLength } {}
         string(const std::string& aString = {}) : iString{ aString } {}

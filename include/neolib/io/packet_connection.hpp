@@ -575,11 +575,10 @@ namespace neolib
                         iReceivePacket->clear();
                     }
                 }
-                std::copy(
+                iReceiveBufferPtr = std::copy(
                     reinterpret_cast<typename receive_buffer::const_pointer>(start), 
                     reinterpret_cast<typename receive_buffer::const_pointer>(iReceiveBufferPtr + aBytesTransferred),
                     &iReceiveBuffer[0]);
-                iReceiveBufferPtr = &iReceiveBuffer[iReceiveBufferPtr + aBytesTransferred - reinterpret_cast<typename receive_buffer::const_pointer>(start)];
                 receive_any();
             }
             else

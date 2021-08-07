@@ -1022,7 +1022,7 @@ namespace neolib
         return aStream;
     }
 
-    typedef basic_quick_string<char> quick_string;
+    typedef basic_quick_string<char> quick_string;             
 
     template <typename charT, typename Traits, typename Alloc>
     inline std::size_t hash_value(const neolib::basic_quick_string<charT, Traits, Alloc>& sv) noexcept
