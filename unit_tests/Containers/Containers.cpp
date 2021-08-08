@@ -95,6 +95,19 @@ int main()
     tree.sort();
     for (auto i = tree.begin(); i != tree.end(); ++i)
         std::cout << std::string(i.depth() * 4, ' ') << *i << " (" << i.descendent_count() << ")" << std::endl;
+
+    std::cout << std::endl;
+    std::cout << "Tree after leaf node erase:-" << std::endl;
+    tree.erase(components);
+    for (auto const& e : tree)
+        std::cout << e << std::endl;
+
+    std::cout << std::endl;
+    std::cout << "Tree after branch node erase:-" << std::endl;
+    tree.erase(people);
+    for (auto const& e : tree)
+        std::cout << e << std::endl;
+
     /*
     std::cout << std::endl;
     std::cout << "Just Animals:-" << std::endl;
