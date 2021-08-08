@@ -311,7 +311,7 @@ namespace neolib
                     event_mutex().unlock();
                 }
             }
-            if (std::next(e) == currentContext.end() || std::next(e)->transaction != *currentTransaction)
+            if (!e->destroyed && (std::next(e) == currentContext.end() || std::next(e)->transaction != *currentTransaction))
                 ec.event().pop_context();
         }
         return didSome;
