@@ -2,8 +2,6 @@
 #include <string>
 #include <neolib/core/tree.hpp>
 
-template class neolib::segmented_tree<std::string, 64, std::allocator<std::string>>; 
-
 void TestTree()
 {
     neolib::tree<std::string> tree;
@@ -64,7 +62,7 @@ void TestTree()
     for (auto i = tree.begin(); i != tree.end(); ++i)
         std::cout << std::string(i.depth() * 4, ' ') << *i << " (" << i.descendent_count() << ")" << std::endl;
 
-    shapes = std::find(tree.sbegin(), tree.send(), "Shapes");
+    shapes = std::find(tree.begin(), tree.end(), "Shapes");
     tree.erase(shapes);
     std::cout << std::endl;
     std::cout << "Tree after branch node erase:-" << std::endl;
