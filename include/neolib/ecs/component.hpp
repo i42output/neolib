@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <atomic>
 #include <vector>
 #include <unordered_map>
 #include <string>

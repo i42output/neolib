@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <atomic>
 #include <neolib/core/mutex.hpp>
 #include <neolib/task/async_task.hpp>
 #include <neolib/task/timer.hpp>

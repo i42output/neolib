@@ -64,6 +64,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <atomic>
 #include <mutex>
 #include <boost/thread/locks.hpp>
 #include <boost/lockfree/detail/prefix.hpp>

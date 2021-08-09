@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <atomic>
 #include <neolib/core/lifetime.hpp>
 #include <neolib/core/dirty_list.hpp>
 #include <neolib/task/i_thread.hpp>
