@@ -99,7 +99,7 @@ if(NEOLIB_TESTS)
   add_neolib_test_executable(StringUtils unit_tests/StringUtils/src/StringUtils.cpp)
   add_neolib_test_executable(NoFussJSON unit_tests/NoFussJSON/src/NoFussJSONTest.cpp)
   add_neolib_test_executable(Event unit_tests/Event/src/Event.cpp)
-  add_neolib_test_executable(Containers unit_tests/Containers/Containers.cpp)
+  add_neolib_test_executable(Containers unit_tests/Containers/Containers.cpp unit_tests/Containers/Tree.cpp)
   add_neolib_test_executable(Logger unit_tests/Logger/Logger.cpp)
 
 endif()
