@@ -69,6 +69,26 @@ void TestTree()
     for (auto i = tree.begin(); i != tree.end(); ++i)
         std::cout << std::string(i.depth() * 4, ' ') << *i << " (" << i.descendent_count() << ")" << std::endl;
 
+    neolib::tree<std::string> tree2;
+    auto connections = tree2.insert(tree2.send(), "Connections");
+    auto identity = tree2.insert(connections.end(), "Identity");
+    auto network = tree2.insert(identity.end(), "Network");
+    auto console = tree2.insert(network.end(), "Console");
+    auto channel = tree2.insert(network.end(), "Channel");
+
+    std::cout << std::endl;
+    std::cout << "Entire tree2 (with depth):-" << std::endl;
+    for (auto i = tree2.begin(); i != tree2.end(); ++i)
+        std::cout << std::string(i.depth() * 4, ' ') << *i << std::endl;
+
+    tree2.erase(console);
+    tree2.erase(network);
+
+    std::cout << std::endl;
+    std::cout << "Entire tree2 after erase (with depth):-" << std::endl;
+    for (auto i = tree2.begin(); i != tree2.end(); ++i)
+        std::cout << std::string(i.depth() * 4, ' ') << *i << std::endl;
+
     /*
     std::cout << std::endl;
     std::cout << "Just Animals:-" << std::endl;

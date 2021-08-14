@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <variant>
 #include <neolib/core/i_iterator.hpp>
 #include <neolib/core/segmented_array.hpp>
 
@@ -78,13 +79,9 @@ namespace neolib
                 iSkipChildren{ other.iSkipChildren },
                 iDescendentCount{ other.iDescendentCount },
                 iSkippedDescendentCount{ other.iSkippedDescendentCount },
-                iContents{ root_place_holder{} }
+                iContents{ other.iContents }
             {
-                if (!is_root())
-                {
-                    iContents.root.~root_place_holder();
-                    new (&iContents.value) value_type{ other.iContents.value };
-                }
+                update_parents(*this);
             }
             node(node&& other) :
                 iParent{},
@@ -98,11 +95,7 @@ namespace neolib
                 std::swap(iSkipChildren, other.iSkipChildren);
                 std::swap(iDescendentCount, other.iDescendentCount);
                 std::swap(iSkippedDescendentCount, other.iSkippedDescendentCount);
-                if (!is_root())
-                {
-                    iContents.root.~root_place_holder();
-                    new (&iContents.value) value_type{ std::move(other.iContents.value) };
-                }
+                std::swap(iContents, other.iContents);
                 update_parents(*this);
             }
             node(node& parent, const value_type& value) :
@@ -115,10 +108,6 @@ namespace neolib
             }
             ~node()
             {
-                if (!is_root())
-                {
-                    iContents.value.~value_type();
-                }
             }
         public:
             node& operator=(const node& other)
@@ -128,10 +117,8 @@ namespace neolib
                 iSkipChildren = other.iSkipChildren;
                 iDescendentCount = other.iDescendentCount;
                 iSkippedDescendentCount = other.iSkippedDescendentCount;
-                if (!other.is_root())
-                    iContents.value = other.iContents.value;
-                else
-                    iContents.root = other.iContents.root;
+                iContents = other.iContents;
+                update_parents(*this);
                 return *this;
             }
             node& operator=(node&& other)
@@ -141,8 +128,7 @@ namespace neolib
                 std::swap(iSkipChildren, other.iSkipChildren);
                 std::swap(iDescendentCount, other.iDescendentCount);
                 std::swap(iSkippedDescendentCount, other.iSkippedDescendentCount);
-                if (!is_root())
-                    std::swap(iContents.value, other.iContents.value);
+                std::swap(iContents, other.iContents);
                 update_parents(*this);
                 return *this;
             }
@@ -165,11 +151,11 @@ namespace neolib
             }
             const value_type& value() const 
             { 
-                return iContents.value; 
+                return std::get<value_type>(iContents);
             }
             value_type& value() 
             { 
-                return iContents.value; 
+                return std::get<value_type>(iContents);
             }
             const child_list& children() const 
             { 
@@ -261,14 +247,7 @@ namespace neolib
             bool iSkipChildren;
             std::size_t iDescendentCount;
             std::size_t iSkippedDescendentCount;
-            union contents
-            {
-                value_type value;
-                root_place_holder root;
-                contents(const value_type& value) : value{ value } {}
-                contents(const root_place_holder& root) : root{ root } {}
-                ~contents() {}
-            } iContents;
+            std::variant<value_type, root_place_holder> iContents;
         };
         typedef typename node::child_list node_child_list;
         typedef typename node::child_list::const_iterator node_child_list_const_iterator;
