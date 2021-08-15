@@ -38,6 +38,7 @@
 #include <neolib/neolib.hpp>
 #include <deque>
 #include <optional>
+#include <map>
 #include <neolib/task/async_task.hpp>
 #include <neolib/task/i_message_queue.hpp>
 
