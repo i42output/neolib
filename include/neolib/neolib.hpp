@@ -41,6 +41,7 @@
 #include <utility>
 #include <variant>
 #include <optional>
+#include <chrono>
 
 #include <neolib/neolib_export.hpp>
 
@@ -51,6 +52,41 @@ constexpr bool ndebug = false;
 #endif
 
 #define rvalue_cast static_cast
+
+#define GENERATE_HAS_MEMBER_TYPE(Type)                                            \
+                                                                                  \
+template <class T, bool OK = std::is_class_v<T>>                                  \
+class HasMemberType_##Type                                                        \
+{                                                                                 \
+public:                                                                           \
+    static constexpr bool RESULT = false;                                         \
+};                                                                                \
+                                                                                  \
+template <class T>                                                                \
+class HasMemberType_##Type<T, true>                                               \
+{                                                                                 \
+private:                                                                          \
+    using Yes = char[2];                                                          \
+    using  No = char[1];                                                          \
+                                                                                  \
+    struct Fallback { struct Type { }; };                                         \
+    struct Derived : T, Fallback { };                                             \
+                                                                                  \
+    template < class U >                                                          \
+    static No& test ( typename U::Type* );                                        \
+    template < typename U >                                                       \
+    static Yes& test ( U* );                                                      \
+                                                                                  \
+public:                                                                           \
+    static constexpr bool RESULT = sizeof(test<Derived>(nullptr)) == sizeof(Yes); \
+};                                                                                \
+                                                                                  \
+template < class T >                                                              \
+struct has_member_type_##Type                                                     \
+: public std::integral_constant<bool, HasMemberType_##Type<T>::RESULT>            \
+{ };   
+
+GENERATE_HAS_MEMBER_TYPE(abstract_type)
 
 namespace neolib
 {
@@ -91,7 +127,7 @@ namespace neolib
         constexpr bool is_pair_v = is_pair<T>::value;
 
         template <typename T>
-        constexpr bool abstract_class_possible_v = std::is_class_v<T> && !is_pair_v<T>;
+        constexpr bool abstract_class_possible_v = std::is_class_v<T> && has_member_type_abstract_type<T>::value;
 
         template <typename T, typename AT, typename = sfinae>
         struct correct_const;
@@ -119,6 +155,8 @@ namespace neolib
         struct abstract_type<const std::pair<T1, pair<T1, T2>>> : std::false_type { typedef typename abstract_type<const pair<T1, T2>>::type type; };
         template <>
         struct abstract_type<std::monostate> : std::true_type { typedef std::monostate type; };
+        template <typename Rep, typename Period>
+        struct abstract_type<std::chrono::duration<Rep, Period>> : std::true_type { typedef std::chrono::duration<Rep, Period> type; };
     }
 
     template <typename T>

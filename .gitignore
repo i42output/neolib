@@ -19,3 +19,12 @@
 /unit_tests/Event/build/win32/vs2019/Event/Event.vcxproj.user
 /build/win32/vs2019/.vs
 /stage
+/build/win32/vs2017/Debug
+/build/win32/vs2017/Release
+/build/win32/vs2017/x64/Debug
+/build/win32/vs2017/x64/Release
+/unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/Debug
+/unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/*.user
+/build/win32/vs2017/.vs/neolib/v15
+/build/win32/vs2017/*.user
+/unit_tests/NoFussJSON/build/win32/vs2017/NoFussJSONTest/.vs/NoFussJSONTest/v15
