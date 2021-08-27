@@ -96,6 +96,9 @@ namespace neolib
         virtual void load() = 0;
         virtual void save() const = 0;
     public:
+        virtual void changing_setting(i_setting const& aSetting) = 0;
+        virtual void changed_setting(i_setting const& aSetting) = 0;
+    public:
         static uuid const& iid() { static uuid sId = neolib::make_uuid("E19B3C48-04F7-4207-B24A-2967A3523CE7"); return sId; }
         // helpers
     public:

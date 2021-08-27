@@ -120,7 +120,7 @@ namespace neolib
             {
                 iEnabled = aEnabled;
                 Changed.trigger();
-                iManager.setting_changed().trigger(*this);
+                iManager.changed_setting(*this);
             }
         }
         bool is_default(bool aUnappliedNew = false) const override
@@ -171,7 +171,7 @@ namespace neolib
                 if (is_default())
                 {
                     Changed.trigger();
-                    iManager.setting_changed().trigger(*this);
+                    iManager.changed_setting(*this);
                 }
             }
         }
@@ -184,14 +184,14 @@ namespace neolib
                 {
                     iNewValue = aNewValue;
                     Changing.trigger();
-                    iManager.setting_changing().trigger(*this);
+                    iManager.changing_setting(*this);
                 }
             }
             else if (modified())
             {
                 iNewValue = std::nullopt;
                 Changing.trigger();
-                iManager.setting_changing().trigger(*this);
+                iManager.changing_setting(*this);
             }
         }
         void set_value_from_string(i_string const& aNewValue) override
@@ -212,7 +212,7 @@ namespace neolib
             else
                 iNewValue.emplace();
             Changing.trigger();
-            iManager.setting_changing().trigger(*this);
+            iManager.changing_setting(*this);
         }
     protected:
         i_setting_value& temp_setting_value() override
@@ -233,12 +233,12 @@ namespace neolib
                 if (changed)
                 {
                     Changed.trigger();
-                    iManager.setting_changed().trigger(*this);
+                    iManager.changed_setting(*this);
                 }
                 else
                 {
                     Changing.trigger();
-                    iManager.setting_changing().trigger(*this);
+                    iManager.changing_setting(*this);
                 }
                 return true;
             }
@@ -250,7 +250,7 @@ namespace neolib
             {
                 iNewValue = std::nullopt;
                 Changing.trigger();
-                iManager.setting_changing().trigger(*this);
+                iManager.changing_setting(*this);
                 return true;
             }
             return false;

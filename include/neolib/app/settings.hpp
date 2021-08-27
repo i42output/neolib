@@ -93,8 +93,12 @@ namespace neolib
     public:
         void load() override;
         void save() const override;
+    public:
+        void changing_setting(i_setting const& aSetting) override;
+        void changed_setting(i_setting const& aSetting) override;
     private:
         string iFileName;
+        mutable bool iModified = false;
         mutable std::unique_ptr<xml> iStore;
         category_titles iCategoryTitles;
         group_titles iGroupTitles;

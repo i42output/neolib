@@ -199,7 +199,7 @@ namespace neolib
         for (auto const& setting: iSettings)
             if (setting.second()->modified())
                 return true;
-        return false;
+        return iModified;
     }
 
     void settings::register_friendly_text(i_setting const& aSetting, i_string const& aText, i_string const& aFriendlyText)
@@ -256,5 +256,17 @@ namespace neolib
             }
             iStore->write(output);
         }
+        iModified = false;
+    }
+
+    void settings::changing_setting(i_setting const& aSetting)
+    {
+        setting_changing().trigger(aSetting);
+    }
+
+    void settings::changed_setting(i_setting const& aSetting)
+    {
+        iModified = true;
+        setting_changed().trigger(aSetting);
     }
 }
