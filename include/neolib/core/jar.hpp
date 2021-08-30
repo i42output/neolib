@@ -336,12 +336,12 @@ namespace neolib
                 std::swap(cookie, allocated_cookies().back());
                 reverse_indices()[cookie] = reverseIndex;
             }
-            items().pop_back();
-            allocated_cookies().pop_back();
-            iterator result = std::next(items().begin(), reverseIndex);
+            auto resultIndex = reverseIndex;
             reverseIndex = INVALID_REVERSE_INDEX;
+            allocated_cookies().pop_back();
             return_cookie(aCookie);
-            return result;
+            items().pop_back();
+            return resultIndex < items().size() ? std::next(items().begin(), resultIndex) : items().end();
         }
     public:
         cookie_type item_cookie(abstract_t<value_type> const& aItem) const override
