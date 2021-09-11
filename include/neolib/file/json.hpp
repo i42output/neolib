@@ -439,6 +439,31 @@ namespace neolib
         {
         }
     public:
+        typename array_type::const_iterator cbegin() const
+        {
+            return cache().begin();
+        }
+        typename array_type::const_iterator cend() const
+        {
+            return cache().end();
+        }
+        typename array_type::const_iterator begin() const
+        {
+            return cache().begin();
+        }
+        typename array_type::const_iterator end() const
+        {
+            return cache().end();
+        }
+        typename array_type::iterator begin()
+        {
+            return cache().begin();
+        }
+        typename array_type::iterator end()
+        {
+            return cache().end();
+        }
+    public:
         json_value& push_back(const value_type& aValue)
         {
             auto& newChild = contents().emplace_back(aValue);
