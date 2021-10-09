@@ -151,7 +151,8 @@ namespace neolib
             return iList.max_size(); 
         }
         void reserve(size_type aCapacity) override 
-        { /* do nothing */ 
+        { 
+            /* do nothing */ 
         }
         void resize(size_type aSize) override 
         { 

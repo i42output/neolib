@@ -41,14 +41,14 @@
 #include <iostream>
 #include <boost/algorithm/string.hpp>
 #include <neolib/core/fwd_abstract.hpp>
-#include <neolib/core/i_random_access_container.hpp>
+#include <neolib/core/i_contiguous_random_access_container.hpp>
 
 namespace neolib
 {
-    class i_string : public i_random_access_container<char>
+    class i_string : public i_contiguous_random_access_container<char>
     {
         typedef i_string self_type;
-        typedef i_random_access_container<char> base_type;
+        typedef i_contiguous_random_access_container<char> base_type;
     public:
         typedef self_type abstract_type;
     public:

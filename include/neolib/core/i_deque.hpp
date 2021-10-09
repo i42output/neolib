@@ -1,6 +1,6 @@
-// i_random_access_container.hpp
+// i_deque.hpp
 /*
- *  Copyright (c) 2019, 2020 Leigh Johnston.
+ *  Copyright (c) 2021 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -36,26 +36,25 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <neolib/core/i_sequence_container.hpp>
+#include <neolib/core/i_random_access_container.hpp>
 
 namespace neolib
 {
     template <typename T>
-    class i_random_access_container : public i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T>>
+    class i_deque : public i_random_access_container<T>
     {
-        typedef i_random_access_container<T> self_type;
-        typedef i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T>> base_type;
+        typedef i_deque<T> self_type;
+        typedef i_random_access_container<T> base_type;
     public:
         typedef self_type abstract_type;
+        using typename base_type::const_iterator;
+        using typename base_type::iterator;
+        using typename base_type::const_reverse_iterator;
+        using typename base_type::reverse_iterator;
     public:
-        using typename base_type::value_type;
-        using typename base_type::size_type;
-    public:
-        using base_type::size;
-    public:
-        virtual const value_type& at(size_type aIndex) const = 0;
-        virtual value_type& at(size_type aIndex) = 0;
-        virtual const value_type& operator[](size_type aIndex) const = 0;
-        virtual value_type& operator[](size_type aIndex) = 0;
+        virtual void push_front(const T& aValue) = 0;
+        virtual void pop_front() = 0;
+        virtual const T& front() const = 0;
+        virtual T& front() = 0;
     };
 }

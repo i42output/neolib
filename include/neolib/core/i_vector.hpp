@@ -36,17 +36,19 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <neolib/core/i_random_access_container.hpp>
+#include <neolib/core/i_contiguous_random_access_container.hpp>
 
 namespace neolib
 {
     template <typename T>
-    class i_vector : public i_random_access_container<T>
+    class i_vector : public i_contiguous_random_access_container<T>
     {
         typedef i_vector<T> self_type;
-        typedef i_random_access_container<T> base_type;
+        typedef i_contiguous_random_access_container<T> base_type;
     public:
         typedef self_type abstract_type;
+    public:
+        using typename base_type::value_type;
         using typename base_type::const_iterator;
         using typename base_type::iterator;
         using typename base_type::const_reverse_iterator;
