@@ -39,7 +39,7 @@
 #include <unordered_map>
 #include <neolib/core/i_mutex.hpp>
 #include <neolib/task/thread_pool.hpp>
-#include <neolib/plugin/plugin_event.hpp>
+#include <neolib/task/event.hpp>
 #include <neolib/app/i_object.hpp>
 #include <neolib/ecs/ecs_ids.hpp>
 #include <neolib/ecs/i_entity_archetype.hpp>

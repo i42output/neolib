@@ -35,9 +35,11 @@
 
 #include <neolib/neolib.hpp>
 #include <boost/asio.hpp>
+#include <neolib/core/scoped.hpp>
 #include <neolib/task/thread.hpp>
 #include <neolib/task/async_task.hpp>
 #include <neolib/task/timer_object.hpp>
+#include <neolib/task/event.hpp>
 
 #ifdef _WIN32
 #include "../win32/task/win32_message_queue.hpp"
@@ -173,13 +175,11 @@ namespace neolib
     async_task::async_task(const std::string& aName) :
         task{ aName }, iThread{ nullptr }, iState{ async_task_state::Init }
     {
-        Destroying.ignore_errors();
     }
 
     async_task::async_task(i_thread& aThread, const std::string& aName) :
         task{ aName }, iThread{ &aThread }, iState{ async_task_state::Init }
     {
-        Destroying.ignore_errors();
     }
 
     async_task::~async_task()
@@ -230,6 +230,7 @@ namespace neolib
         if (halted())
             return false;
         bool didSome = false;
+        didSome = (async_event_queue::instance().pump_events() || didSome);
         didSome = (pump_messages() || didSome);
         if (iTimerService)
             didSome = (iTimerService->poll() || didSome);
@@ -323,13 +324,7 @@ namespace neolib
     {
         if (is_alive())
         {
-            try
-            {
-                Destroying.trigger();
-            }
-            catch (event_queue_destroyed)
-            {
-            }
+            Destroying.trigger();
             lifetime::set_destroying();
         }
     }

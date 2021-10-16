@@ -40,7 +40,7 @@
 #include <neolib/task/i_thread.hpp>
 #include <neolib/task/i_message_queue.hpp>
 #include <neolib/task/i_task.hpp>
-#include <neolib/plugin/i_plugin_event.hpp>
+#include <neolib/task/i_event.hpp>
 
 namespace neolib
 {

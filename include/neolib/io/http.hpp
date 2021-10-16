@@ -43,7 +43,7 @@
 #include <variant>
 #include <chrono>
 #include <neolib/core/string_ci.hpp>
-#include <neolib/plugin/plugin_event.hpp>
+#include <neolib/task/event.hpp>
 #include <neolib/io/packet_stream.hpp>
 #include <neolib/io/string_packet.hpp>
 

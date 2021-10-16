@@ -43,7 +43,7 @@
 #include <neolib/task/task.hpp>
 #include <neolib/task/i_async_task.hpp>
 #include <neolib/task/i_timer_object.hpp>
-#include <neolib/plugin/plugin_event.hpp>
+#include <neolib/task/event.hpp>
 
 namespace neolib
 {

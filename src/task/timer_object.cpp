@@ -34,6 +34,7 @@
  */
 
 #include <neolib/neolib.hpp>
+#include <neolib/core/scoped.hpp>
 #include <neolib/task/timer_object.hpp>
 
 namespace neolib

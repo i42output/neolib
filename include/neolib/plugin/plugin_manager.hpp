@@ -42,7 +42,7 @@
 #include <neolib/core/vector.hpp>
 #include <neolib/core/reference_counted.hpp>
 #include <neolib/app/module.hpp>
-#include <neolib/plugin/plugin_event.hpp>
+#include <neolib/task/event.hpp>
 #include <neolib/plugin/i_plugin_manager.hpp>
 #include <neolib/app/i_application.hpp>
 

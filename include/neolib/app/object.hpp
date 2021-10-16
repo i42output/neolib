@@ -38,7 +38,7 @@
 #include <neolib/neolib.hpp>
 #include <neolib/core/lifetime.hpp>
 #include <neolib/task/event.hpp>
-#include <neolib/plugin/plugin_event.hpp>
+#include <neolib/task/event.hpp>
 #include <neolib/app/i_object.hpp>
 
 namespace neolib

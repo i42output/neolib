@@ -39,7 +39,7 @@
 #include <stdexcept>
 #include <vector>
 #include <neolib/task/i_async_task.hpp>
-#include <neolib/plugin/plugin_event.hpp>
+#include <neolib/task/event.hpp>
 #include <neolib/io/i_packet.hpp>
 #include <neolib/io/binary_packet.hpp>
 #include <neolib/io/string_packet.hpp>

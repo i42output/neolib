@@ -42,7 +42,7 @@
 #include <neolib/core/uuid.hpp>
 #include <neolib/core/i_string.hpp>
 #include <neolib/plugin/simple_variant.hpp>
-#include <neolib/plugin/i_plugin_event.hpp>
+#include <neolib/task/i_event.hpp>
 #include <neolib/app/i_setting.hpp>
 #include <neolib/app/setting_constraints.hpp>
 

@@ -42,8 +42,6 @@
 
 namespace neolib
 {
-    class async_event_queue;
-
     class NEOLIB_EXPORT async_thread : public thread
     {
         // types

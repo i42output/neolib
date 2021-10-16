@@ -40,11 +40,23 @@ class counter
 {
 public:
 	neolib::event<int> new_integer;
+	neolib::event<int&> new_integer_ref;
+	std::vector<std::shared_ptr<int>> refs;
 public:
 	void count(int n)
 	{
 		for (int i = 1; i <= n; ++i)
 			new_integer.trigger(i);
+		for (int i = 1; i <= n; ++i)
+			new_integer_ref.trigger(i);
+		for (int i = 1; i <= n; ++i)
+			new_integer.async_trigger(i);
+		for (int i = 1; i <= n; ++i)
+		{
+			refs.push_back(std::make_shared<int>(i));
+			int& ref = *refs.back();
+			new_integer_ref.async_trigger(ref);
+		}
 	}
 };
 
@@ -63,11 +75,29 @@ int main()
 		counter c;
 		{
 			neolib::sink localSink;
-			localSink += c.new_integer([](int n) { std::cout << "in sink: " << n << std::endl; });
-			localSink += c.new_integer([](int n) { std::cout << "in sink: " << n << std::endl; });
-			c.new_integer([](int n) { std::cout << "not in sink: " << n << std::endl; });
+			localSink += c.new_integer([](int n) 
+				{ 
+					std::cout << "in sink: " << n << std::endl; 
+				});
+			localSink += ~~~~c.new_integer([](int n) 
+				{ 
+					std::cout << "in sink: " << n << std::endl; 
+				});
+			localSink += c.new_integer_ref([](int& n) 
+				{ 
+					std::cout << "in sink: " << n << std::endl; 
+				});
+			localSink += ~~~~c.new_integer_ref([](int& n) 
+				{ 
+					std::cout << "in sink: " << n << std::endl; 
+				});
+			c.new_integer([](int n) 
+				{ 
+					std::cout << "not in sink: " << n << std::endl; 
+				});
 			c.count(10);
 		}
 		c.count(10); // should only print "not in sink"
+		neolib::async_event_queue::instance().pump_events();
 	}
 }

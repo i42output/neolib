@@ -37,7 +37,6 @@
 
 #include <atomic>
 #include <neolib/neolib.hpp>
-#include <neolib/core/jar.hpp>
 
 namespace neolib
 {

@@ -40,7 +40,7 @@
 #include <neolib/core/i_vector.hpp>
 #include <neolib/core/string.hpp>
 #include <neolib/core/i_discoverable.hpp>
-#include <neolib/plugin/i_plugin_event.hpp>
+#include <neolib/task/i_event.hpp>
 #include <neolib/plugin/i_plugin.hpp>
 
 namespace neolib

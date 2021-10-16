@@ -45,7 +45,7 @@
 #include <neolib/core/string.hpp>
 #include <neolib/core/i_custom_type_factory.hpp>
 #include <neolib/file/xml.hpp>
-#include <neolib/plugin/plugin_event.hpp>
+#include <neolib/task/event.hpp>
 #include <neolib/app/i_application.hpp>
 #include <neolib/app/setting.hpp>
 #include <neolib/app/i_settings.hpp>

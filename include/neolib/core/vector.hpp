@@ -67,22 +67,22 @@ namespace neolib
         // construction
     public:
         vector() {}
-        vector(const vector& aOther) : 
+        vector(vector const& aOther) :
             iVector(aOther.iVector) {}
         vector(vector&& aOther) : 
             iVector(std::move(aOther.iVector)) {}
-        vector(const i_vector<abstract_value_type>& aOther) 
+        vector(i_vector<abstract_value_type> const& aOther)
         { 
             assign(aOther); 
         }
-        vector(const std_type& aOtherContainer) : 
+        vector(std_type const& aOtherContainer) :
             iVector(aOtherContainer) {}
         vector(std::initializer_list<value_type> aValues) : 
             iVector{ aValues } {}
         template <typename InputIter>
         vector(InputIter aFirst, InputIter aLast) : 
             iVector(aFirst, aLast) {}
-        vector& operator=(const vector& aOther) 
+        vector& operator=(vector const& aOther)
         { 
             assign(aOther); 
             return *this; 
@@ -92,7 +92,7 @@ namespace neolib
             iVector = std::move(aOther.iVector); 
             return *this; 
         }
-        vector& operator=(const i_vector<abstract_value_type>& aOther) 
+        vector& operator=(i_vector<abstract_value_type> const& aOther)
         { 
             assign(aOther); 
             return *this; 
@@ -134,7 +134,7 @@ namespace neolib
         { 
             iVector.clear(); 
         }
-        void assign(const generic_container_type& aOther) override 
+        void assign(generic_container_type const& aOther) override
         { 
             if (&aOther == this) 
                 return; clear(); 
@@ -159,13 +159,13 @@ namespace neolib
         { 
             return new (memory) container_iterator(iVector.end()); 
         }
-        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override 
+        abstract_iterator* do_erase(void* memory, abstract_const_iterator const& aPosition) override
         { 
-            return new (memory) container_iterator(iVector.erase(static_cast<const container_const_iterator&>(aPosition))); 
+            return new (memory) container_iterator(iVector.erase(static_cast<container_const_iterator const&>(aPosition)));
         }
-        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override 
+        abstract_iterator* do_erase(void* memory, abstract_const_iterator const& aFirst, abstract_const_iterator const& aLast) override
         { 
-            return new (memory) container_iterator(iVector.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); 
+            return new (memory) container_iterator(iVector.erase(static_cast<container_const_iterator const&>(aFirst), static_cast<container_const_iterator const&>(aLast)));
         }
         // from i_sequence_container
     public:
@@ -186,11 +186,11 @@ namespace neolib
             else
                 throw std::logic_error{ "neolib::vector::value_type not default constructible" }; 
         }
-        void resize(size_type aSize, const abstract_value_type& aValue) override 
+        void resize(size_type aSize, abstract_value_type const& aValue) override
         { 
             iVector.resize(aSize, aValue); 
         }
-        void push_back(const abstract_value_type& aValue) override 
+        void push_back(abstract_value_type const& aValue) override
         { 
             iVector.push_back(aValue); 
         }
@@ -257,9 +257,9 @@ namespace neolib
         }
         // from i_sequence_container
     private:
-        abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const abstract_value_type& aValue) override 
+        abstract_iterator* do_insert(void* memory, abstract_const_iterator const& aPosition, abstract_value_type const& aValue) override
         { 
-            return new (memory) container_iterator(iVector.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); 
+            return new (memory) container_iterator(iVector.insert(static_cast<container_const_iterator const&>(aPosition), aValue));
         }
         // attributes
     private:

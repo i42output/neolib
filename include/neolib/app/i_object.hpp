@@ -38,7 +38,7 @@
 #include <neolib/neolib.hpp>
 #include <type_traits>
 #include <neolib/core/i_lifetime.hpp>
-#include <neolib/plugin/i_plugin_event.hpp>
+#include <neolib/task/i_event.hpp>
 
 namespace neolib
 {

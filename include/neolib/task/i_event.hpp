@@ -1,6 +1,6 @@
-// event.hpp
+// i_event.hpp
 /*
- *  Copyright (c) 2015, 2018, 2020 Leigh Johnston.
+ *  Copyright (c) 2021 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -36,18 +36,13 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <functional>
 #include <neolib/core/mutex.hpp>
-#include <neolib/core/i_reference_counted.hpp>
-#include <neolib/core/jar.hpp>
-#include <neolib/core/i_map.hpp>
+#include <neolib/core/lifetime.hpp>
+#include <neolib/core/reference_counted.hpp>
 
 namespace neolib
 {
-    struct event_callable_expired : std::logic_error { event_callable_expired() : std::logic_error{ "neolib::event_callable_expired" } {} };
-    struct event_destroyed : std::logic_error { event_destroyed() : std::logic_error{ "neolib::event_destroyed" } {} };
-    struct event_queue_destroyed : std::logic_error { event_queue_destroyed() : std::logic_error{ "neolib::event_queue_destroyed" } {} };
-    struct event_handler_not_found : std::logic_error { event_handler_not_found() : std::logic_error{ "neolib::event_handler_not_found" } {} };
-
     inline switchable_mutex& event_mutex()
     {
         static switchable_mutex sMutex;
@@ -67,141 +62,236 @@ namespace neolib
         }
     }
 
+    template <typename... Args>
     class i_event;
-
-    class i_event_control
+        
+    class i_slot_base : public i_reference_counted, public i_lifetime
     {
     public:
-        virtual ~i_event_control() = default;
+        typedef i_slot_base abstract_type;
     public:
-        virtual void add_ref() noexcept = 0;
-        virtual void release() noexcept = 0;
-        virtual bool valid() const noexcept = 0;
-        virtual i_event& get() const = 0;
-    public:
-        virtual void reset() noexcept = 0;
+        virtual void remove() = 0;
     };
 
-    class i_event_handle
+    template <typename... Args>
+    class i_slot : public i_slot_base
     {
     public:
-        struct no_control : std::logic_error { no_control() : std::logic_error{ "neolib::i_event_handle::no_control" } {} };
+        typedef i_slot abstract_type;
     public:
-        typedef i_event_handle abstract_type;
-    public:
-        virtual ~i_event_handle() noexcept = default;
-    public:
-        virtual i_event_handle& operator=(const i_event_handle& aRhs) noexcept = 0;
-        virtual i_event_handle& operator=(i_event_handle&& aRhs) noexcept = 0;
-    public:
-        virtual bool have_control() const noexcept = 0;
-        virtual i_event_control& control() const = 0;
-        virtual cookie id() const noexcept = 0;
-        virtual bool active() const noexcept = 0;
-        virtual void set_active() noexcept = 0;
-    public:
-        virtual i_event_handle& operator~() noexcept = 0;
-        virtual i_event_handle& operator!() noexcept = 0;
-    public:
-        virtual void detach() noexcept = 0;
+        virtual i_event<Args...> const& event() const = 0;
+        virtual void call(Args... aArgs) const = 0;
+        virtual std::thread::id call_thread() const = 0;
+        virtual bool call_in_emitter_thread() const = 0;
+        virtual void set_call_in_emitter_thread(bool aCallInEmitterThread) = 0;
+        virtual bool stateless() const = 0;
+        virtual void set_stateless(bool aStateless) = 0;
     };
 
-    inline i_event_handle& i_event_handle::operator=(const i_event_handle& aRhs) noexcept
+    enum class trigger_type
     {
-        return *this;
+        Synchronous,
+        SynchronousDontQueue,
+        Asynchronous,
+        AsynchronousDontQueue
+    };
+
+    enum class trigger_result
+    {
+        Unknown,
+        Unaccepted,
+        Accepted
+    };
+
+    inline bool event_consumed(trigger_result aTriggerResult)
+    {
+        switch (aTriggerResult)
+        {
+        case trigger_result::Unknown:
+        case trigger_result::Unaccepted:
+        default:
+            return false;
+        case trigger_result::Accepted:
+            return true;
+        }
     }
 
-    inline i_event_handle& i_event_handle::operator=(i_event_handle&& aRhs) noexcept
-    {
-        return *this;
-    }
+    template <typename... Args>
+    class slot;
 
-    class i_event
+    template <typename... Args>
+    struct slot_proxy
     {
+        ref_ptr<slot<Args...>> slot;
+
+        slot_proxy&& operator~()
+        {
+            slot->set_call_in_emitter_thread(true);
+            return std::move(*this);
+        }
+
+        slot_proxy&& operator!()
+        {
+            slot->set_stateless(true);
+            return std::move(*this);
+        }
+    };
+
+    template <typename... Args>
+    class i_event : public i_lifetime
+    {
+        typedef i_event<Args...> self_type;
+    public:
+        typedef self_type abstract_type;
     public:
         virtual ~i_event() = default;
     public:
-        virtual void release_control() = 0;
-        virtual void remove_handler(cookie aHandlerId) = 0;
-        virtual void handle_in_same_thread_as_emitter(cookie aHandlerId) = 0;
-        virtual void handler_is_stateless(cookie aHandlerId) = 0;
+        virtual neolib::trigger_type trigger_type() const = 0;
+        virtual void set_trigger_type(neolib::trigger_type aTriggerType) = 0;
     public:
-        virtual void pre_trigger() const = 0;
-    public:
-        virtual void push_context() const = 0;
-        virtual void pop_context() const = 0;
-    public:
-        virtual bool accepted() const = 0;
+        virtual trigger_result sync_trigger(Args... aArgs) const = 0;
+        virtual void async_trigger(Args... aArgs) const = 0;
         virtual void accept() const = 0;
-        virtual void ignore() const = 0;
     public:
-        virtual bool filtered() const = 0;
-        virtual void filter_added() const = 0;
-        virtual void filter_removed() const = 0;
-        virtual void filters_removed() const = 0;
+        virtual bool has_slots() const = 0;
+        virtual void add_slot(i_slot<Args...>& aSlot) const = 0;
+        virtual void remove_slot(i_slot<Args...>& aSlot) const = 0;
+    public:
+        trigger_result trigger(Args... aArgs) const
+        {
+            switch (trigger_type())
+            {
+            case neolib::trigger_type::Synchronous:
+            case neolib::trigger_type::SynchronousDontQueue:
+                return sync_trigger(aArgs...);
+            case neolib::trigger_type::Asynchronous:
+            case neolib::trigger_type::AsynchronousDontQueue:
+                async_trigger(aArgs...);
+                return trigger_result::Unknown;
+            default:
+                return trigger_result::Unaccepted;
+            }
+        }
+        slot_proxy<Args...> operator()(std::function<void(Args...)> const& aCallback) const
+        {
+            return slot_proxy<Args...>{ make_ref<slot<Args...>>(*this, aCallback) };
+        }
     };
 
-    class i_event_callback : public i_reference_counted
+    template <typename... Args>
+    class slot : public reference_counted<lifetime<i_slot<Args...>>>
     {
+        typedef slot<Args...> self_type;
     public:
-        typedef i_event_callback abstract_type;
+        slot(i_event<Args...> const& aEvent, std::function<void(Args...)> const& aCallable) :
+            iEvent{ aEvent },
+            iEventDestroyed{ aEvent },
+            iCallable{ aCallable },
+            iCallThread{ std::this_thread::get_id() }
+        {
+            event().add_slot(*this);
+        }
+        ~slot()
+        {
+            remove();
+        }
     public:
-        virtual ~i_event_callback() = default;
-    public:
-        virtual bool operator==(const i_event_callback& aRhs) const = 0;
-    public:
-        virtual const i_event& event() const = 0;
-        virtual const void* identity() const = 0;
-        virtual bool valid() const = 0;
-        virtual void call() const = 0;
+        void remove() final
+        {
+            if (!iEventDestroyed)
+                event().remove_slot(*this);
+        }
+        i_event<Args...> const& event() const final
+        {
+            return iEvent;
+        }
+        void call(Args... aArgs) const final
+        {
+            iCallable(aArgs...);
+        }
+        std::thread::id call_thread() const final
+        {
+            if (call_in_emitter_thread())
+                return std::this_thread::get_id();
+            return *iCallThread;
+        }
+        bool call_in_emitter_thread() const final
+        {
+            return iCallThread == std::nullopt;
+        }
+        void set_call_in_emitter_thread(bool aCallInEmitterThread) final
+        {
+            if (aCallInEmitterThread)
+                iCallThread = std::nullopt;
+            else
+                iCallThread = std::this_thread::get_id();
+        }
+        bool stateless() const final
+        {
+            return iStateless;
+        }
+        void set_stateless(bool aStateless) final
+        {
+            iStateless = aStateless;
+        }
+    private:
+        i_event<Args...> const& iEvent;
+        destroyed_flag iEventDestroyed;
+        std::function<void(Args...)> iCallable;
+        std::optional<std::thread::id> iCallThread;
+        bool iStateless = false;
     };
 
-    class i_event_filter
+    class sink
     {
     public:
-        virtual ~i_event_filter() = default;
+        sink()
+        {
+        }
+        ~sink()
+        {
+            clear();
+        }
     public:
-        virtual void pre_filter_event(const i_event& aEvent) = 0;
-        virtual void filter_event(const i_event& aEvent) = 0;
+        bool empty() const
+        {
+            return iSlots.empty();
+        }
+    public:
+        template <typename... Args>
+        slot_proxy<Args...>&& operator=(slot_proxy<Args...>&& aSlot)
+        {
+            std::scoped_lock lock{ event_mutex() };
+            clear();
+            iSlots.push_back(aSlot.slot);
+            return std::move(aSlot);
+        }
+        template <typename... Args>
+        slot_proxy<Args...>&& operator+=(slot_proxy<Args...>&& aSlot)
+        {
+            std::scoped_lock lock{ event_mutex() };
+            iSlots.push_back(aSlot.slot);
+            return std::move(aSlot);
+        }
+        void clear()
+        {
+            std::scoped_lock lock{ event_mutex() };
+            for (auto& slot : iSlots)
+                slot->remove();
+            iSlots.clear();
+        }
+    private:
+        std::vector<ref_ptr<i_slot_base>> iSlots;
     };
 
-    class i_event_filter_registry
-    {
-    public:
-        virtual void install_event_filter(i_event_filter& aFilter, const i_event& aEvent) = 0;
-        virtual void uninstall_event_filter(i_event_filter& aFilter, const i_event& aEvent) = 0;
-        virtual void uninstall_event_filter(const i_event& aEvent) = 0;
-    public:
-        virtual void pre_filter_event(const i_event& aEvent) const = 0;
-        virtual void filter_event(const i_event& aEvent) const = 0;
-    };
+    #define detail_event_subscribe( declName, ... ) \
+            neolib::slot_proxy<__VA_ARGS__> declName(const std::function<void(__VA_ARGS__)>& aCallback) const { return declName()(aCallback); }\
+            neolib::slot_proxy<__VA_ARGS__> declName(const std::function<void(__VA_ARGS__)>& aCallback) { return declName()(aCallback); }
 
-    class i_sink
-    {
-    public:
-        virtual ~i_sink() = default;
-    public:
-        virtual i_sink& operator=(i_sink const& aSink) = 0;
-        virtual i_sink& operator=(i_sink&& aSink) = 0;
-    public:
-        virtual i_sink& operator=(i_event_handle const& aHandle) = 0;
-        virtual i_sink& operator=(i_event_handle&& aHandle) = 0;
-        virtual i_sink& operator+=(i_event_handle const& aHandle) = 0;
-        virtual i_sink& operator+=(i_event_handle&& aHandle) = 0;
-    public:
-        virtual bool empty() const = 0;
-        virtual void clear() = 0;
-        virtual i_vector<i_event_handle> const& handles() const = 0;
-        virtual i_vector<i_event_handle>& handles() = 0;
-    };
-
-    inline i_sink& i_sink::operator=(i_sink const& aSink) 
-    {
-        return *this;
-    }
-
-    inline i_sink& i_sink::operator=(i_sink&& aSink)
-    {
-        return *this;
-    }
+    #define declare_event( declName, ... ) \
+            virtual const neolib::i_event<__VA_ARGS__>& ev_##declName() const = 0;\
+            virtual neolib::i_event<__VA_ARGS__>& ev_##declName() = 0;\
+            const neolib::i_event<__VA_ARGS__>& declName() const { return ev_##declName(); }\
+            neolib::i_event<__VA_ARGS__>& declName() { return ev_##declName(); }\
+            detail_event_subscribe(declName, __VA_ARGS__)
 }
