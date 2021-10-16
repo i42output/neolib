@@ -122,7 +122,7 @@ namespace neolib
     template <typename... Args>
     struct slot_proxy
     {
-        ref_ptr<slot<Args...>> slot;
+        ref_ptr<neolib::slot<Args...>> slot;
 
         slot_proxy&& operator~()
         {
