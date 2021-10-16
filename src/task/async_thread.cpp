@@ -41,7 +41,7 @@ namespace neolib
     async_thread::async_thread(async_task& aTask, const std::string& aName, bool aAttachToCurrentThread) :
         neolib::thread{ aName, aAttachToCurrentThread }, iTask{ aTask }
     {
-        aTask.join(*this);
+        iTask.join(*this);
         if (using_existing_thread())
             iEventQueue.emplace(async_event_queue::instance());
     }
@@ -51,6 +51,7 @@ namespace neolib
         iTask.cancel();
         iTask.set_destroying();
         iTask.wait();
+        iTask.detach();
         cancel();
     }
 
