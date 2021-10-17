@@ -81,7 +81,7 @@ namespace neolib
 
     bool async_event_queue::pump_events()
     {
-        std::scoped_lock lock{ event_mutex() };
+        std::unique_lock lock{ event_mutex() };
         thread_local std::size_t stack;
         scoped_counter<std::size_t> stackCounter{ stack };
         typedef std::vector<queue_entry> work_list;
@@ -90,6 +90,7 @@ namespace neolib
             workLists.push_back(std::make_unique<work_list>());
         auto& workList = *workLists[stack - 1];
         workList.swap(iQueue);
+        lock.unlock();
         bool didSome = false;
         for (auto& entry : workList)
         {
