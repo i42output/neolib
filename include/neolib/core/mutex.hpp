@@ -75,9 +75,9 @@ namespace neolib
 {
     struct null_mutex : public i_lockable
     {
-        void lock() noexcept override {}
-        void unlock() noexcept override {}
-        bool try_lock() noexcept override { return true; }
+        void lock() noexcept final {}
+        void unlock() noexcept final {}
+        bool try_lock() noexcept final { return true; }
     };
 
     template <typename Subject>
@@ -89,15 +89,15 @@ namespace neolib
         {
         }
     public:
-        void lock() noexcept override
+        void lock() noexcept final
         {
             iSubject->lock();
         }
-        void unlock() noexcept override
+        void unlock() noexcept final
         {
             iSubject->unlock();
         }
-        bool try_lock() noexcept override
+        bool try_lock() noexcept final
         {
             return iSubject->try_lock();
         }
@@ -114,7 +114,7 @@ namespace neolib
     public:
         recursive_spinlock() :
             iState{ spinlock_status::unlocked },
-            iLockingThread{ nullptr },
+            iLockingThread{},
             iLockCount{ 0u },
             iGenerator{ std::random_device{}() }
         {
@@ -124,9 +124,10 @@ namespace neolib
             assert(iState.load(std::memory_order_acquire) == spinlock_status::unlocked);
         }
     public:
-        void lock() noexcept override
+        void lock() noexcept final
         {
-            if (iState.load(std::memory_order_acquire) == spinlock_status::locked && iLockingThread.load(std::memory_order_acquire) == this_thread())
+            auto const thisThread = std::this_thread::get_id();
+            if (iState.load(std::memory_order_acquire) == spinlock_status::locked && iLockingThread.load(std::memory_order_acquire) == thisThread)
             {
                 ++iLockCount;
                 return;
@@ -167,23 +168,24 @@ namespace neolib
                 }
                 else 
                 {
-                    iLockingThread.store(this_thread());
+                    iLockingThread.store(thisThread);
                     ++iLockCount;
                     break;
                 }
             }
         }
-        void unlock() noexcept override
+        void unlock() noexcept final
         {
             if (--iLockCount == 0u)
             {
-                iLockingThread.store(nullptr, std::memory_order_release);
+                iLockingThread.store(std::thread::id{}, std::memory_order_release);
                 iState.store(spinlock_status::unlocked, std::memory_order_release);
             }
         }
-        bool try_lock() noexcept override
+        bool try_lock() noexcept final
         {
-            if (iState.load(std::memory_order_acquire) == spinlock_status::locked && iLockingThread.load(std::memory_order_acquire) == this_thread())
+            auto const thisThread = std::this_thread::get_id();
+            if (iState.load(std::memory_order_acquire) == spinlock_status::locked && iLockingThread.load(std::memory_order_acquire) == thisThread)
             {
                 ++iLockCount;
                 return true;
@@ -191,20 +193,14 @@ namespace neolib
             bool locked = (spinlock_status::unlocked == iState.exchange(spinlock_status::locked, std::memory_order_acquire));
             if (locked)
             {
-                iLockingThread.store(this_thread());
+                iLockingThread.store(thisThread);
                 ++iLockCount;
             }
             return locked;
         }
     private:
-        static void* this_thread()
-        {
-            thread_local int tThisThread = 42;
-            return &tThisThread;
-        }
-    private:
         std::atomic<spinlock_status> iState;
-        std::atomic<void*> iLockingThread;
+        std::atomic<std::thread::id> iLockingThread;
         std::atomic<uint32_t> iLockCount;
         std::minstd_rand iGenerator;
     };
@@ -230,7 +226,7 @@ namespace neolib
             iActiveMutex.emplace<neolib::recursive_spinlock>();
         }
     public:
-        void lock() noexcept override
+        void lock() noexcept final
         {
             if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
                 std::get<std::recursive_mutex>(iActiveMutex).lock();
@@ -239,7 +235,7 @@ namespace neolib
             else
                 std::get<neolib::null_mutex>(iActiveMutex).lock();
         }
-        void unlock() noexcept override
+        void unlock() noexcept final
         {
             if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
                 std::get<std::recursive_mutex>(iActiveMutex).unlock();
@@ -248,7 +244,7 @@ namespace neolib
             else
                 std::get<neolib::null_mutex>(iActiveMutex).unlock();
         }
-        bool try_lock() noexcept override
+        bool try_lock() noexcept final
         {
             if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
                 return std::get<std::recursive_mutex>(iActiveMutex).try_lock();
