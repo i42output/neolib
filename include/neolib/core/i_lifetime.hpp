@@ -35,6 +35,8 @@
 
 #pragma once
 
+#include <stdexcept>
+#include <memory>
 #include <atomic>
 #include <neolib/neolib.hpp>
 
