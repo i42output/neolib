@@ -230,7 +230,11 @@ namespace neolib
         if (halted())
             return false;
         bool didSome = false;
-        didSome = (async_event_queue::instance().pump_events() || didSome);
+        {
+            std::scoped_lock lock{ iMutex };
+            for (auto eventQueue : iEventQueues)
+                didSome = (eventQueue->pump_events() || didSome);
+        }
         didSome = (pump_messages() || didSome);
         if (iTimerService)
             didSome = (iTimerService->poll() || didSome);
@@ -276,6 +280,22 @@ namespace neolib
         if (iMessageQueue == nullptr)
             throw no_message_queue();
         return *iMessageQueue;
+    }
+
+    void async_task::register_event_queue(i_async_event_queue& aQueue)
+    {
+        std::scoped_lock lock{ iMutex };
+        auto existing = std::find(iEventQueues.begin(), iEventQueues.end(), &aQueue);
+        if (existing == iEventQueues.end())
+            iEventQueues.push_back(&aQueue);
+    }
+
+    void async_task::unregister_event_queue(i_async_event_queue& aQueue)
+    {
+        std::scoped_lock lock{ iMutex };
+        auto existing = std::find(iEventQueues.begin(), iEventQueues.end(), &aQueue);
+        if (existing != iEventQueues.end())
+            iEventQueues.erase(existing);
     }
 
     bool async_task::pump_messages()

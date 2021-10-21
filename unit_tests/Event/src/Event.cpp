@@ -60,10 +60,16 @@ public:
 	}
 };
 
+template<> neolib::i_async_task& neolib::services::start_service<neolib::i_async_task>()
+{
+	static neolib::async_task mainTask;
+	static neolib::async_thread mainThread{ mainTask, "neolib::event unit test(s)", true };
+	return mainTask;
+}
+
 int main()
 {
-	neolib::async_task mainTask;
-	neolib::async_thread mainThread{ mainTask, "neolib::event unit test(s)", true };
+	neolib::allocate_service_provider();
 
 	{
 		// we shall use 'new' instead of smart pointer maker as greetings object will delete itself in event handler...

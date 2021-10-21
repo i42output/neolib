@@ -39,11 +39,12 @@
 #include <vector>
 #include <neolib/core/lifetime.hpp>
 #include <neolib/core/scoped.hpp>
+#include <neolib/task/i_async_task.hpp>
 #include <neolib/task/i_event.hpp>
 
 namespace neolib
 {
-    class async_event_queue : public lifetime<>
+    class async_event_queue : public lifetime<i_async_event_queue>
     {
     private:
         struct queue_entry
@@ -83,8 +84,11 @@ namespace neolib
             iQueue.emplace_back(&event, event, &aSlot, aSlot, callback);
         }
     public:
-        bool pump_events();
+        void register_with_task(i_async_task& aTask) final;
+        bool pump_events() final;
     private:
+        i_async_task* iTask = nullptr;
+        std::optional<destroyed_flag> iTaskDestroyed;
         std::vector<queue_entry> iQueue;
     };
 

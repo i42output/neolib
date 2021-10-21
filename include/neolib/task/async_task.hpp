@@ -111,6 +111,8 @@ namespace neolib
         i_message_queue& create_message_queue(std::function<bool()> aIdleFunction = std::function<bool()>()) override;
         const i_message_queue& message_queue() const override;
         i_message_queue& message_queue() override;
+        void register_event_queue(i_async_event_queue& aQueue) override;
+        void unregister_event_queue(i_async_event_queue& aQueue) override;
         bool pump_messages() override;
         bool running() const noexcept override;
         bool halted() const noexcept override;
@@ -134,6 +136,7 @@ namespace neolib
         std::optional<neolib::timer_service> iTimerService;
         std::unique_ptr<i_async_service> iIoService;
         message_queue_pointer iMessageQueue;
+        std::vector<i_async_event_queue*> iEventQueues;
         std::atomic<async_task_state> iState;
     };
 }

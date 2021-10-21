@@ -23,8 +23,17 @@ namespace test
 	};
 }
 
+template<> neolib::i_async_task& neolib::services::start_service<neolib::i_async_task>()
+{
+	static neolib::async_task mainTask;
+	static neolib::async_thread mainThread{ mainTask, "neolib::task unit test(s)", true };
+	return mainTask;
+}
+
 int main()
 {
+	neolib::allocate_service_provider();
+
 	std::optional<std::pair<double, double>> stats;
 	for (int32_t i = 1; i <= 200; ++i)
 	{

@@ -43,7 +43,10 @@ namespace neolib
     {
         iTask.join(*this);
         if (using_existing_thread())
+        {
+            async_event_queue::instance().register_with_task(iTask);
             iEventQueue.emplace(async_event_queue::instance());
+        }
     }
 
     async_thread::~async_thread()
@@ -57,6 +60,7 @@ namespace neolib
 
     void async_thread::exec_preamble()
     {
+        async_event_queue::instance().register_with_task(iTask);
         iEventQueue.emplace(async_event_queue::instance());
     }
 

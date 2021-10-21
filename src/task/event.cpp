@@ -77,6 +77,15 @@ namespace neolib
         auto existing = instance_map().find(std::this_thread::get_id());
         if (existing != instance_map().end())
             instance_map().erase(existing);
+        if (iTask && !*iTaskDestroyed)
+            iTask->unregister_event_queue(*this);
+    }
+
+    void async_event_queue::register_with_task(i_async_task& aTask)
+    {
+        iTask = &aTask;
+        iTaskDestroyed.emplace(*iTask);
+        iTask->register_event_queue(*this);
     }
 
     bool async_event_queue::pump_events()

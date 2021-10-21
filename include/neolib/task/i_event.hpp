@@ -62,6 +62,15 @@ namespace neolib
         }
     }
 
+    class i_async_task;
+
+    class i_async_event_queue : public i_lifetime
+    {
+    public:
+        virtual void register_with_task(i_async_task& aTask) = 0;
+        virtual bool pump_events() = 0;
+    };
+
     template <typename... Args>
     class i_event;
         
