@@ -184,6 +184,7 @@ namespace neolib
 
     async_task::~async_task()
     {
+        cancel();
         set_destroying();
         if (joined())
             thread().abort();
@@ -370,8 +371,10 @@ namespace neolib
     void async_task::cancel() noexcept
     {
         base_type::cancel();
-        if (!running())
-            iState = async_task_state::Finished;
+        while (running())
+            std::this_thread::sleep_for(std::chrono::milliseconds{ 1 });
+        iTimerService.reset();
+        iIoService.reset();
     }
 
     void async_task::idle()
