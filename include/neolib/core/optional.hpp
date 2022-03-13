@@ -111,11 +111,11 @@ namespace neolib
         }
         // element access
     public:
-        reference get() override
+        reference value() override
         {
             return iData.value();
         }
-        const_reference get() const override
+        const_reference value() const override
         {
             return iData.value();
         }
@@ -141,7 +141,7 @@ namespace neolib
         reference& emplace(Args&&... args)
         {
             iData.emplace(std::forward<Args>(args)...);
-            return get();
+            return value();
         }
         void reset() override
         {
@@ -155,7 +155,7 @@ namespace neolib
         self_type& operator=(const self_type& rhs)
         {
             if (rhs.valid())
-                iData = rhs.get();
+                iData = rhs.value();
             else
                 iData = std::nullopt;
             return *this;
@@ -163,7 +163,7 @@ namespace neolib
         self_type& operator=(const abstract_type& rhs) override
         {
             if (rhs.valid())
-                iData = T{ rhs.get() };
+                iData = T{ rhs.value() };
             else
                 iData = std::nullopt;
             return *this;
@@ -196,7 +196,7 @@ namespace neolib
             return false;
         if (!lhs.valid())
             return true;
-        return lhs.get() == rhs.get();
+        return lhs.value() == rhs.value();
     }
 
     template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
@@ -204,7 +204,7 @@ namespace neolib
     {
         if (!lhs.valid())
             return false;
-        return lhs.get() == rhs;
+        return lhs.value() == rhs;
     }
 
     template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
@@ -212,7 +212,7 @@ namespace neolib
     {
         if (!rhs.valid())
             return false;
-        return lhs == rhs.get();
+        return lhs == rhs.value();
     }
 
     template <typename T>
@@ -240,7 +240,7 @@ namespace neolib
             return lhs.valid() < rhs.valid();
         if (!lhs.valid())
             return false;
-        return lhs.get() < rhs.get();
+        return lhs.value() < rhs.value();
     }
 
     template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
@@ -248,7 +248,7 @@ namespace neolib
     {
         if (!lhs.valid())
             return true;
-        return lhs.get() < rhs;
+        return lhs.value() < rhs;
     }
 
     template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
@@ -256,7 +256,7 @@ namespace neolib
     {
         if (!rhs.valid())
             return false;
-        return lhs < rhs.get();
+        return lhs < rhs.value();
     }
 
     template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_t<T>>, int> = 0>
@@ -264,7 +264,7 @@ namespace neolib
     {
         if (!lhs.valid())
             return true;
-        return lhs.get() < rhs;
+        return lhs.value() < rhs;
     }
 
     template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_t<T>>, int> = 0>
@@ -272,7 +272,7 @@ namespace neolib
     {
         if (!rhs.valid())
             return false;
-        return lhs < rhs.get();
+        return lhs < rhs.value();
     }
 
     template <typename T>

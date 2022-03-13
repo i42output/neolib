@@ -72,8 +72,8 @@ namespace neolib
         virtual explicit operator bool() const noexcept = 0;
         // element access
     public:
-        virtual reference get() = 0;
-        virtual const_reference get() const = 0;
+        virtual reference value() = 0;
+        virtual const_reference value() const = 0;
         virtual reference operator*() = 0;
         virtual const_reference operator*() const = 0;
         virtual pointer operator->() = 0;
@@ -84,6 +84,18 @@ namespace neolib
         virtual i_optional<T>& operator=(std::nullopt_t) noexcept = 0;
         virtual i_optional<T>& operator=(const i_optional<T>& rhs) = 0;
         virtual i_optional<T>& operator=(const T& value) = 0;
+        // helpers
+    public:
+        [[deprecated("Use i_optional::value()")]]
+        reference get()
+        {
+            return value();
+        }
+        [[deprecated("Use i_optional::value()")]]
+        const_reference get() const
+        {
+            return value();
+        }
     };
 
     template <typename T>
