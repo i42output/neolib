@@ -285,7 +285,7 @@ namespace neolib
         }
     public:
         abstract_iterator& operator+=(difference_type aDifference) { return wrapped_iterator() += aDifference; }
-        abstract_iterator& operator-=(difference_type aDifference) { return wrapped_iterator() += aDifference; }
+        abstract_iterator& operator-=(difference_type aDifference) { return wrapped_iterator() -= aDifference; }
         self_type operator+(difference_type aDifference) const { return wrapped_iterator() + aDifference; }
         self_type operator-(difference_type aDifference) const { return wrapped_iterator() - aDifference; }
         reference operator[](difference_type aDifference) const { return wrapped_iterator()[aDifference]; }
@@ -523,7 +523,7 @@ namespace neolib
         }
     public:
         abstract_iterator& operator+=(difference_type aDifference) { return wrapped_iterator() += aDifference; }
-        abstract_iterator& operator-=(difference_type aDifference) { return wrapped_iterator() += aDifference; }
+        abstract_iterator& operator-=(difference_type aDifference) { return wrapped_iterator() -= aDifference; }
         self_type operator+(difference_type aDifference) const { return wrapped_iterator() + aDifference; }
         self_type operator-(difference_type aDifference) const { return wrapped_iterator() - aDifference; }
         reference operator[](difference_type aDifference) const { return wrapped_iterator()[aDifference]; }
