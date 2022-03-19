@@ -55,6 +55,8 @@ namespace neolib
         class logger : public i_logger, public lifetime<>
         {
             typedef logger<Instance> self_type;
+        public:
+            define_declared_event(NewLogMessage, new_log_message, i_string const&)
         protected:
             typedef std::string buffer_t;
         private:
@@ -292,12 +294,16 @@ namespace neolib
                     if (message_severity() >= filter_severity() && message_category_enabled())
                     {
                         if (!has_formatter())
+                        {
                             buffer() += aMessage.to_std_string_view();
+                            NewLogMessage.trigger(aMessage);
+                        }
                         else
                         {
                             thread_local string tempFormattedMessage;
                             formatter().format(*this, aMessage, tempFormattedMessage);
                             buffer() += tempFormattedMessage.to_std_string_view();
+                            NewLogMessage.trigger(tempFormattedMessage);
                             tempFormattedMessage.clear();
                         }
                         ++iLineId;

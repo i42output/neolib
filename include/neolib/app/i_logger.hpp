@@ -39,6 +39,7 @@
 #include <functional>
 #include <sstream>
 #include <neolib/core/string.hpp>
+#include <neolib/task/event.hpp>
 #include <neolib/app/services.hpp>
 
 namespace neolib
@@ -131,6 +132,8 @@ namespace neolib
         {
             template <std::size_t Instance>
             friend class logger;
+        public:
+            declare_event(new_log_message, i_string const&)
         public:
             struct logging_thread_already_created : std::logic_error { logging_thread_already_created() : std::logic_error{ "neolib::logger::i_logger::logging_thread_already_created" } {} };
             struct no_formatter : std::logic_error { no_formatter() : std::logic_error{ "neolib::logger::i_logger::no_formatter" } {} };
