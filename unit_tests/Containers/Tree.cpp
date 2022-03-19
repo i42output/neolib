@@ -4,6 +4,17 @@
 
 void TestTree()
 {
+    neolib::tree<int> tree0;
+    for (int i = 0; i < 100; ++i)
+        tree0.insert(tree0.kend(), 42);
+    for (int i = 0; i < 10000; ++i)
+    {
+        tree0.erase(std::next(tree0.kbegin(), std::rand() % tree0.size()));
+        tree0.insert(std::next(tree0.kbegin(), std::rand() % tree0.size()), 42);
+    }
+    while (!tree0.empty())
+        tree0.erase(tree0.kbegin());
+
     neolib::tree<std::string> tree;
     auto entities = tree.insert(tree.send(), "Entity");
     auto components = tree.insert(tree.send(), "Component");
