@@ -63,6 +63,8 @@ namespace neolib
     class i_settings : public i_reference_counted
     {
     public:
+        typedef i_settings abstract_type;
+    public:
         declare_event(setting_changing, const i_setting&)
         declare_event(setting_changed, const i_setting&)
         declare_event(setting_deleted, const i_setting&)

@@ -67,6 +67,7 @@ namespace neolib
     {
         if (iSettings.find(aSetting.key()) != iSettings.end())
             throw setting_already_registered();
+        scoped_flag sf{ iRegisteringSetting };
         iSettingsOrdered.push_back(ref_ptr<i_setting>{ aSetting });
         iSettings[aSetting.key()] = iSettingsOrdered.back();
         auto const key = aSetting.key().to_std_string();
@@ -261,12 +262,18 @@ namespace neolib
 
     void settings::changing_setting(i_setting const& aSetting)
     {
-        setting_changing().trigger(aSetting);
+        if (!iRegisteringSetting)
+        {
+            setting_changing().trigger(aSetting);
+        }
     }
 
     void settings::changed_setting(i_setting const& aSetting)
     {
-        iModified = true;
-        setting_changed().trigger(aSetting);
+        if (!iRegisteringSetting)
+        {
+            iModified = true;
+            setting_changed().trigger(aSetting);
+        }
     }
 }

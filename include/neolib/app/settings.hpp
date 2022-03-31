@@ -99,6 +99,7 @@ namespace neolib
     private:
         string iFileName;
         mutable bool iModified = false;
+        bool iRegisteringSetting = false;
         mutable std::unique_ptr<xml> iStore;
         category_titles iCategoryTitles;
         group_titles iGroupTitles;
