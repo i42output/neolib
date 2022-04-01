@@ -144,12 +144,11 @@ namespace neolib
         packet_stream_pointer take_ownership(packet_stream_type& aStream)
         {
             for (typename stream_list::iterator i = iStreamList.begin(); i != iStreamList.end(); ++i)
-                if (*i == &aStream)
+                if (&**i == &aStream)
                 {
-                    packet_stream_pointer found(*i);
+                    packet_stream_pointer found{ std::move(*i) };
                     iStreamList.erase(i);
-                    aStream.remove_observer(*this);
-                    return found;
+                    return std::move(found);
                 }
             throw stream_not_found();
         }
