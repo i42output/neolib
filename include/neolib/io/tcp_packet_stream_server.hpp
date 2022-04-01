@@ -179,7 +179,7 @@ namespace neolib
                 return;
             iAcceptingStream = std::make_unique<packet_stream_type>(iIoTask, iSecure, iLocalEndpoint.protocol() == protocol_type::v4() ? IPv4 : IPv6);
             auto acceptingStream = &*iAcceptingStream;
-            iAcceptingStream->connection_closed([this, acceptingStream]()
+            iSink += iAcceptingStream->connection_closed([this, acceptingStream]()
             {
                 if (is_alive())
                 {
@@ -224,6 +224,7 @@ namespace neolib
         acceptor_type iAcceptor;
         packet_stream_pointer iAcceptingStream;
         stream_list iStreamList;
+        sink iSink;
     };
 
     typedef tcp_packet_stream_server<string_packet> tcp_string_packet_stream_server;

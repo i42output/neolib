@@ -38,6 +38,7 @@
 #include <neolib/neolib.hpp>
 #include <stdexcept>
 #include <vector>
+#include <neolib/core/lifetime.hpp>
 #include <neolib/task/i_async_task.hpp>
 #include <neolib/task/event.hpp>
 #include <neolib/io/i_packet.hpp>
@@ -51,7 +52,7 @@ namespace neolib
     class packet_stream;
 
     template <typename PacketType, typename Protocol>
-    class packet_stream : private i_basic_packet_connection_owner<typename PacketType::character_type>
+    class packet_stream : private i_basic_packet_connection_owner<typename PacketType::character_type>, public lifetime<>
     {
         // types
     public:
