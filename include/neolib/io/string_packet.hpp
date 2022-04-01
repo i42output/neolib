@@ -125,7 +125,7 @@ namespace neolib
                 ++aFirst;
             if (aFirst != aLast)
                 ++aFirst;
-            return end != aLast;
+            return end != aLast || (start == end && !iContents.empty());
         }
         virtual clone_pointer clone() const
         {
