@@ -52,7 +52,7 @@ namespace neolib
     class packet_stream;
 
     template <typename PacketType, typename Protocol>
-    class packet_stream : private i_basic_packet_connection_owner<typename PacketType::character_type>, public lifetime<>
+    class packet_stream : public lifetime<>, private i_basic_packet_connection_owner<typename PacketType::character_type>
     {
         // types
     public:

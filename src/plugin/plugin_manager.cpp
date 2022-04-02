@@ -144,7 +144,10 @@ namespace neolib
         {
             auto pluginsToUnload = std::move(iPlugins);
             for (auto const& p : pluginsToUnload)
+            {
+                p->unload();
                 PluginUnloaded.trigger(*p);
+            }
         }
         for (modules_t::iterator i = iModules.begin(); i != iModules.end(); ++i)
         {

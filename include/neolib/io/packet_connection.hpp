@@ -102,33 +102,33 @@ namespace neolib
         class handler_proxy
         {
         public:
-            handler_proxy(our_type& aParent) : iParent(aParent), iOrphaned(false)
+            handler_proxy(our_type& aParent) : iParentDestroyed{ aParent }, iParent{ aParent }, iOrphaned{ false }
             {
             }
         public:
             void handle_resolve(const boost::system::error_code& aError, typename resolver_type::iterator aEndPointIterator)
             {
-                if (!iOrphaned)
+                if (!iParentDestroyed && !iOrphaned)
                     iParent.handle_resolve(aError, aEndPointIterator);
             }
             void handle_connect(const boost::system::error_code& aError)
             {
-                if (!iOrphaned)
+                if (!iParentDestroyed && !iOrphaned)
                     iParent.handle_connect(aError);
             }
             void handle_handshake(const boost::system::error_code& aError)
             {
-                if (!iOrphaned)
+                if (!iParentDestroyed && !iOrphaned)
                     iParent.handle_handshake(aError);
             }
             void handle_write(const boost::system::error_code& aError, size_t aBytesTransferred)
             {
-                if (!iOrphaned)
+                if (!iParentDestroyed && !iOrphaned)
                     iParent.handle_write(aError, aBytesTransferred);
             }
             void handle_read(const boost::system::error_code& aError, size_t aBytesTransferred)
             {
-                if (!iOrphaned)
+                if (!iParentDestroyed && !iOrphaned)
                     iParent.handle_read(aError, aBytesTransferred);
             }
             void orphan(bool aCreateNewHandlerProxy = true)
@@ -140,6 +140,7 @@ namespace neolib
                     iParent.iHandlerProxy.reset();
             }
         private:
+            destroyed_flag iParentDestroyed;
             our_type& iParent;
             bool iOrphaned;
         };
@@ -200,6 +201,7 @@ namespace neolib
         }
         ~basic_packet_connection()
         {
+            set_destroying();
             close();
         }
         

@@ -73,26 +73,19 @@ namespace neolib
         class handler_proxy
         {
         public:
-            handler_proxy(self_type& aParent) : iParent(aParent), iOrphaned(false)
+            handler_proxy(self_type& aParent) : iParentDestroyed{ aParent }, iParent{ aParent }
             {
             }
         public:
             void operator()(const boost::system::error_code& aError)
             {
-                if (!iOrphaned)
-                    iParent.handle_accept(aError);
-            }
-            void orphan(bool aCreateNewHandlerProxy = true)
-            {
-                iOrphaned = true;
-                if (aCreateNewHandlerProxy)
-                    iParent.iHandlerProxy = std::make_shared<handler_proxy>(iParent);
-                else
-                    iParent.iHandlerProxy.reset();
+                if (iParentDestroyed)
+                    return;
+                iParent.handle_accept(aError);
             }
         private:
+            destroyed_flag iParentDestroyed;
             self_type& iParent;
-            bool iOrphaned;
         };
 
         // exceptions
@@ -131,7 +124,6 @@ namespace neolib
             for (typename stream_list::iterator i = iStreamList.begin(); i != iStreamList.end(); ++i)
                 *i = nullptr;
             iStreamList.clear();
-            iHandlerProxy->orphan();
             iAcceptor.close();
         }
         
