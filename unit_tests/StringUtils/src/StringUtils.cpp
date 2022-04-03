@@ -3,6 +3,14 @@
 
 int main()
 {
+    std::vector<std::string> v0, v1, v2, v3, v4, v5;
+    neolib::tokens(""s, ","s, v0, 0, false);
+    neolib::tokens("1"s, ","s, v1, 0, false);
+    neolib::tokens("1,"s, ","s, v2, 0, false);
+    neolib::tokens("1,2"s, ","s, v3, 0, false);
+    neolib::tokens(",2"s, ","s, v4, 0, false);
+    neolib::tokens(","s, ","s, v5, 0, false);
+
     neolib::string_search_fsa searchFsa;
     searchFsa.add_pattern("foo", [](char const* begin, char const* end) { std::cout << "Found foo [" << std::string_view{begin, end} << "]!\n"; });
     searchFsa.add_pattern("bar", [](char const* begin, char const* end) { std::cout << "Found bar [" << std::string_view{begin, end} << "]!\n"; });
