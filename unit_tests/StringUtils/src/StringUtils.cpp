@@ -11,6 +11,13 @@ int main()
     neolib::tokens(",2"s, ","s, v4, 0, false);
     neolib::tokens(","s, ","s, v5, 0, false);
 
+    assert((v0 == std::vector<std::string>{}));
+    assert((v1 == std::vector<std::string>{ "1"s }));
+    assert((v2 == std::vector<std::string>{ "1"s, ""s }));
+    assert((v3 == std::vector<std::string>{ "1"s, "2"s }));
+    assert((v4 == std::vector<std::string>{ ""s, "2"s }));
+    assert((v5 == std::vector<std::string>{ ""s, ""s }));
+           
     neolib::string_search_fsa searchFsa;
     searchFsa.add_pattern("foo", [](char const* begin, char const* end) { std::cout << "Found foo [" << std::string_view{begin, end} << "]!\n"; });
     searchFsa.add_pattern("bar", [](char const* begin, char const* end) { std::cout << "Found bar [" << std::string_view{begin, end} << "]!\n"; });
