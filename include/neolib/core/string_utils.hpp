@@ -108,22 +108,25 @@ namespace neolib
         typedef typename ResultContainer::value_type value_type;
         if (aDelimeterFirst == aDelimiterLast)
         {
-            aTokens.push_back(value_type(aFirst, aLast));
+            aTokens.push_back(value_type{ aFirst, aLast });
             return aLast;
         }
         FwdIter1 b = aFirst;
         FwdIter1 e = aDelimeterIsSubsequence ? std::search(b, aLast, aDelimeterFirst, aDelimiterLast) : std::find_first_of(b, aLast, aDelimeterFirst, aDelimiterLast);
         std::size_t tokens = 0;
+        std::optional<FwdIter1> last;
         while(e != aLast && (aMaxTokens == 0 || tokens < aMaxTokens))
         {
             if (b == e && !aSkipEmptyTokens)
             {
-                aTokens.push_back(value_type(b, b));
+                aTokens.push_back(value_type{ b, b });
+                last = b;
                 ++tokens;
             }
             else if (b != e)
             {
-                aTokens.push_back(value_type(b, e));
+                aTokens.push_back(value_type{ b, e });
+                last = e;
                 ++tokens;
             }
             b = e;
@@ -132,9 +135,11 @@ namespace neolib
         }
         if (b != e && (aMaxTokens == 0 || tokens < aMaxTokens))
         {
-            aTokens.push_back(value_type(b, e));
+            aTokens.push_back(value_type{ b, e });
             b = e;
         }
+        else if (b == e && last && last.value() != e && !aSkipEmptyTokens)
+            aTokens.push_back(value_type{ e, e });
         return b;
     }
     

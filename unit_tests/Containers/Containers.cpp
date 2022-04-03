@@ -2,6 +2,7 @@
 #include <string>
 #include <neolib/core/optional.hpp>
 #include <neolib/core/jar.hpp>
+#include <neolib/core/string_utils.hpp>
 
 struct i_foo
 {
@@ -21,6 +22,14 @@ void TestTree();
 
 int main()
 {
+    std::vector<std::string> v0, v1, v2, v3, v4, v5;
+    neolib::tokens(""s, ","s, v0, 0, false);
+    neolib::tokens("1"s, ","s, v1, 0, false);
+    neolib::tokens("1,"s, ","s, v2, 0, false);
+    neolib::tokens("1,2"s, ","s, v3, 0, false);
+    neolib::tokens(",2"s, ","s, v4, 0, false);
+    neolib::tokens(","s, ","s, v5, 0, false);
+
     neolib::optional<foo> of = {};
 
     neolib::optional<bool> o1 = true;
