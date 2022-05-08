@@ -87,12 +87,27 @@ namespace neolib
 
     inline bool operator!=(const i_string& lhs, const i_string& rhs)
     {
-        return lhs.size() != rhs.size() || std::strcmp(lhs.c_str(), rhs.c_str()) != 0;
+        return !(lhs == rhs);
     }
 
     inline bool operator<(const i_string& lhs, const i_string& rhs)
     {
         return std::strcmp(lhs.c_str(), rhs.c_str()) < 0;
+    }
+
+    inline bool operator>(const i_string& lhs, const i_string& rhs)
+    {
+        return std::strcmp(lhs.c_str(), rhs.c_str()) > 0;
+    }
+
+    inline bool operator<=(const i_string& lhs, const i_string& rhs)
+    {
+        return !(lhs > rhs);
+    }
+
+    inline bool operator>=(const i_string& lhs, const i_string& rhs)
+    {
+        return !(lhs < rhs);
     }
 
     struct ci_equal_to

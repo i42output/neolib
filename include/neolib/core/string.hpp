@@ -136,6 +136,11 @@ namespace neolib
     public:
         using i_string::assign;
         void assign(string&& aOther) { if (&aOther == this) return; iString.assign(std::move(aOther.to_std_string())); }
+    public:
+        std::strong_ordering operator<=>(const string& that) const
+        {
+            return iString <=> that.iString;
+        }
         // attributes
     private:
         std::string iString;
@@ -152,11 +157,6 @@ namespace neolib
         return lhs;
     }
 
-    inline bool operator==(const string& lhs, const string& rhs)
-    {
-        return lhs.size() == rhs.size() && std::strcmp(lhs.c_str(), rhs.c_str()) == 0;
-    }
-
     inline bool operator==(const string& lhs, const i_string& rhs)
     {
         return lhs.size() == rhs.size() && std::strcmp(lhs.c_str(), rhs.c_str()) == 0;
@@ -167,24 +167,14 @@ namespace neolib
         return lhs.size() == rhs.size() && std::strcmp(lhs.c_str(), rhs.c_str()) == 0;
     }
 
-    inline bool operator!=(const string& lhs, const string& rhs)
-    {
-        return lhs.size() != rhs.size() || std::strcmp(lhs.c_str(), rhs.c_str()) != 0;
-    }
-
     inline bool operator!=(const string& lhs, const i_string& rhs)
     {
-        return lhs.size() != rhs.size() || std::strcmp(lhs.c_str(), rhs.c_str()) != 0;
+        return !(lhs == rhs);
     }
 
     inline bool operator!=(const i_string& lhs, const string& rhs)
     {
-        return lhs.size() != rhs.size() || std::strcmp(lhs.c_str(), rhs.c_str()) != 0;
-    }
-
-    inline bool operator<(const string& lhs, const string& rhs)
-    {
-        return std::strcmp(lhs.c_str(), rhs.c_str()) < 0;
+        return !(lhs == rhs);
     }
 
     inline bool operator<(const string& lhs, const i_string& rhs)
@@ -195,6 +185,36 @@ namespace neolib
     inline bool operator<(const i_string& lhs, const string& rhs)
     {
         return std::strcmp(lhs.c_str(), rhs.c_str()) < 0;
+    }
+
+    inline bool operator>(const string& lhs, const i_string& rhs)
+    {
+        return std::strcmp(lhs.c_str(), rhs.c_str()) > 0;
+    }
+
+    inline bool operator>(const i_string& lhs, const string& rhs)
+    {
+        return std::strcmp(lhs.c_str(), rhs.c_str()) > 0;
+    }
+
+    inline bool operator>=(const string& lhs, const i_string& rhs)
+    {
+        return !(lhs < rhs);
+    }
+
+    inline bool operator>=(const i_string& lhs, const string& rhs)
+    {
+        return !(lhs < rhs);
+    }
+
+    inline bool operator<=(const string& lhs, const i_string& rhs)
+    {
+        return !(lhs > rhs);
+    }
+
+    inline bool operator<=(const i_string& lhs, const string& rhs)
+    {
+        return !(lhs > rhs);
     }
 
     namespace string_literals
