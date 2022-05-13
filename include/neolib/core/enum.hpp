@@ -72,15 +72,15 @@ namespace neolib
         }
         // state
     public:
-        underlying_type value() const override
+        underlying_type value() const final
         {
             return iValue;
         }
-        void set_value(underlying_type aValue) override
+        void set_value(underlying_type aValue) final
         {
             iValue = aValue;
         }
-        underlying_type set_value(const i_string& aValue) override
+        underlying_type set_value(const i_string& aValue) final
         {
             for (auto const& e : enumerators())
                 if (e.second() == aValue)
@@ -90,31 +90,31 @@ namespace neolib
                 }
             throw bad_enum_string();
         }
-        underlying_type const* data() const override
+        underlying_type const* data() const final
         {
             return &iValue;
         }
-        underlying_type* data() override
+        underlying_type* data() final
         {
             return &iValue;
         }
         // meta
     public:
-        void to_string(i_string& aString) const override
+        void to_string(i_string& aString) const final
         {
             aString = enumerators().find(value())->second();
         }
-        const typename base_type::enumerators_t& enumerators() const override
+        const typename base_type::enumerators_t& enumerators() const final
         {
             return enum_enumerators<enum_type>();
         }
         // implementation
     private:
-        abstract_type* do_clone() const override
+        abstract_type* do_clone() const final
         {
             return new self_type{ *this };
         }
-        abstract_type& do_assign(const abstract_type& aRhs) override
+        abstract_type& do_assign(const abstract_type& aRhs) final
         {
             iValue = aRhs.value();
             return *this;

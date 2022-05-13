@@ -58,9 +58,9 @@ namespace neolib
         typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
         typedef std::reverse_iterator<iterator> reverse_iterator;
     public:
-        virtual size_type size() const = 0;
-        virtual size_type max_size() const = 0;
-        bool empty() const { return size() == 0; }
+        virtual size_type size() const noexcept = 0;
+        virtual size_type max_size() const noexcept = 0;
+        bool empty() const noexcept { return size() == 0; }
         const_iterator cbegin() const { const_iterator result; return do_begin(result.storage()); }
         const_iterator begin() const { return cbegin(); }
         iterator begin() { iterator result; return do_begin(result.storage()); }
@@ -85,18 +85,6 @@ namespace neolib
             assign(aRhs);
             return *this;
         }
-        friend bool operator==(const i_container& aLhs, const i_container& aRhs)
-        {
-            return aLhs.size() == aRhs.size() && std::equal(aLhs.begin(), aLhs.end(), aRhs.begin());
-        }
-        friend bool operator!=(const i_container& aLhs, const i_container& aRhs)
-        {
-            return aLhs.size() != aRhs.size() || !std::equal(aLhs.begin(), aLhs.end(), aRhs.begin());
-        }
-        friend bool operator<(const i_container& aLhs, const i_container& aRhs)
-        {
-            return std::lexicographical_compare(aLhs.begin(), aLhs.end(), aRhs.begin(), aRhs.end());
-        }
     private:
         virtual abstract_const_iterator* do_begin(void* memory) const = 0;
         virtual abstract_const_iterator* do_end(void* memory) const = 0;
@@ -105,4 +93,16 @@ namespace neolib
         virtual abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) = 0;
         virtual abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) = 0;
     };
+
+    template <typename T, typename ConstIteratorType, typename IteratorType>
+    inline bool operator==(const i_container<T, ConstIteratorType, IteratorType>& lhs, const i_container<T, ConstIteratorType, IteratorType>& rhs)
+    {
+        return lhs.size() == rhs.size() && std::equal(lhs.begin(), lhs.end(), rhs.begin());
+    }
+
+    template <typename T, typename ConstIteratorType, typename IteratorType>
+    inline std::partial_ordering operator<=>(const i_container<T, ConstIteratorType, IteratorType>& lhs, const i_container<T, ConstIteratorType, IteratorType>& rhs)
+    {
+        return std::lexicographical_compare_three_way(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+    }
 }

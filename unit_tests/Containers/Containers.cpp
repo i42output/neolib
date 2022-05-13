@@ -1,7 +1,10 @@
 #include <iostream>
 #include <string>
 #include <neolib/core/optional.hpp>
+#include <neolib/core/variant.hpp>
 #include <neolib/core/jar.hpp>
+#include <neolib/core/string.hpp>
+#include <neolib/core/pair.hpp>
 
 struct i_foo
 {
@@ -19,8 +22,45 @@ template class neolib::basic_jar<foo>;
 
 void TestTree();
 
+#undef NDEBUG
+
 int main()
 {
+    neolib::string s1, s2;
+    neolib::i_string const& rs1{ s1 };
+    neolib::i_string const& rs2{ s2 };
+
+    assert(s1 == s2);
+    assert(s1 == rs2);
+    assert(rs2 == s1);
+
+    neolib::optional<neolib::string> os1;
+    neolib::i_optional<neolib::i_string>& raos1{ os1 };
+    assert(os1 == os1);
+    assert(os1 == raos1);
+    assert(raos1 == os1);
+
+    neolib::pair<neolib::string, neolib::string> p1;
+    neolib::pair<neolib::string, neolib::string> p2;
+
+    assert(p1 == p2);
+    assert(!(p1 < p2));
+    assert(!(p1 > p2));
+
+    neolib::variant<neolib::string, int, double> v;
+    neolib::variant<neolib::string, int, double, foo> v2;
+
+    assert(v == neolib::none);
+    assert(!(v != neolib::none));
+    
+    v <=> v;
+
+    v2 = neolib::none;
+
+    assert(!(v < v));
+    assert(v == v);
+    assert(!(v != v));
+
     neolib::optional<foo> of = {};
 
     neolib::optional<bool> o1 = true;

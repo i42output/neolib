@@ -480,39 +480,21 @@ namespace neolib
         };
 
         template <typename T, uint32_t Size, typename Type>
-        inline bool operator<(const basic_vector<T, Size, Type>& aLhs, const basic_vector<T, Size, Type>& aRhs)
-        {
-            return aLhs.v < aRhs.v;
-        }
-
-        template <typename T, uint32_t Size, typename Type>
-        inline bool operator<=(const basic_vector<T, Size, Type>& aLhs, const basic_vector<T, Size, Type>& aRhs)
-        {
-            return aLhs.v <= aRhs.v;
-        }
-
-        template <typename T, uint32_t Size, typename Type>
-        inline bool operator>(const basic_vector<T, Size, Type>& aLhs, const basic_vector<T, Size, Type>& aRhs)
-        {
-            return aLhs.v > aRhs.v;
-        }
-
-        template <typename T, uint32_t Size, typename Type>
-        inline bool operator>=(const basic_vector<T, Size, Type>& aLhs, const basic_vector<T, Size, Type>& aRhs)
-        {
-            return aLhs.v >= aRhs.v;
-        }
-
-        template <typename T, uint32_t Size, typename Type>
         inline bool operator==(const basic_vector<T, Size, Type>& aLhs, const basic_vector<T, Size, Type>& aRhs)
         {
             return aLhs.v == aRhs.v;
         }
 
         template <typename T, uint32_t Size, typename Type>
-        inline bool operator!=(const basic_vector<T, Size, Type>& aLhs, const basic_vector<T, Size, Type>& aRhs)
+        inline bool operator<(const basic_vector<T, Size, Type>& aLhs, const basic_vector<T, Size, Type>& aRhs)
         {
-            return aLhs.v != aRhs.v;
+            return aLhs.v < aRhs.v;
+        }
+
+        template <typename T, uint32_t Size, typename Type>
+        inline std::partial_ordering operator<=>(const basic_vector<T, Size, Type>& aLhs, const basic_vector<T, Size, Type>& aRhs)
+        {
+            return aLhs.v <=> aRhs.v;
         }
 
         typedef basic_vector<double, 1> vector1;
@@ -1590,15 +1572,16 @@ namespace neolib
             return left.min == right.min && left.max == right.max;
         }
 
-        inline bool operator!=(const aabb& left, const aabb& right)
-        {
-            return !(left == right);
-        }
-
         inline bool operator<(const aabb& left, const aabb& right)
         {
-            return std::tie(left.min.z, left.min.y, left.min.x, left.max.z, left.max.y, left.max.x) <
-                std::tie(right.min.z, right.min.y, right.min.x, right.max.z, right.max.y, right.max.x);
+            return std::forward_as_tuple(left.min.z, left.min.y, left.min.x, left.max.z, left.max.y, left.max.x) <
+                std::forward_as_tuple(right.min.z, right.min.y, right.min.x, right.max.z, right.max.y, right.max.x);
+        }
+
+        inline std::partial_ordering operator<=>(const aabb& left, const aabb& right)
+        {
+            return std::forward_as_tuple(left.min.z, left.min.y, left.min.x, left.max.z, left.max.y, left.max.x) <=>
+                std::forward_as_tuple(right.min.z, right.min.y, right.min.x, right.max.z, right.max.y, right.max.x);
         }
 
         typedef optional<aabb> optional_aabb;
@@ -1728,15 +1711,16 @@ namespace neolib
             return left.min == right.min && left.max == right.max;
         }
 
-        inline bool operator!=(const aabb_2d& left, const aabb_2d& right)
-        {
-            return !(left == right);
-        }
-
         inline bool operator<(const aabb_2d& left, const aabb_2d& right)
         {
-            return std::tie(left.min.y, left.min.x, left.max.y, left.max.x) <
-                std::tie(right.min.y, right.min.x, right.max.y, right.max.x);
+            return std::forward_as_tuple(left.min.y, left.min.x, left.max.y, left.max.x) <
+                std::forward_as_tuple(right.min.y, right.min.x, right.max.y, right.max.x);
+        }
+
+        inline std::partial_ordering operator<=>(const aabb_2d& left, const aabb_2d& right)
+        {
+            return std::forward_as_tuple(left.min.y, left.min.x, left.max.y, left.max.x) <=>
+                std::forward_as_tuple(right.min.y, right.min.x, right.max.y, right.max.x);
         }
 
         typedef optional<aabb_2d> optional_aabb_2d;

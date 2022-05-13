@@ -62,6 +62,15 @@ namespace neolib
     public:
         virtual bool operator==(const i_custom_type&) const = 0;
         virtual bool operator<(const i_custom_type&) const = 0;
+        std::strong_ordering operator<=>(const i_custom_type& that) const
+        {
+            if (*this == that)
+                return std::strong_ordering::equal;
+            else if (*this < that)
+                return std::strong_ordering::less;
+            else
+                return std::strong_ordering::greater;
+        }
         // state
     public:
         bool has_instance() const { return instance_ptr() != nullptr; }

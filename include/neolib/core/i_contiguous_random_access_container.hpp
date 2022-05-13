@@ -126,9 +126,9 @@ namespace neolib
     public:
         using base_type::size;
     public:
-        virtual const value_type* cdata() const = 0;
-        virtual const value_type* data() const = 0;
-        virtual value_type* data() = 0;
+        virtual const value_type* cdata() const noexcept = 0;
+        virtual const value_type* data() const noexcept = 0;
+        virtual value_type* data() noexcept = 0;
     public:
         virtual const value_type& at(size_type aIndex) const = 0;
         virtual value_type& at(size_type aIndex) = 0;

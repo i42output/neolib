@@ -115,26 +115,30 @@ namespace neolib
         }
         // comparison
     public:
-        bool operator<(const self_type& aRhs) const 
+        constexpr bool operator==(const self_type& that) const noexcept
+        {
+            return to_std_deque() == that.to_std_deque();
+        }
+        constexpr std::partial_ordering operator<=>(const self_type& that) const noexcept
         { 
-            return to_std_deque() < aRhs.to_std_deque();
+            return to_std_deque() <=> that.to_std_deque();
         }
         // implementation
         // from i_container
     public:
-        size_type size() const override 
+        size_type size() const noexcept final 
         { 
             return iDeque.size(); 
         }
-        size_type max_size() const override 
+        size_type max_size() const noexcept final
         { 
             return iDeque.max_size(); 
         }
-        void clear() override 
+        void clear() final 
         { 
             iDeque.clear(); 
         }
-        void assign(const generic_container_type& aOther) override 
+        void assign(const generic_container_type& aOther) final 
         { 
             if (&aOther == this) 
                 return; clear(); 
@@ -143,41 +147,41 @@ namespace neolib
         }
         // from i_container
     private:
-        abstract_const_iterator* do_begin(void* memory) const override 
+        abstract_const_iterator* do_begin(void* memory) const final 
         { 
             return new (memory) container_const_iterator(iDeque.begin()); 
         }
-        abstract_const_iterator* do_end(void* memory) const override 
+        abstract_const_iterator* do_end(void* memory) const final 
         { 
             return new (memory) container_const_iterator(iDeque.end()); 
         }
-        abstract_iterator* do_begin(void* memory) override 
+        abstract_iterator* do_begin(void* memory) final 
         { 
             return new (memory) container_iterator(iDeque.begin()); 
         }
-        abstract_iterator* do_end(void* memory) override 
+        abstract_iterator* do_end(void* memory) final 
         { 
             return new (memory) container_iterator(iDeque.end()); 
         }
-        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override 
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) final 
         { 
             return new (memory) container_iterator(iDeque.erase(static_cast<const container_const_iterator&>(aPosition))); 
         }
-        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override 
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) final 
         { 
             return new (memory) container_iterator(iDeque.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); 
         }
         // from i_sequence_container
     public:
-        size_type capacity() const override 
+        size_type capacity() const final 
         { 
             return iDeque.max_size();
         }
-        void reserve(size_type aCapacity) override 
+        void reserve(size_type aCapacity) final 
         { 
             /* do nothing */
         }
-        void resize(size_type aSize) override 
+        void resize(size_type aSize) final 
         { 
             if constexpr (std::is_default_constructible_v<value_type>)
                 iDeque.resize(aSize);
@@ -186,11 +190,11 @@ namespace neolib
             else
                 throw std::logic_error{ "neolib::deque::value_type not default constructible" }; 
         }
-        void resize(size_type aSize, const abstract_value_type& aValue) override 
+        void resize(size_type aSize, const abstract_value_type& aValue) final 
         { 
             iDeque.resize(aSize, aValue); 
         }
-        void push_front(const abstract_value_type& aValue) override
+        void push_front(const abstract_value_type& aValue) final
         {
             iDeque.push_front(aValue);
         }
@@ -199,11 +203,11 @@ namespace neolib
         {
             iDeque.emplace_front(std::forward<Args>(aArgs)...);
         }
-        void pop_front() override
+        void pop_front() final
         {
             iDeque.pop_front();
         }
-        void push_back(const abstract_value_type& aValue) override
+        void push_back(const abstract_value_type& aValue) final
         { 
             iDeque.push_back(aValue); 
         }
@@ -212,47 +216,47 @@ namespace neolib
         { 
             iDeque.emplace_back(std::forward<Args>(aArgs)...); 
         }
-        void pop_back() override 
+        void pop_back() final 
         { 
             iDeque.pop_back(); 
         }
-        const value_type& front() const override
+        const value_type& front() const final
         { 
             return iDeque.front(); 
         }
-        value_type& front() override 
+        value_type& front() final 
         { 
             return iDeque.front(); 
         }
-        const value_type& back() const override 
+        const value_type& back() const final 
         { 
             return iDeque.back(); 
         }
-        value_type& back() override 
+        value_type& back() final 
         { 
             return iDeque.back(); 
         }
         // from i_random_access_container
     public:
-        const value_type& at(size_type aIndex) const override 
+        const value_type& at(size_type aIndex) const final 
         { 
             return iDeque.at(aIndex); 
         }
-        value_type& at(size_type aIndex) override 
+        value_type& at(size_type aIndex) final 
         { 
             return iDeque.at(aIndex); 
         }
-        const value_type& operator[](size_type aIndex) const override 
+        const value_type& operator[](size_type aIndex) const final 
         { 
             return iDeque[aIndex]; 
         }
-        value_type& operator[](size_type aIndex) override 
+        value_type& operator[](size_type aIndex) final 
         { 
             return iDeque[aIndex]; 
         }
         // from i_sequence_container
     private:
-        abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const abstract_value_type& aValue) override 
+        abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const abstract_value_type& aValue) final 
         { 
             return new (memory) container_iterator(iDeque.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); 
         }

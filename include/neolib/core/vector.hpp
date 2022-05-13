@@ -122,19 +122,19 @@ namespace neolib
         // implementation
         // from i_container
     public:
-        size_type size() const override 
+        size_type size() const noexcept final
         { 
             return iVector.size(); 
         }
-        size_type max_size() const override 
+        size_type max_size() const noexcept final
         { 
             return iVector.max_size(); 
         }
-        void clear() override 
+        void clear() final 
         { 
             iVector.clear(); 
         }
-        void assign(generic_container_type const& aOther) override
+        void assign(generic_container_type const& aOther) final
         { 
             if (&aOther == this) 
                 return; clear(); 
@@ -143,41 +143,41 @@ namespace neolib
         }
         // from i_container
     private:
-        abstract_const_iterator* do_begin(void* memory) const override 
+        abstract_const_iterator* do_begin(void* memory) const final 
         { 
             return new (memory) container_const_iterator(iVector.begin()); 
         }
-        abstract_const_iterator* do_end(void* memory) const override 
+        abstract_const_iterator* do_end(void* memory) const final 
         { 
             return new (memory) container_const_iterator(iVector.end()); 
         }
-        abstract_iterator* do_begin(void* memory) override 
+        abstract_iterator* do_begin(void* memory) final 
         { 
             return new (memory) container_iterator(iVector.begin()); 
         }
-        abstract_iterator* do_end(void* memory) override 
+        abstract_iterator* do_end(void* memory) final 
         { 
             return new (memory) container_iterator(iVector.end()); 
         }
-        abstract_iterator* do_erase(void* memory, abstract_const_iterator const& aPosition) override
+        abstract_iterator* do_erase(void* memory, abstract_const_iterator const& aPosition) final
         { 
             return new (memory) container_iterator(iVector.erase(static_cast<container_const_iterator const&>(aPosition)));
         }
-        abstract_iterator* do_erase(void* memory, abstract_const_iterator const& aFirst, abstract_const_iterator const& aLast) override
+        abstract_iterator* do_erase(void* memory, abstract_const_iterator const& aFirst, abstract_const_iterator const& aLast) final
         { 
             return new (memory) container_iterator(iVector.erase(static_cast<container_const_iterator const&>(aFirst), static_cast<container_const_iterator const&>(aLast)));
         }
         // from i_sequence_container
     public:
-        size_type capacity() const override 
+        size_type capacity() const final 
         { 
             return iVector.capacity(); 
         }
-        void reserve(size_type aCapacity) override 
+        void reserve(size_type aCapacity) final 
         { 
             iVector.reserve(aCapacity); 
         }
-        void resize(size_type aSize) override 
+        void resize(size_type aSize) final 
         { 
             if constexpr (std::is_default_constructible_v<value_type>)
                 iVector.resize(aSize);
@@ -186,11 +186,11 @@ namespace neolib
             else
                 throw std::logic_error{ "neolib::vector::value_type not default constructible" }; 
         }
-        void resize(size_type aSize, abstract_value_type const& aValue) override
+        void resize(size_type aSize, abstract_value_type const& aValue) final
         { 
             iVector.resize(aSize, aValue); 
         }
-        void push_back(abstract_value_type const& aValue) override
+        void push_back(abstract_value_type const& aValue) final
         { 
             iVector.push_back(aValue); 
         }
@@ -199,65 +199,65 @@ namespace neolib
         { 
             iVector.emplace_back(std::forward<Args>(aArgs)...); 
         }
-        void pop_back() override 
+        void pop_back() final 
         { 
             iVector.pop_back(); 
         }
-        const value_type& front() const override 
+        const value_type& front() const final 
         { 
             return iVector.front(); 
         }
-        value_type& front() override 
+        value_type& front() final 
         { 
             return iVector.front(); 
         }
-        const value_type& back() const override 
+        const value_type& back() const final 
         { 
             return iVector.back(); 
         }
-        value_type& back() override 
+        value_type& back() final 
         { 
             return iVector.back(); 
         }
         // from i_random_access_container
     public:
-        const value_type* cdata() const override 
+        const value_type* cdata() const noexcept final 
         { 
             return iVector.data(); 
         }
-        const value_type* data() const override 
+        const value_type* data() const noexcept final
         { 
             return iVector.data(); 
         }
-        value_type* data() override 
+        value_type* data() noexcept final
         { 
             return iVector.data(); 
         }
     public:
-        const value_type& at(size_type aIndex) const override 
+        const value_type& at(size_type aIndex) const final 
         { 
             return iVector.at(aIndex); 
         }
-        value_type& at(size_type aIndex) override 
+        value_type& at(size_type aIndex) final 
         { 
             return iVector.at(aIndex); 
         }
-        const value_type& operator[](size_type aIndex) const override 
+        const value_type& operator[](size_type aIndex) const final 
         { 
             return iVector[aIndex]; 
         }
-        value_type& operator[](size_type aIndex) override 
+        value_type& operator[](size_type aIndex) final 
         { 
             return iVector[aIndex]; 
         }
     private:
-        std::ptrdiff_t iterator_offset() const override 
+        std::ptrdiff_t iterator_offset() const final 
         { 
             return sizeof(value_type); 
         }
         // from i_sequence_container
     private:
-        abstract_iterator* do_insert(void* memory, abstract_const_iterator const& aPosition, abstract_value_type const& aValue) override
+        abstract_iterator* do_insert(void* memory, abstract_const_iterator const& aPosition, abstract_value_type const& aValue) final
         { 
             return new (memory) container_iterator(iVector.insert(static_cast<container_const_iterator const&>(aPosition), aValue));
         }

@@ -57,7 +57,7 @@ namespace neolib
     public:
         virtual i_string& operator=(const i_string& aOther) = 0;
     public:
-        virtual const value_type* c_str() const = 0;
+        virtual const value_type* c_str() const noexcept = 0;
         virtual void assign(const i_string& aOther) = 0;
         virtual void assign(const value_type* aSource, size_type aSourceLength) = 0;
         virtual void append(const i_string& aOther) = 0;
@@ -71,43 +71,23 @@ namespace neolib
         void assign(const std::string& aSource) { assign(aSource.c_str(), aSource.size()); }
         void append(const std::string& aSource) { append(aSource.c_str(), aSource.size()); }
         std::string to_std_string() const { return std::string(c_str(), size()); }
-        std::string_view to_std_string_view() const { return std::string_view(c_str(), size()); }
+        std::string_view to_std_string_view() const noexcept { return std::string_view(c_str(), size()); }
     };
+
+    inline bool operator==(const i_string& lhs, const i_string& rhs) noexcept
+    {
+        return lhs.to_std_string_view() == rhs.to_std_string_view();
+    }
+
+    inline std::strong_ordering operator<=>(const i_string& lhs, const i_string& rhs) noexcept
+    {
+        return lhs.to_std_string_view() <=> rhs.to_std_string_view();
+    }
 
     inline i_string& operator+=(i_string& lhs, const i_string& rhs)
     {
         lhs.append(rhs);
         return lhs;
-    }
-
-    inline bool operator==(const i_string& lhs, const i_string& rhs)
-    {
-        return lhs.size() == rhs.size() && std::strcmp(lhs.c_str(), rhs.c_str()) == 0;
-    }
-
-    inline bool operator!=(const i_string& lhs, const i_string& rhs)
-    {
-        return !(lhs == rhs);
-    }
-
-    inline bool operator<(const i_string& lhs, const i_string& rhs)
-    {
-        return std::strcmp(lhs.c_str(), rhs.c_str()) < 0;
-    }
-
-    inline bool operator>(const i_string& lhs, const i_string& rhs)
-    {
-        return std::strcmp(lhs.c_str(), rhs.c_str()) > 0;
-    }
-
-    inline bool operator<=(const i_string& lhs, const i_string& rhs)
-    {
-        return !(lhs > rhs);
-    }
-
-    inline bool operator>=(const i_string& lhs, const i_string& rhs)
-    {
-        return !(lhs < rhs);
     }
 
     struct ci_equal_to

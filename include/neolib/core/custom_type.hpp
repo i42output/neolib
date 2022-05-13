@@ -67,22 +67,22 @@ namespace neolib
     public:
         using i_custom_type::name;
         using i_custom_type::to_string;
-        virtual void name(i_string& aName) const
+        void name(i_string& aName) const final
         { 
             aName = iName;
         }
-        virtual void to_string(i_string& aString) const
+        void to_string(i_string& aString) const final
         {
             if (!!iInstance)
                 aString = to_string(*iInstance);
             else
                 aString.clear();
         }
-        virtual i_custom_type* clone() const 
+        i_custom_type* clone() const final
         { 
             return new custom_type{ *this }; 
         }
-        virtual i_custom_type& assign(const i_custom_type& aRhs)
+        i_custom_type& assign(const i_custom_type& aRhs) final
         {
             if (aRhs.name() != name())
                 throw type_mismatch();
@@ -92,17 +92,23 @@ namespace neolib
                 *iInstance = aRhs.instance_as<abstract_value_type>();
             return *this;
         }
-        virtual bool operator==(const i_custom_type& aRhs) const
+        bool operator==(const i_custom_type& aRhs) const final
         {
             return instance_ptr() == aRhs.instance_ptr() || (instance_ptr() != nullptr && aRhs.instance_ptr() != nullptr && instance_as<abstract_value_type>() == aRhs.instance_as<abstract_value_type>());
         }
-        virtual bool operator<(const i_custom_type& aRhs) const
+        bool operator<(const i_custom_type& aRhs) const final
         {
             return (instance_ptr() != nullptr && aRhs.instance_ptr() != nullptr && instance_as<abstract_value_type>() < aRhs.instance_as<abstract_value_type>()) || (instance_ptr() < aRhs.instance_ptr());
         }
     public:
-        virtual const void* instance_ptr() const { return iInstance != std::nullopt ? static_cast<const abstract_value_type*>(&*iInstance) : static_cast<const abstract_value_type*>(nullptr); }
-        virtual void* instance_ptr() { return iInstance != std::nullopt ? static_cast<abstract_value_type*>(&*iInstance) : static_cast<abstract_value_type*>(nullptr); }
+        const void* instance_ptr() const final
+        { 
+            return iInstance != std::nullopt ? static_cast<const abstract_value_type*>(&*iInstance) : static_cast<const abstract_value_type*>(nullptr); 
+        }
+        void* instance_ptr() final
+        { 
+            return iInstance != std::nullopt ? static_cast<abstract_value_type*>(&*iInstance) : static_cast<abstract_value_type*>(nullptr); 
+        }
     private:
         string iName;
         container_type iInstance;

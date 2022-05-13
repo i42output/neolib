@@ -163,17 +163,13 @@ namespace neolib
         }
         // comparison
     public:
-        bool operator==(const self_type& aRhs) const
+        bool operator==(const self_type& that) const
         {
-            return value() == aRhs.value();
+            return value() == that.value();
         }
-        bool operator!=(const self_type& aRhs) const
+        std::strong_ordering operator<=>(const self_type& that) const
         {
-            return !(*this == aRhs);
-        }
-        bool operator<(const self_type& aRhs) const
-        {
-            return value() < aRhs.value();
+            return value() <=> that.value();
         }
         // state
     public:

@@ -152,53 +152,62 @@ namespace neolib
         {
             return std::holds_alternative<std::monostate>(*this);
         }
-        bool operator==(const abstract_type& aRhs) const override
+        bool operator==(const abstract_type& that) const final
         {
-            if (index() != aRhs.index())
+            if (index() != that.index())
                 return false;
             bool result = false;
-            std::visit([this, &aRhs, &result](auto&& v)
+            std::visit([this, &that, &result](auto&& v)
             {
                 typedef std::decay_t<decltype(v)> type;
                 typedef abstract_t<type> comparison_type;
                 if constexpr (boost::has_equal_to<comparison_type, comparison_type>::value)
-                    result = (*static_cast<const comparison_type*>(data()) == *static_cast<const comparison_type*>(aRhs.data()));
+                    result = (*static_cast<const comparison_type*>(data()) == *static_cast<const comparison_type*>(that.data()));
                 else
                     throw variant_type_not_equality_comparable();
             }, as_std_variant());
             return result;
         }
-        bool operator<(const abstract_type& aRhs) const override
+        bool operator<(const abstract_type& that) const final
         {
-            if (index() != aRhs.index())
-                return index() < aRhs.index();
+            if (index() != that.index())
+                return index() < that.index();
             if (index() == 0u)
                 return false;
             bool result = false;
-            std::visit([this, &aRhs, &result](auto&& v)
+            std::visit([this, &that, &result](auto&& v)
             {
                 typedef std::decay_t<decltype(v)> type;
                 typedef abstract_t<type> comparison_type;
                 if constexpr (boost::has_less<comparison_type, comparison_type>::value)
-                    result = (*static_cast<const comparison_type*>(data()) < *static_cast<const comparison_type*>(aRhs.data()));
+                    result = (*static_cast<const comparison_type*>(data()) < *static_cast<const comparison_type*>(that.data()));
                 else
                     throw variant_type_not_less_than_comparable();
             },  as_std_variant());
             return result;
         }
+        std::partial_ordering operator<=>(const self_type& that) const
+        {
+            if (*this == that)
+                return std::partial_ordering::equivalent;
+            else if (*this < that)
+                return std::partial_ordering::less;
+            else
+                return std::partial_ordering::greater;
+        }
         // state
     public:
-        void clear() override
+        void clear() final
         {
             variant_type::operator=(std::monostate{});
         }
-        id_t which() const override
+        id_t which() const final
         {
             if (!empty())
                 return static_cast<id_t>(index() - 1u);
             throw bad_variant_access();
         }
-        bool empty() const override
+        bool empty() const final
         {
             return std::holds_alternative<std::monostate>(*this);
         }
@@ -212,7 +221,7 @@ namespace neolib
         {
             return *this;
         }
-        const typename i_enum_t<Id>::enumerators_t& ids() const override
+        const typename i_enum_t<Id>::enumerators_t& ids() const final
         {
             return iEnum.enumerators();
         }
@@ -222,27 +231,27 @@ namespace neolib
         }
         // implementation
     private:
-        std::size_t index() const override
+        std::size_t index() const final
         {
             return variant_type::index();
         }
-        const void* data() const override
+        const void* data() const final
         {
             const void* result = nullptr;
             std::visit([&result](auto&& v) { result = &v; }, as_std_variant());
             return result;
         }
-        void* data() override
+        void* data() final
         {
             void* result = nullptr;
             std::visit([&result](auto&& v) { result = &v; }, as_std_variant());
             return result;
         }
-        abstract_type* do_clone() const override
+        abstract_type* do_clone() const final
         {
             return new self_type{ *this };
         }
-        abstract_type& do_assign(id_t aType, const void* aData) override
+        abstract_type& do_assign(id_t aType, const void* aData) final
         {
             static detail::plugin_variant::funky_assign_list_t<variant_type> funks;
             static auto const n = detail::plugin_variant::funky_gen_assign<variant_type, Types...>(funks);
@@ -252,7 +261,7 @@ namespace neolib
                 throw std::bad_variant_access();
             return *this;
         }
-        abstract_type& do_move_assign(id_t aType, void* aData) override
+        abstract_type& do_move_assign(id_t aType, void* aData) final
         {
             static detail::plugin_variant::funky_move_assign_list_t<variant_type> funks;
             static auto const n = detail::plugin_variant::funky_gen_move_assign<variant_type, Types...>(funks);

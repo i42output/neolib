@@ -120,10 +120,10 @@ namespace neolib
         // implementation
         // from i_container
     public:
-        size_type size() const override { return iMap.size(); }
-        size_type max_size() const override { return iMap.max_size(); }
-        void clear() override { iMap.clear(); }
-        void assign(const generic_container_type& aOther) override
+        size_type size() const noexcept final { return iMap.size(); }
+        size_type max_size() const noexcept final { return iMap.max_size(); }
+        void clear() final { iMap.clear(); }
+        void assign(const generic_container_type& aOther) final
         {
             if (&aOther == this) 
                 return;
@@ -137,15 +137,15 @@ namespace neolib
         using abstract_type::find;
         // from i_container
     private:
-        abstract_const_iterator* do_begin(void* memory) const override { return new (memory) container_const_iterator{ iMap.begin() }; }
-        abstract_const_iterator* do_end(void* memory) const override { return new (memory) container_const_iterator{ iMap.end() }; }
-        abstract_iterator* do_begin(void* memory) override { return new (memory) container_iterator{ iMap.begin() }; }
-        abstract_iterator* do_end(void* memory) override { return new (memory) container_iterator{ iMap.end() }; }
-        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override { return new (memory) container_iterator{ iMap.erase(static_cast<const container_const_iterator&>(aPosition)) }; }
-        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new (memory) container_iterator{ iMap.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast)) }; }
+        abstract_const_iterator* do_begin(void* memory) const final { return new (memory) container_const_iterator{ iMap.begin() }; }
+        abstract_const_iterator* do_end(void* memory) const final { return new (memory) container_const_iterator{ iMap.end() }; }
+        abstract_iterator* do_begin(void* memory) final { return new (memory) container_iterator{ iMap.begin() }; }
+        abstract_iterator* do_end(void* memory) final { return new (memory) container_iterator{ iMap.end() }; }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) final { return new (memory) container_iterator{ iMap.erase(static_cast<const container_const_iterator&>(aPosition)) }; }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) final { return new (memory) container_iterator{ iMap.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast)) }; }
         // from i_map
     public:
-        abstract_mapped_type& operator[](const abstract_key_type& aKey) override
+        abstract_mapped_type& operator[](const abstract_key_type& aKey) final
         { 
             auto existing = iMap.find(aKey);
             if (existing == iMap.end())
@@ -159,11 +159,11 @@ namespace neolib
             }
             return existing->second.second(); 
         }
-        const abstract_mapped_type& at(const abstract_key_type& aKey) const override
+        const abstract_mapped_type& at(const abstract_key_type& aKey) const final
         {
             return iMap.at(aKey).second();
         }
-        abstract_mapped_type& at(const abstract_key_type& aKey) override
+        abstract_mapped_type& at(const abstract_key_type& aKey) final
         {
             return iMap.at(aKey).second();
         }
@@ -177,7 +177,7 @@ namespace neolib
             return result.first->second;
         }
     private:
-        abstract_iterator* do_insert(void* memory, const abstract_key_type& aKey, const abstract_mapped_type& aMapped) override
+        abstract_iterator* do_insert(void* memory, const abstract_key_type& aKey, const abstract_mapped_type& aMapped) final
         { 
             return new (memory) container_iterator{ iMap.insert(
                 typename std_type::value_type{
@@ -186,12 +186,12 @@ namespace neolib
                         key_type{aKey},
                         mapped_type{aMapped}} }).first };
         }
-        abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.find(aKey) }; }
-        abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.find(aKey) }; }
-        abstract_const_iterator* do_lower_bound(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.lower_bound(aKey) }; }
-        abstract_iterator* do_lower_bound(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.lower_bound(aKey) }; }
-        abstract_const_iterator* do_upper_bound(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.upper_bound(aKey) }; }
-        abstract_iterator* do_upper_bound(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.upper_bound(aKey) }; }
+        abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const final { return new (memory) container_const_iterator{ iMap.find(aKey) }; }
+        abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) final { return new (memory) container_iterator{ iMap.find(aKey) }; }
+        abstract_const_iterator* do_lower_bound(void* memory, const abstract_key_type& aKey) const final { return new (memory) container_const_iterator{ iMap.lower_bound(aKey) }; }
+        abstract_iterator* do_lower_bound(void* memory, const abstract_key_type& aKey) final { return new (memory) container_iterator{ iMap.lower_bound(aKey) }; }
+        abstract_const_iterator* do_upper_bound(void* memory, const abstract_key_type& aKey) const final { return new (memory) container_const_iterator{ iMap.upper_bound(aKey) }; }
+        abstract_iterator* do_upper_bound(void* memory, const abstract_key_type& aKey) final { return new (memory) container_iterator{ iMap.upper_bound(aKey) }; }
     private:
         std_type iMap;
     };
@@ -273,10 +273,10 @@ namespace neolib
         // implementation
         // from i_container
     public:
-        size_type size() const override { return iMap.size(); }
-        size_type max_size() const override { return iMap.max_size(); }
-        void clear() override { iMap.clear(); }
-        void assign(const generic_container_type& aOther) override
+        size_type size() const noexcept final { return iMap.size(); }
+        size_type max_size() const noexcept final { return iMap.max_size(); }
+        void clear() final { iMap.clear(); }
+        void assign(const generic_container_type& aOther) final
         {
             if (&aOther == this)
                 return;
@@ -290,12 +290,12 @@ namespace neolib
         using abstract_type::find;
         // from i_container
     private:
-        abstract_const_iterator* do_begin(void* memory) const override { return new (memory) container_const_iterator{ iMap.begin() }; }
-        abstract_const_iterator* do_end(void* memory) const override { return new (memory) container_const_iterator{ iMap.end() }; }
-        abstract_iterator* do_begin(void* memory) override { return new (memory) container_iterator{ iMap.begin() }; }
-        abstract_iterator* do_end(void* memory) override { return new (memory) container_iterator{ iMap.end() }; }
-        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override { return new (memory) container_iterator(iMap.erase(static_cast<const container_const_iterator&>(aPosition))); }
-        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override { return new (memory) container_iterator(iMap.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
+        abstract_const_iterator* do_begin(void* memory) const final { return new (memory) container_const_iterator{ iMap.begin() }; }
+        abstract_const_iterator* do_end(void* memory) const final { return new (memory) container_const_iterator{ iMap.end() }; }
+        abstract_iterator* do_begin(void* memory) final { return new (memory) container_iterator{ iMap.begin() }; }
+        abstract_iterator* do_end(void* memory) final { return new (memory) container_iterator{ iMap.end() }; }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) final { return new (memory) container_iterator(iMap.erase(static_cast<const container_const_iterator&>(aPosition))); }
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) final { return new (memory) container_iterator(iMap.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); }
         // own
     public:
         template <typename Key2, typename... Args>
@@ -305,7 +305,7 @@ namespace neolib
         }
         // from i_multimap
     private:
-        abstract_iterator* do_insert(void* memory, const abstract_key_type& aKey, const abstract_mapped_type& aMapped) override
+        abstract_iterator* do_insert(void* memory, const abstract_key_type& aKey, const abstract_mapped_type& aMapped) final
         {
             return new (memory) container_iterator{ iMap.insert(
                 typename std_type::value_type{
@@ -314,12 +314,12 @@ namespace neolib
                         key_type{aKey},
                         mapped_type{aMapped}} }) };
         }
-        abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.find(aKey) }; }
-        abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.find(aKey) }; }
-        abstract_const_iterator* do_lower_bound(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.lower_bound(aKey) }; }
-        abstract_iterator* do_lower_bound(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.lower_bound(aKey) }; }
-        abstract_const_iterator* do_upper_bound(void* memory, const abstract_key_type& aKey) const override { return new (memory) container_const_iterator{ iMap.upper_bound(aKey) }; }
-        abstract_iterator* do_upper_bound(void* memory, const abstract_key_type& aKey) override { return new (memory) container_iterator{ iMap.upper_bound(aKey) }; }
+        abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const final { return new (memory) container_const_iterator{ iMap.find(aKey) }; }
+        abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) final { return new (memory) container_iterator{ iMap.find(aKey) }; }
+        abstract_const_iterator* do_lower_bound(void* memory, const abstract_key_type& aKey) const final { return new (memory) container_const_iterator{ iMap.lower_bound(aKey) }; }
+        abstract_iterator* do_lower_bound(void* memory, const abstract_key_type& aKey) final { return new (memory) container_iterator{ iMap.lower_bound(aKey) }; }
+        abstract_const_iterator* do_upper_bound(void* memory, const abstract_key_type& aKey) const final { return new (memory) container_const_iterator{ iMap.upper_bound(aKey) }; }
+        abstract_iterator* do_upper_bound(void* memory, const abstract_key_type& aKey) final { return new (memory) container_iterator{ iMap.upper_bound(aKey) }; }
     private:
         std_type iMap;
     };

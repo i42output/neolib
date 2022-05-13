@@ -55,23 +55,25 @@ namespace neolib
         virtual const second_type& second() const = 0;
         virtual second_type& second() = 0;
     public:
-        friend bool operator==(const self_type& aLhs, const self_type& aRhs)
-        {
-            return aLhs.first() == aRhs.first() && aLhs.second() == aRhs.second();
-        }
-        friend bool operator!=(const self_type& aLhs, const self_type& aRhs)
-        {
-            return !(aLhs == aRhs);
-        }
-        friend bool operator<(const self_type& aLhs, const self_type& aRhs)
-        {
-            return std::tie(aLhs.first(), aLhs.second()) < std::tie(aRhs.first(), aRhs.second());
-        }
         friend void swap(self_type& a, self_type& b)
         {
             using std::swap;
             swap(a.first(), b.first());
             swap(a.second(), b.second());
+        }
+    public:
+        constexpr bool operator==(const self_type& that) const noexcept
+        {
+            return first() == that.first() && second() == that.second();
+        }
+        constexpr std::partial_ordering operator<=>(const self_type& that) const noexcept
+        {
+            if (*this == that)
+                return std::partial_ordering::equivalent;
+            else if (std::forward_as_tuple(first(), second()) < std::forward_as_tuple(that.first(), that.second()))
+                return std::partial_ordering::less;
+            else
+                return std::partial_ordering::greater;
         }
     };
 }

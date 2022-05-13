@@ -100,19 +100,19 @@ namespace neolib
         // implementation
     public:
         // from i_container
-        size_type size() const override 
+        size_type size() const noexcept final
         { 
             return iList.size(); 
         }
-        size_type max_size() const override 
+        size_type max_size() const noexcept final
         { 
             return iList.max_size(); 
         }
-        void clear() override 
+        void clear() final 
         { 
             iList.clear(); 
         }
-        void assign(const generic_container_type& aOther) override 
+        void assign(const generic_container_type& aOther) final 
         { 
             if (&aOther == this) 
                 return; 
@@ -120,41 +120,41 @@ namespace neolib
         }
     private:
         // from i_container
-        abstract_const_iterator* do_begin(void* memory) const override 
+        abstract_const_iterator* do_begin(void* memory) const final 
         { 
             return new(memory) container_const_iterator(iList.begin()); 
         }
-        abstract_const_iterator* do_end(void* memory) const override 
+        abstract_const_iterator* do_end(void* memory) const final 
         { 
             return new(memory) container_const_iterator(iList.end()); 
         }
-        abstract_iterator* do_begin(void* memory) override 
+        abstract_iterator* do_begin(void* memory) final 
         { 
             return new(memory) container_iterator(iList.begin()); 
         }
-        abstract_iterator* do_end(void* memory) override 
+        abstract_iterator* do_end(void* memory) final 
         { 
             return new(memory) container_iterator(iList.end()); 
         }
-        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) override 
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) final 
         { 
             return new (memory) container_iterator(iList.erase(static_cast<const container_const_iterator&>(aPosition))); 
         }
-        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) override 
+        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) final 
         { 
             return new (memory) container_iterator(iList.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); 
         }
     public:
         // from i_sequence_container
-        size_type capacity() const override 
+        size_type capacity() const final 
         { 
             return iList.max_size(); 
         }
-        void reserve(size_type aCapacity) override 
+        void reserve(size_type aCapacity) final 
         { 
             /* do nothing */ 
         }
-        void resize(size_type aSize) override 
+        void resize(size_type aSize) final 
         { 
             if constexpr (std::is_default_constructible_v<value_type>) 
                 iList.resize(aSize); 
@@ -163,35 +163,35 @@ namespace neolib
             else
                 throw std::logic_error{ "neolib::list::value_type not default constructible" }; 
         }
-        void resize(size_type aSize, const abstract_value_type& aValue) override 
+        void resize(size_type aSize, const abstract_value_type& aValue) final 
         { 
             iList.resize(aSize, aValue); 
         }
-        void push_back(const abstract_value_type& aValue) override 
+        void push_back(const abstract_value_type& aValue) final 
         { 
             iList.push_back(aValue); 
         }
-        void pop_back() override 
+        void pop_back() final 
         { 
             iList.pop_back(); 
         }
-        const abstract_value_type& back() const override 
+        const abstract_value_type& back() const final 
         { 
             return to_abstract(iList.back()); 
         }
-        abstract_value_type& back() override 
+        abstract_value_type& back() final 
         { 
             return to_abstract(iList.back()); 
         }
     private:
         // from i_sequence_container
-        abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const abstract_value_type& aValue) override { return new (memory) container_iterator(iList.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
+        abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const abstract_value_type& aValue) final { return new (memory) container_iterator(iList.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
     public:
         // from i_list
-        void push_front(const abstract_value_type& aValue) override { iList.push_front(aValue); }
-        void pop_front() override { iList.pop_front(); }
-        const abstract_value_type& front() const override { return to_abstract(iList.front()); }
-        abstract_value_type& front() override { return to_abstract(iList.front()); }
+        void push_front(const abstract_value_type& aValue) final { iList.push_front(aValue); }
+        void pop_front() final { iList.pop_front(); }
+        const abstract_value_type& front() const final { return to_abstract(iList.front()); }
+        abstract_value_type& front() final { return to_abstract(iList.front()); }
         // attributes
     private:
         std::list<value_type> iList;

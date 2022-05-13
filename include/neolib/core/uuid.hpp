@@ -55,23 +55,9 @@ namespace neolib
         uint16_t part3;
         uint16_t part4;
         std::array<uint8_t, 6> part5;
+
+        auto operator<=>(const uuid&) const = default;
     };
-
-    inline bool operator==(const uuid& lhs, const uuid& rhs)
-    {
-        return lhs.part1 == rhs.part1 && lhs.part2 == rhs.part2 && lhs.part3 == rhs.part3 && lhs.part4 == rhs.part4 && lhs.part5 == rhs.part5;
-    }
-
-    inline bool operator!=(const uuid& lhs, const uuid& rhs)
-    {
-        return !(lhs == rhs);
-    }
-
-    inline bool operator<(const uuid& lhs, const uuid& rhs)
-    {
-        return std::tie(lhs.part1, lhs.part2, lhs.part3, lhs.part4, lhs.part5) <
-            std::tie(rhs.part1, rhs.part2, rhs.part3, rhs.part4, rhs.part5);
-    }
 
     inline uuid make_uuid(const std::string& aHyphenatedHexString /* "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" */)
     {

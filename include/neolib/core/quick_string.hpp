@@ -547,9 +547,18 @@ namespace neolib
         {
             return basic_quick_string(*this, pos1, n1).compare(basic_quick_string(s, n2));
         }
+    public:
+        bool operator==(const basic_quick_string& that) const
+        {
+            return size() == that.size() && std::equal(begin(), end(), that.begin(), that.end());
+        }
+        std::strong_ordering operator<=>(const basic_quick_string& that) const
+        {
+            return std::lexicographical_compare_three_way(begin(), end(), that.begin(), that.end());
+        }
         // basic_quick_string specific operations
     public:
-        bool is_view() const 
+        bool is_view() const
         { 
             return std::holds_alternative<view_contents_type>(iContents);
         }
@@ -678,306 +687,6 @@ namespace neolib
         return static_cast<std::basic_string<charT, Traits, Alloc>>(_Left) + _Right;
         }
 
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator==(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test for basic_quick_string equality
-        return (_Left.compare(_Right) == 0);
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator==(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const typename basic_quick_string<charT, Traits, Alloc>::string_type& _Right)
-        {    // test for basic_quick_string equality
-        return (_Left.compare(_Right) == 0);
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator==(
-            const typename basic_quick_string<charT, Traits, Alloc>::string_type& _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test for basic_quick_string equality
-        return (basic_quick_string<charT, Traits, Alloc>(_Left.begin(), _Left.end()).compare(_Right) == 0);
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator==(
-            const charT * _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test for NTCS vs. basic_quick_string equality
-        return (_Right.compare(_Left) == 0);
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator==(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const charT *_Right)
-        {    // test for basic_quick_string vs. NTCS equality
-        return (_Left.compare(_Right) == 0);
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator!=(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test for basic_quick_string inequality
-        return (!(_Left == _Right));
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator!=(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const typename basic_quick_string<charT, Traits, Alloc>::string_type& _Right)
-        {    // test for basic_quick_string inequality
-        return (!(_Left == _Right));
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator!=(
-        const typename basic_quick_string<charT, Traits, Alloc>::string_type& _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test for basic_quick_string inequality
-        return (!(_Left == _Right));
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator!=(
-            const charT *_Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test for NTCS vs. basic_quick_string inequality
-        return (!(_Left == _Right));
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator!=(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const charT *_Right)
-        {    // test for basic_quick_string vs. NTCS inequality
-        return (!(_Left == _Right));
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator<(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test if basic_quick_string < basic_quick_string
-        return (_Left.compare(_Right) < 0);
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator<(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const typename basic_quick_string<charT, Traits, Alloc>::string_type& _Right)
-        {    // test if basic_quick_string < basic_quick_string
-        return (_Left.compare(_Right) < 0);
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator<(
-        const typename basic_quick_string<charT, Traits, Alloc>::string_type& _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test if basic_quick_string < basic_quick_string
-        return (basic_quick_string<charT, Traits, Alloc>(_Left.begin(), _Left.end()).compare(_Right) < 0);
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator<(
-            const charT * _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test if NTCS < basic_quick_string
-        return (_Right.compare(_Left) > 0);
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator<(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const charT *_Right)
-        {    // test if basic_quick_string < NTCS
-        return (_Left.compare(_Right) < 0);
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator>(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test if basic_quick_string > basic_quick_string
-        return (_Right < _Left);
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator>(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const typename basic_quick_string<charT, Traits, Alloc>::string_type& _Right)
-        {    // test if basic_quick_string > basic_quick_string
-        return (_Right < _Left);
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator>(
-        const typename basic_quick_string<charT, Traits, Alloc>::string_type& _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test if basic_quick_string > basic_quick_string
-        return (_Right < _Left);
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator>(
-            const charT * _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test if NTCS > basic_quick_string
-        return (_Right < _Left);
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator>(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const charT *_Right)
-        {    // test if basic_quick_string > NTCS
-        return (_Right < _Left);
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator<=(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test if basic_quick_string <= basic_quick_string
-        return (!(_Right < _Left));
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator<=(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const typename basic_quick_string<charT, Traits, Alloc>::string_type& _Right)
-        {    // test if basic_quick_string <= basic_quick_string
-        return (!(_Right < _Left));
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator<=(
-        const typename basic_quick_string<charT, Traits, Alloc>::string_type& _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test if basic_quick_string <= basic_quick_string
-        return (!(_Right < _Left));
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator<=(
-            const charT * _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test if NTCS <= basic_quick_string
-        return (!(_Right < _Left));
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator<=(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const charT *_Right)
-        {    // test if basic_quick_string <= NTCS
-        return (!(_Right < _Left));
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator>=(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test if basic_quick_string >= basic_quick_string
-        return (!(_Left < _Right));
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator>=(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const typename basic_quick_string<charT, Traits, Alloc>::string_type& _Right)
-        {    // test if basic_quick_string >= basic_quick_string
-        return (!(_Left < _Right));
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator>=(
-            const typename basic_quick_string<charT, Traits, Alloc>::string_type& _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test if basic_quick_string >= basic_quick_string
-        return (!(_Left < _Right));
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator>=(
-            const charT * _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
-        {    // test if NTCS >= basic_quick_string
-        return (!(_Left < _Right));
-        }
-
-    template<class charT,
-        class Traits,
-        class Alloc> inline
-        bool operator>=(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const charT *_Right)
-        {    // test if basic_quick_string >= NTCS
-        return (!(_Left < _Right));
-        }
-
     template <typename charT>
     class basic_character_map
     {
@@ -1025,7 +734,7 @@ namespace neolib
     typedef basic_quick_string<char> quick_string;             
 
     template <typename charT, typename Traits, typename Alloc>
-    inline std::size_t hash_value(const neolib::basic_quick_string<charT, Traits, Alloc>& sv) noexcept
+    inline std::size_t hash_value(const neolib::basic_quick_string<charT, Traits, Alloc>& sv) 
     {
         return neolib::fast_hash(&*sv.to_std_string_view().cbegin(), sv.size());
     }

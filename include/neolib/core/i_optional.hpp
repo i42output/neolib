@@ -84,6 +84,34 @@ namespace neolib
         virtual i_optional<T>& operator=(std::nullopt_t) noexcept = 0;
         virtual i_optional<T>& operator=(const i_optional<T>& rhs) = 0;
         virtual i_optional<T>& operator=(const T& value) = 0;
+        // comparison
+    public:
+        bool operator==(std::nullopt_t) const
+        {
+            return !valid();
+        }
+        bool operator!=(std::nullopt_t) const
+        {
+            return valid();
+        }
+        bool operator==(const i_optional<T>& that) const
+        {
+            if (valid() != that.valid())
+                return false;
+            if (!valid())
+                return true;
+            return value() == that.value();
+        }
+        std::partial_ordering operator<=>(const i_optional<T>& that) const
+        {
+            if (valid() < that.valid())
+                return std::partial_ordering::less;
+            else if (valid() > that.valid())
+                return std::partial_ordering::greater;
+            else if (!valid())
+                return std::partial_ordering::equivalent;
+            return value() <=> that.value();
+        }
         // helpers
     public:
         [[deprecated("Use i_optional::value()")]]
@@ -97,28 +125,6 @@ namespace neolib
             return value();
         }
     };
-
-    template <typename T>
-    inline bool operator==(const i_optional<T>& lhs, std::nullopt_t) noexcept
-    {
-        return !lhs.valid();
-    }
-        
-    template <typename T>
-    inline bool operator!=(const i_optional<T>& lhs, std::nullopt_t) noexcept
-    {
-        return lhs.valid();
-    }
-
-    template <typename T>
-    inline bool operator==(const i_optional<T>& lhs, const i_optional<T>& rhs)
-    {
-        if (lhs.valid() != rhs.valid())
-            return false;
-        if (!lhs.valid())
-            return true;
-        return lhs.get() == rhs.get();
-    }
 
     template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
     inline bool operator==(const i_optional<T>& lhs, const U& rhs)
@@ -136,47 +142,19 @@ namespace neolib
         return lhs == rhs.get();
     }
 
-    template <typename T>
-    inline bool operator!=(const i_optional<T>& lhs, const i_optional<T>& rhs)
-    {
-        return !(lhs == rhs);
-    }
-
     template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
-    inline bool operator!=(const i_optional<T>& lhs, const U& rhs)
-    {
-        return !(lhs == rhs);
-    }
-
-    template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
-    inline bool operator!=(const U& lhs, const i_optional<T>& rhs)
-    {
-        return !(lhs == rhs);
-    }
-
-    template <typename T>
-    inline bool operator<(const i_optional<T>& lhs, const i_optional<T>& rhs)
-    {
-        if (lhs.valid() != rhs.valid())
-            return lhs.valid() < rhs.valid();
-        if (!lhs.valid())
-            return false;
-        return lhs.get() < rhs.get();
-    }
-
-    template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
-    inline bool operator<(const i_optional<T>& lhs, const U& rhs)
+    inline std::partial_ordering operator<=>(const i_optional<T>& lhs, const U& rhs)
     {
         if (!lhs.valid())
-            return true;
-        return lhs.get() < rhs;
+            return std::partial_ordering::less;
+        return lhs.get() <=> rhs;
     }
 
     template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
-    inline bool operator<(const U& lhs, const i_optional<T>& rhs)
+    inline std::partial_ordering operator<=>(const U& lhs, const i_optional<T>& rhs)
     {
         if (!rhs.valid())
-            return false;
-        return lhs < rhs.get();
+            return std::partial_ordering::greater;
+        return lhs <=> rhs.get();
     }
 }

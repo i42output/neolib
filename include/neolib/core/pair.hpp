@@ -62,12 +62,12 @@ namespace neolib
         pair(T3&& aFirst, T4&& aSecond) : concrete_type{ std::forward<T3>(aFirst), std::forward<T4>(aSecond) } {}
     public:
         self_type& operator=(const self_type& aOther) { return assign(aOther); }
-        abstract_type& operator=(const abstract_type& aOther) override { return assign(aOther); }
+        abstract_type& operator=(const abstract_type& aOther) final { return assign(aOther); }
     public:
-        const first_type& first() const override { return concrete_type::first; }
-        first_type& first() override { return concrete_type::first; }
-        const second_type& second() const override { return concrete_type::second; }
-        second_type& second() override { return concrete_type::second; }
+        const first_type& first() const final { return concrete_type::first; }
+        first_type& first() final { return concrete_type::first; }
+        const second_type& second() const final { return concrete_type::second; }
+        second_type& second() final { return concrete_type::second; }
     public:
         self_type& assign(const abstract_type& aOther)
         {
@@ -85,6 +85,20 @@ namespace neolib
             using std::swap;
             swap(a.first(), b.first());
             swap(a.second(), b.second());
+        }
+    public:
+        constexpr bool operator==(const self_type& that) const noexcept
+        {
+            return first() == that.first() && second() == that.second();
+        }
+        constexpr std::partial_ordering operator<=>(const self_type& that) const noexcept
+        {
+            if (*this == that)
+                return std::partial_ordering::equivalent;
+            else if (std::forward_as_tuple(first(), second()) < std::forward_as_tuple(that.first(), that.second()))
+                return std::partial_ordering::less;
+            else
+                return std::partial_ordering::greater;
         }
     };
 

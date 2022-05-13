@@ -59,49 +59,49 @@ namespace std
     template <typename Visitor, typename... Types>
     inline constexpr decltype(auto) visit(Visitor&& vis, neolib::variant<Types...>&& var)
     {
-        return visit(std::forward<Visitor>(vis), static_cast<std::variant<std::monostate, Types...>&&>(std::move(var.to_std_variant())));
+        return visit(std::forward<Visitor>(vis), static_cast<std::variant<std::monostate, Types...>&&>(std::move(var)));
     }
     
     template <typename Visitor, typename... Types>
     inline constexpr decltype(auto) visit(Visitor&& vis, neolib::variant<Types...> const& var)
     {
-        return visit(std::forward<Visitor>(vis), static_cast<std::variant<std::monostate, Types...> const&>(var.to_std_variant()));
+        return visit(std::forward<Visitor>(vis), static_cast<std::variant<std::monostate, Types...> const&>(var));
     }
     
     template <typename Visitor, typename... Types>
     inline constexpr decltype(auto) visit(Visitor&& vis, neolib::variant<Types...>& var)
     {
-        return visit(std::forward<Visitor>(vis), static_cast<std::variant<std::monostate, Types...>&>(var.to_std_variant()));
+        return visit(std::forward<Visitor>(vis), static_cast<std::variant<std::monostate, Types...>&>(var));
     }
 
     template <typename T, typename... Types>
     inline constexpr bool holds_alternative(neolib::variant<Types...> const& var) noexcept
     {
-        return holds_alternative<T>(var.to_std_variant());
+        return holds_alternative<T>(static_cast<std::variant<std::monostate, Types...> const&>(var));
     }
 
     template<typename T, typename... Types>
-    inline constexpr T& get(neolib::variant<Types...>& v)
+    inline constexpr T& get(neolib::variant<Types...>& var)
     {
-        return get<T>(v.to_std_variant());
+        return get<T>(static_cast<std::variant<std::monostate, Types...>&>(var));
     }
 
     template<typename T, typename... Types>
-    inline constexpr T&& get(neolib::variant<Types...>&& v)
+    inline constexpr T&& get(neolib::variant<Types...>&& var)
     {
-        return get<T>(std::move(v.to_std_variant()));
+        return get<T>(static_cast<std::variant<std::monostate, Types...> &&>(std::move(var)));
     }
 
     template<typename T, typename... Types>
-    inline constexpr const T& get(const neolib::variant<Types...>& v)
+    inline constexpr const T& get(const neolib::variant<Types...>& var)
     {
-        return get<T>(v.to_std_variant());
+        return get<T>(static_cast<std::variant<std::monostate, Types...> const&>(var));
     }
 
     template<typename T, typename... Types>
-    inline constexpr const T&& get(const neolib::variant<Types...>&& v)
+    inline constexpr const T&& get(const neolib::variant<Types...>&& var)
     {
-        return get<T>(std::move(v.to_std_variant()));
+        return get<T>(static_cast<const std::variant<std::monostate, Types...>&&>(std::move(var)));
     }
 }
 
@@ -134,7 +134,7 @@ namespace neolib
     using from_abstract_t = typename from_abstract_next<AbstractT, Type...>::result_type;
 
     template <typename... Types>
-    class variant : public reference_counted<i_variant<abstract_t<Types>...>>, private std::variant<std::monostate, Types...>
+    class variant : public reference_counted<i_variant<abstract_t<Types>...>>, public std::variant<std::monostate, Types...>
     {
         typedef variant<Types...> self_type;
         // types
@@ -165,51 +165,6 @@ namespace neolib
         // assignment
     public:
         using std_type::operator=;
-        using std_type::emplace;
-        // comparison
-    public:
-        bool operator==(none_t) const
-        {
-            return std::holds_alternative<std::monostate>(*this);
-        }
-        bool operator!=(none_t) const
-        {
-            return !std::holds_alternative<std::monostate>(*this);
-        }
-        bool operator==(const variant<Types...>& rhs) const
-        {
-            return to_std_variant() == rhs.to_std_variant();
-        }
-        bool operator!=(const variant<Types...>& rhs) const
-        {
-            return to_std_variant() != rhs.to_std_variant();
-        }
-        bool operator<(const variant<Types...>& rhs) const
-        {
-            return to_std_variant() < rhs.to_std_variant();
-        }
-        bool operator<=(const variant<Types...>& rhs) const
-        {
-            return to_std_variant() <= rhs.to_std_variant();
-        }
-        bool operator>(const variant<Types...>& rhs) const
-        {
-            return to_std_variant() > rhs.to_std_variant();
-        }
-        bool operator>=(const variant<Types...>& rhs) const
-        {
-            return to_std_variant() >= rhs.to_std_variant();
-        }
-        // std
-    public:
-        std_type& to_std_variant()
-        {
-            return static_cast<std_type&>(*this);
-        }
-        std_type const& to_std_variant() const
-        {
-            return static_cast<std_type const&>(*this);
-        }
         // meta
     public:
         std::size_t index() const override
@@ -233,24 +188,84 @@ namespace neolib
         }
     };
 
-    // Deprecated, use std::get.
-    template <typename T, typename Variant>
-    inline auto& static_variant_cast(const Variant& aVariant)
+    template <typename... Types>
+    inline bool operator==(variant<Types...> const& lhs, variant<Types...> const& rhs)
     {
-        return std::get<std::decay_t<T>>(aVariant);
+        return static_cast<std::variant<std::monostate, Types...> const&>(lhs) == static_cast<std::variant<std::monostate, Types...> const&>(rhs);
+    }
+
+    template <typename... Types>
+    inline bool operator!=(variant<Types...> const& lhs, variant<Types...> const& rhs)
+    {
+        return static_cast<std::variant<std::monostate, Types...> const&>(lhs) != static_cast<std::variant<std::monostate, Types...> const&>(rhs);
+    }
+
+    template <typename... Types>
+    inline bool operator<(variant<Types...> const& lhs, variant<Types...> const& rhs)
+    {
+        return static_cast<std::variant<std::monostate, Types...> const&>(lhs) < static_cast<std::variant<std::monostate, Types...> const&>(rhs);
+    }
+
+    template <typename... Types>
+    inline bool operator<=(variant<Types...> const& lhs, variant<Types...> const& rhs)
+    {
+        return static_cast<std::variant<std::monostate, Types...> const&>(lhs) <= static_cast<std::variant<std::monostate, Types...> const&>(rhs);
+    }
+
+    template <typename... Types>
+    inline bool operator>(variant<Types...> const& lhs, variant<Types...> const& rhs)
+    {
+        return static_cast<std::variant<std::monostate, Types...> const&>(lhs) > static_cast<std::variant<std::monostate, Types...> const&>(rhs);
+    }
+
+    template <typename... Types>
+    inline bool operator>=(variant<Types...> const& lhs, variant<Types...> const& rhs)
+    {
+        return static_cast<std::variant<std::monostate, Types...> const&>(lhs) >= static_cast<std::variant<std::monostate, Types...> const&>(rhs);
+    }
+
+    template <typename... Types>
+    inline bool operator==(variant<Types...> const& var, neolib::none_t)
+    {
+        return std::holds_alternative<std::monostate>(var);
+    }
+
+    template <typename... Types>
+    inline bool operator==(neolib::none_t, variant<Types...> const& var)
+    {
+        return std::holds_alternative<std::monostate>(var);
+    }
+
+    template <typename... Types>
+    inline bool operator!=(variant<Types...> const& var, neolib::none_t)
+    {
+        return !std::holds_alternative<std::monostate>(var);
+    }
+
+    template <typename... Types>
+    inline bool operator!=(neolib::none_t, variant<Types...> const& var)
+    {
+        return !std::holds_alternative<std::monostate>(var);
     }
 
     // Deprecated, use std::get.
     template <typename T, typename Variant>
-    inline auto& static_variant_cast(Variant& aVariant)
+    inline auto& static_variant_cast(const Variant& var)
+    {
+        return std::get<std::decay_t<T>>(var);
+    }
+
+    // Deprecated, use std::get.
+    template <typename T, typename Variant>
+    inline auto& static_variant_cast(Variant& var)
     { 
-        return std::get<std::decay_t<T>>(aVariant);
+        return std::get<std::decay_t<T>>(var);
     }
 
     struct bad_numeric_variant_cast : std::logic_error { bad_numeric_variant_cast() : std::logic_error{ "neolib::bad_numeric_variant_cast" } {} };
 
     template <typename T, typename Variant>
-    inline T static_numeric_variant_cast(const Variant& aVariant)
+    inline T static_numeric_variant_cast(const Variant& var)
     {
         typedef T result_type;
         std::optional<result_type> result;
@@ -259,24 +274,24 @@ namespace neolib
             typedef std::remove_cv_t<std::remove_reference_t<decltype(source)>> source_type;
             if constexpr (std::is_arithmetic_v<source_type>)
                 result = static_cast<result_type>(source); 
-        }, aVariant);
+        }, var);
         if (result != std::nullopt)
             return *result;
         throw bad_numeric_variant_cast();
     }
 
     template <typename T, typename Variant>
-    inline T static_numeric_variant_cast(Variant& aVariant)
+    inline T static_numeric_variant_cast(Variant& var)
     {
         typedef T result_type;
         typedef std::remove_cv_t<std::remove_reference_t<result_type>> alternative_type;
-        visit([&aVariant](auto&& source)
+        visit([&var](auto&& source)
         { 
             typedef std::remove_cv_t<std::remove_reference_t<decltype(source)>> source_type;
             if constexpr (std::is_arithmetic_v<source_type> && !std::is_same_v<alternative_type, source_type>)
-                aVariant = static_cast<alternative_type>(source);
-        }, aVariant);
-        return static_variant_cast<T>(aVariant);
+                var = static_cast<alternative_type>(source);
+        }, var);
+        return static_variant_cast<T>(var);
     }
 
     template<typename T, typename Variant, std::size_t index = 0>

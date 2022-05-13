@@ -129,11 +129,16 @@ namespace neolib
         }
         // comparison
     public:
-        virtual bool operator==(const self_type& aRhs) const = 0;
-        virtual bool operator<(const self_type& aRhs) const = 0;
-        bool operator!=(const self_type& aRhs) const
+        virtual bool operator==(const self_type& that) const = 0;
+        virtual bool operator<(const self_type& that) const = 0;
+        std::partial_ordering operator<=>(const self_type& that) const
         {
-            return !(*this == aRhs);
+            if (*this == that)
+                return std::partial_ordering::equivalent;
+            else if (*this < that)
+                return std::partial_ordering::less;
+            else
+                return std::partial_ordering::greater;
         }
         bool operator==(const none_t) const
         {

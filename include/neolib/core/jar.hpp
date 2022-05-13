@@ -116,7 +116,7 @@ namespace neolib
         }
         bool operator<(basic_cookie_ref_ptr const& aRhs) const
         {
-            return std::tie(iConsumer, iCookie) < std::tie(aRhs.iConsumer, aRhs.iCookie);
+            return std::forward_as_tuple(iConsumer, iCookie) < std::forward_as_tuple(aRhs.iConsumer, aRhs.iCookie);
         }
     public:
         bool valid() const
