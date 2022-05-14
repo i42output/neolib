@@ -46,6 +46,8 @@ namespace neolib
     template <typename Key, typename T, typename Pr = std::less<Key>, typename Alloc = std::allocator<std::pair<const Key, T>>>
     class map : public reference_counted<i_map<abstract_t<Key>, abstract_t<T>>>
     {
+        typedef map<Key, T, Pr, Alloc> self_type;
+        typedef reference_counted<i_map<abstract_t<Key>, abstract_t<T>>> base_type;
         // types
     public:
         typedef i_map<abstract_t<Key>, abstract_t<T>> abstract_type;
@@ -112,6 +114,16 @@ namespace neolib
         const std_type& as_std_map() const { return iMap; }
         std_type& as_std_map() { return iMap; }
         std_type to_std_map() const { return iMap; }
+        // comparison
+    public:
+        constexpr bool operator==(const self_type& that) const noexcept
+        {
+            return as_std_map() == that.as_std_map();
+        }
+        constexpr std::partial_ordering operator<=>(const self_type& that) const noexcept
+        {
+            return as_std_map() <=> that.as_std_map();
+        }
         // implementation
         // from i_container
     public:
@@ -194,6 +206,8 @@ namespace neolib
     template <typename Key, typename T, typename Pr = std::less<Key>, typename Alloc = std::allocator<std::pair<const Key, T>>>
     class multimap : public reference_counted<i_multimap<abstract_t<Key>, abstract_t<T>>>
     {
+        typedef multimap<Key, T, Pr, Alloc> self_type;
+        typedef reference_counted<i_multimap<abstract_t<Key>, abstract_t<T>>> base_type;
         // types
     public:
         typedef i_multimap<abstract_t<Key>, abstract_t<T>> abstract_type;
@@ -260,6 +274,16 @@ namespace neolib
         const std_type& as_std_multimap() const { return iMap; }
         std_type& as_std_multimap() { return iMap; }
         std_type to_std_multimap() const { return iMap; }
+        // comparison
+    public:
+        constexpr bool operator==(const self_type& that) const noexcept
+        {
+            return as_std_multimap() == that.as_std_multimap();
+        }
+        constexpr std::partial_ordering operator<=>(const self_type& that) const noexcept
+        {
+            return as_std_multimap() <=> that.as_std_multimap();
+        }
         // implementation
         // from i_container
     public:

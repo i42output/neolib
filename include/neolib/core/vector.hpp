@@ -47,7 +47,7 @@ namespace neolib
     class vector : public reference_counted<i_vector<abstract_t<T>>>
     {
         typedef vector<T> self_type;
-        typedef reference_counted<i_vector<T>> base_type;
+        typedef reference_counted<i_vector<abstract_t<T>>> base_type;
         // types
     public:
         typedef i_vector<abstract_t<T>> abstract_type;
@@ -119,9 +119,13 @@ namespace neolib
         }
         // comparison
     public:
-        bool operator<(const self_type& aRhs) const 
-        { 
-            return to_std_vector() < aRhs.to_std_vector();
+        constexpr bool operator==(const self_type& that) const noexcept
+        {
+            return as_std_vector() == that.as_std_vector();
+        }
+        constexpr std::partial_ordering operator<=>(const self_type& that) const noexcept
+        {
+            return as_std_vector() <=> that.as_std_vector();
         }
         // implementation
         // from i_container

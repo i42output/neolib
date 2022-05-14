@@ -45,6 +45,8 @@ namespace neolib
     template <typename T, typename Pred = std::less<typename crack_key<T>::key_type>, typename Alloc = std::allocator<T>>
     class set : public reference_counted<i_set<abstract_t<T>>>
     {
+        typedef set<T, Pred, Alloc> self_type;
+        typedef reference_counted<i_set<abstract_t<T>>> base_type;
         // types
     public:
         typedef i_set<abstract_t<T>> abstract_type;
@@ -88,6 +90,16 @@ namespace neolib
         const std_type& as_std_set() const { return iSet; }
         std_type& as_std_set() { return iSet; }
         std_type to_std_set() const { return iSet; }
+        // comparison
+    public:
+        constexpr bool operator==(const self_type& that) const noexcept
+        {
+            return as_std_set() == that.as_std_set();
+        }
+        constexpr std::partial_ordering operator<=>(const self_type& that) const noexcept
+        {
+            return as_std_set() <=> that.as_std_set();
+        }
         // implementation
     public:
         // from i_container
@@ -122,6 +134,8 @@ namespace neolib
     template <typename T, typename Pred = std::less<typename crack_key<T>::key_type>, typename Alloc = std::allocator<T>>
     class multiset : public reference_counted<i_multiset<abstract_t<T>>>
     {
+        typedef multiset<T, Pred, Alloc> self_type;
+        typedef reference_counted<i_multiset<abstract_t<T>>> base_type;
         // types
     public:
         typedef i_multiset<abstract_t<T>> abstract_type;
@@ -164,6 +178,16 @@ namespace neolib
         const std_type& as_std_multiset() const { return iSet; }
         std_type& as_std_multiset() { return iSet; }
         std_type to_std_multiset() const { return iSet; }
+        // comparison
+    public:
+        constexpr bool operator==(const self_type& that) const noexcept
+        {
+            return as_std_multiset() == that.as_std_multiset();
+        }
+        constexpr std::partial_ordering operator<=>(const self_type& that) const noexcept
+        {
+            return as_std_multiset() <=> that.as_std_multiset();
+        }
         // implementation
     public:
         // from i_container

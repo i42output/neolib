@@ -47,7 +47,7 @@ namespace neolib
     class deque : public reference_counted<i_deque<abstract_t<T>>>
     {
         typedef deque<T> self_type;
-        typedef reference_counted<i_deque<T>> base_type;
+        typedef reference_counted<i_deque<abstract_t<T>>> base_type;
         // types
     public:
         typedef i_deque<abstract_t<T>> abstract_type;

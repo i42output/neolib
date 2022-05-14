@@ -155,10 +155,10 @@ namespace neolib
         iRemovable{ false }
     {
         if (!arguments().as_vector().empty())
-            if (std::find(std::next(arguments().as_vector().to_std_vector().begin()), arguments().as_vector().to_std_vector().end(), neolib::ci_string("/pocket")) != arguments().as_vector().to_std_vector().end() ||
-                std::find(std::next(arguments().as_vector().to_std_vector().begin()), arguments().as_vector().to_std_vector().end(), neolib::ci_string("-pocket")) != arguments().as_vector().to_std_vector().end() ||
-                std::find(std::next(arguments().as_vector().to_std_vector().begin()), arguments().as_vector().to_std_vector().end(), neolib::ci_string("/removable")) != arguments().as_vector().to_std_vector().end() ||
-                std::find(std::next(arguments().as_vector().to_std_vector().begin()), arguments().as_vector().to_std_vector().end(), neolib::ci_string("-removable")) != arguments().as_vector().to_std_vector().end())
+            if (std::find(std::next(arguments().as_vector().as_std_vector().begin()), arguments().as_vector().as_std_vector().end(), neolib::ci_string("/pocket")) != arguments().as_vector().as_std_vector().end() ||
+                std::find(std::next(arguments().as_vector().as_std_vector().begin()), arguments().as_vector().as_std_vector().end(), neolib::ci_string("-pocket")) != arguments().as_vector().as_std_vector().end() ||
+                std::find(std::next(arguments().as_vector().as_std_vector().begin()), arguments().as_vector().as_std_vector().end(), neolib::ci_string("/removable")) != arguments().as_vector().as_std_vector().end() ||
+                std::find(std::next(arguments().as_vector().as_std_vector().begin()), arguments().as_vector().as_std_vector().end(), neolib::ci_string("-removable")) != arguments().as_vector().as_std_vector().end())
             {
                 iRemovable = true;
             }
