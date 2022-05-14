@@ -99,13 +99,17 @@ namespace neolib
         }
         // operations
     public:
-        std_type& to_std_deque()
+        const std_type& as_std_deque() const
+        {
+            return iDeque;
+        }
+        std_type& as_std_deque()
         { 
             return iDeque; 
         }
-        const std_type& to_std_deque() const
-        { 
-            return iDeque; 
+        std_type to_std_deque() const
+        {
+            return iDeque;
         }
         template <typename... Args>
         iterator emplace(const_iterator aPos, Args&&... aArgs) 
@@ -117,11 +121,11 @@ namespace neolib
     public:
         constexpr bool operator==(const self_type& that) const noexcept
         {
-            return to_std_deque() == that.to_std_deque();
+            return as_std_deque() == that.as_std_deque();
         }
         constexpr std::partial_ordering operator<=>(const self_type& that) const noexcept
         { 
-            return to_std_deque() <=> that.to_std_deque();
+            return as_std_deque() <=> that.as_std_deque();
         }
         // implementation
         // from i_container

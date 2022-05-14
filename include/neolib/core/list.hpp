@@ -89,13 +89,17 @@ namespace neolib
         }
         // operations
     public:
-        std_type& to_std_list() 
+        const std_type& as_std_list() const 
         { 
             return iList; 
         }
-        const std_type& to_std_list() const 
-        { 
-            return iList; 
+        std_type& as_std_list()
+        {
+            return iList;
+        }
+        std_type to_std_list() const
+        {
+            return iList;
         }
         // implementation
     public:

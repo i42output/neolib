@@ -109,14 +109,9 @@ namespace neolib
         }
         // non-asbtract operations
     public:
-        const std_type& to_std_map() const
-        {
-            return iMap;
-        }
-        std_type& to_std_map()
-        {
-            return iMap;
-        }
+        const std_type& as_std_map() const { return iMap; }
+        std_type& as_std_map() { return iMap; }
+        std_type to_std_map() const { return iMap; }
         // implementation
         // from i_container
     public:
@@ -262,14 +257,9 @@ namespace neolib
         }
         // non-asbtract operations
     public:
-        const std_type& to_std_multimap() const
-        {
-            return iMap;
-        }
-        std_type& to_std_multimap()
-        {
-            return iMap;
-        }
+        const std_type& as_std_multimap() const { return iMap; }
+        std_type& as_std_multimap() { return iMap; }
+        std_type to_std_multimap() const { return iMap; }
         // implementation
         // from i_container
     public:

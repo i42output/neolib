@@ -70,8 +70,8 @@ namespace neolib
         size_type length() const { return size(); }
         void assign(const std::string& aSource) { assign(aSource.c_str(), aSource.size()); }
         void append(const std::string& aSource) { append(aSource.c_str(), aSource.size()); }
-        std::string to_std_string() const { return std::string(c_str(), size()); }
-        std::string_view to_std_string_view() const noexcept { return std::string_view(c_str(), size()); }
+        std::string to_std_string() const { return std::string{ c_str(), size() }; }
+        std::string_view to_std_string_view() const noexcept { return std::string_view{ c_str(), size() }; }
     };
 
     inline bool operator==(const i_string& lhs, const i_string& rhs) noexcept
@@ -108,7 +108,7 @@ namespace neolib
 
     inline std::ostream& operator<<(std::ostream& aStream, const i_string& aString)
     {
-        aStream << aString.to_std_string();
+        aStream << aString.to_std_string_view();
         return aStream;
     }
 

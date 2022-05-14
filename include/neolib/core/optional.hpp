@@ -101,11 +101,15 @@ namespace neolib
         }
         // std
     public:
-        std_type& to_std_optional()
+        const std_type& as_std_optional() const
         {
             return iData;
         }
-        const std_type& to_std_optional() const
+        std_type& as_std_optional()
+        {
+            return iData;
+        }
+        std_type to_std_optional() const
         {
             return iData;
         }

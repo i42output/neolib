@@ -85,8 +85,9 @@ namespace neolib
         {}
         // operations
     public:
-        const std_type& to_std_set() const { return iSet; }
-        std_type& to_std_set() { return iSet; }
+        const std_type& as_std_set() const { return iSet; }
+        std_type& as_std_set() { return iSet; }
+        std_type to_std_set() const { return iSet; }
         // implementation
     public:
         // from i_container
@@ -160,8 +161,9 @@ namespace neolib
         {}
         // operations
     public:
-        const std_type& to_std_multiset() const { return iSet; }
-        std_type& to_std_multiset() { return iSet; }
+        const std_type& as_std_multiset() const { return iSet; }
+        std_type& as_std_multiset() { return iSet; }
+        std_type to_std_multiset() const { return iSet; }
         // implementation
     public:
         // from i_container

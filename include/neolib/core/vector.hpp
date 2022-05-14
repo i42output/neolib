@@ -99,13 +99,17 @@ namespace neolib
         }
         // operations
     public:
-        std_type& to_std_vector()
+        const std_type& as_std_vector() const
+        {
+            return iVector;
+        }
+        std_type& as_std_vector()
         { 
             return iVector; 
         }
-        const std_type& to_std_vector() const
-        { 
-            return iVector; 
+        std_type to_std_vector() const
+        {
+            return iVector;
         }
         template <typename... Args>
         iterator emplace(const_iterator aPos, Args&&... aArgs) 

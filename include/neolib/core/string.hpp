@@ -80,8 +80,10 @@ namespace neolib
         string& operator=(const i_string& aOther) final { assign(aOther); return *this; }
         // operations
     public:
-        const std_type& to_std_string() const { return iString; }
-        std_type& to_std_string() { return iString; }
+        const std_type& as_std_string() const { return iString; }
+        std_type& as_std_string() { return iString; }
+        std::string to_std_string() const { return iString; }
+        std::string_view to_std_string_view() const noexcept { return std::string_view{ iString }; }
         // implementation
         // from i_container
     public:
