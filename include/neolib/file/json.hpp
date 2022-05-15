@@ -623,8 +623,10 @@ namespace neolib
             T result = {};
             std::visit([&result](auto&& v)
             {
-                if constexpr (std::is_convertible_v<std::decay_t<decltype(v)>, std::decay_t<T>>)
-                    result = v;
+                using Lhs = std::decay_t<T>;
+                using Rhs = std::decay_t<decltype(v)>;
+                if constexpr (std::is_convertible_v<Lhs, Rhs>)
+                    result = static_cast<T>(v);
                 else
                     throw bad_conversion();
             }, iValue);
