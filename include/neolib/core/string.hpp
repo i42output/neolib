@@ -69,9 +69,9 @@ namespace neolib
         string(const std::string& aString = {}) : iString{ aString } {}
         string(const std::string_view& aStringView) : iString{ aStringView } {}
         string(const neolib::quick_string& aOther) : iString{ aOther } {}
-        string(const string& aOther) : iString{ aOther.to_std_string() } {}
-        string(string&& aOther) : iString{ std::move(aOther.to_std_string()) } {}
-        string(const i_string& aOther) : iString{ aOther.to_std_string() } {}
+        string(const string& aOther) : iString{ aOther.as_std_string() } {}
+        string(string&& aOther) : iString{ std::move(aOther.as_std_string()) } {}
+        string(const i_string& aOther) : iString{ aOther.to_std_string_view() } {}
         template <typename Iter>
         string(Iter aBegin, Iter aEnd) : iString{ aBegin, aEnd } {}
         ~string() {}
@@ -176,12 +176,12 @@ namespace neolib
 
     inline string operator+(const string& lhs, const string& rhs)
     {
-        return lhs.to_std_string() + rhs.to_std_string();
+        return lhs.as_std_string() + rhs.as_std_string();
     }
 
     inline string& operator+=(string& lhs, const i_string& rhs)
     {
-        lhs.to_std_string() += rhs.to_std_string_view();
+        lhs.as_std_string() += rhs.to_std_string_view();
         return lhs;
     }
 
