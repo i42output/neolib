@@ -645,12 +645,14 @@ namespace neolib
         }
         reference operator=(const value_type& aValue)
         {
+            clear();
             iValue = aValue;
             update_contents();
             return *this;
         }
         reference operator=(value_type&& aValue)
         {
+            clear();
             iValue = std::move(aValue);
             update_contents();
             return *this;
@@ -834,8 +836,17 @@ namespace neolib
         }
         void clear()
         {
-            iNode.~node_type();
-            new(&iNode) node_type();
+            if (has_parent())
+            {
+                auto& p = parent();
+                iNode.~node_type();
+                new(&iNode) node_type{ p };
+            }
+            else
+            {
+                iNode.~node_type();
+                new(&iNode) node_type{};
+            }
         }
         template <typename... Args>
         reference emplace_back(Args&&... aArguments)
