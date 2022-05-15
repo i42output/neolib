@@ -224,7 +224,7 @@ namespace neolib
         {
             if (opened())
                 throw already_open();
-            if (!iSecure)
+            if (!secure())
             {
                 iSocketHolder = socket_pointer(new socket_type(iIoTask.io_service().native_object<boost::asio::io_service>()));
             }
@@ -265,7 +265,7 @@ namespace neolib
         }
         bool opened() const
         {
-            if (!iSecure)
+            if (!secure())
             {
                 return std::holds_alternative<socket_pointer>(iSocketHolder) && std::get<socket_pointer>(iSocketHolder) != nullptr;
             }
@@ -289,6 +289,10 @@ namespace neolib
         unsigned short remote_port() const
         {
             return iRemotePort;
+        }
+        bool secure() const
+        {
+            return iSecure;
         }
         bool has_error() const
         {
@@ -432,7 +436,7 @@ namespace neolib
             if (!aError)
             {
                 iConnected = true;
-                if (!iSecure)
+                if (!secure())
                 {
                     destroyed_flag destroyed{ *this };
                     iOwner.handle_connection_established();
@@ -485,7 +489,7 @@ namespace neolib
                 return;
             iPacketBeingSent = iSendQueue.front();
             iSendQueue.pop_front();
-            if (!iSecure)
+            if (!secure())
             {
                 boost::asio::async_write(
                     socket(), 
@@ -513,7 +517,7 @@ namespace neolib
             if (!connected())
                 return;
             
-            if (!iSecure)
+            if (!secure())
             {
                 socket().async_read_some(
                     boost::asio::buffer(iReceiveBufferPtr, iReceiveBuffer.size() - (iReceiveBufferPtr - &iReceiveBuffer[0])),
@@ -630,7 +634,7 @@ namespace neolib
         typedef basic_packet_connection<CharType, tcp_protocol, ReceiveBufferSize> connection_type;
         if (aConnection.closed())
             throw typename connection_type::no_socket();
-        if (!aConnection.iSecure)
+        if (!aConnection.secure())
         {
             return *std::get<typename connection_type::socket_pointer>(aConnection.iSocketHolder);
         }
