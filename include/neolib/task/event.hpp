@@ -194,8 +194,8 @@ namespace neolib
 
     #define define_declared_event( name, declName, ... ) \
             neolib::event<__VA_ARGS__> name; \
-            const neolib::i_event<__VA_ARGS__>& ev_##declName() const override { return name; };\
-            neolib::i_event<__VA_ARGS__>& ev_##declName() override { return name; };
+            const neolib::i_event<__VA_ARGS__>& ev_##declName() const final { return name; };\
+            neolib::i_event<__VA_ARGS__>& ev_##declName() final { return name; };
 
     #define define_event( name, declName, ... ) \
             neolib::event<__VA_ARGS__> name; \
