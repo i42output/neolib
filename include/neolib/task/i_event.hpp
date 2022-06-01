@@ -257,6 +257,11 @@ namespace neolib
         sink()
         {
         }
+        template <typename... Args>
+        sink(slot_proxy<Args...>&& aSlot)
+        {
+            *this = std::move(aSlot);
+        }
         ~sink()
         {
             clear();
