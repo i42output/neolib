@@ -53,8 +53,8 @@ namespace neolib
 { 
     namespace math
     {
-        #define USE_AVX
-        #define USE_EMM
+#define USE_AVX
+#define USE_EMM
 
         using namespace boost::math::constants;
 
@@ -97,6 +97,15 @@ namespace neolib
         struct row_vector {};
 
         template <typename T, uint32_t _Size, typename Type = column_vector>
+        class basic_vector;
+    }
+
+    template <typename T, uint32_t _Size, typename Type>
+    bool constexpr vecarray_trivial_v<math::basic_vector<T, _Size, Type>> = true;
+
+    namespace math
+    {
+        template <typename T, uint32_t _Size, typename Type>
         class basic_vector
         {
             typedef basic_vector<T, _Size, Type> self_type;

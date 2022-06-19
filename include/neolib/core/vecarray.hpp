@@ -71,6 +71,9 @@ namespace neolib
         }
     };
 
+    template <typename T>
+    bool constexpr vecarray_trivial_v = std::is_trivial_v<T>;
+
     namespace detail
     {
         template <typename InputIter1, typename InputIter2, typename ForwardIter1, typename ForwardIter2>
@@ -85,8 +88,9 @@ namespace neolib
             {
                 auto last = dest1 + (last1 - first1);
                 typedef typename std::iterator_traits<ForwardIter1>::value_type value_type;
-                for (auto i = dest1; i != last; ++i)
-                    (*i).~value_type();
+                if constexpr (!vecarray_trivial_v<value_type>)
+                    for (auto i = dest1; i != last; ++i)
+                        (*i).~value_type();
                 throw;
             }
         }
@@ -531,8 +535,10 @@ namespace neolib
                 iterator first2 = std::next(begin(), std::distance(cbegin(), first));
                 iterator last2 = std::next(begin(), std::distance(cbegin(), last));
                 auto garbage = std::copy(std::make_move_iterator(last2), std::make_move_iterator(end()), first2);
-                for (auto i = garbage; i != end(); ++i)
-                    (*i).~value_type();
+                auto garbageLast = end();
+                if constexpr (!vecarray_trivial_v<value_type>)
+                    for (auto i = garbage; i != garbageLast; ++i)
+                        (*i).~value_type();
                 iSize -= (last - first);
                 return first2;
             }
@@ -587,7 +593,8 @@ namespace neolib
         }
         void remove(value_type value, bool multiple = true)
         {
-            for (iterator i = begin(); i != end(); )
+            auto last = end();
+            for (iterator i = begin(); i != last; )
             {
                 if (*i == value)
                 {
