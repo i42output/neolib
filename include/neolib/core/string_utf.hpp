@@ -380,6 +380,11 @@ namespace neolib
         return utf8_to_utf32(aString.begin(), aString.end(), aCodePageFallback);
     }
 
+    inline std::u32string utf8_to_utf32(const std::string_view& aStringView, bool aCodePageFallback = false)
+    {
+        return utf8_to_utf32(aStringView, detail::default_utf32_conversion_callback, aCodePageFallback);
+    }
+
     inline std::string utf32_to_utf8(const std::u32string& aString)
     {
         std::string result;
