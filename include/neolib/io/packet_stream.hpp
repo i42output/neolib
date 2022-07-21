@@ -48,10 +48,7 @@
 
 namespace neolib
 {
-    template <typename PacketType, typename Protocol>
-    class packet_stream;
-
-    template <typename PacketType, typename Protocol>
+    template <typename PacketType, typename Protocol, size_t ReceiveBufferSize = 1024>
     class packet_stream : public lifetime<>, private i_basic_packet_connection_owner<typename PacketType::character_type>
     {
         // types
@@ -61,7 +58,7 @@ namespace neolib
         typedef std::unique_ptr<packet_stream> pointer;
         typedef i_basic_packet<typename packet_type::character_type> generic_packet_type;
         typedef typename packet_type::clone_pointer packet_clone_pointer;
-        typedef basic_packet_connection<typename packet_type::character_type, Protocol> connection_type;
+        typedef basic_packet_connection<typename packet_type::character_type, Protocol, ReceiveBufferSize> connection_type;
         typedef std::unique_ptr<packet_type> queue_item;
         typedef std::unique_ptr<packet_type> orphaned_queue_item;
         typedef std::vector<queue_item> send_queue;
