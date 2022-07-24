@@ -72,7 +72,7 @@ namespace neolib
         string(const string& aOther) : iString{ aOther.as_std_string() } {}
         string(string&& aOther) : iString{ std::move(aOther.as_std_string()) } {}
         string(const i_string& aOther) : iString{ aOther.to_std_string_view() } {}
-        template <typename Iter>
+        template <typename Iter, typename SFINAE = std::enable_if_t<!std::is_scalar_v<Iter>, sfinae>>
         string(Iter aBegin, Iter aEnd) : iString{ aBegin, aEnd } {}
         ~string() {}
         string& operator=(const string& aOther) { assign(aOther); return *this; }
