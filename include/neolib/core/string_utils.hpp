@@ -59,6 +59,23 @@ namespace neolib
         comma_as_whitespace(std::size_t refs = 0) : ctype{ make_table(), false, refs } {}
     };
 
+    struct NEOLIB_EXPORT comma_and_brackets_as_whitespace : std::ctype<char>
+    {
+        static const mask* make_table()
+        {
+            static std::vector<mask> v(classic_table(), classic_table() + table_size);
+            v[','] |= space;
+            v['['] |= space;
+            v[']'] |= space;
+            v['('] |= space;
+            v[')'] |= space;
+            v['{'] |= space;
+            v['}'] |= space;
+            return &v[0];
+        }
+        comma_and_brackets_as_whitespace(std::size_t refs = 0) : ctype{ make_table(), false, refs } {}
+    };
+
     struct NEOLIB_EXPORT comma_only_whitespace : std::ctype<char>
     {
         static const mask* make_table()

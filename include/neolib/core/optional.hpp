@@ -37,6 +37,8 @@
 
 #include <neolib/neolib.hpp>
 #include <optional>
+#include <istream>
+#include <ostream>
 #include <neolib/core/reference_counted.hpp>
 #include <neolib/core/i_optional.hpp>
 
@@ -313,4 +315,28 @@ namespace neolib
 
     template <typename T>
     using optional_t = typename optional_type<T>::type;
+
+    template <typename Elem, typename Traits, typename T>
+    inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, optional<T> const& aOptional)
+    {
+        if (aOptional.valid())
+            aStream << aOptional.value();
+        else
+            aStream << '?';
+        return aStream;
+    }
+
+    template <typename Elem, typename Traits, typename T>
+    inline std::basic_istream<Elem, Traits>& operator>>(std::basic_istream<Elem, Traits>& aStream, optional<T>& aOptional)
+    {
+        char temp;
+        aStream >> temp;
+        if (temp != '?')
+        {
+            aStream.unget();
+            aOptional.emplace();
+            aStream >> aOptional.value();
+        }
+        return aStream;
+    }
 }

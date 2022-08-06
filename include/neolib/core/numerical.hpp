@@ -43,11 +43,13 @@
 #include <array>
 #include <algorithm>
 #include <ostream>
+#include <istream>
 #include <boost/math/constants/constants.hpp>
 #include <neolib/core/vecarray.hpp>
 #include <neolib/core/swizzle.hpp>
 #include <neolib/core/simd.hpp>
 #include <neolib/core/optional.hpp>
+#include <neolib/core/string_utils.hpp>
 
 namespace neolib
 { 
@@ -1312,6 +1314,18 @@ namespace neolib
                 aStream << aVector[i];
             }
             aStream << "]";
+            return aStream;
+        }
+
+        template <typename Elem, typename Traits, typename T, uint32_t Size, typename Type>
+        inline std::basic_istream<Elem, Traits>& operator>>(std::basic_istream<Elem, Traits>& aStream, basic_vector<T, Size, Type>& aVector)
+        {
+            auto previousImbued = aStream.getloc();
+            if (typeid(std::use_facet<std::ctype<char>>(previousImbued)) != typeid(neolib::comma_and_brackets_as_whitespace))
+                aStream.imbue(std::locale{ previousImbued, new neolib::comma_and_brackets_as_whitespace{} });
+            for (uint32_t i = 0; i < Size; ++i)
+                aStream >> aVector[i];
+            aStream.imbue(previousImbued);
             return aStream;
         }
 
