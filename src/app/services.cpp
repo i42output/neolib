@@ -35,34 +35,51 @@
 
 #include <neolib/neolib.hpp>
 #include <unordered_map>
+#include <memory>
+#include <mutex>
 #include <neolib/app/services.hpp>
 
 namespace neolib::services
 {
     struct service_provider : public i_service_provider
     {
+        mutable std::recursive_mutex mutex;
         std::unordered_map<uuid, i_service*> services;
 
-        bool service_registered(uuid aServiceIid) const override
+        void lock() final
         {
+            mutex.lock();
+        }
+
+        void unlock() final
+        {
+            mutex.unlock();
+        }
+
+        bool service_registered(uuid aServiceIid) const final
+        {
+            std::unique_lock lock{ mutex };
             return services.find(aServiceIid) != services.end();
         }
 
-        i_service& service(uuid aServiceIid) override
+        i_service& service(uuid aServiceIid) final
         {
+            std::unique_lock lock{ mutex };
             auto existing = services.find(aServiceIid);
             if (existing != services.end())
                 return *existing->second;
             throw service_not_found();
         }
 
-        void register_service(i_service& aService, uuid aServiceIid) override
+        void register_service(i_service& aService, uuid aServiceIid) final
         {
+            std::unique_lock lock{ mutex };
             services[aServiceIid] = &aService;
         }
 
-        void unregister_service(uuid aServiceIid) override
+        void unregister_service(uuid aServiceIid) final
         {
+            std::unique_lock lock{ mutex };
             auto existing = services.find(aServiceIid);
             if (existing != services.end())
             {
@@ -73,23 +90,43 @@ namespace neolib::services
         }
     };
 
-    std::unique_ptr<service_provider> sServiceProvider;
-    i_service_provider* sServiceProviderAlias;
+    struct service_provider_instance
+    {
+        std::recursive_mutex mutex;
+        std::shared_ptr<i_service_provider> instance;
+    };
+
+    service_provider_instance& get_service_provider_instance()
+    {
+        static service_provider_instance sInstance;
+        return sInstance;
+    }
 
     i_service_provider& allocate_service_provider()
     {
-        sServiceProvider = std::make_unique<service_provider>();
-        sServiceProviderAlias = &*sServiceProvider;
-        return *sServiceProviderAlias;
+        auto& instance = get_service_provider_instance();
+        std::unique_lock lock{ instance.mutex };
+        if (instance.instance != nullptr)
+            throw service_provider_instance_exists();
+        instance.instance = std::make_shared<service_provider>();
+        return *instance.instance;
     }
 
     i_service_provider& get_service_provider()
     {
-        return *sServiceProviderAlias;
+        auto& instance = get_service_provider_instance();
+        std::unique_lock lock{ instance.mutex };
+        if (instance.instance == nullptr)
+            throw no_service_provider_instance();
+        return *instance.instance;
     }
 
     void set_service_provider(i_service_provider& aServiceProvider)
     {
-        sServiceProviderAlias = &aServiceProvider;
+        auto& instance = get_service_provider_instance();
+        std::unique_lock lock{ instance.mutex };
+        if (instance.instance != nullptr)
+            throw service_provider_instance_exists();
+        instance.instance = std::shared_ptr<i_service_provider>{ std::shared_ptr<i_service_provider>{}, &aServiceProvider };
     }
 }

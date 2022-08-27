@@ -1,4 +1,4 @@
-// service.hpp
+// services.hpp
 /*
  *  Copyright (c) 2020 Leigh Johnston.
  *
@@ -37,10 +37,13 @@
 
 #include <stdexcept>
 #include <atomic>
+#include <mutex>
 #include <neolib/core/uuid.hpp>
 
 namespace neolib::services
 {
+    struct no_service_provider_instance : std::logic_error { no_service_provider_instance() : std::logic_error{ "neolib::services::no_service_provider_instance" } {} };
+    struct service_provider_instance_exists : std::logic_error { service_provider_instance_exists() : std::logic_error{ "neolib::services::service_provider_instance_exists" } {} };
     struct service_not_found : std::logic_error { service_not_found() : std::logic_error{ "neolib::services::service_not_found" } {} };
 
     template <typename Service>
@@ -60,6 +63,9 @@ namespace neolib::services
     {
     public:
         virtual ~i_service_provider() = default;
+    public:
+        virtual void lock() = 0;
+        virtual void unlock() = 0;
     public:
         virtual bool service_registered(uuid aServiceIid) const = 0;
         virtual i_service& service(uuid aServiceIid) = 0;
@@ -108,6 +114,7 @@ namespace neolib::services
     {
         if (service_ptr<Service>() != nullptr)
             return *service_ptr<Service>();
+        std::unique_lock lock{ get_service_provider() };
         if (!service_registered<Service>())
             register_service(start_service<Service>());
         else
