@@ -84,15 +84,16 @@ namespace neolib
     public:
         class iterator
         {
-            friend class segmented_array;
-            friend class segmented_array::const_iterator;
+            friend class self_type;
+            friend class self_type::const_iterator;
 
         public:
             typedef std::random_access_iterator_tag iterator_category;
-            typedef segmented_array::value_type value_type;
-            typedef segmented_array::difference_type difference_type;
-            typedef segmented_array::pointer pointer;
-            typedef segmented_array::reference reference;
+            typedef typename self_type::value_type value_type;
+            typedef typename self_type::difference_type difference_type;
+            typedef typename self_type::pointer pointer;
+            typedef typename self_type::size_type size_type;
+            typedef typename self_type::reference reference;
 
         public:
             iterator() :
@@ -138,6 +139,7 @@ namespace neolib
                 }
                 return *this;
             }
+#ifndef _MSC_VER // Internal Compiler Error (VS2022)
             iterator& operator--()
             {
                 --iContainerPosition;
@@ -148,6 +150,20 @@ namespace neolib
                 }
                 return *this;
             }
+#else // Internal Compiler Error (VS2022) workaround
+            iterator& operator--()
+            {
+                --iContainerPosition;
+                if (iSegmentPosition == 0)
+                {
+                    iNode = static_cast<node*>(iNode->previous());
+                    iSegmentPosition = static_cast<node*>(iNode)->segment().size() - 1;
+                }
+                else
+                    --iSegmentPosition;
+                return *this;
+            }
+#endif
             iterator operator++(int) { iterator ret(*this); operator++(); return ret; }
             iterator operator--(int) { iterator ret(*this); operator--(); return ret; }
             iterator& operator+=(difference_type aDifference)
@@ -200,14 +216,15 @@ namespace neolib
         };
         class const_iterator
         {
-            friend class segmented_array;
+            friend class self_type;
 
         public:
             typedef std::random_access_iterator_tag iterator_category;
-            typedef segmented_array::value_type value_type;
-            typedef segmented_array::difference_type difference_type;
-            typedef segmented_array::const_pointer pointer;
-            typedef segmented_array::const_reference reference;
+            typedef typename self_type::value_type value_type;
+            typedef typename self_type::difference_type difference_type;
+            typedef typename self_type::const_pointer pointer;
+            typedef typename self_type::size_type size_type;
+            typedef typename self_type::const_reference reference;
 
         public:
             const_iterator() :
@@ -265,6 +282,7 @@ namespace neolib
                 }
                 return *this;
             }
+#ifndef _MSC_VER  // Internal Compiler Error (VS2022)
             const_iterator& operator--()
             {
                 --iContainerPosition;
@@ -275,6 +293,20 @@ namespace neolib
                 }
                 return *this;
             }
+#else // Internal Compiler Error (VS2022) workaround
+            const_iterator& operator--()
+            {
+                --iContainerPosition;
+                if (iSegmentPosition == 0)
+                {
+                    iNode = static_cast<node*>(iNode->previous());
+                    iSegmentPosition = static_cast<node*>(iNode)->segment().size() - 1;
+                }
+                else
+                    --iSegmentPosition;
+                return *this;
+            }
+#endif
             const_iterator operator++(int) { const_iterator ret(*this); operator++(); return ret; }
             const_iterator operator--(int) { const_iterator ret(*this); operator--(); return ret; }
             const_iterator& operator+=(difference_type aDifference)

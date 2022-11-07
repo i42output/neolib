@@ -5,6 +5,7 @@
 #include <neolib/core/jar.hpp>
 #include <neolib/core/string.hpp>
 #include <neolib/core/pair.hpp>
+#include <neolib/core/segmented_array.hpp>
 
 struct i_foo
 {
@@ -89,6 +90,20 @@ int main()
     jar.emplace();
 
     jar.item_cookie(jar.at_index(1));
+
+    neolib::segmented_array<int> sa;
+    sa.push_back(1);
+    sa.push_back(2);
+    sa.push_back(3);
+    
+    ++sa.begin();
+    ++sa.cbegin();
+    sa.begin()++;
+    sa.cbegin()++;
+    --++sa.begin();
+    --++sa.cbegin();
+    (++sa.begin())--;
+    (++sa.cbegin())--;
 
     TestTree();
 }

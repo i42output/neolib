@@ -40,6 +40,7 @@
 #include <vector>
 #include <list>
 #include <set>
+#include <map>
 #include <variant>
 #include <locale>
 #include <neolib/core/string.hpp>
@@ -89,7 +90,7 @@ namespace neolib
     };
 
     template <typename T>
-    std::string to_std_string(T const& aValue)
+    inline std::string to_std_string(T const& aValue)
     {
         std::ostringstream oss;
         oss << aValue;
@@ -97,7 +98,7 @@ namespace neolib
     }
 
     template <typename T>
-    T from_std_string(std::string const& aValueAsString)
+    inline T from_std_string(std::string const& aValueAsString)
     {
         T result;
         std::istringstream iss{ aValueAsString };
@@ -105,14 +106,15 @@ namespace neolib
         return result;
 
     }
+
     template <typename T>
-    string to_string(T const& aValue)
+    inline string to_string(T const& aValue)
     {
         return to_std_string(aValue);
     }
 
     template <typename T>
-    T from_string(i_string const& aValueAsString)
+    inline T from_string(i_string const& aValueAsString)
     {
         return from_std_string<T>(aValueAsString.to_std_string());
     }
@@ -194,7 +196,7 @@ namespace neolib
     }
 
     template <typename CharT, typename Traits, typename Alloc>
-    std::basic_string<CharT, Traits, Alloc> to_lower(const std::basic_string<CharT, Traits, Alloc>& aString)
+    inline std::basic_string<CharT, Traits, Alloc> to_lower(const std::basic_string<CharT, Traits, Alloc>& aString)
     {
         static boost::locale::generator gen;
         static std::locale loc = gen("en_US.UTF-8");
@@ -202,13 +204,13 @@ namespace neolib
     }
 
     template <typename CharT>
-    CharT to_lower(CharT aCharacter)
+    inline CharT to_lower(CharT aCharacter)
     {
         return to_lower(std::basic_string<CharT>(1, aCharacter))[0];
     }
 
     template <typename CharT, typename Traits, typename Alloc>
-    std::basic_string<CharT, Traits, Alloc> to_upper(const std::basic_string<CharT, Traits, Alloc>& aString)
+    inline std::basic_string<CharT, Traits, Alloc> to_upper(const std::basic_string<CharT, Traits, Alloc>& aString)
     {
         static boost::locale::generator gen;
         static std::locale loc = gen("en_US.UTF-8");
@@ -216,7 +218,7 @@ namespace neolib
     }
 
     template <typename CharT>
-    CharT to_upper(CharT aCharacter)
+    inline CharT to_upper(CharT aCharacter)
     {
         return to_upper(std::basic_string<CharT>(1, aCharacter))[0];
     }
@@ -418,7 +420,7 @@ namespace neolib
     }
 
     template <typename CharT, typename Traits, typename FwdIter>
-    bool do_wildcard_match(FwdIter aTextBegin, FwdIter aTextEnd, FwdIter aPatternBegin, FwdIter aPatternEnd)
+    inline bool do_wildcard_match(FwdIter aTextBegin, FwdIter aTextEnd, FwdIter aPatternBegin, FwdIter aPatternEnd)
     {
         typedef std::pair<FwdIter, FwdIter> substring_t;
         typedef std::vector<substring_t> substrings_t;
@@ -445,13 +447,13 @@ namespace neolib
     }
 
     template <typename CharT, typename FwdIter>
-    bool wildcard_match(FwdIter aTextBegin, FwdIter aTextEnd, FwdIter aPatternBegin, FwdIter aPatternEnd)
+    inline bool wildcard_match(FwdIter aTextBegin, FwdIter aTextEnd, FwdIter aPatternBegin, FwdIter aPatternEnd)
     {
         return do_wildcard_match<CharT, std::char_traits<CharT>, FwdIter>(aTextBegin, aTextEnd, aPatternBegin, aPatternEnd);
     }
 
     template <typename CharT, typename Traits, typename Alloc>
-    bool wildcard_match(const std::basic_string<CharT, Traits, Alloc>& aText, const std::basic_string<CharT, Traits, Alloc>& aPattern)
+    inline bool wildcard_match(const std::basic_string<CharT, Traits, Alloc>& aText, const std::basic_string<CharT, Traits, Alloc>& aPattern)
     {
         return do_wildcard_match<CharT, Traits, std::basic_string<CharT, Traits, Alloc>::const_iterator>(aText.begin(), aText.end(), aPattern.begin(), aPattern.end());
     }

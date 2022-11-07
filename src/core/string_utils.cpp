@@ -84,9 +84,9 @@ namespace neolib
                     aResults.insert(std::make_tuple(&action, aStart, aEnd));
             return;
         }
-        for (auto existing : !aSearchingWildcard ?
-            std::initializer_list<decltype(aState.match)::const_iterator>{ aState.match.find(*aNext), aState.match.find('?'), aState.match.find('*') } :
-            std::initializer_list<decltype(aState.match)::const_iterator>{ aState.match.find('*') })
+        auto const nonWildcardSearch = { aState.match.find(*aNext), aState.match.find('?'), aState.match.find('*') };
+        auto const wildcardSearch = { aState.match.find('*') };
+        for (auto existing : !aSearchingWildcard ? nonWildcardSearch : wildcardSearch)
             if (existing != aState.match.end())
             {
                 bool const wildcard = (existing->first == '*');
