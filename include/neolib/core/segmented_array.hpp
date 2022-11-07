@@ -84,16 +84,16 @@ namespace neolib
     public:
         class iterator
         {
-            friend class self_type;
-            friend class self_type::const_iterator;
+            friend class segmented_array;
+            friend class segmented_array::const_iterator;
 
         public:
             typedef std::random_access_iterator_tag iterator_category;
-            typedef typename self_type::value_type value_type;
-            typedef typename self_type::difference_type difference_type;
-            typedef typename self_type::pointer pointer;
-            typedef typename self_type::size_type size_type;
-            typedef typename self_type::reference reference;
+            typedef typename segmented_array ::value_type value_type;
+            typedef typename segmented_array ::difference_type difference_type;
+            typedef typename segmented_array ::pointer pointer;
+            typedef typename segmented_array ::size_type size_type;
+            typedef typename segmented_array ::reference reference;
 
         public:
             iterator() :
@@ -216,15 +216,15 @@ namespace neolib
         };
         class const_iterator
         {
-            friend class self_type;
+            friend class segmented_array;
 
         public:
             typedef std::random_access_iterator_tag iterator_category;
-            typedef typename self_type::value_type value_type;
-            typedef typename self_type::difference_type difference_type;
-            typedef typename self_type::const_pointer pointer;
-            typedef typename self_type::size_type size_type;
-            typedef typename self_type::const_reference reference;
+            typedef typename segmented_array::value_type value_type;
+            typedef typename segmented_array::difference_type difference_type;
+            typedef typename segmented_array::const_pointer pointer;
+            typedef typename segmented_array::size_type size_type;
+            typedef typename segmented_array::const_reference reference;
 
         public:
             const_iterator() :
