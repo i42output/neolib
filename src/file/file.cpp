@@ -83,8 +83,8 @@ namespace neolib
 
     std::wstring convert_path(const std::string& aString)
     {
-        auto utf16 = utf8_to_utf16(aString);
-        return std::filesystem::path(reinterpret_cast<const wchar_t*>(utf16.c_str())).generic_wstring();
+        auto const utf16 = utf8_to_utf16(aString);
+        return std::filesystem::path(utf16.c_str()).generic_wstring();
     }
 
     const std::wstring& create_path(const std::wstring& aPath)

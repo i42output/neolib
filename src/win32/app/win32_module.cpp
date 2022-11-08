@@ -33,6 +33,7 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <algorithm>
 #include <neolib/neolib.hpp>
 #include <neolib/file/file.hpp>
 #include "win32_module.hpp"
@@ -74,19 +75,47 @@ namespace neolib
         return *this;
     }
 
+    namespace
+    {
+        std::string GetLastErrorText()
+        {
+            DWORD errorMessageID = ::GetLastError();
+            if (errorMessageID == 0)
+                return std::string{};
+
+            LPSTR messageBuffer = nullptr;
+            size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+
+            std::string message{ messageBuffer, size };
+            LocalFree(messageBuffer);
+
+            if (message.empty())
+                message = "Unknown error, code: " + std::to_string(errorMessageID);
+
+            return message;
+        }
+    }
+
     bool os_module::load(const std::string& aPath)
     { 
         try
         {
-            iHandle = ::LoadLibraryW(neolib::convert_path(aPath).c_str());
+            auto widePath = neolib::convert_path(aPath);
+            std::replace(widePath.begin(), widePath.end(), L'/', L'\\');
+            iHandle = ::LoadLibraryW(widePath.c_str());
+            if (iHandle == nullptr)
+            {
+                throw std::runtime_error{ GetLastErrorText() };
+            }
         }
         catch (const std::exception& e)
         {
-            throw std::runtime_error("neolib::os_module: Failed to load module '" + aPath + "', reason: " + e.what());
+            throw std::runtime_error{ "neolib::os_module: Failed to load module '" + aPath + "', reason: " + e.what() };
         }
         catch (...)
         {
-            throw std::runtime_error("neolib::os_module: Failed to load module '" + aPath + "', unknown reason");
+            throw std::runtime_error{ "neolib::os_module: Failed to load module '" + aPath + "', unknown reason" };
         }
         return loaded(); 
     }
