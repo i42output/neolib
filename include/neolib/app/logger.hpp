@@ -72,22 +72,22 @@ namespace neolib
                 set_destroying();
             }
         public:
-            void copy_to(i_logger& aLogger) override
+            void copy_to(i_logger& aLogger) final
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 copies().push_back(&aLogger);
             }
-            void cancel_copy_to(i_logger& aLogger) override
+            void cancel_copy_to(i_logger& aLogger) final
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 copies().erase(std::remove(copies().begin(), copies().end(), &aLogger), copies().end());
             }
-            bool has_logging_thread() const override
+            bool has_logging_thread() const final
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 return iLoggingThread != std::nullopt;
             }
-            void create_logging_thread() override
+            void create_logging_thread() final
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 if (iLoggingThread)
@@ -105,12 +105,12 @@ namespace neolib
                 });
             }
         public:
-            severity filter_severity() const override
+            severity filter_severity() const final
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 return iFilterSeverity;
             }
-            void set_filter_severity(severity aSeverity) override
+            void set_filter_severity(severity aSeverity) final
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 iFilterSeverity = aSeverity;
@@ -119,7 +119,7 @@ namespace neolib
             using i_logger::category_enabled;
             using i_logger::enable_category;
             using i_logger::disable_category;
-            void register_category(category_id aId, i_string const& aName) override
+            void register_category(category_id aId, i_string const& aName) final
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 iCategories[aId].first = true;
@@ -127,13 +127,13 @@ namespace neolib
                 for (auto& copy : copies())
                     copy->register_category(aId, aName);
             }
-            bool category_enabled(category_id aId) const override
+            bool category_enabled(category_id aId) const final
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 auto existing = iCategories.find(aId);
                 return existing != iCategories.end() && existing->second.first;
             }
-            void enable_category(category_id aId) override
+            void enable_category(category_id aId) final
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 auto existing = iCategories.find(aId);
@@ -142,7 +142,7 @@ namespace neolib
                 for (auto& copy : copies())
                     copy->enable_category(aId);
             }
-            void disable_category(category_id aId) override
+            void disable_category(category_id aId) final
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 auto existing = iCategories.find(aId);
@@ -152,40 +152,40 @@ namespace neolib
                     copy->disable_category(aId);
             }
         public:
-            bool has_formatter() const override
+            bool has_formatter() const final
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 return iFormatter != nullptr;
             }
-            i_formatter& formatter() const override
+            i_formatter& formatter() const final
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 if (iFormatter != nullptr)
                     return *iFormatter;
                 throw no_formatter();
             }
-            void set_formatter(i_formatter& aFormatter) override
+            void set_formatter(i_formatter& aFormatter) final
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 iFormatter = std::shared_ptr<i_formatter>{ std::shared_ptr<i_formatter>{}, &aFormatter };
             }
-            void clear_formatter() override
+            void clear_formatter() final
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 iFormatter = nullptr;
             }
         public:
-            line_id_t line_id() const override
+            line_id_t line_id() const final
             {
                 return iLineId;
             }
-            void reset_line_id(line_id_t aLineId = DefaultInitialLineId) override
+            void reset_line_id(line_id_t aLineId = DefaultInitialLineId) final
             {
                 iLineId = aLineId;
             }
         public:
             using i_logger::operator<<;
-            i_logger& operator<<(severity aSeverity) override
+            i_logger& operator<<(severity aSeverity) final
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 set_message_severity(aSeverity);
@@ -193,7 +193,7 @@ namespace neolib
                     (*copy) << aSeverity;
                 return *this;
             }
-            i_logger& operator<<(category_id aCategory) override
+            i_logger& operator<<(category_id aCategory) final
             {
                 std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 set_message_category(aCategory);
@@ -221,22 +221,18 @@ namespace neolib
             }
             severity message_severity() const
             {
-                std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 return message_severity_ref();
             }
             void set_message_severity(severity aMessageSeverity)
             {
-                std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 message_severity_ref() = aMessageSeverity;
             }
             category_id message_category() const
             {
-                std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 return message_category_ref();
             }
             void set_message_category(category_id aid)
             {
-                std::lock_guard<std::recursive_mutex> lg{ mutex() };
                 message_category_ref() = aid;
             }
             bool message_category_enabled() const
@@ -274,7 +270,7 @@ namespace neolib
                 else
                     commit_signal().notify_one();
             }
-            void wait() const override
+            void wait() const final
             {
                 if (iLoggingThread)
                 {
@@ -286,7 +282,7 @@ namespace neolib
                 }
             }
         protected:
-            void flush(i_string const& aMessage) override
+            void flush(i_string const& aMessage) final
             {
                 bool notify = false;
                 { 
