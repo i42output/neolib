@@ -648,6 +648,12 @@ namespace neolib
         typedef std::array<vec2, 3> triangle_2d;
         typedef std::array<vec2, 4> quad_2d;
 
+        typedef std::array<vec3f, 3> trianglef;
+        typedef std::array<vec3f, 4> quadf;
+
+        typedef std::array<vec2f, 3> trianglef_2d;
+        typedef std::array<vec2f, 4> quadf_2d;
+
         template <typename T, uint32_t D, typename Type>
         inline basic_vector<T, D, Type> operator+(const basic_vector<T, D, Type>& left, const basic_vector<T, D, Type>& right)
         {
@@ -1241,6 +1247,17 @@ namespace neolib
             return result;
         }
 
+        template <typename T, uint32_t D, std::size_t N>
+        inline std::array<basic_vector<T, D, column_vector>, N> operator*(const basic_matrix<T, D, D>& left, const std::array<basic_vector<T, D, column_vector>, N>& right)
+        {
+            if (left.is_identity())
+                return right;
+            std::array<basic_vector<T, D, column_vector>, N> result;
+            for (std::size_t vector = 0; vector < N; ++vector)
+                result[vector] = left * right[vector];
+            return result;
+        }
+
         template <typename T>
         inline basic_vector<T, 4u, column_vector> operator*(const basic_matrix<T, 4u, 4u>& left, const basic_vector<T, 4u, column_vector>& right)
         {
@@ -1249,6 +1266,17 @@ namespace neolib
             basic_vector<T, 4u, column_vector> result;
             for (uint32_t row = 0u; row < 4u; ++row)
                 result[row] = simd_fma_4d(left[0][row], right[0], left[1][row], right[1], left[2][row], right[2], left[3][row], right[3]);
+            return result;
+        }
+
+        template <typename T, std::size_t N>
+        inline std::array<basic_vector<T, 4u, column_vector>, N> operator*(const basic_matrix<T, 4u, 4u>& left, const std::array<basic_vector<T, 4u, column_vector>, N>& right)
+        {
+            if (left.is_identity())
+                return right;
+            std::array<basic_vector<T, 4u, column_vector>, N> result;
+            for (std::size_t vector = 0; vector < N; ++vector)
+                result[vector] = left * right[vector];
             return result;
         }
 
@@ -1264,6 +1292,17 @@ namespace neolib
             return result;
         }
 
+        template <typename T, uint32_t D, std::size_t N>
+        inline std::array<basic_vector<T, D, row_vector>, N> operator*(const std::array<basic_vector<T, D, row_vector>, N>& left, const basic_matrix<T, D, D>& right)
+        {
+            if (right.is_identity())
+                return left;
+            std::array<basic_vector<T, D, row_vector>, N> result;
+            for (std::size_t vector = 0; vector < N; ++vector)
+                result[vector] = left[vector] * right;
+            return result;
+        }
+
         template <typename T>
         inline basic_vector<T, 4u, row_vector> operator*(const basic_vector<T, 4u, row_vector>& left, const basic_matrix<T, 4u, 4u>& right)
         {
@@ -1272,6 +1311,17 @@ namespace neolib
             basic_vector<T, 4u, row_vector> result;
             for (uint32_t column = 0u; column < 4u; ++column)
                 result[column] = simd_fma_4d(left[0], right[column][0], left[1], right[column][1], left[2], right[column][2], left[3], right[column][3]);
+            return result;
+        }
+
+        template <typename T, std::size_t N>
+        inline basic_vector<T, 4u, row_vector> operator*(const std::array<basic_vector<T, 4u, row_vector>, N>& left, const basic_matrix<T, 4u, 4u>& right)
+        {
+            if (right.is_identity())
+                return left;
+            std::array<basic_vector<T, 4u, row_vector>, N> result;
+            for (std::size_t vector = 0; vector < N; ++vector)
+                result[vector] = left[vector] * right;
             return result;
         }
 
