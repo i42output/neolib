@@ -670,6 +670,42 @@ namespace neolib
             return result;
         }
 
+        template <typename T, uint32_t D, typename Type, std::size_t VertexCount>
+        inline std::array<basic_vector<T, D, Type>, VertexCount> operator+(const basic_vector<T, D, Type>& left, const std::array<basic_vector<T, D, Type>, VertexCount>& right)
+        {
+            std::array<basic_vector<T, D, Type>, VertexCount> result = right;
+            for (auto& v : result)
+                v += left;
+            return result;
+        }
+
+        template <typename T, uint32_t D, typename Type, std::size_t VertexCount>
+        inline std::array<basic_vector<T, D, Type>, VertexCount> operator+(const std::array<basic_vector<T, D, Type>, VertexCount>& left, const basic_vector<T, D, Type>& right)
+        {
+            std::array<basic_vector<T, D, Type>, VertexCount> result = left;
+            for (auto& v : result)
+                v += right;
+            return result;
+        }
+
+        template <typename T, uint32_t D, typename Type, std::size_t VertexCount>
+        inline std::array<basic_vector<T, D, Type>, VertexCount> operator-(const basic_vector<T, D, Type>& left, const std::array<basic_vector<T, D, Type>, VertexCount>& right)
+        {
+            std::array<basic_vector<T, D, Type>, VertexCount> result = right;
+            for (auto& v : result)
+                v = left - v;
+            return result;
+        }
+
+        template <typename T, uint32_t D, typename Type, std::size_t VertexCount>
+        inline std::array<basic_vector<T, D, Type>, VertexCount> operator-(const std::array<basic_vector<T, D, Type>, VertexCount>& left, const basic_vector<T, D, Type>& right)
+        {
+            std::array<basic_vector<T, D, Type>, VertexCount> result = left;
+            for (auto& v : result)
+                v -= right;
+            return result;
+        }
+
         template <typename T, uint32_t D, typename Type>
         inline basic_vector<T, D, Type> operator+(const basic_vector<T, D, Type>& left, const T& right)
         {
@@ -1247,13 +1283,13 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t D, std::size_t N>
-        inline std::array<basic_vector<T, D, column_vector>, N> operator*(const basic_matrix<T, D, D>& left, const std::array<basic_vector<T, D, column_vector>, N>& right)
+        template <typename T, uint32_t D, std::size_t VertexCount>
+        inline std::array<basic_vector<T, D, column_vector>, VertexCount> operator*(const basic_matrix<T, D, D>& left, const std::array<basic_vector<T, D, column_vector>, VertexCount>& right)
         {
             if (left.is_identity())
                 return right;
-            std::array<basic_vector<T, D, column_vector>, N> result;
-            for (std::size_t vector = 0; vector < N; ++vector)
+            std::array<basic_vector<T, D, column_vector>, VertexCount> result;
+            for (std::size_t vector = 0; vector < VertexCount; ++vector)
                 result[vector] = left * right[vector];
             return result;
         }
@@ -1269,13 +1305,13 @@ namespace neolib
             return result;
         }
 
-        template <typename T, std::size_t N>
-        inline std::array<basic_vector<T, 4u, column_vector>, N> operator*(const basic_matrix<T, 4u, 4u>& left, const std::array<basic_vector<T, 4u, column_vector>, N>& right)
+        template <typename T, std::size_t VertexCount>
+        inline std::array<basic_vector<T, 4u, column_vector>, VertexCount> operator*(const basic_matrix<T, 4u, 4u>& left, const std::array<basic_vector<T, 4u, column_vector>, VertexCount>& right)
         {
             if (left.is_identity())
                 return right;
-            std::array<basic_vector<T, 4u, column_vector>, N> result;
-            for (std::size_t vector = 0; vector < N; ++vector)
+            std::array<basic_vector<T, 4u, column_vector>, VertexCount> result;
+            for (std::size_t vector = 0; vector < VertexCount; ++vector)
                 result[vector] = left * right[vector];
             return result;
         }
@@ -1292,13 +1328,13 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t D, std::size_t N>
-        inline std::array<basic_vector<T, D, row_vector>, N> operator*(const std::array<basic_vector<T, D, row_vector>, N>& left, const basic_matrix<T, D, D>& right)
+        template <typename T, uint32_t D, std::size_t VertexCount>
+        inline std::array<basic_vector<T, D, row_vector>, VertexCount> operator*(const std::array<basic_vector<T, D, row_vector>, VertexCount>& left, const basic_matrix<T, D, D>& right)
         {
             if (right.is_identity())
                 return left;
-            std::array<basic_vector<T, D, row_vector>, N> result;
-            for (std::size_t vector = 0; vector < N; ++vector)
+            std::array<basic_vector<T, D, row_vector>, VertexCount> result;
+            for (std::size_t vector = 0; vector < VertexCount; ++vector)
                 result[vector] = left[vector] * right;
             return result;
         }
@@ -1314,13 +1350,13 @@ namespace neolib
             return result;
         }
 
-        template <typename T, std::size_t N>
-        inline basic_vector<T, 4u, row_vector> operator*(const std::array<basic_vector<T, 4u, row_vector>, N>& left, const basic_matrix<T, 4u, 4u>& right)
+        template <typename T, std::size_t VertexCount>
+        inline basic_vector<T, 4u, row_vector> operator*(const std::array<basic_vector<T, 4u, row_vector>, VertexCount>& left, const basic_matrix<T, 4u, 4u>& right)
         {
             if (right.is_identity())
                 return left;
-            std::array<basic_vector<T, 4u, row_vector>, N> result;
-            for (std::size_t vector = 0; vector < N; ++vector)
+            std::array<basic_vector<T, 4u, row_vector>, VertexCount> result;
+            for (std::size_t vector = 0; vector < VertexCount; ++vector)
                 result[vector] = left[vector] * right;
             return result;
         }
