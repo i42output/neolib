@@ -689,6 +689,14 @@ namespace neolib
         }
 
         template <typename T, uint32_t D, typename Type, std::size_t VertexCount>
+        inline std::array<basic_vector<T, D, Type>, VertexCount>& operator+=(std::array<basic_vector<T, D, Type>, VertexCount>& left, const basic_vector<T, D, Type>& right)
+        {
+            for (auto& v : left)
+                v += right;
+            return left;
+        }
+
+        template <typename T, uint32_t D, typename Type, std::size_t VertexCount>
         inline std::array<basic_vector<T, D, Type>, VertexCount> operator-(const basic_vector<T, D, Type>& left, const std::array<basic_vector<T, D, Type>, VertexCount>& right)
         {
             std::array<basic_vector<T, D, Type>, VertexCount> result = right;
@@ -704,6 +712,14 @@ namespace neolib
             for (auto& v : result)
                 v -= right;
             return result;
+        }
+
+        template <typename T, uint32_t D, typename Type, std::size_t VertexCount>
+        inline std::array<basic_vector<T, D, Type>, VertexCount>& operator-=(std::array<basic_vector<T, D, Type>, VertexCount>& left, const basic_vector<T, D, Type>& right)
+        {
+            for (auto& v : left)
+                v -= right;
+            return left;
         }
 
         template <typename T, uint32_t D, typename Type>
@@ -1610,6 +1626,15 @@ namespace neolib
                 [epsilon](auto const& lhs, auto const& rhs) { return nearly_equal(lhs, rhs, epsilon); });
         }
 
+        template <typename T>
+        basic_vector<T, 2> quad_extents(std::array<basic_vector<T, 2>, 4> const& aQuad)
+        {
+            return basic_vector<T, 2>{ 
+                (aQuad[1].distance(aQuad[0]) + aQuad[3].distance(aQuad[2])) / static_cast<T>(2.0),
+                (aQuad[0].distance(aQuad[3]) + aQuad[1].distance(aQuad[2])) / static_cast<T>(2.0)
+            };
+        }
+
         // AABB
 
         struct aabb
@@ -1665,15 +1690,23 @@ namespace neolib
             return aabb{ aOrigin - aSize / 2.0, aOrigin + aSize / 2.0 };
         }
 
-        inline aabb to_aabb(const vertices& vertices, const mat44& aTransformation = mat44::identity())
+        template <typename VertexIter>
+        inline aabb to_aabb(VertexIter aBegin, VertexIter aEnd, const mat44& aTransformation = mat44::identity())
         {
-            aabb result = !vertices.empty() ? aabb{ vertices[0], vertices[0] } : aabb{};
-            for (auto const& v : vertices)
+            if (aBegin == aEnd)
+                return aabb_transform(aabb{}, aTransformation);
+            aabb result{ aBegin->xyz, aBegin->xyz };
+            for (auto i = std::next(aBegin); i != aEnd; ++i)
             {
-                result.min = result.min.min(v);
-                result.max = result.max.max(v);
+                result.min = result.min.min(i->xyz);
+                result.max = result.max.max(i->xyz);
             }
             return aabb_transform(result, aTransformation);
+        }
+
+        inline aabb to_aabb(const vertices& aVertices, const mat44& aTransformation = mat44::identity())
+        {
+            return to_aabb(aVertices.begin(), aVertices.end(), aTransformation);
         }
 
         inline bool operator==(const aabb& left, const aabb& right)
@@ -1804,15 +1837,23 @@ namespace neolib
             return aabb_2d{ (aOrigin - aSize / 2.0).xy, (aOrigin + aSize / 2.0).xy };
         }
 
-        inline aabb_2d to_aabb_2d(const vertices& vertices, const mat44& aTransformation = mat44::identity())
+        template <typename VertexIter>
+        inline aabb_2d to_aabb_2d(VertexIter aBegin, VertexIter aEnd, const mat44& aTransformation = mat44::identity())
         {
-            aabb_2d result = !vertices.empty() ? aabb_2d{ vertices[0].xy, vertices[0].xy } : aabb_2d{};
-            for (auto const& v : vertices)
+            if (aBegin == aEnd)
+                return aabb_transform(aabb_2d{}, aTransformation);
+            aabb_2d result{ aBegin->xy, aBegin->xy };
+            for (auto i = std::next(aBegin); i != aEnd; ++i)
             {
-                result.min = result.min.min(v.xy);
-                result.max = result.max.max(v.xy);
+                result.min = result.min.min(i->xy);
+                result.max = result.max.max(i->xy);
             }
             return aabb_transform(result, aTransformation);
+        }
+
+        inline aabb_2d to_aabb_2d(const vertices& aVertices, const mat44& aTransformation = mat44::identity())
+        {
+            return to_aabb_2d(aVertices.begin(), aVertices.end(), aTransformation);
         }
 
         inline bool operator==(const aabb_2d& left, const aabb_2d& right)
