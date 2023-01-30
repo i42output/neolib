@@ -49,7 +49,7 @@ namespace neolib
         rebuild();
     }
 
-    void string_search_fsa::search(std::string const& aText) const
+    void string_search_fsa::search(std::string const& aText, bool aRemoveSubmatches) const
     {
         auto const begin = aText.data();
         auto const end = aText.data() + aText.size();
@@ -58,17 +58,20 @@ namespace neolib
             search(iRoot, nullptr, i, end, false, results);
         if (results.empty())
             return;
-        for (auto i = results.begin(); i != std::prev(results.end());)
+        if (aRemoveSubmatches)
         {
-            auto j = std::next(i);
-            if (std::get<0>(*i) != std::get<0>(*j))
-                ++i;
-            else if (std::get<1>(*i) <= std::get<1>(*j) && std::get<2>(*i) >= std::get<2>(*j))
-                results.erase(j);
-            else if (std::get<1>(*i) >= std::get<1>(*j) && std::get<2>(*i) <= std::get<2>(*j))
-                i = results.erase(i);
-            else
-                ++i;
+            for (auto i = results.begin(); i != std::prev(results.end());)
+            {
+                auto j = std::next(i);
+                if (std::get<0>(*i) != std::get<0>(*j))
+                    ++i;
+                else if (std::get<1>(*i) <= std::get<1>(*j) && std::get<2>(*i) >= std::get<2>(*j))
+                    results.erase(j);
+                else if (std::get<1>(*i) >= std::get<1>(*j) && std::get<2>(*i) <= std::get<2>(*j))
+                    i = results.erase(i);
+                else
+                    ++i;
+            }
         }
         for (auto& result : results)
             (*std::get<0>(result))(std::get<1>(result), std::get<2>(result));

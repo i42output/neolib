@@ -43,6 +43,7 @@
 #include <map>
 #include <variant>
 #include <locale>
+#include <format>
 #include <neolib/core/string.hpp>
 #include <neolib/core/string_numeric.hpp>
 #include <neolib/core/string_utf.hpp>
@@ -473,7 +474,7 @@ namespace neolib
         string_search_fsa();
     public:
         void add_pattern(std::string const& aPattern, action_t aAction);
-        void search(std::string const& aText) const;
+        void search(std::string const& aText, bool aRemoveSubmatches = true) const;
     private:
         void search(state const& aState, char const* aStart, char const* aNext, char const* aEnd, bool aSearchingWildcard, results_t& aResults) const;
         void rebuild();
@@ -481,4 +482,83 @@ namespace neolib
         std::map<std::string, action_t> iPatterns;
         state iRoot;
     };
+
+    struct format_result
+    {
+        struct formatted_arg
+        {
+            std::size_t arg;
+            std::ptrdiff_t begin;
+            std::ptrdiff_t end;
+
+            constexpr std::strong_ordering operator<=>(formatted_arg const&) const noexcept = default;
+        };
+        typedef std::vector<formatted_arg> arg_list;
+
+        std::string text;
+        arg_list args;
+
+        arg_list::const_iterator find_arg(std::size_t aArgIndex) const
+        {
+            return std::find_if(args.begin(), args.end(), [&](auto const& a) { return a.arg == aArgIndex; });
+        }
+        bool has_arg(std::size_t aArgIndex) const
+        {
+            return find_arg(aArgIndex) != args.end();
+        }
+        std::string_view arg_span(std::size_t aArgIndex) const
+        {
+            auto existing = find_arg(aArgIndex);
+            if (existing != args.end())
+                return { std::next(text.begin(), existing->begin), std::next(text.begin(), existing->end) };
+            throw std::format_error("neolib::format_result");
+        }
+    };
+
+    template <typename... Args>
+    inline format_result format(std::string_view const& aFormat, Args&&... aArgs)
+    {
+        format_result result;
+        auto next = aFormat.begin();
+        while (next != aFormat.end())
+        {
+            auto nextArg = std::find(next, aFormat.end(), '{');
+            if (nextArg == aFormat.end())
+            {
+                result.text.append(next, nextArg);
+                next = nextArg;
+            }
+            else if (std::next(nextArg) == aFormat.end())
+                throw std::format_error("neolib::format");
+            else if (*std::next(nextArg) == '{')
+            {
+                result.text.append(next, std::next(nextArg, 2));
+                next = std::next(nextArg, 2);
+            }
+            else
+            {
+                result.text.append(next, nextArg);
+                auto nextArgEnd = std::find(nextArg, aFormat.end(), '}');
+                if (nextArgEnd == aFormat.end())
+                    throw std::format_error("neolib::format");
+                else
+                {
+                    // todo: add support for omission of arg-id in format string
+                    ++nextArgEnd;
+                    next = nextArgEnd;
+                    auto argIdTerminators = { ':', '}' };
+                    auto argIdEnd = std::find_first_of(nextArg, nextArgEnd, argIdTerminators.begin(), argIdTerminators.end());
+                    std::optional<std::size_t> argId;
+                    if (argIdEnd - nextArg >= 2)
+                        argId = static_cast<std::size_t>(std::stoi(std::string{ std::next(nextArg), argIdEnd }));
+                    if (argId)
+                        result.args.emplace_back(argId.value(), result.text.size());
+                    result.text.append(std::vformat(std::string_view{ nextArg, nextArgEnd }, std::make_format_args(std::forward<Args>(aArgs)...)));
+                    if (argId)
+                        result.args.back().end = result.text.size();
+                }
+            }
+        }
+        return result;
+    }
 }
