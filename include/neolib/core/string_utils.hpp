@@ -513,6 +513,10 @@ namespace neolib
                 return { std::next(text.begin(), existing->begin), std::next(text.begin(), existing->end) };
             throw std::format_error("neolib::format_result");
         }
+        arg_list::const_iterator arg_spanning(std::ptrdiff_t aPos) const
+        {
+            return std::find_if(args.begin(), args.end(), [&](auto const& a) { return aPos >= a.begin && aPos < a.end; });
+        }
     };
 
     template <typename... Args>

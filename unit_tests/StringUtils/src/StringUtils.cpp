@@ -12,16 +12,23 @@ int main()
     assert((result1.args == neolib::format_result::arg_list{ { 0, 0, 5 }, { 1, 6, 8 } }));
     assert((result1.arg_span(0) == "xyzzy"));
     assert((result1.arg_span(1) == "42"));
+    assert((result1.arg_spanning(3) == std::next(result1.args.begin(), 0)));
+    assert((result1.arg_spanning(7) == std::next(result1.args.begin(), 1)));
     assert((result2.text == "{{0}}:42"));
     assert((result2.args == neolib::format_result::arg_list{ { 1, 6, 8 } }));
     assert((result2.arg_span(1) == "42"));
+    assert((result2.arg_spanning(7) == std::next(result2.args.begin(), 0)));
     assert((result3.text == "xyzzy:{{1}}"));
     assert((result3.args == neolib::format_result::arg_list{ { 0, 0, 5 } }));
     assert((result3.arg_span(0) == "xyzzy"));
+    assert((result3.arg_spanning(3) == std::next(result3.args.begin(), 0)));
     assert((result4.text == "xyzzy:xyzzy:42"));
     assert((result4.args == neolib::format_result::arg_list{ { 0, 0, 5 }, { 0, 6, 11 }, { 1, 12, 14 } }));
     assert((result4.arg_span(0) == "xyzzy"));
     assert((result4.arg_span(1) == "42"));
+    assert((result4.arg_spanning(0) == std::next(result4.args.begin(), 0)));
+    assert((result4.arg_spanning(6) == std::next(result4.args.begin(), 1)));
+    assert((result4.arg_spanning(13) == std::next(result4.args.begin(), 2)));
 
     std::vector<std::string> v0, v1, v2, v3, v4, v5;
     neolib::tokens(""s, ","s, v0, 0, false);
