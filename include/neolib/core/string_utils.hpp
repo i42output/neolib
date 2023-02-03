@@ -517,6 +517,19 @@ namespace neolib
         {
             return std::find_if(args.begin(), args.end(), [&](auto const& a) { return aPos >= a.begin && aPos < a.end; });
         }
+        arg_list::const_iterator arg_after(std::ptrdiff_t aPos) const
+        {
+            auto existing = arg_spanning(aPos);
+            if (existing == args.end())
+            {
+                existing = std::find_if(args.rbegin(), args.rend(), [&](auto const& a) { return aPos >= a.end; }).base();
+                if (existing != args.begin())
+                    --existing;
+            }
+            if (existing != args.end())
+                ++existing;
+            return existing;
+        }
     };
 
     template <typename... Args>

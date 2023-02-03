@@ -14,6 +14,10 @@ int main()
     assert((result1.arg_span(1) == "42"));
     assert((result1.arg_spanning(3) == std::next(result1.args.begin(), 0)));
     assert((result1.arg_spanning(7) == std::next(result1.args.begin(), 1)));
+    assert((result1.arg_after(4) == std::next(result1.args.begin(), 1)));
+    assert((result1.arg_after(5) == std::next(result1.args.begin(), 1)));
+    assert((result1.arg_after(7) == std::next(result1.args.begin(), 2)));
+    assert((result1.arg_after(8) == std::next(result1.args.begin(), 2)));
     assert((result2.text == "{{0}}:42"));
     assert((result2.args == neolib::format_result::arg_list{ { 1, 6, 8 } }));
     assert((result2.arg_span(1) == "42"));
