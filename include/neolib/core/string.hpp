@@ -137,6 +137,7 @@ namespace neolib
         void replace_all(const i_string& aSearch, const i_string& aReplace) final { boost::replace_all(iString, aSearch.to_std_string_view(), aReplace.to_std_string_view()); }
     public:
         using i_string::assign;
+        using i_string::append;
         void assign(string&& aOther) { if (&aOther == this) return; iString.assign(std::move(aOther.to_std_string())); }
     public:
         // attributes

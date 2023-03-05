@@ -69,7 +69,9 @@ namespace neolib
         i_string& operator=(const std::string& aOther) { assign(aOther); return *this; }
         size_type length() const { return size(); }
         void assign(const std::string& aSource) { assign(aSource.c_str(), aSource.size()); }
+        void assign(const std::string_view& aSource) { assign(aSource.data(), aSource.size()); }
         void append(const std::string& aSource) { append(aSource.c_str(), aSource.size()); }
+        void append(const std::string_view& aSource) { append(aSource.data(), aSource.size()); }
         std::string to_std_string() const { return std::string{ c_str(), size() }; }
         std::string_view to_std_string_view() const noexcept { return std::string_view{ c_str(), size() }; }
     };
