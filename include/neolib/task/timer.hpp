@@ -61,6 +61,9 @@ namespace neolib
     public:
         timer(i_async_task& aTask, const duration_type& aDuration_s, bool aInitialWait = true);
         timer(i_async_task& aTask, const i_lifetime& aContext, const duration_type& aDuration_s, bool aInitialWait = true);
+        template <typename Context>
+        timer(i_async_task& aTask, const Context& aContext, const duration_type& aDuration_s, bool aInitialWait = true) :
+            timer{ aTask, dynamic_cast<const i_lifetime&>(aContext), aDuration_s, aInitialWait } {}
         timer(const timer& aOther);
         timer& operator=(const timer& aOther);
         virtual ~timer();
