@@ -188,8 +188,10 @@ namespace neolib
             typedef const i_plugin_variant<Id, Types...> variant_type;
             static detail::i_plugin_variant::funky_visit_list_t<Visitor, variant_type> funks;
             static auto const n = detail::i_plugin_variant::funky_gen_visit<Visitor, variant_type, Types...>(funks);
-            if (static_cast<std::size_t>(aVariant.which()) < n)
-                funks[static_cast<std::size_t>(aVariant.which())](aVisitor, aVariant);
+            auto const which = aVariant.which();
+            auto const index = static_cast<std::size_t>(which);
+            if (index < n)
+                funks[index](aVisitor, aVariant);
             else
                 throw std::bad_variant_access();
         }
@@ -200,8 +202,10 @@ namespace neolib
             typedef i_plugin_variant<Id, Types...> variant_type;
             static detail::i_plugin_variant::funky_visit_list_t<Visitor, variant_type> funks;
             static auto const n = detail::i_plugin_variant::funky_gen_visit<Visitor, variant_type, Types...>(funks);
-            if (static_cast<std::size_t>(aVariant.which()) < n)
-                funks[static_cast<std::size_t>(aVariant.which())](aVisitor, aVariant);
+            auto const which = aVariant.which();
+            auto const index = static_cast<std::size_t>(which);
+            if (index < n)
+                funks[index](aVisitor, aVariant);
             else
                 throw std::bad_variant_access();
         }
