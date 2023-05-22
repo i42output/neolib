@@ -42,6 +42,8 @@
 #include <variant>
 #include <optional>
 #include <chrono>
+#include <stdexcept>
+#include <string>
 
 #include <neolib/neolib_export.hpp>
 
@@ -49,6 +51,19 @@
 constexpr bool ndebug = true;
 #else
 constexpr bool ndebug = false;
+#endif
+
+#define STRING2(x) #x
+#define STRING(x) STRING2(x)
+
+#define TODO_MSG __FILE__ "(" STRING(__LINE__) "): TODO"
+#ifdef _MSC_VER
+#define TODO \
+    _Pragma("message (TODO_MSG)") \
+    throw std::logic_error(std::string{ TODO_MSG });
+#else
+#define TODO \
+    throw std::logic_error(std::string{ TODO_MSG });
 #endif
 
 #define rvalue_cast static_cast
