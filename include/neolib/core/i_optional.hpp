@@ -67,13 +67,14 @@ namespace neolib
         typedef const value_type& const_reference;
         // state
     public:
-        virtual bool valid() const noexcept = 0;
-        virtual bool invalid() const noexcept = 0;
+        virtual bool has_value() const noexcept = 0;
         virtual explicit operator bool() const noexcept = 0;
         // element access
     public:
         virtual reference value() = 0;
         virtual const_reference value() const = 0;
+        virtual reference value_or(reference aDefaultValue) = 0;
+        virtual const_reference value_or(const_reference aDefaultValue) const = 0;
         virtual reference operator*() = 0;
         virtual const_reference operator*() const = 0;
         virtual pointer operator->() = 0;
@@ -88,48 +89,36 @@ namespace neolib
     public:
         bool operator==(std::nullopt_t) const
         {
-            return !valid();
+            return !has_value();
         }
         bool operator!=(std::nullopt_t) const
         {
-            return valid();
+            return has_value();
         }
         bool operator==(const i_optional<T>& that) const
         {
-            if (valid() != that.valid())
+            if (has_value() != that.has_value())
                 return false;
-            if (!valid())
+            if (!has_value())
                 return true;
             return value() == that.value();
         }
         std::partial_ordering operator<=>(const i_optional<T>& that) const
         {
-            if (valid() < that.valid())
+            if (has_value() < that.has_value())
                 return std::partial_ordering::less;
-            else if (valid() > that.valid())
+            else if (has_value() > that.has_value())
                 return std::partial_ordering::greater;
-            else if (!valid())
+            else if (!has_value())
                 return std::partial_ordering::equivalent;
             return value() <=> that.value();
-        }
-        // helpers
-    public:
-        [[deprecated("Use i_optional::value()")]]
-        reference get()
-        {
-            return value();
-        }
-        [[deprecated("Use i_optional::value()")]]
-        const_reference get() const
-        {
-            return value();
         }
     };
 
     template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
     inline bool operator==(const i_optional<T>& lhs, const U& rhs)
     {
-        if (!lhs.valid())
+        if (!lhs.has_value())
             return false;
         return lhs.get() == rhs;
     }
@@ -137,7 +126,7 @@ namespace neolib
     template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
     inline bool operator==(const U& lhs, const i_optional<T>& rhs)
     {
-        if (!rhs.valid())
+        if (!rhs.has_value())
             return false;
         return lhs == rhs.get();
     }
@@ -145,7 +134,7 @@ namespace neolib
     template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
     inline std::partial_ordering operator<=>(const i_optional<T>& lhs, const U& rhs)
     {
-        if (!lhs.valid())
+        if (!lhs.has_value())
             return std::partial_ordering::less;
         return lhs.get() <=> rhs;
     }
@@ -153,7 +142,7 @@ namespace neolib
     template <typename T, typename U, typename = std::enable_if_t<!is_optional_v<U>, sfinae>>
     inline std::partial_ordering operator<=>(const U& lhs, const i_optional<T>& rhs)
     {
-        if (!rhs.valid())
+        if (!rhs.has_value())
             return std::partial_ordering::greater;
         return lhs <=> rhs.get();
     }
