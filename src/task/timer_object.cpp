@@ -71,7 +71,7 @@ namespace neolib
             std::cerr << "timer_object::async_wait(...)" << std::endl;
 #endif
         std::unique_lock lock{ iSubscribersMutex };
-        iSubscribers.insert(aSubscriber).second;
+        iSubscribers.insert(aSubscriber);
     }
 
     void timer_object::unsubscribe(i_timer_subscriber& aSubscriber)
