@@ -23,7 +23,14 @@ template class neolib::basic_jar<foo>;
 
 void TestTree();
 
-#undef NDEBUG
+namespace
+{
+    void test_assert(bool assertion)
+    {
+        if (!assertion)
+            throw std::logic_error("Test failed");
+    }
+}
 
 int main()
 {
@@ -31,36 +38,36 @@ int main()
     neolib::i_string const& rs1{ s1 };
     neolib::i_string const& rs2{ s2 };
 
-    assert(s1 == s2);
-    assert(s1 == rs2);
-    assert(rs2 == s1);
+    test_assert(s1 == s2);
+    test_assert(s1 == rs2);
+    test_assert(rs2 == s1);
 
     neolib::optional<neolib::string> os1;
     neolib::i_optional<neolib::i_string>& raos1{ os1 };
-    assert(os1 == os1);
-    assert(os1 == raos1);
-    assert(raos1 == os1);
+    test_assert(os1 == os1);
+    test_assert(os1 == raos1);
+    test_assert(raos1 == os1);
 
     neolib::pair<neolib::string, neolib::string> p1;
     neolib::pair<neolib::string, neolib::string> p2;
 
-    assert(p1 == p2);
-    assert(!(p1 < p2));
-    assert(!(p1 > p2));
+    test_assert(p1 == p2);
+    test_assert(!(p1 < p2));
+    test_assert(!(p1 > p2));
 
     neolib::variant<neolib::string, int, double> v;
     neolib::variant<neolib::string, int, double, foo> v2;
 
-    assert(v == neolib::none);
-    assert(!(v != neolib::none));
+    test_assert(v == neolib::none);
+    test_assert(!(v != neolib::none));
     
     v <=> v;
 
     v2 = neolib::none;
 
-    assert(!(v < v));
-    assert(v == v);
-    assert(!(v != v));
+    test_assert(!(v < v));
+    test_assert(v == v);
+    test_assert(!(v != v));
 
     neolib::optional<foo> of = {};
 
@@ -74,15 +81,15 @@ int main()
     std::optional<bool> so3{ o3.to_std_optional() };
     std::optional<bool> so4{ o4.to_std_optional() };
 
-    assert(*o1 == true);
-    assert(*o2 == true);
-    assert(*o3 == false);
-    assert(*o4 == false);
+    test_assert(*o1 == true);
+    test_assert(*o2 == true);
+    test_assert(*o3 == false);
+    test_assert(*o4 == false);
 
-    assert(*so1 == true);
-    assert(*so2 == true);
-    assert(*so3 == false);
-    assert(*so4 == false);
+    test_assert(*so1 == true);
+    test_assert(*so2 == true);
+    test_assert(*so3 == false);
+    test_assert(*so4 == false);
 
     neolib::basic_jar<foo> jar;
     jar.emplace();

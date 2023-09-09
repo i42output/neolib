@@ -96,9 +96,12 @@ namespace neolib
             existing = tLocals.insert(std::make_pair(aFullyQualifiedVariableName, tLocalStack.back().get())).first;
             result.initializationRequired = true;
         }
+        
         if (existing->second->size != aVariableSize)
             throw std::logic_error("neolib::shared_thread_local::allocate_or_get: bad size");
+
         result.memory = existing->second->memory.get();
+
         return result;
     }
 }
