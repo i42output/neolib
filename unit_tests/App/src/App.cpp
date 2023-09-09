@@ -22,6 +22,7 @@ struct wobble
 {
     wobble() { f(); }
     int f() { shared_thread_local_class(int, f, n, next_sequence()); return n; }
+    static int sf() { shared_thread_local_class_ex(int, wobble<T>, sf, n, next_sequence()); return n; }
 };
 
 namespace foo
@@ -64,7 +65,10 @@ int main()
         assert(o1.f() == o1.f());
         assert(o2.f() == o2.f());
         assert(o1.f() != o2.f());
-    };
+        assert(o1.sf() == o1.sf());
+        assert(o2.sf() == o2.sf());
+        assert(o1.sf() != o2.sf());
+        };
 
     test();
     std::thread t1{ test };
