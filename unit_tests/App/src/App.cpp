@@ -1,3 +1,4 @@
+#include <vector>
 #include <thread>
 #include <iostream>
 #include <neolib/app/i_shared_thread_local.hpp>

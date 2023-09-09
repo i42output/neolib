@@ -332,7 +332,7 @@ namespace neolib
             reset(aOther.ptr(), aOther.managed_ptr(), aOther.reference_counted(), true);
             return *this;
         }
-        ref_ptr& operator=(nullptr_t)
+        ref_ptr& operator=(std::nullptr_t)
         {
             reset();
             return *this;
@@ -500,7 +500,7 @@ namespace neolib
             reset(aOther.managed_ptr());
             return *this;
         }
-        weak_ref_ptr& operator=(nullptr_t)
+        weak_ref_ptr& operator=(std::nullptr_t)
         {
             reset();
             return *this;
