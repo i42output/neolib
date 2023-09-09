@@ -69,7 +69,7 @@ namespace neolib
     };
 
     #define shared_thread_local_impl(VariableType, VariableScope, VariableName, InitialValue) \
-    thread_local auto const& neolib_PartialResult_##VariableName = \
+    thread_local auto const neolib_PartialResult_##VariableName = \
         neolib::service<neolib::i_shared_thread_local>().allocate_or_get<VariableType>( \
             STRING(VariableScope) "::" STRING(VariableName), \
             [](void* aMemory) { using VariableTypeAlias = VariableType; static_cast<VariableType*>(aMemory)->~VariableTypeAlias(); }); \
@@ -84,7 +84,7 @@ namespace neolib
         }();
 
     #define shared_thread_local_class_impl(VariableType, ClassType, VariableScope, VariableName, InitialValue) \
-    thread_local auto const& neolib_PartialResult_##VariableName = \
+    thread_local auto const neolib_PartialResult_##VariableName = \
         neolib::service<neolib::i_shared_thread_local>().allocate_or_get<VariableType>( \
             (std::string{ typeid(ClassType).name() } + "::" STRING(VariableScope) "::" STRING(VariableName)).c_str(), \
             [](void* aMemory) { using neolib_VariableTypeAlias = VariableType; static_cast<VariableType*>(aMemory)->~neolib_VariableTypeAlias(); }); \

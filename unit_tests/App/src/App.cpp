@@ -5,7 +5,7 @@
 
 int next_sequence()
 {
-    static std::atomic<int> sequence;
+    static std::atomic<int> sequence = 0;
     return ++sequence;
 }
 
@@ -19,8 +19,8 @@ template <typename T>
 struct wobble
 {
     wobble() { f(); }
-    int f() { shared_thread_local_class(int, *this, f, n, next_sequence()); return n; }
-    static int sf() { shared_thread_local_class(int, wobble<T>, sf, n, next_sequence()); return n; }
+    int& f() { shared_thread_local_class(int, *this, f, n, next_sequence()); return n; }
+    static int& sf() { shared_thread_local_class(int, wobble<T>, sf, n, next_sequence()); return n; }
 };
 
 namespace foo
@@ -65,17 +65,26 @@ int main()
         test_assert(foo::f() == foo::f());
         test_assert(bar::f() == bar::f());
         test_assert(foo::f() != bar::f());
+
         std::cout << foo::f() << " " << bar::f() << std::endl;
 
         wobble<int> o1;
         wobble<double> o2;
+
+        test_assert(&o1.f() == &o1.f());
+        test_assert(&o2.f() == &o2.f());
+        test_assert(&o1.f() != &o2.f());
+        test_assert(&o1.sf() == &o1.sf());
+        test_assert(&o2.sf() == &o2.sf());
+        test_assert(&o1.sf() != &o2.sf());
+
         test_assert(o1.f() == o1.f());
         test_assert(o2.f() == o2.f());
         test_assert(o1.f() != o2.f());
         test_assert(o1.sf() == o1.sf());
         test_assert(o2.sf() == o2.sf());
         test_assert(o1.sf() != o2.sf());
-        };
+    };
 
     test();
     std::thread t1{ test };
