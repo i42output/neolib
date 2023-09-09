@@ -72,7 +72,22 @@ namespace neolib
     thread_local auto const& neolib_PartialResult_##VariableName = \
         neolib::service<neolib::i_shared_thread_local>().allocate_or_get<VariableType>( \
             STRING(VariableScope) "::" STRING(VariableName), \
-            [](void* aMemory) { using T = VariableType; static_cast<VariableType*>(aMemory)->~T(); }); \
+            [](void* aMemory) { using VariableTypeAlias = VariableType; static_cast<VariableType*>(aMemory)->~VariableTypeAlias(); }); \
+    auto const& neolib_CapturablePartialResult_##VariableName = neolib_PartialResult_##VariableName; \
+    thread_local auto& VariableName = [&neolib_CapturablePartialResult_##VariableName]() -> VariableType& \
+        { \
+            if (neolib_CapturablePartialResult_##VariableName.initializationRequired) \
+            { \
+                new (static_cast<VariableType*>(neolib_CapturablePartialResult_##VariableName.memory)) VariableType{ InitialValue }; \
+            } \
+            return *static_cast<VariableType*>(neolib_CapturablePartialResult_##VariableName.memory); \
+        }();
+
+    #define shared_thread_local_class_impl(VariableType, VariableScope, VariableName, InitialValue) \
+    thread_local auto const& neolib_PartialResult_##VariableName = \
+        neolib::service<neolib::i_shared_thread_local>().allocate_or_get<VariableType>( \
+            (std::string{ typeid(*this).name() } + "::" STRING(VariableScope) "::" STRING(VariableName)).c_str(), \
+            [](void* aMemory) { using neolib_VariableTypeAlias = VariableType; static_cast<VariableType*>(aMemory)->~neolib_VariableTypeAlias(); }); \
     auto const& neolib_CapturablePartialResult_##VariableName = neolib_PartialResult_##VariableName; \
     thread_local auto& VariableName = [&neolib_CapturablePartialResult_##VariableName]() -> VariableType& \
         { \
@@ -85,4 +100,7 @@ namespace neolib
 
     #define shared_thread_local(VariableType, VariableScope, VariableName, ...) \
     shared_thread_local_impl(VariableType, VariableScope, VariableName, __VA_ARGS__)
+
+    #define shared_thread_local_class(VariableType, VariableScope, VariableName, ...) \
+    shared_thread_local_class_impl(VariableType, VariableScope, VariableName, __VA_ARGS__)
 }

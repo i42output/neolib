@@ -1,3 +1,5 @@
+#undef NDEBUG
+
 #include <vector>
 #include <thread>
 #include <iostream>
@@ -13,6 +15,13 @@ struct wibble
 {
     wibble() { std::cout << "wibble::wibble(), thread id: " << std::this_thread::get_id() << std::endl; }
     ~wibble() { std::cout << "wibble::~wibble(), thread id: " << std::this_thread::get_id() << std::endl; }
+};
+
+template <typename T>
+struct wobble
+{
+    wobble() { f(); }
+    int f() { shared_thread_local_class(int, f, n, next_sequence()); return n; }
 };
 
 namespace foo
@@ -49,7 +58,14 @@ int main()
         assert(bar::f() == bar::f());
         assert(foo::f() != bar::f());
         std::cout << foo::f() << " " << bar::f() << std::endl;
+
+        wobble<int> o1;
+        wobble<double> o2;
+        assert(o1.f() == o1.f());
+        assert(o2.f() == o2.f());
+        assert(o1.f() != o2.f());
     };
+
     test();
     std::thread t1{ test };
     std::thread t2{ test };
