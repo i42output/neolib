@@ -34,6 +34,7 @@
 */
 
 #include <neolib/neolib.hpp>
+#include <vector>
 #include <unordered_map>
 #include <neolib/app/shared_thread_local.hpp>
 
@@ -68,14 +69,13 @@ namespace neolib
 
         result_type result = {};
 
-        thread_local std::unordered_map<std::string, std::unique_ptr<data>> tLocals;
+        thread_local std::vector<std::unique_ptr<data>> tLocalStack;
+        thread_local std::unordered_map<std::string, data const*> tLocals;
         auto existing = tLocals.find(aFullyQualifiedVariableName);
         if (existing == tLocals.end())
         {
-            existing = tLocals.insert(
-                std::make_pair(
-                    aFullyQualifiedVariableName, 
-                    std::make_unique<data>(aVariableSize, aDeleter))).first;
+            tLocalStack.push_back(std::make_unique<data>(aVariableSize, aDeleter));
+            existing = tLocals.insert(std::make_pair(aFullyQualifiedVariableName, tLocalStack.back().get())).first;
             result.initializationRequired = true;
         }
         if (existing->second->size != aVariableSize)
