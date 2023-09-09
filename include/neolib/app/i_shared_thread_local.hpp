@@ -69,17 +69,18 @@ namespace neolib
     };
 
     #define shared_thread_local_impl(VariableType, VariableScope, VariableName, InitialValue) \
-    auto const& neolib_PartialResult_##VariableName = \
+    thread_local auto const& neolib_PartialResult_##VariableName = \
         neolib::service<neolib::i_shared_thread_local>().allocate_or_get<VariableType>( \
             STRING(VariableScope) "::" STRING(VariableName), \
             [](void* aMemory) { using T = VariableType; static_cast<VariableType*>(aMemory)->~T(); }); \
-    thread_local auto& VariableName = [&neolib_PartialResult_##VariableName]() -> VariableType& \
+    auto const& neolib_CapturablePartialResult_##VariableName = neolib_PartialResult_##VariableName; \
+    thread_local auto& VariableName = [&neolib_CapturablePartialResult_##VariableName]() -> VariableType& \
         { \
-            if (neolib_PartialResult_##VariableName.initializationRequired) \
+            if (neolib_CapturablePartialResult_##VariableName.initializationRequired) \
             { \
-                new (static_cast<VariableType*>(neolib_PartialResult_##VariableName.memory)) VariableType{ InitialValue }; \
+                new (static_cast<VariableType*>(neolib_CapturablePartialResult_##VariableName.memory)) VariableType{ InitialValue }; \
             } \
-            return *static_cast<VariableType*>(neolib_PartialResult_##VariableName.memory); \
+            return *static_cast<VariableType*>(neolib_CapturablePartialResult_##VariableName.memory); \
         }();
 
     #define shared_thread_local(VariableType, VariableScope, VariableName, ...) \
