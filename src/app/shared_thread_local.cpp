@@ -71,6 +71,24 @@ namespace neolib
 
         thread_local std::vector<std::unique_ptr<data>> tLocalStack;
         thread_local std::unordered_map<std::string, data const*> tLocals;
+
+        struct stack_destroyer
+        {
+            ~stack_destroyer()
+            {
+                while (!tLocalStack.empty())
+                {
+                    auto existing = std::find_if(
+                        tLocals.begin(), tLocals.end(), 
+                        [](auto const& e) { return e.second == tLocalStack.back().get(); });
+                    tLocalStack.pop_back();
+                    tLocals.erase(existing);
+                }
+            }
+        };
+
+        thread_local stack_destroyer tStackDestroyer;
+
         auto existing = tLocals.find(aFullyQualifiedVariableName);
         if (existing == tLocals.end())
         {
