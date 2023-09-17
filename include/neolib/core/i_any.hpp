@@ -65,7 +65,7 @@ namespace neolib
         virtual void reset() = 0;
     public:
         virtual bool has_value() const = 0;
-        virtual type_info const& type() const = 0;
+        virtual std::type_info const& type() const = 0;
     public:
         virtual bool operator==(const i_any& aOther) const = 0;
         virtual bool operator!=(const i_any& aOther) const = 0;

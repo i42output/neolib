@@ -182,7 +182,7 @@ namespace neolib
         {
             return std::any::has_value();
         }
-        type_info const& type() const override
+        std::type_info const& type() const override
         {
             return std::any::type();
         }
