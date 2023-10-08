@@ -57,9 +57,37 @@ int main()
 
     neolib::variant<neolib::string, int, double> v;
     neolib::variant<neolib::string, int, double, foo> v2;
+    neolib::variant<neolib::string, int, double, foo> v3{ neolib::string{} };
+    neolib::variant<neolib::string, int, double, foo> v4{ std::string{} };
+    neolib::variant<neolib::string, int, double, foo> v5{ v4 };
+    neolib::variant<neolib::string, int, double, foo> v6{ static_cast<neolib::abstract_t<decltype(v4)> const&>(v4) };
+
+    using bv = neolib::variant<neolib::string, int, double, foo>;
+
+    struct dv : bv
+    {
+        using bv::bv;
+        using bv::operator=;
+
+        dv(const bv& other) : bv{ other } {}
+        dv(bv&& other) : bv{ std::move(other) } {}
+    };
+
+    dv dv1;
+    dv dv2{ dv1 };
+    dv dv3{ v2 };
+
+    static_assert(!decltype(v)::is_alternative_v<std::string>);
+    static_assert(decltype(v)::is_alternative_v<neolib::string>);
+    static_assert(decltype(v)::is_alternative_v<neolib::i_string>);
+    static_assert(decltype(v)::is_alternative_v<const neolib::string&>);
+    static_assert(decltype(v)::is_alternative_v<const neolib::i_string&>);
 
     test_assert(v == neolib::none);
     test_assert(!(v != neolib::none));
+
+    v = neolib::string{};
+    v = std::string{};
     
     v <=> v;
 

@@ -107,7 +107,7 @@ namespace std
 
 namespace neolib
 {
-    struct none_t : std::monostate {};
+    using none_t = std::monostate;
     const none_t none;
 
     template <typename AbstractT, typename Type>
@@ -136,35 +136,114 @@ namespace neolib
     template <typename... Types>
     class variant : public reference_counted<i_variant<abstract_t<Types>...>>, public std::variant<std::monostate, Types...>
     {
-        typedef variant<Types...> self_type;
+        using self_type = variant<Types...>;
         // types
     public:
-        typedef i_variant<abstract_t<Types>...> abstract_type;
-        typedef std::variant<std::monostate, Types...> std_type;
+        using abstract_type = i_variant<abstract_t<Types>...> ;
+        using std_type = std::variant<std::monostate, Types...>;
+        static constexpr bool is_copy_constructible_v = (std::is_copy_constructible_v<Types> && ...);
+        static constexpr bool is_move_constructible_v = (std::is_move_constructible_v<Types> && ...);
+        static constexpr bool is_copy_assignable_v = (std::is_copy_assignable_v<Types> && ...);
+        static constexpr bool is_move_assignable_v = (std::is_move_assignable_v<Types> && ...);
+    public:
+        template <typename T>
+        static constexpr bool is_alternative_v = (std::is_same_v<std::decay_t<T>, Types> || ...) || (std::is_same_v<std::decay_t<T>, abstract_t<Types>> || ...);
         // construction
     public:
-        using std_type::std_type;
-        variant(abstract_type const& aOther) :
+        variant() :
+            std_type{}
+        {
+        }
+        template <typename T, std::enable_if_t<std::is_base_of_v<self_type, T> && is_copy_constructible_v, int> = 0>
+        variant(T const& aOther) :
+            std_type{ aOther }
+        {
+        }
+        template <typename T, std::enable_if_t<std::is_base_of_v<self_type, T> && is_move_constructible_v, int> = 0>
+        variant(T&& aOther) :
+            std_type{ std::move(aOther) }
+        {
+        }
+        template <typename T, std::enable_if_t<std::is_same_v<T, abstract_type> && is_copy_constructible_v, int> = 0>
+        variant(T const& aOther) :
             std_type{ static_cast<self_type const&>(aOther) } // todo: not plugin-safe
         {
         }
+        template <typename T, std::enable_if_t<std::is_same_v<T, abstract_type> && is_move_constructible_v, int> = 0>
         variant(abstract_type&& aOther) :
             std_type{ static_cast<self_type&&>(aOther) } // todo: not plugin-safe
         {
         }
-        template <typename T, typename = std::enable_if_t<!std::is_base_of_v<T, self_type>, sfinae>>
-        variant(T const& aValue, std::enable_if_t<std::is_abstract_v<T>, sfinae> = {}) :
-            std_type{ static_cast<from_abstract_t<T, Types...> const&>(aValue) }
+        template <typename T, std::enable_if_t<!std::is_base_of_v<self_type, T> && !std::is_abstract_v<T>, int> = 0>
+        variant(T const& aValue) :
+            std_type{ aValue }
         {
         }
-        template <typename T, typename = std::enable_if_t<!std::is_base_of_v<T, self_type>, sfinae>>
-        variant(T&& aValue, std::enable_if_t<std::is_abstract_v<T>, sfinae> = {}) :
-            std_type{ static_cast<from_abstract_t<T, Types...>&&>(aValue) }
+        template <typename T, std::enable_if_t<!std::is_base_of_v<self_type, T> && !std::is_abstract_v<T>, int> = 0>
+        variant(T&& aValue) :
+            std_type{ std::move(aValue) }
+        {
+        }
+        template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_type> && std::is_abstract_v<T>, int> = 0>
+        variant(T const& aValue) :
+            std_type{ static_cast<from_abstract_t<T, Types...> const&>(aValue) } // todo: not plugin-safe
+        {
+        }
+        template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_type> && std::is_abstract_v<T>, int> = 0>
+        variant(T&& aValue) :
+            std_type{ static_cast<from_abstract_t<T, Types...>&&>(aValue) } // todo: not plugin-safe
         {
         }
         // assignment
     public:
-        using std_type::operator=;
+        template <typename T, std::enable_if_t<std::is_base_of_v<self_type, T> && is_copy_assignable_v, int> = 0>
+        self_type& operator=(T const& aOther)
+        {
+            std_type::operator=(aOther);
+            return *this;
+        }
+        template <typename T, std::enable_if_t<std::is_base_of_v<self_type, T> && is_move_assignable_v, int> = 0>
+        self_type& operator=(T&& aOther)
+        {
+            std_type::operator=(std::move(aOther));
+            return *this;
+        }
+        template <typename T, std::enable_if_t<std::is_same_v<T, abstract_type> && is_copy_assignable_v, int> = 0>
+        self_type& operator=(T const& aOther)
+        {
+            std_type::operator=(static_cast<self_type const&>(aOther)); // todo: not plugin-safe
+            return *this;
+        }
+        template <typename T, std::enable_if_t<std::is_same_v<T, abstract_type> && is_move_assignable_v, int> = 0>
+        self_type& operator=(T&& aOther)
+        {
+            std_type::operator=(static_cast<self_type&&>(aOther)); // todo: not plugin-safe
+            return *this;
+        }
+        template <typename T, std::enable_if_t<!std::is_base_of_v<self_type, T> && !std::is_abstract_v<T>, int> = 0>
+        self_type& operator=(T const& aValue)
+        {
+            std_type::operator=(aValue);
+            return *this;
+        }
+        template <typename T, std::enable_if_t<!std::is_base_of_v<self_type, T> && !std::is_abstract_v<T>, int> = 0>
+        self_type& operator=(T&& aValue)
+        {
+            std_type::operator=(std::move(aValue));
+            return *this;
+        }
+        template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_type> && std::is_abstract_v<T>, int> = 0>
+        self_type& operator=(T const& aValue)
+        {
+            std_type::operator=(static_cast<from_abstract_t<T, Types...> const&>(aValue)); // todo: not plugin-safe
+            return *this;
+        }
+        template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_type> && std::is_abstract_v<T>, int> = 0>
+        self_type& operator=(T&& aValue)
+        {
+            std_type::operator=(static_cast<from_abstract_t<T, Types...>&&>(aValue)); // todo: not plugin-safe
+            return *this;
+        }
         // meta
     public:
         std::size_t index() const override
@@ -189,63 +268,69 @@ namespace neolib
     };
 
     template <typename... Types>
-    inline bool operator==(variant<Types...> const& lhs, variant<Types...> const& rhs)
+    inline bool operator==(none_t const&, variant<Types...> const& rhs) noexcept
+    {
+        return std::holds_alternative<std::monostate>(rhs);
+    }
+
+    template <typename... Types>
+    inline bool operator==(variant<Types...> const& lhs, none_t const&) noexcept
+    {
+        return std::holds_alternative<std::monostate>(lhs);
+    }
+
+    template <typename... Types>
+    inline bool operator!=(none_t const&, variant<Types...> const& rhs) noexcept
+    {
+        return !std::holds_alternative<std::monostate>(rhs);
+    }
+
+    template <typename... Types>
+    inline bool operator!=(variant<Types...> const& lhs, none_t const&) noexcept
+    {
+        return !std::holds_alternative<std::monostate>(lhs);
+    }
+
+    template <typename... Types>
+    inline bool operator==(variant<Types...> const& lhs, variant<Types...> const& rhs) noexcept
     {
         return static_cast<std::variant<std::monostate, Types...> const&>(lhs) == static_cast<std::variant<std::monostate, Types...> const&>(rhs);
     }
 
     template <typename... Types>
-    inline bool operator!=(variant<Types...> const& lhs, variant<Types...> const& rhs)
+    inline bool operator!=(variant<Types...> const& lhs, variant<Types...> const& rhs) noexcept
     {
         return static_cast<std::variant<std::monostate, Types...> const&>(lhs) != static_cast<std::variant<std::monostate, Types...> const&>(rhs);
     }
 
     template <typename... Types>
-    inline bool operator<(variant<Types...> const& lhs, variant<Types...> const& rhs)
+    inline bool operator<(variant<Types...> const& lhs, variant<Types...> const& rhs) noexcept
     {
         return static_cast<std::variant<std::monostate, Types...> const&>(lhs) < static_cast<std::variant<std::monostate, Types...> const&>(rhs);
     }
 
     template <typename... Types>
-    inline bool operator<=(variant<Types...> const& lhs, variant<Types...> const& rhs)
+    inline bool operator<=(variant<Types...> const& lhs, variant<Types...> const& rhs) noexcept
     {
         return static_cast<std::variant<std::monostate, Types...> const&>(lhs) <= static_cast<std::variant<std::monostate, Types...> const&>(rhs);
     }
 
     template <typename... Types>
-    inline bool operator>(variant<Types...> const& lhs, variant<Types...> const& rhs)
+    inline bool operator>(variant<Types...> const& lhs, variant<Types...> const& rhs) noexcept
     {
         return static_cast<std::variant<std::monostate, Types...> const&>(lhs) > static_cast<std::variant<std::monostate, Types...> const&>(rhs);
     }
 
     template <typename... Types>
-    inline bool operator>=(variant<Types...> const& lhs, variant<Types...> const& rhs)
+    inline bool operator>=(variant<Types...> const& lhs, variant<Types...> const& rhs) noexcept
     {
         return static_cast<std::variant<std::monostate, Types...> const&>(lhs) >= static_cast<std::variant<std::monostate, Types...> const&>(rhs);
     }
 
     template <typename... Types>
-    inline bool operator==(variant<Types...> const& var, neolib::none_t)
+    inline auto operator<=>(variant<Types...> const& lhs, variant<Types...> const& rhs) noexcept
     {
-        return std::holds_alternative<std::monostate>(var);
-    }
-
-    template <typename... Types>
-    inline bool operator==(neolib::none_t, variant<Types...> const& var)
-    {
-        return std::holds_alternative<std::monostate>(var);
-    }
-
-    template <typename... Types>
-    inline bool operator!=(variant<Types...> const& var, neolib::none_t)
-    {
-        return !std::holds_alternative<std::monostate>(var);
-    }
-
-    template <typename... Types>
-    inline bool operator!=(neolib::none_t, variant<Types...> const& var)
-    {
-        return !std::holds_alternative<std::monostate>(var);
+        return static_cast<std::variant<std::monostate, Types...> const&>(lhs) <=> static_cast<std::variant<std::monostate, Types...> const&>(rhs);
     }
 
     // Deprecated, use std::get.
