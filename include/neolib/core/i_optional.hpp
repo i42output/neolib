@@ -73,8 +73,9 @@ namespace neolib
     public:
         virtual reference value() = 0;
         virtual const_reference value() const = 0;
-        virtual reference value_or(reference aDefaultValue) = 0;
         virtual const_reference value_or(const_reference aDefaultValue) const = 0;
+        virtual const_reference value_or(reference aDefaultValue) const = 0;
+        virtual reference value_or(reference aDefaultValue) = 0;
         virtual reference operator*() = 0;
         virtual const_reference operator*() const = 0;
         virtual pointer operator->() = 0;

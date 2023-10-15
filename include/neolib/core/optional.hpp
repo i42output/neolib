@@ -123,18 +123,25 @@ namespace neolib
         {
             return iData.value();
         }
-        abstract_reference value_or(abstract_reference aDefaultValue) final
-        {
-            if (iData.has_value())
-                return iData.value();
-            else 
-                return aDefaultValue;
-        }
         abstract_const_reference value_or(abstract_const_reference aDefaultValue) const final
         {
             if (iData.has_value())
                 return iData.value();
             else
+                return aDefaultValue;
+        }
+        abstract_const_reference value_or(abstract_reference aDefaultValue) const final
+        {
+            if (iData.has_value())
+                return iData.value();
+            else
+                return aDefaultValue;
+        }
+        abstract_reference value_or(abstract_reference aDefaultValue) final
+        {
+            if (iData.has_value())
+                return iData.value();
+            else 
                 return aDefaultValue;
         }
         reference operator*() final
