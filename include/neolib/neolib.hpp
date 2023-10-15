@@ -211,6 +211,17 @@ namespace neolib
 
     template <typename T>
     using abstract_return_t = typename detail::abstract_return_type<T>::type;
+
+    template <typename T>
+    using cache = std::optional<T>;
+
+    inline constexpr auto invalid = std::nullopt;
+
+    template <typename T>
+    inline void clear_cache(cache<T>& aCachedVariable)
+    {
+        aCachedVariable = invalid;
+    }
 }
 
 #ifdef NEOLIB_HOSTED_ENVIRONMENT
