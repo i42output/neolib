@@ -456,7 +456,7 @@ namespace neolib
         }
         constexpr size_type size() const noexcept
         {
-            return std_type::size() - gap_size();
+            return (iDataEnd - iData) - gap_size();
         }
         constexpr size_type max_size() const noexcept
         {
@@ -523,46 +523,47 @@ namespace neolib
         }
         constexpr iterator insert(const_iterator pos, const T& value)
         {
-            std::allocator_traits<allocator_type>::construct(iAlloc, (pos = insert_gap(pos, 1)), value);
-            consume_gap();
-            return iterator{ *this, pos };
+            auto memory = allocate_from_gap(pos, 1);
+            std::allocator_traits<allocator_type>::construct(iAlloc, memory, value);
+            return iterator{ *this, memory };
         }
         constexpr iterator insert(const_iterator pos, T&& value)
         {
-            std::allocator_traits<allocator_type>::construct(iAlloc, (pos = insert_gap(pos, 1)), std::move(value));
-            consume_gap();
-            return iterator{ *this, pos };
+            auto memory = allocate_from_gap(pos, 1);
+            std::allocator_traits<allocator_type>::construct(iAlloc, memory, std::move(value));
+            return iterator{ *this, memory };
         }
         constexpr iterator insert(const_iterator pos, size_type count, const T& value)
         {
-            std::unitialized_copy_n(value, count, (pos = insert_gap(pos, count)));
-            consume_gap(count);
-            return iterator{ *this, pos };
+            auto memory = allocate_from_gap(pos, count);
+            std::unitialized_copy_n(value, count, memory);
+            return iterator{ *this, memory };
         }
         template<class InputIt>
         constexpr iterator insert(const_iterator pos, InputIt first, InputIt last)
         {
+            auto posIndex = std::distance(cbegin(), pos);
             size_type count = 0;
             while (first != last)
             {
+                auto memory = allocate_from_gap(pos, 1);
                 ++count;
-                std::unitialized_copy_n(first++, 1, (pos = insert_gap(pos, 1)));
-                consume_gap();
+                std::unitialized_copy_n(first++, 1, memory);
             }
-            return iterator{ *this, pos };
+            return std::next(begin(), posIndex);
         }
         constexpr iterator insert(const_iterator pos, std::initializer_list<T> list)
         {
-            std::unitialized_copy(list.begin(), list.end(), (pos = insert_gap(pos, list.size())));
-            consume_gap(list.size());
-            return iterator{ *this, pos };
+            auto memory = allocate_from_gap(pos, list.size());
+            std::unitialized_copy(list.begin(), list.end(), memory);
+            return iterator{ *this, memory };
         }
         template<class... Args>
         constexpr iterator emplace(const_iterator pos, Args&&... args)
         {
-            std::allocator_traits<allocator_type>::construct(iAlloc, pos = insert_gap(pos, 1), std::forward<Args>(args)...);
-            consume_gap();
-            return pos;
+            auto memory = allocate_from_gap(pos, 1);
+            std::allocator_traits<allocator_type>::construct(iAlloc, memory, std::forward<Args>(args)...);
+            return iterator{ *this, memory };
         }
     public:
         constexpr void unsplit() const
@@ -589,14 +590,6 @@ namespace neolib
         constexpr gap_type& gap() const
         {
             return iGap.value();
-        }
-        constexpr bool temp_gap_active() const noexcept
-        {
-            return iTempGap != std::nullopt;
-        }
-        constexpr gap_type& temp_gap() const
-        {
-            return iTempGap.value();
         }
         constexpr size_type gap_start() const
         {
@@ -626,28 +619,51 @@ namespace neolib
                 return false;
             return std::abs(aPosition.base() - gap().start + ((gap().end - gap().start) / 2)) <= DefaultGapSize * NearnessFactor;
         }
-        constexpr void insert_gap(const_iterator aPosition, size_type aCount)
+        constexpr pointer allocate_from_gap(const_iterator aPosition, size_type aCount)
         {
+            auto const pos = std::next(begin(), std::distance(cbegin(), aPosition)).base();
             if (near_gap(aPosition) && aCount <= gap_size())
             {
                 if (before_gap(aPosition))
                 {
+                    auto dest = std::next(gap().start, aCount - 1);
+                    auto src = gap().start;
+                    do
+                    {
+                        --src;
+                        if (dest >= gap().start)
+                            std::allocator_traits<allocator_type>::construct(iAlloc, dest--, std::move(*src));
+                        else
+                            *dest-- = std::move(*src);
+                        if (src < pos + aCount)
+                            std::allocator_traits<allocator_type>::destroy(iAlloc, src);
+                    } while (src != pos);
+                    gap().start += aCount;
+                    return pos;
                 }
-                else
+                else if (after_gap(aPosition))
                 {
+                    auto dest = std::prev(gap().end, aCount);
+                    auto src = gap().end;
+                    do
+                    {
+                        ++src;
+                        if (dest < gap().end)
+                            std::allocator_traits<allocator_type>::construct(iAlloc, dest++, std::move(*src));
+                        else
+                            *dest++ = std::move(*src);
+                        if (src >= pos - aCount)
+                            std::allocator_traits<allocator_type>::destroy(iAlloc, src);
+                    } while (src != pos);
+                    gap().end -= aCount;
+                    return pos - aCount;
                 }
+                // pos should be gap().start
+                gap().start += aCount;
+                return pos;
             }
             else
             {
-            }
-        }
-        constexpr void consume_gap(size_type aCount = 1)
-        {
-            if (temp_gap_active())
-            {
-                if (temp_gap().end - temp_gap().start != aCount)
-                    throw std::logic_error("neolib::gap_vector::consume_gap");
-                iTempGap = std::nullopt;
             }
         }
     private:
@@ -656,6 +672,5 @@ namespace neolib
         mutable pointer iDataEnd = nullptr;
         mutable pointer iStorageEnd = nullptr;
         mutable std::optional<gap_type> iGap;
-        mutable std::optional<gap_type> iTempGap;
     };
 }
