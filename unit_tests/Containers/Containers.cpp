@@ -6,6 +6,7 @@
 #include <neolib/core/string.hpp>
 #include <neolib/core/pair.hpp>
 #include <neolib/core/segmented_array.hpp>
+#include <neolib/core/gap_vector.hpp>
 
 struct i_foo
 {
@@ -20,6 +21,8 @@ struct foo : i_foo
 };
 
 template class neolib::basic_jar<foo>;
+
+template class neolib::gap_vector<int>;
 
 void TestTree();
 

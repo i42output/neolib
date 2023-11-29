@@ -42,18 +42,6 @@
 
 namespace neolib
 {
-    namespace detail::gap_vector
-    {
-        template <typename Pointer>
-        struct gap
-        {
-            using pointer = Pointer;
-
-            pointer start;
-            pointer end;
-        };
-    }
-
     template <typename T, std::size_t DefaultGapSize = 256, std::size_t NearnessFactor = 2, typename Allocator = std::allocator<T>>
     class gap_vector
     {
@@ -81,16 +69,23 @@ namespace neolib
             iterator_impl()
             {
             }
-            iterator_impl(iterator_impl const& aOther) :
-                iContainer{ &aOther.c()},
-                iBase{ aOther.base() }
-            {
-            }
-        private:
+        protected:
             iterator_impl(self_type& aContainer, base_iterator aBase) :
-                iContainer{ aContainer },
+                iContainer{ &aContainer },
                 iBase{ aBase }
             {
+            }
+            iterator_impl(iterator_impl const& aOther) :
+                iContainer{ aOther.iContainer },
+                iBase{ aOther.iBase }
+            {
+            }
+            iterator_impl(iterator_impl&& aOther) :
+                iContainer{ aOther.iContainer },
+                iBase{ aOther.iBase }
+            {
+                aOther.iContainer = nullptr;
+                aOther.iBase = nullptr;
             }
         public:
             iterator_impl& operator=(iterator_impl const& aOther)
@@ -110,31 +105,31 @@ namespace neolib
             }
             iterator_impl& operator++()
             {
-                auto const next = std::distance(c().std_type::begin(), base()) + 1;
-                if (!c().gap_active() || next < c().gap_start() || next >= c().gap_end())
+                auto const next = std::next(base());
+                if (!c().gap_active() || next < c().iGapStart || next >= c().iGapEnd)
                     ++base();
                 else
-                    base() = std::next(c().std_type::begin(), c().gap_end());
+                    base() = c().iGapEnd;
                 return *this;
             }
             iterator_impl& operator--()
             {
-                auto const next = std::distance(c().std_type::begin(), base()) - 1;
-                if (!c().gap_active() || next <= c().gap_start() || next > c().gap_end())
+                auto const prev = std::prev(base());
+                if (!c().gap_active() || prev <= c().iGapStart || prev > c().iGapEnd)
                     --base();
                 else
-                    base() = std::next(c().std_type::begin(), c().gap_start() - 1);
+                    base() = std::prev(c().iGapStart);
                 return *this;
             }
             iterator_impl& operator+=(difference_type aDifference)
             {
                 if (aDifference < 0)
                     return operator-=(-aDifference);
-                auto const current = std::distance(c().std_type::begin(), base());
+                auto const current = base();
                 auto const next = current + aDifference;
-                if (!c().gap_active() || (current <= c().gap_start() && next <= c().gap_start()) || (current >= c().gap_end() && next >= c().gap_end()))
+                if (!c().gap_active() || (current <= c().iGapStart && next <= c().iGapStart) || (current >= c().iGapEnd && next >= c().iGapEnd))
                     base() += aDifference;
-                else if (current <= c().gap_start() && next >= c().gap_end())
+                else if (current <= c().iGapStart && next >= c().iGapEnd)
                     base() += (aDifference + c().gap_size());
                 return *this;
             }
@@ -142,11 +137,11 @@ namespace neolib
             {
                 if (aDifference < 0)
                     return operator+=(-aDifference);
-                auto const current = std::distance(c().std_type::begin(), base());
+                auto const current = base();
                 auto const next = current - aDifference;
-                if (!c().gap_active() || (current <= c().gap_start() && next <= c().gap_start()) || (current >= c().gap_end() && next >= c().gap_end()))
+                if (!c().gap_active() || (current <= c().iGapStart && next <= c().iGapStart) || (current >= c().iGapEnd && next >= c().iGapEnd))
                     base() -= aDifference;
-                else if (next <= c().gap_start() && current >= c().gap_end())
+                else if (next <= c().iGapStart && current >= c().iGapEnd)
                     base() -= (aDifference + c().gap_size());
                 return *this;
             }
@@ -158,7 +153,7 @@ namespace neolib
             }
             iterator_impl operator-(difference_type aDifference) const
             { 
-                iterator result(*this); 
+                iterator_impl result(*this);
                 result -= aDifference; 
                 return result; 
             }
@@ -195,7 +190,7 @@ namespace neolib
             {
                 return iBase;
             }
-        protected:
+        private:
             self_type* iContainer = nullptr;
             base_iterator iBase = {};
         };
@@ -207,16 +202,24 @@ namespace neolib
             using base_type = iterator_impl<pointer, reference, pointer>;
         public:
             iterator() : 
-                iterator_impl{}
+                base_type{}
             {
             }
             iterator(iterator const& aOther) :
-                iterator_impl{ aOther }
+                base_type{ aOther }
             {
             }
         private:
-            iterator(self_type& aContainer, iterator aBase) :
-                iterator_impl{ aContainer, aBase }
+            iterator(self_type& aContainer, pointer aBase) :
+                base_type{ aContainer, aBase }
+            {
+            }
+            iterator(base_type& aOther) :
+                base_type{ aOther }
+            {
+            }
+            iterator(base_type&& aOther) :
+                base_type{ aOther }
             {
             }
         public:
@@ -259,11 +262,11 @@ namespace neolib
             }
             iterator operator+(difference_type aDifference) const
             {
-                return base_type::operator+(aDifference);
+                return iterator{ base_type::operator+(aDifference) };
             }
             iterator operator-(difference_type aDifference) const
             {
-                return base_type::operator-(aDifference);
+                return iterator{ base_type::operator-(aDifference) };
             }
         };
         class const_iterator : public iterator_impl<const_pointer, const_reference, const_pointer>
@@ -273,11 +276,11 @@ namespace neolib
             using base_type = iterator_impl<const_pointer, const_reference, const_pointer>;
         public:
             const_iterator() :
-                iterator_impl{}
+                base_type{}
             {
             }
             const_iterator(const_iterator const& aOther) :
-                iterator_impl{ aOther }
+                base_type{ aOther }
             {
             }
             const_iterator(iterator const& aOther) :
@@ -285,8 +288,12 @@ namespace neolib
             {
             }
         private:
-            const_iterator(self_type& aContainer, const_iterator aBase) :
-                iterator_impl{ aContainer, aBase }
+            const_iterator(self_type& aContainer, pointer aBase) :
+                base_type{ aContainer, aBase }
+            {
+            }
+            const_iterator(base_type&& aOther) :
+                base_type{ aOther }
             {
             }
         public:
@@ -307,7 +314,7 @@ namespace neolib
             }
             const_iterator operator++(int)
             {
-                iterator temp = *this;
+                const_iterator temp = *this;
                 operator++();
                 return temp;
             }
@@ -318,7 +325,7 @@ namespace neolib
             }
             const_iterator operator--(int)
             {
-                iterator temp = *this;
+                const_iterator temp = *this;
                 operator--();
                 return temp;
             }
@@ -334,18 +341,68 @@ namespace neolib
             }
             const_iterator operator+(difference_type aDifference) const
             {
-                return base_type::operator+(aDifference);
+                return const_iterator{ base_type::operator+(aDifference) };
             }
             const_iterator operator-(difference_type aDifference) const
             {
-                return base_type::operator-(aDifference);
+                return const_iterator{ base_type::operator-(aDifference) };
             }
         };
         using reverse_iterator = std::reverse_iterator<iterator>;
         using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-    private:
-        using gap_type = detail::gap_vector::gap<pointer>;
     public:
+        constexpr gap_vector() noexcept(noexcept(Allocator()))
+        {
+        }
+        constexpr explicit gap_vector(const Allocator& alloc) noexcept : iAlloc{ alloc }
+        {
+        }
+        constexpr gap_vector(size_type count, const value_type& value, const Allocator& alloc = Allocator()) : iAlloc{ alloc }
+        {
+            resize(count, value);
+        }
+        constexpr explicit gap_vector(size_type count, const Allocator& alloc = Allocator()) : iAlloc{ alloc }
+        {
+            resize(count);
+        }
+        template<class InputIt>
+        constexpr gap_vector(InputIt first, InputIt last, const Allocator& alloc = Allocator()) : iAlloc{ alloc }
+        {
+            (void)insert(begin(), first, last);
+        }
+        constexpr gap_vector(const gap_vector& other)
+        {
+            (void)insert(begin(), other.begin(), other.end());
+        }
+        constexpr gap_vector(const gap_vector& other, const Allocator& alloc) : iAlloc{ alloc }
+        {
+            (void)insert(begin(), other.begin(), other.end());
+        }
+        constexpr gap_vector(gap_vector&& other) noexcept
+        {
+            swap(other);
+        }
+        constexpr gap_vector(gap_vector&& other, const Allocator& alloc) : iAlloc{ alloc }
+        {
+            swap(other);
+        }
+        constexpr gap_vector(std::initializer_list<T> init, const Allocator& alloc = Allocator()) : iAlloc{ alloc }
+        {
+            (void)insert(begin(), init);
+        }
+        ~gap_vector()
+        {
+            clear();
+        }
+    public:
+        constexpr void swap(self_type& other) noexcept
+        {
+            std::swap(iData, other.iData);
+            std::swap(iDataEnd, other.iDataEnd);
+            std::swap(iStorageEnd, other.iStorageEnd);
+            std::swap(iGapStart, other.iGapStart);
+            std::swap(iGapEnd, other.iGapEnd);
+        }
     public:
         constexpr allocator_type get_allocator() const noexcept
         {
@@ -505,38 +562,58 @@ namespace neolib
     public:
         constexpr void clear() noexcept
         {
-            try
+            for (auto e = iData; e != iDataEnd; ++e)
             {
-                for (auto e = iData; e != iDataEnd; ++e)
-                {
-                    if (gap_active() && e >= gap().start && e < gap().end)
-                        continue;
-                    std::allocator_traits<allocator_type>::destroy(iAlloc, e);
-                }
+                if (gap_active() && e >= iGapStart && e < iGapEnd)
+                    continue;
+                std::allocator_traits<allocator_type>::destroy(iAlloc, e);
             }
-            catch (...)
-            {
-            }
-
-            iDataEnd = iData;
-            iGap = std::nullopt;
         }
-        constexpr iterator insert(const_iterator pos, const T& value)
+        constexpr iterator erase(const_iterator pos)
+        {
+            return erase(pos, std::next(pos));
+        }
+        constexpr iterator erase(const_iterator first, const_iterator last)
+        {
+            if (first == last)
+                return last;
+            auto const firstPos = std::next(begin(), std::distance(cbegin(), first)).base();
+            auto const lastPos = std::next(begin(), std::distance(cbegin(), last)).base();
+            auto const garbageCount = lastPos - firstPos;
+            auto const garbageStart = std::prev(iDataEnd, garbageCount);
+            for (auto src = std::next(firstPos, garbageCount), dest = firstPos; src != iDataEnd; ++src, ++dest)
+            {
+                if ((dest >= iGapStart && dest < iGapEnd) && !(src >= iGapStart && src < iGapEnd))
+                    std::allocator_traits<allocator_type>::construct(iAlloc, dest, std::move(*src));
+                else if (!(dest >= iGapStart && dest < iGapEnd) && (src >= iGapStart && src < iGapEnd))
+                    std::allocator_traits<allocator_type>::destroy(iAlloc, dest);
+                else if (!(dest >= iGapStart && dest < iGapEnd) && !(src >= iGapStart && src < iGapEnd))
+                    *dest = std::move(src);
+            }
+            for (auto garbage = iDataEnd - garbageCount; garbage != iDataEnd; ++garbage)
+                std::allocator_traits<allocator_type>::destroy(iAlloc, garbage);
+            return iterator{ *this, firstPos };
+        }
+        constexpr void pop_back()
+        {
+            (void)erase(std::prev(end()));
+        }
+        constexpr iterator insert(const_iterator pos, value_type const& value)
         {
             auto memory = allocate_from_gap(pos, 1);
             std::allocator_traits<allocator_type>::construct(iAlloc, memory, value);
             return iterator{ *this, memory };
         }
-        constexpr iterator insert(const_iterator pos, T&& value)
+        constexpr iterator insert(const_iterator pos, value_type&& value)
         {
             auto memory = allocate_from_gap(pos, 1);
             std::allocator_traits<allocator_type>::construct(iAlloc, memory, std::move(value));
             return iterator{ *this, memory };
         }
-        constexpr iterator insert(const_iterator pos, size_type count, const T& value)
+        constexpr iterator insert(const_iterator pos, size_type count, value_type const& value)
         {
             auto memory = allocate_from_gap(pos, count);
-            std::unitialized_copy_n(value, count, memory);
+            std::uninitialized_copy_n(value, count, memory);
             return iterator{ *this, memory };
         }
         template<class InputIt>
@@ -548,14 +625,14 @@ namespace neolib
             {
                 auto memory = allocate_from_gap(pos, 1);
                 ++count;
-                std::unitialized_copy_n(first++, 1, memory);
+                std::uninitialized_copy_n(first++, 1, memory);
             }
             return std::next(begin(), posIndex);
         }
-        constexpr iterator insert(const_iterator pos, std::initializer_list<T> list)
+        constexpr iterator insert(const_iterator pos, std::initializer_list<value_type> list)
         {
             auto memory = allocate_from_gap(pos, list.size());
-            std::unitialized_copy(list.begin(), list.end(), memory);
+            std::uninitialized_copy(list.begin(), list.end(), memory);
             return iterator{ *this, memory };
         }
         template<class... Args>
@@ -565,112 +642,172 @@ namespace neolib
             std::allocator_traits<allocator_type>::construct(iAlloc, memory, std::forward<Args>(args)...);
             return iterator{ *this, memory };
         }
+        constexpr void push_back(value_type const& value)
+        {
+            (void)insert(end(), value);
+        }
+        constexpr void push_back(value_type&& value)
+        {
+            (void)insert(end(), std::move(value));
+        }
+        template<class... Args>
+        constexpr void emplace_back(Args&&... args)
+        {
+            (void)emplace(end(), std::forward<Args>(args)...);
+        }
+        constexpr void resize(size_type count)
+        {
+            if (count < size())
+                (void)erase(std::prev(end(), size() - count), end());
+            else if (count > size())
+                (void)insert(end(), count - size(), value_type{});
+        }
+        constexpr void resize(size_type count, value_type const& value)
+        {
+            if (count < size())
+                (void)erase(std::prev(end(), size() - count), end());
+            else if (count > size())
+                (void)insert(end(), count - size(), value);
+        }
     public:
         constexpr void unsplit() const
         {
             if (!gap_active())
                 return;
-            std::unitialized_move(gap().end, std::min(gap().end + gap_size(), iDataEnd), gap().start);
-            auto const newEnd = std::move(std::min(gap().end + gap_size(), iDataEnd), iDataEnd, gap().start);
+            std::uninitialized_move(iGapEnd, std::min(iGapEnd + gap_size(), iDataEnd), iGapStart);
+            auto const newEnd = std::move(std::min(iGapEnd + gap_size(), iDataEnd), iDataEnd, iGapStart);
             std::erase(newEnd, iDataEnd);
             iDataEnd = newEnd;
-            iGap = std::nullopt;
+            iGapStart = nullptr;
+            iGapEnd = nullptr;
         }
     private:
+        constexpr size_type room() const noexcept
+        {
+            return capacity() - size();
+        }
         constexpr size_type adjusted_index(size_type pos) const noexcept
         {
-            if (!gap_active() || pos < gap_start())
+            if (!gap_active() || pos < iGapStart)
                 return pos;
             return pos + gap_size();
         }
         constexpr bool gap_active() const noexcept
         {
-            return iGap != std::nullopt;
-        }
-        constexpr gap_type& gap() const
-        {
-            return iGap.value();
-        }
-        constexpr size_type gap_start() const
-        {
-            return gap().start - data();
-        }
-        constexpr size_type gap_end() const
-        {
-            return gap().end - data();
+            return iGapStart != iGapEnd;
         }
         constexpr size_type gap_size() const noexcept
         {
-            if (gap_active())
-                return gap().end - gap().start;
-            return 0;
+            return iGapEnd - iGapStart;
         }
-        constexpr bool before_gap(const_iterator aPosition) const noexcept
+        constexpr bool before_gap(const_pointer aPosition) const noexcept
         {
-            return gap_active() && aPosition.base() < gap().start;
+            return gap_active() && aPosition < iGapStart;
         }
-        constexpr bool after_gap(const_iterator aPosition) const noexcept
+        constexpr bool after_gap(const_pointer aPosition) const noexcept
         {
-            return gap_active() && aPosition.base() >= gap().end;
+            return gap_active() && aPosition >= iGapEnd;
         }
-        constexpr bool near_gap(const_iterator aPosition) const noexcept
+        constexpr bool near_gap(const_pointer aPosition) const noexcept
         {
             if (!gap_active())
                 return false;
-            return std::abs(aPosition.base() - gap().start + ((gap().end - gap().start) / 2)) <= DefaultGapSize * NearnessFactor;
+            return std::abs(aPosition - iGapStart + ((iGapEnd - iGapStart) / 2)) <= DefaultGapSize * NearnessFactor;
+        }
+        constexpr bool before_gap(const_iterator aPosition) const noexcept
+        {
+            return before_gap(aPosition.base());
+        }
+        constexpr bool after_gap(const_iterator aPosition) const noexcept
+        {
+            return after_gap(aPosition.base());
+        }
+        constexpr bool near_gap(const_iterator aPosition) const noexcept
+        {
+            return near_gap(aPosition.base());
         }
         constexpr pointer allocate_from_gap(const_iterator aPosition, size_type aCount)
         {
-            auto const pos = std::next(begin(), std::distance(cbegin(), aPosition)).base();
             if (near_gap(aPosition) && aCount <= gap_size())
             {
+                auto const pos = std::next(begin(), std::distance(cbegin(), aPosition)).base();
                 if (before_gap(aPosition))
                 {
-                    auto dest = std::next(gap().start, aCount - 1);
-                    auto src = gap().start;
+                    auto dest = std::next(iGapStart, aCount - 1);
+                    auto src = iGapStart;
                     do
                     {
                         --src;
-                        if (dest >= gap().start)
+                        if (dest >= iGapStart)
                             std::allocator_traits<allocator_type>::construct(iAlloc, dest--, std::move(*src));
                         else
                             *dest-- = std::move(*src);
                         if (src < pos + aCount)
                             std::allocator_traits<allocator_type>::destroy(iAlloc, src);
                     } while (src != pos);
-                    gap().start += aCount;
+                    iGapStart += aCount;
                     return pos;
                 }
                 else if (after_gap(aPosition))
                 {
-                    auto dest = std::prev(gap().end, aCount);
-                    auto src = gap().end;
+                    auto dest = std::prev(iGapEnd, aCount);
+                    auto src = iGapEnd;
                     do
                     {
                         ++src;
-                        if (dest < gap().end)
+                        if (dest < iGapEnd)
                             std::allocator_traits<allocator_type>::construct(iAlloc, dest++, std::move(*src));
                         else
                             *dest++ = std::move(*src);
                         if (src >= pos - aCount)
                             std::allocator_traits<allocator_type>::destroy(iAlloc, src);
                     } while (src != pos);
-                    gap().end -= aCount;
+                    iGapEnd -= aCount;
                     return pos - aCount;
                 }
-                // pos should be gap().start
-                gap().start += aCount;
+                // pos should be iGapStart
+                iGapStart += aCount;
                 return pos;
             }
             else
             {
+                // todo: consider optimising by removing the need to call unsplit
+                auto const posIndex = std::distance(cbegin(), aPosition);
+                unsplit();
+                if (room() < aCount)
+                    grow(aCount);
+                auto const pos = std::next(iData, posIndex);
+                auto const initialGapSize = std::min(room(), DefaultGapSize);
+                auto src = iDataEnd;
+                auto dest = std::next(iDataEnd, initialGapSize);
+                do
+                {
+                    --src;
+                    --dest;
+                    if (dest >= iDataEnd)
+                        std::allocator_traits<allocator_type>::construct(iAlloc, dest, std::move(*src));
+                    else
+                        *dest = std::move(*src);
+                } while (src != pos);
+                while(dest != pos)
+                    std::allocator_traits<allocator_type>::destroy(iAlloc, --dest);
+                std::advance(iDataEnd, initialGapSize);
+                iGapStart = std::next(pos, aCount);
+                iGapEnd = std::next(pos, initialGapSize - aCount);
+                return pos;
             }
         }
+        constexpr void grow(size_type aCount)
+        {
+            double constexpr GrowthFactor = 1.5;
+            reserve(static_cast<size_type>((capacity() + DefaultGapSize + aCount) * GrowthFactor));
+        }
     private:
-        allocator iAlloc;
+        allocator_type iAlloc = {};
         mutable pointer iData = nullptr;
         mutable pointer iDataEnd = nullptr;
         mutable pointer iStorageEnd = nullptr;
-        mutable std::optional<gap_type> iGap;
+        mutable pointer iGapStart = nullptr;
+        mutable pointer iGapEnd = nullptr;
     };
 }
