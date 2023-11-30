@@ -591,25 +591,21 @@ namespace neolib
         {
             if (first == last)
                 return std::next(begin(), std::distance(cbegin(), last));
-            auto const firstPos = std::next(begin(), std::distance(cbegin(), first)).base();
-            auto const lastPos = std::next(begin(), std::distance(cbegin(), last)).base();
-            auto const garbageCount = lastPos - firstPos;
-            if (near_gap(firstPos) && gap_size() >= garbageCount)
+            auto const firstIndex = std::distance(cbegin(), first);
+            auto const lastIndex = std::distance(cbegin(), last);
+            auto const garbageCount = lastIndex - firstIndex;
+            if (near_gap(std::next(cbegin(), firstIndex)) && gap_size() >= garbageCount)
             {
                 // todo
             }
             else
             {
+                unsplit();
+                auto const firstPos = std::next(begin(), firstIndex).base();
+                auto const lastPos = std::next(begin(), lastIndex).base();
                 auto const garbageStart = std::prev(iDataEnd, garbageCount);
                 for (auto src = std::next(firstPos, garbageCount), dest = firstPos; src != iDataEnd; ++src, ++dest)
-                {
-                    if ((dest >= iGapStart && dest < iGapEnd) && !(src >= iGapStart && src < iGapEnd))
-                        std::allocator_traits<allocator_type>::construct(iAlloc, dest, std::move(*src));
-                    else if (!(dest >= iGapStart && dest < iGapEnd) && (src >= iGapStart && src < iGapEnd))
-                        std::allocator_traits<allocator_type>::destroy(iAlloc, dest);
-                    else if (!(dest >= iGapStart && dest < iGapEnd) && !(src >= iGapStart && src < iGapEnd))
-                        *dest = std::move(*src);
-                }
+                    *dest = std::move(*src);
                 for (auto garbage = iDataEnd - garbageCount; garbage != iDataEnd; ++garbage)
                     std::allocator_traits<allocator_type>::destroy(iAlloc, garbage);
                 return iterator{ *this, firstPos };
