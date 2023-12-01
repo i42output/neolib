@@ -593,16 +593,44 @@ namespace neolib
                 return std::next(begin(), std::distance(cbegin(), last));
             auto const firstIndex = std::distance(cbegin(), first);
             auto const lastIndex = std::distance(cbegin(), last);
+            auto const firstPos = std::next(begin(), firstIndex).base();
+            auto const lastPos = std::next(begin(), lastIndex).base();
             auto const garbageCount = lastIndex - firstIndex;
-            if (near_gap(std::next(cbegin(), firstIndex)) && gap_size() >= garbageCount)
+            if (near_gap(firstPos) || near_gap(lastPos))
             {
-                // todo
+                if (before_gap(lastPos))
+                {
+                    for (auto src = firstPos, dest = firstPos; src < iGapStart; ++src, ++dest)
+                        *dest = std::move(*src);
+                    for (auto garbage = iGapStart - garbageCount; garbage != iGapStart; ++garbage)
+                        std::allocator_traits<allocator_type>::destroy(iAlloc, garbage);
+                    std::advance(iGapStart, -garbageCount);
+                }
+                else if (after_gap(firstPos))
+                {
+                    for (auto src = std::prev(firstPos), dest = std::prev(lastPos); src >= iGapEnd; --src, --dest)
+                        *dest = std::move(*src);
+                    for (auto garbage = iGapEnd; garbage != iGapEnd + garbageCount; ++garbage)
+                        std::allocator_traits<allocator_type>::destroy(iAlloc, garbage);
+                    std::advance(iGapEnd, garbageCount);
+                }
+                else
+                {
+                    for (auto garbage = firstPos; garbage != lastPos; ++garbage)
+                    {
+                        if (garbage < iGapStart)
+                            std::allocator_traits<allocator_type>::destroy(iAlloc, garbage);
+                        else if (garbage >= iGapEnd)
+                            std::allocator_traits<allocator_type>::destroy(iAlloc, garbage);
+                    }
+                    iGapStart = firstPos;
+                    iGapEnd = lastPos;
+                }
+                return std::next(begin(), firstIndex);
             }
             else
             {
                 unsplit();
-                auto const firstPos = std::next(begin(), firstIndex).base();
-                auto const lastPos = std::next(begin(), lastIndex).base();
                 auto const garbageStart = std::prev(iDataEnd, garbageCount);
                 for (auto src = std::next(firstPos, garbageCount), dest = firstPos; src != iDataEnd; ++src, ++dest)
                     *dest = std::move(*src);
@@ -728,7 +756,8 @@ namespace neolib
         {
             if (!gap_active())
                 return false;
-            return std::abs(aPosition - iGapStart + ((iGapEnd - iGapStart) / 2)) <= DefaultGapSize * NearnessFactor;
+            return std::abs(aPosition - iGapStart) <= DefaultGapSize * NearnessFactor || 
+                std::abs(aPosition - iGapEnd) <= DefaultGapSize * NearnessFactor;
         }
         constexpr bool before_gap(const_iterator aPosition) const noexcept
         {
