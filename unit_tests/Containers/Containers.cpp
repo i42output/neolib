@@ -37,6 +37,17 @@ namespace
 
 int main()
 {
+    neolib::gap_vector<int> gapVector;
+    std::vector<int> normalVector;
+
+    for (int i = 1; i < 1000000; ++i)
+    {
+        gapVector.push_back(i);
+        normalVector.push_back(i);
+    }
+
+    test_assert(std::equal(gapVector.begin(), gapVector.end(), normalVector.begin()));
+
     neolib::string s1, s2;
     neolib::i_string const& rs1{ s1 };
     neolib::i_string const& rs2{ s2 };
