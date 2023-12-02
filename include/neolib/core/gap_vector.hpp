@@ -107,6 +107,7 @@ namespace neolib
             {
                 return iBase;
             }
+        protected:
             iterator_impl& operator++()
             {
                 auto const next = std::next(iBase);
@@ -165,11 +166,13 @@ namespace neolib
                 result -= aDifference; 
                 return result; 
             }
+        public:
             reference operator[](difference_type aDifference) const 
             { 
                 return *((*this) + aDifference); 
             }
-            difference_type operator-(const iterator_impl& aOther) const
+        protected:
+            difference_type difference(const iterator_impl& aOther) const
             {
                 auto result = iBase - aOther.base();
                 if (c().gap_active())
@@ -181,7 +184,17 @@ namespace neolib
                 }
                 return result;
             }
-            auto operator<=>(const iterator_impl&) const = default;
+        public:
+            template <typename ContainerType2, typename BaseIterator2, typename Reference2, typename Pointer2>
+            constexpr bool operator==(const iterator_impl<ContainerType2, BaseIterator2, Reference2, Pointer2>& that) const noexcept
+            {
+                return iBase == that.base();
+            }
+            template <typename ContainerType2, typename BaseIterator2, typename Reference2, typename Pointer2>
+            constexpr std::strong_ordering operator<=>(const iterator_impl<ContainerType2, BaseIterator2, Reference2, Pointer2>& that) const noexcept
+            {
+                return iBase <=> that.base();
+            }        
         protected:
             constexpr container_type& c() const noexcept
             {
@@ -280,7 +293,10 @@ namespace neolib
             {
                 return iterator{ base_type::operator-(aDifference) };
             }
-            using base_type::operator-;
+            difference_type operator-(const iterator& aOther) const
+            {
+                return base_type::difference(aOther);
+            }
         };
         class const_iterator : public iterator_impl<self_type const, const_pointer, const_reference, const_pointer>
         {
@@ -367,7 +383,10 @@ namespace neolib
             {
                 return const_iterator{ base_type::operator-(aDifference) };
             }
-            using base_type::operator-;
+            difference_type operator-(const const_iterator& aOther) const
+            {
+                return base_type::difference(aOther);
+            }
         };
         using reverse_iterator = std::reverse_iterator<iterator>;
         using const_reverse_iterator = std::reverse_iterator<const_iterator>;
@@ -391,19 +410,19 @@ namespace neolib
         {
             (void)insert(begin(), first, last);
         }
-        constexpr gap_vector(const gap_vector& other)
+        constexpr gap_vector(const self_type& other)
         {
             (void)insert(begin(), other.begin(), other.end());
         }
-        constexpr gap_vector(const gap_vector& other, const Allocator& alloc) : iAlloc{ alloc }
+        constexpr gap_vector(const self_type& other, const Allocator& alloc) : iAlloc{ alloc }
         {
             (void)insert(begin(), other.begin(), other.end());
         }
-        constexpr gap_vector(gap_vector&& other) noexcept
+        constexpr gap_vector(self_type&& other) noexcept
         {
             swap(other);
         }
-        constexpr gap_vector(gap_vector&& other, const Allocator& alloc) : iAlloc{ alloc }
+        constexpr gap_vector(self_type&& other, const Allocator& alloc) : iAlloc{ alloc }
         {
             swap(other);
         }
@@ -414,6 +433,40 @@ namespace neolib
         ~gap_vector()
         {
             clear();
+        }
+    public:
+        constexpr self_type& operator=(const self_type& other)
+        {
+            assign(other.begin(), other.end());
+            return *this;
+        }
+        constexpr self_type& operator=(self_type&& other) noexcept
+        {
+            self_type temp;
+            temp.swap(other);
+            temp.swap(*this);
+            return *this;
+        }
+        constexpr self_type& operator=(std::initializer_list<value_type> ilist)
+        {
+            assign(ilist);
+            return *this;
+        }
+        constexpr void assign(size_type count, const value_type& value)
+        {
+            clear();
+            insert(begin(), count, value);
+        }
+        template<class InputIt>
+        constexpr void assign(InputIt first, InputIt last) 
+        {
+            clear();
+            insert(begin(), first, last);
+        }
+        constexpr void assign(std::initializer_list<value_type> ilist)
+        {
+            clear();
+            insert(begin(), ilist);
         }
     public:
         constexpr void swap(self_type& other) noexcept
@@ -740,7 +793,7 @@ namespace neolib
         }
         constexpr size_type adjusted_index(size_type pos) const noexcept
         {
-            if (!gap_active() || pos < (iGapStart - iData))
+            if (!gap_active() || pos < static_cast<size_type>(iGapStart - iData))
                 return pos;
             return pos + gap_size();
         }
@@ -869,4 +922,20 @@ namespace neolib
         mutable pointer iGapStart = nullptr;
         mutable pointer iGapEnd = nullptr;
     };
+
+    template <typename T, std::size_t DefaultGapSize, std::size_t NearnessFactor, typename Allocator>
+    inline constexpr bool operator==(
+        gap_vector<T, DefaultGapSize, NearnessFactor, Allocator> const& lhs, 
+        gap_vector<T, DefaultGapSize, NearnessFactor, Allocator> const& rhs)
+    {
+        return lhs.size() == rhs.size() && std::equal(lhs.begin(), lhs.end(), rhs.begin());
+    }
+
+    template <typename T, std::size_t DefaultGapSize, std::size_t NearnessFactor, typename Allocator>
+    inline constexpr auto operator<=>(
+        gap_vector<T, DefaultGapSize, NearnessFactor, Allocator> const& lhs,
+        gap_vector<T, DefaultGapSize, NearnessFactor, Allocator> const& rhs)
+    {
+        return std::lexicographical_compare_three_way(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+    }
 }
