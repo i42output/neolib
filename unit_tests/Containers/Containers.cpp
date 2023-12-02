@@ -60,10 +60,21 @@ int main()
         { 
             index = index + rand() % gapVector.DefaultGapSize - gapVector.DefaultGapSize / 2;
             index = std::max<int>(0, std::min<int>(index, gapVector.size() - 1));
-            if (rand() % 2 == 0 || gapVector.empty())
+            switch (rand() % 4)
+            {
+            case 0:
                 gapVector.insert(std::next(gapVector.begin(), index), rand());
-            else
+                break;
+            case 1:
+                gapVector.insert(std::next(gapVector.begin(), index), { 1, 2, 3, 4 });
+                break;
+            case 2:
                 gapVector.erase(std::next(gapVector.begin(), index));
+                break;
+            case 3:
+                gapVector.erase(std::next(gapVector.begin(), index), std::next(gapVector.begin(), std::min<std::size_t>(gapVector.size(), index + 4)) );
+                break;
+            }
         }
         gapEnd = std::chrono::high_resolution_clock::now();
     }
@@ -79,16 +90,29 @@ int main()
         {
             index = index + rand() % gapVector.DefaultGapSize - gapVector.DefaultGapSize / 2;
             index = std::max<int>(0, std::min<int>(index, normalVector.size() - 1));
-            if (rand() % 2 == 0 || normalVector.empty())
+            switch (rand() % 4)
+            {
+            case 0:
                 normalVector.insert(std::next(normalVector.begin(), index), rand());
-            else
+                break;
+            case 1:
+                normalVector.insert(std::next(normalVector.begin(), index), { 1, 2, 3, 4 });
+                break;
+            case 2:
                 normalVector.erase(std::next(normalVector.begin(), index));
+                break;
+            case 3:
+                normalVector.erase(std::next(normalVector.begin(), index), std::next(normalVector.begin(), std::min<std::size_t>(normalVector.size(), index + 4)));
+                break;
+            }
         }
         normalEnd = std::chrono::high_resolution_clock::now();
     }
 
     test_assert(gapVector.size() == normalVector.size());
     test_assert(std::equal(gapVector.begin(), gapVector.end(), normalVector.begin()));
+
+    // todo: more gap_vector unit tests, e.g. multi-element insert/erase.
 
     std::cout << "neolib::gap_vector: " << std::chrono::duration_cast<std::chrono::milliseconds>(gapEnd - gapStart).count() / 1000.0 << " s" << std::endl;
     std::cout << "std::vector: " << std::chrono::duration_cast<std::chrono::milliseconds>(normalEnd - normalStart).count() / 1000.0 << " s" << std::endl;
