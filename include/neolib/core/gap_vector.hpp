@@ -37,8 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <algorithm>
-#include <vector>
-#include <optional>
+#include <memory>
 
 namespace neolib
 {
