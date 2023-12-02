@@ -10,6 +10,7 @@
 * vecarray container, see [http://i42.co.uk/stuff/vecarray.htm](http://i42.co.uk/stuff/vecarray.htm).
 * segmented_array container, see [http://i42.co.uk/stuff/segmented_array.htm](http://i42.co.uk/stuff/segmented_array.htm).
 * neosigslot, see [http://i42.co.uk/stuff/neosigslot.htm](http://i42.co.uk/stuff/neosigslot.htm).
+* gap_vector, a gap buffer.
 * NoFussXML, see [http://i42.co.uk/stuff/NoFussXML.htm](http://i42.co.uk/stuff/NoFussXML.htm).
 * NoFussJSON, a fast JSON and Relaxed JSON parser/generator.
 * packet stream network library (based on Boost.Asio).
