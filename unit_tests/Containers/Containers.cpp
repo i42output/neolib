@@ -40,13 +40,58 @@ int main()
     neolib::gap_vector<int> gapVector;
     std::vector<int> normalVector;
 
-    for (int i = 1; i < 1000000; ++i)
+    for (int i = 1; i < 20000000; ++i)
     {
         gapVector.push_back(i);
         normalVector.push_back(i);
     }
 
+    test_assert(std::distance(gapVector.begin(), gapVector.end()) == std::distance(normalVector.begin(), normalVector.end()));
     test_assert(std::equal(gapVector.begin(), gapVector.end(), normalVector.begin()));
+
+    std::chrono::high_resolution_clock::time_point gapStart;
+    std::chrono::high_resolution_clock::time_point gapEnd;
+
+    {
+        gapStart = std::chrono::high_resolution_clock::now();
+        srand(0);
+        int index = gapVector.size() / 2;
+        for (int i = 1; i < 10000; ++i)
+        { 
+            index = index + rand() % gapVector.DefaultGapSize - gapVector.DefaultGapSize / 2;
+            index = std::max<int>(0, std::min<int>(index, gapVector.size() - 1));
+            if (rand() % 2 == 0 || gapVector.empty())
+                gapVector.insert(std::next(gapVector.begin(), index), rand());
+            else
+                gapVector.erase(std::next(gapVector.begin(), index));
+        }
+        gapEnd = std::chrono::high_resolution_clock::now();
+    }
+
+    std::chrono::high_resolution_clock::time_point normalStart;
+    std::chrono::high_resolution_clock::time_point normalEnd;
+
+    {
+        normalStart = std::chrono::high_resolution_clock::now();
+        srand(0);
+        int index = normalVector.size() / 2;
+        for (int i = 1; i < 10000; ++i)
+        {
+            index = index + rand() % gapVector.DefaultGapSize - gapVector.DefaultGapSize / 2;
+            index = std::max<int>(0, std::min<int>(index, normalVector.size() - 1));
+            if (rand() % 2 == 0 || normalVector.empty())
+                normalVector.insert(std::next(normalVector.begin(), index), rand());
+            else
+                normalVector.erase(std::next(normalVector.begin(), index));
+        }
+        normalEnd = std::chrono::high_resolution_clock::now();
+    }
+
+    test_assert(gapVector.size() == normalVector.size());
+    test_assert(std::equal(gapVector.begin(), gapVector.end(), normalVector.begin()));
+
+    std::cout << "neolib::gap_vector: " << std::chrono::duration_cast<std::chrono::milliseconds>(gapEnd - gapStart).count() / 1000.0 << " s" << std::endl;
+    std::cout << "std::vector: " << std::chrono::duration_cast<std::chrono::milliseconds>(normalEnd - normalStart).count() / 1000.0 << " s" << std::endl;
 
     neolib::string s1, s2;
     neolib::i_string const& rs1{ s1 };

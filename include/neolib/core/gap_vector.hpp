@@ -42,11 +42,11 @@
 
 namespace neolib
 {
-    template <typename T, std::size_t DefaultGapSize = 256, std::size_t NearnessFactor = 2, typename Allocator = std::allocator<T>>
+    template <typename T, std::size_t DefaultGapSize_ = 256, std::size_t NearnessFactor_ = 2, typename Allocator = std::allocator<T>>
     class gap_vector
     {
     private:
-        using self_type = gap_vector<T, DefaultGapSize, NearnessFactor, Allocator>;
+        using self_type = gap_vector<T, DefaultGapSize_, NearnessFactor_, Allocator>;
     public:
         using value_type = T;
         using allocator_type = Allocator;
@@ -56,6 +56,9 @@ namespace neolib
         using const_reference = value_type const&;
         using pointer = std::allocator_traits<Allocator>::pointer;
         using const_pointer = std::allocator_traits<Allocator>::const_pointer;
+    public:
+        static constexpr size_type DefaultGapSize = DefaultGapSize_;
+        static constexpr size_type NearnessFactor = NearnessFactor_;
     private:
         template <typename ContainerType, typename BaseIterator, typename Reference, typename Pointer>
         class iterator_impl
@@ -99,25 +102,25 @@ namespace neolib
         public:
             reference operator*() const
             {
-                return *base();
+                return *iBase;
             }
             pointer operator->() const
             {
-                return base();
+                return iBase;
             }
             iterator_impl& operator++()
             {
-                auto const next = std::next(base());
-                if (!c().gap_active() || next < c().iGapStart || next >= c().iGapEnd)
+                auto const next = std::next(iBase);
+                if (!c().gap_active() || next < c().iGapStart || (c().iGapEnd == c().iDataEnd && next == c().iGapStart) || next > c().iGapEnd)
                     ++iBase;
                 else
-                    iBase = (c().iDataEnd != c().iGapEnd ? c().iGapEnd : c().iGapStart);
+                    iBase = c().iGapEnd;
                 return *this;
             }
             iterator_impl& operator--()
             {
-                auto const prev = std::prev(base());
-                if (!c().gap_active() || prev <= c().iGapStart || prev > c().iGapEnd)
+                auto const prev = std::prev(iBase);
+                if (!c().gap_active() || prev < c().iGapStart || prev > c().iGapEnd)
                     --iBase;
                 else
                     iBase = std::prev(c().iGapStart);
@@ -125,25 +128,29 @@ namespace neolib
             }
             iterator_impl& operator+=(difference_type aDifference)
             {
-                if (aDifference < 0)
+                if (aDifference == 0)
+                    return *this;
+                else if (aDifference < 0)
                     return operator-=(-aDifference);
-                auto const current = base();
+                auto const current = iBase;
                 auto const next = current + aDifference;
-                if (!c().gap_active() || (current <= c().iGapStart && next <= c().iGapStart) || (current >= c().iGapEnd && next >= c().iGapEnd))
+                if (!c().gap_active() || next <= c().iGapStart || current >= c().iGapEnd)
                     iBase += aDifference;
-                else if (current <= c().iGapStart && next >= c().iGapEnd)
+                else
                     iBase += (aDifference + c().gap_size());
                 return *this;
             }
             iterator_impl& operator-=(difference_type aDifference)
             {
-                if (aDifference < 0)
+                if (aDifference == 0)
+                    return *this;
+                else if (aDifference < 0)
                     return operator+=(-aDifference);
-                auto const current = base();
+                auto const current = iBase;
                 auto const next = current - aDifference;
-                if (!c().gap_active() || (current <= c().iGapStart && next <= c().iGapStart) || (current >= c().iGapEnd && next >= c().iGapEnd))
+                if (!c().gap_active() || current < c().iGapStart || next >= c().iGapEnd)
                     iBase -= aDifference;
-                else if (next <= c().iGapStart && current >= c().iGapEnd)
+                else
                     iBase -= (aDifference + c().gap_size());
                 return *this;
             }
@@ -165,12 +172,12 @@ namespace neolib
             }
             difference_type operator-(const iterator_impl& aOther) const
             {
-                auto result = base() - aOther.base();
+                auto result = iBase - aOther.base();
                 if (c().gap_active())
                 {
-                    if (c().before_gap(aOther.base()) && c().after_gap(base()))
+                    if (c().before_gap(aOther.base()) && c().after_gap(iBase))
                         result -= c().gap_size();
-                    else if (c().before_gap(base()) && c().after_gap(aOther.base()))
+                    else if (c().before_gap(iBase) && c().after_gap(aOther.base()))
                         result += c().gap_size();
                 }
                 return result;
@@ -475,51 +482,51 @@ namespace neolib
     public:
         constexpr const_iterator begin() const noexcept
         {
-            return const_iterator{ *this, iData };
+            return const_iterator{ *this, !gap_active() || iData != iGapStart ? iData : iGapEnd };
         }
         constexpr const_iterator cbegin() const noexcept
         {
-            return const_iterator{ *this, iData };
+            return const_iterator{ *this, !gap_active() || iData != iGapStart ? iData : iGapEnd };
         }
         constexpr iterator begin() noexcept
         {
-            return iterator{ *this, iData };
+            return iterator{ *this, !gap_active() || iData != iGapStart ? iData : iGapEnd };
         }
         constexpr const_iterator end() const noexcept
         {
-            return const_iterator{ *this, iDataEnd != iGapEnd ? iDataEnd : iGapStart };
+            return const_iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iGapStart };
         }
         constexpr const_iterator cend() const noexcept
         {
-            return const_iterator{ *this, iDataEnd != iGapEnd ? iDataEnd : iGapStart };
+            return const_iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iGapStart };
         }
         constexpr iterator end() noexcept
         {
-            return iterator{ *this, iDataEnd != iGapEnd ? iDataEnd : iGapStart };
+            return iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iGapStart };
         }
         constexpr const_reverse_iterator rbegin() const noexcept
         {
-            return const_reverse_iterator{ const_iterator{ *this, iDataEnd != iGapEnd ? iDataEnd : iGapStart } };
+            return const_reverse_iterator{ const_iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iGapStart } };
         }
         constexpr const_reverse_iterator crbegin() const noexcept
         {
-            return const_reverse_iterator{ const_iterator{ *this, iDataEnd != iGapEnd ? iDataEnd : iGapStart } };
+            return const_reverse_iterator{ const_iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iGapStart } };
         }
         constexpr reverse_iterator rbegin() noexcept
         {
-            return reverse_iterator{ iterator{ *this, iDataEnd != iGapEnd ? iDataEnd : iGapStart } };
+            return reverse_iterator{ iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iGapStart } };
         }
         constexpr const_reverse_iterator rend() const noexcept
         {
-            return const_reverse_iterator{ const_iterator{ *this, iData } };
+            return const_reverse_iterator{ const_iterator{ *this, !gap_active() || iData != iGapStart ? iData : iGapEnd } };
         }
         constexpr const_reverse_iterator crend() const noexcept
         {
-            return const_reverse_iterator{ const_iterator{ *this, iData } };
+            return const_reverse_iterator{ const_iterator{ *this, !gap_active() || iData != iGapStart ? iData : iGapEnd } };
         }
         constexpr reverse_iterator rend() noexcept
         {
-            return reverse_iterator{ iterator{ *this, iData } };
+            return reverse_iterator{ iterator{ *this, !gap_active() || iData != iGapStart ? iData : iGapEnd } };
         }
     public:
         [[nodiscard]] constexpr bool empty() const noexcept
@@ -598,9 +605,9 @@ namespace neolib
             auto const garbageCount = lastIndex - firstIndex;
             if (near_gap(firstPos) || near_gap(lastPos))
             {
-                if (before_gap(lastPos))
+                if (before_gap(std::prev(lastPos)))
                 {
-                    for (auto src = firstPos, dest = firstPos; src < iGapStart; ++src, ++dest)
+                    for (auto src = lastPos, dest = firstPos; src < iGapStart; ++src, ++dest)
                         *dest = std::move(*src);
                     for (auto garbage = iGapStart - garbageCount; garbage != iGapStart; ++garbage)
                         std::allocator_traits<allocator_type>::destroy(iAlloc, garbage);
@@ -631,12 +638,14 @@ namespace neolib
             else
             {
                 unsplit();
+                auto const newFirstPos = std::next(begin(), firstIndex).base();
                 auto const garbageStart = std::prev(iDataEnd, garbageCount);
-                for (auto src = std::next(firstPos, garbageCount), dest = firstPos; src != iDataEnd; ++src, ++dest)
+                for (auto src = std::next(newFirstPos, garbageCount), dest = newFirstPos; src != iDataEnd; ++src, ++dest)
                     *dest = std::move(*src);
                 for (auto garbage = iDataEnd - garbageCount; garbage != iDataEnd; ++garbage)
                     std::allocator_traits<allocator_type>::destroy(iAlloc, garbage);
-                return iterator{ *this, firstPos };
+                std::advance(iDataEnd, -garbageCount);
+                return iterator{ *this, newFirstPos };
             }
         }
         constexpr void pop_back()
@@ -717,8 +726,8 @@ namespace neolib
         {
             if (!gap_active())
                 return;
-            std::uninitialized_move(iGapEnd, std::min(iGapEnd + gap_size(), iDataEnd), iGapStart);
-            auto const newEnd = std::move(std::min(iGapEnd + gap_size(), iDataEnd), iDataEnd, iGapStart);
+            auto const next = std::uninitialized_move(iGapEnd, std::min(iGapEnd + gap_size(), iDataEnd), iGapStart);
+            auto const newEnd = std::move(std::min(iGapEnd + gap_size(), iDataEnd), iDataEnd, next);
             for (auto garbage = newEnd; garbage != iDataEnd; ++garbage)
                 std::allocator_traits<allocator_type>::destroy(iAlloc, garbage);
             iDataEnd = newEnd;
@@ -775,7 +784,8 @@ namespace neolib
         {
             if (near_gap(aPosition) && aCount <= gap_size())
             {
-                auto const pos = std::next(begin(), std::distance(cbegin(), aPosition)).base();
+                auto const posIndex = std::distance(cbegin(), aPosition);
+                auto const pos = std::next(begin(), posIndex).base();
                 if (before_gap(aPosition))
                 {
                     auto dest = std::next(iGapStart, aCount - 1);
@@ -795,18 +805,21 @@ namespace neolib
                 }
                 else if (after_gap(aPosition))
                 {
-                    auto dest = std::prev(iGapEnd, aCount);
-                    auto src = iGapEnd;
-                    do
+                    if (pos != iGapEnd)
                     {
-                        ++src;
-                        if (dest < iGapEnd)
-                            std::allocator_traits<allocator_type>::construct(iAlloc, dest++, std::move(*src));
-                        else
-                            *dest++ = std::move(*src);
-                        if (src >= pos - aCount)
-                            std::allocator_traits<allocator_type>::destroy(iAlloc, src);
-                    } while (src != pos);
+                        auto dest = std::prev(iGapEnd, aCount);
+                        auto src = iGapEnd;
+                        do
+                        {
+                            if (dest < iGapEnd)
+                                std::allocator_traits<allocator_type>::construct(iAlloc, dest++, std::move(*src));
+                            else
+                                *dest++ = std::move(*src);
+                            if (src >= pos - aCount)
+                                std::allocator_traits<allocator_type>::destroy(iAlloc, src);
+                            ++src;
+                        } while (src != pos);
+                    }
                     iGapEnd -= aCount;
                     return pos - aCount;
                 }
@@ -838,6 +851,7 @@ namespace neolib
                 for (auto garbage = std::next(pos, garbageCount); garbage != pos;)
                     std::allocator_traits<allocator_type>::destroy(iAlloc, --garbage);
                 std::advance(iDataEnd, initialGapSize);
+
                 iGapStart = std::next(pos, aCount);
                 iGapEnd = std::next(pos, initialGapSize);
                 return pos;
