@@ -706,43 +706,44 @@ namespace neolib
         }
         constexpr iterator insert(const_iterator pos, value_type const& value)
         {
-            auto memory = allocate_from_gap(pos, 1);
+            auto const memory = allocate_from_gap(pos, 1);
             std::allocator_traits<allocator_type>::construct(iAlloc, memory, value);
             return iterator{ *this, memory };
         }
         constexpr iterator insert(const_iterator pos, value_type&& value)
         {
-            auto memory = allocate_from_gap(pos, 1);
+            auto const memory = allocate_from_gap(pos, 1);
             std::allocator_traits<allocator_type>::construct(iAlloc, memory, std::move(value));
             return iterator{ *this, memory };
         }
         constexpr iterator insert(const_iterator pos, size_type count, value_type const& value)
         {
-            auto memory = allocate_from_gap(pos, count);
+            auto const memory = allocate_from_gap(pos, count);
             std::uninitialized_fill_n(memory, count, value);
             return iterator{ *this, memory };
         }
         template<class InputIt>
         constexpr iterator insert(const_iterator pos, InputIt first, InputIt last)
         {
-            auto posIndex = std::distance(cbegin(), pos);
-            while (first != last)
+            auto const insertPosIndex = std::distance(cbegin(), pos);
+            for (auto nextPosIndex = insertPosIndex; first != last; ++nextPosIndex)
             {
-                auto memory = allocate_from_gap(pos, 1);
+                auto const nextPos = std::next(cbegin(), nextPosIndex);
+                auto const memory = allocate_from_gap(nextPos, 1);
                 std::uninitialized_copy_n(first++, 1, memory);
             }
-            return std::next(begin(), posIndex);
+            return std::next(begin(), insertPosIndex);
         }
         constexpr iterator insert(const_iterator pos, std::initializer_list<value_type> list)
         {
-            auto memory = allocate_from_gap(pos, list.size());
+            auto const memory = allocate_from_gap(pos, list.size());
             std::uninitialized_copy(list.begin(), list.end(), memory);
             return iterator{ *this, memory };
         }
         template<class... Args>
         constexpr iterator emplace(const_iterator pos, Args&&... args)
         {
-            auto memory = allocate_from_gap(pos, 1);
+            auto const memory = allocate_from_gap(pos, 1);
             std::allocator_traits<allocator_type>::construct(iAlloc, memory, std::forward<Args>(args)...);
             return iterator{ *this, memory };
         }
