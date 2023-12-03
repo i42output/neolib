@@ -44,6 +44,12 @@ int main()
     {
         gapVector.push_back(i);
         normalVector.push_back(i);
+        test_assert(gapVector.back() == normalVector.back());
+        if (i == gapVector.DefaultGapSize)
+        {
+            gapVector.clear();
+            normalVector.clear();
+        }
     }
 
     test_assert(std::distance(gapVector.begin(), gapVector.end()) == std::distance(normalVector.begin(), normalVector.end()));
