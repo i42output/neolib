@@ -148,7 +148,7 @@ namespace neolib
                     return operator+=(-aDifference);
                 auto const current = iBase;
                 auto const next = current - aDifference;
-                if (!c().gap_active() || current < c().iGapStart || next >= c().iGapEnd)
+                if (!c().gap_active() || current <= c().iGapStart || next >= c().iGapEnd)
                     iBase -= aDifference;
                 else
                     iBase -= (aDifference + c().gap_size());
