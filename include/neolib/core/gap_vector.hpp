@@ -635,12 +635,10 @@ namespace neolib
     public:
         constexpr void clear() noexcept
         {
+            unsplit();
             for (auto e = iData; e != iDataEnd; ++e)
-            {
-                if (gap_active() && e >= iGapStart && e < iGapEnd)
-                    continue;
                 std::allocator_traits<allocator_type>::destroy(iAlloc, e);
-            }
+            iDataEnd = iData;
         }
         constexpr iterator erase(const_iterator pos)
         {
