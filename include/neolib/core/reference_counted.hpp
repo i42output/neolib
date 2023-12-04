@@ -57,23 +57,23 @@ namespace neolib
         {
         }
     public:
-        i_reference_counted* ptr() const noexcept override
+        i_reference_counted* ptr() const noexcept final
         {
             return iManagedPtr;
         }
-        bool expired() const noexcept override
+        bool expired() const noexcept final
         {
             return iManagedPtr == nullptr;
         }
-        int32_t weak_use_count() const noexcept override
+        int32_t weak_use_count() const noexcept final
         {
             return iWeakUseCount;
         }
-        void add_ref() noexcept override
+        void add_ref() noexcept final
         {
             ++iWeakUseCount;
         }
-        void release() override
+        void release() final
         {
             if (--iWeakUseCount <= 0 && expired())
                 delete this;
@@ -117,11 +117,11 @@ namespace neolib
             return *this;
         }
     public:
-        void add_ref() const noexcept override
+        void add_ref() const noexcept final
         {
             ++iReferenceCount;
         }
-        void release() const override
+        void release() const final
         {
             if (--iReferenceCount <= 0 && !iPinned)
             {
@@ -131,33 +131,33 @@ namespace neolib
                     throw release_during_destruction();
             }
         }
-        int32_t use_count() const noexcept override
+        int32_t use_count() const noexcept final
         {
             return iReferenceCount;
         }
-        const base_type* release_and_take_ownership() const override
+        const base_type* release_and_take_ownership() const final
         {
             if (iReferenceCount != 1)
                 throw too_many_references();
             iReferenceCount = 0;
             return this;
         }
-        base_type* release_and_take_ownership() override
+        base_type* release_and_take_ownership() final
         {
             return const_cast<base_type*>(to_const(*this).release_and_take_ownership());
         }
-        void pin() const noexcept override
+        void pin() const noexcept final
         {
             iPinned = true;
         }
-        void unpin() const override
+        void unpin() const final
         {
             iPinned = false;
             if (iReferenceCount <= 0)
                 destroy();
         }
     public:
-        i_ref_control_block& control_block() override
+        i_ref_control_block& control_block() final
         {
             bool expected = false;
             if (iControlled.compare_exchange_strong(expected, true))
@@ -344,33 +344,40 @@ namespace neolib
             return ref_ptr<Interface2>{ *this };
         }
     public:
-        bool reference_counted() const noexcept override
+        bool reference_counted() const noexcept final
         {
             return iReferenceCounted;
         }
-        int32_t use_count() const noexcept override
+        int32_t use_count() const noexcept final
         {
-            if (iManagedPtr && iReferenceCounted)
-                return iManagedPtr->use_count();
+            if (managing() && reference_counted())
+                return managed_ptr()->use_count();
             return 0;
         }
-        void reset() override
+        bool unique() const noexcept final
+        {
+            if (reference_counted())
+                return use_count() == 1;
+            else
+                return valid();
+        }
+        void reset() final
         {
             reset<Interface>(nullptr, nullptr, false, false);
         }
-        void reset(abstract_t<Interface>* aPtr) override
+        void reset(abstract_t<Interface>* aPtr) final
         {
             reset<abstract_t<Interface>>(aPtr, aPtr, aPtr != nullptr, true);
         }
-        void reset(abstract_t<Interface>* aPtr, abstract_t<Interface>* aManagedPtr) override
+        void reset(abstract_t<Interface>* aPtr, abstract_t<Interface>* aManagedPtr) final
         {
             reset<abstract_t<Interface>>(aPtr, aManagedPtr, aManagedPtr != nullptr, true);
         }
-        void reset(abstract_t<Interface>* aPtr, abstract_t<Interface>* aManagedPtr, bool aReferenceCounted, bool aAddRef) override
+        void reset(abstract_t<Interface>* aPtr, abstract_t<Interface>* aManagedPtr, bool aReferenceCounted, bool aAddRef) final
         {
             reset<abstract_t<Interface>>(aPtr, aManagedPtr, aReferenceCounted, aAddRef);
         }
-        Interface* release() override
+        Interface* release() final
         {
             if (iManagedPtr == nullptr)
                 throw no_managed_object();
@@ -380,7 +387,7 @@ namespace neolib
             iReferenceCounted = false;
             return releasedObject;
         }
-        Interface* detach() noexcept override
+        Interface* detach() noexcept final
         {
             auto detached = iManagedPtr;
             iPtr = nullptr;
@@ -388,29 +395,29 @@ namespace neolib
             iReferenceCounted = false;
             return detached;
         }
-        bool valid() const noexcept override
+        bool valid() const noexcept final
         {
             return iPtr != nullptr;
         }
-        bool managing() const noexcept override
+        bool managing() const noexcept final
         {
             return iManagedPtr != nullptr;
         }
-        Interface* ptr() const noexcept override
+        Interface* ptr() const noexcept final
         {
             return iPtr;
         }
-        Interface* managed_ptr() const noexcept override
+        Interface* managed_ptr() const noexcept final
         {
             return iManagedPtr;
         }
-        Interface* operator->() const override
+        Interface* operator->() const final
         {
             if (iPtr == nullptr)
                 throw no_object();
             return iPtr;
         }
-        Interface& operator*() const override
+        Interface& operator*() const final
         {
             if (iPtr == nullptr)
                 throw no_object();
@@ -506,74 +513,78 @@ namespace neolib
             return *this;
         }
     public:
-        bool reference_counted() const noexcept override
+        bool reference_counted() const noexcept final
         {
             return false;
         }
-        int32_t use_count() const noexcept override
+        int32_t use_count() const noexcept final
         {
             return 0;
         }
-        void reset() override
+        bool unique() const noexcept final
+        {
+            return false;
+        }
+        void reset() final
         {
             weak_ref_ptr copy(*this);
             update_control_block(nullptr);
         }
-        void reset(abstract_t<Interface>* aPtr) override
+        void reset(abstract_t<Interface>* aPtr) final
         {
             weak_ref_ptr copy(*this);
             update_control_block(aPtr);
         }
-        void reset(abstract_t<Interface>*, abstract_t<Interface>* aManagedPtr) override
+        void reset(abstract_t<Interface>*, abstract_t<Interface>* aManagedPtr) final
         {
             weak_ref_ptr copy(*this);
             update_control_block(aManagedPtr);
         }
-        void reset(abstract_t<Interface>*, abstract_t<Interface>* aManagedPtr, bool, bool) override
+        void reset(abstract_t<Interface>*, abstract_t<Interface>* aManagedPtr, bool, bool) final
         {
             weak_ref_ptr copy(*this);
             update_control_block(aManagedPtr);
         }
-        Interface* release() override
+        Interface* release() final
         {
             if (expired())
                 throw no_object();
             else
                 throw bad_release();
         }
-        Interface* detach() override
+        Interface* detach() final
         {
             weak_ref_ptr copy(*this);
             update_control_block(nullptr);
             return copy.ptr();
         }
-        bool valid() const noexcept override
+        bool valid() const noexcept final
         {
             return ptr() != nullptr;
         }
-        bool managing() const noexcept override
+        bool managing() const noexcept final
         {
             return valid();
         }
-        bool expired() const noexcept override
+        bool expired() const noexcept final
         {
             return iControlBlock == nullptr || iControlBlock->expired();
         }
-        Interface* ptr() const noexcept override
+        Interface* ptr() const noexcept final
         {
             return static_cast<Interface*>(iControlBlock != nullptr ? iControlBlock->ptr() : nullptr);
         }
-        Interface* managed_ptr() const noexcept override
+        Interface* managed_ptr() const noexcept final
         {
             return ptr();
         }
-        Interface* operator->() const override
+        Interface* operator->() const final
         {
             if (expired())
                 throw no_object();
             return ptr();
         }
-        Interface& operator*() const override
+        Interface& operator*() const final
         {
             if (expired())
                 throw no_object();

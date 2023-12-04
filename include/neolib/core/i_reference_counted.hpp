@@ -88,6 +88,7 @@ namespace neolib
     public:
         virtual bool reference_counted() const noexcept = 0;
         virtual int32_t use_count() const noexcept = 0;
+        virtual bool unique() const noexcept = 0;
         virtual void reset() = 0;
         virtual void reset(Interface* aPtr) = 0;
         virtual void reset(Interface* aPtr, Interface* aManagedPtr) = 0;
