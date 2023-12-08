@@ -454,7 +454,7 @@ namespace neolib
     };
 
     template <typename T, typename CookieType = cookie, typename MutexType = null_mutex>
-    class basic_vector_jar
+    class basic_std_vector_jar
     {
     public:
         typedef CookieType cookie_type;
@@ -472,7 +472,7 @@ namespace neolib
         static constexpr cookie_type INVALID_COOKIE = invalid_cookie<cookie_type>;
         static constexpr reverse_index_t INVALID_REVERSE_INDEX = static_cast<reverse_index_t>(~reverse_index_t{});
     public:
-        basic_vector_jar() : iNextAvailableCookie{}
+        basic_std_vector_jar() : iNextAvailableCookie{}
         {
         }
     public:
@@ -738,7 +738,7 @@ namespace neolib
     using small_jar = basic_jar<T, vector<T>, small_cookie, MutexType>;
 
     template <typename T, typename MutexType = null_mutex>
-    using vector_jar = basic_vector_jar<T, cookie, MutexType>;
+    using std_vector_jar = basic_std_vector_jar<T, cookie, MutexType>;
     template <typename T, typename MutexType = null_mutex>
-    using small_vector_jar = basic_vector_jar<T, small_cookie, MutexType>;
+    using small_std_vector_jar = basic_std_vector_jar<T, small_cookie, MutexType>;
 }
