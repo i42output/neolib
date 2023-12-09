@@ -41,13 +41,15 @@
 
 namespace neolib::ecs
 {
-    typedef neolib::uuid entity_archetype_id;
-    typedef neolib::uuid component_id;
-    typedef neolib::uuid system_id;
-    typedef void* handle_t;
-    typedef neolib::cookie id_t;
+    using entity_archetype_id = neolib::uuid;
+    using component_id = neolib::uuid;
+    using system_id = neolib::uuid;
+
+    using handle_t = void*;
+
+    using id_t = neolib::cookie;
     constexpr id_t null_id = 0;
-    typedef id_t handle_id;
-    typedef id_t entity_id;
+    using handle_id = id_t;
+    using entity_id = id_t;
     constexpr entity_id null_entity = 0;
 }

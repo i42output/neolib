@@ -180,24 +180,66 @@ namespace neolib
     template <typename T, typename Container = vector<T>, typename CookieType = cookie, typename MutexType = null_mutex>
     class basic_jar : public reference_counted<i_basic_jar<abstract_t<T>, abstract_t<Container>, CookieType>>
     {
-    public:
-        typedef CookieType cookie_type;
-    public:
-        typedef T value_type;
-        typedef Container container_type;
-        typedef typename container_type::const_iterator const_iterator;
-        typedef typename container_type::iterator iterator;
-        typedef MutexType mutex_type;
     private:
-        typedef typename container_type::size_type reverse_index_t;
-        typedef std::vector<reverse_index_t> reverse_indices_t;
-        typedef std::vector<cookie_type> cookies_t;
+        using self_type = basic_jar<T, Container, CookieType, MutexType>;
+    public:
+        using cookie_type = CookieType;
+    public:
+        using value_type = T;
+        using container_type = Container;
+        using const_iterator = typename container_type::const_iterator;
+        using iterator = typename container_type::iterator;
+        using mutex_type = MutexType;
+    private:
+        using reverse_index_t = typename container_type::size_type;
+        using reverse_indices_t = std::vector<reverse_index_t>;
+        using cookies_t = std::vector<cookie_type>;
     private:
         static constexpr cookie_type INVALID_COOKIE = invalid_cookie<cookie_type>;
         static constexpr reverse_index_t INVALID_REVERSE_INDEX = static_cast<reverse_index_t>(~reverse_index_t{});
     public:
         basic_jar() : iNextAvailableCookie{}
         {
+        }
+        basic_jar(self_type const& aOther) :
+            iNextAvailableCookie{ aOther.iNextAvailableCookie.load() },
+            iAllocatedCookies{ aOther.iAllocatedCookies },
+            iItems{ aOther.iItems },
+            iFreeCookies{ aOther.iFreeCookies },
+            iReverseIndices{ aOther.iReverseIndices }
+        {
+        }
+        basic_jar(self_type&& aOther) :
+            iNextAvailableCookie{ aOther.iNextAvailableCookie.load() },
+            iAllocatedCookies{ std::move(aOther.iAllocatedCookies) },
+            iItems{ std::move(aOther.iItems) },
+            iFreeCookies{ std::move(aOther.iFreeCookies) },
+            iReverseIndices{ std::move(aOther.iReverseIndices) }
+        {
+            aOther.iNextAvailableCookie.store({});
+        }
+    public:
+        self_type& operator=(self_type const& aOther)
+        {
+            iNextAvailableCookie = aOther.iNextAvailableCookie.load();
+            iAllocatedCookies = aOther.iAllocatedCookies;
+            iItems = aOther.iItems;
+            iFreeCookies = aOther.iFreeCookies;
+            iReverseIndices = aOther.iReverseIndices;
+
+            return *this;
+        }
+        self_type& operator=(self_type&& aOther)
+        {
+            iNextAvailableCookie = aOther.iNextAvailableCookie.load();
+            iAllocatedCookies = std::move(aOther.iAllocatedCookies);
+            iItems = std::move(aOther.iItems);
+            iFreeCookies = std::move(aOther.iFreeCookies);
+            iReverseIndices = std::move(aOther.iReverseIndices);
+
+            aOther.iNextAvailableCookie.store({});
+
+            return *this;
         }
     public:
         bool empty() const final
@@ -456,24 +498,66 @@ namespace neolib
     template <typename T, typename CookieType = cookie, typename MutexType = null_mutex>
     class basic_std_vector_jar
     {
-    public:
-        typedef CookieType cookie_type;
-    public:
-        typedef T value_type;
-        typedef std::vector<value_type> container_type;
-        typedef typename container_type::const_iterator const_iterator;
-        typedef typename container_type::iterator iterator;
-        typedef MutexType mutex_type;
     private:
-        typedef typename container_type::size_type reverse_index_t;
-        typedef std::vector<reverse_index_t> reverse_indices_t;
-        typedef std::vector<cookie_type> cookies_t;
+        using self_type = basic_std_vector_jar<T, CookieType, MutexType>;
+    public:
+        using cookie_type = CookieType;
+    public:
+        using value_type = T;
+        using container_type = std::vector<value_type>;
+        using const_iterator = typename container_type::const_iterator;
+        using iterator = typename container_type::iterator;
+        using mutex_type = MutexType;
+    private:
+        using reverse_index_t = typename container_type::size_type;
+        using reverse_indices_t = std::vector<reverse_index_t>;
+        using cookies_t = std::vector<cookie_type>;
     private:
         static constexpr cookie_type INVALID_COOKIE = invalid_cookie<cookie_type>;
         static constexpr reverse_index_t INVALID_REVERSE_INDEX = static_cast<reverse_index_t>(~reverse_index_t{});
     public:
         basic_std_vector_jar() : iNextAvailableCookie{}
         {
+        }
+        basic_std_vector_jar(self_type const& aOther) :
+            iNextAvailableCookie{ aOther.iNextAvailableCookie.load() },
+            iAllocatedCookies{ aOther.iAllocatedCookies },
+            iItems{ aOther.iItems },
+            iFreeCookies { aOther.iFreeCookies },
+            iReverseIndices{ aOther.iReverseIndices }
+        {
+        }
+        basic_std_vector_jar(self_type&& aOther) :
+            iNextAvailableCookie{ aOther.iNextAvailableCookie.load() },
+            iAllocatedCookies{ std::move(aOther.iAllocatedCookies) },
+            iItems{ std::move(aOther.iItems) },
+            iFreeCookies{ std::move(aOther.iFreeCookies) },
+            iReverseIndices{ std::move(aOther.iReverseIndices) }
+        {
+            aOther.iNextAvailableCookie.store({});
+        }
+    public:
+        self_type& operator=(self_type const& aOther)
+        {
+            iNextAvailableCookie = aOther.iNextAvailableCookie.load();
+            iAllocatedCookies = aOther.iAllocatedCookies;
+            iItems = aOther.iItems;
+            iFreeCookies = aOther.iFreeCookies;
+            iReverseIndices = aOther.iReverseIndices;
+            
+            return *this;
+        }
+        self_type& operator=(self_type&& aOther)
+        {
+            iNextAvailableCookie = aOther.iNextAvailableCookie.load();
+            iAllocatedCookies = std::move(aOther.iAllocatedCookies);
+            iItems = std::move(aOther.iItems);
+            iFreeCookies = std::move(aOther.iFreeCookies);
+            iReverseIndices = std::move(aOther.iReverseIndices);
+
+            aOther.iNextAvailableCookie.store({});
+
+            return *this;
         }
     public:
         bool empty() const
@@ -607,7 +691,7 @@ namespace neolib
             if (reverseIndex < items().size() - 1)
             {
                 auto& item = items()[reverseIndex];
-                swap(item, items().back());
+                std::swap(item, items().back());
                 auto& cookie = allocated_cookies()[reverseIndex];
                 std::swap(cookie, allocated_cookies().back());
                 reverse_indices()[cookie] = reverseIndex;

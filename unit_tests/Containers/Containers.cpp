@@ -21,6 +21,7 @@ struct foo : i_foo
 };
 
 template class neolib::basic_jar<foo>;
+template class neolib::basic_std_vector_jar<foo>;
 
 template class neolib::gap_vector<int>;
 
