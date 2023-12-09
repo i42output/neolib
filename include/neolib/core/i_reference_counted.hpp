@@ -49,7 +49,7 @@ namespace neolib
     public:
         virtual i_reference_counted* ptr() const noexcept = 0;
         virtual bool expired() const noexcept = 0;
-        virtual int32_t weak_use_count() const noexcept = 0;
+        virtual long weak_use_count() const noexcept = 0;
         virtual void add_ref() noexcept = 0;
         virtual void release() = 0;
     };
@@ -64,7 +64,7 @@ namespace neolib
     public:
         virtual void add_ref() const noexcept = 0;
         virtual void release() const = 0;
-        virtual int32_t use_count() const noexcept = 0;
+        virtual long use_count() const noexcept = 0;
         virtual const i_reference_counted* release_and_take_ownership() const = 0;
         virtual i_reference_counted* release_and_take_ownership() = 0;
         virtual void pin() const noexcept = 0;
@@ -87,7 +87,7 @@ namespace neolib
         virtual ~i_ref_ptr() = default;
     public:
         virtual bool reference_counted() const noexcept = 0;
-        virtual int32_t use_count() const noexcept = 0;
+        virtual long use_count() const noexcept = 0;
         virtual bool unique() const noexcept = 0;
         virtual void reset() = 0;
         virtual void reset(Interface* aPtr) = 0;

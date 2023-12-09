@@ -65,7 +65,7 @@ namespace neolib
         {
             return iManagedPtr == nullptr;
         }
-        int32_t weak_use_count() const noexcept final
+        long weak_use_count() const noexcept final
         {
             return iWeakUseCount;
         }
@@ -87,7 +87,7 @@ namespace neolib
         }
     private:
         i_reference_counted* iManagedPtr;
-        int32_t iWeakUseCount;
+        long iWeakUseCount;
     };
 
     template <typename Base, bool DeallocateOnRelease = true>
@@ -117,11 +117,11 @@ namespace neolib
             return *this;
         }
     public:
-        void add_ref() const noexcept final
+        void add_ref() const noexcept override
         {
             ++iReferenceCount;
         }
-        void release() const final
+        void release() const override
         {
             if (--iReferenceCount <= 0 && !iPinned)
             {
@@ -131,7 +131,7 @@ namespace neolib
                     throw release_during_destruction();
             }
         }
-        int32_t use_count() const noexcept final
+        long use_count() const noexcept override
         {
             return iReferenceCount;
         }
@@ -174,7 +174,7 @@ namespace neolib
         }
     private:
         std::atomic<bool> iDestroying;
-        mutable std::atomic<int32_t> iReferenceCount;
+        mutable std::atomic<long> iReferenceCount;
         mutable std::atomic<bool> iPinned;
         mutable std::atomic<bool> iControlled;
         mutable std::atomic<ref_control_block*> iControlBlock;
@@ -348,7 +348,7 @@ namespace neolib
         {
             return iReferenceCounted;
         }
-        int32_t use_count() const noexcept final
+        long use_count() const noexcept final
         {
             if (managing() && reference_counted())
                 return managed_ptr()->use_count();
@@ -517,7 +517,7 @@ namespace neolib
         {
             return false;
         }
-        int32_t use_count() const noexcept final
+        long use_count() const noexcept final
         {
             return 0;
         }
