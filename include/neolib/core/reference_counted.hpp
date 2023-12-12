@@ -69,13 +69,13 @@ namespace neolib
         {
             return iWeakUseCount;
         }
-        void add_ref() noexcept final
+        void add_ref(long aCount = 1) noexcept final
         {
-            ++iWeakUseCount;
+            iWeakUseCount += aCount;
         }
-        void release() final
+        void release(long aCount = 1) final
         {
-            if (--iWeakUseCount <= 0 && expired())
+            if ((iWeakUseCount -= aCount) <= 0 && expired())
                 delete this;
         }
     private:
@@ -117,13 +117,13 @@ namespace neolib
             return *this;
         }
     public:
-        void add_ref() const noexcept override
+        void add_ref(long aCount = 1) const noexcept override
         {
-            ++iReferenceCount;
+            iReferenceCount += aCount;
         }
-        void release() const override
+        void release(long aCount = 1) const override
         {
-            if (--iReferenceCount <= 0 && !iPinned)
+            if ((iReferenceCount -= aCount) <= 0 && !iPinned)
             {
                 if (!iDestroying)
                     destroy();

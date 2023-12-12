@@ -50,8 +50,8 @@ namespace neolib
         virtual i_reference_counted* ptr() const noexcept = 0;
         virtual bool expired() const noexcept = 0;
         virtual long weak_use_count() const noexcept = 0;
-        virtual void add_ref() noexcept = 0;
-        virtual void release() = 0;
+        virtual void add_ref(long aCount = 1) noexcept = 0;
+        virtual void release(long aCount = 1) = 0;
     };
 
     class i_reference_counted
@@ -62,8 +62,8 @@ namespace neolib
     public:
         virtual ~i_reference_counted() = default;
     public:
-        virtual void add_ref() const noexcept = 0;
-        virtual void release() const = 0;
+        virtual void add_ref(long aCount = 1) const noexcept = 0;
+        virtual void release(long aCount = 1) const = 0;
         virtual long use_count() const noexcept = 0;
         virtual const i_reference_counted* release_and_take_ownership() const = 0;
         virtual i_reference_counted* release_and_take_ownership() = 0;
