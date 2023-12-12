@@ -58,8 +58,8 @@ namespace neolib
     public:
         virtual ~i_basic_cookie_consumer() = default;
     public:
-        virtual void add_ref(cookie_type aCookie) = 0;
-        virtual void release(cookie_type aCookie) = 0;
+        virtual void add_ref(cookie_type aCookie, long aCount = 1) = 0;
+        virtual void release(cookie_type aCookie, long aCount = 1) = 0;
         virtual long use_count(cookie_type aCookie) const = 0;
     };
 

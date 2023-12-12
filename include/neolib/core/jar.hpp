@@ -53,6 +53,8 @@ namespace neolib
     {  
         a.add_ref(c);
         a.release(c);
+        a.add_ref(c, 2);
+        a.release(c, 2);
     };
 
     template <typename CookieType, CookieConsumer<CookieType> ConsumerType = i_basic_cookie_consumer<CookieType>>
@@ -147,17 +149,17 @@ namespace neolib
             iCookie = no_cookie;
         }
     private:
-        void add_ref() const
+        void add_ref(long count = 1) const
         {
             if (!valid())
                 return;
-            consumer().add_ref(cookie());
+            consumer().add_ref(cookie(), count);
         }
-        void release() const
+        void release(long count = 1) const
         {
             if (!valid())
                 return;
-            consumer().release(cookie());
+            consumer().release(cookie(), count);
             reset();
         }
         bool have_consumer() const
