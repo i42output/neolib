@@ -48,11 +48,21 @@
 
 namespace neolib
 {
-    template <typename CookieType>
+    template <typename Consumer, typename Cookie>
+    concept CookieConsumer = requires(Consumer a, Cookie c)
+    {  
+        a.add_ref(c);
+        a.release(c);
+    };
+
+    template <typename CookieType, CookieConsumer<CookieType> ConsumerType = i_basic_cookie_consumer<CookieType>>
     class basic_cookie_ref_ptr
     {
+    private:
+        using self_type = basic_cookie_ref_ptr<CookieType, ConsumerType>;
     public:
-        typedef CookieType cookie_type;
+        using cookie_type = CookieType;
+        using consumer_type = ConsumerType;
         static constexpr cookie_type no_cookie = cookie_type{};
     public:
         basic_cookie_ref_ptr() :
@@ -60,7 +70,7 @@ namespace neolib
             iCookie{ no_cookie }
         {
         }
-        basic_cookie_ref_ptr(i_basic_cookie_consumer<cookie_type>& aConsumer, cookie_type aCookie) :
+        basic_cookie_ref_ptr(consumer_type& aConsumer, cookie_type aCookie) :
             iConsumer{ &aConsumer },
             iCookie{ aCookie }
         {
@@ -70,13 +80,13 @@ namespace neolib
         {
             release();
         }
-        basic_cookie_ref_ptr(basic_cookie_ref_ptr const& aOther) :
+        basic_cookie_ref_ptr(self_type const& aOther) :
             iConsumer{ aOther.iConsumer },
             iCookie{ aOther.iCookie }
         {
             add_ref();
         }
-        basic_cookie_ref_ptr(basic_cookie_ref_ptr&& aOther) :
+        basic_cookie_ref_ptr(self_type&& aOther) :
             iConsumer{ aOther.iConsumer },
             iCookie{ aOther.iCookie }
         {
@@ -84,21 +94,21 @@ namespace neolib
             aOther.release();
         }
     public:
-        basic_cookie_ref_ptr& operator=(basic_cookie_ref_ptr const& aOther)
+        self_type& operator=(self_type const& aOther)
         {
             if (&aOther == this)
                 return *this;
-            basic_cookie_ref_ptr temp{ std::move(*this) };
+            self_type temp{ std::move(*this) };
             iConsumer = aOther.iConsumer;
             iCookie = aOther.iCookie;
             add_ref();
             return *this;
         }
-        basic_cookie_ref_ptr& operator=(basic_cookie_ref_ptr&& aOther)
+        self_type& operator=(self_type&& aOther)
         {
             if (&aOther == this)
                 return *this;
-            basic_cookie_ref_ptr temp{ std::move(*this) };
+            self_type temp{ std::move(*this) };
             iConsumer = aOther.iConsumer;
             iCookie = aOther.iCookie;
             add_ref();
@@ -106,15 +116,15 @@ namespace neolib
             return *this;
         }
     public:
-        bool operator==(basic_cookie_ref_ptr const& aRhs) const
+        bool operator==(self_type const& aRhs) const
         {
             return iConsumer == aRhs.iConsumer && iCookie == aRhs.iCookie;
         }
-        bool operator!=(basic_cookie_ref_ptr const& aRhs) const
+        bool operator!=(self_type const& aRhs) const
         {
             return !(*this == aRhs);
         }
-        bool operator<(basic_cookie_ref_ptr const& aRhs) const
+        bool operator<(self_type const& aRhs) const
         {
             return std::forward_as_tuple(iConsumer, iCookie) < std::forward_as_tuple(aRhs.iConsumer, aRhs.iCookie);
         }
@@ -154,7 +164,7 @@ namespace neolib
         {
             return iConsumer != nullptr;
         }
-        i_basic_cookie_consumer<cookie_type>& consumer() const
+        consumer_type& consumer() const
         {
             return *iConsumer;
         }
@@ -163,7 +173,7 @@ namespace neolib
             return iCookie != no_cookie;
         }
     private:
-        mutable i_basic_cookie_consumer<cookie_type>* iConsumer;
+        mutable consumer_type* iConsumer;
         mutable cookie_type iCookie;
     };
 
