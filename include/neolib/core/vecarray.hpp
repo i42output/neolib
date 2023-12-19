@@ -462,14 +462,17 @@ namespace neolib
         }
         vecarray& operator=(vecarray&& rhs)
         {
-            clear();
-            if (rhs.using_vector())
-                vector() = std::move(rhs.vector());
-            else
+            if (&rhs != this)
             {
-                for (auto&& element : rhs)
-                    push_back(std::move(element));
-                rhs.clear();
+                clear();
+                if (rhs.using_vector())
+                    vector() = std::move(rhs.vector());
+                else
+                {
+                    for (auto&& element : rhs)
+                        push_back(std::move(element));
+                    rhs.clear();
+                }
             }
             return *this;
         }
