@@ -383,11 +383,8 @@ namespace neolib
         }
         vecarray(vecarray&& rhs) : iSize{0}
         {
-            if (using_vector())
-            {
+            if (rhs.using_vector())
                 vector() = std::move(rhs.vector());
-                iSize = rhs.iSize;
-            }
             else
             {
                 for (auto&& element : rhs)
@@ -461,6 +458,19 @@ namespace neolib
         {
             if (&rhs != this)
                 assign(rhs.begin(), rhs.end());
+            return *this;
+        }
+        vecarray& operator=(vecarray&& rhs)
+        {
+            if (rhs.using_vector())
+                vector() = std::move(rhs.vector());
+            else
+            {
+                clear();
+                for (auto&& element : rhs)
+                    push_back(std::move(element));
+                rhs.clear();
+            }
             return *this;
         }
         template<typename T2, std::size_t N2>
@@ -679,6 +689,8 @@ namespace neolib
         }
         vector_type& vector()
         {
+            if (!using_vector())
+                convert(0);
             return reinterpret_cast<vector_type&>(iAlignedBuffer.iVector);
         }
         const vector_type& vector() const
