@@ -621,7 +621,7 @@ namespace neolib
         {
             return items().at(aIndex);
         }
-        cookie_type insert(abstract_t<value_type> const& aItem)
+        cookie_type insert(value_type const& aItem)
         {
             auto cookie = next_cookie();
             try
@@ -650,9 +650,9 @@ namespace neolib
             }
             return cookie;
         }
-        iterator add(cookie_type aCookie, abstract_t<value_type> const& aItem)
+        iterator add(cookie_type aCookie, value_type const& aItem)
         {
-            return add<const abstract_t<value_type>&>(aCookie, aItem);
+            return add<const value_type&>(aCookie, aItem);
         }
         iterator erase(const_iterator aItem)
         {
@@ -686,7 +686,7 @@ namespace neolib
             reverse_indices()[aCookie] = items().size() - 1;
             return *result;
         }
-        iterator remove(abstract_t<value_type> const& aItem)
+        iterator remove(value_type const& aItem)
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
             return remove(item_cookie(aItem));
@@ -716,7 +716,7 @@ namespace neolib
             return resultIndex < items().size() ? std::next(items().begin(), resultIndex) : items().end();
         }
     public:
-        cookie_type item_cookie(abstract_t<value_type> const& aItem) const
+        cookie_type item_cookie(value_type const& aItem) const
         {
             if constexpr (!std::is_pointer_v<value_type>)
                 return allocated_cookies()[&static_cast<value_type const&>(aItem) - &items()[0]];
