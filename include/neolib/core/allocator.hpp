@@ -378,21 +378,21 @@ namespace neolib
         }
     };
 
-    template <typename T, std::size_t SmallBufferSize = 8u>
+    template <typename T, std::size_t SmallBufferSize = 8u, std::size_t MaxSize = std::numeric_limits<std::size_t>::max() / sizeof(T), typename Alloc = std::allocator<T>>
     class basic_small_buffer_allocator;
 
     template <typename T, typename R>
     struct small_buffer_allocator_types
     {
-        typedef T controlled_value_type;
-        typedef R rebound_value_type;
+        using controlled_value_type = T;
+        using rebound_value_type = R;
     };
 
     template <typename T, std::size_t SmallBufferSize>
     struct small_buffer
     {
-        typedef T value_type;
-        typedef std::aligned_storage_t<sizeof(value_type)* SmallBufferSize> buffer_storage_t;
+        using value_type = T;
+        using buffer_storage_t = std::aligned_storage_t<sizeof(value_type)* SmallBufferSize>;
         buffer_storage_t storage;
         bool allocated;
         small_buffer() : allocated{ false } {}
@@ -400,25 +400,24 @@ namespace neolib
         small_buffer& operator=(const small_buffer&) { return *this; }
     };
 
-    template <typename T, typename R, std::size_t SmallBufferSize>
-    class basic_small_buffer_allocator<small_buffer_allocator_types<T, R>, SmallBufferSize> : public std::allocator<R>
+    template <typename T, typename R, std::size_t SmallBufferSize, std::size_t MaxSize, typename Alloc>
+    class basic_small_buffer_allocator<small_buffer_allocator_types<T, R>, SmallBufferSize, MaxSize, Alloc> : public std::allocator_traits<Alloc>::template rebind_alloc<R>
     {
-        typedef basic_small_buffer_allocator<small_buffer_allocator_types<T, R>, SmallBufferSize> self_type;
-        template <typename, std::size_t>
-        friend class basic_small_buffer_allocator;
+        typedef basic_small_buffer_allocator<small_buffer_allocator_types<T, R>, SmallBufferSize, MaxSize, Alloc> self_type;
     public:
         struct no_small_buffer : std::logic_error { no_small_buffer() : std::logic_error("neolib::basic_small_buffer_allocator::no_small_buffer") {} };
     public:
-        typedef small_buffer_allocator_types<T, R> types;
-        typedef std::false_type propagate_on_container_move_assignment;
-        typedef std::false_type is_always_equal;
-        template<class U> struct rebind { typedef basic_small_buffer_allocator<small_buffer_allocator_types<T, U>, SmallBufferSize> other; };
+        using types = small_buffer_allocator_types<T, R>;
+        using propagate_on_container_move_assignment = std::false_type;
+        using is_always_equal = std::false_type;
+        template<class U> struct rebind { typedef basic_small_buffer_allocator<small_buffer_allocator_types<T, U>, SmallBufferSize, MaxSize, Alloc> other; };
     public:
-        typedef T controlled_value_type;
-        typedef R value_type;
-        typedef std::allocator<value_type> default_allocator_type;
-        typedef typename std::allocator_traits<default_allocator_type>::pointer pointer;
-        typedef small_buffer<controlled_value_type, SmallBufferSize> small_buffer_type;
+        using controlled_value_type = T;
+        using value_type = R;
+        using default_allocator_type = std::allocator<value_type>;
+        using size_type = typename default_allocator_type::size_type;
+        using pointer = typename std::allocator_traits<default_allocator_type>::pointer;
+        using small_buffer_type = small_buffer<controlled_value_type, SmallBufferSize>;
     public:
         basic_small_buffer_allocator() :
             default_allocator_type{},
@@ -441,13 +440,13 @@ namespace neolib
         {
         }
         template <typename U>
-        basic_small_buffer_allocator(const basic_small_buffer_allocator<U, SmallBufferSize>& aOther) :
+        basic_small_buffer_allocator(const basic_small_buffer_allocator<U, SmallBufferSize, MaxSize, Alloc>& aOther) :
             default_allocator_type{ aOther },
             iBuffer{ nullptr }
         {
         }
         template <typename U>
-        basic_small_buffer_allocator(const basic_small_buffer_allocator<U, SmallBufferSize>&& aOther) :
+        basic_small_buffer_allocator(const basic_small_buffer_allocator<U, SmallBufferSize, MaxSize, Alloc>&& aOther) :
             default_allocator_type(std::move(aOther)),
             iBuffer{ nullptr }
         {
@@ -464,13 +463,13 @@ namespace neolib
             return *this;
         }
         template <typename U>
-        basic_small_buffer_allocator& operator=(const basic_small_buffer_allocator<U, SmallBufferSize>& aOther)
+        basic_small_buffer_allocator& operator=(const basic_small_buffer_allocator<U, SmallBufferSize, MaxSize, Alloc>& aOther)
         {
             iBuffer = nullptr;
             return *this;
         }
         template <typename U>
-        basic_small_buffer_allocator& operator=(basic_small_buffer_allocator<U, SmallBufferSize>&& aOther)
+        basic_small_buffer_allocator& operator=(basic_small_buffer_allocator<U, SmallBufferSize, MaxSize, Alloc>&& aOther)
         {
             iBuffer = nullptr;
             return *this;
@@ -485,6 +484,10 @@ namespace neolib
             return true;
         }
     public:
+        size_type max_size() const
+        {
+            return MaxSize;
+        }
         pointer allocate(std::size_t n)
         {
             return allocate(n, nullptr);
@@ -543,20 +546,20 @@ namespace neolib
         small_buffer_type* iBuffer;
     };
 
-    template <typename T, typename U, std::size_t SmallBufferSize>
-    inline bool operator==(const basic_small_buffer_allocator<T, SmallBufferSize>&, const basic_small_buffer_allocator<U, SmallBufferSize>&)
+    template <typename T, typename U, std::size_t SmallBufferSize, std::size_t MaxSize, typename Alloc>
+    inline bool operator==(const basic_small_buffer_allocator<T, SmallBufferSize, MaxSize, Alloc>&, const basic_small_buffer_allocator<U, SmallBufferSize, MaxSize, Alloc>&)
     {
         return false;
     }
 
-    template <typename T, typename U, std::size_t SmallBufferSize>
-    inline bool operator!=(const basic_small_buffer_allocator<T, SmallBufferSize>&, const basic_small_buffer_allocator<U, SmallBufferSize>&)
+    template <typename T, typename U, std::size_t SmallBufferSize, std::size_t MaxSize, typename Alloc>
+    inline bool operator!=(const basic_small_buffer_allocator<T, SmallBufferSize, MaxSize, Alloc>&, const basic_small_buffer_allocator<U, SmallBufferSize, MaxSize, Alloc>&)
     {
         return true;
     }
 
-    template <typename T, std::size_t SmallBufferSize = 8u>
-    using small_buffer_allocator = basic_small_buffer_allocator<small_buffer_allocator_types<T, T>, SmallBufferSize>;
+    template <typename T, std::size_t SmallBufferSize = 8u, std::size_t MaxSize = std::numeric_limits<std::size_t>::max() / sizeof(T), typename Alloc = std::allocator<T>>
+    using small_buffer_allocator = basic_small_buffer_allocator<small_buffer_allocator_types<T, T>, SmallBufferSize, MaxSize, Alloc>;
 
     // WARNING: Omega allocator doesn't free chunks and doesn't call element destructors on deallocation; use only when pathological performance is required.
     template <typename T, std::size_t ChunkSize = 1 * 1024 * 1024>

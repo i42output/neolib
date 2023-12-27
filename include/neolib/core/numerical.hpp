@@ -102,9 +102,6 @@ namespace neolib
         class basic_vector;
     }
 
-    template <typename T, uint32_t _Size, typename Type>
-    bool constexpr vecarray_trivial_v<math::basic_vector<T, _Size, Type>> = true;
-
     namespace math
     {
         template <typename T, uint32_t _Size, typename Type>
@@ -597,10 +594,10 @@ namespace neolib
         typedef vector4u32 vec4u32;
 
         template <std::size_t VertexCount>
-        using vec3_array = neolib::vecarray<vec3, VertexCount, VertexCount, neolib::check<neolib::vecarray_overflow>, std::allocator<vec3>>;
+        using vec3_array = neolib::vecarray<vec3, VertexCount, VertexCount>;
 
         template <std::size_t VertexCount>
-        using vec2_array = neolib::vecarray<vec2, VertexCount, VertexCount, neolib::check<neolib::vecarray_overflow>, std::allocator<vec2>>;
+        using vec2_array = neolib::vecarray<vec2, VertexCount, VertexCount>;
 
         typedef std::array<int8_t, 1> avec1i8;
         typedef std::array<int8_t, 2> avec2i8;

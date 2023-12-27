@@ -1,6 +1,6 @@
 // vecarray.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2007,2023 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -36,767 +36,368 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <cassert>
-#include <cstddef>
-#include <stdexcept>
-#include <memory>
-#include <algorithm>
-#include <iterator>
-#include <type_traits>
 #include <vector>
+#include <neolib/core/allocator.hpp>
+#include <neolib/core/i_vector.hpp>
+#include <neolib/core/container_iterator.hpp>
 
 namespace neolib
 {
-    struct vecarray_overflow : public std::exception
+    template<typename T, std::size_t ArraySize, std::size_t MaxVectorSize = ArraySize, typename Alloc = std::allocator<T>>
+    class vecarray : public std::vector<T, small_buffer_allocator<T, ArraySize, MaxVectorSize, Alloc>>
     {
-        virtual const char* what() const throw() { return "neolib::vecarray_overflow"; }
-    };
-
-    struct nocheck
-    {
-        inline static void test(bool aValid)
-        {
-            (void)aValid;
-            assert(aValid);
-        }
-    };
-
-    template <typename Exception>
-    struct check
-    {
-        inline static void test(bool aValid)
-        {
-            if (!aValid)
-                throw Exception();
-        }
-    };
-
-    template <typename T>
-    bool constexpr vecarray_trivial_v = std::is_trivial_v<T>;
-
-    namespace detail
-    {
-        template <typename InputIter1, typename InputIter2, typename ForwardIter1, typename ForwardIter2>
-        inline static void uninitialized_copy2(InputIter1 first1, InputIter1 last1, ForwardIter1 dest1, InputIter2 first2, InputIter2 last2, ForwardIter2 dest2)
-        {
-            std::uninitialized_copy(first1, last1, dest1);
-            try
-            {
-                std::uninitialized_copy(first2, last2, dest2);
-            }
-            catch(...)
-            {
-                auto last = dest1 + (last1 - first1);
-                typedef typename std::iterator_traits<ForwardIter1>::value_type value_type;
-                if constexpr (!vecarray_trivial_v<value_type>)
-                    for (auto i = dest1; i != last; ++i)
-                        (*i).~value_type();
-                throw;
-            }
-        }
-    }
-
-    template<typename T, std::size_t ArraySize, std::size_t MaxVectorSize = ArraySize, typename CheckPolicy = check<vecarray_overflow>, typename Alloc = std::allocator<T> >
-    class vecarray
-    {
+        using self_type = vecarray<T, ArraySize, MaxVectorSize>;
+        using base_type = std::vector<T, small_buffer_allocator<T, ArraySize, MaxVectorSize, Alloc>>;
+        // types
     public:
-        struct iterator_invalid : std::logic_error { iterator_invalid() : std::logic_error("neolib::vecarray::iterator_invalid") {} };
-    private:
-        enum iterator_type_e { ArrayIterator, VectorIterator };
-    public:
-        typedef T value_type;
-        typedef T* pointer;
-        typedef const T* const_pointer;
-        typedef T& reference;
-        typedef const T& const_reference;
-        typedef std::size_t size_type;
-        typedef std::ptrdiff_t difference_type;
-        typedef Alloc allocator_type;
-        typedef std::vector<value_type, allocator_type> vector_type;
-        class const_iterator;
-        class iterator
-        {
-            friend class const_iterator;
-
-        public:
-            typedef std::random_access_iterator_tag iterator_category;
-            typedef vecarray::value_type value_type;
-            typedef vecarray::difference_type difference_type;
-            typedef vecarray::pointer pointer;
-            typedef vecarray::reference reference;
-
-        public:
-            iterator() : iType(ArrayIterator), iArrayPtr(0), iVectorIter()
-            {
-            }
-            iterator(const iterator& aOther) : iType(aOther.iType), iArrayPtr(aOther.iArrayPtr), iVectorIter(aOther.iVectorIter)
-            {
-            }
-            iterator(T* aPtr) : iType(ArrayIterator), iArrayPtr(aPtr), iVectorIter()
-            {
-            }
-            iterator(typename vector_type::iterator aIter) : iType(VectorIterator), iArrayPtr(0), iVectorIter(aIter)
-            {
-            }
-
-        public:
-            iterator& operator++()
-            {
-                if (iType == ArrayIterator)
-                    ++iArrayPtr;
-                else
-                    ++iVectorIter;
-                return *this;
-            }
-            iterator& operator--()
-            {
-                if (iType == ArrayIterator)
-                    --iArrayPtr;
-                else
-                    --iVectorIter;
-                return *this;
-            }
-            iterator operator++(int) { iterator ret(*this); operator++(); return ret; }
-            iterator operator--(int) { iterator ret(*this); operator--(); return ret; }
-            iterator& operator+=(difference_type aDifference)
-            {
-                if (aDifference < 0)
-                    return operator-=(-aDifference);
-                if (iType == ArrayIterator)
-                    iArrayPtr += aDifference;
-                else
-                    iVectorIter += aDifference;
-                return *this;
-            }
-            iterator& operator-=(difference_type aDifference)
-            {
-                if (aDifference < 0)
-                    return operator+=(-aDifference);
-                if (iType == ArrayIterator)
-                    iArrayPtr -= aDifference;
-                else
-                    iVectorIter -= aDifference;
-                return *this;
-            }
-            iterator operator+(difference_type aDifference) const { iterator result(*this); result += aDifference; return result; }
-            iterator operator-(difference_type aDifference) const { iterator result(*this); result -= aDifference; return result; }
-            reference operator[](difference_type aDifference) const { return *((*this) + aDifference); }
-            difference_type operator-(const iterator& aOther) const 
-            { 
-                if (iType == ArrayIterator)
-                    return iArrayPtr - aOther.iArrayPtr;
-                else
-                    return iVectorIter - aOther.iVectorIter;
-            }
-            reference operator*() const
-            {
-                if (iType == ArrayIterator)
-                    return *iArrayPtr;
-                else
-                    return *iVectorIter;
-            }
-            pointer operator->() const { return &operator*(); }
-            bool operator==(const iterator& aOther) const 
-            { 
-                if (iType == ArrayIterator)
-                    return iArrayPtr == aOther.iArrayPtr;
-                else
-                    return iVectorIter == aOther.iVectorIter;
-            }
-            bool operator!=(const iterator& aOther) const
-            {
-                if (iType == ArrayIterator)
-                    return iArrayPtr != aOther.iArrayPtr;
-                else
-                    return iVectorIter != aOther.iVectorIter;
-            }
-            bool operator<(const iterator& aOther) const
-            {
-                if (iType == ArrayIterator)
-                    return iArrayPtr < aOther.iArrayPtr;
-                else
-                    return iVectorIter < aOther.iVectorIter;
-            }
-        public:
-            T* array_ptr() const
-            {
-                if (iType == ArrayIterator)
-                    return iArrayPtr;
-                else
-                    throw iterator_invalid();
-            }
-            typename vector_type::iterator vector_iter() const
-            {
-                if (iType == VectorIterator)
-                    return iVectorIter;
-                else
-                    throw iterator_invalid();
-            }
-        private:
-            iterator_type_e iType;
-            T* iArrayPtr;
-            typename vector_type::iterator iVectorIter;
-        };
-        class const_iterator
-        {
-        public:
-            typedef std::random_access_iterator_tag iterator_category;
-            typedef vecarray::value_type value_type;
-            typedef vecarray::difference_type difference_type;
-            typedef vecarray::const_pointer pointer;
-            typedef vecarray::const_reference reference;
-
-        public:
-            const_iterator() : iType(ArrayIterator), iArrayPtr(0), iVectorIter()
-            {
-            }
-            const_iterator(const const_iterator& aOther) : iType(aOther.iType), iArrayPtr(aOther.iArrayPtr), iVectorIter(aOther.iVectorIter)
-            {
-            }
-            const_iterator(const typename vecarray::iterator& aOther) : iType(aOther.iType), iArrayPtr(aOther.iArrayPtr), iVectorIter(aOther.iVectorIter)
-            {
-            }
-            const_iterator(const T* aPtr) : iType(ArrayIterator), iArrayPtr(aPtr), iVectorIter()
-            {
-            }
-            const_iterator(typename vector_type::const_iterator aIter) : iType(VectorIterator), iArrayPtr(0), iVectorIter(aIter)
-            {
-            }
-            const_iterator(typename vector_type::iterator aIter) : iType(VectorIterator), iArrayPtr(0), iVectorIter(aIter)
-            {
-            }
-
-        public:
-            const_iterator& operator++()
-            {
-                if (iType == ArrayIterator)
-                    ++iArrayPtr;
-                else
-                    ++iVectorIter;
-                return *this;
-            }
-            const_iterator& operator--()
-            {
-                if (iType == ArrayIterator)
-                    --iArrayPtr;
-                else
-                    --iVectorIter;
-                return *this;
-            }
-            const_iterator operator++(int) { const_iterator ret(*this); operator++(); return ret; }
-            const_iterator operator--(int) { const_iterator ret(*this); operator--(); return ret; }
-            const_iterator& operator+=(difference_type aDifference)
-            {
-                if (aDifference < 0)
-                    return operator-=(-aDifference);
-                if (iType == ArrayIterator)
-                    iArrayPtr += aDifference;
-                else
-                    iVectorIter += aDifference;
-                return *this;
-            }
-            const_iterator& operator-=(difference_type aDifference)
-            {
-                if (aDifference < 0)
-                    return operator+=(-aDifference);
-                if (iType == ArrayIterator)
-                    iArrayPtr -= aDifference;
-                else
-                    iVectorIter -= aDifference;
-                return *this;
-            }
-            const_iterator operator+(difference_type aDifference) const { const_iterator result(*this); result += aDifference; return result; }
-            const_iterator operator-(difference_type aDifference) const { const_iterator result(*this); result -= aDifference; return result; }
-            const_reference operator[](difference_type aDifference) const { return *((*this) + aDifference); }
-            difference_type operator-(const const_iterator& aOther) const
-            {
-                if (iType == ArrayIterator)
-                    return iArrayPtr - aOther.iArrayPtr;
-                else
-                    return iVectorIter - aOther.iVectorIter;
-            }
-            const_reference operator*() const
-            {
-                if (iType == ArrayIterator)
-                    return *iArrayPtr;
-                else
-                    return *iVectorIter;
-            }
-            const_pointer operator->() const { return &operator*(); }
-            bool operator==(const const_iterator& aOther) const
-            {
-                if (iType == ArrayIterator)
-                    return iArrayPtr == aOther.iArrayPtr;
-                else
-                    return iVectorIter == aOther.iVectorIter;
-            }
-            bool operator!=(const const_iterator& aOther) const
-            {
-                if (iType == ArrayIterator)
-                    return iArrayPtr != aOther.iArrayPtr;
-                else
-                    return iVectorIter != aOther.iVectorIter;
-            }
-            bool operator<(const const_iterator& aOther) const
-            {
-                if (iType == ArrayIterator)
-                    return iArrayPtr < aOther.iArrayPtr;
-                else
-                    return iVectorIter < aOther.iVectorIter;
-            }
-
-        public:
-            const T* array_ptr() const
-            {
-                if (iType == ArrayIterator)
-                    return iArrayPtr;
-                else
-                    throw iterator_invalid();
-            }
-            typename vector_type::const_iterator vector_iter() const
-            {
-                if (iType == VectorIterator)
-                    return iVectorIter;
-                else
-                    throw iterator_invalid();
-            }
-
-        private:
-            iterator_type_e iType;
-            const T* iArrayPtr;
-            typename vector_type::const_iterator iVectorIter;
-        };
-        typedef std::reverse_iterator<iterator> reverse_iterator;
-        typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-
-    public:
-        static constexpr bool is_fixed_size() { return ArraySize == MaxVectorSize; }
-
-    public:
+        using value_type = T;
+        using std_type = base_type;
+        using allocator_type = typename std_type::allocator_type;
+        using size_type = typename std_type::size_type;
+        using const_iterator = typename std_type::const_iterator;
+        using iterator = typename std_type::iterator;
         // construction
-        vecarray() : iSize{ 0 }
-        {
-        }
-        vecarray(const vecarray& rhs) : iSize{ 0 }
-        {
-            insert(begin(), rhs.begin(), rhs.end());
-        }
-        vecarray(vecarray&& rhs) : iSize{0}
-        {
-            if (rhs.using_vector())
-                vector() = std::move(rhs.vector());
-            else
-            {
-                for (auto&& element : rhs)
-                    push_back(std::move(element));
-                rhs.clear();
-            }
-        }
-        template <typename T2, std::size_t N2>
-        vecarray(const vecarray<T2, N2>& rhs) : iSize{ 0 }
-        {
-            insert(begin(), rhs.begin(), rhs.end());
-        }
-        vecarray(size_type n) : iSize{ 0 }
-        {
-            insert(begin(), n, value_type());
-        }
-        vecarray(size_type n, value_type value) : iSize{ 0 }
-        {
-            insert(begin(), n, value);
-        }
-        template<typename InputIterator>
-        vecarray(InputIterator first, InputIterator last) : iSize{ 0 }
-        {
-            insert(begin(), first, last);
-        }
-        vecarray(std::initializer_list<T> init) : iSize{ 0 }
-        {
-            insert(begin(), init.begin(), init.end());
-        }
-        ~vecarray()
-        {
-            clear();
-            if (using_vector())
-                vector().~vector_type();
-        }
-
-        // traversals
     public:
-        const_iterator cbegin() const { return using_array() ? const_iterator(reinterpret_cast<const_pointer>(iAlignedBuffer.iData)) : const_iterator(vector().begin()); }
-        const_iterator begin() const { return cbegin(); }
-        iterator begin() { return using_array() ? iterator(reinterpret_cast<pointer>(iAlignedBuffer.iData)) : iterator(vector().begin()); }
-        const_iterator cend() const { return using_array() ? const_iterator(reinterpret_cast<const_pointer>(iAlignedBuffer.iData) + iSize) : const_iterator(vector().end()); }
-        const_iterator end() const { return cend(); }
-        iterator end() { return using_array() ? iterator(reinterpret_cast<pointer>(iAlignedBuffer.iData) + iSize) : iterator(vector().end()); }
-        reverse_iterator rbegin() { return reverse_iterator(end()); }
-        const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
-        reverse_iterator rend() { return reverse_iterator(begin()); }
-        const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
-        bool empty() const { return size() == 0; }
-        bool full() const { return size() == MaxVectorSize; }
-        size_type size() const { return using_array() ? iSize : vector().size(); }
-        size_type available() const { return MaxVectorSize - size(); }
-        size_type capacity() const { return MaxVectorSize; }
-        size_type max_size() const { return MaxVectorSize; }
-        size_type after(size_type position) const { return position < size() ? size() - position : 0; }
-
-        // element access
-    public:
-        reference operator[](size_type n) { return *(begin() + n); }
-        const_reference operator[](size_type n) const { return *(begin() + n); }
-        reference at(size_type n) { if (n < size()) return operator[](n); throw std::out_of_range("vecarray::at"); }
-        const_reference at(size_type n) const { if (n < size()) return operator[](n); throw std::out_of_range("vecarray::at"); }
-        reference front() { return *begin(); }
-        reference back() { return *(begin() + (size() - 1)); }
-        const_reference front() const { return *begin(); }
-        const_reference back() const { return *(begin() + (size() - 1)); }
-
-        // modifiers
-    public:
-        vecarray& operator=(const vecarray& rhs)
+        vecarray() :
+            std_type{ allocator_type{ iSmallBuffer } }
         {
-            if (&rhs != this)
-                assign(rhs.begin(), rhs.end());
+            std_type::reserve(ArraySize);
+        }
+        vecarray(vecarray const& aOther) :
+            std_type{ aOther, allocator_type{ iSmallBuffer } }
+        {
+            std_type::reserve(ArraySize);
+        }
+        vecarray(vecarray&& aOther) :
+            std_type{ std::move(aOther), allocator_type{ iSmallBuffer } }
+        {
+            std_type::reserve(ArraySize);
+        }
+        vecarray(std_type const& aOtherContainer) :
+            std_type{ aOtherContainer, allocator_type{ iSmallBuffer } }
+        {
+            std_type::reserve(ArraySize);
+        }
+        vecarray(std::initializer_list<value_type> aValues) :
+            std_type{ aValues, allocator_type{ iSmallBuffer } }
+        {
+            std_type::reserve(ArraySize);
+        }
+        template <typename InputIter>
+        vecarray(InputIter aFirst, InputIter aLast) :
+            std_type{ aFirst, aLast, allocator_type{ iSmallBuffer } }
+        {
+            std_type::reserve(ArraySize);
+        }
+    public:
+        constexpr vecarray& operator=(const vecarray& other)
+        {
+            std_type::operator=(other);
             return *this;
         }
-        vecarray& operator=(vecarray&& rhs)
+        constexpr vecarray& operator=(vecarray&& other) noexcept
         {
-            if (&rhs != this)
-            {
-                clear();
-                if (rhs.using_vector())
-                    vector() = std::move(rhs.vector());
-                else
-                {
-                    for (auto&& element : rhs)
-                        push_back(std::move(element));
-                    rhs.clear();
-                }
-            }
+            std_type::operator=(std::move(other));
             return *this;
         }
-        template<typename T2, std::size_t N2>
-        vecarray& operator=(const vecarray<T2, N2>& rhs)
+        constexpr vecarray& operator=(std::initializer_list<T> ilist)
         {
-            if (static_cast<const void*>(&rhs) != static_cast<const void*>(this))
-                assign(rhs.begin(), rhs.end());
+            std_type::operator=(ilist);
             return *this;
         }
-        template <typename InputIterator>
-        void assign(InputIterator first, InputIterator last)
-        {
-            clear();
-            insert(cbegin(), first, last);
-        }
-        void assign(size_type n, value_type value)
-        {
-            clear();
-            insert(cbegin(), n, value);
-        }
-        template <class InputIterator>
-        typename std::enable_if_t<!std::is_integral<InputIterator>::value, iterator>
-        insert(const_iterator position, InputIterator first, InputIterator last)
-        {
-            need(std::distance(first, last), position);
-            position = do_insert(position, first, last);
-            return begin() + (position - cbegin());
-        }
-        iterator insert(const_iterator position, value_type value)
-        {
-            need(1, position);
-            insert(position, 1, value);
-            return begin() + (position - cbegin());
-        }
-        iterator insert(const_iterator position, size_type count, const value_type& value)
-        {
-            need(count, position);
-            if (using_array())
-            {
-                iterator next = std::next(begin(), std::distance(cbegin(), position));
-                while (count > 0)
-                {
-                    next = std::next(insert(next, &value, &value + 1));
-                    --count;
-                }
-                return next;
-            }
-            else
-                return vector().insert(position.vector_iter(), count, value);
-        }
-        iterator erase(const_iterator position)
-        { 
-            if (using_array())
-            {
-                assert(iSize > 0);
-                iterator dest = std::next(begin(), std::distance(cbegin(), position));
-                auto garbage = std::copy(std::make_move_iterator(std::next(dest)), std::make_move_iterator(end()), dest);
-                (*garbage).~value_type();
-                --iSize;
-                return dest;
-            }
-            else
-                return vector().erase(position.vector_iter());
-        }
-        iterator erase(const_iterator first, const_iterator last)
-        { 
-            if (first == last)
-                return std::next(begin(), std::distance(cbegin(), first));
-            if (using_array())
-            {
-                assert(iSize > 0);
-                iterator first2 = std::next(begin(), std::distance(cbegin(), first));
-                iterator last2 = std::next(begin(), std::distance(cbegin(), last));
-                auto garbage = std::copy(std::make_move_iterator(last2), std::make_move_iterator(end()), first2);
-                auto garbageLast = end();
-                if constexpr (!vecarray_trivial_v<value_type>)
-                    for (auto i = garbage; i != garbageLast; ++i)
-                        (*i).~value_type();
-                iSize -= (last - first);
-                return first2;
-            }
-            else
-                return vector().erase(first.vector_iter(), last.vector_iter());
-        }
-        void clear()
-        {
-            erase(cbegin(), cend());
-        }
-        template< class... Args >
-        reference emplace_back(Args&&... args)
-        {
-            CheckPolicy::test(size() < MaxVectorSize);
-            need(1);
-            if (using_array())
-            {
-                new (end().array_ptr()) value_type{ std::forward<Args>(args)... };
-                ++iSize;
-                return back();
-            }
-            else
-                return vector().emplace_back(std::forward<Args>(args)...);
-        }
-        void push_back(const value_type& value)
-        {
-            CheckPolicy::test(size() < MaxVectorSize);
-            need(1);
-            if (using_array())
-            {
-                new (end().array_ptr()) value_type{ value };
-                ++iSize;
-            }
-            else
-                vector().push_back(value);
-        }
-        void push_back(value_type&& value)
-        {
-            CheckPolicy::test(size() < MaxVectorSize);
-            need(1);
-            if (using_array())
-            {
-                new (end().array_ptr()) value_type{ std::move(value) };
-                ++iSize;
-            }
-            else
-                vector().push_back(std::move(value));
-        }
-        void pop_back()
-        {
-            erase(end() - 1);
-        }
-        void remove(value_type value, bool multiple = true)
-        {
-            auto last = end();
-            for (iterator i = begin(); i != last; )
-            {
-                if (*i == value)
-                {
-                    erase(i);
-                    if (!multiple)
-                        return;
-                }
-                else
-                    ++i;
-            }
-        }
-        void resize(size_type n)
-        {
-            if (using_array())
-            {
-                if (size() > n)
-                    erase(begin() + n, end());
-                else if (size() < n)
-                    insert(end(), n - size(), value_type{});
-            }
-            else
-                vector().resize(n);
-        }
-        void resize(size_type n, const value_type& value)
-        {
-            if (using_array())
-            {
-                if (size() > n)
-                    erase(begin() + n, end());
-                else if (size() < n)
-                    insert(end(), n - size(), value);
-            }
-            else
-                vector().resize(n, value);
-        }
-        void reserve(size_type n)
-        {
-            if (n > ArraySize && n > size())
-                need(n - size());
-        }
-        template<typename T2, std::size_t ArraySize2, std::size_t MaxVectorSize2, typename CheckPolicy2, typename Alloc2>
-        void swap(vecarray<T2, ArraySize2, MaxVectorSize2, CheckPolicy2, Alloc2>& rhs)
-        {
-            vecarray tmp = rhs;
-            rhs = *this;
-            *this = tmp;
-        }
-
-        // equality
+        // operations
     public:
-        template<typename T2, std::size_t ArraySize2, std::size_t MaxVectorSize2, typename CheckPolicy2, typename Alloc2>
-        bool operator==(const vecarray<T2, ArraySize2, MaxVectorSize2, CheckPolicy2, Alloc2>& rhs) const
+        const std_type& as_std_vector() const
         {
-            return rhs.size() == size() && std::equal(begin(), end(), rhs.begin());
+            return *this;
         }
-        template<typename T2, std::size_t ArraySize2, std::size_t MaxVectorSize2, typename CheckPolicy2, typename Alloc2>
-        bool operator!=(const vecarray<T2, ArraySize2, MaxVectorSize2, CheckPolicy2, Alloc2>& rhs) const
+        std_type& as_std_vector()
         {
-            return !operator==(rhs);
+            return *this;
         }
-
+        std_type to_std_vector() const
+        {
+            return *this;
+        }
+        size_type available() const noexcept
+        {
+            return std_type::max_size() - std_type::size();
+        }
+        // attributes
     private:
-        template <std::size_t ArraySize2 = ArraySize, std::size_t MaxVectorSize2 = MaxVectorSize>
-        constexpr typename std::enable_if<ArraySize2 == MaxVectorSize2, bool>::type using_array() const
-        {
-            return true;
-        }
-        template <std::size_t ArraySize2 = ArraySize, std::size_t MaxVectorSize2 = MaxVectorSize>
-        typename std::enable_if<ArraySize2 != MaxVectorSize2, bool>::type using_array() const
-        {
-            return iSize != USING_VECTOR;
-        }
-        template <std::size_t ArraySize2 = ArraySize, std::size_t MaxVectorSize2 = MaxVectorSize>
-        constexpr typename std::enable_if<ArraySize2 == MaxVectorSize2, bool>::type using_vector() const
-        {
-            return false;
-        }
-        template <std::size_t ArraySize2 = ArraySize, std::size_t MaxVectorSize2 = MaxVectorSize>
-        typename std::enable_if<ArraySize2 != MaxVectorSize2, bool>::type using_vector() const
-        {
-            return iSize == USING_VECTOR;
-        }
-        vector_type& vector()
-        {
-            if (!using_vector())
-                convert(0);
-            return reinterpret_cast<vector_type&>(iAlignedBuffer.iVector);
-        }
-        const vector_type& vector() const
-        {
-            return reinterpret_cast<const vector_type&>(iAlignedBuffer.iVector);
-        }
-        void need(size_type aAmount)
-        {
-            if (using_array() && size() + aAmount > ArraySize)
-                convert(aAmount);
-        }
-        template <typename Iter>
-        void need(size_type aAmount, Iter& aIter)
-        {
-            static_assert(std::is_same_v<Iter, const_iterator> || std::is_same_v<Iter, iterator>, "bad usage");
-            if (using_array() && size() + aAmount > ArraySize)
-            {
-
-                if constexpr (std::is_same_v<Iter, const_iterator>)
-                {
-                    size_type index = aIter - cbegin();
-                    convert(aAmount);
-                    aIter = cbegin() + index;
-                }
-                else if constexpr (std::is_same_v<Iter, iterator>)
-                {
-                    size_type index = aIter - begin();
-                    convert(aAmount);
-                    aIter = begin() + index;
-                }
-            }
-        }
-        void convert(size_type aExtra)
-        {
-            if (using_array())
-            {
-                vector_type copy;
-                copy.reserve(std::max(ArraySize * 2, size() + aExtra));
-                copy.insert(copy.begin(), std::make_move_iterator(begin()), std::make_move_iterator(end()));
-                clear();
-                new (iAlignedBuffer.iVector) vector_type{ std::move(copy) };
-                iSize = USING_VECTOR;
-            }
-        }
-        template <class InputIterator>
-        typename std::enable_if<!std::is_same<typename std::iterator_traits<InputIterator>::iterator_category, std::input_iterator_tag>::value, iterator>::type
-        do_insert(const_iterator position, InputIterator first, InputIterator last)
-        {
-            difference_type n = last - first;
-            CheckPolicy::test(size() + n <= MaxVectorSize);
-            need(n, position);
-            if (using_array())
-            {
-                auto pos = const_cast<pointer>(position.array_ptr());
-                const_iterator theEnd = end();
-                difference_type t = theEnd - position;
-                if (t > 0)
-                {
-                    if (t > n)
-                    {
-                        std::uninitialized_copy(theEnd - n, theEnd, const_cast<pointer>(theEnd.array_ptr()));
-                        iSize += n;
-                        std::copy_backward(position, theEnd - n, const_cast<pointer>(theEnd.array_ptr()));
-                        std::copy(first, last, pos);
-                    }
-                    else
-                    {
-                        detail::uninitialized_copy2(theEnd - t, theEnd, const_cast<pointer>((theEnd + (n - t)).array_ptr()), first + t, last, const_cast<pointer>(theEnd.array_ptr()));
-                        iSize += n;
-                        std::copy(first, first + t, pos);
-                    }
-                }
-                else
-                {
-                    std::uninitialized_copy(first, last, pos);
-                    iSize += n;
-                }
-                return pos;
-            }
-            else
-            {
-                return vector().insert(position.vector_iter(), first, last);
-            }
-        }
-        template <class InputIterator>
-        typename std::enable_if<std::is_same<typename std::iterator_traits<InputIterator>::iterator_category, std::input_iterator_tag>::value, iterator>::type
-        do_insert(const_iterator position, InputIterator first, InputIterator last)
-        {
-            iterator next = position;
-            while (first != last)
-            {
-                next = std::next(insert(next, 1, *first++));
-            }
-            return next;
-        }
-
-    private:
-        union
-        {
-            alignas(T) char iData[sizeof(T) * ArraySize];
-            char iVector[sizeof(vector_type)];
-        } iAlignedBuffer;
-        size_type iSize;
-        static const size_type USING_VECTOR = static_cast<size_type>(-1);
+        small_buffer<value_type, ArraySize> iSmallBuffer;
     };
+
+    namespace polymorphic
+    {
+        template<typename T, std::size_t ArraySize, std::size_t MaxVectorSize = ArraySize>
+        class vecarray : public reference_counted<i_vector<abstract_t<T>>>
+        {
+            using self_type = vecarray<T, ArraySize, MaxVectorSize>;
+            using base_type = reference_counted<i_vector<abstract_t<T>>>;
+            // types
+        public:
+            using abstract_type = i_vector<abstract_t<T>>;
+            using value_type = T;
+            using abstract_value_type = abstract_t<T>;
+            using allocator_type = small_buffer_allocator<T, ArraySize, MaxVectorSize>;
+            using std_type = std::vector<value_type, allocator_type>;
+            using size_type = typename abstract_type::size_type;
+            using const_iterator = typename abstract_type::const_iterator;
+            using iterator = typename abstract_type::iterator;
+            using generic_container_type = typename abstract_type::generic_container_type;
+        protected:
+            using abstract_const_iterator = typename abstract_type::abstract_const_iterator;
+            using abstract_iterator = typename abstract_type::abstract_iterator;
+        protected:
+            using container_const_iterator = container::random_access_const_iterator<T, typename std_type::const_iterator>;
+            using container_iterator = container::random_access_iterator<T, typename std_type::iterator, typename std_type::const_iterator>;
+            // construction
+        public:
+            vecarray() :
+                std_type{ allocator_type{ iSmallBuffer } }
+            {
+                std_type::reserve(ArraySize);
+            }
+            vecarray(vecarray const& aOther) :
+                std_type{ aOther.iVector, allocator_type{ iSmallBuffer } }
+            {
+                std_type::reserve(ArraySize);
+            }
+            vecarray(vecarray&& aOther) :
+                std_type{ std::move(aOther.iVector), allocator_type{ iSmallBuffer } }
+            {
+                std_type::reserve(ArraySize);
+            }
+            vecarray(i_vector<abstract_value_type> const& aOther) :
+                std_type{ allocator_type{ iSmallBuffer } }
+            {
+                std_type::reserve(ArraySize);
+                assign(aOther);
+            }
+            vecarray(std_type const& aOtherContainer) :
+                std_type{ aOtherContainer, allocator_type{ iSmallBuffer } }
+            {
+                std_type::reserve(ArraySize);
+            }
+            vecarray(std::initializer_list<value_type> aValues) :
+                std_type{ aValues, allocator_type{ iSmallBuffer } }
+            {
+                std_type::reserve(ArraySize);
+            }
+            template <typename InputIter>
+            vecarray(InputIter aFirst, InputIter aLast) :
+                iVector{ aFirst, aLast, allocator_type{ iSmallBuffer } }
+            {
+                std_type::reserve(ArraySize);
+            }
+            vecarray& operator=(vecarray const& aOther)
+            {
+                assign(aOther);
+                return *this;
+            }
+            vecarray& operator=(vecarray&& aOther)
+            {
+                iVector = std::move(aOther.iVector);
+                return *this;
+            }
+            vecarray& operator=(i_vector<abstract_value_type> const& aOther)
+            {
+                assign(aOther);
+                return *this;
+            }
+            // operations
+        public:
+            const std_type& as_std_vector() const
+            {
+                return iVector;
+            }
+            std_type& as_std_vector()
+            {
+                return iVector;
+            }
+            std_type to_std_vector() const
+            {
+                return iVector;
+            }
+            using base_type::insert;
+            iterator insert(const_iterator aPos, const_iterator aFirst, const_iterator aLast)
+            {
+                auto newPos = std_type::insert(std_type::begin() + (aPos - abstract_type::cbegin()), aFirst, aLast);
+                return abstract_type::begin() + (newPos - std_type::begin());
+            }
+            template <typename InputIter>
+            iterator insert(const_iterator aPos, InputIter aFirst, InputIter aLast)
+            {
+                auto newPos = std_type::insert(std_type::begin() + (aPos - abstract_type::cbegin()), aFirst, aLast);
+                return abstract_type::begin() + (newPos - std_type::begin());
+            }
+            template <typename... Args>
+            iterator emplace(const_iterator aPos, Args&&... aArgs)
+            {
+                auto newPos = std_type::emplace(std_type::begin() + (aPos - abstract_type::cbegin()), std::forward<Args>(aArgs)...);
+                return abstract_type::begin() + (newPos - std_type::begin());
+            }
+            // comparison
+        public:
+            constexpr bool operator==(const self_type& that) const noexcept
+            {
+                return as_std_vector() == that.as_std_vector();
+            }
+            constexpr std::partial_ordering operator<=>(const self_type& that) const noexcept
+            {
+                return as_std_vector() <=> that.as_std_vector();
+            }
+            // implementation
+            // from i_container
+        public:
+            size_type size() const noexcept final
+            {
+                return std_type::size();
+            }
+            size_type max_size() const noexcept final
+            {
+                return std_type::max_size();
+            }
+            size_type available() const noexcept
+            {
+                return max_size() - size();
+            }
+            void clear() final
+            {
+                std_type::clear();
+            }
+            void assign(generic_container_type const& aOther) final
+            {
+                if (&aOther == this)
+                    return; clear();
+                reserve(aOther.size());
+                std::copy(aOther.begin(), aOther.end(), std::back_insert_iterator{ iVector });
+            }
+            // from i_container
+        private:
+            abstract_const_iterator* do_begin(void* memory) const final
+            {
+                return new (memory) container_const_iterator(std_type::begin());
+            }
+            abstract_const_iterator* do_end(void* memory) const final
+            {
+                return new (memory) container_const_iterator(std_type::end());
+            }
+            abstract_iterator* do_begin(void* memory) final
+            {
+                return new (memory) container_iterator(std_type::begin());
+            }
+            abstract_iterator* do_end(void* memory) final
+            {
+                return new (memory) container_iterator(std_type::end());
+            }
+            abstract_iterator* do_erase(void* memory, abstract_const_iterator const& aPosition) final
+            {
+                return new (memory) container_iterator(std_type::erase(static_cast<container_const_iterator const&>(aPosition)));
+            }
+            abstract_iterator* do_erase(void* memory, abstract_const_iterator const& aFirst, abstract_const_iterator const& aLast) final
+            {
+                return new (memory) container_iterator(std_type::erase(static_cast<container_const_iterator const&>(aFirst), static_cast<container_const_iterator const&>(aLast)));
+            }
+            // from i_sequence_container
+        public:
+            size_type capacity() const final
+            {
+                return std_type::capacity();
+            }
+            void reserve(size_type aCapacity) final
+            {
+                std_type::reserve(aCapacity);
+            }
+            void resize(size_type aSize) final
+            {
+                if constexpr (std::is_default_constructible_v<value_type>)
+                    std_type::resize(aSize);
+                else if (aSize <= size())
+                    std_type::erase(std::next(std_type::begin(), aSize), std_type::end());
+                else
+                    throw std::logic_error{ "neolib::vector::value_type not default constructible" };
+            }
+            void resize(size_type aSize, abstract_value_type const& aValue) final
+            {
+                std_type::resize(aSize, aValue);
+            }
+            void push_back(abstract_value_type const& aValue) final
+            {
+                std_type::push_back(aValue);
+            }
+            template <typename... Args>
+            void emplace_back(Args&&... aArgs)
+            {
+                std_type::emplace_back(std::forward<Args>(aArgs)...);
+            }
+            void pop_back() final
+            {
+                std_type::pop_back();
+            }
+            const value_type& front() const final
+            {
+                return std_type::front();
+            }
+            value_type& front() final
+            {
+                return std_type::front();
+            }
+            const value_type& back() const final
+            {
+                return std_type::back();
+            }
+            value_type& back() final
+            {
+                return std_type::back();
+            }
+            // from i_random_access_container
+        public:
+            const value_type* cdata() const noexcept final
+            {
+                return std_type::data();
+            }
+            const value_type* data() const noexcept final
+            {
+                return std_type::data();
+            }
+            value_type* data() noexcept final
+            {
+                return std_type::data();
+            }
+        public:
+            const value_type& at(size_type aIndex) const final
+            {
+                return std_type::at(aIndex);
+            }
+            value_type& at(size_type aIndex) final
+            {
+                return std_type::at(aIndex);
+            }
+            const value_type& operator[](size_type aIndex) const final
+            {
+                return iVector[aIndex];
+            }
+            value_type& operator[](size_type aIndex) final
+            {
+                return iVector[aIndex];
+            }
+        private:
+            std::ptrdiff_t iterator_offset() const final
+            {
+                return sizeof(value_type);
+            }
+            // from i_sequence_container
+        private:
+            abstract_iterator* do_insert(void* memory, abstract_const_iterator const& aPosition, abstract_value_type const& aValue) final
+            {
+                return new (memory) container_iterator(std_type::insert(static_cast<container_const_iterator const&>(aPosition), aValue));
+            }
+            // attributes
+        private:
+            small_buffer<value_type, ArraySize> iSmallBuffer;
+            std_type iVector;
+        };
+    }
 }

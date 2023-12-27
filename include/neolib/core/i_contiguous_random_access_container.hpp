@@ -149,6 +149,7 @@ namespace neolib
         reverse_iterator rend() { return reverse_iterator{ begin() }; }
         iterator insert(const const_iterator& aPosition, const value_type& aValue) { return to_iterator(base_type::insert(from_iterator(aPosition), aValue)); }
         iterator erase(const const_iterator& aPosition) { return to_iterator(base_type::erase(from_iterator(aPosition))); }
+        iterator erase(const const_iterator& aFirst, const const_iterator& aLast) { return to_iterator(base_type::erase(from_iterator(aFirst), from_iterator(aLast))); }
     private:
         virtual std::ptrdiff_t iterator_offset() const = 0;
         typename base_type::const_iterator from_iterator(const_iterator aPosition) const
