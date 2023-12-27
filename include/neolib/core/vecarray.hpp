@@ -43,6 +43,8 @@
 
 namespace neolib
 {
+    constexpr std::size_t MaxSize = static_cast<std::size_t>(-1);
+
     template<typename T, std::size_t ArraySize, std::size_t MaxVectorSize = ArraySize, typename Alloc = std::allocator<T>>
     class vecarray : public std::vector<T, small_buffer_allocator<T, ArraySize, MaxVectorSize, Alloc>>
     {
