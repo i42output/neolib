@@ -62,7 +62,7 @@ namespace neolib
         template <typename ContainerType, typename BaseIterator, typename Reference, typename Pointer>
         class iterator_impl
         {
-            friend class self_type;
+            friend self_type;
         private:
             using container_type = ContainerType;
         protected:
@@ -220,10 +220,11 @@ namespace neolib
             using base_type = iterator_impl<self_type, pointer, reference, pointer>;
             using container_type = self_type;
         public:
+            using typename base_type::pointer;
+            using typename base_type::reference;
+        public:
             using difference_type = typename container_type::difference_type;
             using value_type = typename container_type::value_type;
-            using pointer = typename container_type::pointer;
-            using reference = typename container_type::reference;
             using iterator_category = std::random_access_iterator_tag;
         public:
             iterator() : 
@@ -305,10 +306,11 @@ namespace neolib
             using base_type = iterator_impl<self_type const, const_pointer, const_reference, const_pointer>;
             using container_type = self_type const;
         public:
+            using typename base_type::pointer;
+            using typename base_type::reference;
+        public:
             using difference_type = typename container_type::difference_type;
             using value_type = typename container_type::value_type;
-            using pointer = typename container_type::const_pointer;
-            using reference = typename container_type::const_reference;
             using iterator_category = std::random_access_iterator_tag;
         public:
             const_iterator() :
