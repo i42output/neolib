@@ -58,36 +58,54 @@ namespace neolib
         using iterator = typename std_type::iterator;
         // construction
     public:
-        vecarray() :
+        constexpr vecarray() :
             std_type{ allocator_type{ iSmallBuffer } }
         {
-            std_type::reserve(ArraySize);
+            if (std_type::capacity() == 0)
+                std_type::reserve(ArraySize);
         }
-        vecarray(vecarray const& aOther) :
+        constexpr vecarray(vecarray const& aOther) :
             std_type{ aOther, allocator_type{ iSmallBuffer } }
         {
-            std_type::reserve(ArraySize);
+            if (std_type::capacity() == 0)
+                std_type::reserve(ArraySize);
         }
-        vecarray(vecarray&& aOther) :
+        constexpr vecarray(vecarray&& aOther) :
             std_type{ std::move(aOther), allocator_type{ iSmallBuffer } }
         {
-            std_type::reserve(ArraySize);
+            if (std_type::capacity() == 0)
+                std_type::reserve(ArraySize);
         }
-        vecarray(std_type const& aOtherContainer) :
+        constexpr vecarray(std_type const& aOtherContainer) :
             std_type{ aOtherContainer, allocator_type{ iSmallBuffer } }
         {
-            std_type::reserve(ArraySize);
+            if (std_type::capacity() == 0)
+                std_type::reserve(ArraySize);
         }
-        vecarray(std::initializer_list<value_type> aValues) :
+        constexpr vecarray(size_type count, const T& value) : 
+            std_type{ count, value, allocator_type{ iSmallBuffer } }
+        {
+            if (std_type::capacity() == 0)
+                std_type::reserve(ArraySize);
+        }
+        constexpr explicit vecarray(size_type count) :
+            std_type{ count, allocator_type{ iSmallBuffer } }
+        {
+            if (std_type::capacity() == 0)
+                std_type::reserve(ArraySize);
+        }
+        constexpr vecarray(std::initializer_list<value_type> aValues) :
             std_type{ aValues, allocator_type{ iSmallBuffer } }
         {
-            std_type::reserve(ArraySize);
+            if (std_type::capacity() == 0)
+                std_type::reserve(ArraySize);
         }
         template <typename InputIter>
-        vecarray(InputIter aFirst, InputIter aLast) :
+        constexpr vecarray(InputIter aFirst, InputIter aLast) :
             std_type{ aFirst, aLast, allocator_type{ iSmallBuffer } }
         {
-            std_type::reserve(ArraySize);
+            if (std_type::capacity() == 0)
+                std_type::reserve(ArraySize);
         }
     public:
         constexpr vecarray& operator=(const vecarray& other)
@@ -155,41 +173,41 @@ namespace neolib
             // construction
         public:
             vecarray() :
-                std_type{ allocator_type{ iSmallBuffer } }
+                iVector{ allocator_type{ iSmallBuffer } }
             {
-                std_type::reserve(ArraySize);
+                iVector.reserve(ArraySize);
             }
             vecarray(vecarray const& aOther) :
-                std_type{ aOther.iVector, allocator_type{ iSmallBuffer } }
+                iVector{ aOther.iVector, allocator_type{ iSmallBuffer } }
             {
-                std_type::reserve(ArraySize);
+                iVector.reserve(ArraySize);
             }
             vecarray(vecarray&& aOther) :
-                std_type{ std::move(aOther.iVector), allocator_type{ iSmallBuffer } }
+                iVector{ std::move(aOther.iVector), allocator_type{ iSmallBuffer } }
             {
-                std_type::reserve(ArraySize);
+                iVector.reserve(ArraySize);
             }
             vecarray(i_vector<abstract_value_type> const& aOther) :
-                std_type{ allocator_type{ iSmallBuffer } }
+                iVector{ allocator_type{ iSmallBuffer } }
             {
-                std_type::reserve(ArraySize);
+                iVector.reserve(ArraySize);
                 assign(aOther);
             }
             vecarray(std_type const& aOtherContainer) :
-                std_type{ aOtherContainer, allocator_type{ iSmallBuffer } }
+                iVector{ aOtherContainer, allocator_type{ iSmallBuffer } }
             {
-                std_type::reserve(ArraySize);
+                iVector.reserve(ArraySize);
             }
             vecarray(std::initializer_list<value_type> aValues) :
-                std_type{ aValues, allocator_type{ iSmallBuffer } }
+                iVector{ aValues, allocator_type{ iSmallBuffer } }
             {
-                std_type::reserve(ArraySize);
+                iVector.reserve(ArraySize);
             }
             template <typename InputIter>
             vecarray(InputIter aFirst, InputIter aLast) :
                 iVector{ aFirst, aLast, allocator_type{ iSmallBuffer } }
             {
-                std_type::reserve(ArraySize);
+                iVector.reserve(ArraySize);
             }
             vecarray& operator=(vecarray const& aOther)
             {
@@ -223,20 +241,20 @@ namespace neolib
             using base_type::insert;
             iterator insert(const_iterator aPos, const_iterator aFirst, const_iterator aLast)
             {
-                auto newPos = std_type::insert(std_type::begin() + (aPos - abstract_type::cbegin()), aFirst, aLast);
-                return abstract_type::begin() + (newPos - std_type::begin());
+                auto newPos = iVector.insert(iVector.begin() + (aPos - abstract_type::cbegin()), aFirst, aLast);
+                return abstract_type::begin() + (newPos - iVector.begin());
             }
             template <typename InputIter>
             iterator insert(const_iterator aPos, InputIter aFirst, InputIter aLast)
             {
-                auto newPos = std_type::insert(std_type::begin() + (aPos - abstract_type::cbegin()), aFirst, aLast);
-                return abstract_type::begin() + (newPos - std_type::begin());
+                auto newPos = iVector.insert(iVector.begin() + (aPos - abstract_type::cbegin()), aFirst, aLast);
+                return abstract_type::begin() + (newPos - iVector.begin());
             }
             template <typename... Args>
             iterator emplace(const_iterator aPos, Args&&... aArgs)
             {
-                auto newPos = std_type::emplace(std_type::begin() + (aPos - abstract_type::cbegin()), std::forward<Args>(aArgs)...);
-                return abstract_type::begin() + (newPos - std_type::begin());
+                auto newPos = iVector.emplace(iVector.begin() + (aPos - abstract_type::cbegin()), std::forward<Args>(aArgs)...);
+                return abstract_type::begin() + (newPos - iVector.begin());
             }
             // comparison
         public:
@@ -253,11 +271,11 @@ namespace neolib
         public:
             size_type size() const noexcept final
             {
-                return std_type::size();
+                return iVector.size();
             }
             size_type max_size() const noexcept final
             {
-                return std_type::max_size();
+                return iVector.max_size();
             }
             size_type available() const noexcept
             {
@@ -265,7 +283,7 @@ namespace neolib
             }
             void clear() final
             {
-                std_type::clear();
+                iVector.clear();
             }
             void assign(generic_container_type const& aOther) final
             {
@@ -278,102 +296,102 @@ namespace neolib
         private:
             abstract_const_iterator* do_begin(void* memory) const final
             {
-                return new (memory) container_const_iterator(std_type::begin());
+                return new (memory) container_const_iterator(iVector.begin());
             }
             abstract_const_iterator* do_end(void* memory) const final
             {
-                return new (memory) container_const_iterator(std_type::end());
+                return new (memory) container_const_iterator(iVector.end());
             }
             abstract_iterator* do_begin(void* memory) final
             {
-                return new (memory) container_iterator(std_type::begin());
+                return new (memory) container_iterator(iVector.begin());
             }
             abstract_iterator* do_end(void* memory) final
             {
-                return new (memory) container_iterator(std_type::end());
+                return new (memory) container_iterator(iVector.end());
             }
             abstract_iterator* do_erase(void* memory, abstract_const_iterator const& aPosition) final
             {
-                return new (memory) container_iterator(std_type::erase(static_cast<container_const_iterator const&>(aPosition)));
+                return new (memory) container_iterator(iVector.erase(static_cast<container_const_iterator const&>(aPosition)));
             }
             abstract_iterator* do_erase(void* memory, abstract_const_iterator const& aFirst, abstract_const_iterator const& aLast) final
             {
-                return new (memory) container_iterator(std_type::erase(static_cast<container_const_iterator const&>(aFirst), static_cast<container_const_iterator const&>(aLast)));
+                return new (memory) container_iterator(iVector.erase(static_cast<container_const_iterator const&>(aFirst), static_cast<container_const_iterator const&>(aLast)));
             }
             // from i_sequence_container
         public:
             size_type capacity() const final
             {
-                return std_type::capacity();
+                return iVector.capacity();
             }
             void reserve(size_type aCapacity) final
             {
-                std_type::reserve(aCapacity);
+                iVector.reserve(aCapacity);
             }
             void resize(size_type aSize) final
             {
                 if constexpr (std::is_default_constructible_v<value_type>)
-                    std_type::resize(aSize);
+                    iVector.resize(aSize);
                 else if (aSize <= size())
-                    std_type::erase(std::next(std_type::begin(), aSize), std_type::end());
+                    iVector.erase(std::next(iVector.begin(), aSize), iVector.end());
                 else
                     throw std::logic_error{ "neolib::vector::value_type not default constructible" };
             }
             void resize(size_type aSize, abstract_value_type const& aValue) final
             {
-                std_type::resize(aSize, aValue);
+                iVector.resize(aSize, aValue);
             }
             void push_back(abstract_value_type const& aValue) final
             {
-                std_type::push_back(aValue);
+                iVector.push_back(aValue);
             }
             template <typename... Args>
             void emplace_back(Args&&... aArgs)
             {
-                std_type::emplace_back(std::forward<Args>(aArgs)...);
+                iVector.emplace_back(std::forward<Args>(aArgs)...);
             }
             void pop_back() final
             {
-                std_type::pop_back();
+                iVector.pop_back();
             }
             const value_type& front() const final
             {
-                return std_type::front();
+                return iVector.front();
             }
             value_type& front() final
             {
-                return std_type::front();
+                return iVector.front();
             }
             const value_type& back() const final
             {
-                return std_type::back();
+                return iVector.back();
             }
             value_type& back() final
             {
-                return std_type::back();
+                return iVector.back();
             }
             // from i_random_access_container
         public:
             const value_type* cdata() const noexcept final
             {
-                return std_type::data();
+                return iVector.data();
             }
             const value_type* data() const noexcept final
             {
-                return std_type::data();
+                return iVector.data();
             }
             value_type* data() noexcept final
             {
-                return std_type::data();
+                return iVector.data();
             }
         public:
             const value_type& at(size_type aIndex) const final
             {
-                return std_type::at(aIndex);
+                return iVector.at(aIndex);
             }
             value_type& at(size_type aIndex) final
             {
-                return std_type::at(aIndex);
+                return iVector.at(aIndex);
             }
             const value_type& operator[](size_type aIndex) const final
             {
@@ -392,7 +410,7 @@ namespace neolib
         private:
             abstract_iterator* do_insert(void* memory, abstract_const_iterator const& aPosition, abstract_value_type const& aValue) final
             {
-                return new (memory) container_iterator(std_type::insert(static_cast<container_const_iterator const&>(aPosition), aValue));
+                return new (memory) container_iterator(iVector.insert(static_cast<container_const_iterator const&>(aPosition), aValue));
             }
             // attributes
         private:

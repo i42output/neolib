@@ -25,6 +25,7 @@ template class neolib::basic_jar<foo>;
 template class neolib::basic_std_vector_jar<foo>;
 
 template class neolib::vecarray<int, 64, -1>;
+template class neolib::polymorphic::vecarray<int, 64, -1>;
 template class neolib::gap_vector<int>;
 
 void TestTree();
