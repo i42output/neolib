@@ -220,9 +220,6 @@ namespace neolib
             using base_type = iterator_impl<self_type, pointer, reference, pointer>;
             using container_type = self_type;
         public:
-            using typename base_type::pointer;
-            using typename base_type::reference;
-        public:
             using difference_type = typename container_type::difference_type;
             using value_type = typename container_type::value_type;
             using iterator_category = std::random_access_iterator_tag;
@@ -306,8 +303,8 @@ namespace neolib
             using base_type = iterator_impl<self_type const, const_pointer, const_reference, const_pointer>;
             using container_type = self_type const;
         public:
-            using typename base_type::pointer;
-            using typename base_type::reference;
+            using pointer = const_pointer;
+            using reference = const_reference;
         public:
             using difference_type = typename container_type::difference_type;
             using value_type = typename container_type::value_type;
