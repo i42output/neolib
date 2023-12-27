@@ -668,7 +668,7 @@ namespace neolib
             if (reverse_indices()[aCookie] != INVALID_REVERSE_INDEX)
                 throw cookie_already_added();
             std::optional<iterator> result;
-            if constexpr (!detail::is_smart_ptr_v<value_type>)
+            if constexpr (!detail::is_smart_ptr_v<value_type> || (sizeof...(Args) == 1 && detail::is_smart_ptr_v<std::decay_t<std::tuple_element_t<0, std::tuple<Args...>>>>))
                 result = items().emplace(items().end(), std::forward<Args>(aArgs)...);
             else if constexpr (detail::is_smart_ptr_v<value_type> && std::is_abstract_v<typename value_type::element_type>)
                 result = items().emplace(items().end(), std::forward<Args>(aArgs)...);
