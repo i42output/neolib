@@ -215,7 +215,7 @@ namespace neolib
     public:
         class iterator : public iterator_impl<self_type, pointer, reference, pointer>
         {
-            friend class self_type;
+            friend self_type;
         private:
             using base_type = iterator_impl<self_type, pointer, reference, pointer>;
             using container_type = self_type;
@@ -301,7 +301,7 @@ namespace neolib
         };
         class const_iterator : public iterator_impl<self_type const, const_pointer, const_reference, const_pointer>
         {
-            friend class self_type;
+            friend self_type;
         private:
             using base_type = iterator_impl<self_type const, const_pointer, const_reference, const_pointer>;
             using container_type = self_type const;
