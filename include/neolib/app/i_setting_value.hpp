@@ -92,21 +92,25 @@ namespace neolib
 
     template <typename T, typename = sfinae> struct setting_type_name {};
     
-    #define define_setting_type(T) using neolib::setting_type_name; template<> struct setting_type_name<T> { static const neolib::string& name() { static neolib::string sTypeName = #T; return sTypeName; } };
-    #define define_setting_type_as(T, Name) using neolib::setting_type_name; template<> struct setting_type_name<T> { static const neolib::string& name() { static neolib::string sTypeName = #Name; return sTypeName; } };
+    #define define_setting_type(T) namespace neolib { template<> struct setting_type_name<T> { static const neolib::string& name() { static neolib::string sTypeName = #T; return sTypeName; } }; }
+    #define define_setting_type_as(T, Name) namespace neolib { template<> struct setting_type_name<T> { static const neolib::string& name() { static neolib::string sTypeName = #Name; return sTypeName; } }; }
+}
 
-    define_setting_type(bool)
-    define_setting_type(int8_t)
-    define_setting_type(int16_t)
-    define_setting_type(int32_t)
-    define_setting_type(int64_t)
-    define_setting_type(uint8_t)
-    define_setting_type(uint16_t)
-    define_setting_type(uint32_t)
-    define_setting_type(uint64_t)
-    define_setting_type(float)
-    define_setting_type(double)
-    define_setting_type(string)
+define_setting_type(bool)
+define_setting_type(int8_t)
+define_setting_type(int16_t)
+define_setting_type(int32_t)
+define_setting_type(int64_t)
+define_setting_type(uint8_t)
+define_setting_type(uint16_t)
+define_setting_type(uint32_t)
+define_setting_type(uint64_t)
+define_setting_type(float)
+define_setting_type(double)
+define_setting_type(string)
+
+namespace neolib 
+{
     template<typename T> struct setting_type_name<T, std::enable_if_t<std::is_enum_v<T>, sfinae>> { static const neolib::string& name() { static neolib::string sTypeName = "enum"; return sTypeName; } };
     
     template<typename T>
