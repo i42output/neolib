@@ -688,7 +688,6 @@ namespace neolib
             {
                 unsplit();
                 auto const newFirstPos = std::next(begin(), firstIndex).base();
-                auto const garbageStart = std::prev(iDataEnd, garbageCount);
                 for (auto src = std::next(newFirstPos, garbageCount), dest = newFirstPos; src != iDataEnd; ++src, ++dest)
                     *dest = std::move(*src);
                 for (auto garbage = iDataEnd - garbageCount; garbage != iDataEnd; ++garbage)
