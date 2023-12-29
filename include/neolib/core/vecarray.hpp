@@ -46,7 +46,7 @@ namespace neolib
     constexpr std::size_t MaxSize = static_cast<std::size_t>(-1);
 
     template<typename T, std::size_t ArraySize, std::size_t MaxVectorSize = ArraySize, typename Alloc = std::allocator<T>>
-    class vecarray : public std::vector<T, small_buffer_allocator<T, ArraySize, MaxVectorSize, Alloc>>
+    class vecarray : private small_buffer<T, ArraySize>, public std::vector<T, small_buffer_allocator<T, ArraySize, MaxVectorSize, Alloc>>
     {
         using self_type = vecarray<T, ArraySize, MaxVectorSize>;
         using base_type = std::vector<T, small_buffer_allocator<T, ArraySize, MaxVectorSize, Alloc>>;
@@ -61,50 +61,50 @@ namespace neolib
         // construction
     public:
         constexpr vecarray() :
-            std_type{ allocator_type{ iSmallBuffer } }
+            std_type{ allocator_type{ *this } }
         {
             if (std_type::capacity() == 0)
                 std_type::reserve(ArraySize);
         }
         constexpr vecarray(vecarray const& aOther) :
-            std_type{ aOther, allocator_type{ iSmallBuffer } }
+            std_type{ aOther, allocator_type{ *this } }
         {
             if (std_type::capacity() == 0)
                 std_type::reserve(ArraySize);
         }
         constexpr vecarray(vecarray&& aOther) :
-            std_type{ std::move(aOther), allocator_type{ iSmallBuffer } }
+            std_type{ std::move(aOther), allocator_type{ *this } }
         {
             if (std_type::capacity() == 0)
                 std_type::reserve(ArraySize);
         }
         constexpr vecarray(std_type const& aOtherContainer) :
-            std_type{ aOtherContainer, allocator_type{ iSmallBuffer } }
+            std_type{ aOtherContainer, allocator_type{ *this } }
         {
             if (std_type::capacity() == 0)
                 std_type::reserve(ArraySize);
         }
         constexpr vecarray(size_type count, const T& value) : 
-            std_type{ count, value, allocator_type{ iSmallBuffer } }
+            std_type{ count, value, allocator_type{ *this } }
         {
             if (std_type::capacity() == 0)
                 std_type::reserve(ArraySize);
         }
         constexpr explicit vecarray(size_type count) :
-            std_type{ count, allocator_type{ iSmallBuffer } }
+            std_type{ count, allocator_type{ *this } }
         {
             if (std_type::capacity() == 0)
                 std_type::reserve(ArraySize);
         }
         constexpr vecarray(std::initializer_list<value_type> aValues) :
-            std_type{ aValues, allocator_type{ iSmallBuffer } }
+            std_type{ aValues, allocator_type{ *this } }
         {
             if (std_type::capacity() == 0)
                 std_type::reserve(ArraySize);
         }
         template <typename InputIter>
         constexpr vecarray(InputIter aFirst, InputIter aLast) :
-            std_type{ aFirst, aLast, allocator_type{ iSmallBuffer } }
+            std_type{ aFirst, aLast, allocator_type{ *this } }
         {
             if (std_type::capacity() == 0)
                 std_type::reserve(ArraySize);
@@ -143,9 +143,6 @@ namespace neolib
         {
             return std_type::max_size() - std_type::size();
         }
-        // attributes
-    private:
-        small_buffer<value_type, ArraySize> iSmallBuffer;
     };
 
     namespace polymorphic
