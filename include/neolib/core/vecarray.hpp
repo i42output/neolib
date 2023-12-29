@@ -135,9 +135,9 @@ namespace neolib
         {
             return *this;
         }
-        std_type to_std_vector() const
+        std::vector<T, Alloc> to_std_vector() const
         {
-            return *this;
+            return std::vector<T, Alloc>{ std_type::begin(), std_type::end() };
         }
         size_type available() const noexcept
         {
@@ -233,9 +233,9 @@ namespace neolib
             {
                 return iVector;
             }
-            std_type to_std_vector() const
+            std::vector<T> to_std_vector() const
             {
-                return iVector;
+                return std::vector<T>{ iVector.begin(), iVector.end() };
             }
             using base_type::insert;
             iterator insert(const_iterator aPos, const_iterator aFirst, const_iterator aLast)
