@@ -545,27 +545,27 @@ namespace neolib
         }
         constexpr const_iterator end() const noexcept
         {
-            return const_iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iGapStart };
+            return const_iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iData == iGapStart ? iGapEnd : iGapStart };
         }
         constexpr const_iterator cend() const noexcept
         {
-            return const_iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iGapStart };
+            return const_iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iData == iGapStart ? iGapEnd : iGapStart };
         }
         constexpr iterator end() noexcept
         {
-            return iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iGapStart };
+            return iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iData == iGapStart ? iGapEnd : iGapStart };
         }
         constexpr const_reverse_iterator rbegin() const noexcept
         {
-            return const_reverse_iterator{ const_iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iGapStart } };
+            return const_reverse_iterator{ const_iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iData == iGapStart ? iGapEnd : iGapStart } };
         }
         constexpr const_reverse_iterator crbegin() const noexcept
         {
-            return const_reverse_iterator{ const_iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iGapStart } };
+            return const_reverse_iterator{ const_iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iData == iGapStart ? iGapEnd : iGapStart } };
         }
         constexpr reverse_iterator rbegin() noexcept
         {
-            return reverse_iterator{ iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iGapStart } };
+            return reverse_iterator{ iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iData == iGapStart ? iGapEnd : iGapStart } };
         }
         constexpr const_reverse_iterator rend() const noexcept
         {
