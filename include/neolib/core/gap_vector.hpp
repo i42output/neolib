@@ -777,7 +777,7 @@ namespace neolib
                 return;
             auto const next = std::uninitialized_move(iGapEnd, std::min(iGapEnd + gap_size(), iDataEnd), iGapStart);
             auto const newEnd = std::move(std::min(iGapEnd + gap_size(), iDataEnd), iDataEnd, next);
-            for (auto garbage = newEnd; garbage != iDataEnd; ++garbage)
+            for (auto garbage = std::max(newEnd, iGapEnd); garbage != iDataEnd; ++garbage)
                 std::allocator_traits<allocator_type>::destroy(iAlloc, garbage);
             iDataEnd = newEnd;
             iGapStart = nullptr;
