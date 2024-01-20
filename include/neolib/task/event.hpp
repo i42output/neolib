@@ -145,7 +145,10 @@ namespace neolib
                 if (destroyed)
                     return trigger_result::Unaccepted;
                 if (workList.accepted)
+                {
+                    workList.accepted = false;
                     return trigger_result::Accepted;
+                }
             }
             workList.slots.clear();
             workList.accepted = false;
