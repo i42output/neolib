@@ -110,31 +110,26 @@ namespace neolib
         protected:
             iterator_impl& operator++()
             {
-                auto const next = std::next(iBase);
-                if (!c().gap_active() || next < c().iGapStart || (c().iGapEnd == c().iDataEnd && next == c().iGapStart) || next > c().iGapEnd)
-                    ++iBase;
-                else
-                    iBase = c().iGapEnd;
-                return *this;
+                return (*this += 1);
             }
             iterator_impl& operator--()
             {
-                auto const prev = std::prev(iBase);
-                if (!c().gap_active() || prev < c().iGapStart || prev > c().iGapEnd)
-                    --iBase;
-                else
-                    iBase = std::prev(c().iGapStart);
-                return *this;
+                return (*this -= 1);
             }
             iterator_impl& operator+=(difference_type aDifference)
             {
                 if (aDifference == 0)
                     return *this;
                 else if (aDifference < 0)
-                    return operator-=(-aDifference);
+                    return (*this -= -aDifference);
                 auto const current = iBase;
                 auto const next = current + aDifference;
-                if (!c().gap_active() || next <= c().iGapStart || current >= c().iGapEnd)
+                auto const gapActive = c().gap_active();
+                auto const currentBeforeGap = (current < c().iGapStart);
+                auto const nextBeforeGap = (next < c().iGapStart);
+                auto const nextEndAtGapStart = (c().iGapEnd == c().iDataEnd && next == c().iGapStart);
+                auto const nextAfterGap = (next > c().iGapEnd);
+                if (!gapActive || nextBeforeGap || nextEndAtGapStart || (nextAfterGap && !currentBeforeGap))
                     iBase += aDifference;
                 else
                     iBase += (aDifference + c().gap_size());
@@ -145,10 +140,13 @@ namespace neolib
                 if (aDifference == 0)
                     return *this;
                 else if (aDifference < 0)
-                    return operator+=(-aDifference);
+                    return (*this += -aDifference);
                 auto const current = iBase;
-                auto const next = current - aDifference;
-                if (!c().gap_active() || current <= c().iGapStart || next >= c().iGapEnd)
+                auto const prev = current - aDifference;
+                auto const gapActive = c().gap_active();
+                auto const currentBeforeGap = current <= c().iGapStart;
+                auto const prevAfterGap = prev >= c().iGapEnd;
+                if (!gapActive || currentBeforeGap || prevAfterGap)
                     iBase -= aDifference;
                 else
                     iBase -= (aDifference + c().gap_size());

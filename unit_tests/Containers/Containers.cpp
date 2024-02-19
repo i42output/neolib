@@ -37,10 +37,22 @@ namespace
         if (!assertion)
             throw std::logic_error("Test failed");
     }
+    void test_assert(int iteration, bool assertion)
+    {
+        if (!assertion)
+        {
+            std::cerr << "Test failed, iteration = " << iteration << std::endl;
+            throw std::logic_error("Test failed");
+        }
+    }
 }
 
 int main()
 {
+    neolib::vecarray<int, 64, neolib::MaxSize> va;
+    va.push_back(42);
+    auto i = va.begin();
+
     neolib::gap_vector<int> gapVector;
     std::vector<int> normalVector;
 
@@ -56,6 +68,9 @@ int main()
         }
     }
 
+    auto const gapVectorSize = gapVector.size();
+    auto const normalVectorSize = normalVector.size();
+    test_assert(gapVectorSize == normalVectorSize);
     test_assert(std::distance(gapVector.begin(), gapVector.end()) == std::distance(normalVector.begin(), normalVector.end()));
     test_assert(std::equal(gapVector.begin(), gapVector.end(), normalVector.begin()));
 
@@ -70,19 +85,29 @@ int main()
         { 
             index = index + rand() % gapVector.DefaultGapSize - gapVector.DefaultGapSize / 2;
             index = std::max<int>(0, std::min<int>(index, gapVector.size() - 1));
+            auto const n2 = std::min<std::size_t>(gapVector.size() - index, 4);
+            auto const size = gapVector.size();
             switch (rand() % 4)
             {
             case 0:
                 gapVector.insert(std::next(gapVector.begin(), index), rand());
+                test_assert(i, gapVector.size() == size + 1);
                 break;
             case 1:
                 gapVector.insert(std::next(gapVector.begin(), index), { 1, 2, 3, 4 });
+                test_assert(i, gapVector.size() == size + 4);
                 break;
             case 2:
                 gapVector.erase(std::next(gapVector.begin(), index));
+                test_assert(i, gapVector.size() == size - 1);
                 break;
             case 3:
-                gapVector.erase(std::next(gapVector.begin(), index), std::next(gapVector.begin(), std::min<std::size_t>(gapVector.size(), index + 4)) );
+                {
+                    auto const first = std::next(gapVector.begin(), index);
+                    auto const last = std::next(gapVector.begin(), index + n2);
+                    gapVector.erase(first, last);
+                    test_assert(i, gapVector.size() == size - n2);
+                }
                 break;
             }
         }
@@ -100,26 +125,38 @@ int main()
         {
             index = index + rand() % gapVector.DefaultGapSize - gapVector.DefaultGapSize / 2;
             index = std::max<int>(0, std::min<int>(index, normalVector.size() - 1));
+            auto const n2 = std::min<std::size_t>(normalVector.size() - index, 4);
+            auto const size = normalVector.size();
             switch (rand() % 4)
             {
             case 0:
                 normalVector.insert(std::next(normalVector.begin(), index), rand());
+                test_assert(i, normalVector.size() == size + 1);
                 break;
             case 1:
                 normalVector.insert(std::next(normalVector.begin(), index), { 1, 2, 3, 4 });
+                test_assert(i, normalVector.size() == size + 4);
                 break;
             case 2:
                 normalVector.erase(std::next(normalVector.begin(), index));
+                test_assert(i, normalVector.size() == size - 1);
                 break;
             case 3:
-                normalVector.erase(std::next(normalVector.begin(), index), std::next(normalVector.begin(), std::min<std::size_t>(normalVector.size(), index + 4)));
+                {
+                    auto const first = std::next(normalVector.begin(), index);
+                    auto const last = std::next(normalVector.begin(), index + n2);
+                    normalVector.erase(first, last);
+                    test_assert(i, normalVector.size() == size - n2);
+                }
                 break;
             }
         }
         normalEnd = std::chrono::high_resolution_clock::now();
     }
 
-    test_assert(gapVector.size() == normalVector.size());
+    auto const gapVectorSize2 = gapVector.size();
+    auto const normalVectorSize2 = normalVector.size();
+    test_assert(gapVectorSize2 == normalVectorSize2);
     test_assert(std::equal(gapVector.begin(), gapVector.end(), normalVector.begin()));
 
     // todo: more gap_vector unit tests, e.g. multi-element insert/erase.
