@@ -144,9 +144,10 @@ namespace neolib
                 auto const current = iBase;
                 auto const prev = current - aDifference;
                 auto const gapActive = c().gap_active();
-                auto const currentBeforeGap = current <= c().iGapStart;
-                auto const prevAfterGap = prev >= c().iGapEnd;
-                if (!gapActive || currentBeforeGap || prevAfterGap)
+                auto const currentBeforeGap = (current <= c().iGapStart);
+                auto const currentAfterGap = (current >= c().iGapEnd);
+                auto const prevAfterGap = (prev >= c().iGapEnd);
+                if (!gapActive || currentBeforeGap || !(currentAfterGap && prevAfterGap))
                     iBase -= aDifference;
                 else
                     iBase -= (aDifference + c().gap_size());
