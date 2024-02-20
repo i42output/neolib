@@ -56,7 +56,9 @@ int main()
     neolib::gap_vector<int> gapVector;
     std::vector<int> normalVector;
 
-    for (int i = 1; i < 20000000; ++i)
+    int const initCount = 20000000;
+
+    for (int i = 1; i <= initCount; ++i)
     {
         gapVector.push_back(i);
         normalVector.push_back(i);
@@ -77,11 +79,13 @@ int main()
     std::chrono::high_resolution_clock::time_point gapStart;
     std::chrono::high_resolution_clock::time_point gapEnd;
 
+    int const walkCount = 10000;
+
     {
         gapStart = std::chrono::high_resolution_clock::now();
         srand(0);
         int index = gapVector.size() / 2;
-        for (int i = 1; i < 10000; ++i)
+        for (int i = 1; i <= walkCount; ++i)
         { 
             index = index + rand() % gapVector.DefaultGapSize - gapVector.DefaultGapSize / 2;
             index = std::max<int>(0, std::min<int>(index, gapVector.size() - 1));
@@ -121,7 +125,7 @@ int main()
         normalStart = std::chrono::high_resolution_clock::now();
         srand(0);
         int index = normalVector.size() / 2;
-        for (int i = 1; i < 10000; ++i)
+        for (int i = 1; i <= walkCount; ++i)
         {
             index = index + rand() % gapVector.DefaultGapSize - gapVector.DefaultGapSize / 2;
             index = std::max<int>(0, std::min<int>(index, normalVector.size() - 1));
@@ -158,6 +162,12 @@ int main()
     auto const normalVectorSize2 = normalVector.size();
     test_assert(gapVectorSize2 == normalVectorSize2);
     test_assert(std::equal(gapVector.begin(), gapVector.end(), normalVector.begin()));
+    test_assert(std::equal(normalVector.begin(), normalVector.end(), gapVector.begin()));
+
+    decltype(gapVector) gapVectorReversed;
+    std::copy(gapVector.rbegin(), gapVector.rend(), std::back_inserter(gapVectorReversed));
+    std::reverse(gapVectorReversed.begin(), gapVectorReversed.end());
+    test_assert(gapVector == gapVectorReversed);
 
     // todo: more gap_vector unit tests, e.g. multi-element insert/erase.
 

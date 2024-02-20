@@ -147,7 +147,7 @@ namespace neolib
                 auto const currentBeforeGap = (current <= c().iGapStart);
                 auto const currentAfterGap = (current >= c().iGapEnd);
                 auto const prevAfterGap = (prev >= c().iGapEnd);
-                if (!gapActive || currentBeforeGap || !(currentAfterGap && prevAfterGap))
+                if (!gapActive || currentBeforeGap || (currentAfterGap && prevAfterGap))
                     iBase -= aDifference;
                 else
                     iBase -= (aDifference + c().gap_size());
@@ -536,7 +536,7 @@ namespace neolib
         }
         constexpr const_iterator cbegin() const noexcept
         {
-            return const_iterator{ *this, !gap_active() || iData != iGapStart ? iData : iGapEnd };
+            return begin();
         }
         constexpr iterator begin() noexcept
         {
@@ -548,7 +548,7 @@ namespace neolib
         }
         constexpr const_iterator cend() const noexcept
         {
-            return const_iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iData == iGapStart ? iGapEnd : iGapStart };
+            return end();
         }
         constexpr iterator end() noexcept
         {
@@ -556,27 +556,27 @@ namespace neolib
         }
         constexpr const_reverse_iterator rbegin() const noexcept
         {
-            return const_reverse_iterator{ const_iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iData == iGapStart ? iGapEnd : iGapStart } };
+            return const_reverse_iterator{ end() };
         }
         constexpr const_reverse_iterator crbegin() const noexcept
         {
-            return const_reverse_iterator{ const_iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iData == iGapStart ? iGapEnd : iGapStart } };
+            return const_reverse_iterator{ cend() };
         }
         constexpr reverse_iterator rbegin() noexcept
         {
-            return reverse_iterator{ iterator{ *this, !gap_active() || iDataEnd != iGapEnd ? iDataEnd : iData == iGapStart ? iGapEnd : iGapStart } };
+            return reverse_iterator{ end() };
         }
         constexpr const_reverse_iterator rend() const noexcept
         {
-            return const_reverse_iterator{ const_iterator{ *this, !gap_active() || iData != iGapStart ? iData : iGapEnd } };
+            return const_reverse_iterator{ begin() };
         }
         constexpr const_reverse_iterator crend() const noexcept
         {
-            return const_reverse_iterator{ const_iterator{ *this, !gap_active() || iData != iGapStart ? iData : iGapEnd } };
+            return const_reverse_iterator{ cbegin() };
         }
         constexpr reverse_iterator rend() noexcept
         {
-            return reverse_iterator{ iterator{ *this, !gap_active() || iData != iGapStart ? iData : iGapEnd } };
+            return reverse_iterator{ begin() };
         }
     public:
         [[nodiscard]] constexpr bool empty() const noexcept
