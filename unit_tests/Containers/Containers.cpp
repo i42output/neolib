@@ -163,6 +163,8 @@ int main()
     test_assert(gapVectorSize2 == normalVectorSize2);
     test_assert(std::equal(gapVector.begin(), gapVector.end(), normalVector.begin()));
     test_assert(std::equal(normalVector.begin(), normalVector.end(), gapVector.begin()));
+    test_assert(std::equal(gapVector.rbegin(), gapVector.rend(), normalVector.rbegin()));
+    test_assert(std::equal(normalVector.rbegin(), normalVector.rend(), gapVector.rbegin()));
 
     decltype(gapVector) gapVectorReversed;
     std::copy(gapVector.rbegin(), gapVector.rend(), std::back_inserter(gapVectorReversed));
