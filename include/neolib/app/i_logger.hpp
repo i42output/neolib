@@ -215,6 +215,8 @@ namespace neolib
             virtual void wait() const = 0;
         protected:
             virtual void flush(i_string const& aMessage) = 0;
+        public:
+            static uuid const& iid() { static uuid const sIid{ 0x15b0fa0c, 0x6c0c, 0x438c, 0xb4a2, { 0x45, 0x2f, 0x21, 0xe8, 0x87, 0xab } }; return sIid; }
         };
 
         class formatter : public i_formatter
