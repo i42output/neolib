@@ -53,8 +53,8 @@ namespace neolib
     struct small_buffer
     {
         using value_type = T;
-        using buffer_storage_t = std::aligned_storage_t<sizeof(value_type)* SmallBufferSize>;
-        buffer_storage_t storage;
+        using buffer_storage_t = std::byte[sizeof(value_type) * SmallBufferSize];
+        alignas(value_type) buffer_storage_t storage;
         bool allocated;
         small_buffer() : allocated{ false } {}
         small_buffer(const small_buffer&) : allocated{ false } {}
