@@ -105,6 +105,8 @@ GENERATE_HAS_MEMBER_TYPE(abstract_type)
 
 namespace neolib
 {
+    constexpr std::size_t MaxSize = static_cast<std::size_t>(-1);
+
     struct sfinae {};
 
     template <typename T>

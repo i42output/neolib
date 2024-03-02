@@ -7,6 +7,7 @@
 #include <neolib/core/pair.hpp>
 #include <neolib/core/segmented_array.hpp>
 #include <neolib/core/vecarray.hpp>
+#include <neolib/core/polymorphic_vecarray.hpp>
 #include <neolib/core/gap_vector.hpp>
 
 struct i_foo

@@ -12,6 +12,7 @@
 using namespace rapidjson;
 #endif
 
+//#define NOFUSSJSON_TEST_INTERACTIVE
 
 int main(int argc, char** argv)
 {
@@ -271,6 +272,8 @@ int main(int argc, char** argv)
             std::cerr << e.what() << std::endl;
         }
 
+#ifdef NOFUSSJSON_TEST_INTERACTIVE
+
         std::string inputBenchmark;
         if (argc < 4)
         {
@@ -327,6 +330,7 @@ int main(int argc, char** argv)
             auto average = std::accumulate(timings.begin(), timings.end(), 0ull) / timings.size();
             std::cout << "Average (NoFussJSON fast): " << average << std::endl;
         }
+
 #ifdef COMPARE_NOFUSSJSON_WITH_RAPIDJSON
         {
             std::vector<uint64_t> timings;
@@ -354,6 +358,7 @@ int main(int argc, char** argv)
             auto average = std::accumulate(timings.begin(), timings.end(), 0ull) / timings.size();
             std::cout << "Average (RapidJSON): " << average << std::endl;
         }
+#endif
 #endif
     }
     catch (std::exception& e)
