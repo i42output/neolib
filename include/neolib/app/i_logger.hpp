@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <unordered_set>
 #include <functional>
 #include <sstream>
 #include <neolib/core/string.hpp>
@@ -71,18 +72,12 @@ namespace neolib
         typedef uint64_t line_id_t;
         constexpr line_id_t DefaultInitialLineId = 1ull;
 
-        struct endl_t {};
-        struct flush_t {};
-
-        const endl_t endl;
-        const flush_t flush;
-
         class client_logger_buffers
         {
         protected:
             typedef std::ostringstream buffer_t;
         private:
-            typedef std::map<std::thread::id, buffer_t> buffer_list_t;
+            typedef std::unordered_set<buffer_t*> buffer_list_t;
         public:
             static client_logger_buffers& instance()
             {
@@ -92,17 +87,23 @@ namespace neolib
         public:
             buffer_t& buffer()
             {
-                std::lock_guard<std::recursive_mutex> lg{ mutex() };
-                thread_local struct cleanup
+                thread_local buffer_t buffer;
+                thread_local struct manager
                 {
                     client_logger_buffers& parent;
-                    ~cleanup()
+                    manager(client_logger_buffers& parent) :
+                        parent{ parent }
                     {
                         std::lock_guard<std::recursive_mutex> lg{ parent.mutex() };
-                        parent.buffers().erase(std::this_thread::get_id());
+                        parent.buffers().insert(&buffer);
                     }
-                } cleanup{ *this };
-                return iBuffers[std::this_thread::get_id()];
+                    ~manager()
+                    {
+                        std::lock_guard<std::recursive_mutex> lg{ parent.mutex() };
+                        parent.buffers().erase(&buffer);
+                    }
+                } manager{ *this };
+                return buffer;
             }
             buffer_list_t& buffers()
             {
@@ -188,18 +189,10 @@ namespace neolib
             {
                 return (*this) << aCategory.id;
             }
-            i_logger& operator<<(endl_t)
+            i_logger& operator<<(std::ostream&(* aManipulator)(std::ostream&))
             {
                 auto& buffer = client_logger_buffers::instance().buffer();
-                buffer << std::endl;
-                flush(string{ buffer.str() });
-                buffer.str({});
-                return *this;
-            }
-            i_logger& operator<<(flush_t)
-            {
-                auto& buffer = client_logger_buffers::instance().buffer();
-                buffer << std::flush;
+                buffer << aManipulator;
                 flush(string{ buffer.str() });
                 buffer.str({});
                 return *this;

@@ -23,13 +23,13 @@ void output_log_messages(neolog::i_logger& logger0, neolog::i_logger& logger1)
 {
     for (int i = 0; i < 1000; ++i)
     {
-        logger0 << Red << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (Red) Info message 1" << neolog::endl;
-        logger0 << Green << neolog::severity::Debug << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (Green) Debug message 1" << neolog::endl;
-        logger0 << Blue << neolog::severity::Debug << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (Blue) Debug message 2" << neolog::endl;
-        logger0 << Black << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (Black) Info message 2" << neolog::endl;
-        logger0 << White << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (White) Info message 3" << neolog::endl;
+        logger0 << Red << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (Red) Info message 1" << std::endl;
+        logger0 << Green << neolog::severity::Debug << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (Green) Debug message 1" << std::endl;
+        logger0 << Blue << neolog::severity::Debug << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (Blue) Debug message 2" << std::endl;
+        logger0 << Black << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (Black) Info message 2" << std::endl;
+        logger0 << White << neolog::severity::Info << "[tid: " << std::this_thread::get_id() << "] [" << std::hex << "0x" << i << "] (White) Info message 3" << std::endl;
 
-        logger1 << neolog::severity::Info << "LOGGER1 MESSAGE" << neolog::flush;
+        logger1 << neolog::severity::Info << "LOGGER1 MESSAGE" << std::flush;
     }
 }
 
@@ -41,7 +41,7 @@ int main()
         logger0.set_filter_severity(neolog::severity::Debug);
         logger0.create_logging_thread();
 
-        neolog::formatter logger1Formmatter{ [](neolog::i_logger const& aLogger, neolib::i_string const& aUnformattedMessage, neolib::i_string& aFormattedMessage)
+        neolog::formatter logger1Formatter{ [](neolog::i_logger const& aLogger, neolib::i_string const& aUnformattedMessage, neolib::i_string& aFormattedMessage)
         {
             thread_local std::ostringstream temp;
             temp << "[" << aLogger.line_id() << "] OoOo " << aUnformattedMessage.to_std_string_view() << " oOoO" << std::endl;
@@ -52,7 +52,7 @@ int main()
         neolog::ostream_logger<1> logger1{ std::cerr };
         logger1.create_logging_thread();
 
-        logger1.set_formatter(logger1Formmatter);
+        logger1.set_formatter(logger1Formatter);
 
         /* std::ofstream ofs{ "c:\\tmp\\test.log" };
         neolog::ostream_logger<2> logger2{ ofs };
