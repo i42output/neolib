@@ -193,8 +193,11 @@ namespace neolib
             {
                 auto& buffer = client_logger_buffers::instance().buffer();
                 buffer << aManipulator;
-                flush(string{ buffer.str() });
-                buffer.str({});
+                if (aManipulator == &std::endl<char, std::char_traits<char>> || aManipulator == &std::flush<char, std::char_traits<char>>)
+                {
+                    flush(string{ buffer.str() });
+                    buffer.str({});
+                }
                 return *this;
             }
             template<typename T>
