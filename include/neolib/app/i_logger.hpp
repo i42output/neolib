@@ -102,7 +102,7 @@ namespace neolib
                         std::lock_guard<std::recursive_mutex> lg{ parent.mutex() };
                         parent.buffers().erase(&buffer);
                     }
-                } manager{ *this };
+                } tManager{ *this };
                 return buffer;
             }
             buffer_list_t& buffers()
@@ -196,7 +196,8 @@ namespace neolib
                 if (aManipulator == &std::endl<char, std::char_traits<char>> || 
                     aManipulator == &std::flush<char, std::char_traits<char>>)
                 {
-                    flush(string{ buffer.str() });
+                    auto const& view = buffer.view();
+                    flush(view.data(), view.data() + view.size());
                     buffer.str({});
                 }
                 return *this;
@@ -211,7 +212,7 @@ namespace neolib
             virtual void commit() = 0;
             virtual void wait() const = 0;
         protected:
-            virtual void flush(i_string const& aMessage) = 0;
+            virtual void flush(char const* aFirst, char const* aLast) = 0;
         public:
             static uuid const& iid() { static uuid const sIid{ 0x15b0fa0c, 0x6c0c, 0x438c, 0xb4a2, { 0x45, 0x2f, 0x21, 0xe8, 0x87, 0xab } }; return sIid; }
         };

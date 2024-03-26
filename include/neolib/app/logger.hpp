@@ -282,34 +282,40 @@ namespace neolib
                 }
             }
         protected:
-            void flush(i_string const& aMessage) final
+            void flush(std::string_view const& aMessage) 
             {
                 bool notify = false;
                 { 
                     std::scoped_lock lg{ mutex(), commit_signal_mutex() };
                     if (message_severity() >= filter_severity() && message_category_enabled())
                     {
+                        thread_local string tempUnformattedMessage;
+                        tempUnformattedMessage = aMessage;
                         if (!has_formatter())
                         {
-                            buffer() += aMessage.to_std_string_view();
-                            NewLogMessage.trigger(aMessage);
+                            buffer() += tempUnformattedMessage.to_std_string_view();
+                            NewLogMessage.trigger(tempUnformattedMessage);
                         }
                         else
                         {
                             thread_local string tempFormattedMessage;
-                            formatter().format(*this, aMessage, tempFormattedMessage);
+                            tempFormattedMessage.clear();
+                            formatter().format(*this, tempUnformattedMessage, tempFormattedMessage);
                             buffer() += tempFormattedMessage.to_std_string_view();
                             NewLogMessage.trigger(tempFormattedMessage);
-                            tempFormattedMessage.clear();
                         }
                         ++iLineId;
                         notify = true;
                     }
                     for (auto& copy : copies())
-                        copy->flush(aMessage);
+                        copy->flush(aMessage.data(), aMessage.data() + aMessage.size());
                 }
                 if (notify)
                     commit_signal().notify_one();
+            }
+            void flush(char const* aFirst, char const* aLast) final
+            {
+                flush(std::string_view{ aFirst, aLast });
             }
         protected:
             virtual void commit(buffer_t const& aBuffer) = 0;
