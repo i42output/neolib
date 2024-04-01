@@ -1624,7 +1624,7 @@ namespace neolib
         }
 
         template <typename T, std::size_t D>
-        basic_vector<T, D> quad_extents(std::array<basic_vector<T, D>, 4> const& aQuad)
+        inline basic_vector<T, D> quad_extents(std::array<basic_vector<T, D>, 4> const& aQuad)
         {
             return basic_vector<T, D>{ 
                 (aQuad[1].distance(aQuad[0]) + aQuad[3].distance(aQuad[2])) / static_cast<T>(2.0),
