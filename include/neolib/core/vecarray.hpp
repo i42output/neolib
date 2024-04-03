@@ -69,7 +69,7 @@ namespace neolib
                 std_type::reserve(ArraySize);
         }
         constexpr vecarray(vecarray&& aOther) :
-            std_type{ std::move(aOther), allocator_type{ *this } }
+            std_type{ aOther, allocator_type{ *this } }
         {
             if (std_type::capacity() == 0)
                 std_type::reserve(ArraySize);
@@ -113,7 +113,7 @@ namespace neolib
         }
         constexpr vecarray& operator=(vecarray&& other) noexcept
         {
-            std_type::operator=(std::move(other));
+            std_type::operator=(other);
             return *this;
         }
         constexpr vecarray& operator=(std::initializer_list<T> ilist)

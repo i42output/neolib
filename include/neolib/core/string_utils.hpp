@@ -570,7 +570,7 @@ namespace neolib
                         argId = static_cast<std::size_t>(std::stoi(std::string{ std::next(nextArg), argIdEnd }));
                     if (argId)
                         result.args.emplace_back(argId.value(), result.text.size());
-                    result.text.append(std::vformat(std::string_view{ nextArg, nextArgEnd }, std::make_format_args(std::forward<Args>(aArgs)...)));
+                    result.text.append(std::vformat(std::string_view{ nextArg, nextArgEnd }, std::make_format_args(aArgs...)));
                     if (argId)
                         result.args.back().end = result.text.size();
                 }
