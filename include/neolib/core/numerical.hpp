@@ -1,6 +1,6 @@
 // numerical.hpp
 /*
- *  Copyright (c) 2015, 2020 Leigh Johnston.
+ *  Copyright (c) 2015, 2020, 2024 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -41,6 +41,7 @@
 #include <vector>
 #include <utility>
 #include <array>
+#include <ranges>
 #include <algorithm>
 #include <ostream>
 #include <istream>
@@ -60,8 +61,8 @@ namespace neolib
 
         using namespace boost::math::constants;
 
-        typedef double scalar;
-        typedef double angle;
+        using scalar    = double;
+        using angle     = double;
 
         namespace constants
         {
@@ -98,31 +99,30 @@ namespace neolib
         struct column_vector {};
         struct row_vector {};
 
-        template <typename T, uint32_t _Size, typename Type = column_vector>
+        template <typename T, std::uint32_t _Size, typename Type = column_vector>
         class basic_vector;
     }
 
     namespace math
     {
-        template <typename T, uint32_t _Size, typename Type>
+        template <typename T, std::uint32_t _Size, typename Type>
         class basic_vector
         {
-            typedef basic_vector<T, _Size, Type> self_type;
         public:
-            typedef self_type abstract_type; // todo: abstract base; std::array?
+            using abstract_type     = basic_vector; // todo: abstract base; std::array?
         public:
-            typedef Type type;
+            using type              = Type;
         public:
-            typedef T value_type;
-            typedef basic_vector<value_type, _Size, Type> vector_type;
-            typedef uint32_t size_type;
-            typedef std::array<value_type, _Size> array_type;
-            typedef typename array_type::const_iterator const_iterator;
-            typedef typename array_type::iterator iterator;
+            using value_type        = T;
+            using vector_type       = basic_vector<value_type, _Size, Type>;
+            using size_type         = std::uint32_t;
+            using array_type        = std::array<value_type, _Size>;
+            using const_iterator    = typename array_type::const_iterator;
+            using iterator          = typename array_type::iterator;
         public:
-            template <uint32_t Size2> struct rebind { typedef basic_vector<T, Size2, Type> type; };
+            template <std::uint32_t Size2> struct rebind { using type = basic_vector<T, Size2, Type>; };
         public:
-            static constexpr uint32_t Size = _Size;
+            static constexpr std::uint32_t Size = _Size;
         public:
             basic_vector() : v{} {}
             template <typename SFINAE = int>
@@ -139,21 +139,21 @@ namespace neolib
             explicit basic_vector(value_type&& value, Arguments&&... aArguments) : v{ {std::move(value), std::forward<Arguments>(aArguments)...} } {}
             explicit basic_vector(const array_type& v) : v{ v } {}
             basic_vector(std::initializer_list<value_type> values) { if (values.size() > Size) throw std::out_of_range("neolib::basic_vector: initializer list too big"); std::uninitialized_copy(values.begin(), values.end(), v.begin()); std::uninitialized_fill(v.begin() + (values.end() - values.begin()), v.end(), value_type{}); }
-            template <typename V, typename A, uint32_t S, uint32_t... Indexes>
-            basic_vector(const swizzle<V, A, S, Indexes...>& aSwizzle) : self_type{ ~aSwizzle } {}
-            basic_vector(const self_type& other) : v{ other.v } {}
-            basic_vector(self_type&& other) : v{ std::move(other.v) } {}
+            template <typename V, typename A, std::uint32_t S, std::uint32_t... Indexes>
+            basic_vector(const swizzle<V, A, S, Indexes...>& aSwizzle) : basic_vector{ ~aSwizzle } {}
+            basic_vector(const basic_vector& other) : v{ other.v } {}
+            basic_vector(basic_vector&& other) : v{ std::move(other.v) } {}
             template <typename T2>
             basic_vector(const basic_vector<T2, Size, Type>& other) { std::transform(other.begin(), other.end(), v.begin(), [](T2 source) { return static_cast<value_type>(source); }); }
-            template <typename T2, uint32_t Size2, typename SFINAE = int>
+            template <typename T2, std::uint32_t Size2, typename SFINAE = int>
             basic_vector(const basic_vector<T2, Size2, Type>& other, typename std::enable_if_t<Size2 < Size, SFINAE> = 0) : v{} { std::transform(other.begin(), other.end(), v.begin(), [](T2 source) { return static_cast<value_type>(source); }); }
-            self_type& operator=(const self_type& other) { v = other.v; return *this; }
-            self_type& operator=(self_type&& other) { v = std::move(other.v); return *this; }
-            self_type& operator=(std::initializer_list<value_type> values) { if (values.size() > Size) throw std::out_of_range("neolib::basic_vector: initializer list too big"); std::copy(values.begin(), values.end(), v.begin()); std::fill(v.begin() + (values.end() - values.begin()), v.end(), value_type{}); return *this; }
+            basic_vector& operator=(const basic_vector& other) { v = other.v; return *this; }
+            basic_vector& operator=(basic_vector&& other) { v = std::move(other.v); return *this; }
+            basic_vector& operator=(std::initializer_list<value_type> values) { if (values.size() > Size) throw std::out_of_range("neolib::basic_vector: initializer list too big"); std::copy(values.begin(), values.end(), v.begin()); std::fill(v.begin() + (values.end() - values.begin()), v.end(), value_type{}); return *this; }
         public:
-            static uint32_t size() { return Size; }
-            value_type operator[](uint32_t aIndex) const { return v[aIndex]; }
-            value_type& operator[](uint32_t aIndex) { return v[aIndex]; }
+            static std::uint32_t size() { return Size; }
+            value_type operator[](std::uint32_t aIndex) const { return v[aIndex]; }
+            value_type& operator[](std::uint32_t aIndex) { return v[aIndex]; }
             const_iterator begin() const { return v.begin(); }
             const_iterator end() const { return v.end(); }
             iterator begin() { return v.begin(); }
@@ -166,50 +166,50 @@ namespace neolib
                 return basic_vector<T2, Size, Type>{ *this };
             }
         public:
-            bool operator==(const self_type& right) const { return v == right.v; }
-            bool operator!=(const self_type& right) const { return v != right.v; }
-            self_type& operator+=(value_type value) { for (uint32_t index = 0; index < Size; ++index) v[index] += value; return *this; }
-            self_type& operator-=(value_type value) { for (uint32_t index = 0; index < Size; ++index) v[index] -= value; return *this; }
-            self_type& operator*=(value_type value) { for (uint32_t index = 0; index < Size; ++index) v[index] *= value; return *this; }
-            self_type& operator/=(value_type value) { for (uint32_t index = 0; index < Size; ++index) v[index] /= value; return *this; }
-            self_type& operator+=(const self_type& right) { for (uint32_t index = 0; index < Size; ++index) v[index] += right.v[index]; return *this; }
-            self_type& operator-=(const self_type& right) { for (uint32_t index = 0; index < Size; ++index) v[index] -= right.v[index]; return *this; }
-            self_type& operator*=(const self_type& right) { for (uint32_t index = 0; index < Size; ++index) v[index] *= right.v[index]; return *this; }
-            self_type& operator/=(const self_type& right) { for (uint32_t index = 0; index < Size; ++index) v[index] /= right.v[index]; return *this; }
-            self_type operator-() const { self_type result; for (uint32_t index = 0; index < Size; ++index) result.v[index] = -v[index]; return result; }
-            self_type scale(const self_type& right) const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = v[index] * right[index]; return result; }
-            value_type magnitude() const { value_type ss = constants::zero<value_type>; for (uint32_t index = 0; index < Size; ++index) ss += (v[index] * v[index]); return std::sqrt(ss); }
-            self_type normalized() const { self_type result; value_type im = constants::one<value_type> / magnitude(); for (uint32_t index = 0; index < Size; ++index) result.v[index] = v[index] * im; return result; }
-            self_type min(const self_type& right) const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = std::min(v[index], right.v[index]); return result; }
-            self_type max(const self_type& right) const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = std::max(v[index], right.v[index]); return result; }
-            value_type min() const { value_type result = v[0]; for (uint32_t index = 1; index < Size; ++index) result = std::min(v[index], result); return result; }
-            self_type ceil() const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = std::ceil(v[index]); return result; }
-            self_type floor() const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = std::floor(v[index]); return result; }
-            self_type round() const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = std::round(v[index]); return result; }
-            value_type distance(const self_type& right) const { value_type total = 0; for (uint32_t index = 0; index < Size; ++index) total += ((v[index] - right.v[index]) * (v[index] - right.v[index])); return std::sqrt(total); }
-            value_type dot(const self_type& right) const
+            bool operator==(const basic_vector& right) const { return v == right.v; }
+            bool operator!=(const basic_vector& right) const { return v != right.v; }
+            basic_vector& operator+=(value_type value) { for (auto& e : v) e += value; return *this; }
+            basic_vector& operator-=(value_type value) { for (auto& e : v) e -= value; return *this; }
+            basic_vector& operator*=(value_type value) { for (auto& e : v) e *= value; return *this; }
+            basic_vector& operator/=(value_type value) { for (auto& e : v) e /= value; return *this; }
+            basic_vector& operator+=(const basic_vector& right) { std::ranges::transform(v, right.v, v.begin(), std::plus{}); return *this; }
+            basic_vector& operator-=(const basic_vector& right) { std::ranges::transform(v, right.v, v.begin(), std::minus{}); return *this; }
+            basic_vector& operator*=(const basic_vector& right) { std::ranges::transform(v, right.v, v.begin(), std::multiplies{}); return *this; }
+            basic_vector& operator/=(const basic_vector& right) { std::ranges::transform(v, right.v, v.begin(), std::divides{}); return *this; }
+            basic_vector operator-() const { basic_vector result; std::ranges::transform(v, result.v.begin(), std::negate{});; return result; }
+            basic_vector scale(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = v[index] * right[index]; return result; }
+            value_type magnitude() const { value_type ss = constants::zero<value_type>; for (std::uint32_t index = 0; index < Size; ++index) ss += (v[index] * v[index]); return std::sqrt(ss); }
+            basic_vector normalized() const { basic_vector result; value_type im = constants::one<value_type> / magnitude(); for (std::uint32_t index = 0; index < Size; ++index) result.v[index] = v[index] * im; return result; }
+            basic_vector min(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::min(v[index], right.v[index]); return result; }
+            basic_vector max(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::max(v[index], right.v[index]); return result; }
+            value_type min() const { value_type result = v[0]; for (std::uint32_t index = 1; index < Size; ++index) result = std::min(v[index], result); return result; }
+            basic_vector ceil() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::ceil(v[index]); return result; }
+            basic_vector floor() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::floor(v[index]); return result; }
+            basic_vector round() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::round(v[index]); return result; }
+            value_type distance(const basic_vector& right) const { value_type total = 0; for (std::uint32_t index = 0; index < Size; ++index) total += ((v[index] - right.v[index]) * (v[index] - right.v[index])); return std::sqrt(total); }
+            value_type dot(const basic_vector& right) const
             {
                 value_type result = constants::zero<value_type>;
-                for (uint32_t index = 0; index < Size; ++index)
+                for (std::uint32_t index = 0; index < Size; ++index)
                     result += (v[index] * right[index]);
                 return result;
             }
-            template <typename SFINAE = self_type>
-            std::enable_if_t<Size == 3, SFINAE> cross(const self_type& right) const
+            template <typename SFINAE = basic_vector>
+            std::enable_if_t<Size == 3, SFINAE> cross(const basic_vector& right) const
             {
-                return self_type{ 
+                return basic_vector{ 
                     y * right.z - z * right.y, 
                     z * right.x - x * right.z, 
                     x * right.y - y * right.x };
             }
-            self_type hadamard_product(const self_type& right) const
+            basic_vector hadamard_product(const basic_vector& right) const
             {
-                self_type result = *this;
+                basic_vector result = *this;
                 result *= right;
                 return result;
             }
         public:
-            friend void swap(self_type& a, self_type& b)
+            friend void swap(basic_vector& a, basic_vector& b)
             {
                 using std::swap;
                 swap(a.v, b.v);
@@ -263,22 +263,21 @@ namespace neolib
         template <typename T, typename Type>
         class basic_vector<T, 2, Type>
         {
-            typedef basic_vector<T, 2, Type> self_type;
         public:
-            typedef self_type abstract_type; // todo: abstract base; std::array?
+            using abstract_type     = basic_vector; // todo: abstract base; std::array?
         public:
-            typedef Type type;
+            using type              = Type;
         public:
-            typedef T value_type;
-            typedef basic_vector<value_type, 2, Type> vector_type;
-            typedef uint32_t size_type;
-            typedef std::array<value_type, 2> array_type;
-            typedef typename array_type::const_iterator const_iterator;
-            typedef typename array_type::iterator iterator;
+            using value_type        = T;
+            using vector_type       = basic_vector<value_type, 2, Type>;
+            using size_type         = std::uint32_t;
+            using array_type        = std::array<value_type, 2>;
+            using const_iterator    = typename array_type::const_iterator;
+            using iterator          = typename array_type::iterator;
         public:
-            template <uint32_t Size2> struct rebind { typedef basic_vector<T, Size2, Type> type; };
+            template <std::uint32_t Size2> struct rebind { using type = basic_vector<T, Size2, Type>; };
         public:
-            static constexpr uint32_t Size = 2;
+            static constexpr std::uint32_t Size = 2;
         public:
             basic_vector() : v{} {}
             explicit basic_vector(value_type x, value_type y) : v{ {x, y} } {}
@@ -288,21 +287,21 @@ namespace neolib
             explicit basic_vector(value_type&& value, Arguments&&... aArguments) : v{ {std::move(value), std::forward<Arguments>(aArguments)...} } {}
             explicit basic_vector(const array_type& v) : v{ v } {}
             basic_vector(std::initializer_list<value_type> values) { if (values.size() > Size) throw std::out_of_range("neolib::basic_vector: initializer list too big"); std::uninitialized_copy(values.begin(), values.end(), v.begin()); std::uninitialized_fill(v.begin() + (values.end() - values.begin()), v.end(), value_type{}); }
-            template <typename V, typename A, uint32_t S, uint32_t... Indexes>
-            basic_vector(const swizzle<V, A, S, Indexes...>& aSwizzle) : self_type{ ~aSwizzle } {}
-            basic_vector(const self_type& other) : v{ other.v } {}
-            basic_vector(self_type&& other) : v{ std::move(other.v) } {}
+            template <typename V, typename A, std::uint32_t S, std::uint32_t... Indexes>
+            basic_vector(const swizzle<V, A, S, Indexes...>& aSwizzle) : basic_vector{ ~aSwizzle } {}
+            basic_vector(const basic_vector& other) : v{ other.v } {}
+            basic_vector(basic_vector&& other) : v{ std::move(other.v) } {}
             template <typename T2>
             basic_vector(const basic_vector<T2, Size, Type>& other) { std::transform(other.begin(), other.end(), v.begin(), [](T2 source) { return static_cast<value_type>(source); }); }
-            template <typename T2, uint32_t Size2, typename SFINAE = int>
+            template <typename T2, std::uint32_t Size2, typename SFINAE = int>
             basic_vector(const basic_vector<T2, Size2, Type>& other, typename std::enable_if_t < Size2 < Size, SFINAE> = 0) : v{} { std::transform(other.begin(), other.end(), v.begin(), [](T2 source) { return static_cast<value_type>(source); }); }
-            self_type& operator=(const self_type& other) { v = other.v; return *this; }
-            self_type& operator=(self_type&& other) { v = std::move(other.v); return *this; }
-            self_type& operator=(std::initializer_list<value_type> values) { if (values.size() > Size) throw std::out_of_range("neolib::basic_vector: initializer list too big"); std::copy(values.begin(), values.end(), v.begin()); std::fill(v.begin() + (values.end() - values.begin()), v.end(), value_type{}); return *this; }
+            basic_vector& operator=(const basic_vector& other) { v = other.v; return *this; }
+            basic_vector& operator=(basic_vector&& other) { v = std::move(other.v); return *this; }
+            basic_vector& operator=(std::initializer_list<value_type> values) { if (values.size() > Size) throw std::out_of_range("neolib::basic_vector: initializer list too big"); std::copy(values.begin(), values.end(), v.begin()); std::fill(v.begin() + (values.end() - values.begin()), v.end(), value_type{}); return *this; }
         public:
-            static uint32_t size() { return Size; }
-            value_type operator[](uint32_t aIndex) const { return v[aIndex]; }
-            value_type& operator[](uint32_t aIndex) { return v[aIndex]; }
+            static std::uint32_t size() { return Size; }
+            value_type operator[](std::uint32_t aIndex) const { return v[aIndex]; }
+            value_type& operator[](std::uint32_t aIndex) { return v[aIndex]; }
             const_iterator begin() const { return v.begin(); }
             const_iterator end() const { return v.end(); }
             iterator begin() { return v.begin(); }
@@ -315,42 +314,42 @@ namespace neolib
                 return basic_vector<T2, Size, Type>{ *this };
             }
         public:
-            bool operator==(const self_type& right) const { return v == right.v; }
-            bool operator!=(const self_type& right) const { return v != right.v; }
-            self_type& operator+=(value_type value) { for (uint32_t index = 0; index < Size; ++index) v[index] += value; return *this; }
-            self_type& operator-=(value_type value) { for (uint32_t index = 0; index < Size; ++index) v[index] -= value; return *this; }
-            self_type& operator*=(value_type value) { for (uint32_t index = 0; index < Size; ++index) v[index] *= value; return *this; }
-            self_type& operator/=(value_type value) { for (uint32_t index = 0; index < Size; ++index) v[index] /= value; return *this; }
-            self_type& operator+=(const self_type& right) { for (uint32_t index = 0; index < Size; ++index) v[index] += right.v[index]; return *this; }
-            self_type& operator-=(const self_type& right) { for (uint32_t index = 0; index < Size; ++index) v[index] -= right.v[index]; return *this; }
-            self_type& operator*=(const self_type& right) { for (uint32_t index = 0; index < Size; ++index) v[index] *= right.v[index]; return *this; }
-            self_type& operator/=(const self_type& right) { for (uint32_t index = 0; index < Size; ++index) v[index] /= right.v[index]; return *this; }
-            self_type operator-() const { self_type result; for (uint32_t index = 0; index < Size; ++index) result.v[index] = -v[index]; return result; }
-            self_type scale(const self_type& right) const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = v[index] * right[index]; return result; }
-            value_type magnitude() const { value_type ss = constants::zero<value_type>; for (uint32_t index = 0; index < Size; ++index) ss += (v[index] * v[index]); return std::sqrt(ss); }
-            self_type normalized() const { self_type result; value_type im = constants::one<value_type> / magnitude(); for (uint32_t index = 0; index < Size; ++index) result.v[index] = v[index] * im; return result; }
-            self_type min(const self_type& right) const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = std::min(v[index], right.v[index]); return result; }
-            self_type max(const self_type& right) const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = std::max(v[index], right.v[index]); return result; }
-            value_type min() const { value_type result = v[0]; for (uint32_t index = 1; index < Size; ++index) result = std::min(v[index], result); return result; }
-            self_type ceil() const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = std::ceil(v[index]); return result; }
-            self_type floor() const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = std::floor(v[index]); return result; }
-            self_type round() const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = std::round(v[index]); return result; }
-            value_type distance(const self_type& right) const { value_type total = 0; for (uint32_t index = 0; index < Size; ++index) total += ((v[index] - right.v[index]) * (v[index] - right.v[index])); return std::sqrt(total); }
-            value_type dot(const self_type& right) const
+            bool operator==(const basic_vector& right) const { return v == right.v; }
+            bool operator!=(const basic_vector& right) const { return v != right.v; }
+            basic_vector& operator+=(value_type value) { for (auto& e : v) e += value; return *this; }
+            basic_vector& operator-=(value_type value) { for (auto& e : v) e -= value; return *this; }
+            basic_vector& operator*=(value_type value) { for (auto& e : v) e *= value; return *this; }
+            basic_vector& operator/=(value_type value) { for (auto& e : v) e /= value; return *this; }
+            basic_vector& operator+=(const basic_vector& right) { std::ranges::transform(v, right.v, v.begin(), std::plus{}); return *this; }
+            basic_vector& operator-=(const basic_vector& right) { std::ranges::transform(v, right.v, v.begin(), std::minus{}); return *this; }
+            basic_vector& operator*=(const basic_vector& right) { std::ranges::transform(v, right.v, v.begin(), std::multiplies{}); return *this; }
+            basic_vector& operator/=(const basic_vector& right) { std::ranges::transform(v, right.v, v.begin(), std::divides{}); return *this; }
+            basic_vector operator-() const { basic_vector result; std::ranges::transform(v, result.v.begin(), std::negate{});; return result; }
+            basic_vector scale(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = v[index] * right[index]; return result; }
+            value_type magnitude() const { value_type ss = constants::zero<value_type>; for (std::uint32_t index = 0; index < Size; ++index) ss += (v[index] * v[index]); return std::sqrt(ss); }
+            basic_vector normalized() const { basic_vector result; value_type im = constants::one<value_type> / magnitude(); for (std::uint32_t index = 0; index < Size; ++index) result.v[index] = v[index] * im; return result; }
+            basic_vector min(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::min(v[index], right.v[index]); return result; }
+            basic_vector max(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::max(v[index], right.v[index]); return result; }
+            value_type min() const { value_type result = v[0]; for (std::uint32_t index = 1; index < Size; ++index) result = std::min(v[index], result); return result; }
+            basic_vector ceil() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::ceil(v[index]); return result; }
+            basic_vector floor() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::floor(v[index]); return result; }
+            basic_vector round() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::round(v[index]); return result; }
+            value_type distance(const basic_vector& right) const { value_type total = 0; for (std::uint32_t index = 0; index < Size; ++index) total += ((v[index] - right.v[index]) * (v[index] - right.v[index])); return std::sqrt(total); }
+            value_type dot(const basic_vector& right) const
             {
                 value_type result = constants::zero<value_type>;
-                for (uint32_t index = 0; index < Size; ++index)
+                for (std::uint32_t index = 0; index < Size; ++index)
                     result += (v[index] * right[index]);
                 return result;
             }
-            self_type hadamard_product(const self_type& right) const
+            basic_vector hadamard_product(const basic_vector& right) const
             {
-                self_type result = *this;
+                basic_vector result = *this;
                 result *= right;
                 return result;
             }
         public:
-            friend void swap(self_type& a, self_type& b)
+            friend void swap(basic_vector& a, basic_vector& b)
             {
                 using std::swap;
                 swap(a.v, b.v);
@@ -382,22 +381,21 @@ namespace neolib
         template <typename T, typename Type>
         class basic_vector<T, 1, Type>
         {
-            typedef basic_vector<T, 1, Type> self_type;
         public:
-            typedef self_type abstract_type; // todo: abstract base; std::array?
+            using abstract_type     = basic_vector; // todo: abstract base; std::array?
         public:
-            typedef Type type;
+            using type              = Type;
         public:
-            typedef T value_type;
-            typedef basic_vector<value_type, 1, Type> vector_type;
-            typedef uint32_t size_type;
-            typedef std::array<value_type, 1> array_type;
-            typedef typename array_type::const_iterator const_iterator;
-            typedef typename array_type::iterator iterator;
+            using value_type        = T;
+            using vector_type       = basic_vector<value_type, 1, Type>;
+            using size_type         = std::uint32_t;
+            using array_type        = std::array<value_type, 1>;
+            using const_iterator    = typename array_type::const_iterator;
+            using iterator          = typename array_type::iterator;
         public:
-            template <uint32_t Size2> struct rebind { typedef basic_vector<T, Size2, Type> type; };
+            template <std::uint32_t Size2> struct rebind { using type = basic_vector<T, Size2, Type>; };
         public:
-            static constexpr uint32_t Size = 1;
+            static constexpr std::uint32_t Size = 1;
         public:
             basic_vector() : v{} {}
             explicit basic_vector(value_type x) : v{ {x} } {}
@@ -407,21 +405,21 @@ namespace neolib
             explicit basic_vector(value_type&& value, Arguments&&... aArguments) : v{ {std::move(value), std::forward<Arguments>(aArguments)...} } {}
             explicit basic_vector(const array_type& v) : v{ v } {}
             basic_vector(std::initializer_list<value_type> values) { if (values.size() > Size) throw std::out_of_range("neolib::basic_vector: initializer list too big"); std::uninitialized_copy(values.begin(), values.end(), v.begin()); std::uninitialized_fill(v.begin() + (values.end() - values.begin()), v.end(), value_type{}); }
-            template <typename V, typename A, uint32_t S, uint32_t... Indexes>
-            basic_vector(const swizzle<V, A, S, Indexes...>& aSwizzle) : self_type{ ~aSwizzle } {}
-            basic_vector(const self_type& other) : v{ other.v } {}
-            basic_vector(self_type&& other) : v{ std::move(other.v) } {}
+            template <typename V, typename A, std::uint32_t S, std::uint32_t... Indexes>
+            basic_vector(const swizzle<V, A, S, Indexes...>& aSwizzle) : basic_vector{ ~aSwizzle } {}
+            basic_vector(const basic_vector& other) : v{ other.v } {}
+            basic_vector(basic_vector&& other) : v{ std::move(other.v) } {}
             template <typename T2>
             basic_vector(const basic_vector<T2, Size, Type>& other) { std::transform(other.begin(), other.end(), v.begin(), [](T2 source) { return static_cast<value_type>(source); }); }
-            template <typename T2, uint32_t Size2, typename SFINAE = int>
+            template <typename T2, std::uint32_t Size2, typename SFINAE = int>
             basic_vector(const basic_vector<T2, Size2, Type>& other, typename std::enable_if_t < Size2 < Size, SFINAE> = 0) : v{} { std::transform(other.begin(), other.end(), v.begin(), [](T2 source) { return static_cast<value_type>(source); }); }
-            self_type& operator=(const self_type& other) { v = other.v; return *this; }
-            self_type& operator=(self_type&& other) { v = std::move(other.v); return *this; }
-            self_type& operator=(std::initializer_list<value_type> values) { if (values.size() > Size) throw std::out_of_range("neolib::basic_vector: initializer list too big"); std::copy(values.begin(), values.end(), v.begin()); std::fill(v.begin() + (values.end() - values.begin()), v.end(), value_type{}); return *this; }
+            basic_vector& operator=(const basic_vector& other) { v = other.v; return *this; }
+            basic_vector& operator=(basic_vector&& other) { v = std::move(other.v); return *this; }
+            basic_vector& operator=(std::initializer_list<value_type> values) { if (values.size() > Size) throw std::out_of_range("neolib::basic_vector: initializer list too big"); std::copy(values.begin(), values.end(), v.begin()); std::fill(v.begin() + (values.end() - values.begin()), v.end(), value_type{}); return *this; }
         public:
-            static uint32_t size() { return Size; }
-            value_type operator[](uint32_t aIndex) const { return v[aIndex]; }
-            value_type& operator[](uint32_t aIndex) { return v[aIndex]; }
+            static std::uint32_t size() { return Size; }
+            value_type operator[](std::uint32_t aIndex) const { return v[aIndex]; }
+            value_type& operator[](std::uint32_t aIndex) { return v[aIndex]; }
             const_iterator begin() const { return v.begin(); }
             const_iterator end() const { return v.end(); }
             iterator begin() { return v.begin(); }
@@ -434,42 +432,42 @@ namespace neolib
                 return basic_vector<T2, Size, Type>{ *this };
             }
         public:
-            bool operator==(const self_type& right) const { return v == right.v; }
-            bool operator!=(const self_type& right) const { return v != right.v; }
-            self_type& operator+=(value_type value) { for (uint32_t index = 0; index < Size; ++index) v[index] += value; return *this; }
-            self_type& operator-=(value_type value) { for (uint32_t index = 0; index < Size; ++index) v[index] -= value; return *this; }
-            self_type& operator*=(value_type value) { for (uint32_t index = 0; index < Size; ++index) v[index] *= value; return *this; }
-            self_type& operator/=(value_type value) { for (uint32_t index = 0; index < Size; ++index) v[index] /= value; return *this; }
-            self_type& operator+=(const self_type& right) { for (uint32_t index = 0; index < Size; ++index) v[index] += right.v[index]; return *this; }
-            self_type& operator-=(const self_type& right) { for (uint32_t index = 0; index < Size; ++index) v[index] -= right.v[index]; return *this; }
-            self_type& operator*=(const self_type& right) { for (uint32_t index = 0; index < Size; ++index) v[index] *= right.v[index]; return *this; }
-            self_type& operator/=(const self_type& right) { for (uint32_t index = 0; index < Size; ++index) v[index] /= right.v[index]; return *this; }
-            self_type operator-() const { self_type result; for (uint32_t index = 0; index < Size; ++index) result.v[index] = -v[index]; return result; }
-            self_type scale(const self_type& right) const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = v[index] * right[index]; return result; }
-            value_type magnitude() const { value_type ss = constants::zero<value_type>; for (uint32_t index = 0; index < Size; ++index) ss += (v[index] * v[index]); return std::sqrt(ss); }
-            self_type normalized() const { self_type result; value_type im = constants::one<value_type> / magnitude(); for (uint32_t index = 0; index < Size; ++index) result.v[index] = v[index] * im; return result; }
-            self_type min(const self_type& right) const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = std::min(v[index], right.v[index]); return result; }
-            self_type max(const self_type& right) const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = std::max(v[index], right.v[index]); return result; }
-            value_type min() const { value_type result = v[0]; for (uint32_t index = 1; index < Size; ++index) result = std::min(v[index], result); return result; }
-            self_type ceil() const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = std::ceil(v[index]); return result; }
-            self_type floor() const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = std::floor(v[index]); return result; }
-            self_type round() const { self_type result; for (uint32_t index = 0; index < Size; ++index) result[index] = std::round(v[index]); return result; }
-            value_type distance(const self_type& right) const { value_type total = 0; for (uint32_t index = 0; index < Size; ++index) total += ((v[index] - right.v[index]) * (v[index] - right.v[index])); return std::sqrt(total); }
-            value_type dot(const self_type& right) const
+            bool operator==(const basic_vector& right) const { return v == right.v; }
+            bool operator!=(const basic_vector& right) const { return v != right.v; }
+            basic_vector& operator+=(value_type value) { for (auto& e : v) e += value; return *this; }
+            basic_vector& operator-=(value_type value) { for (auto& e : v) e -= value; return *this; }
+            basic_vector& operator*=(value_type value) { for (auto& e : v) e *= value; return *this; }
+            basic_vector& operator/=(value_type value) { for (auto& e : v) e /= value; return *this; }
+            basic_vector& operator+=(const basic_vector& right) { std::ranges::transform(v, right.v, v.begin(), std::plus{}); return *this; }
+            basic_vector& operator-=(const basic_vector& right) { std::ranges::transform(v, right.v, v.begin(), std::minus{}); return *this; }
+            basic_vector& operator*=(const basic_vector& right) { std::ranges::transform(v, right.v, v.begin(), std::multiplies{}); return *this; }
+            basic_vector& operator/=(const basic_vector& right) { std::ranges::transform(v, right.v, v.begin(), std::divides{}); return *this; }
+            basic_vector operator-() const { basic_vector result; std::ranges::transform(v, result.v.begin(), std::negate{});; return result; }
+            basic_vector scale(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = v[index] * right[index]; return result; }
+            value_type magnitude() const { value_type ss = constants::zero<value_type>; for (std::uint32_t index = 0; index < Size; ++index) ss += (v[index] * v[index]); return std::sqrt(ss); }
+            basic_vector normalized() const { basic_vector result; value_type im = constants::one<value_type> / magnitude(); for (std::uint32_t index = 0; index < Size; ++index) result.v[index] = v[index] * im; return result; }
+            basic_vector min(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::min(v[index], right.v[index]); return result; }
+            basic_vector max(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::max(v[index], right.v[index]); return result; }
+            value_type min() const { value_type result = v[0]; for (std::uint32_t index = 1; index < Size; ++index) result = std::min(v[index], result); return result; }
+            basic_vector ceil() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::ceil(v[index]); return result; }
+            basic_vector floor() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::floor(v[index]); return result; }
+            basic_vector round() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::round(v[index]); return result; }
+            value_type distance(const basic_vector& right) const { value_type total = 0; for (std::uint32_t index = 0; index < Size; ++index) total += ((v[index] - right.v[index]) * (v[index] - right.v[index])); return std::sqrt(total); }
+            value_type dot(const basic_vector& right) const
             {
                 value_type result = constants::zero<value_type>;
-                for (uint32_t index = 0; index < Size; ++index)
+                for (std::uint32_t index = 0; index < Size; ++index)
                     result += (v[index] * right[index]);
                 return result;
             }
-            self_type hadamard_product(const self_type& right) const
+            basic_vector hadamard_product(const basic_vector& right) const
             {
-                self_type result = *this;
+                basic_vector result = *this;
                 result *= right;
                 return result;
             }
         public:
-            friend void swap(self_type& a, self_type& b)
+            friend void swap(basic_vector& a, basic_vector& b)
             {
                 using std::swap;
                 swap(a.v, b.v);
@@ -487,111 +485,111 @@ namespace neolib
             };
         };
 
-        template <typename T, uint32_t Size, typename Type>
+        template <typename T, std::uint32_t Size, typename Type>
         inline bool operator==(const basic_vector<T, Size, Type>& aLhs, const basic_vector<T, Size, Type>& aRhs)
         {
             return aLhs.v == aRhs.v;
         }
 
-        template <typename T, uint32_t Size, typename Type>
+        template <typename T, std::uint32_t Size, typename Type>
         inline bool operator<(const basic_vector<T, Size, Type>& aLhs, const basic_vector<T, Size, Type>& aRhs)
         {
             return aLhs.v < aRhs.v;
         }
 
-        template <typename T, uint32_t Size, typename Type>
+        template <typename T, std::uint32_t Size, typename Type>
         inline std::partial_ordering operator<=>(const basic_vector<T, Size, Type>& aLhs, const basic_vector<T, Size, Type>& aRhs)
         {
             return aLhs.v <=> aRhs.v;
         }
 
-        typedef basic_vector<double, 1> vector1;
-        typedef basic_vector<double, 2> vector2;
-        typedef basic_vector<double, 3> vector3;
-        typedef basic_vector<double, 4> vector4;
+        using vector1 = basic_vector<double, 1>;
+        using vector2 = basic_vector<double, 2>;
+        using vector3 = basic_vector<double, 3>;
+        using vector4 = basic_vector<double, 4>;
 
-        typedef vector1 vec1;
-        typedef vector2 vec2;
-        typedef vector3 vec3;
-        typedef vector4 vec4;
+        using vec1 = vector1;
+        using vec2 = vector2;
+        using vec3 = vector3;
+        using vec4 = vector4;
 
-        typedef vec1 col_vec1;
-        typedef vec2 col_vec2;
-        typedef vec3 col_vec3;
-        typedef vec4 col_vec4;
+        using col_vec1 = vec1;
+        using col_vec2 = vec2;
+        using col_vec3 = vec3;
+        using col_vec4 = vec4;
 
-        typedef basic_vector<double, 1, row_vector> row_vec1;
-        typedef basic_vector<double, 2, row_vector> row_vec2;
-        typedef basic_vector<double, 3, row_vector> row_vec3;
-        typedef basic_vector<double, 4, row_vector> row_vec4;
+        using row_vec1 = basic_vector<double, 1, row_vector>;
+        using row_vec2 = basic_vector<double, 2, row_vector>;
+        using row_vec3 = basic_vector<double, 3, row_vector>;
+        using row_vec4 = basic_vector<double, 4, row_vector>;
 
-        typedef optional<vector1> optional_vector1;
-        typedef optional<vector2> optional_vector2;
-        typedef optional<vector3> optional_vector3;
-        typedef optional<vector4> optional_vector4;
+        using optional_vector1 = optional<vector1>;
+        using optional_vector2 = optional<vector2>;
+        using optional_vector3 = optional<vector3>;
+        using optional_vector4 = optional<vector4>;
 
-        typedef optional<vec1> optional_vec1;
-        typedef optional<vec2> optional_vec2;
-        typedef optional<vec3> optional_vec3;
-        typedef optional<vec4> optional_vec4;
+        using optional_vec1 = optional<vec1>;
+        using optional_vec2 = optional<vec2>;
+        using optional_vec3 = optional<vec3>;
+        using optional_vec4 = optional<vec4>;
 
-        typedef optional<col_vec1> optional_col_vec1;
-        typedef optional<col_vec2> optional_col_vec2;
-        typedef optional<col_vec3> optional_col_vec3;
-        typedef optional<col_vec4> optional_col_vec4;
+        using optional_col_vec1 = optional<col_vec1>;
+        using optional_col_vec2 = optional<col_vec2>;
+        using optional_col_vec3 = optional<col_vec3>;
+        using optional_col_vec4 = optional<col_vec4>;
 
-        typedef optional<row_vec1> optional_row_vec1;
-        typedef optional<row_vec2> optional_row_vec2;
-        typedef optional<row_vec3> optional_row_vec3;
-        typedef optional<row_vec4> optional_row_vec4;
+        using optional_row_vec1 = optional<row_vec1>;
+        using optional_row_vec2 = optional<row_vec2>;
+        using optional_row_vec3 = optional<row_vec3>;
+        using optional_row_vec4 = optional<row_vec4>;
 
-        typedef std::vector<vec2> vec2_list;
-        typedef std::vector<vec3> vec3_list;
+        using vec2_list = std::vector<vec2>;
+        using vec3_list = std::vector<vec3>;
 
-        typedef optional<vec2_list> optional_vec2_list;
-        typedef optional<vec3_list> optional_vec3_list;
+        using optional_vec2_list = optional<vec2_list>;
+        using optional_vec3_list = optional<vec3_list>;
 
-        typedef vec2_list vertices_2d;
-        typedef vec3_list vertices;
+        using vertices_2d = vec2_list;
+        using vertices    = vec3_list;
 
-        typedef optional_vec2_list optional_vertices_2d_t;
-        typedef optional_vec3_list optional_vertices_t;
+        using optional_vertices_2d_t = optional_vec2_list;
+        using optional_vertices_t    = optional_vec3_list;
 
-        typedef basic_vector<float, 1> vector1f;
-        typedef basic_vector<float, 2> vector2f;
-        typedef basic_vector<float, 3> vector3f;
-        typedef basic_vector<float, 4> vector4f;
+        using vector1f = basic_vector<float, 1>;
+        using vector2f = basic_vector<float, 2>;
+        using vector3f = basic_vector<float, 3>;
+        using vector4f = basic_vector<float, 4>;
 
-        typedef vector1f vec1f;
-        typedef vector2f vec2f;
-        typedef vector3f vec3f;
-        typedef vector4f vec4f;
+        using vec1f = vector1f;
+        using vec2f = vector2f;
+        using vec3f = vector3f;
+        using vec4f = vector4f;
 
-        typedef int32_t i32;
-        typedef int64_t i64;
+        using i32 = int32_t;
+        using i64 = int64_t;
 
-        typedef basic_vector<i32, 1> vector1i32;
-        typedef basic_vector<i32, 2> vector2i32;
-        typedef basic_vector<i32, 3> vector3i32;
-        typedef basic_vector<i32, 4> vector4i32;
+        using vector1i32 = basic_vector<i32, 1>;
+        using vector2i32 = basic_vector<i32, 2>;
+        using vector3i32 = basic_vector<i32, 3>;
+        using vector4i32 = basic_vector<i32, 4>;
 
-        typedef vector1i32 vec1i32;
-        typedef vector2i32 vec2i32;
-        typedef vector3i32 vec3i32;
-        typedef vector4i32 vec4i32;
+        using vec1i32 = vector1i32;
+        using vec2i32 = vector2i32;
+        using vec3i32 = vector3i32;
+        using vec4i32 = vector4i32;
 
-        typedef uint32_t u32;
-        typedef uint32_t u64;
+        using u32 = std::uint32_t;
+        using u64 = std::uint32_t;
 
-        typedef basic_vector<u32, 1> vector1u32;
-        typedef basic_vector<u32, 2> vector2u32;
-        typedef basic_vector<u32, 3> vector3u32;
-        typedef basic_vector<u32, 4> vector4u32;
+        using vector1u32 = basic_vector<u32, 1>;
+        using vector2u32 = basic_vector<u32, 2>;
+        using vector3u32 = basic_vector<u32, 3>;
+        using vector4u32 = basic_vector<u32, 4>;
 
-        typedef vector1u32 vec1u32;
-        typedef vector2u32 vec2u32;
-        typedef vector3u32 vec3u32;
-        typedef vector4u32 vec4u32;
+        using vec1u32 = vector1u32;
+        using vec2u32 = vector2u32;
+        using vec3u32 = vector3u32;
+        using vec4u32 = vector4u32;
 
         template <std::size_t VertexCount>
         using vec3_array = neolib::vecarray<vec3, VertexCount, VertexCount>;
@@ -599,59 +597,59 @@ namespace neolib
         template <std::size_t VertexCount>
         using vec2_array = neolib::vecarray<vec2, VertexCount, VertexCount>;
 
-        typedef std::array<int8_t, 1> avec1i8;
-        typedef std::array<int8_t, 2> avec2i8;
-        typedef std::array<int8_t, 3> avec3i8;
-        typedef std::array<int8_t, 4> avec4i8;
+        using avec1i8 = std::array<int8_t, 1>;
+        using avec2i8 = std::array<int8_t, 2>;
+        using avec3i8 = std::array<int8_t, 3>;
+        using avec4i8 = std::array<int8_t, 4>;
 
-        typedef std::array<int16_t, 1> avec1i16;
-        typedef std::array<int16_t, 2> avec2i16;
-        typedef std::array<int16_t, 3> avec3i16;
-        typedef std::array<int16_t, 4> avec4i16;
+        using avec1i16 = std::array<int16_t, 1>;
+        using avec2i16 = std::array<int16_t, 2>;
+        using avec3i16 = std::array<int16_t, 3>;
+        using avec4i16 = std::array<int16_t, 4>;
 
-        typedef std::array<int32_t, 1> avec1i32;
-        typedef std::array<int32_t, 2> avec2i32;
-        typedef std::array<int32_t, 3> avec3i32;
-        typedef std::array<int32_t, 4> avec4i32;
+        using avec1i32 = std::array<int32_t, 1>;
+        using avec2i32 = std::array<int32_t, 2>;
+        using avec3i32 = std::array<int32_t, 3>;
+        using avec4i32 = std::array<int32_t, 4>;
 
-        typedef std::array<uint8_t, 1> avec1u8;
-        typedef std::array<uint8_t, 2> avec2u8;
-        typedef std::array<uint8_t, 3> avec3u8;
-        typedef std::array<uint8_t, 4> avec4u8;
+        using avec1u8 = std::array<uint8_t, 1>;
+        using avec2u8 = std::array<uint8_t, 2>;
+        using avec3u8 = std::array<uint8_t, 3>;
+        using avec4u8 = std::array<uint8_t, 4>;
 
-        typedef std::array<uint16_t, 1> avec1u16;
-        typedef std::array<uint16_t, 2> avec2u16;
-        typedef std::array<uint16_t, 3> avec3u16;
-        typedef std::array<uint16_t, 4> avec4u16;
+        using avec1u16 = std::array<uint16_t, 1>;
+        using avec2u16 = std::array<uint16_t, 2>;
+        using avec3u16 = std::array<uint16_t, 3>;
+        using avec4u16 = std::array<uint16_t, 4>;
 
-        typedef std::array<uint32_t, 1> avec1u32;
-        typedef std::array<uint32_t, 2> avec2u32;
-        typedef std::array<uint32_t, 3> avec3u32;
-        typedef std::array<uint32_t, 4> avec4u32;
+        using avec1u32 = std::array<std::uint32_t, 1>;
+        using avec2u32 = std::array<std::uint32_t, 2>;
+        using avec3u32 = std::array<std::uint32_t, 3>;
+        using avec4u32 = std::array<std::uint32_t, 4>;
 
-        typedef std::array<float, 1> avec1f;
-        typedef std::array<float, 2> avec2f;
-        typedef std::array<float, 3> avec3f;
-        typedef std::array<float, 4> avec4f;
+        using avec1f = std::array<float, 1>;
+        using avec2f = std::array<float, 2>;
+        using avec3f = std::array<float, 3>;
+        using avec4f = std::array<float, 4>;
 
-        typedef std::array<double, 1> avec1;
-        typedef std::array<double, 2> avec2;
-        typedef std::array<double, 3> avec3;
-        typedef std::array<double, 4> avec4;
+        using avec1 = std::array<double, 1>;
+        using avec2 = std::array<double, 2>;
+        using avec3 = std::array<double, 3>;
+        using avec4 = std::array<double, 4>;
 
-        typedef std::array<vec3, 3> triangle;
-        typedef std::array<vec3, 4> quad;
+        using triangle  = std::array<vec3, 3>;
+        using quad      = std::array<vec3, 4>;
 
-        typedef std::array<vec2, 3> triangle_2d;
-        typedef std::array<vec2, 4> quad_2d;
+        using triangle_2d   = std::array<vec2, 3>;
+        using quad_2d       = std::array<vec2, 4>;
 
-        typedef std::array<vec3f, 3> trianglef;
-        typedef std::array<vec3f, 4> quadf;
+        using trianglef = std::array<vec3f, 3>;
+        using quadf     = std::array<vec3f, 4>;
 
-        typedef std::array<vec2f, 3> trianglef_2d;
-        typedef std::array<vec2f, 4> quadf_2d;
+        using trianglef_2d  = std::array<vec2f, 3>;
+        using quadf_2d      = std::array<vec2f, 4>;
 
-        template <typename T, uint32_t D, typename Type>
+        template <typename T, std::uint32_t D, typename Type>
         inline basic_vector<T, D, Type> operator+(const basic_vector<T, D, Type>& left, const basic_vector<T, D, Type>& right)
         {
             basic_vector<T, D, Type> result = left;
@@ -659,7 +657,7 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t D, typename Type>
+        template <typename T, std::uint32_t D, typename Type>
         inline basic_vector<T, D, Type> operator-(const basic_vector<T, D, Type>& left, const basic_vector<T, D, Type>& right)
         {
             basic_vector<T, D, Type> result = left;
@@ -667,7 +665,7 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t D, typename Type, std::size_t VertexCount>
+        template <typename T, std::uint32_t D, typename Type, std::size_t VertexCount>
         inline std::array<basic_vector<T, D, Type>, VertexCount> operator+(const basic_vector<T, D, Type>& left, const std::array<basic_vector<T, D, Type>, VertexCount>& right)
         {
             std::array<basic_vector<T, D, Type>, VertexCount> result = right;
@@ -676,7 +674,7 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t D, typename Type, std::size_t VertexCount>
+        template <typename T, std::uint32_t D, typename Type, std::size_t VertexCount>
         inline std::array<basic_vector<T, D, Type>, VertexCount> operator+(const std::array<basic_vector<T, D, Type>, VertexCount>& left, const basic_vector<T, D, Type>& right)
         {
             std::array<basic_vector<T, D, Type>, VertexCount> result = left;
@@ -685,7 +683,7 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t D, typename Type, std::size_t VertexCount>
+        template <typename T, std::uint32_t D, typename Type, std::size_t VertexCount>
         inline std::array<basic_vector<T, D, Type>, VertexCount>& operator+=(std::array<basic_vector<T, D, Type>, VertexCount>& left, const basic_vector<T, D, Type>& right)
         {
             for (auto& v : left)
@@ -693,7 +691,7 @@ namespace neolib
             return left;
         }
 
-        template <typename T, uint32_t D, typename Type, std::size_t VertexCount>
+        template <typename T, std::uint32_t D, typename Type, std::size_t VertexCount>
         inline std::array<basic_vector<T, D, Type>, VertexCount> operator-(const basic_vector<T, D, Type>& left, const std::array<basic_vector<T, D, Type>, VertexCount>& right)
         {
             std::array<basic_vector<T, D, Type>, VertexCount> result = right;
@@ -702,7 +700,7 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t D, typename Type, std::size_t VertexCount>
+        template <typename T, std::uint32_t D, typename Type, std::size_t VertexCount>
         inline std::array<basic_vector<T, D, Type>, VertexCount> operator-(const std::array<basic_vector<T, D, Type>, VertexCount>& left, const basic_vector<T, D, Type>& right)
         {
             std::array<basic_vector<T, D, Type>, VertexCount> result = left;
@@ -711,7 +709,7 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t D, typename Type, std::size_t VertexCount>
+        template <typename T, std::uint32_t D, typename Type, std::size_t VertexCount>
         inline std::array<basic_vector<T, D, Type>, VertexCount>& operator-=(std::array<basic_vector<T, D, Type>, VertexCount>& left, const basic_vector<T, D, Type>& right)
         {
             for (auto& v : left)
@@ -719,92 +717,92 @@ namespace neolib
             return left;
         }
 
-        template <typename T, uint32_t D, typename Type>
+        template <typename T, std::uint32_t D, typename Type>
         inline basic_vector<T, D, Type> operator+(const basic_vector<T, D, Type>& left, const T& right)
         {
             basic_vector<T, D, Type> result = left;
-            for (uint32_t i = 0; i < D; ++i)
+            for (std::uint32_t i = 0; i < D; ++i)
                 result[i] += right;
             return result;
         }
 
-        template <typename T, uint32_t D, typename Type>
+        template <typename T, std::uint32_t D, typename Type>
         inline basic_vector<T, D, Type> operator+(const T& left, const basic_vector<T, D, Type>& right)
         {
             basic_vector<T, D, Type> result = right;
-            for (uint32_t i = 0; i < D; ++i)
+            for (std::uint32_t i = 0; i < D; ++i)
                 result[i] += left;
             return result;
         }
 
-        template <typename T, uint32_t D, typename Type>
+        template <typename T, std::uint32_t D, typename Type>
         inline basic_vector<T, D, Type> operator-(const basic_vector<T, D, Type>& left, const T& right)
         {
             basic_vector<T, D, Type> result = left;
-            for (uint32_t i = 0; i < D; ++i)
+            for (std::uint32_t i = 0; i < D; ++i)
                 result[i] -= right;
             return result;
         }
 
-        template <typename T, uint32_t D, typename Type>
+        template <typename T, std::uint32_t D, typename Type>
         inline basic_vector<T, D, Type> operator-(const T& left, const basic_vector<T, D, Type>& right)
         {
             basic_vector<T, D, Type> result;
-            for (uint32_t i = 0; i < D; ++i)
+            for (std::uint32_t i = 0; i < D; ++i)
                 result[i] = left - right[i];
             return result;
         }
 
-        template <typename T, uint32_t D, typename Type>
+        template <typename T, std::uint32_t D, typename Type>
         inline basic_vector<T, D, Type> operator*(const basic_vector<T, D, Type>& left, const T& right)
         {
             basic_vector<T, D, Type> result = left;
-            for (uint32_t i = 0; i < D; ++i)
+            for (std::uint32_t i = 0; i < D; ++i)
                 result[i] *= right;
             return result;
         }
 
-        template <typename T, uint32_t D, typename Type>
+        template <typename T, std::uint32_t D, typename Type>
         inline basic_vector<T, D, Type> operator*(const T& left, const basic_vector<T, D, Type>& right)
         {
             basic_vector<T, D, Type> result = right;
-            for (uint32_t i = 0; i < D; ++i)
+            for (std::uint32_t i = 0; i < D; ++i)
                 result[i] *= left;
             return result;
         }
 
-        template <typename T, uint32_t D, typename Type>
+        template <typename T, std::uint32_t D, typename Type>
         inline basic_vector<T, D, Type> operator/(const basic_vector<T, D, Type>& left, const T& right)
         {
             basic_vector<T, D, Type> result = left;
-            for (uint32_t i = 0; i < D; ++i)
+            for (std::uint32_t i = 0; i < D; ++i)
                 result[i] /= right;
             return result;
         }
 
-        template <typename T, uint32_t D, typename Type>
+        template <typename T, std::uint32_t D, typename Type>
         inline basic_vector<T, D, Type> operator/(const T& left, const basic_vector<T, D, Type>& right)
         {
             basic_vector<T, D, Type> result;
-            for (uint32_t i = 0; i < D; ++i)
+            for (std::uint32_t i = 0; i < D; ++i)
                 result[i] = left / right[i];
             return result;
         }
 
-        template <typename T, uint32_t D, typename Type>
+        template <typename T, std::uint32_t D, typename Type>
         inline basic_vector<T, D, Type> operator%(const basic_vector<T, D, Type>& left, const T& right)
         {
             basic_vector<T, D, Type> result;
-            for (uint32_t i = 0; i < D; ++i)
+            for (std::uint32_t i = 0; i < D; ++i)
                 result[i] = std::fmod(left[i], right);
             return result;
         }
 
-        template <typename T, uint32_t D>
+        template <typename T, std::uint32_t D>
         inline T operator*(const basic_vector<T, D, row_vector>& left, const basic_vector<T, D, column_vector>& right)
         {
             T result = {};
-            for (uint32_t index = 0; index < D; ++index)
+            for (std::uint32_t index = 0; index < D; ++index)
                 result += (left[index] * right[index]);
             return result;
         }
@@ -881,11 +879,11 @@ namespace neolib
             return (left + right) / constants::two<T>;
         }
 
-        template <typename T, uint32_t Size, typename Type>
+        template <typename T, std::uint32_t Size, typename Type>
         inline basic_vector<T, Size, Type> lerp(const basic_vector<T, Size, Type>& aV1, const basic_vector<T, Size, Type>& aV2, double aAmount)
         {
             basic_vector<T, Size, Type> result;
-            for (uint32_t i = 0; i < Size; ++i)
+            for (std::uint32_t i = 0; i < Size; ++i)
             {
                 double x1 = aV1[i];
                 double x2 = aV2[i];
@@ -895,35 +893,34 @@ namespace neolib
         }
 
         /* todo: specializations that use SIMD intrinsics. */
-        template <typename T, uint32_t Rows, uint32_t Columns>
+        template <typename T, std::uint32_t Rows, std::uint32_t Columns>
         class basic_matrix
         {
-            typedef basic_matrix<T, Rows, Columns> self_type;
         public:
-            typedef self_type abstract_type; // todo: abstract base
+            using abstract_type = basic_matrix; // todo: abstract base
         public:
-            typedef T value_type;
-            typedef basic_vector<T, Columns, row_vector> row_type;
-            typedef basic_vector<T, Rows, column_vector> column_type;
-            typedef std::array<column_type, Columns> array_type;
+            using value_type    = T;
+            using row_type      = basic_vector<T, Columns, row_vector>;
+            using column_type   = basic_vector<T, Rows, column_vector>;
+            using array_type    = std::array<column_type, Columns>;
         public:
             template <typename T2>
-            struct rebind { typedef basic_matrix<T2, Rows, Columns> type; };
+            struct rebind { using type = basic_matrix<T2, Rows, Columns>; };
         public:
             basic_matrix() : m{ {} } {}
             basic_matrix(std::initializer_list<std::initializer_list<value_type>> aColumns) { std::copy(aColumns.begin(), aColumns.end(), m.begin()); }
-            basic_matrix(const self_type& other) : m{ other.m }, isIdentity{ other.isIdentity } {}
-            basic_matrix(self_type&& other) : m{ std::move(other.m) }, isIdentity{ other.isIdentity } {}
+            basic_matrix(const basic_matrix& other) : m{ other.m }, isIdentity{ other.isIdentity } {}
+            basic_matrix(basic_matrix&& other) : m{ std::move(other.m) }, isIdentity{ other.isIdentity } {}
             template <typename T2>
             basic_matrix(const basic_matrix<T2, Rows, Columns>& other)
             {
-                for (uint32_t column = 0; column < Columns; ++column)
-                    for (uint32_t row = 0; row < Rows; ++row)
+                for (std::uint32_t column = 0; column < Columns; ++column)
+                    for (std::uint32_t row = 0; row < Rows; ++row)
                         (*this)[column][row] = static_cast<value_type>(other[column][row]);
                 isIdentity = other.maybe_identity();
             }
-            self_type& operator=(const self_type& other) { m = other.m; isIdentity = other.isIdentity; return *this; }
-            self_type& operator=(self_type&& other) { m = std::move(other.m); isIdentity = other.isIdentity; return *this; }
+            basic_matrix& operator=(const basic_matrix& other) { m = other.m; isIdentity = other.isIdentity; return *this; }
+            basic_matrix& operator=(basic_matrix&& other) { m = std::move(other.m); isIdentity = other.isIdentity; return *this; }
         public:
             template <typename T2>
             basic_matrix<T2, Rows, Columns> as() const
@@ -931,38 +928,38 @@ namespace neolib
                 return basic_matrix<T2, Rows, Columns>{ *this };
             }
         public:
-            std::pair<uint32_t, uint32_t> size() const { return std::make_pair(Rows, Columns); }
-            const column_type& operator[](uint32_t aColumn) const { return m[aColumn]; }
-            column_type& operator[](uint32_t aColumn) { isIdentity = std::nullopt; return m[aColumn]; }
+            std::pair<std::uint32_t, std::uint32_t> size() const { return std::make_pair(Rows, Columns); }
+            const column_type& operator[](std::uint32_t aColumn) const { return m[aColumn]; }
+            column_type& operator[](std::uint32_t aColumn) { isIdentity = std::nullopt; return m[aColumn]; }
             const value_type* data() const { return &m[0].v[0]; }
         public:
-            bool operator==(const self_type& right) const { return m == right.m; }
-            bool operator!=(const self_type& right) const { return m != right.m; }
-            self_type& operator+=(const self_type& right) { for (uint32_t column = 0; column < Columns; ++column) (*this)[column] += right[column]; return *this; }
-            self_type& operator-=(const self_type& right) { for (uint32_t column = 0; column < Columns; ++column) (*this)[column] -= right[column]; return *this; }
-            self_type& operator*=(const self_type& right)
+            bool operator==(const basic_matrix& right) const { return m == right.m; }
+            bool operator!=(const basic_matrix& right) const { return m != right.m; }
+            basic_matrix& operator+=(const basic_matrix& right) { for (std::uint32_t column = 0; column < Columns; ++column) (*this)[column] += right[column]; return *this; }
+            basic_matrix& operator-=(const basic_matrix& right) { for (std::uint32_t column = 0; column < Columns; ++column) (*this)[column] -= right[column]; return *this; }
+            basic_matrix& operator*=(const basic_matrix& right)
             {
-                self_type result;
-                for (uint32_t column = 0; column < Columns; ++column)
-                    for (uint32_t row = 0; row < Rows; ++row)
-                        for (uint32_t index = 0; index < Columns; ++index)
+                basic_matrix result;
+                for (std::uint32_t column = 0; column < Columns; ++column)
+                    for (std::uint32_t row = 0; row < Rows; ++row)
+                        for (std::uint32_t index = 0; index < Columns; ++index)
                             result[column][row] += ((*this)[index][row] * right[column][index]);
                 *this = result;
                 return *this;
             }
-            self_type operator-() const
+            basic_matrix operator-() const
             {
-                self_type result = *this;
-                for (uint32_t column = 0; column < Columns; ++column)
-                    for (uint32_t row = 0; row < Rows; ++row)
+                basic_matrix result = *this;
+                for (std::uint32_t column = 0; column < Columns; ++column)
+                    for (std::uint32_t row = 0; row < Rows; ++row)
                         result[column][row] = -result[column][row];
                 return result;
             }
-            self_type round_to(value_type aEpsilon) const
+            basic_matrix round_to(value_type aEpsilon) const
             {
-                self_type result;
-                for (uint32_t column = 0; column < Columns; ++column)
-                    for (uint32_t row = 0; row < Rows; ++row)
+                basic_matrix result;
+                for (std::uint32_t column = 0; column < Columns; ++column)
+                    for (std::uint32_t row = 0; row < Rows; ++row)
                     {
                          std::modf((*this)[column][row] / aEpsilon + 0.5, &result[column][row]);
                          result[column][row] *= aEpsilon;
@@ -972,23 +969,23 @@ namespace neolib
             basic_matrix<T, Columns, Rows> transposed() const
             {
                 basic_matrix<T, Columns, Rows> result;
-                for (uint32_t column = 0; column < Columns; ++column)
-                    for (uint32_t row = 0; row < Rows; ++row)
+                for (std::uint32_t column = 0; column < Columns; ++column)
+                    for (std::uint32_t row = 0; row < Rows; ++row)
                         result[row][column] = (*this)[column][row];
                 return result;
             }
-            template <typename SFINAE = self_type>
+            template <typename SFINAE = basic_matrix>
             static const std::enable_if_t<Rows == Columns, SFINAE>& identity()
             {
                 auto make_identity = []()
                 {
-                    self_type result;
-                    for (uint32_t diag = 0; diag < Rows; ++diag)
+                    basic_matrix result;
+                    for (std::uint32_t diag = 0; diag < Rows; ++diag)
                         result[diag][diag] = static_cast<value_type>(1.0);
                     result.isIdentity = true;
                     return result;
                 };
-                static self_type const sIdentity = make_identity();
+                static basic_matrix const sIdentity = make_identity();
                 return sIdentity;
             }
             bool is_identity() const
@@ -1003,7 +1000,7 @@ namespace neolib
                 return isIdentity;
             }
         public:
-            friend void swap(self_type& a, self_type& b)
+            friend void swap(basic_matrix& a, basic_matrix& b)
             {
                 using std::swap;
                 swap(a.m, b.m);
@@ -1014,178 +1011,178 @@ namespace neolib
             mutable std::optional<bool> isIdentity;
         };
 
-        typedef basic_matrix<double, 1, 1> matrix11;
-        typedef basic_matrix<double, 2, 2> matrix22;
-        typedef basic_matrix<double, 2, 1> matrix21;
-        typedef basic_matrix<double, 1, 2> matrix12;
-        typedef basic_matrix<double, 3, 3> matrix33;
-        typedef basic_matrix<double, 3, 1> matrix31;
-        typedef basic_matrix<double, 3, 2> matrix32;
-        typedef basic_matrix<double, 1, 3> matrix13;
-        typedef basic_matrix<double, 2, 3> matrix23;
-        typedef basic_matrix<double, 4, 4> matrix44;
-        typedef basic_matrix<double, 4, 1> matrix41;
-        typedef basic_matrix<double, 4, 2> matrix42;
-        typedef basic_matrix<double, 4, 3> matrix43;
-        typedef basic_matrix<double, 1, 4> matrix14;
-        typedef basic_matrix<double, 2, 4> matrix24;
-        typedef basic_matrix<double, 3, 4> matrix34;
+        using matrix11 = basic_matrix<double, 1, 1>;
+        using matrix22 = basic_matrix<double, 2, 2>;
+        using matrix21 = basic_matrix<double, 2, 1>;
+        using matrix12 = basic_matrix<double, 1, 2>;
+        using matrix33 = basic_matrix<double, 3, 3>;
+        using matrix31 = basic_matrix<double, 3, 1>;
+        using matrix32 = basic_matrix<double, 3, 2>;
+        using matrix13 = basic_matrix<double, 1, 3>;
+        using matrix23 = basic_matrix<double, 2, 3>;
+        using matrix44 = basic_matrix<double, 4, 4>;
+        using matrix41 = basic_matrix<double, 4, 1>;
+        using matrix42 = basic_matrix<double, 4, 2>;
+        using matrix43 = basic_matrix<double, 4, 3>;
+        using matrix14 = basic_matrix<double, 1, 4>;
+        using matrix24 = basic_matrix<double, 2, 4>;
+        using matrix34 = basic_matrix<double, 3, 4>;
 
-        typedef matrix11 matrix1;
-        typedef matrix22 matrix2;
-        typedef matrix33 matrix3;
-        typedef matrix44 matrix4;
+        using matrix1 = matrix11;
+        using matrix2 = matrix22;
+        using matrix3 = matrix33;
+        using matrix4 = matrix44;
 
-        typedef matrix11 mat11;
-        typedef matrix22 mat22;
-        typedef matrix21 mat21;
-        typedef matrix12 mat12;
-        typedef matrix33 mat33;
-        typedef matrix31 mat31;
-        typedef matrix32 mat32;
-        typedef matrix13 mat13;
-        typedef matrix23 mat23;
-        typedef matrix44 mat44;
-        typedef matrix41 mat41;
-        typedef matrix42 mat42;
-        typedef matrix43 mat43;
-        typedef matrix14 mat14;
-        typedef matrix24 mat24;
-        typedef matrix34 mat34;
+        using mat11 = matrix11;
+        using mat22 = matrix22;
+        using mat21 = matrix21;
+        using mat12 = matrix12;
+        using mat33 = matrix33;
+        using mat31 = matrix31;
+        using mat32 = matrix32;
+        using mat13 = matrix13;
+        using mat23 = matrix23;
+        using mat44 = matrix44;
+        using mat41 = matrix41;
+        using mat42 = matrix42;
+        using mat43 = matrix43;
+        using mat14 = matrix14;
+        using mat24 = matrix24;
+        using mat34 = matrix34;
 
-        typedef mat11 mat1;
-        typedef mat22 mat2;
-        typedef mat33 mat3;
-        typedef mat44 mat4;
+        using mat1 = mat11;
+        using mat2 = mat22;
+        using mat3 = mat33;
+        using mat4 = mat44;
 
-        typedef optional<matrix11> optional_matrix11;
-        typedef optional<matrix22> optional_matrix22;
-        typedef optional<matrix21> optional_matrix21;
-        typedef optional<matrix12> optional_matrix12;
-        typedef optional<matrix33> optional_matrix33;
-        typedef optional<matrix31> optional_matrix31;
-        typedef optional<matrix32> optional_matrix32;
-        typedef optional<matrix13> optional_matrix13;
-        typedef optional<matrix23> optional_matrix23;
-        typedef optional<matrix44> optional_matrix44;
-        typedef optional<matrix41> optional_matrix41;
-        typedef optional<matrix42> optional_matrix42;
-        typedef optional<matrix43> optional_matrix43;
-        typedef optional<matrix14> optional_matrix14;
-        typedef optional<matrix24> optional_matrix24;
-        typedef optional<matrix34> optional_matrix34;
+        using optional_matrix11 = optional<matrix11>;
+        using optional_matrix22 = optional<matrix22>;
+        using optional_matrix21 = optional<matrix21>;
+        using optional_matrix12 = optional<matrix12>;
+        using optional_matrix33 = optional<matrix33>;
+        using optional_matrix31 = optional<matrix31>;
+        using optional_matrix32 = optional<matrix32>;
+        using optional_matrix13 = optional<matrix13>;
+        using optional_matrix23 = optional<matrix23>;
+        using optional_matrix44 = optional<matrix44>;
+        using optional_matrix41 = optional<matrix41>;
+        using optional_matrix42 = optional<matrix42>;
+        using optional_matrix43 = optional<matrix43>;
+        using optional_matrix14 = optional<matrix14>;
+        using optional_matrix24 = optional<matrix24>;
+        using optional_matrix34 = optional<matrix34>;
 
-        typedef optional<matrix11> optional_matrix1;
-        typedef optional<matrix22> optional_matrix2;
-        typedef optional<matrix33> optional_matrix3;
-        typedef optional<matrix44> optional_matrix4;
+        using optional_matrix1 = optional<matrix11>;
+        using optional_matrix2 = optional<matrix22>;
+        using optional_matrix3 = optional<matrix33>;
+        using optional_matrix4 = optional<matrix44>;
 
-        typedef optional<mat11> optional_mat11;
-        typedef optional<mat22> optional_mat22;
-        typedef optional<mat21> optional_mat21;
-        typedef optional<mat12> optional_mat12;
-        typedef optional<mat33> optional_mat33;
-        typedef optional<mat31> optional_mat31;
-        typedef optional<mat32> optional_mat32;
-        typedef optional<mat13> optional_mat13;
-        typedef optional<mat23> optional_mat23;
-        typedef optional<mat44> optional_mat44;
-        typedef optional<mat41> optional_mat41;
-        typedef optional<mat42> optional_mat42;
-        typedef optional<mat43> optional_mat43;
-        typedef optional<mat14> optional_mat14;
-        typedef optional<mat24> optional_mat24;
-        typedef optional<mat34> optional_mat34;
+        using optional_mat11 = optional<mat11>;
+        using optional_mat22 = optional<mat22>;
+        using optional_mat21 = optional<mat21>;
+        using optional_mat12 = optional<mat12>;
+        using optional_mat33 = optional<mat33>;
+        using optional_mat31 = optional<mat31>;
+        using optional_mat32 = optional<mat32>;
+        using optional_mat13 = optional<mat13>;
+        using optional_mat23 = optional<mat23>;
+        using optional_mat44 = optional<mat44>;
+        using optional_mat41 = optional<mat41>;
+        using optional_mat42 = optional<mat42>;
+        using optional_mat43 = optional<mat43>;
+        using optional_mat14 = optional<mat14>;
+        using optional_mat24 = optional<mat24>;
+        using optional_mat34 = optional<mat34>;
 
-        typedef optional<mat11> optional_mat1;
-        typedef optional<mat22> optional_mat2;
-        typedef optional<mat33> optional_mat3;
-        typedef optional<mat44> optional_mat4;
+        using optional_mat1 = optional<mat11>;
+        using optional_mat2 = optional<mat22>;
+        using optional_mat3 = optional<mat33>;
+        using optional_mat4 = optional<mat44>;
 
-        typedef basic_matrix<float, 1, 1> matrix11f;
-        typedef basic_matrix<float, 2, 2> matrix22f;
-        typedef basic_matrix<float, 2, 1> matrix21f;
-        typedef basic_matrix<float, 1, 2> matrix12f;
-        typedef basic_matrix<float, 3, 3> matrix33f;
-        typedef basic_matrix<float, 3, 1> matrix31f;
-        typedef basic_matrix<float, 3, 2> matrix32f;
-        typedef basic_matrix<float, 1, 3> matrix13f;
-        typedef basic_matrix<float, 2, 3> matrix23f;
-        typedef basic_matrix<float, 4, 4> matrix44f;
-        typedef basic_matrix<float, 4, 1> matrix41f;
-        typedef basic_matrix<float, 4, 2> matrix42f;
-        typedef basic_matrix<float, 4, 3> matrix43f;
-        typedef basic_matrix<float, 1, 4> matrix14f;
-        typedef basic_matrix<float, 2, 4> matrix24f;
-        typedef basic_matrix<float, 3, 4> matrix34f;
+        using matrix11f = basic_matrix<float, 1, 1>;
+        using matrix22f = basic_matrix<float, 2, 2>;
+        using matrix21f = basic_matrix<float, 2, 1>;
+        using matrix12f = basic_matrix<float, 1, 2>;
+        using matrix33f = basic_matrix<float, 3, 3>;
+        using matrix31f = basic_matrix<float, 3, 1>;
+        using matrix32f = basic_matrix<float, 3, 2>;
+        using matrix13f = basic_matrix<float, 1, 3>;
+        using matrix23f = basic_matrix<float, 2, 3>;
+        using matrix44f = basic_matrix<float, 4, 4>;
+        using matrix41f = basic_matrix<float, 4, 1>;
+        using matrix42f = basic_matrix<float, 4, 2>;
+        using matrix43f = basic_matrix<float, 4, 3>;
+        using matrix14f = basic_matrix<float, 1, 4>;
+        using matrix24f = basic_matrix<float, 2, 4>;
+        using matrix34f = basic_matrix<float, 3, 4>;
 
-        typedef matrix11f mat11f;
-        typedef matrix22f mat22f;
-        typedef matrix21f mat21f;
-        typedef matrix12f mat12f;
-        typedef matrix33f mat33f;
-        typedef matrix31f mat31f;
-        typedef matrix32f mat32f;
-        typedef matrix13f mat13f;
-        typedef matrix23f mat23f;
-        typedef matrix44f mat44f;
-        typedef matrix41f mat41f;
-        typedef matrix42f mat42f;
-        typedef matrix43f mat43f;
-        typedef matrix14f mat14f;
-        typedef matrix24f mat24f;
-        typedef matrix34f mat34f;
+        using mat11f = matrix11f;
+        using mat22f = matrix22f;
+        using mat21f = matrix21f;
+        using mat12f = matrix12f;
+        using mat33f = matrix33f;
+        using mat31f = matrix31f;
+        using mat32f = matrix32f;
+        using mat13f = matrix13f;
+        using mat23f = matrix23f;
+        using mat44f = matrix44f;
+        using mat41f = matrix41f;
+        using mat42f = matrix42f;
+        using mat43f = matrix43f;
+        using mat14f = matrix14f;
+        using mat24f = matrix24f;
+        using mat34f = matrix34f;
 
-        typedef matrix11f mat1f;
-        typedef matrix22f mat2f;
-        typedef matrix33f mat3f;
-        typedef matrix44f mat4f;
+        using mat1f = matrix11f;
+        using mat2f = matrix22f;
+        using mat3f = matrix33f;
+        using mat4f = matrix44f;
 
-        typedef optional<matrix11f> optional_matrix11f;
-        typedef optional<matrix22f> optional_matrix22f;
-        typedef optional<matrix21f> optional_matrix21f;
-        typedef optional<matrix12f> optional_matrix12f;
-        typedef optional<matrix33f> optional_matrix33f;
-        typedef optional<matrix31f> optional_matrix31f;
-        typedef optional<matrix32f> optional_matrix32f;
-        typedef optional<matrix13f> optional_matrix13f;
-        typedef optional<matrix23f> optional_matrix23f;
-        typedef optional<matrix44f> optional_matrix44f;
-        typedef optional<matrix41f> optional_matrix41f;
-        typedef optional<matrix42f> optional_matrix42f;
-        typedef optional<matrix43f> optional_matrix43f;
-        typedef optional<matrix14f> optional_matrix14f;
-        typedef optional<matrix24f> optional_matrix24f;
-        typedef optional<matrix34f> optional_matrix34f;
+        using optional_matrix11f = optional<matrix11f>;
+        using optional_matrix22f = optional<matrix22f>;
+        using optional_matrix21f = optional<matrix21f>;
+        using optional_matrix12f = optional<matrix12f>;
+        using optional_matrix33f = optional<matrix33f>;
+        using optional_matrix31f = optional<matrix31f>;
+        using optional_matrix32f = optional<matrix32f>;
+        using optional_matrix13f = optional<matrix13f>;
+        using optional_matrix23f = optional<matrix23f>;
+        using optional_matrix44f = optional<matrix44f>;
+        using optional_matrix41f = optional<matrix41f>;
+        using optional_matrix42f = optional<matrix42f>;
+        using optional_matrix43f = optional<matrix43f>;
+        using optional_matrix14f = optional<matrix14f>;
+        using optional_matrix24f = optional<matrix24f>;
+        using optional_matrix34f = optional<matrix34f>;
 
-        typedef optional<matrix11f> optional_matrix1f;
-        typedef optional<matrix22f> optional_matrix2f;
-        typedef optional<matrix33f> optional_matrix3f;
-        typedef optional<matrix44f> optional_matrix4f;
+        using optional_matrix1f = optional<matrix11f>;
+        using optional_matrix2f = optional<matrix22f>;
+        using optional_matrix3f = optional<matrix33f>;
+        using optional_matrix4f = optional<matrix44f>;
 
-        typedef optional<mat11f> optional_mat11f;
-        typedef optional<mat22f> optional_mat22f;
-        typedef optional<mat21f> optional_mat21f;
-        typedef optional<mat12f> optional_mat12f;
-        typedef optional<mat33f> optional_mat33f;
-        typedef optional<mat31f> optional_mat31f;
-        typedef optional<mat32f> optional_mat32f;
-        typedef optional<mat13f> optional_mat13f;
-        typedef optional<mat23f> optional_mat23f;
-        typedef optional<mat44f> optional_mat44f;
-        typedef optional<mat41f> optional_mat41f;
-        typedef optional<mat42f> optional_mat42f;
-        typedef optional<mat43f> optional_mat43f;
-        typedef optional<mat14f> optional_mat14f;
-        typedef optional<mat24f> optional_mat24f;
-        typedef optional<mat34f> optional_mat34f;
+        using optional_mat11f = optional<mat11f>;
+        using optional_mat22f = optional<mat22f>;
+        using optional_mat21f = optional<mat21f>;
+        using optional_mat12f = optional<mat12f>;
+        using optional_mat33f = optional<mat33f>;
+        using optional_mat31f = optional<mat31f>;
+        using optional_mat32f = optional<mat32f>;
+        using optional_mat13f = optional<mat13f>;
+        using optional_mat23f = optional<mat23f>;
+        using optional_mat44f = optional<mat44f>;
+        using optional_mat41f = optional<mat41f>;
+        using optional_mat42f = optional<mat42f>;
+        using optional_mat43f = optional<mat43f>;
+        using optional_mat14f = optional<mat14f>;
+        using optional_mat24f = optional<mat24f>;
+        using optional_mat34f = optional<mat34f>;
 
-        typedef optional<mat11f> optional_mat1f;
-        typedef optional<mat22f> optional_mat2f;
-        typedef optional<mat33f> optional_mat3f;
-        typedef optional<mat44f> optional_mat4f;
+        using optional_mat1f = optional<mat11f>;
+        using optional_mat2f = optional<mat22f>;
+        using optional_mat3f = optional<mat33f>;
+        using optional_mat4f = optional<mat44f>;
 
-        template <typename T, uint32_t Rows, uint32_t Columns>
+        template <typename T, std::uint32_t Rows, std::uint32_t Columns>
         inline basic_matrix<T, Rows, Columns> operator+(const basic_matrix<T, Rows, Columns>& left, typename basic_matrix<T, Rows, Columns>::value_type right)
         {
             basic_matrix<T, Rows, Columns> result = left;
@@ -1193,7 +1190,7 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t Rows, uint32_t Columns>
+        template <typename T, std::uint32_t Rows, std::uint32_t Columns>
         inline basic_matrix<T, Rows, Columns> operator-(const basic_matrix<T, Rows, Columns>& left, typename basic_matrix<T, Rows, Columns>::value_type right)
         {
             basic_matrix<T, Rows, Columns> result = left;
@@ -1201,7 +1198,7 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t Rows, uint32_t Columns>
+        template <typename T, std::uint32_t Rows, std::uint32_t Columns>
         inline basic_matrix<T, Rows, Columns> operator*(const basic_matrix<T, Rows, Columns>& left, typename basic_matrix<T, Rows, Columns>::value_type right)
         {
             basic_matrix<T, Rows, Columns> result = left;
@@ -1209,7 +1206,7 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t Rows, uint32_t Columns>
+        template <typename T, std::uint32_t Rows, std::uint32_t Columns>
         inline basic_matrix<T, Rows, Columns> operator/(const basic_matrix<T, Rows, Columns>& left, typename basic_matrix<T, Rows, Columns>::value_type right)
         {
             basic_matrix<T, Rows, Columns> result = left;
@@ -1217,7 +1214,7 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t Rows, uint32_t Columns>
+        template <typename T, std::uint32_t Rows, std::uint32_t Columns>
         inline basic_matrix<T, Rows, Columns> operator+(scalar left, const basic_matrix<T, Rows, Columns>& right)
         {
             basic_matrix<T, Rows, Columns> result = right;
@@ -1225,13 +1222,13 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t Rows, uint32_t Columns>
+        template <typename T, std::uint32_t Rows, std::uint32_t Columns>
         inline basic_matrix<T, Rows, Columns> operator-(scalar left, const basic_matrix<T, Rows, Columns>& right)
         {
             return -right + left;
         }
 
-        template <typename T, uint32_t Rows, uint32_t Columns>
+        template <typename T, std::uint32_t Rows, std::uint32_t Columns>
         inline basic_matrix<T, Rows, Columns> operator*(scalar left, const basic_matrix<T, Rows, Columns>& right)
         {
             basic_matrix<T, Rows, Columns> result = right;
@@ -1239,7 +1236,7 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t Rows, uint32_t Columns>
+        template <typename T, std::uint32_t Rows, std::uint32_t Columns>
         inline basic_matrix<T, Rows, Columns> operator+(const basic_matrix<T, Rows, Columns>& left, const basic_matrix<T, Rows, Columns>& right)
         {
             basic_matrix<T, Rows, Columns> result = left;
@@ -1247,7 +1244,7 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t Rows, uint32_t Columns>
+        template <typename T, std::uint32_t Rows, std::uint32_t Columns>
         inline basic_matrix<T, Rows, Columns> operator-(const basic_matrix<T, Rows, Columns>& left, const basic_matrix<T, Rows, Columns>& right)
         {
             basic_matrix<T, Rows, Columns> result = left;
@@ -1255,7 +1252,7 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t D1, uint32_t D2>
+        template <typename T, std::uint32_t D1, std::uint32_t D2>
         inline basic_matrix<T, D1, D1> operator*(const basic_matrix<T, D1, D2>& left, const basic_matrix<T, D2, D1>& right)
         {
             if (left.is_identity())
@@ -1263,9 +1260,9 @@ namespace neolib
             if (right.is_identity())
                 return left;
             basic_matrix<T, D1, D1> result;
-            for (uint32_t column = 0u; column < D1; ++column)
-                for (uint32_t row = 0u; row < D1; ++row)
-                    for (uint32_t index = 0; index < D2; ++index)
+            for (std::uint32_t column = 0u; column < D1; ++column)
+                for (std::uint32_t row = 0u; row < D1; ++row)
+                    for (std::uint32_t index = 0; index < D2; ++index)
                         result[column][row] += (left[index][row] * right[column][index]);
             return result;
         }
@@ -1278,25 +1275,25 @@ namespace neolib
             if (right.is_identity())
                 return left;
             basic_matrix<T, 4u, 4u> result;
-            for (uint32_t column = 0u; column < 4u; ++column)
-                for (uint32_t row = 0u; row < 4u; ++row)
+            for (std::uint32_t column = 0u; column < 4u; ++column)
+                for (std::uint32_t row = 0u; row < 4u; ++row)
                     result[column][row] = simd_fma_4d(left[0u][row], right[column][0u], left[1u][row], right[column][1u], left[2u][row], right[column][2u], left[3u][row], right[column][3u]);
             return result;
         }
 
-        template <typename T, uint32_t D>
+        template <typename T, std::uint32_t D>
         inline basic_vector<T, D, column_vector> operator*(const basic_matrix<T, D, D>& left, const basic_vector<T, D, column_vector>& right)
         {
             if (left.is_identity())
                 return right;
             basic_vector<T, D, column_vector> result;
-            for (uint32_t row = 0; row < D; ++row)
-                for (uint32_t index = 0; index < D; ++index)
+            for (std::uint32_t row = 0; row < D; ++row)
+                for (std::uint32_t index = 0; index < D; ++index)
                     result[row] += (left[index][row] * right[index]);
             return result;
         }
 
-        template <typename T, uint32_t D, std::size_t VertexCount>
+        template <typename T, std::uint32_t D, std::size_t VertexCount>
         inline std::array<basic_vector<T, D, column_vector>, VertexCount> operator*(const basic_matrix<T, D, D>& left, const std::array<basic_vector<T, D, column_vector>, VertexCount>& right)
         {
             if (left.is_identity())
@@ -1313,7 +1310,7 @@ namespace neolib
             if (left.is_identity())
                 return right;
             basic_vector<T, 4u, column_vector> result;
-            for (uint32_t row = 0u; row < 4u; ++row)
+            for (std::uint32_t row = 0u; row < 4u; ++row)
                 result[row] = simd_fma_4d(left[0][row], right[0], left[1][row], right[1], left[2][row], right[2], left[3][row], right[3]);
             return result;
         }
@@ -1329,19 +1326,19 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t D>
+        template <typename T, std::uint32_t D>
         inline basic_vector<T, D, row_vector> operator*(const basic_vector<T, D, row_vector>& left, const basic_matrix<T, D, D>& right)
         {
             if (right.is_identity())
                 return left;
             basic_vector<T, D, row_vector> result;
-            for (uint32_t column = 0; column < D; ++column)
-                for (uint32_t index = 0; index < D; ++index)
+            for (std::uint32_t column = 0; column < D; ++column)
+                for (std::uint32_t index = 0; index < D; ++index)
                     result[column] += (left[index] * right[column][index]);
             return result;
         }
 
-        template <typename T, uint32_t D, std::size_t VertexCount>
+        template <typename T, std::uint32_t D, std::size_t VertexCount>
         inline std::array<basic_vector<T, D, row_vector>, VertexCount> operator*(const std::array<basic_vector<T, D, row_vector>, VertexCount>& left, const basic_matrix<T, D, D>& right)
         {
             if (right.is_identity())
@@ -1358,7 +1355,7 @@ namespace neolib
             if (right.is_identity())
                 return left;
             basic_vector<T, 4u, row_vector> result;
-            for (uint32_t column = 0u; column < 4u; ++column)
+            for (std::uint32_t column = 0u; column < 4u; ++column)
                 result[column] = simd_fma_4d(left[0], right[column][0], left[1], right[column][1], left[2], right[column][2], left[3], right[column][3]);
             return result;
         }
@@ -1374,12 +1371,12 @@ namespace neolib
             return result;
         }
 
-        template <typename T, uint32_t D>
+        template <typename T, std::uint32_t D>
         inline basic_matrix<T, D, D> operator*(const basic_vector<T, D, column_vector>& left, const basic_vector<T, D, row_vector>& right)
         {
             basic_matrix<T, D, D> result;
-            for (uint32_t column = 0; column < D; ++column)
-                for (uint32_t row = 0; row < D; ++row)
+            for (std::uint32_t column = 0; column < D; ++column)
+                for (std::uint32_t row = 0; row < D; ++row)
                     result[column][row] = (left[row] * right[column]);
             return result;
         }
@@ -1388,25 +1385,25 @@ namespace neolib
         inline basic_matrix<T, 4u, 4u> operator*(const basic_vector<T, 4u, column_vector>& left, const basic_vector<T, 4u, row_vector>& right)
         {
             basic_matrix<T, 4u, 4u> result;
-            for (uint32_t column = 0; column < 4u; ++column)
+            for (std::uint32_t column = 0; column < 4u; ++column)
                 simd_mul_4d(left[0u], right[column], left[1u], right[column], left[2u], right[column], left[3u], right[column], result[column][0u], result[column][1u], result[column][2u], result[column][3u]);
             return result;
         }
 
-        template <typename T, uint32_t D>
+        template <typename T, std::uint32_t D>
         inline basic_matrix<T, D, D> without_translation(const basic_matrix<T, D, D>& matrix)
         {
             auto result = matrix;
-            for (uint32_t row = 0; row < D - 1; ++row)
+            for (std::uint32_t row = 0; row < D - 1; ++row)
                 result[D - 1][row] = 0.0;
             return result;
         }
 
-        template <typename Elem, typename Traits, typename T, uint32_t Size, typename Type>
+        template <typename Elem, typename Traits, typename T, std::uint32_t Size, typename Type>
         inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const basic_vector<T, Size, Type>& aVector)
         {
             aStream << "[";
-            for (uint32_t i = 0; i < Size; ++i)
+            for (std::uint32_t i = 0; i < Size; ++i)
             {
                 if (i != 0)
                     aStream << ", ";
@@ -1416,28 +1413,28 @@ namespace neolib
             return aStream;
         }
 
-        template <typename Elem, typename Traits, typename T, uint32_t Size, typename Type>
+        template <typename Elem, typename Traits, typename T, std::uint32_t Size, typename Type>
         inline std::basic_istream<Elem, Traits>& operator>>(std::basic_istream<Elem, Traits>& aStream, basic_vector<T, Size, Type>& aVector)
         {
             auto previousImbued = aStream.getloc();
             if (typeid(std::use_facet<std::ctype<char>>(previousImbued)) != typeid(neolib::comma_and_brackets_as_whitespace))
                 aStream.imbue(std::locale{ previousImbued, new neolib::comma_and_brackets_as_whitespace{} });
-            for (uint32_t i = 0; i < Size; ++i)
+            for (std::uint32_t i = 0; i < Size; ++i)
                 aStream >> aVector[i];
             aStream.imbue(previousImbued);
             return aStream;
         }
 
-        template <typename Elem, typename Traits, typename T, uint32_t Rows, uint32_t Columns>
+        template <typename Elem, typename Traits, typename T, std::uint32_t Rows, std::uint32_t Columns>
         inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const basic_matrix<T, Rows, Columns>& aMatrix)
         {
             aStream << "[";
-            for (uint32_t row = 0; row < Rows; ++row)
+            for (std::uint32_t row = 0; row < Rows; ++row)
             {
                 if (row != 0)
                     aStream << ", ";
                 aStream << "[";
-                for (uint32_t column = 0; column < Columns; ++column)
+                for (std::uint32_t column = 0; column < Columns; ++column)
                 {
                     if (column != 0)
                         aStream << ", ";
@@ -1449,7 +1446,7 @@ namespace neolib
             return aStream;
         }
 
-        template <typename Elem, typename Traits, typename T, uint32_t Rows, uint32_t Columns>
+        template <typename Elem, typename Traits, typename T, std::uint32_t Rows, std::uint32_t Columns>
         inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const optional<basic_matrix<T, Rows, Columns>>& aMatrix)
         {
             if (aMatrix != std::nullopt)
@@ -1459,7 +1456,7 @@ namespace neolib
             return aStream;
         }
 
-        template <typename Elem, typename Traits, typename T, uint32_t Rows, uint32_t Columns>
+        template <typename Elem, typename Traits, typename T, std::uint32_t Rows, std::uint32_t Columns>
         inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& aStream, const std::optional<basic_matrix<T, Rows, Columns>>& aMatrix)
         {
             if (aMatrix != std::nullopt)
@@ -1477,7 +1474,7 @@ namespace neolib
             if (left.is_identity())
                 return right;
             basic_vector<T, 3u, column_vector> result;
-            for (uint32_t row = 0u; row < 3u; ++row)
+            for (std::uint32_t row = 0u; row < 3u; ++row)
                 result[row] = static_cast<T>(simd_fma_4d(left[0][row], right[0], left[1][row], right[1], left[2][row], right[2], left[3][row], 1.0));
             return result;
         }
@@ -1585,10 +1582,10 @@ namespace neolib
         {
             return lhs == rhs;
         }
-        template <typename T, uint32_t Size, typename Type = column_vector>
+        template <typename T, std::uint32_t Size, typename Type = column_vector>
         inline bool nearly_equal(basic_vector<T, Size, Type> const& lhs, basic_vector<T, Size, Type> const& rhs, scalar epsilon = 0.00001)
         {
-            for (uint32_t index = 0; index < Size; ++index)
+            for (std::uint32_t index = 0; index < Size; ++index)
                 if (!nearly_equal(lhs[index], rhs[index], epsilon))
                     return false;
             return true;
@@ -1636,7 +1633,7 @@ namespace neolib
 
         struct aabb
         {
-            typedef aabb abstract_type;
+            using abstract_type = aabb;
 
             vec3 min;
             vec3 max;
@@ -1723,7 +1720,7 @@ namespace neolib
                 std::forward_as_tuple(right.min.z, right.min.y, right.min.x, right.max.z, right.max.y, right.max.x);
         }
 
-        typedef optional<aabb> optional_aabb;
+        using optional_aabb = optional<aabb>;
 
         inline aabb aabb_union(const aabb& left, const aabb& right)
         {
@@ -1786,7 +1783,7 @@ namespace neolib
 
         struct aabb_2d
         {
-            typedef aabb_2d abstract_type;
+            using abstract_type = aabb_2d;
 
             vec2 min;
             vec2 max;
@@ -1870,7 +1867,7 @@ namespace neolib
                 std::forward_as_tuple(right.min.y, right.min.x, right.max.y, right.max.x);
         }
 
-        typedef optional<aabb_2d> optional_aabb_2d;
+        using optional_aabb_2d = optional<aabb_2d>;
 
         inline aabb_2d aabb_union(const aabb_2d& left, const aabb_2d& right)
         {
