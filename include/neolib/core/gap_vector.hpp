@@ -44,8 +44,6 @@ namespace neolib
     template <typename T, std::size_t DefaultGapSize_ = 256, std::size_t NearnessFactor_ = 2, typename Allocator = std::allocator<T>>
     class gap_vector
     {
-    private:
-        using self_type = gap_vector<T, DefaultGapSize_, NearnessFactor_, Allocator>;
     public:
         using value_type = T;
         using allocator_type = Allocator;
@@ -62,10 +60,9 @@ namespace neolib
         template <typename ContainerType, typename BaseIterator, typename Reference, typename Pointer>
         class iterator_impl
         {
-            friend self_type;
-        private:
-            using container_type = ContainerType;
+            friend class gap_vector;
         protected:
+            using container_type = ContainerType;
             using base_iterator = BaseIterator;
             using reference = Reference;
             using pointer = Pointer;
@@ -212,15 +209,14 @@ namespace neolib
             base_iterator iBase = {};
         };
     public:
-        class iterator : public iterator_impl<self_type, pointer, reference, pointer>
+        class iterator : public iterator_impl<gap_vector, pointer, reference, pointer>
         {
-            friend self_type;
+            friend class gap_vector;
         private:
-            using base_type = iterator_impl<self_type, pointer, reference, pointer>;
-            using container_type = self_type;
+            using base_type = iterator_impl<gap_vector, pointer, reference, pointer>;
         public:
-            using difference_type = typename container_type::difference_type;
-            using value_type = typename container_type::value_type;
+            using difference_type = typename gap_vector::difference_type;
+            using value_type = typename gap_vector::value_type;
             using iterator_category = std::random_access_iterator_tag;
         public:
             iterator() : 
@@ -232,7 +228,7 @@ namespace neolib
             {
             }
         private:
-            iterator(container_type& aContainer, pointer aBase) :
+            iterator(gap_vector& aContainer, pointer aBase) :
                 base_type{ aContainer, aBase }
             {
             }
@@ -295,18 +291,17 @@ namespace neolib
                 return base_type::difference(aOther);
             }
         };
-        class const_iterator : public iterator_impl<self_type const, const_pointer, const_reference, const_pointer>
+        class const_iterator : public iterator_impl<gap_vector const, const_pointer, const_reference, const_pointer>
         {
-            friend self_type;
+            friend class gap_vector;
         private:
-            using base_type = iterator_impl<self_type const, const_pointer, const_reference, const_pointer>;
-            using container_type = self_type const;
+            using base_type = iterator_impl<gap_vector const, const_pointer, const_reference, const_pointer>;
         public:
             using pointer = const_pointer;
             using reference = const_reference;
         public:
-            using difference_type = typename container_type::difference_type;
-            using value_type = typename container_type::value_type;
+            using difference_type = typename gap_vector::difference_type;
+            using value_type = typename gap_vector::value_type;
             using iterator_category = std::random_access_iterator_tag;
         public:
             const_iterator() :
@@ -322,7 +317,7 @@ namespace neolib
             {
             }
         private:
-            const_iterator(container_type& aContainer, pointer aBase) :
+            const_iterator(gap_vector const& aContainer, pointer aBase) :
                 base_type{ aContainer, aBase }
             {
             }
@@ -408,19 +403,19 @@ namespace neolib
         {
             (void)insert(begin(), first, last);
         }
-        constexpr gap_vector(const self_type& other)
+        constexpr gap_vector(const gap_vector& other)
         {
             (void)insert(begin(), other.begin(), other.end());
         }
-        constexpr gap_vector(const self_type& other, const Allocator& alloc) : iAlloc{ alloc }
+        constexpr gap_vector(const gap_vector& other, const Allocator& alloc) : iAlloc{ alloc }
         {
             (void)insert(begin(), other.begin(), other.end());
         }
-        constexpr gap_vector(self_type&& other) noexcept
+        constexpr gap_vector(gap_vector&& other) noexcept
         {
             swap(other);
         }
-        constexpr gap_vector(self_type&& other, const Allocator& alloc) : iAlloc{ alloc }
+        constexpr gap_vector(gap_vector&& other, const Allocator& alloc) : iAlloc{ alloc }
         {
             swap(other);
         }
@@ -431,21 +426,23 @@ namespace neolib
         ~gap_vector()
         {
             clear();
+            if (iData != nullptr)
+                std::allocator_traits<allocator_type>::deallocate(iAlloc, iData, capacity());
         }
     public:
-        constexpr self_type& operator=(const self_type& other)
+        constexpr gap_vector& operator=(const gap_vector& other)
         {
             assign(other.begin(), other.end());
             return *this;
         }
-        constexpr self_type& operator=(self_type&& other) noexcept
+        constexpr gap_vector& operator=(gap_vector&& other) noexcept
         {
-            self_type temp;
+            gap_vector temp;
             temp.swap(other);
             temp.swap(*this);
             return *this;
         }
-        constexpr self_type& operator=(std::initializer_list<value_type> ilist)
+        constexpr gap_vector& operator=(std::initializer_list<value_type> ilist)
         {
             assign(ilist);
             return *this;
@@ -467,7 +464,7 @@ namespace neolib
             insert(begin(), ilist);
         }
     public:
-        constexpr void swap(self_type& other) noexcept
+        constexpr void swap(gap_vector& other) noexcept
         {
             std::swap(iData, other.iData);
             std::swap(iDataEnd, other.iDataEnd);
@@ -598,9 +595,10 @@ namespace neolib
 
             unsplit();
 
-            auto existingData = iData;
-            auto existingDataEnd = iDataEnd;
-            auto existingStorageEnd = iStorageEnd;
+            auto const existingCapacity = capacity();
+            auto const existingData = iData;
+            auto const existingDataEnd = iDataEnd;
+            auto const existingStorageEnd = iStorageEnd;
 
             pointer newStorage = std::allocator_traits<allocator_type>::allocate(iAlloc, aNewCapacity);
 
@@ -611,6 +609,8 @@ namespace neolib
                 iStorageEnd = newStorage + aNewCapacity;
 
                 iDataEnd = std::uninitialized_move(existingData, existingDataEnd, iData);
+
+                std::allocator_traits<allocator_type>::deallocate(iAlloc, existingData, existingCapacity);
             }
             catch(...)
             {
@@ -628,7 +628,7 @@ namespace neolib
         }
         constexpr void shrink_to_fit()
         {
-            self_type{ *this }.swap(*this);
+            gap_vector{ *this }.swap(*this);
         }
     public:
         constexpr void clear() noexcept
