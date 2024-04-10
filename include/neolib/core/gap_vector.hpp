@@ -61,8 +61,9 @@ namespace neolib
         class iterator_impl
         {
             friend class gap_vector;
-        protected:
+        private:
             using container_type = ContainerType;
+        protected:
             using base_iterator = BaseIterator;
             using reference = Reference;
             using pointer = Pointer;
