@@ -101,60 +101,101 @@ namespace neolib
                 continue;
             for (std::filesystem::recursive_directory_iterator i(folder.to_std_string()); i != std::filesystem::recursive_directory_iterator(); ++i)
                 if (find(plugin_file_extensions().begin(), plugin_file_extensions().end(), i->path().extension().string()) != plugin_file_extensions().end())
-                    create_plugin(string(i->path().generic_string()));
+                    load_plugin(string(i->path().generic_string()), true);
         }
         bool gotSome = false;
         for (plugins_t::const_iterator i = iPlugins.begin(); i != iPlugins.end(); ++i)
-            if (!(*i)->loaded())
-                if ((*i)->load())
-                {
-                    gotSome = true;
-                    PluginLoaded.trigger(**i);
-                }
+            if (!(*i)->initialized())
+                gotSome = initialize_plugin(**i) || gotSome;
         return gotSome;
     }
 
-    bool plugin_manager::load_plugin(const i_string& aPluginPath)
+    bool plugin_manager::load_plugin(const i_string& aPluginPath, bool aDeferInitialization)
     {
         bool loaded = false;
-        auto const& newPlugin = create_plugin(aPluginPath);
-        if (newPlugin != nullptr)
-            loaded = newPlugin->load();
-        if (loaded)
-            PluginLoaded.trigger(*newPlugin);
+        try
+        {
+            auto const& newPlugin = create_plugin(aPluginPath);
+            if (newPlugin != nullptr)
+                loaded = newPlugin->load();
+            if (loaded)
+            {
+                PluginLoaded.trigger(*newPlugin);
+                if (!aDeferInitialization)
+                {
+                    if (!initialize_plugin(*newPlugin))
+                        throw std::runtime_error("Failed to initialize plugin '" + aPluginPath + "'");
+                }
+            }
+            else
+                PluginLoadFailure.trigger(string{ "Failed to load plugin '" } + aPluginPath + "'");
+        }
+        catch (std::exception const& e)
+        {
+            loaded = false;
+            PluginLoadFailure.trigger(string{ "Failed to load plugin '" } + aPluginPath + "', reason: " + e.what());
+        }
+        catch (...)
+        {
+            loaded = false;
+            PluginLoadFailure.trigger(string{ "Failed to load plugin '" } + aPluginPath + "'");
+        }
         return loaded;
+    }
+
+    bool plugin_manager::initialize_plugin(i_plugin& aPlugin)
+    {
+        bool ok = aPlugin.initialize();
+        if (ok)
+            PluginInitialized.trigger(aPlugin);
+        else
+            unload_plugin(aPlugin);
+        return ok;
     }
 
     void plugin_manager::enable_plugin(i_plugin& aPlugin, bool aEnable)
     {
-        /* todo */
-        (void)aPlugin;
-        (void)aEnable;
+        aPlugin.enable(aEnable);
     }
 
     bool plugin_manager::plugin_enabled(const i_plugin& aPlugin) const
     {
-        /* todo */
-        (void)aPlugin;
-        return true;
+        return aPlugin.enabled();
     }
 
-    void plugin_manager::unload_plugins()
+    bool plugin_manager::unload_plugins()
     {
+        bool gotSome = false;
         {
-            auto pluginsToUnload = std::move(iPlugins);
-            for (auto const& p : pluginsToUnload)
+            while (!iPlugins.empty())
+                gotSome = unload_plugin(*iPlugins.back()) || gotSome;
+        }
+        return gotSome;
+    }
+
+    bool plugin_manager::unload_plugin(i_plugin& aPlugin)
+    {
+        auto const id = aPlugin.id();
+        bool unloaded = aPlugin.unload();
+        if (unloaded)
+        {
+            std::unique_ptr<module> moduleToUnload;
+            auto existingModule = iModules.find(id);
+            if (existingModule != iModules.end())
             {
-                p->unload();
-                PluginUnloaded.trigger(*p);
+                moduleToUnload = std::move(existingModule->second);
+                iModules.erase(existingModule);
             }
+            PluginUnloaded.trigger(aPlugin);
+            auto existingPlugin = std::find_if(iPlugins.begin(), iPlugins.end(), [&](auto const& p) { return &aPlugin == p.ptr(); });
+            if (existingPlugin != iPlugins.end())
+                iPlugins.erase(existingPlugin);
+            else
+                moduleToUnload.release();
+            if (moduleToUnload)
+                moduleToUnload->unload();
         }
-        for (modules_t::iterator i = iModules.begin(); i != iModules.end(); ++i)
-        {
-            (*i).second->unload();
-            (*i).second.reset();
-        }
-        iModules.clear();
+        return unloaded;
     }
 
     const plugin_manager::plugins_t& plugin_manager::plugins() const
@@ -187,11 +228,11 @@ namespace neolib
 
     i_ref_ptr<i_plugin>& plugin_manager::create_plugin(const i_string& aPluginPath)
     {
-        auto pm = std::make_unique<module>(aPluginPath.to_std_string());
-        thread_local ref_ptr<i_plugin> tNewPlugin;
-        tNewPlugin = nullptr;
         try
         {
+            auto pm = std::make_unique<module>(aPluginPath.to_std_string());
+            thread_local ref_ptr<i_plugin> tNewPlugin;
+            tNewPlugin = nullptr;
             if (!pm->load())
                 return tNewPlugin;
             entry_point entryPoint = pm->procedure<entry_point>("entry_point");

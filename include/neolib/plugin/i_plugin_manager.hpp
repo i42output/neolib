@@ -52,7 +52,9 @@ namespace neolib
         // events
     public:
         declare_event(plugin_loaded, i_plugin&)
+        declare_event(plugin_initialized, i_plugin&)
         declare_event(plugin_unloaded, i_plugin&)
+        declare_event(plugin_load_failure, i_string const&)
         // types
     public:
         typedef i_vector<i_string> plugin_file_extensions_t;
@@ -69,10 +71,12 @@ namespace neolib
         virtual const plugin_folders_t& plugin_folders() const = 0;
         virtual plugin_folders_t& plugin_folders() = 0;
         virtual bool load_plugins() = 0;
-        virtual bool load_plugin(const i_string& aPluginPath) = 0;
+        virtual bool load_plugin(const i_string& aPluginPath, bool aDeferInitialization = false) = 0;
+        virtual bool initialize_plugin(i_plugin& aPlugin) = 0;
         virtual void enable_plugin(i_plugin& aPlugin, bool aEnable) = 0;
         virtual bool plugin_enabled(const i_plugin& aPlugin) const = 0;
-        virtual void unload_plugins() = 0;
+        virtual bool unload_plugins() = 0;
+        virtual bool unload_plugin(i_plugin& aPlugin) = 0;
         virtual const plugins_t& plugins() const = 0;
         virtual const i_ref_ptr<i_plugin>& find_plugin(const uuid& aId) const = 0;
         virtual i_ref_ptr<i_plugin>& find_plugin(const uuid& aId) = 0;

@@ -26,31 +26,79 @@
 
 namespace neolib
 {
-    template <typename T>
-    class plugin : public neolib::reference_counted<neolib::i_plugin>
+    template <typename Interface = i_plugin>
+    class plugin : public reference_counted<Interface>
     {
     public:
-        typedef T value_type;
-        typedef typename value_type::abstract_type abstract_value_type;
+        using abstract_type = Interface;
     public:
-        plugin(
-            neolib::i_application& aApplication,
-            const neolib::uuid& aId = value_type::plugin_id(),
+        bool loaded() const final
+        {
+            return iLoaded;
+        }
+        bool initialized() const final
+        {
+            return iInitialized;
+        }
+        bool enabled() const final
+        {
+            return iEnabled;
+        }
+        bool load() override
+        {
+            iLoaded = true;
+            return true;
+        }
+        bool initialize() override
+        {
+            iInitialized = true;
+            return true;
+        }
+        void enable(bool aEnabled) override
+        {
+            iEnabled = aEnabled;
+        }
+        bool unload() override
+        {
+            iLoaded = false;
+            return true;
+        }
+        bool open_uri(const i_string& aUri) override
+        {
+            return false;
+        }
+    private:
+        bool iLoaded = false;
+        bool iInitialized = false;
+        bool iEnabled = true;
+    };
+
+    template <typename T, typename Interface = i_plugin>
+    class simple_plugin : public plugin<Interface>
+    {
+        using base_type = plugin<Interface>;
+    public:
+        using abstract_type = Interface;
+        using value_type = T;
+        using abstract_value_type = typename value_type::abstract_type;
+    public:
+        simple_plugin(
+            i_application& aApplication,
+            uuid const& aId = value_type::plugin_id(),
             std::string const& aName = value_type::plugin_name(),
             std::string const& aDescription = value_type::plugin_description(),
-            const neolib::version& aVersion = value_type::plugin_version(),
+            i_version const& aVersion = value_type::plugin_version(),
             std::string const& aCopyright = value_type::plugin_copyright()) :
             iApplication{ aApplication },
             iId{ aId },
             iName{ aName },
             iDescription{ aDescription },
             iVersion{ aVersion },
-            iCopyright{ aCopyright },
-            iLoaded{ false }
+            iCopyright{ aCopyright }
         {
         }
     public:
-        bool discover(const neolib::uuid& aId, void*& aObject) override
+        bool discover(uuid const& aId, void*& aObject) override
         {
             if (aId == abstract_value_type::iid())
             {
@@ -62,53 +110,38 @@ namespace neolib
             return false;
         }
     public:
-        const neolib::uuid& id() const override
+        const uuid& id() const final
         {
             return iId;
         }
-        const neolib::i_string& name() const override
+        const i_string& name() const final
         {
             return iName;
         }
-        const neolib::i_string& description() const override
+        const i_string& description() const final
         {
             return iDescription;
         }
-        const neolib::i_version& version() const override
+        const i_version& version() const final
         {
             return iVersion;
         }
-        const neolib::i_string& copyright() const override
+        const i_string& copyright() const final
         {
             return iCopyright;
-        }
-        bool load() override
-        {
-            iLoaded = true;
-            return true;
         }
         bool unload() override
         {
             iContents.reset();
-            iLoaded = false;
-            return true;
-        }
-        bool loaded() const override
-        {
-            return iLoaded;
-        }
-        bool open_uri(const neolib::i_string& aUri) override
-        {
-            return false;
+            return base_type::unload();
         }
     private:
-        neolib::i_application& iApplication;
-        neolib::uuid iId;
-        neolib::string iName;
-        neolib::string iDescription;
+        i_application& iApplication;
+        uuid iId;
+        string iName;
+        string iDescription;
         neolib::version iVersion;
-        neolib::string iCopyright;
-        bool iLoaded;
+        string iCopyright;
         ref_ptr<value_type> iContents;
     };
 }

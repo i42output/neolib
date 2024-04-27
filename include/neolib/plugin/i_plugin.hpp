@@ -46,16 +46,20 @@ namespace neolib
     class i_plugin : public i_discoverable
     {
     public:
-        typedef i_plugin abstract_type;
+        using abstract_type = i_plugin;
     public:
         virtual const uuid& id() const = 0;
         virtual const i_string& name() const = 0;
         virtual const i_string& description() const = 0;
         virtual const i_version& version() const = 0;
         virtual const i_string& copyright() const = 0;
-        virtual bool load() = 0;
-        virtual bool unload() = 0;
         virtual bool loaded() const = 0;
+        virtual bool initialized() const = 0;
+        virtual bool enabled() const = 0;
+        virtual bool load() = 0;
+        virtual bool initialize() = 0;
+        virtual void enable(bool aEnable) = 0;
+        virtual bool unload() = 0;
         virtual bool open_uri(const i_string& aUri) = 0;
     };
 }
