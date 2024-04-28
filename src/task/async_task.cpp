@@ -379,6 +379,7 @@ namespace neolib
 
     void async_task::idle()
     {
+        IdleWork.trigger();
         if (have_message_queue())
             message_queue().idle();
     }

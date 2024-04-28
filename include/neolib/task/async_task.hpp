@@ -83,6 +83,7 @@ namespace neolib
         typedef task<reference_counted<i_async_task>> base_type;
         // events
     public:
+        define_declared_event(IdleWork, idle_work)
         define_declared_event(Destroying, destroying)
         define_declared_event(Destroyed, destroyed)
         // exceptions

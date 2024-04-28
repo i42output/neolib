@@ -88,6 +88,7 @@ namespace neolib
     {
         // events
     public:
+        declare_event(idle_work)
         declare_event(destroying)
         declare_event(destroyed)
         // exceptions
