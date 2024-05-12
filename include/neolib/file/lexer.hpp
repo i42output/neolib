@@ -54,6 +54,7 @@ namespace neolib
         Sequence,
         Repeat,
         Optional,
+        Discard,
         Primitive,
         Atom,
         Rule
@@ -192,18 +193,43 @@ namespace neolib
                 value{ lhs, rhs }
             {}
 
-            optional(repeat const& repeat, primitive_atom const& primitive) :
-                value{ repeat.value }
+            optional(optional const& optional, primitive_atom const& primitive) :
+                value{ optional.value }
             {
                 value.push_back(primitive);
             }
         };
 
-        struct primitive_atom : std::variant<token, terminal, tuple, choice, sequence, repeat, optional>, lexer_component<lexer_component_type::Primitive>
+        struct discard : lexer_component<lexer_component_type::Discard>
         {
             using token_type = token;
 
-            using base_type = std::variant<token, terminal, tuple, choice, sequence, repeat, optional>;
+            std::vector<primitive_atom> value;
+
+            discard(primitive_atom const& primitive)
+            {
+                if (std::holds_alternative<tuple>(primitive))
+                    value.push_back(sequence{ primitive });
+                else
+                    value.push_back(primitive);
+            }
+
+            discard(primitive_atom const& lhs, primitive_atom const& rhs) :
+                value{ lhs, rhs }
+            {}
+
+            discard(discard const& discard, primitive_atom const& primitive) :
+                value{ discard.value }
+            {
+                value.push_back(primitive);
+            }
+        };
+
+        struct primitive_atom : std::variant<token, terminal, tuple, choice, sequence, repeat, optional, discard>, lexer_component<lexer_component_type::Primitive>
+        {
+            using token_type = token;
+
+            using base_type = std::variant<token, terminal, tuple, choice, sequence, repeat, optional, discard>;
             using base_type::base_type;
 
             bool is_tuple() const
@@ -309,6 +335,9 @@ namespace neolib
     using lexer_optional = typename lexer<Token>::optional;
 
     template <typename Token>
+    using lexer_discard = typename lexer<Token>::discard;
+
+    template <typename Token>
     using lexer_rule = typename lexer<Token>::rule;
 
     template <typename T>
@@ -334,6 +363,9 @@ namespace neolib
 
     template <typename T>
     concept LexerOptional = std::is_base_of_v<lexer_component<lexer_component_type::Optional>, T>;
+
+    template <typename T>
+    concept LexerDiscard = std::is_base_of_v<lexer_component<lexer_component_type::Discard>, T>;
 
     template <typename T>
     concept LexerRule = std::is_base_of_v<lexer_component<lexer_component_type::Rule>, T>;
@@ -423,6 +455,12 @@ namespace neolib
         {
             return { lhs };
         }
+
+        template <typename Token>
+        inline lexer_discard<Token> discard(lexer_primitive<Token> const& lhs)
+        {
+            return { lhs };
+        }
     }
 
 #define enable_neolib_lexer(token)\
@@ -451,5 +489,10 @@ namespace neolib
     inline neolib::lexer_optional<token> optional(T&& lhs)\
     {\
         return neolib::lexer_operators::optional<token>(std::forward<T>(lhs)); \
+    }\
+    template <typename T>\
+        inline neolib::lexer_discard<token> discard(T&& lhs)\
+    {\
+        return neolib::lexer_operators::discard<token>(std::forward<T>(lhs)); \
     }
 }
