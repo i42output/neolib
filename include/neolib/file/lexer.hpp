@@ -50,6 +50,7 @@ namespace neolib
     {
         Terminal,
         Tuple,
+        Choice,
         Sequence,
         Repeat,
         Optional,
@@ -93,6 +94,31 @@ namespace neolib
 
             tuple(tuple const& tuple, primitive_atom const& primitive) :
                 value{ tuple.value }
+            {
+                value.push_back(primitive);
+            }
+        };
+
+        struct choice : lexer_component<lexer_component_type::Choice>
+        {
+            using token_type = token;
+
+            std::vector<primitive_atom> value;
+
+            choice(primitive_atom const& primitive)
+            {
+                if (std::holds_alternative<tuple>(primitive))
+                    value = std::get<tuple>(primitive).value;
+                else
+                    value.push_back(primitive);
+            }
+
+            choice(primitive_atom const& lhs, primitive_atom const& rhs) :
+                value{ lhs, rhs }
+            {}
+
+            choice(choice const& choice, primitive_atom const& primitive) :
+                value{ choice.value }
             {
                 value.push_back(primitive);
             }
@@ -173,17 +199,18 @@ namespace neolib
             }
         };
 
-        struct primitive_atom : std::variant<token, terminal, tuple, sequence, repeat, optional>, lexer_component<lexer_component_type::Primitive>
+        struct primitive_atom : std::variant<token, terminal, tuple, choice, sequence, repeat, optional>, lexer_component<lexer_component_type::Primitive>
         {
             using token_type = token;
 
-            using base_type = std::variant<token, terminal, tuple, sequence, repeat, optional>;
+            using base_type = std::variant<token, terminal, tuple, choice, sequence, repeat, optional>;
             using base_type::base_type;
 
             bool is_tuple() const
             {
                 return 
                     std::holds_alternative<tuple>(*this) ||
+                    std::holds_alternative<choice>(*this) ||
                     std::holds_alternative<sequence>(*this) ||
                     std::holds_alternative<repeat>(*this);
             }
@@ -270,6 +297,9 @@ namespace neolib
     using lexer_tuple = typename lexer<Token>::tuple;
 
     template <typename Token>
+    using lexer_choice = typename lexer<Token>::choice;
+
+    template <typename Token>
     using lexer_sequence = typename lexer<Token>::sequence;
 
     template <typename Token>
@@ -292,6 +322,9 @@ namespace neolib
 
     template <typename T>
     concept LexerTuple = std::is_base_of_v<lexer_component<lexer_component_type::Tuple>, T>;
+
+    template <typename T>
+    concept LexerChoice = std::is_base_of_v<lexer_component<lexer_component_type::Choice>, T>;
 
     template <typename T>
     concept LexerSequence = std::is_base_of_v<lexer_component<lexer_component_type::Sequence>, T>;
@@ -368,6 +401,12 @@ namespace neolib
         }
 
         template <typename Token>
+        inline lexer_choice<Token> choice(lexer_primitive<Token> const& lhs)
+        {
+            return { lhs };
+        }
+
+        template <typename Token>
         inline lexer_repeat<Token> repeat(lexer_primitive<Token> const& lhs)
         {
             return { lhs };
@@ -392,6 +431,11 @@ namespace neolib
     inline neolib::lexer_terminal<token> operator"" _(const char* str, std::size_t len)\
     {\
         return neolib::lexer_terminal<token>{ str, len };\
+    }\
+    template <typename T>\
+    inline neolib::lexer_choice<token> choice(T&& lhs)\
+    {\
+        return neolib::lexer_operators::choice<token>(std::forward<T>(lhs));\
     }\
     template <typename T>\
     inline neolib::lexer_repeat<token> repeat(T&& lhs)\
