@@ -53,6 +53,7 @@ namespace neolib
         Choice,
         Sequence,
         Repeat,
+        Range,
         Optional,
         Discard,
         Primitive,
@@ -69,12 +70,18 @@ namespace neolib
     public:
         using token = Token;
 
-        struct terminal : std::string_view, lexer_component<lexer_component_type::Terminal>
+        using terminal_character = std::optional<char>;
+
+        struct terminal : terminal_character, std::string_view, lexer_component<lexer_component_type::Terminal>
         {
             using token_type = token;
 
             using base_type = std::string_view;
             using base_type::base_type;
+
+            terminal(char character) :
+                terminal_character{ character }, base_type{ &terminal_character::value(), &terminal_character::value() + 1 }
+            {}
         };
 
         struct primitive_atom;
@@ -82,8 +89,13 @@ namespace neolib
         struct tuple : lexer_component<lexer_component_type::Tuple>
         {
             using token_type = token;
+            using value_type = std::vector<primitive_atom>;
 
-            std::vector<primitive_atom> value;
+            value_type value;
+
+            tuple(value_type const& value) :
+                value{ value }
+            {}
 
             tuple(primitive_atom const& primitive) :
                 value{ primitive }
@@ -103,8 +115,13 @@ namespace neolib
         struct choice : lexer_component<lexer_component_type::Choice>
         {
             using token_type = token;
+            using value_type = std::vector<primitive_atom>;
 
-            std::vector<primitive_atom> value;
+            value_type value;
+
+            choice(value_type const& value) :
+                value{ value }
+            {}
 
             choice(primitive_atom const& primitive)
             {
@@ -128,8 +145,13 @@ namespace neolib
         struct sequence : lexer_component<lexer_component_type::Sequence>
         {
             using token_type = token;
+            using value_type = std::vector<primitive_atom>;
 
-            std::vector<primitive_atom> value;
+            value_type value;
+
+            sequence(value_type const& value) :
+                value{ value }
+            {}
 
             sequence(primitive_atom const& primitive)
             {
@@ -153,8 +175,13 @@ namespace neolib
         struct repeat : lexer_component<lexer_component_type::Repeat>
         {
             using token_type = token;
+            using value_type = std::vector<primitive_atom>;
 
-            std::vector<primitive_atom> value;
+            value_type value;
+
+            repeat(value_type const& value) :
+                value{ value }
+            {}
 
             repeat(primitive_atom const& primitive)
             {
@@ -175,11 +202,46 @@ namespace neolib
             }
         };
 
+        struct range : lexer_component<lexer_component_type::Range>
+        {
+            using token_type = token;
+            using value_type = std::vector<primitive_atom>;
+
+            value_type value;
+
+            range(value_type const& value) :
+                value{ value }
+            {}
+
+            range(primitive_atom const& primitive)
+            {
+                if (std::holds_alternative<tuple>(primitive))
+                    value = std::get<tuple>(primitive).value;
+                else
+                    value.push_back(primitive);
+            }
+
+            range(primitive_atom const& lhs, primitive_atom const& rhs) :
+                value{ lhs, rhs }
+            {}
+
+            range(range const& range, primitive_atom const& primitive) :
+                value{ range.value }
+            {
+                value.push_back(primitive);
+            }
+        };
+
         struct optional : lexer_component<lexer_component_type::Optional>
         {
             using token_type = token;
+            using value_type = std::vector<primitive_atom>;
 
-            std::vector<primitive_atom> value;
+            value_type value;
+
+            optional(value_type const& value) :
+                value{ value }
+            {}
 
             optional(primitive_atom const& primitive)
             {
@@ -203,8 +265,13 @@ namespace neolib
         struct discard : lexer_component<lexer_component_type::Discard>
         {
             using token_type = token;
+            using value_type = std::vector<primitive_atom>;
 
-            std::vector<primitive_atom> value;
+            value_type value;
+
+            discard(value_type const& value) :
+                value{ value }
+            {}
 
             discard(primitive_atom const& primitive)
             {
@@ -225,11 +292,11 @@ namespace neolib
             }
         };
 
-        struct primitive_atom : std::variant<token, terminal, tuple, choice, sequence, repeat, optional, discard>, lexer_component<lexer_component_type::Primitive>
+        struct primitive_atom : std::variant<token, terminal, tuple, choice, sequence, repeat, range, optional, discard>, lexer_component<lexer_component_type::Primitive>
         {
             using token_type = token;
 
-            using base_type = std::variant<token, terminal, tuple, choice, sequence, repeat, optional, discard>;
+            using base_type = std::variant<token, terminal, tuple, choice, sequence, repeat, range, optional, discard>;
             using base_type::base_type;
 
             bool is_tuple() const
@@ -332,6 +399,9 @@ namespace neolib
     using lexer_repeat = typename lexer<Token>::repeat;
 
     template <typename Token>
+    using lexer_range = typename lexer<Token>::range;
+
+    template <typename Token>
     using lexer_optional = typename lexer<Token>::optional;
 
     template <typename Token>
@@ -362,6 +432,9 @@ namespace neolib
     concept LexerRepeat = std::is_base_of_v<lexer_component<lexer_component_type::Repeat>, T>;
 
     template <typename T>
+    concept LexerRange = std::is_base_of_v<lexer_component<lexer_component_type::Range>, T>;
+
+    template <typename T>
     concept LexerOptional = std::is_base_of_v<lexer_component<lexer_component_type::Optional>, T>;
 
     template <typename T>
@@ -384,12 +457,6 @@ namespace neolib
             return lexer_rule<Token>{ lhs, rhs };
         }
 
-        template <LexerOptional Optional>
-        inline lexer_rule<typename Optional::token_type> operator>>(Optional const& lhs, lexer_primitive<typename Optional::token_type> const& rhs)
-        {
-            return lexer_rule<typename Optional::token_type>{ lhs, rhs };
-        }
-
         template <LexerRule Rule>
         inline Rule operator|(Rule const& lhs, lexer_primitive<typename Rule::token_type> const& rhs)
         {
@@ -408,14 +475,14 @@ namespace neolib
             return lexer_tuple<Token>{ lhs, rhs };
         }
 
-        template <LexerTerminal Terminal, TokenEnum Token>
-        inline lexer_tuple<Token> operator|(Terminal const& lhs, Token rhs)
+        template <TokenEnum Token>
+        inline lexer_tuple<Token> operator|(lexer_primitive<Token> const& lhs, Token rhs)
         {
             return lexer_tuple<Token>{ lhs, rhs };
         }
 
-        template <TokenEnum Token, LexerTerminal Terminal>
-        inline lexer_tuple<Token> operator|(Token lhs, Terminal const& rhs)
+        template <TokenEnum Token>
+        inline lexer_tuple<Token> operator|(Token lhs, lexer_primitive<Token> const& rhs)
         {
             return lexer_tuple<Token>{ lhs, rhs };
         }
@@ -426,10 +493,112 @@ namespace neolib
             return lexer_tuple<typename Terminal::token_type>{ lhs, rhs };
         }
 
+        template <LexerTerminal Terminal, LexerPrimitive Primitive>
+        inline lexer_tuple<typename Terminal::tokwn_type> operator|(Terminal const& lhs, Primitive const& rhs)
+        {
+            return lexer_tuple<typename Terminal::tokwn_type>{ lhs, rhs };
+        }
+
+        template <LexerTerminal Terminal, LexerPrimitive Primitive>
+        inline lexer_tuple<typename Terminal::tokwn_type> operator|(Primitive const& lhs, Terminal const& rhs)
+        {
+            return lexer_tuple<typename Terminal::tokwn_type>{ lhs, rhs };
+        }
+
+        template <LexerTerminal Terminal>
+        inline lexer_tuple<typename Terminal::token_type> operator|(Terminal const& lhs, char rhs)
+        {
+            return lexer_tuple<typename Terminal::token_type>{ lhs, Terminal{ rhs } };
+        }
+
+        template <LexerTerminal Terminal>
+        inline lexer_tuple<typename Terminal::token_type> operator|(char lhs, Terminal const& rhs)
+        {
+            return lexer_tuple<typename Terminal::token_type>{ Terminal{ lhs }, rhs };
+        }
+
         template <LexerTuple Tuple, LexerTerminal Terminal>
         inline Tuple operator|(Tuple const& lhs, Terminal const& rhs)
         {
             return Tuple{ lhs, rhs };
+        }
+
+        template <LexerTuple Tuple, LexerTerminal Terminal>
+        inline Tuple operator|(Terminal const& lhs, Tuple const& rhs)
+        {
+            return Tuple{ lhs, rhs };
+        }
+
+        template <LexerRule Rule>
+        inline Rule operator,(Rule const& lhs, lexer_primitive<typename Rule::token_type> const& rhs)
+        {
+            return Rule{ lhs.lhs, lexer_sequence<typename Rule::token_type>{ lhs.rhs, rhs } };
+        }
+
+        template <LexerSequence Sequence>
+        inline Sequence operator,(Sequence const& lhs, lexer_primitive<typename Sequence::token_type> const& rhs)
+        {
+            return Sequence{ lhs, rhs };
+        }
+
+        template <TokenEnum Token>
+        inline lexer_sequence<Token> operator,(Token lhs, Token rhs)
+        {
+            return lexer_sequence<Token>{ lhs, rhs };
+        }
+
+        template <TokenEnum Token>
+        inline lexer_sequence<Token> operator,(lexer_primitive<Token> const& lhs, Token rhs)
+        {
+            return lexer_sequence<Token>{ lhs, rhs };
+        }
+
+        template <TokenEnum Token>
+        inline lexer_sequence<Token> operator,(Token lhs, lexer_primitive<Token> const& rhs)
+        {
+            return lexer_sequence<Token>{ lhs, rhs };
+        }
+
+        template <LexerTerminal Terminal>
+        inline lexer_sequence<typename Terminal::token_type> operator,(Terminal const& lhs, Terminal const& rhs)
+        {
+            return lexer_sequence<typename Terminal::token_type>{ lhs, rhs };
+        }
+
+        template <LexerTerminal Terminal, LexerPrimitive Primitive>
+        inline lexer_sequence<typename Terminal::tokwn_type> operator,(Terminal const& lhs, Primitive const& rhs)
+        {
+            return lexer_sequence<typename Terminal::tokwn_type>{ lhs, rhs };
+        }
+
+        template <LexerTerminal Terminal, LexerPrimitive Primitive>
+        inline lexer_sequence<typename Terminal::tokwn_type> operator,(Primitive const& lhs, Terminal const& rhs)
+        {
+            return lexer_sequence<typename Terminal::tokwn_type>{ lhs, rhs };
+        }
+
+        template <LexerTerminal Terminal>
+        inline lexer_sequence<typename Terminal::token_type> operator,(Terminal const& lhs, char rhs)
+        {
+            return lexer_sequence<typename Terminal::token_type>{ lhs, Terminal{ rhs } };
+        }
+
+        template <LexerTerminal Terminal>
+        inline lexer_sequence<typename Terminal::token_type> operator,(char lhs, Terminal const& rhs)
+        {
+            return lexer_sequence<typename Terminal::token_type>{ Terminal{ lhs }, rhs };
+        }
+
+        template <LexerSequence Sequence, LexerTerminal Terminal>
+        inline Sequence operator,(Sequence const& lhs, Terminal const& rhs)
+        {
+            return Sequence{ lhs, rhs };
+        }
+
+        template <LexerSequence Sequence, LexerTerminal Terminal>
+        inline Sequence operator,(Terminal const& lhs, Sequence const& rhs)
+        {
+            return Sequence{ lhs, rhs };
         }
 
         template <typename Token>
@@ -444,10 +613,16 @@ namespace neolib
             return { lhs };
         }
 
-        template <typename Token>
-        inline lexer_sequence<Token> sequence(lexer_primitive<Token> const& lhs)
+        template <typename Token, typename... Args>
+        inline lexer_sequence<Token> sequence(Args&&... lhs)
         {
-            return { lhs };
+            return typename lexer_sequence<Token>::value_type{ std::forward<Args>(lhs)... };
+        }
+
+        template <typename Token>
+        inline lexer_range<Token> range(lexer_primitive<Token> const& lhs, lexer_primitive<Token> const& rhs)
+        {
+            return { lhs, rhs };
         }
 
         template <typename Token>
@@ -470,6 +645,10 @@ namespace neolib
     {\
         return neolib::lexer_terminal<token>{ str, len };\
     }\
+    inline neolib::lexer_terminal<token> operator"" _(char character)\
+    {\
+        return neolib::lexer_terminal<token>{ character };\
+    }\
     template <typename T>\
     inline neolib::lexer_choice<token> choice(T&& lhs)\
     {\
@@ -480,10 +659,15 @@ namespace neolib
     {\
         return neolib::lexer_operators::repeat<token>(std::forward<T>(lhs));\
     }\
-    template <typename T>\
-    inline neolib::lexer_sequence<token> sequence(T&& lhs)\
+    template <typename... T>\
+    inline neolib::lexer_sequence<token> sequence(T&&... lhs)\
     {\
-        return neolib::lexer_operators::sequence<token>(std::forward<T>(lhs)); \
+        return neolib::lexer_operators::sequence<token>(std::forward<T>(lhs)...); \
+    }\
+    template <typename T>\
+    inline neolib::lexer_range<token> range(T&& lhs, T&& rhs)\
+    {\
+        return neolib::lexer_operators::range<token>(std::forward<T>(lhs), std::forward<T>(rhs)); \
     }\
     template <typename T>\
     inline neolib::lexer_optional<token> optional(T&& lhs)\
