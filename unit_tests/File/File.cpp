@@ -33,6 +33,7 @@ enable_neolib_lexer(token)
 char const* source = R"test(
     void foo()
     {
+        a := 42.0 * 1.0;
     }
 )test";
 
