@@ -370,11 +370,38 @@ namespace neolib
             {}
         };
 
+        struct ast_node
+        {
+            token token;
+            std::string_view value;
+            std::vector<ast_node> children;
+        };
+
     public:
-        bool parse(char const* source) const
+        template <std::size_t RuleCount>
+        lexer(rule const (&aRules)[RuleCount]) :
+            iRules{ &aRules[0], &aRules[0] + RuleCount }
+        {
+        }
+
+    public:
+        bool parse(token aRoot, std::string_view const& aSource)
+        {
+            ast_node rootNode{ aRoot, { aSource } };
+            bool ok = parse(rootNode, aSource);
+            iAst = std::move(rootNode);
+            return ok;
+        }
+
+    private:
+        bool parse(ast_node& aNode, std::string_view const& aSource)
         {
             return true;
         }
+
+    private:
+        std::vector<rule> iRules;
+        ast_node iAst;
     };
 
     template <typename Token>
@@ -444,10 +471,7 @@ namespace neolib
     concept LexerRule = std::is_base_of_v<lexer_component<lexer_component_type::Rule>, T>;
 
     template <typename T>
-    concept TokenEnum = requires(T a)
-    {
-        { is_lexer_token(a) } -> std::convertible_to<T>;
-    };
+    concept TokenEnum = std::is_enum_v<T> && std::is_convertible_v<T, decltype(is_lexer_token(T{}))>;
 
     namespace lexer_operators
     {

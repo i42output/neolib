@@ -1,36 +1,39 @@
 ﻿#include <neolib/neolib.hpp>
 #include <neolib/file/lexer.hpp>
 
-enum class token
+namespace lexer_test
 {
-    Program,
-    Whitespace,
-    FunctionDefinition,
-    FunctionPrototype,
-    FunctionBody,
-    FunctionReturnType,
-    FunctionName,
-    FunctionParameterList,
-    FunctionParameter,
-    Expression,
-    Term,
-    Primary,
-    Add,
-    Subtract,
-    Multiply,
-    Divide,
-    Negate,
-    Number,
-    Digit,
-    Decimal,
-    Name,
-    Assign,
-    Equal
-};
+    enum class token
+    {
+        Program,
+        Whitespace,
+        FunctionDefinition,
+        FunctionPrototype,
+        FunctionBody,
+        FunctionReturnType,
+        FunctionName,
+        FunctionParameterList,
+        FunctionParameter,
+        Expression,
+        Term,
+        Primary,
+        Add,
+        Subtract,
+        Multiply,
+        Divide,
+        Negate,
+        Number,
+        Digit,
+        Decimal,
+        Name,
+        Assign,
+        Equal
+    };
 
-enable_neolib_lexer(token)
+    enable_neolib_lexer(token)
+}
 
-char const* source = R"test(
+std::string_view const source = R"test(
     void foo()
     {
         a := 42.0 * 1.0;
@@ -38,7 +41,9 @@ char const* source = R"test(
 )test";
 
 int main(int argc, char** argv)
-{   
+{
+    using namespace lexer_test;
+
     neolib::lexer_rule<token> lexerRules[] =
     {
         ( token::Program >> repeat(token::FunctionDefinition) ),
@@ -83,7 +88,7 @@ int main(int argc, char** argv)
         ( token::Primary >> token::Whitespace , token::Primary , token::Whitespace )
     };
 
-    neolib::lexer<token> parser;
-    auto result = parser.parse(source);
+    neolib::lexer<token> parser{ lexerRules };
+    auto result = parser.parse(token::Program, source);
 }
 
