@@ -343,6 +343,7 @@ namespace neolib
             child_list children;
 
             ast_node() = default;
+            ast_node(ast_node const&) = delete;
 
             ast_node(
                 ast_node* parent,
@@ -394,6 +395,7 @@ namespace neolib
 
             auto const startTime = std::chrono::high_resolution_clock::now();
             auto const result = parse(aRoot, rootNode, aSource);
+            simplify_ast(rootNode);
             auto const endTime = std::chrono::high_resolution_clock::now();
 
             if (iDebugOutput && iError)
@@ -424,6 +426,44 @@ namespace neolib
         }
 
     private:
+        void simplify_ast(ast_node& aNode)
+        {
+            simplify_ast(&aNode);
+        }
+
+        std::optional<typename ast_node::child_list::iterator> simplify_ast(ast_node* aNode)
+        {
+            for (auto child = aNode->children.begin(); child != aNode->children.end(); )
+            {
+                auto result = simplify_ast(&**child);
+                if (result)
+                    child = aNode->children.erase(result.value());
+                else
+                    ++child;
+            }
+
+            if (aNode->parent && aNode->parent->rule &&
+                std::holds_alternative<token>(aNode->rule->lhs[0]) &&
+                std::holds_alternative<token>(aNode->parent->rule->lhs[0]) &&
+                std::get<token>(aNode->rule->lhs[0]) == std::get<token>(aNode->parent->rule->lhs[0]) &&
+                aNode->value.data() >= aNode->parent->value.data() &&
+                std::next(aNode->value.data(), aNode->value.size()) <= std::next(aNode->parent->value.data(), aNode->parent->value.size()))
+            {
+                aNode->parent->value = aNode->value;
+                auto existing = std::find_if(aNode->parent->children.begin(), aNode->parent->children.end(), [&](auto const& e)
+                    {
+                        return &*e == aNode;
+                    });
+                for (auto& child2 : aNode->children)
+                    child2->parent = aNode->parent;
+                auto pos = aNode->parent->children.insert(std::next(existing),
+                    std::make_move_iterator(aNode->children.begin()), std::make_move_iterator(aNode->children.end()));
+                return std::prev(pos);
+            }
+
+            return {};
+        }
+
         std::optional<token> parent_token(ast_node& aNode) const
         {
             if (aNode.parent && aNode.parent->atom && std::holds_alternative<token>(*aNode.parent->atom))
