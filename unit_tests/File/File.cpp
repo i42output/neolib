@@ -8,6 +8,7 @@ namespace lexer_test
     {
         Program,
         Whitespace,
+        Identifier,
         FunctionDefinition,
         FunctionPrototype,
         FunctionBody,
@@ -15,6 +16,7 @@ namespace lexer_test
         FunctionName,
         FunctionParameterList,
         FunctionParameter,
+        Type,
         Expression,
         Term,
         Primary,
@@ -35,6 +37,7 @@ namespace lexer_test
 declare_tokens(lexer_test::token)
 declare_token(lexer_test::token, Program)
 declare_token(lexer_test::token, Whitespace)
+declare_token(lexer_test::token, Identifier)
 declare_token(lexer_test::token, FunctionDefinition)
 declare_token(lexer_test::token, FunctionPrototype)
 declare_token(lexer_test::token, FunctionBody)
@@ -42,6 +45,7 @@ declare_token(lexer_test::token, FunctionReturnType)
 declare_token(lexer_test::token, FunctionName)
 declare_token(lexer_test::token, FunctionParameterList)
 declare_token(lexer_test::token, FunctionParameter)
+declare_token(lexer_test::token, Type)
 declare_token(lexer_test::token, Expression)
 declare_token(lexer_test::token, Term)
 declare_token(lexer_test::token, Primary)
@@ -80,9 +84,12 @@ int main(int argc, char** argv)
         ( token::FunctionDefinition >> token::FunctionPrototype , token::FunctionBody ),
         ( token::FunctionPrototype >> token::FunctionReturnType , token::FunctionName , 
             '(' , optional(token::FunctionParameterList) , ')' ),
+        ( token::FunctionReturnType >> token::Type ),
         ( token::FunctionParameterList >> 
             token::FunctionParameter , optional(repeat(sequence(',' , token::FunctionParameter))) ),
         ( token::FunctionBody >> repeat(token::Expression) ),
+        ( token::Type >> token::Identifier ),
+        ( token::Identifier >> sequence(repeat(range('A', 'Z') | range('a', 'z')) , repeat(range('A', 'Z') | range('a', 'z') | range('0', '9'))) ),
         ( token::Expression >> token::Expression , choice(token::Add | token::Subtract) , token::Term ),
         ( token::Expression >> token::Term ),
         ( token::Term >> token::Term , choice(token::Divide | token::Multiply) , token::Primary ),

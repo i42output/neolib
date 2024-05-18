@@ -123,7 +123,12 @@ namespace neolib
             using base_type::base_type;
 
             terminal(char character) :
-                terminal_character{ character }, base_type{ &terminal_character::value(), &terminal_character::value() + 1 }
+                terminal_character{ character }, 
+                base_type{ &terminal_character::value(), &terminal_character::value() + 1 }
+            {}
+            terminal(terminal const& other) :
+                terminal_character{ other }, 
+                base_type{ other.has_value() ? std::string_view{ &terminal_character::value(), &terminal_character::value() + 1 } : std::string_view{ other } }
             {}
         };
 
@@ -329,9 +334,10 @@ namespace neolib
 
         struct ast_node
         {
+            ast_node* parent;
             primitive_atom const* atom;
             std::string_view value;
-            std::vector<ast_node> children;
+            std::vector<std::unique_ptr<ast_node>> children;
         };
 
     public:
@@ -344,10 +350,14 @@ namespace neolib
     public:
         bool parse(token aRoot, std::string_view const& aSource)
         {
-            ast_node rootNode{ nullptr, { aSource } };
-            bool ok = parse(aRoot, rootNode, aSource);
-            iAst = std::move(rootNode);
-            return ok;
+            ast_node rootNode{ nullptr, nullptr, { aSource } };
+            auto const result = parse(aRoot, rootNode, aSource);
+            if (result.has_value())
+            {
+                iAst = std::move(rootNode);
+                return true;
+            }
+            return false;
         }
 
     public:
@@ -357,10 +367,22 @@ namespace neolib
         }
 
     private:
-        bool parse(token aToken, ast_node& aNode, std::string_view const& aSource)
+        std::optional<token> parent_token(ast_node& aNode) const
         {
+            if (aNode.parent && aNode.parent->atom && std::holds_alternative<token>(*aNode.parent->atom))
+                return std::get<token>(*aNode.parent->atom);
+
+            return {};
+        }
+        std::optional<std::string_view> parse(token aToken, ast_node& aNode, std::string_view const& aSource)
+        {
+            auto const parentToken = parent_token(aNode);
+            if (parentToken && parentToken.value() == aToken)
+                return {};
+
             scoped_counter sc{ iLevel };
-            { scoped_debug_print{ *this, aToken, aSource }; }
+            std::optional<scoped_debug_print> sdp;
+            sdp.emplace(*this, aToken, aSource);
 
             for (auto& rule : iRules)
             {
@@ -370,26 +392,36 @@ namespace neolib
                 if (ruleToken == aToken)
                 {
                     auto const& ruleAtom = rule.rhs[0];
-                    if (parse(ruleAtom, aNode, aSource))
-                        return true;
+                    auto const result = parse(ruleAtom, aNode, aSource);
+                    if (result)
+                    {
+                        sdp->ok = true;
+                        return result;
+                    }
                 }
             }
 
-            return false;
+            return {};
         }
-        bool parse(primitive_atom const& aAtom, ast_node& aNode, std::string_view const& aSource)
+        std::optional<std::string_view> parse(primitive_atom const& aAtom, ast_node& aNode, std::string_view const& aSource)
         {
+            std::string_view result = { aSource.data(), aSource.data() };
+            char const* sourceEnd = aSource.data() + aSource.size();
+
             scoped_counter sc{ iLevel };
-            if (!std::holds_alternative<token>(aAtom)) { scoped_debug_print{ *this, aAtom, aSource }; }
+            std::optional<scoped_debug_print> sdp;
+            if (!std::holds_alternative<token>(aAtom))
+                sdp.emplace(*this, aAtom, aSource);
 
             // todo: visitor?
 
             if (std::holds_alternative<token>(aAtom))
             {
                 token const atomToken = std::get<token>(aAtom);
-                aNode.children.emplace_back(&aAtom, aSource);
-                if (parse(atomToken, aNode.children.back(), aSource))
-                    return true;
+                aNode.children.push_back(std::make_unique<ast_node>(&aNode, &aAtom, aSource));
+                auto const partialResult = parse(atomToken, *aNode.children.back(), aSource);
+                if (partialResult)
+                    return apply_partial_result(result, partialResult);
                 aNode.children.pop_back();
             }
             else if (std::holds_alternative<terminal>(aAtom))
@@ -397,63 +429,76 @@ namespace neolib
                 auto const& t = std::get<terminal>(aAtom);
                 if (aSource.find(t) == 0)
                 {
-                    aNode.children.emplace_back(&aAtom, aSource.substr(t.size()));
-                    return true;
+                    auto const partialResult = aSource.substr(0, t.size());
+                    aNode.children.push_back(std::make_unique<ast_node>(&aNode, &aAtom, partialResult));
+                    return (sdp->ok = true, apply_partial_result(result, partialResult));
                 }
             }
             else if (std::holds_alternative<sequence>(aAtom))
             {
-                std::size_t progress = 0;
                 for (auto const& a : std::get<sequence>(aAtom).value)
                 {
-                    aNode.children.emplace_back(&a, aSource);
-                    ++progress;
-                    if (!parse(a, aNode.children.back(), aSource))
-                    {
-                        aNode.children.erase(std::prev(aNode.children.end(), progress), aNode.children.end());
-                        return false;
-                    }
+                    auto const partialResult = parse(a, aNode, std::string_view{ result.data(), sourceEnd });;
+                    if (!partialResult)
+                        return {};
+                    result = apply_partial_result(result, partialResult);
                 }
-                return true;
+                sdp->ok = true;
+                return result;
             }
             else if (std::holds_alternative<repeat>(aAtom))
             {
-                bool found = true;
-                std::size_t progress = 0;
+                bool found = false;
                 for (auto const& a : std::get<repeat>(aAtom).value)
                 {
-                    aNode.children.emplace_back(&a, aSource);
-                    ++progress;
-                    if (parse(a, aNode.children.back(), aSource))
+                    auto const partialResult = parse(a, aNode, std::string_view{ result.data(), sourceEnd });;
+                    if (partialResult)
+                    {
                         found = true;
+                        result = apply_partial_result(result, partialResult);
+                    }
                 }
                 if (found)
-                    return true;
-                aNode.children.erase(std::prev(aNode.children.end(), progress), aNode.children.end());
-                return false;
+                {
+                    sdp->ok = true;
+                    return result;
+                }
+                return {};
             }
             else if (std::holds_alternative<optional>(aAtom))
             {
                 for (auto const& a : std::get<optional>(aAtom).value)
                 {
-                    aNode.children.emplace_back(&a, aSource);
-                    if (!parse(a, aNode.children.back(), aSource))
-                        aNode.children.pop_back();
+                    auto const partialResult = parse(a, aNode, std::string_view{ result.data(), sourceEnd });;
+                    if (partialResult)
+                        result = apply_partial_result(result, partialResult);
                 }
-                return true;
+                sdp->ok = true;
+                return result;
             }
             else if (std::holds_alternative<discard>(aAtom))
             {
                 for (auto const& a : std::get<discard>(aAtom).value)
                 {
-                    aNode.children.emplace_back(&a, aSource);
-                    if (!parse(a, aNode.children.back(), aSource))
-                        aNode.children.pop_back();
+                    auto const partialResult = parse(a, aNode, std::string_view{ result.data(), sourceEnd });;
+                    if (partialResult)
+                        result = apply_partial_result(result, partialResult);
                 }
-                return true;
+                aNode.children.clear();
+                sdp->ok = true;
+                return result;
             }
-            
-            return false;
+
+            return {};
+        }
+
+        static std::string_view apply_partial_result(std::string_view const& aResult, std::optional<std::string_view> const& aPartialResult)
+        {
+            char const* resultFirst = aResult.data();
+            char const* resultLast = std::next(aResult.data(), aResult.size());
+            char const* partialResultFirst = aPartialResult.value().data();
+            char const* partialResultLast = std::next(aPartialResult.value().data(), aPartialResult.value().size());
+            return { std::min(resultFirst, partialResultFirst), std::max(resultLast, partialResultLast) };
         }
 
     private:
@@ -462,6 +507,7 @@ namespace neolib
             lexer& owner;
             std::string value;
             std::string_view const& source;
+            bool ok = false;
 
             template <typename T>
             scoped_debug_print(lexer& aOwner, T const& aValue, std::string_view const& aSource) : 
@@ -477,6 +523,8 @@ namespace neolib
                     {
                         if constexpr (std::is_same_v<token, std::decay_t<decltype(pa)>>)
                             oss << "a(" << enum_to_string(pa) << ")";
+                        else if constexpr (std::is_same_v<terminal, std::decay_t<decltype(pa)>>)
+                            oss << "a(" << to_string(pa.type) << ":[" << debug_print(pa) << "])";
                         else
                             oss << "a(" << to_string(pa.type) << ")";
                     }, aValue);
@@ -484,12 +532,15 @@ namespace neolib
                 else
                     oss << "(" << aValue << ")";
                 value = oss.str();
+
+                if (owner.iDebugOutput)
+                    (*owner.iDebugOutput) << std::string(static_cast<std::size_t>(owner.iLevel - 1), ' ') << value << ": " << "[" << debug_print(source) << "]" << std::endl;
             }
 
             ~scoped_debug_print()
             {
-                if (owner.iDebugOutput)
-                    (*owner.iDebugOutput) << std::string(static_cast<std::size_t>(owner.iLevel - 1), ' ') << value << ": " << "[" << debug_print(source) << "]" << std::endl;
+                if (owner.iDebugOutput && ok)
+                    (*owner.iDebugOutput) << std::string(static_cast<std::size_t>(owner.iLevel - 1), ' ') << value << " ok: [" << debug_print(source) << "]" << std::endl;
             }
         };
 
@@ -503,7 +554,7 @@ namespace neolib
                 if (ch >= ' ')
                     result << ch;
                 else
-                    result << "\\x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<std::uint32_t>(ch);
+                    result << "\\x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<std::uint32_t>(static_cast<std::uint8_t>(ch));
                 if (charsAdded == aMaxChars)
                     break;
             }
@@ -511,7 +562,7 @@ namespace neolib
         }
     private:
         std::vector<rule> iRules;
-        ast_node iAst;
+        ast_node iAst = {};
         std::uint32_t iLevel = 0;
         std::ostream* iDebugOutput = nullptr;
     };
@@ -661,6 +712,24 @@ namespace neolib
 
         template <LexerRepeat Repeat, LexerTerminal Terminal>
         inline Repeat operator|(Terminal const& lhs, Repeat const& rhs)
+        {
+            return Repeat{ lhs, rhs };
+        }
+
+        template <LexerRange Range>
+        inline lexer_repeat<typename Range::token_type> operator|(Range const& lhs, Range const& rhs)
+        {
+            return lexer_repeat<typename Range::token_type>{ lhs , rhs };
+        }
+
+        template <LexerRepeat Repeat, LexerRange Range>
+        inline Repeat operator|(Repeat const& lhs, Range const& rhs)
+        {
+            return Repeat{ lhs, rhs };
+        }
+
+        template <LexerRepeat Repeat, LexerRange Range>
+        inline Repeat operator|(Range const& lhs, Repeat const& rhs)
         {
             return Repeat{ lhs, rhs };
         }
