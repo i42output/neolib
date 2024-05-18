@@ -47,6 +47,8 @@
 #include <string>
 #include <istream>
 
+#include <boost/functional/hash.hpp>
+
 #include <neolib/core/vecarray.hpp>
 #include <neolib/core/i_enum.hpp>
 #include <neolib/core/scoped.hpp>
@@ -567,17 +569,13 @@ namespace neolib
             if (iError)
                 return {};
 
-            auto cacheAtomEntry = iCache.find(&aAtom);
-            if (cacheAtomEntry != iCache.end())
+            auto cacheEntry = iCache.find(cache_key{ &aAtom, aSource.data() });
+            if (cacheEntry != iCache.end())
             {
-                auto cacheSourceEntry = cacheAtomEntry->second.find(aSource.data());
-                if (cacheSourceEntry != cacheAtomEntry->second.end())
-                {
-                    auto const cachedResult = cacheSourceEntry->second.result;
-                    auto& cachedNode = cacheSourceEntry->second.node;
-                    aNode.children = cachedNode->children;
-                    return cachedResult;
-                }
+                auto const cachedResult = cacheEntry->second.result;
+                auto& cachedNode = cacheEntry->second.node;
+                aNode.children = cachedNode->children;
+                return cachedResult;
             }
 
             std::string_view result = { aSource.data(), aSource.data() };
@@ -598,8 +596,8 @@ namespace neolib
                 auto const partialResult = parse(atomToken, *aNode.children.back(), aSource);
                 if (partialResult)
                 {
-                    iCache[&aAtom][aSource.data()] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult)};
-                    return iCache[&aAtom][aSource.data()].result;
+                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult)};
+                    return iCache[cache_key{ &aAtom, aSource.data() }].result;
                 }
                 aNode.children.pop_back();
             }
@@ -610,8 +608,8 @@ namespace neolib
                 {
                     auto const partialResult = aSource.substr(0, t.size());
                     aNode.children.push_back(std::make_shared<ast_node>(&aNode, aNode.rule, &aAtom, partialResult));
-                    iCache[&aAtom][aSource.data()] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult) };
-                    return ((sdp ? sdp->ok = true : true), iCache[&aAtom][aSource.data()].result);
+                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult) };
+                    return ((sdp ? sdp->ok = true : true), iCache[cache_key{ &aAtom, aSource.data() }].result);
                 }
             }
             else if (std::holds_alternative<range>(aAtom))
@@ -622,8 +620,8 @@ namespace neolib
                 {
                     auto const partialResult = aSource.substr(0, 1);
                     aNode.children.push_back(std::make_shared<ast_node>(&aNode, aNode.rule, &aAtom, partialResult));
-                    iCache[&aAtom][aSource.data()] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult) };
-                    return ((sdp ? sdp->ok = true : true), iCache[&aAtom][aSource.data()].result);
+                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult) };
+                    return ((sdp ? sdp->ok = true : true), iCache[cache_key{ &aAtom, aSource.data() }].result);
                 }
             }
             else if (std::holds_alternative<sequence>(aAtom))
@@ -636,7 +634,7 @@ namespace neolib
                     result = apply_partial_result(result, partialResult);
                     sourceNext = std::next(sourceNext, partialResult->size());
                 }
-                iCache[&aAtom][aSource.data()] = cache_result{ aNode.shared_from_this(), result };
+                iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
             else if (std::holds_alternative<repeat>(aAtom))
@@ -660,7 +658,7 @@ namespace neolib
                 } while (found);
                 if (foundAtLeastOne)
                 {
-                    iCache[&aAtom][aSource.data()] = cache_result{ aNode.shared_from_this(), result };
+                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
                     return ((sdp ? sdp->ok = true : true), result);
                 }
                 return {};
@@ -681,7 +679,7 @@ namespace neolib
                 }
                 if (found)
                 {
-                    iCache[&aAtom][aSource.data()] = cache_result{ aNode.shared_from_this(), result };
+                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
                     return ((sdp ? sdp->ok = true : true), result);
                 }
                 return {};
@@ -697,7 +695,7 @@ namespace neolib
                         sourceNext = std::next(sourceNext, partialResult->size());
                     }
                 }
-                iCache[&aAtom][aSource.data()] = cache_result{ aNode.shared_from_this(), result };
+                iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
             else if (std::holds_alternative<discard>(aAtom))
@@ -714,7 +712,7 @@ namespace neolib
                         sourceNext = std::next(sourceNext, partialResult->size());
                     }
                 }
-                iCache[&aAtom][aSource.data()] = cache_result{ aNode.shared_from_this(), result };
+                iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
 
@@ -846,11 +844,12 @@ namespace neolib
             std::shared_ptr<ast_node> node;
             std::optional<std::string_view> result;
         };
-        std::unordered_map<primitive_atom const*, std::unordered_map<char const*, cache_result>> iCache;
+        using cache_key = std::pair<primitive_atom const*, char const*>;
+        std::unordered_map<cache_key, cache_result, boost::hash<cache_key>> iCache;
         std::ostream* iDebugOutput = nullptr;
         bool iDebugScan = false;
         bool iDebugSource = true;
-        bool iDebugAst = false;
+        bool iDebugAst = true;
     };
 
     template <typename Token>
