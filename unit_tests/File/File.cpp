@@ -75,7 +75,7 @@ int main(int argc, char** argv)
 
         // whitespace handling...
 
-        ( token::Whitespace >> discard(optional(repeat(' '_ | '\r' | '\n' | '\t'))) ),
+        ( token::Whitespace >> discard(optional(' '_ | '\r' | '\n' | '\t')) ),
         ( token::Program >> token::Whitespace , token::Program , token::Whitespace ),
         ( token::FunctionDefinition >> token::Whitespace , token::FunctionDefinition , token::Whitespace ),
         ( token::FunctionPrototype >> token::Whitespace , token::FunctionPrototype , token::Whitespace ),

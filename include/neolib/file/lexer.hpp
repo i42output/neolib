@@ -106,9 +106,28 @@ namespace neolib
             {
             }
 
-            tuple(primitive_atom const& lhs, primitive_atom const& rhs) :
-                value{ lhs, rhs }
+            tuple(primitive_atom const& lhs, primitive_atom const& rhs)
             {
+                if (std::holds_alternative<derived_type>(lhs) && std::holds_alternative<derived_type>(rhs))
+                {
+                    value.insert(value.end(), std::get<derived_type>(lhs).value.begin(), std::get<derived_type>(lhs).value.end());
+                    value.insert(value.end(), std::get<derived_type>(rhs).value.begin(), std::get<derived_type>(rhs).value.end());
+                }
+                else if (std::holds_alternative<derived_type>(lhs))
+                {
+                    value.insert(value.end(), std::get<derived_type>(lhs).value.begin(), std::get<derived_type>(lhs).value.end());
+                    value.push_back(rhs);
+                }
+                else if (std::holds_alternative<derived_type>(rhs))
+                {
+                    value.push_back(lhs);
+                    value.insert(value.end(), std::get<derived_type>(rhs).value.begin(), std::get<derived_type>(rhs).value.end());
+                }
+                else
+                {
+                    value.push_back(lhs);
+                    value.push_back(rhs);
+                }
             }
 
             tuple(atom const& lhs, primitive_atom const& rhs)
@@ -267,7 +286,7 @@ namespace neolib
 
         struct ast_node
         {
-            token token;
+            primitive_atom const* atom;
             std::string_view value;
             std::vector<ast_node> children;
         };
@@ -282,31 +301,75 @@ namespace neolib
     public:
         bool parse(token aRoot, std::string_view const& aSource)
         {
-            ast_node rootNode{ aRoot, { aSource } };
-            bool ok = parse(rootNode, aSource);
+            ast_node rootNode{ nullptr, { aSource } };
+            bool ok = parse(aRoot, rootNode, aSource);
             iAst = std::move(rootNode);
             return ok;
         }
 
     private:
-        bool parse(ast_node& aNode, std::string_view const& aSource)
+        bool parse(token aToken, ast_node& aNode, std::string_view const& aSource)
         {
             for (auto& rule : iRules)
             {
-                if (std::holds_alternative<token>(rule.lhs[0]))
+                if (!std::holds_alternative<token>(rule.lhs[0]))
+                    continue;
+                token const ruleToken = std::get<token>(rule.lhs[0]);
+                if (ruleToken == aToken)
                 {
-                    token const ruleToken = std::get<token>(rule.lhs[0]);
-                    if (ruleToken == aNode.token)
-                    {
-                        auto const& ruleContent = rule.rhs[0];
-                        if (std::holds_alternative<terminal>(ruleContent))
-                            ;
-                    }
+                    auto const& ruleAtom = rule.rhs[0];
+                    if (parse(ruleAtom, aNode, aSource))
+                        return true;
                 }
             }
-            return true;
+            return false;
         }
-
+        bool parse(primitive_atom const& aAtom, ast_node& aNode, std::string_view const& aSource)
+        {
+            // todo: visitor?
+            if (std::holds_alternative<token>(aAtom))
+            {
+                token const atomToken = std::get<token>(aAtom);
+                aNode.children.emplace_back(&aAtom, aSource);
+                if (parse(atomToken, aNode.children.back(), aSource))
+                    return true;
+                aNode.children.pop_back();
+            }
+            else if (std::holds_alternative<terminal>(aAtom))
+            {
+                auto const& t = std::get<terminal>(aAtom);
+                if (aSource.find(t) == 0)
+                {
+                    aNode.children.emplace_back(&aAtom, aSource.substr(t.size()));
+                    return true;
+                }
+            }
+            else if (std::holds_alternative<sequence>(aAtom))
+            {
+                std::size_t progress = 0;
+                for (auto const& a : std::get<sequence>(aAtom).value)
+                {
+                    aNode.children.emplace_back(&a, aSource);
+                    ++progress;
+                    if (!parse(a, aNode.children.back(), aSource))
+                    {
+                        aNode.children.erase(std::prev(aNode.children.end(), progress), aNode.children.end());
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else if (std::holds_alternative<repeat>(aAtom))
+            {
+                std::size_t progress = 0;
+                for (auto const& a : std::get<repeat>(aAtom).value)
+                {
+                    // todo
+                }
+                return false;
+            }
+            return false;
+        }
     private:
         std::vector<rule> iRules;
         ast_node iAst;
@@ -395,70 +458,70 @@ namespace neolib
             return Rule{ lhs.lhs, lexer_atom<typename Rule::token_type>{ lhs.rhs, rhs } };
         }
 
-        template <LexerUndefined Undefined>
-        inline Undefined operator|(Undefined const& lhs, lexer_primitive<typename Undefined::token_type> const& rhs)
+        template <LexerRepeat Repeat>
+        inline Repeat operator|(Repeat const& lhs, lexer_primitive<typename Repeat::token_type> const& rhs)
         {
-            return Undefined{ lhs, rhs };
+            return Repeat{ lhs, rhs };
         }
 
         template <TokenEnum Token>
-        inline lexer_undefined<Token> operator|(Token lhs, Token rhs)
+        inline lexer_repeat<Token> operator|(Token lhs, Token rhs)
         {
-            return lexer_undefined<Token>{ lhs, rhs };
+            return lexer_repeat<Token>{ lhs, rhs };
         }
 
         template <TokenEnum Token>
-        inline lexer_undefined<Token> operator|(lexer_primitive<Token> const& lhs, Token rhs)
+        inline lexer_repeat<Token> operator|(lexer_primitive<Token> const& lhs, Token rhs)
         {
-            return lexer_undefined<Token>{ lhs, rhs };
+            return lexer_repeat<Token>{ lhs, rhs };
         }
 
         template <TokenEnum Token>
-        inline lexer_undefined<Token> operator|(Token lhs, lexer_primitive<Token> const& rhs)
+        inline lexer_repeat<Token> operator|(Token lhs, lexer_primitive<Token> const& rhs)
         {
-            return lexer_undefined<Token>{ lhs, rhs };
+            return lexer_repeat<Token>{ lhs, rhs };
         }
 
         template <LexerTerminal Terminal>
-        inline lexer_undefined<typename Terminal::token_type> operator|(Terminal const& lhs, Terminal const& rhs)
+        inline lexer_repeat<typename Terminal::token_type> operator|(Terminal const& lhs, Terminal const& rhs)
         {
-            return lexer_undefined<typename Terminal::token_type>{ lhs, rhs };
+            return lexer_repeat<typename Terminal::token_type>{ lhs, rhs };
         }
 
         template <LexerTerminal Terminal, LexerPrimitive Primitive>
-        inline lexer_undefined<typename Terminal::token_type> operator|(Terminal const& lhs, Primitive const& rhs)
+        inline lexer_repeat<typename Terminal::token_type> operator|(Terminal const& lhs, Primitive const& rhs)
         {
-            return lexer_undefined<typename Terminal::token_type>{ lhs, rhs };
+            return lexer_repeat<typename Terminal::token_type>{ lhs, rhs };
         }
 
         template <LexerTerminal Terminal, LexerPrimitive Primitive>
-        inline lexer_undefined<typename Terminal::token_type> operator|(Primitive const& lhs, Terminal const& rhs)
+        inline lexer_repeat<typename Terminal::token_type> operator|(Primitive const& lhs, Terminal const& rhs)
         {
-            return lexer_undefined<typename Terminal::token_type>{ lhs, rhs };
+            return lexer_repeat<typename Terminal::token_type>{ lhs, rhs };
         }
 
         template <LexerTerminal Terminal>
-        inline lexer_undefined<typename Terminal::token_type> operator|(Terminal const& lhs, char rhs)
+        inline lexer_repeat<typename Terminal::token_type> operator|(Terminal const& lhs, char rhs)
         {
-            return lexer_undefined<typename Terminal::token_type>{ lhs, Terminal{ rhs } };
+            return lexer_repeat<typename Terminal::token_type>{ lhs, Terminal{ rhs } };
         }
 
         template <LexerTerminal Terminal>
-        inline lexer_undefined<typename Terminal::token_type> operator|(char lhs, Terminal const& rhs)
+        inline lexer_repeat<typename Terminal::token_type> operator|(char lhs, Terminal const& rhs)
         {
-            return lexer_undefined<typename Terminal::token_type>{ Terminal{ lhs }, rhs };
+            return lexer_repeat<typename Terminal::token_type>{ Terminal{ lhs }, rhs };
         }
 
-        template <LexerUndefined Undefined, LexerTerminal Terminal>
-        inline Undefined operator|(Undefined const& lhs, Terminal const& rhs)
+        template <LexerRepeat Repeat, LexerTerminal Terminal>
+        inline Repeat operator|(Repeat const& lhs, Terminal const& rhs)
         {
-            return Undefined{ lhs, rhs };
+            return Repeat{ lhs, rhs };
         }
 
-        template <LexerUndefined Undefined, LexerTerminal Terminal>
-        inline Undefined operator|(Terminal const& lhs, Undefined const& rhs)
+        template <LexerRepeat Repeat, LexerTerminal Terminal>
+        inline Repeat operator|(Terminal const& lhs, Repeat const& rhs)
         {
-            return Undefined{ lhs, rhs };
+            return Repeat{ lhs, rhs };
         }
 
         template <LexerRule Rule>
