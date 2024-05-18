@@ -93,7 +93,7 @@ int main(int argc, char** argv)
         ( token::Program >> repeat(token::FunctionDefinition) , discard(token::Eof) ),
         ( token::FunctionDefinition >> token::FunctionPrototype , token::FunctionBody ),
         ( token::FunctionPrototype >> token::FunctionReturnType , token::FunctionName , 
-            '(' , optional(token::FunctionParameterList) , ')' ),
+            discard('(') , optional(token::FunctionParameterList) , discard(')') ),
         ( token::FunctionReturnType >> token::Type ),
         ( token::FunctionName >> token::Identifier ),
         ( token::FunctionParameterList >> 
