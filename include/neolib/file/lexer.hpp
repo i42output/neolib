@@ -360,7 +360,7 @@ namespace neolib
             if (iError && iDebugOutput)
                 (*iDebugOutput) << "Error: " << iError.value() << std::endl;
             if (iDebugOutput)
-                (*iDebugOutput) << "Parse time: " << std::setprecision(3) <<
+                (*iDebugOutput) << "Parse time" << (iDebugScan ? " (debug)" : "") << ": " << std::setprecision(3) <<
                 std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count() / 1000.0 << 
                 " seconds" << std::endl;
             
@@ -389,15 +389,13 @@ namespace neolib
         }
         bool left_recursion(ast_node const& aNode, rule const& aRule) const
         {
-            // todo
-            bool different = false;
-            for (auto parent = aNode.parent; parent; parent = parent->parent)
-            {
-                if (parent->rule != &aRule)
-                    different = true;
-                if (parent->rule && parent->rule == &aRule && !different)
+            if (aNode.parent && aNode.parent->rule == &aRule)
+                return true;
+            if (iStack.empty())
+                return false;
+            for (auto r = std::next(iStack.rbegin()); r != iStack.rend(); ++r)
+                if (*r == iStack.back())
                     return true;
-            }
             return false;
         }
         std::optional<std::string_view> parse(token aToken, ast_node& aNode, std::string_view const& aSource)
@@ -440,6 +438,7 @@ namespace neolib
                 if (!std::holds_alternative<token>(rule.lhs[0]))
                     continue;
                 token const ruleToken = std::get<token>(rule.lhs[0]);
+                scoped_stack_entry sse{ *this, rule, aSource };
                 if (ruleToken == aToken && !left_recursion(aNode, rule))
                 {
                     aNode.rule = &rule;
@@ -447,8 +446,7 @@ namespace neolib
                     auto const result = parse(ruleAtom, aNode, aSource);
                     if (result)
                     {
-                        sdp->ok = true;
-                        return result;
+                        return ((sdp ? sdp->ok = true : true), result);
                     }
                 }
             }
@@ -488,18 +486,18 @@ namespace neolib
                 {
                     auto const partialResult = aSource.substr(0, t.size());
                     aNode.children.push_back(std::make_unique<ast_node>(&aNode, aNode.rule, &aAtom, partialResult));
-                    return (sdp->ok = true, apply_partial_result(result, partialResult));
+                    return ((sdp ? sdp->ok = true : true), apply_partial_result(result, partialResult));
                 }
             }
             else if (std::holds_alternative<range>(aAtom))
             {
                 auto const min = std::get<terminal>(std::get<range>(aAtom).value[0]).value();
                 auto const max = std::get<terminal>(std::get<range>(aAtom).value[1]).value();
-                if (aSource[0] >= min && aSource[0] <= max)
+                if (!aSource.empty() && aSource[0] >= min && aSource[0] <= max)
                 {
                     auto const partialResult = aSource.substr(0, 1);
                     aNode.children.push_back(std::make_unique<ast_node>(&aNode, aNode.rule, &aAtom, partialResult));
-                    return (sdp->ok = true, apply_partial_result(result, partialResult));
+                    return ((sdp ? sdp->ok = true : true), apply_partial_result(result, partialResult));
                 }
             }
             else if (std::holds_alternative<sequence>(aAtom))
@@ -512,8 +510,7 @@ namespace neolib
                     result = apply_partial_result(result, partialResult);
                     sourceNext = std::next(sourceNext, partialResult->size());
                 }
-                sdp->ok = true;
-                return result;
+                return ((sdp ? sdp->ok = true : true), result);
             }
             else if (std::holds_alternative<repeat>(aAtom))
             {
@@ -536,8 +533,7 @@ namespace neolib
                 } while (found);
                 if (foundAtLeastOne)
                 {
-                    sdp->ok = true;
-                    return result;
+                    return ((sdp ? sdp->ok = true : true), result);
                 }
                 return {};
             }
@@ -557,8 +553,7 @@ namespace neolib
                 }
                 if (found)
                 {
-                    sdp->ok = true;
-                    return result;
+                    return ((sdp ? sdp->ok = true : true), result);
                 }
                 return {};
             }
@@ -573,8 +568,7 @@ namespace neolib
                         sourceNext = std::next(sourceNext, partialResult->size());
                     }
                 }
-                sdp->ok = true;
-                return result;
+                return ((sdp ? sdp->ok = true : true), result);
             }
             else if (std::holds_alternative<discard>(aAtom))
             {
@@ -588,8 +582,7 @@ namespace neolib
                     }
                 }
                 aNode.children.clear();
-                sdp->ok = true;
-                return result;
+                return ((sdp ? sdp->ok = true : true), result);
             }
 
             return {};
@@ -605,6 +598,20 @@ namespace neolib
         }
 
     private:
+        struct scoped_stack_entry
+        {
+            lexer& owner;
+
+            scoped_stack_entry(lexer& owner, rule const& rule, std::string_view const& source) :
+                owner{ owner }
+            {
+                owner.iStack.push_back(std::make_pair(&rule, source));
+            }
+            ~scoped_stack_entry()
+            {
+                owner.iStack.pop_back();
+            }
+        };
         struct scoped_debug_print
         {
             lexer& owner;
@@ -672,11 +679,12 @@ namespace neolib
     private:
         std::vector<rule> iRules;
         ast_node iAst = {};
+        std::vector<std::pair<rule const*, std::string_view>> iStack;
         std::uint32_t iMaxLevel = 256;
         std::uint32_t iLevel = 0;
         std::optional<std::string> iError;
         std::ostream* iDebugOutput = nullptr;
-        bool iDebugScan = false;
+        bool iDebugScan = true;
     };
 
     template <typename Token>

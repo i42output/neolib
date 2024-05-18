@@ -8,6 +8,7 @@ namespace lexer_test
     {
         Program,
         Whitespace,
+        Eof,
         Identifier,
         FunctionDefinition,
         FunctionPrototype,
@@ -41,6 +42,7 @@ namespace lexer_test
 declare_tokens(lexer_test::token)
 declare_token(lexer_test::token, Program)
 declare_token(lexer_test::token, Whitespace)
+declare_token(lexer_test::token, Eof)
 declare_token(lexer_test::token, Identifier)
 declare_token(lexer_test::token, FunctionDefinition)
 declare_token(lexer_test::token, FunctionPrototype)
@@ -88,7 +90,7 @@ int main(int argc, char** argv)
 
     neolib::lexer_rule<token> lexerRules[] =
     {
-        ( token::Program >> repeat(token::FunctionDefinition) ),
+        ( token::Program >> repeat(token::FunctionDefinition) , token::Eof ),
         ( token::FunctionDefinition >> token::FunctionPrototype , token::FunctionBody ),
         ( token::FunctionPrototype >> token::FunctionReturnType , token::FunctionName , 
             '(' , optional(token::FunctionParameterList) , ')' ),
@@ -126,7 +128,8 @@ int main(int argc, char** argv)
 
         // whitespace handling...
 
-        ( token::Whitespace >> discard(optional(' '_ | '\r' | '\n' | '\t' | "" ))),
+        ( token::Eof >> "" ),
+        ( token::Whitespace >> discard(optional(' '_ | '\r' | '\n' | '\t' ))),
         ( token::Program >> token::Whitespace , token::Program , token::Whitespace ),
         ( token::FunctionDefinition >> token::Whitespace , token::FunctionDefinition , token::Whitespace ),
         ( token::FunctionPrototype >> token::Whitespace , token::FunctionPrototype , token::Whitespace ),
