@@ -23,6 +23,8 @@ namespace lexer_test
         Statement,
         EndStatement,
         Expression,
+        OpenExpression,
+        CloseExpression,
         Term,
         Primary,
         Add,
@@ -57,6 +59,8 @@ declare_token(lexer_test::token, Type)
 declare_token(lexer_test::token, Statement)
 declare_token(lexer_test::token, EndStatement)
 declare_token(lexer_test::token, Expression)
+declare_token(lexer_test::token, OpenExpression)
+declare_token(lexer_test::token, CloseExpression)
 declare_token(lexer_test::token, Term)
 declare_token(lexer_test::token, Primary)
 declare_token(lexer_test::token, Add)
@@ -80,7 +84,10 @@ namespace lexer_test
 std::string_view const source = R"test(
     void foo()
     {
-        x := 7 + 42.0 * 1.0 * (5-1);
+        a := (1+1+1+1+1);
+        b := (1*1*1*1*1);
+        x := 1 + 1 + 1; 
+        y := 7 + 42.0 * 1.0 * (5-1+2) + x;
     }
 )test";
 
@@ -105,15 +112,19 @@ int main(int argc, char** argv)
         ( token::CloseScope >> '}' ),
         ( token::Statement >> token::Expression , discard(token::EndStatement) ),
         ( token::EndStatement >> ';' ),
+        ( token::Expression >> token::Expression , choice(token::Add | token::Subtract) , token::Expression ),
         ( token::Expression >> token::Expression , choice(token::Add | token::Subtract) , token::Term ),
         ( token::Expression >> token::Term ),
+        ( token::Term >> token::Term , choice(token::Divide | token::Multiply) , token::Term ),
         ( token::Term >> token::Term , choice(token::Divide | token::Multiply) , token::Primary ),
         ( token::Term >> token::Primary ),
         ( token::Primary >> token::Variable , token::Assign , token::Expression ),
         ( token::Primary >> token::Negate , token::Primary ),
         ( token::Primary >> token::Number ),
         ( token::Primary >> token::Variable ),
-        ( token::Primary >> '(' , token::Expression , ')' ),
+        ( token::Primary >> token::OpenExpression , token::Expression , token::CloseExpression ),
+        ( token::OpenExpression >> '(' ),
+        ( token::CloseExpression >> ')' ),
         ( token::Add >> '+' ),
         ( token::Subtract >> '-' ),
         ( token::Multiply >> '*' ),
@@ -142,6 +153,8 @@ int main(int argc, char** argv)
         ( token::Statement >> discard(token::Whitespace) , token::Statement , discard(token::Whitespace) ),
         ( token::EndStatement >> discard(sequence(token::Whitespace , token::EndStatement , token::Whitespace)) ),
         ( token::Expression >> discard(token::Whitespace) , token::Expression , discard(token::Whitespace) ),
+        ( token::OpenExpression >> discard(token::Whitespace) , token::OpenExpression , discard(token::Whitespace) ),
+        ( token::CloseExpression >> discard(token::Whitespace) , token::CloseExpression , discard(token::Whitespace) ),
         ( token::Variable >> discard(token::Whitespace) , token::Variable , discard(token::Whitespace) ),
         ( token::Identifier >> discard(token::Whitespace) , token::Identifier , discard(token::Whitespace) ),
         ( token::Number >> discard(token::Whitespace) , token::Number, discard(token::Whitespace) ),
@@ -158,6 +171,7 @@ int main(int argc, char** argv)
 
     neolib::lexer<token> parser{ lexerRules };
     parser.set_debug_output(std::cerr);
+//    parser.set_debug_scan(true);
     auto result = parser.parse(token::Program, source);
 }
 

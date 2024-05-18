@@ -398,6 +398,9 @@ namespace neolib
             simplify_ast(rootNode);
             auto const endTime = std::chrono::high_resolution_clock::now();
 
+            if (!result.has_value() && !iError)
+                iError = "Unspecified error";
+
             if (iDebugOutput && iError)
                 (*iDebugOutput) << "Error: " << iError.value() << std::endl;
             if (iDebugOutput)
@@ -423,6 +426,11 @@ namespace neolib
         void set_debug_output(std::ostream& aDebugOutput)
         {
             iDebugOutput = &aDebugOutput;
+        }
+
+        void set_debug_scan(bool aDebugScan)
+        {
+            iDebugScan = aDebugScan;
         }
 
     private:
@@ -474,8 +482,6 @@ namespace neolib
 
         bool left_recursion(ast_node const& aNode, rule const& aRule) const
         {
-            if (aNode.parent && aNode.parent->rule == &aRule)
-                return true;
             if (iStack.empty())
                 return false;
             for (auto r = std::next(iStack.rbegin()); r != iStack.rend(); ++r)
@@ -531,7 +537,7 @@ namespace neolib
                     auto const& ruleAtom = rule.rhs[0];
                     typename ast_node::child_list children;
                     std::swap(aNode.children, children);
-                    auto const result = parse(ruleAtom, aNode, aSource);
+                    auto const result = parse(ruleAtom, aNode, std::string_view{ sourceNext, sourceEnd });
                     std::swap(aNode.children, children);
                     if (result)
                     {
