@@ -80,7 +80,7 @@ namespace lexer_test
 std::string_view const source = R"test(
     void foo()
     {
-        x := 7 + 42.0 * 1.0;
+        x := 7 + 42.0 * 1.0 * (5-1);
     }
 )test";
 
