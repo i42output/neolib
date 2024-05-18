@@ -80,7 +80,7 @@ namespace lexer_test
 std::string_view const source = R"test(
     void foo()
     {
-        x := 42.0 * 1.0;
+        x := 7 + 42.0 * 1.0;
     }
 )test";
 
@@ -121,7 +121,7 @@ int main(int argc, char** argv)
         ( token::Negate >> '-' ),
         ( token::Assign >> ":=" ),
         ( token::Equal >> '=' ),
-        ( token::Number >> repeat(token::Digit) , token::Decimal , repeat(token::Digit) ),
+        ( token::Number >> repeat(token::Digit) , optional(token::Decimal) , optional(repeat(token::Digit)) ),
         ( token::Digit >> range('0' , '9') ),
         ( token::Decimal >> '.' ),
         ( token::Variable >> token::Identifier ),

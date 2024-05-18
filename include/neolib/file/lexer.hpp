@@ -785,6 +785,7 @@ namespace neolib
                             oss << "a(" << to_string(pa.type) << ":[" << debug_print(pa) << "])";
                         else
                             oss << "a(" << to_string(pa.type) << ")";
+                        oss << " = [" << debug_print(aNode.value, 64) << "]";
                     }, *aNode.atom);
             }
             oss << std::endl;
