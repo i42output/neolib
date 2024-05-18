@@ -341,6 +341,39 @@ namespace neolib
             primitive_atom const* atom;
             std::string_view value;
             child_list children;
+
+            ast_node() = default;
+
+            ast_node(
+                ast_node* parent,
+                lexer::rule const* rule,
+                primitive_atom const* atom,
+                std::string_view value) :
+                parent{ parent },
+                rule{ rule },
+                atom{ atom },
+                value{ value }
+            {
+            }
+
+            ast_node(ast_node&& other) :
+                parent{ other.parent },
+                rule{ other.rule },
+                atom{ other.atom },
+                value{ other.value },
+                children{ std::move(other.children) }
+            {
+            }
+
+            ast_node& operator=(ast_node&& other)
+            {
+                parent = other.parent;
+                rule = other.rule;
+                atom = other.atom;
+                value = other.value;
+                children = std::move(other.children);
+                return *this;
+            }
         };
 
     public:
@@ -456,9 +489,13 @@ namespace neolib
                 {
                     aNode.rule = &rule;
                     auto const& ruleAtom = rule.rhs[0];
+                    typename ast_node::child_list children;
+                    std::swap(aNode.children, children);
                     auto const result = parse(ruleAtom, aNode, aSource);
+                    std::swap(aNode.children, children);
                     if (result)
                     {
+                        aNode.children.insert(aNode.children.end(), std::make_move_iterator(children.begin()), std::make_move_iterator(children.end()));
                         return ((sdp ? sdp->ok = true : true), result);
                     }
                 }
