@@ -41,11 +41,13 @@
 
 #include <concepts>
 #include <vector>
+#include <unordered_map>
 #include <variant>
 #include <optional>
 #include <string>
 #include <istream>
 
+#include <neolib/core/vecarray.hpp>
 #include <neolib/core/i_enum.hpp>
 #include <neolib/core/scoped.hpp>
 
@@ -332,9 +334,9 @@ namespace neolib
             {}
         };
 
-        struct ast_node
+        struct ast_node : std::enable_shared_from_this<ast_node>
         {
-            using child_list = std::vector<std::unique_ptr<ast_node>>;
+            using child_list = std::vector<std::shared_ptr<ast_node>>;
 
             ast_node* parent;
             rule const* rule;
@@ -364,6 +366,8 @@ namespace neolib
                 value{ other.value },
                 children{ std::move(other.children) }
             {
+                for (auto& child : children)
+                    child.parent = this;
             }
 
             ast_node& operator=(ast_node&& other)
@@ -373,6 +377,10 @@ namespace neolib
                 atom = other.atom;
                 value = other.value;
                 children = std::move(other.children);
+
+                for (auto& child : children)
+                    child->parent = this;
+
                 return *this;
             }
         };
@@ -391,11 +399,11 @@ namespace neolib
             iStack = {};
             iError = {};
 
-            ast_node rootNode{ nullptr, nullptr, nullptr, { aSource } };
+            auto rootNode = std::make_shared<ast_node>(nullptr, nullptr, nullptr, aSource);
 
             auto const startTime = std::chrono::high_resolution_clock::now();
-            auto const result = parse(aRoot, rootNode, aSource);
-            simplify_ast(rootNode);
+            auto const result = parse(aRoot, *rootNode, aSource);
+            simplify_ast(*rootNode);
             auto const endTime = std::chrono::high_resolution_clock::now();
 
             if (!result.has_value() && !iError)
@@ -411,7 +419,7 @@ namespace neolib
             if (!result.has_value())
                 return false;
 
-            iAst = std::move(rootNode);
+            iAst = std::move(*rootNode);
 
             if (iDebugOutput && iDebugAst)
             {
@@ -556,6 +564,19 @@ namespace neolib
             if (iError)
                 return {};
 
+            auto cacheAtomEntry = iCache.find(&aAtom);
+            if (cacheAtomEntry != iCache.end())
+            {
+                auto cacheSourceEntry = cacheAtomEntry->second.find(aSource.data());
+                if (cacheSourceEntry != cacheAtomEntry->second.end())
+                {
+                    auto const cachedResult = cacheSourceEntry->second.result;
+                    auto& cachedNode = cacheSourceEntry->second.node;
+                    aNode.children = cachedNode->children;
+                    return cachedResult;
+                }
+            }
+
             std::string_view result = { aSource.data(), aSource.data() };
             char const* sourceNext = aSource.data();
             char const* sourceEnd = aSource.data() + aSource.size();
@@ -570,10 +591,13 @@ namespace neolib
             if (std::holds_alternative<token>(aAtom))
             {
                 token const atomToken = std::get<token>(aAtom);
-                aNode.children.push_back(std::make_unique<ast_node>(&aNode, aNode.rule, &aAtom, aSource));
+                aNode.children.push_back(std::make_shared<ast_node>(&aNode, aNode.rule, &aAtom, aSource));
                 auto const partialResult = parse(atomToken, *aNode.children.back(), aSource);
                 if (partialResult)
-                    return apply_partial_result(result, partialResult);
+                {
+                    iCache[&aAtom][aSource.data()] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult)};
+                    return iCache[&aAtom][aSource.data()].result;
+                }
                 aNode.children.pop_back();
             }
             else if (std::holds_alternative<terminal>(aAtom))
@@ -582,8 +606,9 @@ namespace neolib
                 if ((!t.empty() && aSource.find(t) == 0) || (t.empty() && sourceNext == sourceEnd ))
                 {
                     auto const partialResult = aSource.substr(0, t.size());
-                    aNode.children.push_back(std::make_unique<ast_node>(&aNode, aNode.rule, &aAtom, partialResult));
-                    return ((sdp ? sdp->ok = true : true), apply_partial_result(result, partialResult));
+                    aNode.children.push_back(std::make_shared<ast_node>(&aNode, aNode.rule, &aAtom, partialResult));
+                    iCache[&aAtom][aSource.data()] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult) };
+                    return ((sdp ? sdp->ok = true : true), iCache[&aAtom][aSource.data()].result);
                 }
             }
             else if (std::holds_alternative<range>(aAtom))
@@ -593,8 +618,9 @@ namespace neolib
                 if (!aSource.empty() && aSource[0] >= min && aSource[0] <= max)
                 {
                     auto const partialResult = aSource.substr(0, 1);
-                    aNode.children.push_back(std::make_unique<ast_node>(&aNode, aNode.rule, &aAtom, partialResult));
-                    return ((sdp ? sdp->ok = true : true), apply_partial_result(result, partialResult));
+                    aNode.children.push_back(std::make_shared<ast_node>(&aNode, aNode.rule, &aAtom, partialResult));
+                    iCache[&aAtom][aSource.data()] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult) };
+                    return ((sdp ? sdp->ok = true : true), iCache[&aAtom][aSource.data()].result);
                 }
             }
             else if (std::holds_alternative<sequence>(aAtom))
@@ -607,6 +633,7 @@ namespace neolib
                     result = apply_partial_result(result, partialResult);
                     sourceNext = std::next(sourceNext, partialResult->size());
                 }
+                iCache[&aAtom][aSource.data()] = cache_result{ aNode.shared_from_this(), result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
             else if (std::holds_alternative<repeat>(aAtom))
@@ -630,6 +657,7 @@ namespace neolib
                 } while (found);
                 if (foundAtLeastOne)
                 {
+                    iCache[&aAtom][aSource.data()] = cache_result{ aNode.shared_from_this(), result };
                     return ((sdp ? sdp->ok = true : true), result);
                 }
                 return {};
@@ -650,6 +678,7 @@ namespace neolib
                 }
                 if (found)
                 {
+                    iCache[&aAtom][aSource.data()] = cache_result{ aNode.shared_from_this(), result };
                     return ((sdp ? sdp->ok = true : true), result);
                 }
                 return {};
@@ -665,6 +694,7 @@ namespace neolib
                         sourceNext = std::next(sourceNext, partialResult->size());
                     }
                 }
+                iCache[&aAtom][aSource.data()] = cache_result{ aNode.shared_from_this(), result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
             else if (std::holds_alternative<discard>(aAtom))
@@ -681,6 +711,7 @@ namespace neolib
                         sourceNext = std::next(sourceNext, partialResult->size());
                     }
                 }
+                iCache[&aAtom][aSource.data()] = cache_result{ aNode.shared_from_this(), result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
 
@@ -807,6 +838,12 @@ namespace neolib
         std::uint32_t iMaxLevel = 256;
         std::uint32_t iLevel = 0;
         std::optional<std::string> iError;
+        struct cache_result
+        {
+            std::shared_ptr<ast_node> node;
+            std::optional<std::string_view> result;
+        };
+        std::unordered_map<primitive_atom const*, std::unordered_map<char const*, cache_result>> iCache;
         std::ostream* iDebugOutput = nullptr;
         bool iDebugScan = false;
         bool iDebugAst = true;
