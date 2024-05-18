@@ -335,6 +335,7 @@ namespace neolib
         struct ast_node
         {
             ast_node* parent;
+            rule const* rule;
             primitive_atom const* atom;
             std::string_view value;
             std::vector<std::unique_ptr<ast_node>> children;
@@ -350,7 +351,7 @@ namespace neolib
     public:
         bool parse(token aRoot, std::string_view const& aSource)
         {
-            ast_node rootNode{ nullptr, nullptr, { aSource } };
+            ast_node rootNode{ nullptr, nullptr, nullptr, { aSource } };
             auto const result = parse(aRoot, rootNode, aSource);
             if (result.has_value())
             {
@@ -374,12 +375,16 @@ namespace neolib
 
             return {};
         }
+        bool left_recursion(ast_node const& aNode, rule const& aRule) const
+        {
+            // todo
+            for (auto parent = aNode.parent; parent; parent = parent->parent)
+                if (parent->rule && parent->rule == &aRule)
+                    return true;
+            return false;
+        }
         std::optional<std::string_view> parse(token aToken, ast_node& aNode, std::string_view const& aSource)
         {
-            auto const parentToken = parent_token(aNode);
-            if (parentToken && parentToken.value() == aToken)
-                return {};
-
             scoped_counter sc{ iLevel };
             std::optional<scoped_debug_print> sdp;
             sdp.emplace(*this, aToken, aSource);
@@ -389,8 +394,9 @@ namespace neolib
                 if (!std::holds_alternative<token>(rule.lhs[0]))
                     continue;
                 token const ruleToken = std::get<token>(rule.lhs[0]);
-                if (ruleToken == aToken)
+                if (ruleToken == aToken && !left_recursion(aNode, rule))
                 {
+                    aNode.rule = &rule;
                     auto const& ruleAtom = rule.rhs[0];
                     auto const result = parse(ruleAtom, aNode, aSource);
                     if (result)
@@ -401,11 +407,13 @@ namespace neolib
                 }
             }
 
+            aNode.rule = nullptr;
             return {};
         }
         std::optional<std::string_view> parse(primitive_atom const& aAtom, ast_node& aNode, std::string_view const& aSource)
         {
             std::string_view result = { aSource.data(), aSource.data() };
+            char const* sourceNext = aSource.data();
             char const* sourceEnd = aSource.data() + aSource.size();
 
             scoped_counter sc{ iLevel };
@@ -418,7 +426,7 @@ namespace neolib
             if (std::holds_alternative<token>(aAtom))
             {
                 token const atomToken = std::get<token>(aAtom);
-                aNode.children.push_back(std::make_unique<ast_node>(&aNode, &aAtom, aSource));
+                aNode.children.push_back(std::make_unique<ast_node>(&aNode, aNode.rule, &aAtom, aSource));
                 auto const partialResult = parse(atomToken, *aNode.children.back(), aSource);
                 if (partialResult)
                     return apply_partial_result(result, partialResult);
@@ -430,7 +438,18 @@ namespace neolib
                 if (aSource.find(t) == 0)
                 {
                     auto const partialResult = aSource.substr(0, t.size());
-                    aNode.children.push_back(std::make_unique<ast_node>(&aNode, &aAtom, partialResult));
+                    aNode.children.push_back(std::make_unique<ast_node>(&aNode, aNode.rule, &aAtom, partialResult));
+                    return (sdp->ok = true, apply_partial_result(result, partialResult));
+                }
+            }
+            else if (std::holds_alternative<range>(aAtom))
+            {
+                auto const min = std::get<terminal>(std::get<range>(aAtom).value[0]).value();
+                auto const max = std::get<terminal>(std::get<range>(aAtom).value[1]).value();
+                if (aSource[0] >= min && aSource[0] <= max)
+                {
+                    auto const partialResult = aSource.substr(0, 1);
+                    aNode.children.push_back(std::make_unique<ast_node>(&aNode, aNode.rule, &aAtom, partialResult));
                     return (sdp->ok = true, apply_partial_result(result, partialResult));
                 }
             }
@@ -438,27 +457,35 @@ namespace neolib
             {
                 for (auto const& a : std::get<sequence>(aAtom).value)
                 {
-                    auto const partialResult = parse(a, aNode, std::string_view{ result.data(), sourceEnd });;
+                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
                     if (!partialResult)
                         return {};
                     result = apply_partial_result(result, partialResult);
+                    sourceNext = std::next(sourceNext, partialResult->size());
                 }
                 sdp->ok = true;
                 return result;
             }
             else if (std::holds_alternative<repeat>(aAtom))
             {
+                bool foundAtLeastOne = false;
                 bool found = false;
-                for (auto const& a : std::get<repeat>(aAtom).value)
+                do
                 {
-                    auto const partialResult = parse(a, aNode, std::string_view{ result.data(), sourceEnd });;
-                    if (partialResult)
+                    found = false;
+                    for (auto const& a : std::get<repeat>(aAtom).value)
                     {
-                        found = true;
-                        result = apply_partial_result(result, partialResult);
+                        auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
+                        if (partialResult)
+                        {
+                            foundAtLeastOne = true;
+                            found = true;
+                            result = apply_partial_result(result, partialResult);
+                            sourceNext = std::next(sourceNext, partialResult->size());
+                        }
                     }
-                }
-                if (found)
+                } while (found);
+                if (foundAtLeastOne)
                 {
                     sdp->ok = true;
                     return result;
@@ -469,9 +496,12 @@ namespace neolib
             {
                 for (auto const& a : std::get<optional>(aAtom).value)
                 {
-                    auto const partialResult = parse(a, aNode, std::string_view{ result.data(), sourceEnd });;
+                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
                     if (partialResult)
+                    {
                         result = apply_partial_result(result, partialResult);
+                        sourceNext = std::next(sourceNext, partialResult->size());
+                    }
                 }
                 sdp->ok = true;
                 return result;
@@ -480,9 +510,12 @@ namespace neolib
             {
                 for (auto const& a : std::get<discard>(aAtom).value)
                 {
-                    auto const partialResult = parse(a, aNode, std::string_view{ result.data(), sourceEnd });;
+                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
                     if (partialResult)
+                    {
                         result = apply_partial_result(result, partialResult);
+                        sourceNext = std::next(sourceNext, partialResult->size());
+                    }
                 }
                 aNode.children.clear();
                 sdp->ok = true;
@@ -553,6 +586,12 @@ namespace neolib
                 ++charsAdded;
                 if (ch >= ' ')
                     result << ch;
+                else if (ch == '\n')
+                    result << "\\n";
+                else if (ch == '\r')
+                    result << "\\r";
+                else if (ch == '\t')
+                    result << "\\t";
                 else
                     result << "\\x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<std::uint32_t>(static_cast<std::uint8_t>(ch));
                 if (charsAdded == aMaxChars)
