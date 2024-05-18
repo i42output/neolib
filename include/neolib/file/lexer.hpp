@@ -421,10 +421,12 @@ namespace neolib
 
             iAst = std::move(*rootNode);
 
-            if (iDebugOutput && iDebugAst)
+            if (iDebugOutput)
             {
-                (*iDebugOutput) << aSource << std::endl;
-                (*iDebugOutput) << debug_print_ast(iAst) << std::endl;
+                if (iDebugSource)
+                    (*iDebugOutput) << aSource << std::endl;
+                if (iDebugAst)
+                    (*iDebugOutput) << debug_print_ast(iAst) << std::endl;
             }
             
             return true;
@@ -846,7 +848,8 @@ namespace neolib
         std::unordered_map<primitive_atom const*, std::unordered_map<char const*, cache_result>> iCache;
         std::ostream* iDebugOutput = nullptr;
         bool iDebugScan = false;
-        bool iDebugAst = true;
+        bool iDebugSource = true;
+        bool iDebugAst = false;
     };
 
     template <typename Token>
