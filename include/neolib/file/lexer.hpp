@@ -398,6 +398,7 @@ namespace neolib
             iAst = {};
             iStack = {};
             iError = {};
+            iCache = {};
 
             auto rootNode = std::make_shared<ast_node>(nullptr, nullptr, nullptr, aSource);
 
