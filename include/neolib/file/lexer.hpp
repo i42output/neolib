@@ -352,12 +352,24 @@ namespace neolib
         bool parse(token aRoot, std::string_view const& aSource)
         {
             ast_node rootNode{ nullptr, nullptr, nullptr, { aSource } };
+
+            auto const startTime = std::chrono::high_resolution_clock::now();
+
             auto const result = parse(aRoot, rootNode, aSource);
+
+            if (iError && iDebugOutput)
+                (*iDebugOutput) << "Error: " << iError.value() << std::endl;
+            if (iDebugOutput)
+                (*iDebugOutput) << "Parse time: " << std::setprecision(3) <<
+                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count() / 1000.0 << 
+                " seconds" << std::endl;
+            
             if (result.has_value())
             {
                 iAst = std::move(rootNode);
                 return true;
             }
+            
             return false;
         }
 
@@ -378,16 +390,50 @@ namespace neolib
         bool left_recursion(ast_node const& aNode, rule const& aRule) const
         {
             // todo
+            bool different = false;
             for (auto parent = aNode.parent; parent; parent = parent->parent)
-                if (parent->rule && parent->rule == &aRule)
+            {
+                if (parent->rule != &aRule)
+                    different = true;
+                if (parent->rule && parent->rule == &aRule && !different)
                     return true;
+            }
             return false;
         }
         std::optional<std::string_view> parse(token aToken, ast_node& aNode, std::string_view const& aSource)
         {
+            if (iError)
+                return {};
+
+            char const* sourceNext = aSource.data();
+            char const* sourceEnd = aSource.data() + aSource.size();
+
             scoped_counter sc{ iLevel };
+
+            if (iLevel > iMaxLevel)
+            {
+                iError = "Internal compiler error (parse too deep): ";
+                bool first = true;
+                auto n = &aNode;
+                while (n)
+                {
+                    if (n->atom)
+                    {
+                        if (!first)
+                            iError.value() += ":";
+                        first = false;
+                        if (std::holds_alternative<token>(*n->atom))
+                            iError.value() += enum_to_string(std::get<token>(*n->atom));
+                        iError.value() += "(" + std::to_string(std::distance<const rule*>(&iRules[0], n->rule)) + ")";
+                    }
+                    n = n->parent;
+                }
+                return {};
+            }
+
             std::optional<scoped_debug_print> sdp;
-            sdp.emplace(*this, aToken, aSource);
+            if (iDebugScan)
+                sdp.emplace(*this, aToken, aSource);
 
             for (auto& rule : iRules)
             {
@@ -412,13 +458,16 @@ namespace neolib
         }
         std::optional<std::string_view> parse(primitive_atom const& aAtom, ast_node& aNode, std::string_view const& aSource)
         {
+            if (iError)
+                return {};
+
             std::string_view result = { aSource.data(), aSource.data() };
             char const* sourceNext = aSource.data();
             char const* sourceEnd = aSource.data() + aSource.size();
 
             scoped_counter sc{ iLevel };
             std::optional<scoped_debug_print> sdp;
-            if (!std::holds_alternative<token>(aAtom))
+            if (!std::holds_alternative<token>(aAtom) && iDebugScan)
                 sdp.emplace(*this, aAtom, aSource);
 
             // todo: visitor?
@@ -435,7 +484,7 @@ namespace neolib
             else if (std::holds_alternative<terminal>(aAtom))
             {
                 auto const& t = std::get<terminal>(aAtom);
-                if (aSource.find(t) == 0)
+                if ((!t.empty() && aSource.find(t) == 0) || (t.empty() && sourceNext == sourceEnd ))
                 {
                     auto const partialResult = aSource.substr(0, t.size());
                     aNode.children.push_back(std::make_unique<ast_node>(&aNode, aNode.rule, &aAtom, partialResult));
@@ -486,6 +535,27 @@ namespace neolib
                     }
                 } while (found);
                 if (foundAtLeastOne)
+                {
+                    sdp->ok = true;
+                    return result;
+                }
+                return {};
+            }
+            else if (std::holds_alternative<choice>(aAtom))
+            {
+                bool found = false;
+                for (auto const& a : std::get<choice>(aAtom).value)
+                {
+                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
+                    if (partialResult)
+                    {
+                        result = apply_partial_result(result, partialResult);
+                        sourceNext = std::next(sourceNext, partialResult->size());
+                        found = true;
+                        break;
+                    }
+                }
+                if (found)
                 {
                     sdp->ok = true;
                     return result;
@@ -602,8 +672,11 @@ namespace neolib
     private:
         std::vector<rule> iRules;
         ast_node iAst = {};
+        std::uint32_t iMaxLevel = 256;
         std::uint32_t iLevel = 0;
+        std::optional<std::string> iError;
         std::ostream* iDebugOutput = nullptr;
+        bool iDebugScan = false;
     };
 
     template <typename Token>
