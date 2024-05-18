@@ -44,8 +44,15 @@
 #include <string>
 #include <istream>
 
+#include <neolib/core/i_enum.hpp>
+#include <neolib/core/scoped.hpp>
+
 namespace neolib
 {
+    #define declare_tokens begin_declare_enum
+    #define declare_token declare_enum_string
+    #define end_declare_tokens end_declare_enum
+
     enum class lexer_component_type
     {
         Terminal,
@@ -61,8 +68,42 @@ namespace neolib
         Rule
     };
 
+    inline std::string to_string(lexer_component_type aType)
+    {
+        switch (aType)
+        {
+        case lexer_component_type::Terminal:
+            return "Terminal";
+        case lexer_component_type::Undefined:
+            return "Undefined";
+        case lexer_component_type::Choice:
+            return "Choice";
+        case lexer_component_type::Sequence:
+            return "Sequence";
+        case lexer_component_type::Repeat:
+            return "Repeat";
+        case lexer_component_type::Range:
+            return "Range";
+        case lexer_component_type::Optional:
+            return "Optional";
+        case lexer_component_type::Discard:
+            return "Discard";
+        case lexer_component_type::Primitive:
+            return "Primitive";
+        case lexer_component_type::Atom:
+            return "Atom";
+        case lexer_component_type::Rule:
+            return "Rule";
+        default:
+            throw std::logic_error("neolib::to_string(lexer_component_type)");
+        }
+    }
+
     template <lexer_component_type Type>
-    struct lexer_component {};
+    struct lexer_component
+    {
+        static constexpr lexer_component_type type = Type;
+    };
 
     template <typename Token>
     class lexer
@@ -307,9 +348,18 @@ namespace neolib
             return ok;
         }
 
+    public:
+        void set_debug_output(std::ostream& aDebugOutput)
+        {
+            iDebugOutput = &aDebugOutput;
+        }
+
     private:
         bool parse(token aToken, ast_node& aNode, std::string_view const& aSource)
         {
+            scoped_counter sc{ iLevel };
+            { scoped_debug_print{ *this, aToken, aSource }; }
+
             for (auto& rule : iRules)
             {
                 if (!std::holds_alternative<token>(rule.lhs[0]))
@@ -322,11 +372,16 @@ namespace neolib
                         return true;
                 }
             }
+
             return false;
         }
         bool parse(primitive_atom const& aAtom, ast_node& aNode, std::string_view const& aSource)
         {
+            scoped_counter sc{ iLevel };
+            if (!std::holds_alternative<token>(aAtom)) { scoped_debug_print{ *this, aAtom, aSource }; }
+
             // todo: visitor?
+
             if (std::holds_alternative<token>(aAtom))
             {
                 token const atomToken = std::get<token>(aAtom);
@@ -361,18 +416,102 @@ namespace neolib
             }
             else if (std::holds_alternative<repeat>(aAtom))
             {
+                bool found = true;
                 std::size_t progress = 0;
                 for (auto const& a : std::get<repeat>(aAtom).value)
                 {
-                    // todo
+                    aNode.children.emplace_back(&a, aSource);
+                    ++progress;
+                    if (parse(a, aNode.children.back(), aSource))
+                        found = true;
                 }
+                if (found)
+                    return true;
+                aNode.children.erase(std::prev(aNode.children.end(), progress), aNode.children.end());
                 return false;
             }
+            else if (std::holds_alternative<optional>(aAtom))
+            {
+                for (auto const& a : std::get<optional>(aAtom).value)
+                {
+                    aNode.children.emplace_back(&a, aSource);
+                    if (!parse(a, aNode.children.back(), aSource))
+                        aNode.children.pop_back();
+                }
+                return true;
+            }
+            else if (std::holds_alternative<discard>(aAtom))
+            {
+                for (auto const& a : std::get<discard>(aAtom).value)
+                {
+                    aNode.children.emplace_back(&a, aSource);
+                    if (!parse(a, aNode.children.back(), aSource))
+                        aNode.children.pop_back();
+                }
+                return true;
+            }
+            
             return false;
+        }
+
+    private:
+        struct scoped_debug_print
+        {
+            lexer& owner;
+            std::string value;
+            std::string_view const& source;
+
+            template <typename T>
+            scoped_debug_print(lexer& aOwner, T const& aValue, std::string_view const& aSource) : 
+                owner{ aOwner },
+                source{ aSource }
+            {
+                std::ostringstream oss;
+                if constexpr (std::is_same_v<T, token>)
+                    oss << "t(" << enum_to_string(aValue) << ")";
+                else if constexpr (std::is_same_v<std::decay_t<T>, primitive_atom>)
+                {
+                    std::visit([&](auto const& pa)
+                    {
+                        if constexpr (std::is_same_v<token, std::decay_t<decltype(pa)>>)
+                            oss << "a(" << enum_to_string(pa) << ")";
+                        else
+                            oss << "a(" << to_string(pa.type) << ")";
+                    }, aValue);
+                }
+                else
+                    oss << "(" << aValue << ")";
+                value = oss.str();
+            }
+
+            ~scoped_debug_print()
+            {
+                if (owner.iDebugOutput)
+                    (*owner.iDebugOutput) << std::string(static_cast<std::size_t>(owner.iLevel - 1), ' ') << value << ": " << "[" << debug_print(source) << "]" << std::endl;
+            }
+        };
+
+        static std::string debug_print(std::string_view const& aSource, std::size_t aMaxChars = 16)
+        {
+            std::ostringstream result;
+            std::size_t charsAdded = 0;
+            for (auto ch : aSource)
+            {
+                ++charsAdded;
+                if (ch >= ' ')
+                    result << ch;
+                else
+                    result << "\\x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<std::uint32_t>(ch);
+                if (charsAdded == aMaxChars)
+                    break;
+            }
+            return result.str();
         }
     private:
         std::vector<rule> iRules;
         ast_node iAst;
+        std::uint32_t iLevel = 0;
+        std::ostream* iDebugOutput = nullptr;
     };
 
     template <typename Token>

@@ -1,4 +1,5 @@
 ﻿#include <neolib/neolib.hpp>
+#include <neolib/core/i_enum.hpp>
 #include <neolib/file/lexer.hpp>
 
 namespace lexer_test
@@ -29,7 +30,36 @@ namespace lexer_test
         Assign,
         Equal
     };
+}
 
+declare_tokens(lexer_test::token)
+declare_token(lexer_test::token, Program)
+declare_token(lexer_test::token, Whitespace)
+declare_token(lexer_test::token, FunctionDefinition)
+declare_token(lexer_test::token, FunctionPrototype)
+declare_token(lexer_test::token, FunctionBody)
+declare_token(lexer_test::token, FunctionReturnType)
+declare_token(lexer_test::token, FunctionName)
+declare_token(lexer_test::token, FunctionParameterList)
+declare_token(lexer_test::token, FunctionParameter)
+declare_token(lexer_test::token, Expression)
+declare_token(lexer_test::token, Term)
+declare_token(lexer_test::token, Primary)
+declare_token(lexer_test::token, Add)
+declare_token(lexer_test::token, Subtract)
+declare_token(lexer_test::token, Multiply)
+declare_token(lexer_test::token, Divide)
+declare_token(lexer_test::token, Negate)
+declare_token(lexer_test::token, Number)
+declare_token(lexer_test::token, Digit)
+declare_token(lexer_test::token, Decimal)
+declare_token(lexer_test::token, Name)
+declare_token(lexer_test::token, Assign)
+declare_token(lexer_test::token, Equal)
+end_declare_tokens(lexer_test::token);
+
+namespace lexer_test
+{
     enable_neolib_lexer(token)
 }
 
@@ -89,6 +119,7 @@ int main(int argc, char** argv)
     };
 
     neolib::lexer<token> parser{ lexerRules };
+    parser.set_debug_output(std::cerr);
     auto result = parser.parse(token::Program, source);
 }
 
