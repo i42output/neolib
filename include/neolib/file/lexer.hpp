@@ -334,11 +334,13 @@ namespace neolib
 
         struct ast_node
         {
+            using child_list = std::vector<std::unique_ptr<ast_node>>;
+
             ast_node* parent;
             rule const* rule;
             primitive_atom const* atom;
             std::string_view value;
-            std::vector<std::unique_ptr<ast_node>> children;
+            child_list children;
         };
 
     public:
@@ -351,26 +353,35 @@ namespace neolib
     public:
         bool parse(token aRoot, std::string_view const& aSource)
         {
+            iAst = {};
+            iStack = {};
+            iError = {};
+
             ast_node rootNode{ nullptr, nullptr, nullptr, { aSource } };
 
             auto const startTime = std::chrono::high_resolution_clock::now();
-
             auto const result = parse(aRoot, rootNode, aSource);
+            auto const endTime = std::chrono::high_resolution_clock::now();
 
-            if (iError && iDebugOutput)
+            if (iDebugOutput && iError)
                 (*iDebugOutput) << "Error: " << iError.value() << std::endl;
             if (iDebugOutput)
                 (*iDebugOutput) << "Parse time" << (iDebugScan ? " (debug)" : "") << ": " << std::setprecision(3) <<
-                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count() / 1000.0 << 
+                std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() / 1000.0 <<
                 " seconds" << std::endl;
             
-            if (result.has_value())
+            if (!result.has_value())
+                return false;
+
+            iAst = std::move(rootNode);
+
+            if (iDebugOutput && iDebugAst)
             {
-                iAst = std::move(rootNode);
-                return true;
+                (*iDebugOutput) << aSource << std::endl;
+                (*iDebugOutput) << debug_print_ast(iAst) << std::endl;
             }
             
-            return false;
+            return true;
         }
 
     public:
@@ -387,6 +398,7 @@ namespace neolib
 
             return {};
         }
+
         bool left_recursion(ast_node const& aNode, rule const& aRule) const
         {
             if (aNode.parent && aNode.parent->rule == &aRule)
@@ -398,6 +410,7 @@ namespace neolib
                     return true;
             return false;
         }
+
         std::optional<std::string_view> parse(token aToken, ast_node& aNode, std::string_view const& aSource)
         {
             if (iError)
@@ -454,6 +467,7 @@ namespace neolib
             aNode.rule = nullptr;
             return {};
         }
+
         std::optional<std::string_view> parse(primitive_atom const& aAtom, ast_node& aNode, std::string_view const& aSource)
         {
             if (iError)
@@ -574,14 +588,16 @@ namespace neolib
             {
                 for (auto const& a : std::get<discard>(aAtom).value)
                 {
-                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
+                    typename ast_node::child_list children;
+                    std::swap(aNode.children, children);
+                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });
+                    std::swap(aNode.children, children);
                     if (partialResult)
                     {
                         result = apply_partial_result(result, partialResult);
                         sourceNext = std::next(sourceNext, partialResult->size());
                     }
                 }
-                aNode.children.clear();
                 return ((sdp ? sdp->ok = true : true), result);
             }
 
@@ -612,6 +628,7 @@ namespace neolib
                 owner.iStack.pop_back();
             }
         };
+ 
         struct scoped_debug_print
         {
             lexer& owner;
@@ -676,6 +693,29 @@ namespace neolib
             }
             return result.str();
         }
+
+        static std::string debug_print_ast(ast_node const& aNode, std::uint32_t aLevel = 0)
+        {
+            std::ostringstream oss;
+            oss << std::string(static_cast<std::size_t>(aLevel), ' ');
+            if (aNode.atom)
+            {
+                std::visit([&](auto const& pa)
+                    {
+                        if constexpr (std::is_same_v<token, std::decay_t<decltype(pa)>>)
+                            oss << "a(" << enum_to_string(pa) << ")";
+                        else if constexpr (std::is_same_v<terminal, std::decay_t<decltype(pa)>>)
+                            oss << "a(" << to_string(pa.type) << ":[" << debug_print(pa) << "])";
+                        else
+                            oss << "a(" << to_string(pa.type) << ")";
+                    }, *aNode.atom);
+            }
+            oss << std::endl;
+            for (auto const& childNode : aNode.children)
+                oss << debug_print_ast(*childNode, aLevel + 1);
+            return oss.str();
+        }
+
     private:
         std::vector<rule> iRules;
         ast_node iAst = {};
@@ -684,7 +724,8 @@ namespace neolib
         std::uint32_t iLevel = 0;
         std::optional<std::string> iError;
         std::ostream* iDebugOutput = nullptr;
-        bool iDebugScan = true;
+        bool iDebugScan = false;
+        bool iDebugAst = true;
     };
 
     template <typename Token>
