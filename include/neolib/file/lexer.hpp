@@ -659,6 +659,22 @@ namespace neolib
                 iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
+            else if (std::holds_alternative<optional>(aAtom))
+            {
+                for (auto const& a : std::get<optional>(aAtom).value)
+                {
+                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
+                    if (partialResult)
+                    {
+                        result = apply_partial_result(result, partialResult);
+                        sourceNext = std::next(sourceNext, partialResult->size());
+                    }
+                }
+                if (!result)
+                    result.emplace(sourceNext, sourceNext);
+                iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
+                return ((sdp ? sdp->ok = true : true), result);
+            }
             else if (std::holds_alternative<repeat>(aAtom))
             {
                 bool foundAtLeastOne = false;
@@ -705,22 +721,6 @@ namespace neolib
                     return ((sdp ? sdp->ok = true : true), result);
                 }
                 return {};
-            }
-            else if (std::holds_alternative<optional>(aAtom))
-            {
-                for (auto const& a : std::get<optional>(aAtom).value)
-                {
-                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
-                    if (partialResult)
-                    {
-                        result = apply_partial_result(result, partialResult);
-                        sourceNext = std::next(sourceNext, partialResult->size());
-                    }
-                }
-                iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
-                if (!result)
-                    result.emplace(sourceNext, sourceNext);
-                return ((sdp ? sdp->ok = true : true), result);
             }
             else if (std::holds_alternative<discard>(aAtom))
             {
