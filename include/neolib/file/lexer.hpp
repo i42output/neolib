@@ -399,6 +399,7 @@ namespace neolib
         {
             iAst = {};
             iStack = {};
+            iDeepestParse = {};
             iError = {};
             iCache = {};
 
@@ -409,23 +410,35 @@ namespace neolib
             simplify_ast(*rootNode);
             auto const endTime = std::chrono::high_resolution_clock::now();
 
-            if (!result.has_value() && !iError)
-                iError = "unspecified error";
-            else if (result.value().data() + result.value().size() < aSource.data() + aSource.size())
+            auto error_print = [&](std::string const& errorPrefix, char const* pos) -> std::string
             {
-                iError = "(" + std::to_string(std::count(result.value().begin(), result.value().end(), '\n') + 1) + "," + std::to_string(result.value().size() - result.value().rfind('\n')) + ") ";
-                iError.value() += std::string{ "syntax error: '" } + debug_print(std::string_view{ result.value().data() + result.value().size(), 1 }) + "' was unexpected here.";
-            }
+                auto const linePos = std::count(aSource.data(), pos, '\n') + 1;
+                auto const columnPos = std::distance(std::reverse_iterator(pos), 
+                    std::find(std::reverse_iterator(pos), std::reverse_iterator(aSource.data()), '\n')) + 1;
+                std::string error = errorPrefix + "(" + std::to_string(linePos) + "," + std::to_string(columnPos) + ") ";
+                error += "'" + debug_print(std::string_view{ pos, std::next(pos) }) + "' was unexpected here.";
+                return error;
+            };
 
-            if (iDebugOutput && iError)
-                (*iDebugOutput) << "Error: " << iError.value() << std::endl;
+            if (!iError && iDeepestParse < aSource.data() + aSource.size())
+                iError = error_print("syntax error: ", iDeepestParse);
+
             if (iDebugOutput)
-                (*iDebugOutput) << "Parse time" << (iDebugScan ? " (debug)" : "") << ": " << std::setprecision(3) <<
-                std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() / 1000.0 <<
-                " seconds" << std::endl;
+            {
+                if (iError)
+                    (*iDebugOutput) << "Error: " << iError.value() << std::endl;
+                else
+                    (*iDebugOutput) << "Parse time" << (iDebugScan ? " (debug)" : "") << ": " << std::setprecision(3) <<
+                        std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() / 1000.0 <<
+                        " seconds" << std::endl;
+            }
             
-            if (!result.has_value())
+            if (iError)
+            {
+                if (iDebugSource)
+                    (*iDebugOutput) << aSource << std::endl;
                 return false;
+            }
 
             iAst = std::move(*rootNode);
 
@@ -516,6 +529,8 @@ namespace neolib
             char const* sourceNext = aSource.data();
             char const* sourceEnd = aSource.data() + aSource.size();
 
+            iDeepestParse = std::max(iDeepestParse, sourceNext);
+
             scoped_counter sc{ iLevel };
 
             if (iLevel > iMaxLevel)
@@ -586,6 +601,8 @@ namespace neolib
             std::optional<std::string_view> result;
             char const* sourceNext = aSource.data();
             char const* sourceEnd = aSource.data() + aSource.size();
+
+            iDeepestParse = std::max(iDeepestParse, sourceNext);
 
             scoped_counter sc{ iLevel };
             std::optional<scoped_debug_print> sdp;
@@ -719,8 +736,6 @@ namespace neolib
                         sourceNext = std::next(sourceNext, partialResult->size());
                     }
                 }
-                if (!result)
-                    result.emplace(sourceNext, sourceNext);
                 iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
@@ -850,6 +865,7 @@ namespace neolib
         std::vector<std::pair<rule const*, std::string_view>> iStack;
         std::uint32_t iMaxLevel = 256;
         std::uint32_t iLevel = 0;
+        char const* iDeepestParse;
         std::optional<std::string> iError;
         struct cache_result
         {

@@ -170,5 +170,9 @@ int main(int argc, char** argv)
     parser.set_debug_output(std::cerr);
     parser.set_debug_scan(false);
     auto result = parser.parse(token::Program, source);
+    if (result)
+        return EXIT_SUCCESS;
+    else
+        return EXIT_FAILURE;
 }
 
