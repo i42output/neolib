@@ -2,6 +2,23 @@
 #include <neolib/core/i_enum.hpp>
 #include <neolib/file/lexer.hpp>
 
+namespace
+{
+    void test_assert(bool assertion)
+    {
+        if (!assertion)
+            throw std::logic_error("Test failed");
+    }
+    void test_assert(int iteration, bool assertion)
+    {
+        if (!assertion)
+        {
+            std::cerr << "Test failed, iteration = " << iteration << std::endl;
+            throw std::logic_error("Test failed");
+        }
+    }
+}
+
 namespace lexer_test
 {
     enum class token
@@ -81,12 +98,40 @@ namespace lexer_test
     enable_neolib_lexer(token)
 }
 
-std::string_view const source = R"test(
+std::string_view const sourcePass1 = R"test(
     void foo()
     {
         1;
         x := 1 + 1 + 1; 
         y := 7 + 42.0 * 1.0 * (5-1+2) + x * 2;
+    }
+)test";
+
+std::string_view const sourceFail1 = R"test(
+    void foo()
+    {
+        1q;
+        x := 1 + 1 + 1; 
+        y := 7 + 42.0 * 1.0 * (5-1+2) + x * 2;
+    }
+)test";
+
+std::string_view const sourceFail2 = R"test(
+    void foo()
+    {
+        1;
+        x := 1 + 1 + 1; 
+        y := 7 + 4
+2.0 * 1.0 * (5-1+2) + x * 2;
+    }
+)test";
+
+std::string_view const sourceFail3 = R"test(
+    void foo()
+    {
+        1;
+        x := 1 + 1 + 1; 
+        y := 7 + 42.0 * 1.0 * (5-1+2)) + x * 2;
     }
 )test";
 
@@ -169,10 +214,9 @@ int main(int argc, char** argv)
     neolib::lexer<token> parser{ lexerRules };
     parser.set_debug_output(std::cerr);
     parser.set_debug_scan(false);
-    auto result = parser.parse(token::Program, source);
-    if (result)
-        return EXIT_SUCCESS;
-    else
-        return EXIT_FAILURE;
+    test_assert(parser.parse(token::Program, sourcePass1));
+    test_assert(!parser.parse(token::Program, sourceFail1));
+    test_assert(!parser.parse(token::Program, sourceFail2));
+    test_assert(!parser.parse(token::Program, sourceFail3));
 }
 
