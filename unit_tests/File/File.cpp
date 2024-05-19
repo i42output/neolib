@@ -84,10 +84,9 @@ namespace lexer_test
 std::string_view const source = R"test(
     void foo()
     {
-        a := (1+1+1+1+1);
-        b := (1*1*1*1*1);
+        1;
         x := 1 + 1 + 1; 
-        y := 7 + 42.0 * 1.0 * (5-1+2) + x;
+        y := 7 + 42.0 * 1.0 * (5-1+2) + x * 2;
     }
 )test";
 
@@ -169,7 +168,7 @@ int main(int argc, char** argv)
 
     neolib::lexer<token> parser{ lexerRules };
     parser.set_debug_output(std::cerr);
-//    parser.set_debug_scan(true);
+    parser.set_debug_scan(false);
     auto result = parser.parse(token::Program, source);
 }
 

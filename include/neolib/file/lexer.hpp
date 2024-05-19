@@ -410,7 +410,12 @@ namespace neolib
             auto const endTime = std::chrono::high_resolution_clock::now();
 
             if (!result.has_value() && !iError)
-                iError = "Unspecified error";
+                iError = "unspecified error";
+            else if (result.value().data() + result.value().size() < aSource.data() + aSource.size())
+            {
+                iError = "(" + std::to_string(std::count(result.value().begin(), result.value().end(), '\n') + 1) + "," + std::to_string(result.value().size() - result.value().rfind('\n')) + ") ";
+                iError.value() += std::string{ "syntax error: '" } + debug_print(std::string_view{ result.value().data() + result.value().size(), 1 }) + "' was unexpected here.";
+            }
 
             if (iDebugOutput && iError)
                 (*iDebugOutput) << "Error: " << iError.value() << std::endl;
@@ -515,7 +520,7 @@ namespace neolib
 
             if (iLevel > iMaxLevel)
             {
-                iError = "Internal compiler error (parse too deep): ";
+                iError = "internal compiler error (parse too deep): ";
                 bool first = true;
                 auto n = &aNode;
                 while (n)
@@ -578,7 +583,7 @@ namespace neolib
                 return cachedResult;
             }
 
-            std::string_view result = { aSource.data(), aSource.data() };
+            std::optional<std::string_view> result;
             char const* sourceNext = aSource.data();
             char const* sourceEnd = aSource.data() + aSource.size();
 
@@ -628,7 +633,7 @@ namespace neolib
             {
                 for (auto const& a : std::get<sequence>(aAtom).value)
                 {
-                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
+                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });
                     if (!partialResult)
                         return {};
                     result = apply_partial_result(result, partialResult);
@@ -696,6 +701,8 @@ namespace neolib
                     }
                 }
                 iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
+                if (!result)
+                    result.emplace(sourceNext, sourceNext);
                 return ((sdp ? sdp->ok = true : true), result);
             }
             else if (std::holds_alternative<discard>(aAtom))
@@ -712,6 +719,8 @@ namespace neolib
                         sourceNext = std::next(sourceNext, partialResult->size());
                     }
                 }
+                if (!result)
+                    result.emplace(sourceNext, sourceNext);
                 iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
@@ -719,13 +728,16 @@ namespace neolib
             return {};
         }
 
-        static std::string_view apply_partial_result(std::string_view const& aResult, std::optional<std::string_view> const& aPartialResult)
+        static std::optional<std::string_view> apply_partial_result(std::optional<std::string_view> const& aResult, std::optional<std::string_view> const& aPartialResult)
         {
-            char const* resultFirst = aResult.data();
-            char const* resultLast = std::next(aResult.data(), aResult.size());
+            if (!aResult)
+                return aPartialResult.value();
+            char const* resultFirst = aResult.value().data();
+            char const* resultLast = std::next(aResult.value().data(), aResult.value().size());
             char const* partialResultFirst = aPartialResult.value().data();
             char const* partialResultLast = std::next(aPartialResult.value().data(), aPartialResult.value().size());
-            return { std::min(resultFirst, partialResultFirst), std::max(resultLast, partialResultLast) };
+            std::string_view result{ std::min(resultFirst, partialResultFirst), std::max(resultLast, partialResultLast) };
+            return result;
         }
 
     private:
