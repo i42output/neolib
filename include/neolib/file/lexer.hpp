@@ -105,8 +105,10 @@ namespace neolib
         }
     }
 
+    struct lexer_component_base {};
+
     template <lexer_component_type Type>
-    struct lexer_component
+    struct lexer_component : lexer_component_base
     {
         static constexpr lexer_component_type type = Type;
     };
@@ -935,6 +937,10 @@ namespace neolib
     using lexer_rule = typename lexer<Token>::rule;
 
     template <typename T>
+    concept LexerComponent = std::is_base_of_v<lexer_component_base, T> && 
+        !std::is_base_of_v<lexer_component<lexer_component_type::Rule>, T>;
+
+    template <typename T>
     concept LexerTerminal = std::is_base_of_v<lexer_component<lexer_component_type::Terminal>, T>;
 
     template <typename T>
@@ -1008,22 +1014,10 @@ namespace neolib
             return lexer_repeat<Token>{ lhs, rhs };
         }
 
-        template <LexerTerminal Terminal>
-        inline lexer_repeat<typename Terminal::token_type> operator|(Terminal const& lhs, Terminal const& rhs)
+        template <LexerComponent Component1, LexerComponent Component2>
+        inline lexer_repeat<typename Component1::token_type> operator|(Component1 const& lhs, Component2 const& rhs)
         {
-            return lexer_repeat<typename Terminal::token_type>{ lhs, rhs };
-        }
-
-        template <LexerTerminal Terminal, LexerPrimitive Primitive>
-        inline lexer_repeat<typename Terminal::token_type> operator|(Terminal const& lhs, Primitive const& rhs)
-        {
-            return lexer_repeat<typename Terminal::token_type>{ lhs, rhs };
-        }
-
-        template <LexerTerminal Terminal, LexerPrimitive Primitive>
-        inline lexer_repeat<typename Terminal::token_type> operator|(Primitive const& lhs, Terminal const& rhs)
-        {
-            return lexer_repeat<typename Terminal::token_type>{ lhs, rhs };
+            return lexer_repeat<typename Component1::token_type>{ lhs, rhs };
         }
 
         template <LexerTerminal Terminal>
@@ -1038,46 +1032,10 @@ namespace neolib
             return lexer_repeat<typename Terminal::token_type>{ Terminal{ lhs }, rhs };
         }
 
-        template <LexerRepeat Repeat, LexerTerminal Terminal>
-        inline Repeat operator|(Repeat const& lhs, Terminal const& rhs)
-        {
-            return Repeat{ lhs, rhs };
-        }
-
-        template <LexerRepeat Repeat, LexerTerminal Terminal>
-        inline Repeat operator|(Terminal const& lhs, Repeat const& rhs)
-        {
-            return Repeat{ lhs, rhs };
-        }
-
-        template <LexerRange Range>
-        inline lexer_repeat<typename Range::token_type> operator|(Range const& lhs, Range const& rhs)
-        {
-            return lexer_repeat<typename Range::token_type>{ lhs , rhs };
-        }
-
-        template <LexerRepeat Repeat, LexerRange Range>
-        inline Repeat operator|(Repeat const& lhs, Range const& rhs)
-        {
-            return Repeat{ lhs, rhs };
-        }
-
-        template <LexerRepeat Repeat, LexerRange Range>
-        inline Repeat operator|(Range const& lhs, Repeat const& rhs)
-        {
-            return Repeat{ lhs, rhs };
-        }
-
         template <LexerRule Rule>
         inline Rule operator,(Rule const& lhs, lexer_primitive<typename Rule::token_type> const& rhs)
         {
             return Rule{ lhs.lhs, lexer_sequence<typename Rule::token_type>{ lhs.rhs, rhs } };
-        }
-
-        template <LexerSequence Sequence>
-        inline Sequence operator,(Sequence const& lhs, lexer_primitive<typename Sequence::token_type> const& rhs)
-        {
-            return Sequence{ lhs, rhs };
         }
 
         template <TokenEnum Token>
@@ -1086,40 +1044,22 @@ namespace neolib
             return lexer_sequence<Token>{ lhs, rhs };
         }
 
-        template <TokenEnum Token>
-        inline lexer_sequence<Token> operator,(lexer_primitive<Token> const& lhs, Token rhs)
+        template <LexerComponent Component1, LexerComponent Component2>
+        inline lexer_sequence<typename Component1::token_type> operator,(Component1 const& lhs, Component2 const& rhs)
+        {
+            return lexer_sequence<typename Component1::token_type>{ lhs, rhs };
+        }
+
+        template <LexerComponent Component, TokenEnum Token>
+        inline lexer_sequence<Token> operator,(Component const& lhs, Token rhs)
         {
             return lexer_sequence<Token>{ lhs, rhs };
         }
 
-        template <TokenEnum Token>
-        inline lexer_sequence<Token> operator,(Token lhs, lexer_primitive<Token> const& rhs)
+        template <TokenEnum Token, LexerComponent Component>
+        inline lexer_sequence<Token> operator,(Token lhs, Component const& rhs)
         {
             return lexer_sequence<Token>{ lhs, rhs };
-        }
-
-        template <LexerTerminal Terminal>
-        inline lexer_sequence<typename Terminal::token_type> operator,(Terminal const& lhs, Terminal const& rhs)
-        {
-            return lexer_sequence<typename Terminal::token_type>{ lhs, rhs };
-        }
-
-        template <LexerRepeat Repeat>
-        inline lexer_sequence<typename Repeat::token_type> operator,(Repeat const& lhs, Repeat const& rhs)
-        {
-            return lexer_sequence<typename Repeat::token_type>{ lhs, rhs };
-        }
-
-        template <LexerTerminal Terminal, LexerPrimitive Primitive>
-        inline lexer_sequence<typename Terminal::token_type> operator,(Terminal const& lhs, Primitive const& rhs)
-        {
-            return lexer_sequence<typename Terminal::token_type>{ lhs, rhs };
-        }
-
-        template <LexerTerminal Terminal, LexerPrimitive Primitive>
-        inline lexer_sequence<typename Terminal::token_type> operator,(Primitive const& lhs, Terminal const& rhs)
-        {
-            return lexer_sequence<typename Terminal::token_type>{ lhs, rhs };
         }
 
         template <LexerTerminal Terminal>
@@ -1132,18 +1072,6 @@ namespace neolib
         inline lexer_sequence<typename Terminal::token_type> operator,(char lhs, Terminal const& rhs)
         {
             return lexer_sequence<typename Terminal::token_type>{ Terminal{ lhs }, rhs };
-        }
-
-        template <LexerSequence Sequence, LexerTerminal Terminal>
-        inline Sequence operator,(Sequence const& lhs, Terminal const& rhs)
-        {
-            return Sequence{ lhs, rhs };
-        }
-
-        template <LexerSequence Sequence, LexerTerminal Terminal>
-        inline Sequence operator,(Terminal const& lhs, Sequence const& rhs)
-        {
-            return Sequence{ lhs, rhs };
         }
 
         template <typename Token>
