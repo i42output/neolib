@@ -148,10 +148,10 @@ int main(int argc, char** argv)
         ( token::FunctionReturnType >> token::Type ),
         ( token::FunctionName >> token::Identifier ),
         ( token::FunctionParameterList >> 
-            token::FunctionParameter , optional(repeat(sequence(',' , token::FunctionParameter))) ),
-        ( token::FunctionBody >> discard(token::OpenScope) , optional(repeat(token::Statement)) , discard(token::CloseScope) ),
+            token::FunctionParameter , repeat(sequence(',' , token::FunctionParameter)) ),
+        ( token::FunctionBody >> discard(token::OpenScope) , optional(+repeat(token::Statement)) , discard(token::CloseScope) ),
         ( token::Type >> token::Identifier ),
-        ( token::Identifier >> sequence(repeat(range('A', 'Z') | range('a', 'z')) , optional(repeat(range('A', 'Z') | range('a', 'z') | range('0', '9')))) ),
+        ( token::Identifier >> (+(range('A', 'Z') | range('a', 'z')) , (range('A', 'Z') | range('a', 'z') | range('0', '9'))) ),
         ( token::OpenScope >> '{' ),
         ( token::CloseScope >> '}' ),
         ( token::Statement >> token::Expression , discard(token::EndStatement) ),
@@ -174,7 +174,7 @@ int main(int argc, char** argv)
         ( token::Negate >> '-' ),
         ( token::Assign >> ":=" ),
         ( token::Equal >> '=' ),
-        ( token::Number >> repeat(token::Digit) , optional(token::Decimal) , optional(repeat(token::Digit)) ),
+        ( token::Number >> +repeat(token::Digit) , optional(token::Decimal) , optional(+repeat(token::Digit)) ),
         ( token::Digit >> range('0' , '9') ),
         ( token::Decimal >> '.' ),
         ( token::Variable >> token::Identifier ),
@@ -182,7 +182,7 @@ int main(int argc, char** argv)
         // whitespace handling...
 
         ( token::Eof >> "" ),
-        ( token::Whitespace >> discard(optional(' '_ | '\r' | '\n' | '\t' ))),
+        ( token::Whitespace >> discard(' '_ | '\r' | '\n' | '\t' )),
         ( token::Program >> discard(token::Whitespace) , token::Program , discard(token::Whitespace) ),
         ( token::FunctionDefinition >> discard(token::Whitespace) , token::FunctionDefinition , discard(token::Whitespace) ),
         ( token::FunctionPrototype >> discard(token::Whitespace) , token::FunctionPrototype , discard(token::Whitespace) ),

@@ -139,11 +139,14 @@ namespace neolib
         struct primitive_atom;
         struct atom;
 
-        template <typename Derived>
-        struct tuple
+        struct no_params {};
+
+        template <typename Derived, typename Params = no_params>
+        struct tuple : Params
         {
             using token_type = token;
             using derived_type = Derived;
+            using params_type = Params;
             using value_type = std::vector<primitive_atom>;
 
             value_type value;
@@ -235,10 +238,22 @@ namespace neolib
             using base_type::base_type;
         };
 
-        struct repeat : tuple<repeat>, lexer_component<lexer_component_type::Repeat>
+        struct repeat_params
         {
-            using base_type = tuple<repeat>;
+            bool atLeastOne = false;
+        };
+
+        struct repeat : tuple<repeat, repeat_params>, lexer_component<lexer_component_type::Repeat>
+        {
+            using base_type = tuple<repeat, repeat_params>;
             using base_type::base_type;
+
+            repeat operator+() const
+            {
+                repeat result = *this;
+                result.atLeastOne = true;
+                return result;
+            }
         };
 
         struct range : tuple<range>, lexer_component<lexer_component_type::Range>
@@ -699,6 +714,12 @@ namespace neolib
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
                     return ((sdp ? sdp->ok = true : true), result);
                 }
+                else if (!std::get<repeat>(aAtom).atLeastOne)
+                {
+                    result.emplace(sourceNext, sourceNext);
+                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
+                    return ((sdp ? sdp->ok = true : true), result);
+                }
                 return {};
             }
             else if (std::holds_alternative<choice>(aAtom))
@@ -1083,6 +1104,12 @@ namespace neolib
             return lexer_sequence<typename Terminal::token_type>{ lhs, rhs };
         }
 
+        template <LexerRepeat Repeat>
+        inline lexer_sequence<typename Repeat::token_type> operator,(Repeat const& lhs, Repeat const& rhs)
+        {
+            return lexer_sequence<typename Repeat::token_type>{ lhs, rhs };
+        }
+
         template <LexerTerminal Terminal, LexerPrimitive Primitive>
         inline lexer_sequence<typename Terminal::token_type> operator,(Terminal const& lhs, Primitive const& rhs)
         {
@@ -1120,9 +1147,9 @@ namespace neolib
         }
 
         template <typename Token>
-        inline lexer_choice<Token> choice(lexer_primitive<Token> const& lhs)
+        inline lexer_choice<Token> choice(lexer_repeat<Token> const& lhs)
         {
-            return { lhs };
+            return lexer_choice<Token>{ lhs.value };
         }
 
         template <typename Token>
