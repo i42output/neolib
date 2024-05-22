@@ -98,38 +98,40 @@ namespace lexer_test
     enable_neolib_lexer(token)
 }
 
-std::string_view const sourcePass1 = R"test(
-    void foo()
+std::string_view const sourcePass1 = R"test(r f(){})test";
+
+std::string_view const sourcePass2 = R"test(
+    xyzzY0 foo()
     {
-        1;
+        1234;
         x := 1 + 1 + 1; 
         y := 7 + 42.0 * 1.0 * (5-1+2) + x * 2;
     }
 )test";
 
-std::string_view const sourceFail1 = R"test(
-    void foo()
+std::string_view const sourceError1 = R"test(
+    xyzzY0 foo()
     {
-        1q;
+        1234q;
         x := 1 + 1 + 1; 
         y := 7 + 42.0 * 1.0 * (5-1+2) + x * 2;
     }
 )test";
 
-std::string_view const sourceFail2 = R"test(
-    void foo()
+std::string_view const sourceError2 = R"test(
+    xyzzY0 foo()
     {
-        1;
+        1234;
         x := 1 + 1 + 1; 
         y := 7 + 4
 2.0 * 1.0 * (5-1+2) + x * 2;
     }
 )test";
 
-std::string_view const sourceFail3 = R"test(
-    void foo()
+std::string_view const sourceError3 = R"test(
+    xyzzY0 foo()
     {
-        1;
+        1234;
         x := 1 + 1 + 1; 
         y := 7 + 42.0 * 1.0 * (5-1+2)) + x * 2;
     }
@@ -141,7 +143,7 @@ int main(int argc, char** argv)
 
     neolib::lexer_rule<token> lexerRules[] =
     {
-        ( token::Program >> repeat(token::FunctionDefinition) , discard(token::Eof) ),
+        ( token::Program >> token::FunctionDefinition , discard(token::Eof) ),
         ( token::FunctionDefinition >> token::FunctionPrototype , token::FunctionBody ),
         ( token::FunctionPrototype >> token::FunctionReturnType , token::FunctionName , 
             discard('(') , optional(token::FunctionParameterList) , discard(')') ),
@@ -149,7 +151,7 @@ int main(int argc, char** argv)
         ( token::FunctionName >> token::Identifier ),
         ( token::FunctionParameterList >> 
             token::FunctionParameter , repeat(sequence(',' , token::FunctionParameter)) ),
-        ( token::FunctionBody >> discard(token::OpenScope) , optional(+repeat(token::Statement)) , discard(token::CloseScope) ),
+        ( token::FunctionBody >> discard(token::OpenScope) , repeat(token::Statement) , discard(token::CloseScope) ),
         ( token::Type >> token::Identifier ),
         ( token::Identifier >> (+(range('A', 'Z') | range('a', 'z')) , (range('A', 'Z') | range('a', 'z') | range('0', '9'))) ),
         ( token::OpenScope >> '{' ),
@@ -174,15 +176,15 @@ int main(int argc, char** argv)
         ( token::Negate >> '-' ),
         ( token::Assign >> ":=" ),
         ( token::Equal >> '=' ),
-        ( token::Number >> +repeat(token::Digit) , optional(token::Decimal) , optional(+repeat(token::Digit)) ),
+        ( token::Number >> +repeat(token::Digit) , optional((token::Decimal , +repeat(token::Digit))) ),
         ( token::Digit >> range('0' , '9') ),
         ( token::Decimal >> '.' ),
         ( token::Variable >> token::Identifier ),
 
         // whitespace handling...
 
-        ( token::Eof >> "" ),
-        ( token::Whitespace >> discard(' '_ | '\r' | '\n' | '\t' )),
+        ( token::Eof >> discard(token::Whitespace), "" ),
+        ( token::Whitespace >> discard(' '_ | '\r' | '\n' | '\t' ) ),
         ( token::Program >> discard(token::Whitespace) , token::Program , discard(token::Whitespace) ),
         ( token::FunctionDefinition >> discard(token::Whitespace) , token::FunctionDefinition , discard(token::Whitespace) ),
         ( token::FunctionPrototype >> discard(token::Whitespace) , token::FunctionPrototype , discard(token::Whitespace) ),
@@ -215,8 +217,9 @@ int main(int argc, char** argv)
     parser.set_debug_output(std::cerr);
     parser.set_debug_scan(false);
     test_assert(parser.parse(token::Program, sourcePass1));
-    test_assert(!parser.parse(token::Program, sourceFail1));
-    test_assert(!parser.parse(token::Program, sourceFail2));
-    test_assert(!parser.parse(token::Program, sourceFail3));
+    test_assert(parser.parse(token::Program, sourcePass2));
+    test_assert(!parser.parse(token::Program, sourceError1));
+    test_assert(!parser.parse(token::Program, sourceError2));
+    test_assert(!parser.parse(token::Program, sourceError3));
 }
 

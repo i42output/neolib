@@ -426,11 +426,13 @@ namespace neolib
             auto const result = parse(aRoot, *rootNode, aSource);
             simplify_ast(*rootNode);
             auto const endTime = std::chrono::high_resolution_clock::now();
+            std::uint32_t linePos;
+            std::uint32_t columnPos;
 
             auto error_print = [&](std::string const& errorPrefix, char const* pos) -> std::string
             {
-                auto const linePos = std::count(aSource.data(), pos, '\n') + 1;
-                auto const columnPos = std::distance(std::reverse_iterator(pos), 
+                linePos = std::count(aSource.data(), pos, '\n') + 1;
+                columnPos = std::distance(std::reverse_iterator(pos), 
                     std::find(std::reverse_iterator(pos), std::reverse_iterator(aSource.data()), '\n')) + 1;
                 std::string error = errorPrefix + "(" + std::to_string(linePos) + "," + std::to_string(columnPos) + ") ";
                 error += "'" + debug_print(std::string_view{ pos, std::next(pos) }) + "' was unexpected here.";
@@ -442,31 +444,35 @@ namespace neolib
 
             if (iDebugOutput)
             {
+                std::vector<std::string> lines;
+                std::istringstream iss{ std::string{ aSource } };
+                std::string line;
+                while (std::getline(iss, line))
+                    lines.push_back(line);
+                std::size_t numberWidth = std::to_string(lines.size()).size();
+                std::uint32_t lineNumber = 1;
+                for (auto const& line : lines)
+                {
+                    (*iDebugOutput) << std::setw(numberWidth) << lineNumber << (iError && lineNumber == linePos ? ">" : "|") << line << std::endl;
+                    ++lineNumber;
+                }
+                if (iError)
+                    (*iDebugOutput) << std::string(columnPos + numberWidth, '-') << "^" << std::endl;
                 if (iError)
                     (*iDebugOutput) << "Error: " << iError.value() << std::endl;
                 else
                     (*iDebugOutput) << "Parse time" << (iDebugScan ? " (debug)" : "") << ": " << std::setprecision(3) <<
                         std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() / 1000.0 <<
                         " seconds" << std::endl;
+                if (iDebugAst)
+                    (*iDebugOutput) << debug_print_ast(*rootNode) << std::endl;
             }
             
             if (iError)
-            {
-                if (iDebugSource)
-                    (*iDebugOutput) << aSource << std::endl;
                 return false;
-            }
 
             iAst = std::move(*rootNode);
 
-            if (iDebugOutput)
-            {
-                if (iDebugSource)
-                    (*iDebugOutput) << aSource << std::endl;
-                if (iDebugAst)
-                    (*iDebugOutput) << debug_print_ast(iAst) << std::endl;
-            }
-            
             return true;
         }
 
@@ -498,23 +504,35 @@ namespace neolib
                     ++child;
             }
 
-            if (aNode->parent && aNode->parent->rule &&
-                std::holds_alternative<token>(aNode->rule->lhs[0]) &&
-                std::holds_alternative<token>(aNode->parent->rule->lhs[0]) &&
-                std::get<token>(aNode->rule->lhs[0]) == std::get<token>(aNode->parent->rule->lhs[0]) &&
-                aNode->value.data() >= aNode->parent->value.data() &&
-                std::next(aNode->value.data(), aNode->value.size()) <= std::next(aNode->parent->value.data(), aNode->parent->value.size()))
+            if (aNode->parent && aNode->parent->rule)
             {
-                aNode->parent->value = aNode->value;
                 auto existing = std::find_if(aNode->parent->children.begin(), aNode->parent->children.end(), [&](auto const& e)
+                {
+                    return &*e == aNode;
+                });
+
+                auto const ourToken = std::get<token>(aNode->rule->lhs[0]);
+                auto const parentToken = std::get<token>(aNode->parent->rule->lhs[0]);
+
+                if (std::holds_alternative<range>(*aNode->atom))
+                {
+                    if (std::holds_alternative<sequence>(aNode->parent->rule->rhs[0]) || std::holds_alternative<repeat>(aNode->parent->rule->rhs[0]))
                     {
-                        return &*e == aNode;
-                    });
-                for (auto& child2 : aNode->children)
-                    child2->parent = aNode->parent;
-                auto pos = aNode->parent->children.insert(std::next(existing),
-                    std::make_move_iterator(aNode->children.begin()), std::make_move_iterator(aNode->children.end()));
-                return std::prev(pos);
+                        aNode->parent->value = std::string_view{ aNode->parent->value.data(), std::to_address(aNode->value.end()) };
+                        return existing;
+                    }
+                }
+                else if (ourToken == parentToken &&
+                    aNode->value.data() >= aNode->parent->value.data() &&
+                    std::to_address(aNode->value.end()) <= std::to_address(aNode->parent->value.end()))
+                {
+                    aNode->parent->value = aNode->value;
+                    for (auto& child2 : aNode->children)
+                        child2->parent = aNode->parent;
+                    auto pos = aNode->parent->children.insert(std::next(existing),
+                        std::make_move_iterator(aNode->children.begin()), std::make_move_iterator(aNode->children.end()));
+                    return std::prev(pos);
+                }
             }
 
             return {};
@@ -671,7 +689,7 @@ namespace neolib
                     if (!partialResult)
                         return {};
                     result = apply_partial_result(result, partialResult);
-                    sourceNext = std::next(sourceNext, partialResult->size());
+                    sourceNext = std::to_address(partialResult->end());
                 }
                 iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
                 return ((sdp ? sdp->ok = true : true), result);
@@ -684,7 +702,7 @@ namespace neolib
                     if (partialResult)
                     {
                         result = apply_partial_result(result, partialResult);
-                        sourceNext = std::next(sourceNext, partialResult->size());
+                        sourceNext = std::to_address(partialResult->end());
                     }
                 }
                 if (!result)
@@ -707,7 +725,7 @@ namespace neolib
                             foundAtLeastOne = true;
                             found = true;
                             result = apply_partial_result(result, partialResult);
-                            sourceNext = std::next(sourceNext, partialResult->size());
+                            sourceNext = std::to_address(partialResult->end());
                         }
                     }
                 } while (found);
@@ -733,7 +751,7 @@ namespace neolib
                     if (partialResult)
                     {
                         result = apply_partial_result(result, partialResult);
-                        sourceNext = std::next(sourceNext, partialResult->size());
+                        sourceNext = std::to_address(partialResult->end());
                         found = true;
                         break;
                     }
@@ -751,14 +769,16 @@ namespace neolib
                 {
                     typename ast_node::child_list children;
                     std::swap(aNode.children, children);
-                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });
+                    auto partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });
                     std::swap(aNode.children, children);
                     if (partialResult)
                     {
                         result = apply_partial_result(result, partialResult);
-                        sourceNext = std::next(sourceNext, partialResult->size());
+                        sourceNext = std::to_address(partialResult->end());
                     }
                 }
+                if (result)
+                    result = std::string_view{ std::to_address(result->end()), std::to_address(result->end()) };
                 iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
@@ -770,10 +790,10 @@ namespace neolib
         {
             if (!aResult)
                 return aPartialResult.value();
-            char const* resultFirst = aResult.value().data();
-            char const* resultLast = std::next(aResult.value().data(), aResult.value().size());
-            char const* partialResultFirst = aPartialResult.value().data();
-            char const* partialResultLast = std::next(aPartialResult.value().data(), aPartialResult.value().size());
+            char const* resultFirst = to_address(aResult->begin());
+            char const* resultLast = to_address(aResult->end());
+            char const* partialResultFirst = to_address(aPartialResult->begin());
+            char const* partialResultLast = to_address(aPartialResult->end());
             std::string_view result{ std::min(resultFirst, partialResultFirst), std::max(resultLast, partialResultLast) };
             return result;
         }
@@ -1077,7 +1097,7 @@ namespace neolib
         template <typename Token>
         inline lexer_choice<Token> choice(lexer_repeat<Token> const& lhs)
         {
-            return lexer_choice<Token>{ lhs.value };
+            return { lhs.value };
         }
 
         template <typename Token>
