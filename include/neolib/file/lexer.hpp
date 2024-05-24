@@ -737,6 +737,8 @@ namespace neolib
             {
                 bool foundAtLeastOne = false;
                 bool found = false;
+                char const* spanStart = sourceNext;
+                char const* spanEnd = nullptr;
                 do
                 {
                     found = false;
@@ -747,11 +749,20 @@ namespace neolib
                         {
                             foundAtLeastOne = true;
                             found = true;
-                            result = apply_partial_result(result, partialResult);
+                            if (std::holds_alternative<discard>(a) && !std::get<discard>(a).childrenOnly)
+                            {
+                                if (spanEnd == nullptr)
+                                    spanStart = std::to_address(partialResult->end());
+                            }
+                            else
+                                spanEnd = std::to_address(partialResult->end());
                             sourceNext = std::to_address(partialResult->end());
                         }
                     }
                 } while (found);
+                if (spanEnd == nullptr)
+                    spanEnd = spanStart;
+                result = std::string_view{ spanStart, spanEnd };
                 if (foundAtLeastOne)
                 {
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
