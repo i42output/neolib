@@ -270,10 +270,22 @@ namespace neolib
             using base_type::base_type;
         };
 
-        struct discard : tuple<discard>, lexer_component<lexer_component_type::Discard>
+        struct discard_params
         {
-            using base_type = tuple<discard>;
+            bool childrenOnly = false;
+        };
+
+        struct discard : tuple<discard, discard_params>, lexer_component<lexer_component_type::Discard>
+        {
+            using base_type = tuple<discard, discard_params>;
             using base_type::base_type;
+
+            discard operator~() const
+            {
+                discard result = *this;
+                result.childrenOnly = true;
+                return result;
+            }
         };
 
         struct primitive_atom : std::variant<token, terminal, undefined, choice, sequence, repeat, range, optional, discard>, lexer_component<lexer_component_type::Primitive>
@@ -561,8 +573,8 @@ namespace neolib
             if (iError)
                 return {};
 
-            char const* sourceNext = aSource.data();
-            char const* sourceEnd = aSource.data() + aSource.size();
+            char const* sourceNext = std::to_address(aSource.begin());
+            char const* sourceEnd = std::to_address(aSource.end());
 
             iDeepestParse = std::max(iDeepestParse, sourceNext);
 
@@ -634,8 +646,8 @@ namespace neolib
             }
 
             std::optional<std::string_view> result;
-            char const* sourceNext = aSource.data();
-            char const* sourceEnd = aSource.data() + aSource.size();
+            char const* sourceNext = std::to_address(aSource.begin());
+            char const* sourceEnd = std::to_address(aSource.end());
 
             iDeepestParse = std::max(iDeepestParse, sourceNext);
 
@@ -683,14 +695,25 @@ namespace neolib
             }
             else if (std::holds_alternative<sequence>(aAtom))
             {
+                char const* spanStart = sourceNext;
+                char const* spanEnd = nullptr;
                 for (auto const& a : std::get<sequence>(aAtom).value)
                 {
                     auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });
                     if (!partialResult)
                         return {};
-                    result = apply_partial_result(result, partialResult);
+                    if (std::holds_alternative<discard>(a) && !std::get<discard>(a).childrenOnly)
+                    {
+                        if (spanEnd == nullptr)
+                            spanStart = std::to_address(partialResult->end());
+                    }
+                    else
+                        spanEnd = std::to_address(partialResult->end());
                     sourceNext = std::to_address(partialResult->end());
                 }
+                if (spanEnd == nullptr)
+                    spanEnd = spanStart;
+                result = std::string_view{ spanStart, spanEnd };
                 iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
@@ -777,8 +800,6 @@ namespace neolib
                         sourceNext = std::to_address(partialResult->end());
                     }
                 }
-                if (result)
-                    result = std::string_view{ std::to_address(result->end()), std::to_address(result->end()) };
                 iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
