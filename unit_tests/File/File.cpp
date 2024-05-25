@@ -109,7 +109,7 @@ std::string_view const sourcePass2 = R"test(
     {
         1234;
         x := 1 + 1 + 1; 
-        y := 7 + 42.0 * 1.0 * (5-1+2) + x * 2;
+        y := 7 + -42.001 * 1.0 * (5-1+2) + x * 2;
     }
 )test";
 
@@ -118,7 +118,7 @@ std::string_view const sourceError1 = R"test(
     {
         1234q;
         x := 1 + 1 + 1; 
-        y := 7 + 42.0 * 1.0 * (5-1+2) + x * 2;
+        y := 7 + -42.001 * 1.0 * (5-1+2) + x * 2;
     }
 )test";
 
@@ -137,7 +137,7 @@ std::string_view const sourceError3 = R"test(
     {
         1234;
         x := 1 + 1 + 1; 
-        y := 7 + 42.0 * 1.0 * (5-1+2)) + x * 2;
+        y := 7 + -42.001 * 1.0 * (5-1+2)) + x * 2;
     }
 )test";
 
@@ -149,13 +149,13 @@ int main(int argc, char** argv)
     {
         ( token::Program >> repeat(token::FunctionDefinition) , discard(token::Eof)),
         ( token::FunctionDefinition >> token::FunctionPrototype , token::FunctionBody ),
-        ( token::FunctionPrototype >> token::FunctionReturnType , token::FunctionName , 
-            optional(token::FunctionParameterList) ),
+        ( token::FunctionPrototype >> token::FunctionReturnType , token::FunctionName , token::FunctionParameterList ),
         ( token::FunctionReturnType >> token::Type ),
         ( token::FunctionName >> token::Identifier ),
         ( token::FunctionParameterList >> 
-            token::FunctionParameterListOpen, token::FunctionParameter , 
-            repeat(sequence(',' , token::FunctionParameter)), token::FunctionParameterListClose ),
+            token::FunctionParameterListOpen, 
+            optional(sequence(token::FunctionParameter, repeat(sequence(',' , token::FunctionParameter)))), 
+            token::FunctionParameterListClose ),
         ( token::FunctionParameterListOpen >> ~discard('(') ),
         ( token::FunctionParameterListClose >> ~discard(')') ),
         ( token::FunctionParameter >> token::Type, token::Variable ),
@@ -192,34 +192,34 @@ int main(int argc, char** argv)
 
         // whitespace handling...
 
-        ( token::Eof >> token::Whitespace, "" ),
-        ( token::Whitespace >> discard(' '_ | '\r' | '\n' | '\t' ) ),
-        ( token::Program >> token::Whitespace , token::Program , token::Whitespace ),
-        ( token::FunctionDefinition >> token::Whitespace , token::FunctionDefinition , token::Whitespace ),
-        ( token::FunctionPrototype >> token::Whitespace , token::FunctionPrototype , token::Whitespace ),
-        ( token::FunctionBody >> token::Whitespace , token::FunctionBody , token::Whitespace ),
-        ( token::FunctionReturnType >> token::Whitespace , token::FunctionReturnType , token::Whitespace ),
-        ( token::FunctionName >> token::Whitespace , token::FunctionName , token::Whitespace ),
-        ( token::FunctionParameter >> token::Whitespace , token::FunctionParameter , token::Whitespace ),
-        ( token::OpenScope >> token::Whitespace , token::OpenScope , token::Whitespace ),
-        ( token::CloseScope >> token::Whitespace , token::CloseScope , token::Whitespace ),
-        ( token::Statement >> token::Whitespace , token::Statement , token::Whitespace ),
-        ( token::EndStatement >> token::Whitespace , token::EndStatement , token::Whitespace ),
-        ( token::Expression >> token::Whitespace , token::Expression , token::Whitespace ),
-        ( token::OpenExpression >> token::Whitespace , token::OpenExpression , token::Whitespace ),
-        ( token::CloseExpression >> token::Whitespace , token::CloseExpression , token::Whitespace ),
-        ( token::Variable >> token::Whitespace , token::Variable , token::Whitespace ),
-        ( token::Identifier >> token::Whitespace , token::Identifier , token::Whitespace ),
-        ( token::Number >> token::Whitespace , token::Number, token::Whitespace ),
-        ( token::Assign >> token::Whitespace , token::Assign, token::Whitespace ),
-        ( token::Equal >> token::Whitespace , token::Equal, token::Whitespace ),
-        ( token::Add >> token::Whitespace , token::Add, token::Whitespace ),
-        ( token::Subtract >> token::Whitespace , token::Subtract, token::Whitespace ),
-        ( token::Multiply >> token::Whitespace , token::Multiply, token::Whitespace ),
-        ( token::Divide >> token::Whitespace , token::Divide, token::Whitespace ),
-        ( token::Negate >> token::Whitespace , token::Negate, token::Whitespace ),
-        ( token::Term >> token::Whitespace , token::Term , token::Whitespace ),
-        ( token::Primary >> token::Whitespace , token::Primary , token::Whitespace )
+        ( token::Eof >> discard(token::Whitespace), "" ),
+        ( token::Whitespace >> (' '_ | '\r' | '\n' | '\t') ),
+        ( token::Program >> discard(token::Whitespace) , token::Program , discard(token::Whitespace) ),
+        ( token::FunctionDefinition >> discard(token::Whitespace) , token::FunctionDefinition , discard(token::Whitespace) ),
+        ( token::FunctionPrototype >> discard(token::Whitespace) , token::FunctionPrototype , discard(token::Whitespace) ),
+        ( token::FunctionBody >> discard(token::Whitespace) , token::FunctionBody , discard(token::Whitespace) ),
+        ( token::FunctionReturnType >> discard(token::Whitespace) , token::FunctionReturnType , discard(token::Whitespace) ),
+        ( token::FunctionName >> discard(token::Whitespace) , token::FunctionName , discard(token::Whitespace) ),
+        ( token::FunctionParameter >> discard(token::Whitespace) , token::FunctionParameter , discard(token::Whitespace) ),
+        ( token::OpenScope >> discard(token::Whitespace) , token::OpenScope , discard(token::Whitespace) ),
+        ( token::CloseScope >> discard(token::Whitespace) , token::CloseScope , discard(token::Whitespace) ),
+        ( token::Statement >> discard(token::Whitespace) , token::Statement , discard(token::Whitespace) ),
+        ( token::EndStatement >> discard(token::Whitespace) , token::EndStatement , discard(token::Whitespace) ),
+        ( token::Expression >> discard(token::Whitespace) , token::Expression , discard(token::Whitespace) ),
+        ( token::OpenExpression >> discard(token::Whitespace) , token::OpenExpression , discard(token::Whitespace) ),
+        ( token::CloseExpression >> discard(token::Whitespace) , token::CloseExpression , discard(token::Whitespace) ),
+        ( token::Variable >> discard(token::Whitespace) , token::Variable , discard(token::Whitespace) ),
+        ( token::Identifier >> discard(token::Whitespace) , token::Identifier , discard(token::Whitespace) ),
+        ( token::Number >> discard(token::Whitespace) , token::Number, discard(token::Whitespace) ),
+        ( token::Assign >> discard(token::Whitespace) , token::Assign, discard(token::Whitespace) ),
+        ( token::Equal >> discard(token::Whitespace) , token::Equal, discard(token::Whitespace) ),
+        ( token::Add >> discard(token::Whitespace) , token::Add, discard(token::Whitespace) ),
+        ( token::Subtract >> discard(token::Whitespace) , token::Subtract, discard(token::Whitespace) ),
+        ( token::Multiply >> discard(token::Whitespace) , token::Multiply, discard(token::Whitespace) ),
+        ( token::Divide >> discard(token::Whitespace) , token::Divide, discard(token::Whitespace) ),
+        ( token::Negate >> discard(token::Whitespace) , token::Negate, discard(token::Whitespace) ),
+        ( token::Term >> discard(token::Whitespace) , token::Term , discard(token::Whitespace) ),
+        ( token::Primary >> discard(token::Whitespace) , token::Primary , discard(token::Whitespace) )
     };
 
     neolib::lexer<token> parser{ lexerRules };

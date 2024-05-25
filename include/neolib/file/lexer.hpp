@@ -272,7 +272,7 @@ namespace neolib
 
         struct discard_params
         {
-            bool childrenOnly = false;
+            bool trim = true;
         };
 
         struct discard : tuple<discard, discard_params>, lexer_component<lexer_component_type::Discard>
@@ -283,7 +283,7 @@ namespace neolib
             discard operator~() const
             {
                 discard result = *this;
-                result.childrenOnly = true;
+                result.trim = false;
                 return result;
             }
         };
@@ -613,6 +613,8 @@ namespace neolib
                 scoped_stack_entry sse{ *this, rule, aSource };
                 if (ruleToken == aToken && !left_recursion(aNode, rule))
                 {
+                    if (ruleToken == token::Type)
+                        std::cout << "";
                     aNode.rule = &rule;
                     auto const& ruleAtom = rule.rhs[0];
                     typename ast_node::child_list children;
@@ -665,6 +667,7 @@ namespace neolib
                 auto const partialResult = parse(atomToken, *aNode.children.back(), aSource);
                 if (partialResult)
                 {
+                    aNode.children.back()->value = partialResult.value();
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult)};
                     return iCache[cache_key{ &aAtom, aSource.data() }].result;
                 }
@@ -695,20 +698,24 @@ namespace neolib
             }
             else if (std::holds_alternative<sequence>(aAtom))
             {
-                char const* spanStart = sourceNext;
+                char const* spanStart = nullptr;
                 char const* spanEnd = nullptr;
                 for (auto const& a : std::get<sequence>(aAtom).value)
                 {
                     auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });
                     if (!partialResult)
                         return {};
-                    if (std::holds_alternative<discard>(a) && !std::get<discard>(a).childrenOnly)
+                    if (std::holds_alternative<discard>(a) && std::get<discard>(a).trim)
                     {
                         if (spanEnd == nullptr)
                             spanStart = std::to_address(partialResult->end());
                     }
                     else
+                    {
+                        if (spanStart == nullptr)
+                            spanStart = std::to_address(partialResult->begin());
                         spanEnd = std::to_address(partialResult->end());
+                    }
                     sourceNext = std::to_address(partialResult->end());
                 }
                 if (spanEnd == nullptr)
@@ -737,7 +744,7 @@ namespace neolib
             {
                 bool foundAtLeastOne = false;
                 bool found = false;
-                char const* spanStart = sourceNext;
+                char const* spanStart = nullptr;
                 char const* spanEnd = nullptr;
                 do
                 {
@@ -749,13 +756,17 @@ namespace neolib
                         {
                             foundAtLeastOne = true;
                             found = true;
-                            if (std::holds_alternative<discard>(a) && !std::get<discard>(a).childrenOnly)
+                            if (std::holds_alternative<discard>(a) && std::get<discard>(a).trim)
                             {
                                 if (spanEnd == nullptr)
                                     spanStart = std::to_address(partialResult->end());
                             }
                             else
+                            {
+                                if (spanStart == nullptr)
+                                    spanStart = std::to_address(partialResult->begin());
                                 spanEnd = std::to_address(partialResult->end());
+                            }
                             sourceNext = std::to_address(partialResult->end());
                         }
                     }
