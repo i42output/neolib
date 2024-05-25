@@ -630,8 +630,6 @@ namespace neolib
                 scoped_stack_entry sse{ *this, rule, aSource };
                 if (ruleToken == aToken && !left_recursion(aNode, rule))
                 {
-                    if (ruleToken == token::FunctionDefinition)
-                        std::cout << "";
                     aNode.rule = &rule;
                     auto const& ruleAtom = rule.rhs[0];
                     typename ast_node::child_list children;
