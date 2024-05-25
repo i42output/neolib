@@ -365,6 +365,23 @@ namespace neolib
             {}
         };
 
+        struct parse_result
+        {
+            std::string_view value;
+            char const* sourceNext;
+
+            parse_result(std::string_view const& value) :
+                value{ value },
+                sourceNext{ std::to_address(value.end()) }
+            {
+            }
+            parse_result(char const* begin, char const* end) :
+                value{ begin, end },
+                sourceNext{ end }
+            {
+            }
+        };
+
         struct ast_node : std::enable_shared_from_this<ast_node>
         {
             using child_list = std::vector<std::shared_ptr<ast_node>>;
@@ -568,7 +585,7 @@ namespace neolib
             return false;
         }
 
-        std::optional<std::string_view> parse(token aToken, ast_node& aNode, std::string_view const& aSource)
+        std::optional<parse_result> parse(token aToken, ast_node& aNode, std::string_view const& aSource)
         {
             if (iError)
                 return {};
@@ -613,7 +630,7 @@ namespace neolib
                 scoped_stack_entry sse{ *this, rule, aSource };
                 if (ruleToken == aToken && !left_recursion(aNode, rule))
                 {
-                    if (ruleToken == token::Type)
+                    if (ruleToken == token::FunctionDefinition)
                         std::cout << "";
                     aNode.rule = &rule;
                     auto const& ruleAtom = rule.rhs[0];
@@ -633,7 +650,7 @@ namespace neolib
             return {};
         }
 
-        std::optional<std::string_view> parse(primitive_atom const& aAtom, ast_node& aNode, std::string_view const& aSource)
+        std::optional<parse_result> parse(primitive_atom const& aAtom, ast_node& aNode, std::string_view const& aSource)
         {
             if (iError)
                 return {};
@@ -647,7 +664,7 @@ namespace neolib
                 return cachedResult;
             }
 
-            std::optional<std::string_view> result;
+            std::optional<parse_result> result;
             char const* sourceNext = std::to_address(aSource.begin());
             char const* sourceEnd = std::to_address(aSource.end());
 
@@ -667,7 +684,7 @@ namespace neolib
                 auto const partialResult = parse(atomToken, *aNode.children.back(), aSource);
                 if (partialResult)
                 {
-                    aNode.children.back()->value = partialResult.value();
+                    aNode.children.back()->value = partialResult.value().value;
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult)};
                     return iCache[cache_key{ &aAtom, aSource.data() }].result;
                 }
@@ -708,19 +725,20 @@ namespace neolib
                     if (std::holds_alternative<discard>(a) && std::get<discard>(a).trim)
                     {
                         if (spanEnd == nullptr)
-                            spanStart = std::to_address(partialResult->end());
+                            spanStart = std::to_address(partialResult->value.end());
                     }
                     else
                     {
                         if (spanStart == nullptr)
-                            spanStart = std::to_address(partialResult->begin());
-                        spanEnd = std::to_address(partialResult->end());
+                            spanStart = std::to_address(partialResult->value.begin());
+                        spanEnd = std::to_address(partialResult->value.end());
                     }
-                    sourceNext = std::to_address(partialResult->end());
+                    sourceNext = std::to_address(partialResult->sourceNext);
                 }
                 if (spanEnd == nullptr)
                     spanEnd = spanStart;
                 result = std::string_view{ spanStart, spanEnd };
+                result.value().sourceNext = sourceNext;
                 iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
@@ -732,7 +750,7 @@ namespace neolib
                     if (partialResult)
                     {
                         result = apply_partial_result(result, partialResult);
-                        sourceNext = std::to_address(partialResult->end());
+                        sourceNext = std::to_address(partialResult->sourceNext);
                     }
                 }
                 if (!result)
@@ -759,21 +777,22 @@ namespace neolib
                             if (std::holds_alternative<discard>(a) && std::get<discard>(a).trim)
                             {
                                 if (spanEnd == nullptr)
-                                    spanStart = std::to_address(partialResult->end());
+                                    spanStart = std::to_address(partialResult->value.end());
                             }
                             else
                             {
                                 if (spanStart == nullptr)
-                                    spanStart = std::to_address(partialResult->begin());
-                                spanEnd = std::to_address(partialResult->end());
+                                    spanStart = std::to_address(partialResult->value.begin());
+                                spanEnd = std::to_address(partialResult->value.end());
                             }
-                            sourceNext = std::to_address(partialResult->end());
+                            sourceNext = std::to_address(partialResult->sourceNext);
                         }
                     }
                 } while (found);
                 if (spanEnd == nullptr)
                     spanEnd = spanStart;
                 result = std::string_view{ spanStart, spanEnd };
+                result.value().sourceNext = sourceNext;
                 if (foundAtLeastOne)
                 {
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
@@ -796,7 +815,7 @@ namespace neolib
                     if (partialResult)
                     {
                         result = apply_partial_result(result, partialResult);
-                        sourceNext = std::to_address(partialResult->end());
+                        sourceNext = std::to_address(partialResult->sourceNext);
                         found = true;
                         break;
                     }
@@ -819,7 +838,7 @@ namespace neolib
                     if (partialResult)
                     {
                         result = apply_partial_result(result, partialResult);
-                        sourceNext = std::to_address(partialResult->end());
+                        sourceNext = std::to_address(partialResult->sourceNext);
                     }
                 }
                 iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
@@ -829,14 +848,14 @@ namespace neolib
             return {};
         }
 
-        static std::optional<std::string_view> apply_partial_result(std::optional<std::string_view> const& aResult, std::optional<std::string_view> const& aPartialResult)
+        static std::optional<parse_result> apply_partial_result(std::optional<parse_result> const& aResult, std::optional<parse_result> const& aPartialResult)
         {
             if (!aResult)
                 return aPartialResult.value();
-            char const* resultFirst = to_address(aResult->begin());
-            char const* resultLast = to_address(aResult->end());
-            char const* partialResultFirst = to_address(aPartialResult->begin());
-            char const* partialResultLast = to_address(aPartialResult->end());
+            char const* resultFirst = to_address(aResult->value.begin());
+            char const* resultLast = to_address(aResult->value.end());
+            char const* partialResultFirst = to_address(aPartialResult->value.begin());
+            char const* partialResultLast = to_address(aPartialResult->value.end());
             std::string_view result{ std::min(resultFirst, partialResultFirst), std::max(resultLast, partialResultLast) };
             return result;
         }
@@ -905,6 +924,11 @@ namespace neolib
             std::size_t charsAdded = 0;
             for (auto ch : aSource)
             {
+                if (charsAdded == aMaxChars)
+                {
+                    result << "...";
+                    break;
+                }
                 ++charsAdded;
                 if (ch >= ' ')
                     result << ch;
@@ -916,8 +940,6 @@ namespace neolib
                     result << "\\t";
                 else
                     result << "\\x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<std::uint32_t>(static_cast<std::uint8_t>(ch));
-                if (charsAdded == aMaxChars)
-                    break;
             }
             return result.str();
         }
@@ -956,7 +978,7 @@ namespace neolib
         struct cache_result
         {
             std::shared_ptr<ast_node> node;
-            std::optional<std::string_view> result;
+            std::optional<parse_result> result;
         };
         using cache_key = std::pair<primitive_atom const*, char const*>;
         std::unordered_map<cache_key, cache_result, boost::hash<cache_key>> iCache;
@@ -1214,5 +1236,10 @@ namespace neolib
         inline neolib::lexer_discard<token> discard(T&& lhs)\
     {\
         return neolib::lexer_operators::discard<token>(std::forward<T>(lhs)); \
+    }\
+    template <typename T>\
+        inline neolib::lexer_discard<token> fold(T&& lhs)\
+    {\
+        return ~neolib::lexer_operators::discard<token>(std::forward<T>(lhs)); \
     }
 }
