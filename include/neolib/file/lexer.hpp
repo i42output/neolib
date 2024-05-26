@@ -71,7 +71,8 @@ namespace neolib
         Discard,
         Primitive,
         Atom,
-        Rule
+        Rule,
+        Concept
     };
 
     inline std::string to_string(lexer_component_type aType)
@@ -100,6 +101,8 @@ namespace neolib
             return "Atom";
         case lexer_component_type::Rule:
             return "Rule";
+        case lexer_component_type::Concept:
+            return "Concept";
         default:
             throw std::logic_error("neolib::to_string(lexer_component_type)");
         }
@@ -158,7 +161,7 @@ namespace neolib
             {
             }
 
-            tuple(std::vector<primitive_atom> const& primitive) :
+            tuple(value_type const& primitive) :
                 value{ primitive }
             {
             }
@@ -209,13 +212,13 @@ namespace neolib
                         value.push_back(a);
             }
 
-            tuple(std::vector<primitive_atom> const& lhs, primitive_atom const& rhs) :
+            tuple(value_type const& lhs, primitive_atom const& rhs) :
                 value{ lhs }
             {
                 value.push_back(rhs);
             }
 
-            tuple(primitive_atom const& lhs, std::vector<primitive_atom> const& rhs) :
+            tuple(primitive_atom const& lhs, value_type const& rhs) :
                 value{ lhs }
             {
                 value.insert(value.end(), rhs.begin(), rhs.end());
@@ -288,11 +291,24 @@ namespace neolib
             }
         };
 
-        struct primitive_atom : std::variant<token, terminal, undefined, choice, sequence, repeat, range, optional, discard>, lexer_component<lexer_component_type::Primitive>
+        struct concept_params
+        {
+            std::string name;
+        };
+
+        struct _concept : tuple<_concept, concept_params>, lexer_component<lexer_component_type::Concept>
+        {
+            using base_type = tuple<_concept, concept_params>;
+            using base_type::base_type;
+
+            _concept() : base_type{ typename base_type::value_type{} } {}
+        };
+
+        struct primitive_atom : std::variant<token, terminal, undefined, choice, sequence, repeat, range, optional, discard, _concept>, lexer_component<lexer_component_type::Primitive>
         {
             using token_type = token;
 
-            using base_type = std::variant<token, terminal, undefined, choice, sequence, repeat, range, optional, discard>;
+            using base_type = std::variant<token, terminal, undefined, choice, sequence, repeat, range, optional, discard, _concept>;
             using base_type::base_type;
 
             bool is_tuple() const
@@ -382,21 +398,21 @@ namespace neolib
             }
         };
 
-        struct ast_node : std::enable_shared_from_this<ast_node>
+        struct cst_node : std::enable_shared_from_this<cst_node>
         {
-            using child_list = std::vector<std::shared_ptr<ast_node>>;
+            using child_list = std::vector<std::shared_ptr<cst_node>>;
 
-            ast_node* parent;
+            cst_node* parent;
             rule const* rule;
             primitive_atom const* atom;
             std::string_view value;
             child_list children;
 
-            ast_node() = default;
-            ast_node(ast_node const&) = delete;
+            cst_node() = default;
+            cst_node(cst_node const&) = delete;
 
-            ast_node(
-                ast_node* parent,
+            cst_node(
+                cst_node* parent,
                 lexer::rule const* rule,
                 primitive_atom const* atom,
                 std::string_view value) :
@@ -407,7 +423,7 @@ namespace neolib
             {
             }
 
-            ast_node(ast_node&& other) :
+            cst_node(cst_node&& other) :
                 parent{ other.parent },
                 rule{ other.rule },
                 atom{ other.atom },
@@ -418,7 +434,7 @@ namespace neolib
                     child.parent = this;
             }
 
-            ast_node& operator=(ast_node&& other)
+            cst_node& operator=(cst_node&& other)
             {
                 parent = other.parent;
                 rule = other.rule;
@@ -443,17 +459,17 @@ namespace neolib
     public:
         bool parse(token aRoot, std::string_view const& aSource)
         {
-            iAst = {};
+            iCst = {};
             iStack = {};
             iDeepestParse = {};
             iError = {};
             iCache = {};
 
-            auto rootNode = std::make_shared<ast_node>(nullptr, nullptr, nullptr, aSource);
+            auto rootNode = std::make_shared<cst_node>(nullptr, nullptr, nullptr, aSource);
 
             auto const startTime = std::chrono::high_resolution_clock::now();
             auto const result = parse(aRoot, *rootNode, aSource);
-            simplify_ast(*rootNode);
+            simplify_cst(*rootNode);
             auto const endTime = std::chrono::high_resolution_clock::now();
             std::uint32_t linePos;
             std::uint32_t columnPos;
@@ -493,14 +509,14 @@ namespace neolib
                     (*iDebugOutput) << "Parse time" << (iDebugScan ? " (debug)" : "") << ": " << std::setprecision(3) <<
                         std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() / 1000.0 <<
                         " seconds" << std::endl;
-                if (iDebugAst)
-                    (*iDebugOutput) << debug_print_ast(*rootNode) << std::endl;
+                if (iDebugCst)
+                    (*iDebugOutput) << debug_print_cst(*rootNode) << std::endl;
             }
             
             if (iError)
                 return false;
 
-            iAst = std::move(*rootNode);
+            iCst = std::move(*rootNode);
 
             return true;
         }
@@ -517,16 +533,16 @@ namespace neolib
         }
 
     private:
-        void simplify_ast(ast_node& aNode)
+        void simplify_cst(cst_node& aNode)
         {
-            simplify_ast(&aNode);
+            simplify_cst(&aNode);
         }
 
-        std::optional<typename ast_node::child_list::iterator> simplify_ast(ast_node* aNode)
+        std::optional<typename cst_node::child_list::iterator> simplify_cst(cst_node* aNode)
         {
             for (auto child = aNode->children.begin(); child != aNode->children.end(); )
             {
-                auto result = simplify_ast(&**child);
+                auto result = simplify_cst(&**child);
                 if (result)
                     child = aNode->children.erase(result.value());
                 else
@@ -567,7 +583,7 @@ namespace neolib
             return {};
         }
 
-        std::optional<token> parent_token(ast_node& aNode) const
+        std::optional<token> parent_token(cst_node& aNode) const
         {
             if (aNode.parent && aNode.parent->atom && std::holds_alternative<token>(*aNode.parent->atom))
                 return std::get<token>(*aNode.parent->atom);
@@ -575,7 +591,7 @@ namespace neolib
             return {};
         }
 
-        bool left_recursion(ast_node const& aNode, rule const& aRule) const
+        bool left_recursion(cst_node const& aNode, rule const& aRule) const
         {
             if (iStack.empty())
                 return false;
@@ -585,7 +601,7 @@ namespace neolib
             return false;
         }
 
-        std::optional<parse_result> parse(token aToken, ast_node& aNode, std::string_view const& aSource)
+        std::optional<parse_result> parse(token aToken, cst_node& aNode, std::string_view const& aSource)
         {
             if (iError)
                 return {};
@@ -632,7 +648,7 @@ namespace neolib
                 {
                     aNode.rule = &rule;
                     auto const& ruleAtom = rule.rhs[0];
-                    typename ast_node::child_list children;
+                    typename cst_node::child_list children;
                     std::swap(aNode.children, children);
                     auto const result = parse(ruleAtom, aNode, std::string_view{ sourceNext, sourceEnd });
                     std::swap(aNode.children, children);
@@ -648,7 +664,7 @@ namespace neolib
             return {};
         }
 
-        std::optional<parse_result> parse(primitive_atom const& aAtom, ast_node& aNode, std::string_view const& aSource)
+        std::optional<parse_result> parse(primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
         {
             if (iError)
                 return {};
@@ -678,7 +694,7 @@ namespace neolib
             if (std::holds_alternative<token>(aAtom))
             {
                 token const atomToken = std::get<token>(aAtom);
-                aNode.children.push_back(std::make_shared<ast_node>(&aNode, aNode.rule, &aAtom, aSource));
+                aNode.children.push_back(std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, aSource));
                 auto const partialResult = parse(atomToken, *aNode.children.back(), aSource);
                 if (partialResult)
                 {
@@ -694,7 +710,7 @@ namespace neolib
                 if ((!t.empty() && aSource.find(t) == 0) || (t.empty() && sourceNext == sourceEnd ))
                 {
                     auto const partialResult = aSource.substr(0, t.size());
-                    aNode.children.push_back(std::make_shared<ast_node>(&aNode, aNode.rule, &aAtom, partialResult));
+                    aNode.children.push_back(std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult));
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult) };
                     return ((sdp ? sdp->ok = true : true), iCache[cache_key{ &aAtom, aSource.data() }].result);
                 }
@@ -706,7 +722,7 @@ namespace neolib
                 if (!aSource.empty() && aSource[0] >= min && aSource[0] <= max)
                 {
                     auto const partialResult = aSource.substr(0, 1);
-                    aNode.children.push_back(std::make_shared<ast_node>(&aNode, aNode.rule, &aAtom, partialResult));
+                    aNode.children.push_back(std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult));
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult) };
                     return ((sdp ? sdp->ok = true : true), iCache[cache_key{ &aAtom, aSource.data() }].result);
                 }
@@ -829,7 +845,7 @@ namespace neolib
             {
                 for (auto const& a : std::get<discard>(aAtom).value)
                 {
-                    typename ast_node::child_list children;
+                    typename cst_node::child_list children;
                     std::swap(aNode.children, children);
                     auto partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });
                     std::swap(aNode.children, children);
@@ -841,6 +857,23 @@ namespace neolib
                 }
                 iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
                 return ((sdp ? sdp->ok = true : true), result);
+            }
+            else if (std::holds_alternative<_concept>(aAtom))
+            {
+                for (auto const& a : std::get<_concept>(aAtom).value)
+                {
+                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
+                    if (partialResult)
+                    {
+                        result = apply_partial_result(result, partialResult);
+                        sourceNext = std::to_address(partialResult->sourceNext);
+                    }
+                }
+                if (result)
+                {
+                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
+                    return ((sdp ? sdp->ok = true : true), result);
+                }
             }
 
             return {};
@@ -942,7 +975,7 @@ namespace neolib
             return result.str();
         }
 
-        static std::string debug_print_ast(ast_node const& aNode, std::uint32_t aLevel = 0)
+        static std::string debug_print_cst(cst_node const& aNode, std::uint32_t aLevel = 0)
         {
             std::ostringstream oss;
             oss << std::string(static_cast<std::size_t>(aLevel), ' ');
@@ -961,13 +994,13 @@ namespace neolib
             }
             oss << std::endl;
             for (auto const& childNode : aNode.children)
-                oss << debug_print_ast(*childNode, aLevel + 1);
+                oss << debug_print_cst(*childNode, aLevel + 1);
             return oss.str();
         }
 
     private:
         std::vector<rule> iRules;
-        ast_node iAst = {};
+        cst_node iCst = {};
         std::vector<std::pair<rule const*, std::string_view>> iStack;
         std::uint32_t iMaxLevel = 256;
         std::uint32_t iLevel = 0;
@@ -975,7 +1008,7 @@ namespace neolib
         std::optional<std::string> iError;
         struct cache_result
         {
-            std::shared_ptr<ast_node> node;
+            std::shared_ptr<cst_node> node;
             std::optional<parse_result> result;
         };
         using cache_key = std::pair<primitive_atom const*, char const*>;
@@ -983,7 +1016,7 @@ namespace neolib
         std::ostream* iDebugOutput = nullptr;
         bool iDebugScan = false;
         bool iDebugSource = true;
-        bool iDebugAst = true;
+        bool iDebugCst = true;
     };
 
     template <typename Token>
@@ -1018,6 +1051,9 @@ namespace neolib
 
     template <typename Token>
     using lexer_rule = typename lexer<Token>::rule;
+
+    template <typename Token>
+    using lexer_concept = typename lexer<Token>::_concept;
 
     template <typename T>
     concept LexerComponent = std::is_base_of_v<lexer_component_base, T> && 
@@ -1057,6 +1093,9 @@ namespace neolib
     concept LexerRule = std::is_base_of_v<lexer_component<lexer_component_type::Rule>, T>;
 
     template <typename T>
+    concept LexerConcept = std::is_base_of_v<lexer_component<lexer_component_type::Concept>, T>;
+
+    template <typename T>
     concept TokenEnum = std::is_enum_v<T> && std::is_convertible_v<T, decltype(is_lexer_token(T{}))>;
 
     namespace lexer_operators
@@ -1071,6 +1110,14 @@ namespace neolib
         inline Rule operator|(Rule const& lhs, lexer_primitive<typename Rule::token_type> const& rhs)
         {
             return Rule{ lhs.lhs, lexer_atom<typename Rule::token_type>{ lhs.rhs, rhs } };
+        }
+
+        template <LexerConcept Concept>
+        inline Concept operator<=>(lexer_primitive<typename Concept::token_type> const& lhs, Concept const& rhs)
+        {
+            Concept result{ lhs };
+            result.name = rhs.name;
+            return result;
         }
 
         template <LexerRepeat Repeat>
@@ -1204,6 +1251,12 @@ namespace neolib
     inline neolib::lexer_terminal<token> operator"" _(char character)\
     {\
         return neolib::lexer_terminal<token>{ character };\
+    }\
+    inline neolib::lexer_concept<token> operator"" _concept(const char* str, std::size_t len)\
+    {\
+        neolib::lexer_concept<token> result{};\
+        result.name = { str, len };\
+        return result;\
     }\
     template <typename T>\
     inline neolib::lexer_choice<token> choice(T&& lhs)\
