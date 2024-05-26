@@ -167,14 +167,18 @@ int main(int argc, char** argv)
         ( token::CloseScope >> '}' ),
         ( token::Statement >> token::Expression , discard(token::EndStatement) ),
         ( token::EndStatement >> ';' ),
-        ( token::Expression >> token::Expression , choice(token::Add | token::Subtract) , token::Expression ),
+        ( token::Expression >> choice(
+            (token::Expression , token::Add , token::Expression) <=> "math.operator.add"_concept | 
+            (token::Expression , token::Subtract , token::Expression) <=> "math.operator.subtract"_concept) ),
         ( token::Expression >> token::Term ),
-        ( token::Term >> token::Term , choice(token::Divide | token::Multiply) , token::Term ),
+        ( token::Term >> choice(
+            (token::Term , token::Multiply , token::Term) <=> "math.operator.multiply"_concept |
+            (token::Term, token::Divide , token::Term) <=> "math.operator.divide"_concept) ),
         ( token::Term >> token::Primary ),
-        ( token::Primary >> (token::Variable <=> "object"_concept , token::Assign <=> "object.assign"_concept, token::Expression) ),
+        ( token::Primary >> ((token::Variable , token::Assign , token::Expression) <=> "object.assign"_concept) ),
         ( token::Primary >> token::Negate , token::Primary ),
         ( token::Primary >> token::Number ),
-        ( token::Primary >> token::Variable ),
+        ( token::Primary >> (token::Variable <=> "object"_concept) ),
         ( token::Primary >> ~discard(token::OpenExpression) , token::Expression , ~discard(token::CloseExpression) ),
         ( token::OpenExpression >> '(' ),
         ( token::CloseExpression >> ')' ),

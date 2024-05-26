@@ -425,15 +425,10 @@ namespace neolib
 
             cst_node* parent;
             rule const* rule;
-            std::optional<_concept> ruleConcept;
+            std::optional<_concept> c;
             primitive_atom const* atom;
             std::string_view value;
             child_list children;
-
-            std::optional<_concept> c() const
-            {
-                return atom && atom->c.has_value() ? atom->c : ruleConcept;
-            }
 
             cst_node() = default;
             cst_node(cst_node const&) = delete;
@@ -453,6 +448,7 @@ namespace neolib
             cst_node(cst_node&& other) :
                 parent{ other.parent },
                 rule{ other.rule },
+                c{ other.c },
                 atom{ other.atom },
                 value{ other.value },
                 children{ std::move(other.children) }
@@ -461,10 +457,15 @@ namespace neolib
                     child.parent = this;
             }
 
+            ~cst_node()
+            {
+            }
+
             cst_node& operator=(cst_node&& other)
             {
                 parent = other.parent;
                 rule = other.rule;
+                c = other.c;
                 atom = other.atom;
                 value = other.value;
                 children = std::move(other.children);
@@ -571,7 +572,11 @@ namespace neolib
             {
                 auto result = simplify_cst(&**child);
                 if (result)
+                {
+                    if (!aNode->c.has_value())
+                        aNode->c = (***result).c;
                     child = aNode->children.erase(result.value());
+                }
                 else
                     ++child;
             }
@@ -681,7 +686,8 @@ namespace neolib
                     std::swap(aNode.children, children);
                     if (result)
                     {
-                        aNode.ruleConcept = ruleAtom.c;
+                        if (!aNode.c.has_value())
+                            aNode.c = ruleAtom.c;
                         aNode.children.insert(aNode.children.end(), std::make_move_iterator(children.begin()), std::make_move_iterator(children.end()));
                         return ((sdp ? sdp->ok = true : true), result);
                     }
@@ -726,6 +732,8 @@ namespace neolib
                 auto const partialResult = parse(atomToken, *aNode.children.back(), aSource);
                 if (partialResult)
                 {
+                    if (!aNode.c.has_value())
+                        aNode.c = aAtom.c;
                     aNode.children.back()->value = partialResult.value().value;
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult)};
                     return iCache[cache_key{ &aAtom, aSource.data() }].result;
@@ -738,6 +746,8 @@ namespace neolib
                 if ((!t.empty() && aSource.find(t) == 0) || (t.empty() && sourceNext == sourceEnd ))
                 {
                     auto const partialResult = aSource.substr(0, t.size());
+                    if (!aNode.c.has_value())
+                        aNode.c = aAtom.c;
                     aNode.children.push_back(std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult));
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult) };
                     return ((sdp ? sdp->ok = true : true), iCache[cache_key{ &aAtom, aSource.data() }].result);
@@ -750,6 +760,8 @@ namespace neolib
                 if (!aSource.empty() && aSource[0] >= min && aSource[0] <= max)
                 {
                     auto const partialResult = aSource.substr(0, 1);
+                    if (!aNode.c.has_value())
+                        aNode.c = aAtom.c;
                     aNode.children.push_back(std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult));
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult) };
                     return ((sdp ? sdp->ok = true : true), iCache[cache_key{ &aAtom, aSource.data() }].result);
@@ -759,11 +771,16 @@ namespace neolib
             {
                 char const* spanStart = nullptr;
                 char const* spanEnd = nullptr;
+                typename cst_node::child_list children;
+                std::swap(aNode.children, children);
                 for (auto const& a : std::get<sequence>(aAtom).value)
                 {
                     auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });
                     if (!partialResult)
+                    {
+                        std::swap(aNode.children, children);
                         return {};
+                    }
                     if (std::holds_alternative<discard>(a) && std::get<discard>(a).trim)
                     {
                         if (spanEnd == nullptr)
@@ -777,6 +794,10 @@ namespace neolib
                     }
                     sourceNext = std::to_address(partialResult->sourceNext);
                 }
+                std::swap(aNode.children, children);
+                aNode.children.insert(aNode.children.end(), std::make_move_iterator(children.begin()), std::make_move_iterator(children.end()));
+                if (!aNode.c.has_value())
+                    aNode.c = aAtom.c;
                 if (spanEnd == nullptr)
                     spanEnd = spanStart;
                 result = std::string_view{ spanStart, spanEnd };
@@ -791,6 +812,8 @@ namespace neolib
                     auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
                     if (partialResult)
                     {
+                        if (!aNode.c.has_value())
+                            aNode.c = aAtom.c;
                         result = apply_partial_result(result, partialResult);
                         sourceNext = std::to_address(partialResult->sourceNext);
                     }
@@ -814,6 +837,8 @@ namespace neolib
                         auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
                         if (partialResult)
                         {
+                            if (!aNode.c.has_value())
+                                aNode.c = aAtom.c;
                             foundAtLeastOne = true;
                             found = true;
                             if (std::holds_alternative<discard>(a) && std::get<discard>(a).trim)
@@ -856,6 +881,8 @@ namespace neolib
                     auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
                     if (partialResult)
                     {
+                        if (!aNode.c.has_value())
+                            aNode.c = aAtom.c;
                         result = apply_partial_result(result, partialResult);
                         sourceNext = std::to_address(partialResult->sourceNext);
                         found = true;
@@ -879,6 +906,8 @@ namespace neolib
                     std::swap(aNode.children, children);
                     if (partialResult)
                     {
+                        if (!aNode.c.has_value())
+                            aNode.c = aAtom.c;
                         result = apply_partial_result(result, partialResult);
                         sourceNext = std::to_address(partialResult->sourceNext);
                     }
@@ -998,8 +1027,8 @@ namespace neolib
                             oss << enum_to_string(pa);
                         else
                             oss << to_string(pa.type);
-                        if (aNode.c())
-                            oss << " : " << aNode.c().value();
+                        if (aNode.c.has_value())
+                            oss << " : " << aNode.c.value();
                         oss << " = [" << debug_print(aNode.value, 64) << "]";
                     }, *aNode.atom);
             }
@@ -1126,7 +1155,7 @@ namespace neolib
         template <LexerConcept Concept>
         inline lexer_primitive<typename Concept::token_type> operator<=>(typename Concept::token_type lhs, Concept const& rhs)
         {
-            lexer_primitive<typename Concept::token_type> result{ lhs };
+            lexer_primitive<typename Concept::token_type> result = lhs;
             result.c = rhs;
             return result;
         }
@@ -1134,13 +1163,19 @@ namespace neolib
         template <LexerConcept Concept>
         inline lexer_primitive<typename Concept::token_type> operator<=>(lexer_primitive<typename Concept::token_type> const& lhs, Concept const& rhs)
         {
-            lexer_primitive<typename Concept::token_type> result{ lhs };
+            lexer_primitive<typename Concept::token_type> result = lhs;
             result.c = rhs;
             return result;
         }
 
         template <LexerRepeat Repeat>
         inline Repeat operator|(Repeat const& lhs, lexer_primitive<typename Repeat::token_type> const& rhs)
+        {
+            return Repeat{ lhs, rhs };
+        }
+
+        template <LexerRepeat Repeat>
+        inline Repeat operator|(Repeat const& lhs, typename Repeat::token_type rhs)
         {
             return Repeat{ lhs, rhs };
         }
