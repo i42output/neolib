@@ -171,7 +171,7 @@ int main(int argc, char** argv)
         ( token::Expression >> token::Term ),
         ( token::Term >> token::Term , choice(token::Divide | token::Multiply) , token::Term ),
         ( token::Term >> token::Primary ),
-        ( token::Primary >> (token::Variable <=> "object"_concept , token::Assign <=> "object.assign"_concept, token::Expression <=> "expression"_concept) ),
+        ( token::Primary >> (token::Variable <=> "object"_concept , token::Assign <=> "object.assign"_concept, token::Expression) ),
         ( token::Primary >> token::Negate , token::Primary ),
         ( token::Primary >> token::Number ),
         ( token::Primary >> token::Variable ),

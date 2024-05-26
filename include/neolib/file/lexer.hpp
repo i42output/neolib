@@ -291,25 +291,46 @@ namespace neolib
             }
         };
 
-        struct concept_params
-        {
-            std::string name;
-        };
-
-        struct _concept : tuple<_concept, concept_params>, lexer_component<lexer_component_type::Concept>
-        {
-            using base_type = tuple<_concept, concept_params>;
-            using base_type::base_type;
-
-            _concept() : base_type{ typename base_type::value_type{} } {}
-        };
-
-        struct primitive_atom : std::variant<token, terminal, undefined, choice, sequence, repeat, range, optional, discard, _concept>, lexer_component<lexer_component_type::Primitive>
+        struct _concept : std::string, lexer_component<lexer_component_type::Concept>
         {
             using token_type = token;
 
-            using base_type = std::variant<token, terminal, undefined, choice, sequence, repeat, range, optional, discard, _concept>;
+            using base_type = std::string;
             using base_type::base_type;
+        };
+
+        struct primitive_atom : std::variant<token, terminal, undefined, choice, sequence, repeat, range, optional, discard>, lexer_component<lexer_component_type::Primitive>
+        {
+            using token_type = token;
+
+            using base_type = std::variant<token, terminal, undefined, choice, sequence, repeat, range, optional, discard>;
+            using base_type::base_type;
+
+            std::optional<_concept> c;
+
+            primitive_atom(primitive_atom const& other) :
+                base_type{ other }, c{ other.c }
+            {
+            }
+
+            primitive_atom(primitive_atom&& other) :
+                base_type{ std::move(other) }, c{std::move(other.c)}
+            {
+            }
+
+            primitive_atom& operator=(primitive_atom const& other)
+            {
+                base_type::operator=(other);
+                c = other.c;
+                return *this;
+            }
+
+            primitive_atom& operator=(primitive_atom&& other)
+            {
+                base_type::operator=(std::move(other));
+                c = std::move(other.c);
+                return *this;
+            }
 
             bool is_tuple() const
             {
@@ -404,9 +425,15 @@ namespace neolib
 
             cst_node* parent;
             rule const* rule;
+            std::optional<_concept> ruleConcept;
             primitive_atom const* atom;
             std::string_view value;
             child_list children;
+
+            std::optional<_concept> c() const
+            {
+                return atom && atom->c.has_value() ? atom->c : ruleConcept;
+            }
 
             cst_node() = default;
             cst_node(cst_node const&) = delete;
@@ -654,6 +681,7 @@ namespace neolib
                     std::swap(aNode.children, children);
                     if (result)
                     {
+                        aNode.ruleConcept = ruleAtom.c;
                         aNode.children.insert(aNode.children.end(), std::make_move_iterator(children.begin()), std::make_move_iterator(children.end()));
                         return ((sdp ? sdp->ok = true : true), result);
                     }
@@ -858,23 +886,6 @@ namespace neolib
                 iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
-            else if (std::holds_alternative<_concept>(aAtom))
-            {
-                for (auto const& a : std::get<_concept>(aAtom).value)
-                {
-                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
-                    if (partialResult)
-                    {
-                        result = apply_partial_result(result, partialResult);
-                        sourceNext = std::to_address(partialResult->sourceNext);
-                    }
-                }
-                if (result)
-                {
-                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
-                    return ((sdp ? sdp->ok = true : true), result);
-                }
-            }
 
             return {};
         }
@@ -927,11 +938,11 @@ namespace neolib
                     std::visit([&](auto const& pa)
                     {
                         if constexpr (std::is_same_v<token, std::decay_t<decltype(pa)>>)
-                            oss << "a(" << enum_to_string(pa) << ")";
+                            oss << "token(" << enum_to_string(pa) << ")";
                         else if constexpr (std::is_same_v<terminal, std::decay_t<decltype(pa)>>)
-                            oss << "a(" << to_string(pa.type) << ":[" << debug_print(pa) << "])";
+                            oss << "teminal(" << to_string(pa.type) << ":[" << debug_print(pa) << "])";
                         else
-                            oss << "a(" << to_string(pa.type) << ")";
+                            oss << "atom(" << to_string(pa.type) << ")";
                     }, aValue);
                 }
                 else
@@ -984,11 +995,11 @@ namespace neolib
                 std::visit([&](auto const& pa)
                     {
                         if constexpr (std::is_same_v<token, std::decay_t<decltype(pa)>>)
-                            oss << "a(" << enum_to_string(pa) << ")";
-                        else if constexpr (std::is_same_v<terminal, std::decay_t<decltype(pa)>>)
-                            oss << "a(" << to_string(pa.type) << ":[" << debug_print(pa) << "])";
+                            oss << enum_to_string(pa);
                         else
-                            oss << "a(" << to_string(pa.type) << ")";
+                            oss << to_string(pa.type);
+                        if (aNode.c())
+                            oss << " : " << aNode.c().value();
                         oss << " = [" << debug_print(aNode.value, 64) << "]";
                     }, *aNode.atom);
             }
@@ -1113,10 +1124,18 @@ namespace neolib
         }
 
         template <LexerConcept Concept>
-        inline Concept operator<=>(lexer_primitive<typename Concept::token_type> const& lhs, Concept const& rhs)
+        inline lexer_primitive<typename Concept::token_type> operator<=>(typename Concept::token_type lhs, Concept const& rhs)
         {
-            Concept result{ lhs };
-            result.name = rhs.name;
+            lexer_primitive<typename Concept::token_type> result{ lhs };
+            result.c = rhs;
+            return result;
+        }
+
+        template <LexerConcept Concept>
+        inline lexer_primitive<typename Concept::token_type> operator<=>(lexer_primitive<typename Concept::token_type> const& lhs, Concept const& rhs)
+        {
+            lexer_primitive<typename Concept::token_type> result{ lhs };
+            result.c = rhs;
             return result;
         }
 
@@ -1254,9 +1273,7 @@ namespace neolib
     }\
     inline neolib::lexer_concept<token> operator"" _concept(const char* str, std::size_t len)\
     {\
-        neolib::lexer_concept<token> result{};\
-        result.name = { str, len };\
-        return result;\
+        return neolib::lexer_concept<token>{ str, len };\
     }\
     template <typename T>\
     inline neolib::lexer_choice<token> choice(T&& lhs)\
