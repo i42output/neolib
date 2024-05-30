@@ -477,6 +477,8 @@ namespace neolib
             }
         };
 
+        using ast_node = cst_node;
+
     public:
         template <std::size_t RuleCount>
         lexer(rule const (&aRules)[RuleCount]) :
@@ -487,6 +489,7 @@ namespace neolib
     public:
         bool parse(token aRoot, std::string_view const& aSource)
         {
+            iSource = aSource;
             iCst = {};
             iStack = {};
             iDeepestParse = {};
@@ -549,6 +552,30 @@ namespace neolib
             return true;
         }
 
+        void create_ast()
+        {
+            iAst = std::move(iCst);
+            create_ast(&iAst);
+
+            if (iDebugOutput)
+            {
+                std::vector<std::string> lines;
+                std::istringstream iss{ std::string{ iSource } };
+                std::string line;
+                while (std::getline(iss, line))
+                    lines.push_back(line);
+                std::size_t numberWidth = std::to_string(lines.size()).size();
+                std::uint32_t lineNumber = 1;
+                for (auto const& line : lines)
+                {
+                    (*iDebugOutput) << std::setw(numberWidth) << lineNumber << "|" << line << std::endl;
+                    ++lineNumber;
+                }
+                if (iDebugCst)
+                    (*iDebugOutput) << debug_print_cst(iAst) << std::endl;
+            }
+        }
+
     public:
         void set_debug_output(std::ostream& aDebugOutput)
         {
@@ -570,6 +597,7 @@ namespace neolib
         {
             for (auto child = aNode->children.begin(); child != aNode->children.end(); )
             {
+                (**child).parent = aNode;
                 auto result = simplify_cst(&**child);
                 if (result)
                 {
@@ -604,6 +632,37 @@ namespace neolib
                     std::to_address(aNode->value.end()) <= std::to_address(aNode->parent->value.end()))
                 {
                     aNode->parent->value = aNode->value;
+                    for (auto& child2 : aNode->children)
+                        child2->parent = aNode->parent;
+                    auto pos = aNode->parent->children.insert(std::next(existing),
+                        std::make_move_iterator(aNode->children.begin()), std::make_move_iterator(aNode->children.end()));
+                    return std::prev(pos);
+                }
+            }
+
+            return {};
+        }
+
+        std::optional<typename ast_node::child_list::iterator> create_ast(ast_node* aNode)
+        {
+            for (auto child = aNode->children.begin(); child != aNode->children.end(); )
+            {
+                auto result = create_ast(&**child);
+                if (result)
+                    child = aNode->children.erase(result.value());
+                else
+                    ++child;
+            }
+
+            if (aNode->parent)
+            {
+                auto existing = std::find_if(aNode->parent->children.begin(), aNode->parent->children.end(), [&](auto const& e)
+                    {
+                        return &*e == aNode;
+                    });
+    
+                if (!aNode->c.has_value())
+                {
                     for (auto& child2 : aNode->children)
                         child2->parent = aNode->parent;
                     auto pos = aNode->parent->children.insert(std::next(existing),
@@ -728,7 +787,8 @@ namespace neolib
             if (std::holds_alternative<token>(aAtom))
             {
                 token const atomToken = std::get<token>(aAtom);
-                aNode.children.push_back(std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, aSource));
+                auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, aSource);
+                aNode.children.push_back(newChild);
                 auto const partialResult = parse(atomToken, *aNode.children.back(), aSource);
                 if (partialResult)
                 {
@@ -748,7 +808,8 @@ namespace neolib
                     auto const partialResult = aSource.substr(0, t.size());
                     if (!aNode.c.has_value())
                         aNode.c = aAtom.c;
-                    aNode.children.push_back(std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult));
+                    auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
+                    aNode.children.push_back(newChild);
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult) };
                     return ((sdp ? sdp->ok = true : true), iCache[cache_key{ &aAtom, aSource.data() }].result);
                 }
@@ -762,7 +823,8 @@ namespace neolib
                     auto const partialResult = aSource.substr(0, 1);
                     if (!aNode.c.has_value())
                         aNode.c = aAtom.c;
-                    aNode.children.push_back(std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult));
+                    auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
+                    aNode.children.push_back(newChild);
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult) };
                     return ((sdp ? sdp->ok = true : true), iCache[cache_key{ &aAtom, aSource.data() }].result);
                 }
@@ -1040,7 +1102,9 @@ namespace neolib
 
     private:
         std::vector<rule> iRules;
+        std::string_view iSource;
         cst_node iCst = {};
+        cst_node iAst = {};
         std::vector<std::pair<rule const*, std::string_view>> iStack;
         std::uint32_t iMaxLevel = 256;
         std::uint32_t iLevel = 0;

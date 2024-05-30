@@ -173,9 +173,10 @@ int main(int argc, char** argv)
         ( token::Expression >> token::Term ),
         ( token::Term >> choice(
             (token::Term , token::Multiply , token::Term) <=> "math.operator.multiply"_concept |
-            (token::Term, token::Divide , token::Term) <=> "math.operator.divide"_concept) ),
+            (token::Term , token::Divide , token::Term) <=> "math.operator.divide"_concept) ),
         ( token::Term >> token::Primary ),
-        ( token::Primary >> ((token::Variable , token::Assign , token::Expression) <=> "object.assign"_concept) ),
+        ( token::Primary >> 
+            ((token::Variable <=> "object"_concept , token::Assign , token::Expression) <=> "object.assign"_concept)),
         ( token::Primary >> token::Negate , token::Primary ),
         ( token::Primary >> token::Number ),
         ( token::Primary >> (token::Variable <=> "object"_concept) ),
@@ -227,13 +228,14 @@ int main(int argc, char** argv)
         ( token::Primary >> discard(token::Whitespace) , token::Primary , discard(token::Whitespace) )
     };
 
-    neolib::lexer<token> parser{ lexerRules };
-    parser.set_debug_output(std::cerr);
-    parser.set_debug_scan(false);
-    test_assert(parser.parse(token::Program, sourcePass1));
-    test_assert(parser.parse(token::Program, sourcePass2));
-    test_assert(!parser.parse(token::Program, sourceError1));
-    test_assert(!parser.parse(token::Program, sourceError2));
-    test_assert(!parser.parse(token::Program, sourceError3));
+    neolib::lexer<token> lexer{ lexerRules };
+    lexer.set_debug_output(std::cerr);
+    lexer.set_debug_scan(false);
+    test_assert(lexer.parse(token::Program, sourcePass1));
+    test_assert(lexer.parse(token::Program, sourcePass2));
+    lexer.create_ast();
+    test_assert(!lexer.parse(token::Program, sourceError1));
+    test_assert(!lexer.parse(token::Program, sourceError2));
+    test_assert(!lexer.parse(token::Program, sourceError3));
 }
 
