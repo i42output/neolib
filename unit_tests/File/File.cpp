@@ -108,7 +108,7 @@ std::string_view const sourcePass2 = R"test(
     xyzzY0 foo()
     {
         1234;
-        x := 1 + 1 + 1; 
+        x := 1 + 2 + 3; 
         y := 7 + -42.001 * 1.0 * (5-1+2) + x * 2;
     }
 )test";
@@ -117,7 +117,7 @@ std::string_view const sourceError1 = R"test(
     xyzzY0 foo()
     {
         1234q;
-        x := 1 + 1 + 1; 
+        x := 1 + 2 + 3; 
         y := 7 + -42.001 * 1.0 * (5-1+2) + x * 2;
     }
 )test";
@@ -126,7 +126,7 @@ std::string_view const sourceError2 = R"test(
     xyzzY0 foo()
     {
         1234;
-        x := 1 + 1 + 1; 
+        x := 1 + 2 + 3; 
         y := 7 + 4
 2.0 * 1.0 * (5-1+2) + x * 2;
     }
@@ -136,7 +136,7 @@ std::string_view const sourceError3 = R"test(
     xyzzY0 foo()
     {
         1234;
-        x := 1 + 1 + 1; 
+        x := 1 + 2 + 3; 
         y := 7 + -42.001 * 1.0 * (5-1+2)) + x * 2;
     }
 )test";

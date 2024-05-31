@@ -491,6 +491,7 @@ namespace neolib
         {
             iSource = aSource;
             iCst = {};
+            iAst = {};
             iStack = {};
             iDeepestParse = {};
             iError = {};
@@ -500,6 +501,7 @@ namespace neolib
 
             auto const startTime = std::chrono::high_resolution_clock::now();
             auto const result = parse(aRoot, *rootNode, aSource);
+            fixup_cst(*rootNode);
             simplify_cst(*rootNode);
             auto const endTime = std::chrono::high_resolution_clock::now();
             std::uint32_t linePos;
@@ -588,6 +590,20 @@ namespace neolib
         }
 
     private:
+        void fixup_cst(cst_node& aNode)
+        {
+            fixup_cst(&aNode);
+        }
+
+        void fixup_cst(cst_node* aNode)
+        {
+            for (auto child = aNode->children.begin(); child != aNode->children.end(); ++child)
+            {
+                (**child).parent = aNode;
+                fixup_cst(&**child);
+            }
+        }
+                
         void simplify_cst(cst_node& aNode)
         {
             simplify_cst(&aNode);
@@ -597,7 +613,6 @@ namespace neolib
         {
             for (auto child = aNode->children.begin(); child != aNode->children.end(); )
             {
-                (**child).parent = aNode;
                 auto result = simplify_cst(&**child);
                 if (result)
                 {
@@ -627,11 +642,8 @@ namespace neolib
                         return existing;
                     }
                 }
-                else if (ourToken == parentToken &&
-                    aNode->value.data() >= aNode->parent->value.data() &&
-                    std::to_address(aNode->value.end()) <= std::to_address(aNode->parent->value.end()))
+                else if ((ourToken == parentToken || (aNode->c.has_value() && aNode->c == aNode->parent->c)) && aNode->value == aNode->parent->value)
                 {
-                    aNode->parent->value = aNode->value;
                     for (auto& child2 : aNode->children)
                         child2->parent = aNode->parent;
                     auto pos = aNode->parent->children.insert(std::next(existing),
@@ -789,12 +801,14 @@ namespace neolib
                 token const atomToken = std::get<token>(aAtom);
                 auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, aSource);
                 aNode.children.push_back(newChild);
-                auto const partialResult = parse(atomToken, *aNode.children.back(), aSource);
+                auto const partialResult = parse(atomToken, *newChild, aSource);
                 if (partialResult)
                 {
                     if (!aNode.c.has_value())
                         aNode.c = aAtom.c;
-                    aNode.children.back()->value = partialResult.value().value;
+                    if (!newChild->c.has_value())
+                        newChild->c = aAtom.c;
+                    newChild->value = partialResult.value().value;
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult)};
                     return iCache[cache_key{ &aAtom, aSource.data() }].result;
                 }
@@ -806,9 +820,8 @@ namespace neolib
                 if ((!t.empty() && aSource.find(t) == 0) || (t.empty() && sourceNext == sourceEnd ))
                 {
                     auto const partialResult = aSource.substr(0, t.size());
-                    if (!aNode.c.has_value())
-                        aNode.c = aAtom.c;
                     auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
+                    newChild->c = aAtom.c;
                     aNode.children.push_back(newChild);
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult) };
                     return ((sdp ? sdp->ok = true : true), iCache[cache_key{ &aAtom, aSource.data() }].result);
@@ -821,9 +834,8 @@ namespace neolib
                 if (!aSource.empty() && aSource[0] >= min && aSource[0] <= max)
                 {
                     auto const partialResult = aSource.substr(0, 1);
-                    if (!aNode.c.has_value())
-                        aNode.c = aAtom.c;
                     auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
+                    newChild->c = aAtom.c;
                     aNode.children.push_back(newChild);
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult) };
                     return ((sdp ? sdp->ok = true : true), iCache[cache_key{ &aAtom, aSource.data() }].result);
@@ -858,7 +870,7 @@ namespace neolib
                 }
                 std::swap(aNode.children, children);
                 aNode.children.insert(aNode.children.end(), std::make_move_iterator(children.begin()), std::make_move_iterator(children.end()));
-                if (!aNode.c.has_value())
+                if (aAtom.c.has_value())
                     aNode.c = aAtom.c;
                 if (spanEnd == nullptr)
                     spanEnd = spanStart;
