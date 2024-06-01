@@ -782,6 +782,8 @@ namespace neolib
             if (iDebugScan)
                 sdp.emplace(*this, aToken, aSource);
 
+            // todo: if more than one rule matches take the deepest parse and/or resolve ambiguity via semantic analyis through IoC.
+
             for (auto& rule : iRules)
             {
                 if (!std::holds_alternative<token>(rule.lhs[0]))
