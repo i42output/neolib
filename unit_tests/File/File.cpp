@@ -174,12 +174,12 @@ int main(int argc, char** argv)
         ( token::Expression >> ((token::Term , 
             +repeat((choice(
                 token::Add <=> "math.operator.add"_concept_associate_left | 
-                token::Subtract <=> "math.operator.subtract"_concept_associate_left), token::Term))) <=> "math.operator.addition"_concept) ),
+                token::Subtract <=> "math.operator.subtract"_concept_associate_left), token::Term))) <=> "math.addition"_concept) ),
         ( token::Expression >> token::Term ),
         ( token::Term >> ((token::Factor ,
             +repeat((choice(
                 token::Multiply <=> "math.operator.multiply"_concept_associate_left | 
-                token::Divide <=> "math.operator.divide"_concept_associate_left), token::Factor))) <=> "math.operator.multiplication"_concept) ),
+                token::Divide <=> "math.operator.divide"_concept_associate_left), token::Factor))) <=> "math.multiplication"_concept) ),
         ( token::Term >> token::Factor ),
         ( token::Factor >> token::Primary ),
         ( token::Primary >> 
