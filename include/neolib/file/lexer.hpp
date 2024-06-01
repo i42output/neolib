@@ -40,6 +40,7 @@
 #include <neolib/neolib.hpp>
 
 #include <concepts>
+#include <memory>
 #include <vector>
 #include <unordered_map>
 #include <variant>
@@ -423,7 +424,7 @@ namespace neolib
             using child_list = std::vector<std::shared_ptr<cst_node>>;
 
             cst_node* parent;
-            rule const* rule;
+            lexer::rule const* rule;
             std::optional<_concept> c;
             primitive_atom const* atom;
             std::string_view value;
@@ -996,10 +997,10 @@ namespace neolib
         {
             if (!aResult)
                 return aPartialResult.value();
-            char const* resultFirst = to_address(aResult->value.begin());
-            char const* resultLast = to_address(aResult->value.end());
-            char const* partialResultFirst = to_address(aPartialResult->value.begin());
-            char const* partialResultLast = to_address(aPartialResult->value.end());
+            char const* resultFirst = std::to_address(aResult->value.begin());
+            char const* resultLast = std::to_address(aResult->value.end());
+            char const* partialResultFirst = std::to_address(aPartialResult->value.begin());
+            char const* partialResultLast = std::to_address(aPartialResult->value.end());
             std::string_view result{ std::min(resultFirst, partialResultFirst), std::max(resultLast, partialResultLast) };
             return result;
         }
@@ -1244,12 +1245,6 @@ namespace neolib
         }
 
         template <LexerRepeat Repeat>
-        inline Repeat operator|(Repeat const& lhs, lexer_primitive<typename Repeat::token_type> const& rhs)
-        {
-            return Repeat{ lhs, rhs };
-        }
-
-        template <LexerRepeat Repeat>
         inline Repeat operator|(Repeat const& lhs, typename Repeat::token_type rhs)
         {
             return Repeat{ lhs, rhs };
@@ -1279,16 +1274,16 @@ namespace neolib
             return lexer_repeat<typename Component1::token_type>{ lhs, rhs };
         }
 
-        template <LexerTerminal Terminal>
-        inline lexer_repeat<typename Terminal::token_type> operator|(Terminal const& lhs, char rhs)
+        template <LexerComponent Component>
+        inline lexer_repeat<typename Component::token_type> operator|(Component const& lhs, char rhs)
         {
-            return lexer_repeat<typename Terminal::token_type>{ lhs, Terminal{ rhs } };
+            return lexer_repeat<typename Component::token_type>{ lhs, lexer_terminal<typename Component::token_type>{ rhs } };
         }
 
-        template <LexerTerminal Terminal>
-        inline lexer_repeat<typename Terminal::token_type> operator|(char lhs, Terminal const& rhs)
+        template <LexerComponent Component>
+        inline lexer_repeat<typename Component::token_type> operator|(char lhs, Component const& rhs)
         {
-            return lexer_repeat<typename Terminal::token_type>{ Terminal{ lhs }, rhs };
+            return lexer_repeat<typename Component::token_type>{ lexer_terminal<typename Component::token_type>{ lhs },  rhs };
         }
 
         template <LexerRule Rule>
