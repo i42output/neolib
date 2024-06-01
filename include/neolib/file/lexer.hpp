@@ -49,7 +49,6 @@
 
 #include <boost/functional/hash.hpp>
 
-#include <neolib/core/vecarray.hpp>
 #include <neolib/core/i_enum.hpp>
 #include <neolib/core/scoped.hpp>
 

@@ -45,6 +45,7 @@ namespace lexer_test
         OpenExpression,
         CloseExpression,
         Term,
+        Factor,
         Primary,
         Add,
         Subtract,
@@ -83,6 +84,7 @@ declare_token(lexer_test::token, Expression)
 declare_token(lexer_test::token, OpenExpression)
 declare_token(lexer_test::token, CloseExpression)
 declare_token(lexer_test::token, Term)
+declare_token(lexer_test::token, Factor)
 declare_token(lexer_test::token, Primary)
 declare_token(lexer_test::token, Add)
 declare_token(lexer_test::token, Subtract)
@@ -168,16 +170,17 @@ int main(int argc, char** argv)
         ( token::Statement >> token::Expression , discard(token::EndStatement) ),
         ( token::EndStatement >> ';' ),
         ( token::Expression >> choice(
-            (token::Expression , token::Add , token::Expression) <=> "math.operator.add"_concept | 
-            (token::Expression , token::Subtract , token::Expression) <=> "math.operator.subtract"_concept) ),
-        ( token::Expression >> token::Term ),
+            token::Term |
+            (token::Term , token::Add , token::Term) <=> "math.operator.add"_concept |
+            (token::Term , token::Subtract , token::Term) <=> "math.operator.subtract"_concept) ),
         ( token::Term >> choice(
-            (token::Term , token::Multiply , token::Term) <=> "math.operator.multiply"_concept |
-            (token::Term , token::Divide , token::Term) <=> "math.operator.divide"_concept) ),
-        ( token::Term >> token::Primary ),
+            token::Factor |
+            (token::Factor , token::Multiply , token::Factor) <=> "math.operator.multiply"_concept |
+            (token::Factor , token::Divide , token::Factor) <=> "math.operator.divide"_concept) ),
+        ( token::Factor >> token::Primary ),
         ( token::Primary >> 
             ((token::Variable <=> "object"_concept , token::Assign , token::Expression) <=> "object.assign"_concept)),
-        ( token::Primary >> token::Negate , token::Primary ),
+        ( token::Primary >> ((token::Negate , token::Primary) <=> "math.operator.negate"_concept) ),
         ( token::Primary >> token::Number ),
         ( token::Primary >> (token::Variable <=> "object"_concept) ),
         ( token::Primary >> ~discard(token::OpenExpression) , token::Expression , ~discard(token::CloseExpression) ),
