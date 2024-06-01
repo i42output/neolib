@@ -116,6 +116,13 @@ namespace neolib
         static constexpr lexer_component_type type = Type;
     };
 
+    enum class concept_association
+    {
+        None,
+        Left,
+        Right
+    };
+
     template <typename Token>
     class lexer
     {
@@ -295,9 +302,25 @@ namespace neolib
         {
             using token_type = token;
 
+            concept_association association = concept_association::None;
+
             using base_type = std::string;
             using base_type::base_type;
+
+            _concept without_association() const
+            {
+                _concept result = *this;
+                result.association = concept_association::None;
+                return result;
+            }
         };
+
+        std::optional<_concept> without_association(std::optional<_concept> const& c)
+        {
+            if (!c.has_value())
+                return c;
+            return c.value().without_association();
+        }
 
         struct primitive_atom : std::variant<token, terminal, undefined, choice, sequence, repeat, range, optional, discard>, lexer_component<lexer_component_type::Primitive>
         {
@@ -681,6 +704,24 @@ namespace neolib
                         std::make_move_iterator(aNode->children.begin()), std::make_move_iterator(aNode->children.end()));
                     return std::prev(pos);
                 }
+                else if (aNode->c.value().association == concept_association::Left)
+                {
+                    aNode->c = without_association(aNode->c);
+                    auto lhs = std::prev(existing);
+                    auto rhs = std::next(existing);
+                    (**lhs).parent = aNode;
+                    (**rhs).parent = aNode;
+                    aNode->children.push_back(*lhs);
+                    aNode->children.push_back(*rhs);
+                    existing = aNode->parent->children.erase(lhs);
+                    rhs = std::next(existing);
+                    return rhs;
+                }
+                else if (aNode->c.value().association == concept_association::Right)
+                {
+                    aNode->c = without_association(aNode->c);
+                    // todo
+                }
             }
 
             return {};
@@ -805,7 +846,7 @@ namespace neolib
                 if (partialResult)
                 {
                     if (!aNode.c.has_value())
-                        aNode.c = aAtom.c;
+                        aNode.c = without_association(aAtom.c);
                     if (!newChild->c.has_value())
                         newChild->c = aAtom.c;
                     newChild->value = partialResult.value().value;
@@ -913,8 +954,6 @@ namespace neolib
                         {
                             if (!aNode.c.has_value())
                                 aNode.c = aAtom.c;
-                            if (aNode.c == "math.operator.addition")
-                                std::cout << "";
                             foundAtLeastOne = true;
                             found = true;
                             if (std::holds_alternative<discard>(a) && std::get<discard>(a).trim)
@@ -1381,6 +1420,18 @@ namespace neolib
     inline neolib::lexer_concept<token> operator"" _concept(const char* str, std::size_t len)\
     {\
         return neolib::lexer_concept<token>{ str, len };\
+    }\
+    inline neolib::lexer_concept<token> operator"" _concept_associate_left(const char* str, std::size_t len)\
+    {\
+        auto result = neolib::lexer_concept<token>{ str, len };\
+        result.association = neolib::concept_association::Left;\
+        return result;\
+    }\
+    inline neolib::lexer_concept<token> operator"" _concept_associate_right(const char* str, std::size_t len)\
+    {\
+        auto result = neolib::lexer_concept<token>{ str, len };\
+        result.association = neolib::concept_association::Right;\
+        return result;\
     }\
     template <typename T>\
     inline neolib::lexer_choice<token> choice(T&& lhs)\

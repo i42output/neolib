@@ -110,7 +110,7 @@ std::string_view const sourcePass2 = R"test(
     xyzzY0 foo()
     {
         1234;
-        x := 1 + 2 + 3; 
+        x := 1 + 2 + 3 - 4 - 5 + 6; 
         y := 7 + -42.001 * 1.0 * (5-1+2) + x * 2;
     }
 )test";
@@ -119,7 +119,7 @@ std::string_view const sourceError1 = R"test(
     xyzzY0 foo()
     {
         1234q;
-        x := 1 + 2 + 3; 
+        x := 1 + 2 + 3 - 4 - 5 + 6; 
         y := 7 + -42.001 * 1.0 * (5-1+2) + x * 2;
     }
 )test";
@@ -128,7 +128,7 @@ std::string_view const sourceError2 = R"test(
     xyzzY0 foo()
     {
         1234;
-        x := 1 + 2 + 3; 
+        x := 1 + 2 + 3 - 4 - 5 + 6; 
         y := 7 + 4
 2.0 * 1.0 * (5-1+2) + x * 2;
     }
@@ -138,7 +138,7 @@ std::string_view const sourceError3 = R"test(
     xyzzY0 foo()
     {
         1234;
-        x := 1 + 2 + 3; 
+        x := 1 + 2 + 3 - 4 - 5 + 6; 
         y := 7 + -42.001 * 1.0 * (5-1+2)) + x * 2;
     }
 )test";
@@ -169,13 +169,15 @@ int main(int argc, char** argv)
         ( token::CloseScope >> '}' ),
         ( token::Statement >> token::Expression , discard(token::EndStatement) ),
         ( token::EndStatement >> ';' ),
-        ( token::Expression >> ((token::Term ,
-            +repeat((choice(token::Add <=> "math.operator.add"_concept | token::Subtract <=> "math.operator.subtract"_concept), 
-                token::Term))) <=> "math.operator.addition"_concept) ),
+        ( token::Expression >> token::Term , 
+            +repeat((choice(
+                token::Add <=> "math.operator.add"_concept_associate_left | 
+                token::Subtract <=> "math.operator.subtract"_concept_associate_left), token::Term)) ),
         ( token::Expression >> token::Term ),
-        ( token::Term >> ((token::Factor ,
-            +repeat((choice(token::Multiply <=> "math.operator.multiply"_concept | token::Divide <=> "math.operator.divide"_concept), 
-                token::Factor))) <=> "math.operator.multiplication"_concept) ),
+        ( token::Term >> token::Factor ,
+            +repeat((choice(
+                token::Multiply <=> "math.operator.multiply"_concept_associate_left | 
+                token::Divide <=> "math.operator.divide"_concept_associate_left), token::Factor)) ),
         ( token::Term >> token::Factor ),
         ( token::Factor >> token::Primary ),
         ( token::Primary >> 
