@@ -913,6 +913,8 @@ namespace neolib
                         {
                             if (!aNode.c.has_value())
                                 aNode.c = aAtom.c;
+                            if (aNode.c == "math.operator.addition")
+                                std::cout << "";
                             foundAtLeastOne = true;
                             found = true;
                             if (std::holds_alternative<discard>(a) && std::get<discard>(a).trim)

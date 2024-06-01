@@ -169,14 +169,12 @@ int main(int argc, char** argv)
         ( token::CloseScope >> '}' ),
         ( token::Statement >> token::Expression , discard(token::EndStatement) ),
         ( token::EndStatement >> ';' ),
-        ( token::Expression >> choice(
-            token::Term |
-            (token::Term , token::Add , token::Term) <=> "math.operator.add"_concept |
-            (token::Term , token::Subtract , token::Term) <=> "math.operator.subtract"_concept) ),
-        ( token::Term >> choice(
-            token::Factor |
-            (token::Factor , token::Multiply , token::Factor) <=> "math.operator.multiply"_concept |
-            (token::Factor , token::Divide , token::Factor) <=> "math.operator.divide"_concept) ),
+        ( token::Expression >> ((token::Term ,
+            +repeat((choice(token::Add <=> "math.operator.add"_concept | token::Subtract <=> "math.operator.subtract"_concept), token::Term))) <=> "math.operator.addition"_concept) ),
+        ( token::Expression >> token::Term ),
+        ( token::Term >> ((token::Factor ,
+            +repeat((choice(token::Multiply <=> "math.operator.multiply"_concept | token::Divide <=> "math.operator.divide"_concept), token::Factor))) <=> "math.operator.multiplication"_concept) ),
+        ( token::Term >> token::Factor ),
         ( token::Factor >> token::Primary ),
         ( token::Primary >> 
             ((token::Variable <=> "object"_concept , token::Assign , token::Expression) <=> "object.assign"_concept)),
@@ -228,6 +226,7 @@ int main(int argc, char** argv)
         ( token::Divide >> discard(token::Whitespace) , token::Divide, discard(token::Whitespace) ),
         ( token::Negate >> discard(token::Whitespace) , token::Negate, discard(token::Whitespace) ),
         ( token::Term >> discard(token::Whitespace) , token::Term , discard(token::Whitespace) ),
+        ( token::Factor >> discard(token::Whitespace) , token::Factor , discard(token::Whitespace) ),
         ( token::Primary >> discard(token::Whitespace) , token::Primary , discard(token::Whitespace) )
     };
 
