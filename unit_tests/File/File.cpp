@@ -1,5 +1,4 @@
 ﻿#include <neolib/neolib.hpp>
-#include <neolib/core/i_enum.hpp>
 #include <neolib/file/lexer.hpp>
 
 namespace

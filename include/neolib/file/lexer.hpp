@@ -1415,7 +1415,12 @@ namespace neolib
 
 #define enable_neolib_lexer(token)\
     inline token is_lexer_token(token) { return {}; }\
-    using namespace neolib::lexer_operators;\
+    \
+    using neolib::lexer_operators::operator>>;\
+    using neolib::lexer_operators::operator<=>;\
+    using neolib::lexer_operators::operator|;\
+    using neolib::lexer_operators::operator,;\
+    \
     inline neolib::lexer_terminal<token> operator"" _(const char* str, std::size_t len)\
     {\
         return neolib::lexer_terminal<token>{ str, len };\
