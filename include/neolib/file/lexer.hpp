@@ -442,6 +442,8 @@ namespace neolib
             }
         };
 
+        // Why aren't we using std::unique_ptr? Because nodes are shared between the cache
+        // and the partial CST currently being built via backtracking.
         struct cst_node : std::enable_shared_from_this<cst_node>
         {
             using child_list = std::vector<std::shared_ptr<cst_node>>;
@@ -562,9 +564,12 @@ namespace neolib
                 if (iError)
                     (*iDebugOutput) << "Error: " << iError.value() << std::endl;
                 else
+                {
+                    auto const time = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() / 1000.0;
                     (*iDebugOutput) << "Parse time" << (iDebugScan ? " (debug)" : "") << ": " << std::setprecision(3) <<
-                        std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() / 1000.0 <<
-                        " seconds" << std::endl;
+                        time << " seconds" << " (" << static_cast<std::uint32_t>(iSource.size() / time) << " characters/second, " << 
+                        static_cast<std::uint32_t>(std::count(iSource.begin(), iSource.end(), '\n') / time) << " lines/second)" << std::endl;
+                }
                 if (iDebugCst)
                     (*iDebugOutput) << debug_print_cst(*rootNode) << std::endl;
             }
