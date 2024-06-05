@@ -57,6 +57,15 @@ int main()
     neolib::gap_vector<int> gapVector;
     std::vector<int> normalVector;
 
+    auto i1 = gapVector.begin();
+    auto i2 = gapVector.begin();
+    test_assert(i1 == i2);
+    auto ci1 = gapVector.cbegin();
+    auto ci2 = gapVector.cbegin();
+    test_assert(ci1 == ci2);
+    decltype(gapVector)::const_iterator ci3 = i1;
+    test_assert(ci1 == i1);
+
     int const initCount = 20000000;
 
     for (int i = 1; i <= initCount; ++i)

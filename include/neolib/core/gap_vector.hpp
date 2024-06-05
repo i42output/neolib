@@ -57,32 +57,39 @@ namespace neolib
         static constexpr size_type DefaultGapSize = DefaultGapSize_;
         static constexpr size_type NearnessFactor = NearnessFactor_;
     private:
-        template <typename ContainerType, typename BaseIterator, typename Reference, typename Pointer>
+        template <typename U>
         class iterator_impl
         {
             friend class gap_vector;
-        private:
-            using container_type = ContainerType;
-        protected:
-            using base_iterator = BaseIterator;
-            using reference = Reference;
-            using pointer = Pointer;
         public:
-            iterator_impl()
+            template <bool> struct qualified_container_type_cracker {};
+            template <> struct qualified_container_type_cracker<true> { using type = gap_vector const; };
+            template <> struct qualified_container_type_cracker<false> { using type = gap_vector; };
+            using qualified_container_type = typename qualified_container_type_cracker<std::is_const_v<U>>::type;
+            using base_iterator = U*;
+            using reference = U&;
+            using pointer = U*;
+            using difference_type = typename gap_vector::difference_type;
+            using value_type = typename gap_vector::value_type;
+            using iterator_category = std::random_access_iterator_tag;
+        public:
+            iterator_impl() :
+                iContainer{},
+                iBase{}
             {
             }
-        protected:
-            iterator_impl(container_type& aContainer, base_iterator aBase) :
+        public:
+            iterator_impl(qualified_container_type& aContainer, base_iterator aBase) :
                 iContainer{ &aContainer },
                 iBase{ aBase }
             {
             }
-            iterator_impl(iterator_impl const& aOther) :
+            iterator_impl(iterator_impl<std::remove_const_t<U>> const& aOther) :
                 iContainer{ aOther.iContainer },
                 iBase{ aOther.iBase }
             {
             }
-            iterator_impl(iterator_impl&& aOther) :
+            iterator_impl(iterator_impl<std::remove_const_t<U>>&& aOther) :
                 iContainer{ aOther.iContainer },
                 iBase{ aOther.iBase }
             {
@@ -90,7 +97,13 @@ namespace neolib
                 aOther.iBase = nullptr;
             }
         public:
-            iterator_impl& operator=(iterator_impl const& aOther)
+            iterator_impl& operator=(iterator_impl<std::remove_const_t<U>> const& aOther)
+            {
+                iContainer = &aOther.c();
+                iBase = aOther.base();
+                return *this;
+            }
+            iterator_impl& operator=(iterator_impl<std::remove_const_t<U>>&& aOther)
             {
                 iContainer = &aOther.c();
                 iBase = aOther.base();
@@ -105,7 +118,7 @@ namespace neolib
             {
                 return iBase;
             }
-        protected:
+        public:
             iterator_impl& operator++()
             {
                 return (*this += 1);
@@ -113,6 +126,18 @@ namespace neolib
             iterator_impl& operator--()
             {
                 return (*this -= 1);
+            }
+            iterator_impl operator++(int)
+            {
+                iterator_impl temp = *this;
+                operator++();
+                return temp;
+            }
+            iterator_impl operator--(int)
+            {
+                iterator_impl temp = *this;
+                operator--();
+                return temp;
             }
             iterator_impl& operator+=(difference_type aDifference)
             {
@@ -168,8 +193,8 @@ namespace neolib
             { 
                 return *((*this) + aDifference); 
             }
-        protected:
-            difference_type difference(const iterator_impl& aOther) const
+        public:
+            difference_type operator-(const iterator_impl& aOther) const
             {
                 auto result = iBase - aOther.base();
                 if (c().gap_active())
@@ -182,18 +207,18 @@ namespace neolib
                 return result;
             }
         public:
-            template <typename ContainerType2, typename BaseIterator2, typename Reference2, typename Pointer2>
-            constexpr bool operator==(const iterator_impl<ContainerType2, BaseIterator2, Reference2, Pointer2>& that) const noexcept
+            template <typename U2>
+            constexpr bool operator==(const iterator_impl<U2>& that) const noexcept
             {
                 return iBase == that.base();
             }
-            template <typename ContainerType2, typename BaseIterator2, typename Reference2, typename Pointer2>
-            constexpr std::strong_ordering operator<=>(const iterator_impl<ContainerType2, BaseIterator2, Reference2, Pointer2>& that) const noexcept
+            template <typename U2>
+            constexpr std::strong_ordering operator<=>(const iterator_impl<U2>& that) const noexcept
             {
                 return iBase <=> that.base();
             }        
         protected:
-            constexpr container_type& c() const noexcept
+            constexpr qualified_container_type& c() const noexcept
             {
                 return *iContainer;
             }
@@ -206,182 +231,12 @@ namespace neolib
                 return iBase;
             }
         private:
-            container_type* iContainer = nullptr;
+            qualified_container_type* iContainer = nullptr;
             base_iterator iBase = {};
         };
     public:
-        class iterator : public iterator_impl<gap_vector, pointer, reference, pointer>
-        {
-            friend class gap_vector;
-        private:
-            using base_type = iterator_impl<gap_vector, pointer, reference, pointer>;
-        public:
-            using difference_type = typename gap_vector::difference_type;
-            using value_type = typename gap_vector::value_type;
-            using iterator_category = std::random_access_iterator_tag;
-        public:
-            iterator() : 
-                base_type{}
-            {
-            }
-            iterator(iterator const& aOther) :
-                base_type{ aOther }
-            {
-            }
-        private:
-            iterator(gap_vector& aContainer, pointer aBase) :
-                base_type{ aContainer, aBase }
-            {
-            }
-            iterator(base_type& aOther) :
-                base_type{ aOther }
-            {
-            }
-            iterator(base_type&& aOther) :
-                base_type{ aOther }
-            {
-            }
-        public:
-            iterator& operator=(iterator const& aOther)
-            {
-                base_type::operator=(aOther);
-                return *this;
-            }
-            iterator& operator++()
-            {
-                base_type::operator++();
-                return *this;
-            }
-            iterator operator++(int)
-            {
-                iterator temp = *this;
-                operator++();
-                return temp;
-            }
-            iterator& operator--()
-            {
-                base_type::operator--();
-                return *this;
-            }
-            iterator operator--(int)
-            {
-                iterator temp = *this;
-                operator--();
-                return temp;
-            }
-            iterator& operator+=(difference_type aDifference)
-            {
-                base_type::operator+=(aDifference);
-                return *this;
-            }
-            iterator& operator-=(difference_type aDifference)
-            {
-                base_type::operator-=(aDifference);
-                return *this;
-            }
-            iterator operator+(difference_type aDifference) const
-            {
-                return iterator{ base_type::operator+(aDifference) };
-            }
-            iterator operator-(difference_type aDifference) const
-            {
-                return iterator{ base_type::operator-(aDifference) };
-            }
-            difference_type operator-(const iterator& aOther) const
-            {
-                return base_type::difference(aOther);
-            }
-        };
-        class const_iterator : public iterator_impl<gap_vector const, const_pointer, const_reference, const_pointer>
-        {
-            friend class gap_vector;
-        private:
-            using base_type = iterator_impl<gap_vector const, const_pointer, const_reference, const_pointer>;
-        public:
-            using pointer = const_pointer;
-            using reference = const_reference;
-        public:
-            using difference_type = typename gap_vector::difference_type;
-            using value_type = typename gap_vector::value_type;
-            using iterator_category = std::random_access_iterator_tag;
-        public:
-            const_iterator() :
-                base_type{}
-            {
-            }
-            const_iterator(const_iterator const& aOther) :
-                base_type{ aOther }
-            {
-            }
-            const_iterator(iterator const& aOther) :
-                const_iterator{ aOther.c(), aOther.base() }
-            {
-            }
-        private:
-            const_iterator(gap_vector const& aContainer, pointer aBase) :
-                base_type{ aContainer, aBase }
-            {
-            }
-            const_iterator(base_type&& aOther) :
-                base_type{ aOther }
-            {
-            }
-        public:
-            const_iterator& operator=(const_iterator const& aOther)
-            {
-                base_type::operator=(aOther);
-                return *this;
-            }
-            const_iterator& operator=(iterator const& aOther)
-            {
-                base_type::operator=(const_iterator{ aOther });
-                return *this;
-            }
-            const_iterator& operator++()
-            {
-                base_type::operator++();
-                return *this;
-            }
-            const_iterator operator++(int)
-            {
-                const_iterator temp = *this;
-                operator++();
-                return temp;
-            }
-            const_iterator& operator--()
-            {
-                base_type::operator--();
-                return *this;
-            }
-            const_iterator operator--(int)
-            {
-                const_iterator temp = *this;
-                operator--();
-                return temp;
-            }
-            const_iterator& operator+=(difference_type aDifference)
-            {
-                base_type::operator+=(aDifference);
-                return *this;
-            }
-            const_iterator& operator-=(difference_type aDifference)
-            {
-                base_type::operator-=(aDifference);
-                return *this;
-            }
-            const_iterator operator+(difference_type aDifference) const
-            {
-                return const_iterator{ base_type::operator+(aDifference) };
-            }
-            const_iterator operator-(difference_type aDifference) const
-            {
-                return const_iterator{ base_type::operator-(aDifference) };
-            }
-            difference_type operator-(const const_iterator& aOther) const
-            {
-                return base_type::difference(aOther);
-            }
-        };
+        using iterator = iterator_impl<value_type>;
+        using const_iterator = iterator_impl<value_type const>;
         using reverse_iterator = std::reverse_iterator<iterator>;
         using const_reverse_iterator = std::reverse_iterator<const_iterator>;
     public:
