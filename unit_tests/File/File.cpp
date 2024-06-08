@@ -248,6 +248,7 @@ int main(int argc, char** argv)
     lexer.set_debug_output(std::cerr);
     lexer.set_debug_scan(false);
     test_assert(lexer.parse(token::Program, sourcePass1));
+    lexer.create_ast();
     test_assert(lexer.parse(token::Program, sourcePass2));
     lexer.create_ast();
     test_assert(!lexer.parse(token::Program, sourceError1));
