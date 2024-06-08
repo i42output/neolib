@@ -789,6 +789,10 @@ namespace neolib
 
             // todo: if more than one rule matches take the deepest parse and/or resolve ambiguity via semantic analyis through IoC.
 
+            std::optional<parse_result> result;
+            rule* resultRule = nullptr;
+            typename cst_node::child_list resultChildren;
+
             for (auto& rule : iRules)
             {
                 if (!std::holds_alternative<token>(rule.lhs[0]))
@@ -801,16 +805,28 @@ namespace neolib
                     auto const& ruleAtom = rule.rhs[0];
                     typename cst_node::child_list children;
                     std::swap(aNode.children, children);
-                    auto const result = parse(ruleAtom, aNode, std::string_view{ sourceNext, sourceEnd });
+                    auto const match = parse(ruleAtom, aNode, std::string_view{ sourceNext, sourceEnd });
                     std::swap(aNode.children, children);
-                    if (result)
+                    if (match)
                     {
-                        if (!aNode.c.has_value())
-                            aNode.c = ruleAtom.c;
-                        aNode.children.insert(aNode.children.end(), std::make_move_iterator(children.begin()), std::make_move_iterator(children.end()));
-                        return ((sdp ? sdp->ok = true : true), result);
+                        if (!result || match.value().value.size() > result.value().value.size())
+                        {
+                            result = match;
+                            resultRule = &rule;
+                            resultChildren = children;
+                            break; // todo match rule with deepest parse
+                        }
                     }
                 }
+            }
+
+            if (result)
+            {
+                aNode.rule = resultRule;
+                if (!aNode.c.has_value())
+                    aNode.c = resultRule->rhs[0].c;
+                aNode.children.insert(aNode.children.end(), std::make_move_iterator(resultChildren.begin()), std::make_move_iterator(resultChildren.end()));
+                return ((sdp ? sdp->ok = true : true), result);
             }
 
             aNode.rule = nullptr;
