@@ -105,7 +105,7 @@ namespace lexer_test
     enable_neolib_lexer(token)
 }
 
-std::string_view const sourcePass1 = R"test(r f(){})test";
+std::string_view const sourcePass1 = R"test(r f(){42!;})test";
 
 std::string_view const sourcePass2 = R"test(
     xyzzY0 foo()
@@ -185,6 +185,7 @@ int main(int argc, char** argv)
             ((token::Variable <=> "object"_concept , token::Assign , token::Expression) <=> "object.assign"_concept)),
         ( token::Primary >> token::Number ),
         ( token::Primary >> ((token::Negate , token::Primary) <=> "math.operator.negate"_concept) ),
+        ( token::Primary >> (sequence(token::Primary , '!') <=> "math.operator.factorial"_concept)),
         ( token::Primary >> (token::Variable <=> "object"_concept) ),
         ( token::Primary >> ~discard(token::OpenExpression) , token::Expression , ~discard(token::CloseExpression) ),
         ( token::OpenExpression >> '(' ),
