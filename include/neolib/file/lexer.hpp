@@ -814,7 +814,6 @@ namespace neolib
                             result = match;
                             resultRule = &rule;
                             resultChildren = children;
-                            break; // todo match rule with deepest parse
                         }
                     }
                 }
@@ -842,8 +841,7 @@ namespace neolib
             if (cacheEntry != iCache.end())
             {
                 auto const cachedResult = cacheEntry->second.result;
-                auto& cachedNode = cacheEntry->second.node;
-                aNode.children = cachedNode->children;
+                aNode.children = cacheEntry->second.nodes;
                 return cachedResult;
             }
 
@@ -873,7 +871,7 @@ namespace neolib
                     if (!newChild->c.has_value())
                         newChild->c = aAtom.c;
                     newChild->value = partialResult.value().value;
-                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult)};
+                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, apply_partial_result(result, partialResult)};
                     return iCache[cache_key{ &aAtom, aSource.data() }].result;
                 }
                 aNode.children.pop_back();
@@ -887,7 +885,7 @@ namespace neolib
                     auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
                     newChild->c = aAtom.c;
                     aNode.children.push_back(newChild);
-                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult) };
+                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, apply_partial_result(result, partialResult) };
                     return ((sdp ? sdp->ok = true : true), iCache[cache_key{ &aAtom, aSource.data() }].result);
                 }
             }
@@ -901,7 +899,7 @@ namespace neolib
                     auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
                     newChild->c = aAtom.c;
                     aNode.children.push_back(newChild);
-                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), apply_partial_result(result, partialResult) };
+                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, apply_partial_result(result, partialResult) };
                     return ((sdp ? sdp->ok = true : true), iCache[cache_key{ &aAtom, aSource.data() }].result);
                 }
             }
@@ -940,7 +938,7 @@ namespace neolib
                     spanEnd = spanStart;
                 result = std::string_view{ spanStart, spanEnd };
                 result.value().sourceNext = sourceNext;
-                iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
+                iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
             else if (std::holds_alternative<optional>(aAtom))
@@ -958,7 +956,7 @@ namespace neolib
                 }
                 if (!result)
                     result.emplace(sourceNext, sourceNext);
-                iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
+                iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
             else if (std::holds_alternative<repeat>(aAtom))
@@ -1000,13 +998,13 @@ namespace neolib
                 result.value().sourceNext = sourceNext;
                 if (foundAtLeastOne)
                 {
-                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
+                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, result };
                     return ((sdp ? sdp->ok = true : true), result);
                 }
                 else if (!std::get<repeat>(aAtom).atLeastOne)
                 {
                     result.emplace(sourceNext, sourceNext);
-                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
+                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, result };
                     return ((sdp ? sdp->ok = true : true), result);
                 }
                 return {};
@@ -1029,7 +1027,7 @@ namespace neolib
                 }
                 if (found)
                 {
-                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
+                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, result };
                     return ((sdp ? sdp->ok = true : true), result);
                 }
                 return {};
@@ -1050,7 +1048,7 @@ namespace neolib
                         sourceNext = std::to_address(partialResult->sourceNext);
                     }
                 }
-                iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.shared_from_this(), result };
+                iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
 
@@ -1188,7 +1186,7 @@ namespace neolib
         std::optional<std::string> iError;
         struct cache_result
         {
-            std::shared_ptr<cst_node> node;
+            typename cst_node::child_list nodes;
             std::optional<parse_result> result;
         };
         using cache_key = std::pair<primitive_atom const*, char const*>;
