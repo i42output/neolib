@@ -602,7 +602,7 @@ namespace neolib
                     ++lineNumber;
                 }
                 if (iDebugCst)
-                    (*iDebugOutput) << debug_print_cst(iAst) << std::endl;
+                    (*iDebugOutput) << debug_print_ast(iAst) << std::endl;
             }
         }
 
@@ -1171,6 +1171,24 @@ namespace neolib
             oss << std::endl;
             for (auto const& childNode : aNode.children)
                 oss << debug_print_cst(*childNode, aLevel + 1);
+            return oss.str();
+        }
+
+        static std::string debug_print_ast(ast_node const& aNode, std::uint32_t aLevel = 0)
+        {
+            std::ostringstream oss;
+            oss << std::string(static_cast<std::size_t>(aLevel), ' ');
+            if (aNode.atom)
+            {
+                std::visit([&](auto const& pa)
+                    {
+                        oss << aNode.c.value();
+                        oss << " = [" << debug_print(aNode.value, 64) << "]";
+                    }, *aNode.atom);
+            }
+            oss << std::endl;
+            for (auto const& childNode : aNode.children)
+                oss << debug_print_ast(*childNode, aLevel + 1);
             return oss.str();
         }
 
