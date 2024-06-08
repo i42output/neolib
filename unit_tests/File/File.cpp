@@ -51,6 +51,8 @@ namespace lexer_test
         Multiply,
         Divide,
         Negate,
+        Integer,
+        Float,
         Number,
         Minus,
         Digit,
@@ -91,6 +93,8 @@ declare_token(lexer_test::token, Subtract)
 declare_token(lexer_test::token, Multiply)
 declare_token(lexer_test::token, Divide)
 declare_token(lexer_test::token, Negate)
+declare_token(lexer_test::token, Integer)
+declare_token(lexer_test::token, Float)
 declare_token(lexer_test::token, Number)
 declare_token(lexer_test::token, Minus)
 declare_token(lexer_test::token, Digit)
@@ -116,7 +120,9 @@ std::string_view const sourcePass2 = R"test(
     }
 )test";
 
-std::string_view const sourceError1 = R"test(
+std::string_view const sourceError1 = R"test(r f(){42.0!;})test";
+
+std::string_view const sourceError2 = R"test(
     xyzzY0 foo()
     {
         1234q;
@@ -125,7 +131,7 @@ std::string_view const sourceError1 = R"test(
     }
 )test";
 
-std::string_view const sourceError2 = R"test(
+std::string_view const sourceError3 = R"test(
     xyzzY0 foo()
     {
         1234;
@@ -135,7 +141,7 @@ std::string_view const sourceError2 = R"test(
     }
 )test";
 
-std::string_view const sourceError3 = R"test(
+std::string_view const sourceError4 = R"test(
     xyzzY0 foo()
     {
         1234;
@@ -185,7 +191,7 @@ int main(int argc, char** argv)
             ((token::Variable <=> "object"_concept , token::Assign , token::Expression) <=> "object.assign"_concept)),
         ( token::Primary >> token::Number ),
         ( token::Primary >> ((token::Negate , token::Primary) <=> "math.operator.negate"_concept) ),
-        ( token::Primary >> (sequence(token::Primary , '!') <=> "math.operator.factorial"_concept)),
+        ( token::Primary >> (sequence(token::Integer , '!') <=> "math.operator.factorial"_concept) ),
         ( token::Primary >> (token::Variable <=> "object"_concept) ),
         ( token::Primary >> ~discard(token::OpenExpression) , token::Expression , ~discard(token::CloseExpression) ),
         ( token::OpenExpression >> '(' ),
@@ -198,8 +204,9 @@ int main(int argc, char** argv)
         ( token::Assign >> ":=" ),
         ( token::Equal >> '=' ),
         ( token::Minus >> '-' ),
-        ( token::Number >> (fold((optional(token::Minus), +repeat(token::Digit) , token::Decimal, +repeat(token::Digit))) <=> "number.float"_concept) ),
-        ( token::Number >> (fold((optional(token::Minus), +repeat(token::Digit))) <=> "number.integer"_concept) ),
+        ( token::Number >> choice(token::Float | token::Integer) ),
+        ( token::Float >> (fold((optional(token::Minus), +repeat(token::Digit) , token::Decimal, +repeat(token::Digit))) <=> "number.float"_concept) ),
+        ( token::Integer >> (fold((optional(token::Minus), +repeat(token::Digit))) <=> "number.integer"_concept) ),
         ( token::Digit >> range('0' , '9') ),
         ( token::Decimal >> '.' ),
         ( token::Variable >> token::Identifier ),
@@ -246,5 +253,6 @@ int main(int argc, char** argv)
     test_assert(!lexer.parse(token::Program, sourceError1));
     test_assert(!lexer.parse(token::Program, sourceError2));
     test_assert(!lexer.parse(token::Program, sourceError3));
+    test_assert(!lexer.parse(token::Program, sourceError4));
 }
 
