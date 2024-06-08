@@ -41,6 +41,15 @@
 
 namespace neolib
 {
+    namespace detail
+    {
+        template <typename T, typename U, bool = std::is_const_v<U>> struct const_if_const {};
+        template <typename T, typename U> struct const_if_const<T, U, true> { using type = T const; };
+        template <typename T, typename U> struct const_if_const<T, U, false> { using type = T; };
+        template <typename T, typename U>
+        using const_if_const_t = typename const_if_const<T, U>::type;
+    }
+
     template <typename T, std::size_t DefaultGapSize_ = 256, std::size_t NearnessFactor_ = 2, typename Allocator = std::allocator<T>>
     class gap_vector
     {
@@ -62,10 +71,7 @@ namespace neolib
         {
             friend class gap_vector;
         public:
-            template <bool> struct qualified_container_type_cracker {};
-            template <> struct qualified_container_type_cracker<true> { using type = gap_vector const; };
-            template <> struct qualified_container_type_cracker<false> { using type = gap_vector; };
-            using qualified_container_type = typename qualified_container_type_cracker<std::is_const_v<U>>::type;
+            using qualified_container_type = detail::const_if_const_t<gap_vector, U>;
             using base_iterator = U*;
             using reference = U&;
             using pointer = U*;
