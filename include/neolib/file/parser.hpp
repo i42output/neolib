@@ -1,6 +1,6 @@
-// lexer.hpp
+// parser.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2024 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -33,8 +33,6 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-// ****** NOTE: THIS LEXER MODULE IS CURRENTLY BEING IMPLEMENTED AND IS NOT YET FUNCTIONAL ******
-
 #pragma once
 
 #include <neolib/neolib.hpp>
@@ -55,11 +53,11 @@
 
 namespace neolib
 {
-    #define declare_tokens begin_declare_enum
-    #define declare_token declare_enum_string
-    #define end_declare_tokens end_declare_enum
+    #define declare_symbols begin_declare_enum
+    #define declare_symbol declare_enum_string
+    #define end_declare_symbols end_declare_enum
 
-    enum class lexer_component_type
+    enum class parser_component_type
     {
         Terminal,
         Undefined,
@@ -75,45 +73,45 @@ namespace neolib
         Concept
     };
 
-    inline std::string to_string(lexer_component_type aType)
+    inline std::string to_string(parser_component_type aType)
     {
         switch (aType)
         {
-        case lexer_component_type::Terminal:
+        case parser_component_type::Terminal:
             return "Terminal";
-        case lexer_component_type::Undefined:
+        case parser_component_type::Undefined:
             return "Undefined";
-        case lexer_component_type::Choice:
+        case parser_component_type::Choice:
             return "Choice";
-        case lexer_component_type::Sequence:
+        case parser_component_type::Sequence:
             return "Sequence";
-        case lexer_component_type::Repeat:
+        case parser_component_type::Repeat:
             return "Repeat";
-        case lexer_component_type::Range:
+        case parser_component_type::Range:
             return "Range";
-        case lexer_component_type::Optional:
+        case parser_component_type::Optional:
             return "Optional";
-        case lexer_component_type::Discard:
+        case parser_component_type::Discard:
             return "Discard";
-        case lexer_component_type::Primitive:
+        case parser_component_type::Primitive:
             return "Primitive";
-        case lexer_component_type::Atom:
+        case parser_component_type::Atom:
             return "Atom";
-        case lexer_component_type::Rule:
+        case parser_component_type::Rule:
             return "Rule";
-        case lexer_component_type::Concept:
+        case parser_component_type::Concept:
             return "Concept";
         default:
-            throw std::logic_error("neolib::to_string(lexer_component_type)");
+            throw std::logic_error("neolib::to_string(parser_component_type)");
         }
     }
 
-    struct lexer_component_base {};
+    struct parser_component_base {};
 
-    template <lexer_component_type Type>
-    struct lexer_component : lexer_component_base
+    template <parser_component_type Type>
+    struct parser_component : parser_component_base
     {
-        static constexpr lexer_component_type type = Type;
+        static constexpr parser_component_type type = Type;
     };
 
     enum class concept_association
@@ -124,16 +122,16 @@ namespace neolib
     };
 
     template <typename Token>
-    class lexer
+    class parser
     {
     public:
-        using token = Token;
+        using symbol = Token;
 
         using terminal_character = std::optional<char>;
 
-        struct terminal : terminal_character, std::string_view, lexer_component<lexer_component_type::Terminal>
+        struct terminal : terminal_character, std::string_view, parser_component<parser_component_type::Terminal>
         {
-            using token_type = token;
+            using symbol_type = symbol;
 
             using base_type = std::string_view;
             using base_type::base_type;
@@ -156,7 +154,7 @@ namespace neolib
         template <typename Derived, typename Params = no_params>
         struct tuple : Params
         {
-            using token_type = token;
+            using symbol_type = symbol;
             using derived_type = Derived;
             using params_type = Params;
             using value_type = std::vector<primitive_atom>;
@@ -232,19 +230,19 @@ namespace neolib
             }
         };
 
-        struct undefined : tuple<undefined>, lexer_component<lexer_component_type::Undefined>
+        struct undefined : tuple<undefined>, parser_component<parser_component_type::Undefined>
         {
             using base_type = tuple<undefined>;
             using base_type::base_type;
         };
 
-        struct choice : tuple<choice>, lexer_component<lexer_component_type::Choice>
+        struct choice : tuple<choice>, parser_component<parser_component_type::Choice>
         {
             using base_type = tuple<choice>;
             using base_type::base_type;
         };
 
-        struct sequence : tuple<sequence>, lexer_component<lexer_component_type::Sequence>
+        struct sequence : tuple<sequence>, parser_component<parser_component_type::Sequence>
         {
             using base_type = tuple<sequence>;
             using base_type::base_type;
@@ -255,7 +253,7 @@ namespace neolib
             bool atLeastOne = false;
         };
 
-        struct repeat : tuple<repeat, repeat_params>, lexer_component<lexer_component_type::Repeat>
+        struct repeat : tuple<repeat, repeat_params>, parser_component<parser_component_type::Repeat>
         {
             using base_type = tuple<repeat, repeat_params>;
             using base_type::base_type;
@@ -268,13 +266,13 @@ namespace neolib
             }
         };
 
-        struct range : tuple<range>, lexer_component<lexer_component_type::Range>
+        struct range : tuple<range>, parser_component<parser_component_type::Range>
         {
             using base_type = tuple<range>;
             using base_type::base_type;
         };
 
-        struct optional : tuple<optional>, lexer_component<lexer_component_type::Optional>
+        struct optional : tuple<optional>, parser_component<parser_component_type::Optional>
         {
             using base_type = tuple<optional>;
             using base_type::base_type;
@@ -285,7 +283,7 @@ namespace neolib
             bool trim = true;
         };
 
-        struct discard : tuple<discard, discard_params>, lexer_component<lexer_component_type::Discard>
+        struct discard : tuple<discard, discard_params>, parser_component<parser_component_type::Discard>
         {
             using base_type = tuple<discard, discard_params>;
             using base_type::base_type;
@@ -298,9 +296,9 @@ namespace neolib
             }
         };
 
-        struct _concept : std::string, lexer_component<lexer_component_type::Concept>
+        struct _concept : std::string, parser_component<parser_component_type::Concept>
         {
-            using token_type = token;
+            using symbol_type = symbol;
 
             concept_association association = concept_association::None;
 
@@ -322,11 +320,11 @@ namespace neolib
             return c.value().without_association();
         }
 
-        struct primitive_atom : std::variant<token, terminal, undefined, choice, sequence, repeat, range, optional, discard>, lexer_component<lexer_component_type::Primitive>
+        struct primitive_atom : std::variant<symbol, terminal, undefined, choice, sequence, repeat, range, optional, discard>, parser_component<parser_component_type::Primitive>
         {
-            using token_type = token;
+            using symbol_type = symbol;
 
-            using base_type = std::variant<token, terminal, undefined, choice, sequence, repeat, range, optional, discard>;
+            using base_type = std::variant<symbol, terminal, undefined, choice, sequence, repeat, range, optional, discard>;
             using base_type::base_type;
 
             std::optional<_concept> c;
@@ -364,9 +362,9 @@ namespace neolib
             }
         };
 
-        struct atom : std::vector<primitive_atom>, lexer_component<lexer_component_type::Atom>
+        struct atom : std::vector<primitive_atom>, parser_component<parser_component_type::Atom>
         {
-            using token_type = token;
+            using symbol_type = symbol;
 
             using base_type = std::vector<primitive_atom>;
             using base_type::base_type;
@@ -405,9 +403,9 @@ namespace neolib
             }
         };
 
-        struct rule : lexer_component<lexer_component_type::Rule>
+        struct rule : parser_component<parser_component_type::Rule>
         {
-            using token_type = token;
+            using symbol_type = symbol;
 
             atom lhs;
             atom rhs;
@@ -449,7 +447,7 @@ namespace neolib
             using child_list = std::vector<std::shared_ptr<cst_node>>;
 
             cst_node* parent;
-            lexer::rule const* rule;
+            parser::rule const* rule;
             std::optional<_concept> c;
             primitive_atom const* atom;
             std::string_view value;
@@ -460,7 +458,7 @@ namespace neolib
 
             cst_node(
                 cst_node* parent,
-                lexer::rule const* rule,
+                parser::rule const* rule,
                 primitive_atom const* atom,
                 std::string_view value) :
                 parent{ parent },
@@ -506,13 +504,13 @@ namespace neolib
 
     public:
         template <std::size_t RuleCount>
-        lexer(rule const (&aRules)[RuleCount]) :
+        parser(rule const (&aRules)[RuleCount]) :
             iRules{ &aRules[0], &aRules[0] + RuleCount }
         {
         }
 
     public:
-        bool parse(token aRoot, std::string_view const& aSource)
+        bool parse(symbol aRoot, std::string_view const& aSource)
         {
             iSource = aSource;
             iCst = {};
@@ -659,8 +657,8 @@ namespace neolib
                     return &*e == aNode;
                 });
 
-                auto const ourToken = std::get<token>(aNode->rule->lhs[0]);
-                auto const parentToken = std::get<token>(aNode->parent->rule->lhs[0]);
+                auto const ourToken = std::get<symbol>(aNode->rule->lhs[0]);
+                auto const parentToken = std::get<symbol>(aNode->parent->rule->lhs[0]);
 
                 if (std::holds_alternative<range>(*aNode->atom))
                 {
@@ -732,10 +730,10 @@ namespace neolib
             return {};
         }
 
-        std::optional<token> parent_token(cst_node& aNode) const
+        std::optional<symbol> parent_symbol(cst_node& aNode) const
         {
-            if (aNode.parent && aNode.parent->atom && std::holds_alternative<token>(*aNode.parent->atom))
-                return std::get<token>(*aNode.parent->atom);
+            if (aNode.parent && aNode.parent->atom && std::holds_alternative<symbol>(*aNode.parent->atom))
+                return std::get<symbol>(*aNode.parent->atom);
 
             return {};
         }
@@ -750,7 +748,7 @@ namespace neolib
             return false;
         }
 
-        std::optional<parse_result> parse(token aToken, cst_node& aNode, std::string_view const& aSource)
+        std::optional<parse_result> parse(symbol aToken, cst_node& aNode, std::string_view const& aSource)
         {
             if (iError)
                 return {};
@@ -774,8 +772,8 @@ namespace neolib
                         if (!first)
                             iError.value() += ":";
                         first = false;
-                        if (std::holds_alternative<token>(*n->atom))
-                            iError.value() += enum_to_string(std::get<token>(*n->atom));
+                        if (std::holds_alternative<symbol>(*n->atom))
+                            iError.value() += enum_to_string(std::get<symbol>(*n->atom));
                         iError.value() += "(" + std::to_string(std::distance<const rule*>(&iRules[0], n->rule)) + ")";
                     }
                     n = n->parent;
@@ -795,9 +793,9 @@ namespace neolib
 
             for (auto& rule : iRules)
             {
-                if (!std::holds_alternative<token>(rule.lhs[0]))
+                if (!std::holds_alternative<symbol>(rule.lhs[0]))
                     continue;
-                token const ruleToken = std::get<token>(rule.lhs[0]);
+                symbol const ruleToken = std::get<symbol>(rule.lhs[0]);
                 scoped_stack_entry sse{ *this, rule, aSource };
                 if (ruleToken == aToken && !left_recursion(aNode, rule))
                 {
@@ -853,14 +851,14 @@ namespace neolib
 
             scoped_counter sc{ iLevel };
             std::optional<scoped_debug_print> sdp;
-            if (!std::holds_alternative<token>(aAtom) && iDebugScan)
+            if (!std::holds_alternative<symbol>(aAtom) && iDebugScan)
                 sdp.emplace(*this, aAtom, aSource);
 
             // todo: visitor?
 
-            if (std::holds_alternative<token>(aAtom))
+            if (std::holds_alternative<symbol>(aAtom))
             {
-                token const atomToken = std::get<token>(aAtom);
+                symbol const atomToken = std::get<symbol>(aAtom);
                 auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, aSource);
                 aNode.children.push_back(newChild);
                 auto const partialResult = parse(atomToken, *newChild, aSource);
@@ -1070,9 +1068,9 @@ namespace neolib
     private:
         struct scoped_stack_entry
         {
-            lexer& owner;
+            parser& owner;
 
-            scoped_stack_entry(lexer& owner, rule const& rule, std::string_view const& source) :
+            scoped_stack_entry(parser& owner, rule const& rule, std::string_view const& source) :
                 owner{ owner }
             {
                 owner.iStack.push_back(std::make_pair(&rule, source));
@@ -1085,25 +1083,25 @@ namespace neolib
  
         struct scoped_debug_print
         {
-            lexer& owner;
+            parser& owner;
             std::string value;
             std::string_view const& source;
             bool ok = false;
 
             template <typename T>
-            scoped_debug_print(lexer& aOwner, T const& aValue, std::string_view const& aSource) : 
+            scoped_debug_print(parser& aOwner, T const& aValue, std::string_view const& aSource) : 
                 owner{ aOwner },
                 source{ aSource }
             {
                 std::ostringstream oss;
-                if constexpr (std::is_same_v<T, token>)
+                if constexpr (std::is_same_v<T, symbol>)
                     oss << "t(" << enum_to_string(aValue) << ")";
                 else if constexpr (std::is_same_v<std::decay_t<T>, primitive_atom>)
                 {
                     std::visit([&](auto const& pa)
                     {
-                        if constexpr (std::is_same_v<token, std::decay_t<decltype(pa)>>)
-                            oss << "token(" << enum_to_string(pa) << ")";
+                        if constexpr (std::is_same_v<symbol, std::decay_t<decltype(pa)>>)
+                            oss << "symbol(" << enum_to_string(pa) << ")";
                         else if constexpr (std::is_same_v<terminal, std::decay_t<decltype(pa)>>)
                             oss << "teminal(" << to_string(pa.type) << ":[" << debug_print(pa) << "])";
                         else
@@ -1159,7 +1157,7 @@ namespace neolib
             {
                 std::visit([&](auto const& pa)
                     {
-                        if constexpr (std::is_same_v<token, std::decay_t<decltype(pa)>>)
+                        if constexpr (std::is_same_v<symbol, std::decay_t<decltype(pa)>>)
                             oss << enum_to_string(pa);
                         else
                             oss << to_string(pa.type);
@@ -1216,300 +1214,300 @@ namespace neolib
     };
 
     template <typename Token>
-    using lexer_terminal = typename lexer<Token>::terminal;
+    using parser_terminal = typename parser<Token>::terminal;
 
     template <typename Token>
-    using lexer_primitive = typename lexer<Token>::primitive_atom;
+    using parser_primitive = typename parser<Token>::primitive_atom;
 
     template <typename Token>
-    using lexer_atom = typename lexer<Token>::atom;
+    using parser_atom = typename parser<Token>::atom;
 
     template <typename Token>
-    using lexer_undefined = typename lexer<Token>::undefined;
+    using parser_undefined = typename parser<Token>::undefined;
 
     template <typename Token>
-    using lexer_choice = typename lexer<Token>::choice;
+    using parser_choice = typename parser<Token>::choice;
 
     template <typename Token>
-    using lexer_sequence = typename lexer<Token>::sequence;
+    using parser_sequence = typename parser<Token>::sequence;
 
     template <typename Token>
-    using lexer_repeat = typename lexer<Token>::repeat;
+    using parser_repeat = typename parser<Token>::repeat;
 
     template <typename Token>
-    using lexer_range = typename lexer<Token>::range;
+    using parser_range = typename parser<Token>::range;
 
     template <typename Token>
-    using lexer_optional = typename lexer<Token>::optional;
+    using parser_optional = typename parser<Token>::optional;
 
     template <typename Token>
-    using lexer_discard = typename lexer<Token>::discard;
+    using parser_discard = typename parser<Token>::discard;
 
     template <typename Token>
-    using lexer_rule = typename lexer<Token>::rule;
+    using parser_rule = typename parser<Token>::rule;
 
     template <typename Token>
-    using lexer_concept = typename lexer<Token>::_concept;
+    using parser_concept = typename parser<Token>::_concept;
 
     template <typename T>
-    concept LexerComponent = std::is_base_of_v<lexer_component_base, T> && 
-        !std::is_base_of_v<lexer_component<lexer_component_type::Rule>, T>;
+    concept ParserComponent = std::is_base_of_v<parser_component_base, T> && 
+        !std::is_base_of_v<parser_component<parser_component_type::Rule>, T>;
 
     template <typename T>
-    concept LexerTerminal = std::is_base_of_v<lexer_component<lexer_component_type::Terminal>, T>;
+    concept ParserTerminal = std::is_base_of_v<parser_component<parser_component_type::Terminal>, T>;
 
     template <typename T>
-    concept LexerPrimitive = std::is_base_of_v<lexer_component<lexer_component_type::Primitive>, T>;
+    concept ParserPrimitive = std::is_base_of_v<parser_component<parser_component_type::Primitive>, T>;
 
     template <typename T>
-    concept LexerAtom = std::is_base_of_v<lexer_component<lexer_component_type::Atom>, T>;
+    concept ParserAtom = std::is_base_of_v<parser_component<parser_component_type::Atom>, T>;
 
     template <typename T>
-    concept LexerUndefined = std::is_base_of_v<lexer_component<lexer_component_type::Undefined>, T>;
+    concept ParserUndefined = std::is_base_of_v<parser_component<parser_component_type::Undefined>, T>;
 
     template <typename T>
-    concept LexerChoice = std::is_base_of_v<lexer_component<lexer_component_type::Choice>, T>;
+    concept ParserChoice = std::is_base_of_v<parser_component<parser_component_type::Choice>, T>;
 
     template <typename T>
-    concept LexerSequence = std::is_base_of_v<lexer_component<lexer_component_type::Sequence>, T>;
+    concept ParserSequence = std::is_base_of_v<parser_component<parser_component_type::Sequence>, T>;
 
     template <typename T>
-    concept LexerRepeat = std::is_base_of_v<lexer_component<lexer_component_type::Repeat>, T>;
+    concept ParserRepeat = std::is_base_of_v<parser_component<parser_component_type::Repeat>, T>;
 
     template <typename T>
-    concept LexerRange = std::is_base_of_v<lexer_component<lexer_component_type::Range>, T>;
+    concept ParserRange = std::is_base_of_v<parser_component<parser_component_type::Range>, T>;
 
     template <typename T>
-    concept LexerOptional = std::is_base_of_v<lexer_component<lexer_component_type::Optional>, T>;
+    concept ParserOptional = std::is_base_of_v<parser_component<parser_component_type::Optional>, T>;
 
     template <typename T>
-    concept LexerDiscard = std::is_base_of_v<lexer_component<lexer_component_type::Discard>, T>;
+    concept ParserDiscard = std::is_base_of_v<parser_component<parser_component_type::Discard>, T>;
 
     template <typename T>
-    concept LexerRule = std::is_base_of_v<lexer_component<lexer_component_type::Rule>, T>;
+    concept ParserRule = std::is_base_of_v<parser_component<parser_component_type::Rule>, T>;
 
     template <typename T>
-    concept LexerConcept = std::is_base_of_v<lexer_component<lexer_component_type::Concept>, T>;
+    concept ParserConcept = std::is_base_of_v<parser_component<parser_component_type::Concept>, T>;
 
     template <typename T>
-    concept TokenEnum = std::is_enum_v<T> && std::is_convertible_v<T, decltype(is_lexer_token(T{}))>;
+    concept TokenEnum = std::is_enum_v<T> && std::is_convertible_v<T, decltype(is_parser_symbol(T{}))>;
 
-    namespace lexer_operators
+    namespace parser_operators
     {
         template <TokenEnum Token>
-        inline lexer_rule<Token> operator>>(Token lhs, lexer_primitive<Token> const& rhs)
+        inline parser_rule<Token> operator>>(Token lhs, parser_primitive<Token> const& rhs)
         {
-            return lexer_rule<Token>{ lhs, rhs };
+            return parser_rule<Token>{ lhs, rhs };
         }
 
-        template <LexerRule Rule>
-        inline Rule operator|(Rule const& lhs, lexer_primitive<typename Rule::token_type> const& rhs)
+        template <ParserRule Rule>
+        inline Rule operator|(Rule const& lhs, parser_primitive<typename Rule::symbol_type> const& rhs)
         {
-            return Rule{ lhs.lhs, lexer_atom<typename Rule::token_type>{ lhs.rhs, rhs } };
+            return Rule{ lhs.lhs, parser_atom<typename Rule::symbol_type>{ lhs.rhs, rhs } };
         }
 
-        template <LexerConcept Concept>
-        inline lexer_primitive<typename Concept::token_type> operator<=>(typename Concept::token_type lhs, Concept const& rhs)
+        template <ParserConcept Concept>
+        inline parser_primitive<typename Concept::symbol_type> operator<=>(typename Concept::symbol_type lhs, Concept const& rhs)
         {
-            lexer_primitive<typename Concept::token_type> result = lhs;
+            parser_primitive<typename Concept::symbol_type> result = lhs;
             result.c = rhs;
             return result;
         }
 
-        template <LexerConcept Concept>
-        inline lexer_primitive<typename Concept::token_type> operator<=>(lexer_primitive<typename Concept::token_type> const& lhs, Concept const& rhs)
+        template <ParserConcept Concept>
+        inline parser_primitive<typename Concept::symbol_type> operator<=>(parser_primitive<typename Concept::symbol_type> const& lhs, Concept const& rhs)
         {
-            lexer_primitive<typename Concept::token_type> result = lhs;
+            parser_primitive<typename Concept::symbol_type> result = lhs;
             result.c = rhs;
             return result;
         }
 
-        template <LexerRepeat Repeat>
-        inline Repeat operator|(Repeat const& lhs, typename Repeat::token_type rhs)
+        template <ParserRepeat Repeat>
+        inline Repeat operator|(Repeat const& lhs, typename Repeat::symbol_type rhs)
         {
             return Repeat{ lhs, rhs };
         }
 
         template <TokenEnum Token>
-        inline lexer_repeat<Token> operator|(Token lhs, Token rhs)
+        inline parser_repeat<Token> operator|(Token lhs, Token rhs)
         {
-            return lexer_repeat<Token>{ lhs, rhs };
+            return parser_repeat<Token>{ lhs, rhs };
         }
 
         template <TokenEnum Token>
-        inline lexer_repeat<Token> operator|(lexer_primitive<Token> const& lhs, Token rhs)
+        inline parser_repeat<Token> operator|(parser_primitive<Token> const& lhs, Token rhs)
         {
-            return lexer_repeat<Token>{ lhs, rhs };
+            return parser_repeat<Token>{ lhs, rhs };
         }
 
         template <TokenEnum Token>
-        inline lexer_repeat<Token> operator|(Token lhs, lexer_primitive<Token> const& rhs)
+        inline parser_repeat<Token> operator|(Token lhs, parser_primitive<Token> const& rhs)
         {
-            return lexer_repeat<Token>{ lhs, rhs };
+            return parser_repeat<Token>{ lhs, rhs };
         }
 
-        template <LexerComponent Component1, LexerComponent Component2>
-        inline lexer_repeat<typename Component1::token_type> operator|(Component1 const& lhs, Component2 const& rhs)
+        template <ParserComponent Component1, ParserComponent Component2>
+        inline parser_repeat<typename Component1::symbol_type> operator|(Component1 const& lhs, Component2 const& rhs)
         {
-            return lexer_repeat<typename Component1::token_type>{ lhs, rhs };
+            return parser_repeat<typename Component1::symbol_type>{ lhs, rhs };
         }
 
-        template <LexerComponent Component>
-        inline lexer_repeat<typename Component::token_type> operator|(Component const& lhs, char rhs)
+        template <ParserComponent Component>
+        inline parser_repeat<typename Component::symbol_type> operator|(Component const& lhs, char rhs)
         {
-            return lexer_repeat<typename Component::token_type>{ lhs, lexer_terminal<typename Component::token_type>{ rhs } };
+            return parser_repeat<typename Component::symbol_type>{ lhs, parser_terminal<typename Component::symbol_type>{ rhs } };
         }
 
-        template <LexerComponent Component>
-        inline lexer_repeat<typename Component::token_type> operator|(char lhs, Component const& rhs)
+        template <ParserComponent Component>
+        inline parser_repeat<typename Component::symbol_type> operator|(char lhs, Component const& rhs)
         {
-            return lexer_repeat<typename Component::token_type>{ lexer_terminal<typename Component::token_type>{ lhs },  rhs };
+            return parser_repeat<typename Component::symbol_type>{ parser_terminal<typename Component::symbol_type>{ lhs },  rhs };
         }
 
-        template <LexerRule Rule>
-        inline Rule operator,(Rule const& lhs, lexer_primitive<typename Rule::token_type> const& rhs)
+        template <ParserRule Rule>
+        inline Rule operator,(Rule const& lhs, parser_primitive<typename Rule::symbol_type> const& rhs)
         {
-            return Rule{ lhs.lhs, lexer_sequence<typename Rule::token_type>{ lhs.rhs, rhs } };
+            return Rule{ lhs.lhs, parser_sequence<typename Rule::symbol_type>{ lhs.rhs, rhs } };
         }
 
         template <TokenEnum Token>
-        inline lexer_sequence<Token> operator,(Token lhs, Token rhs)
+        inline parser_sequence<Token> operator,(Token lhs, Token rhs)
         {
-            return lexer_sequence<Token>{ lhs, rhs };
+            return parser_sequence<Token>{ lhs, rhs };
         }
 
-        template <LexerComponent Component1, LexerComponent Component2>
-        inline lexer_sequence<typename Component1::token_type> operator,(Component1 const& lhs, Component2 const& rhs)
+        template <ParserComponent Component1, ParserComponent Component2>
+        inline parser_sequence<typename Component1::symbol_type> operator,(Component1 const& lhs, Component2 const& rhs)
         {
-            return lexer_sequence<typename Component1::token_type>{ lhs, rhs };
+            return parser_sequence<typename Component1::symbol_type>{ lhs, rhs };
         }
 
-        template <LexerComponent Component, TokenEnum Token>
-        inline lexer_sequence<Token> operator,(Component const& lhs, Token rhs)
+        template <ParserComponent Component, TokenEnum Token>
+        inline parser_sequence<Token> operator,(Component const& lhs, Token rhs)
         {
-            return lexer_sequence<Token>{ lhs, rhs };
+            return parser_sequence<Token>{ lhs, rhs };
         }
 
-        template <TokenEnum Token, LexerComponent Component>
-        inline lexer_sequence<Token> operator,(Token lhs, Component const& rhs)
+        template <TokenEnum Token, ParserComponent Component>
+        inline parser_sequence<Token> operator,(Token lhs, Component const& rhs)
         {
-            return lexer_sequence<Token>{ lhs, rhs };
+            return parser_sequence<Token>{ lhs, rhs };
         }
 
-        template <LexerTerminal Terminal>
-        inline lexer_sequence<typename Terminal::token_type> operator,(Terminal const& lhs, char rhs)
+        template <ParserTerminal Terminal>
+        inline parser_sequence<typename Terminal::symbol_type> operator,(Terminal const& lhs, char rhs)
         {
-            return lexer_sequence<typename Terminal::token_type>{ lhs, Terminal{ rhs } };
+            return parser_sequence<typename Terminal::symbol_type>{ lhs, Terminal{ rhs } };
         }
 
-        template <LexerTerminal Terminal>
-        inline lexer_sequence<typename Terminal::token_type> operator,(char lhs, Terminal const& rhs)
+        template <ParserTerminal Terminal>
+        inline parser_sequence<typename Terminal::symbol_type> operator,(char lhs, Terminal const& rhs)
         {
-            return lexer_sequence<typename Terminal::token_type>{ Terminal{ lhs }, rhs };
+            return parser_sequence<typename Terminal::symbol_type>{ Terminal{ lhs }, rhs };
         }
 
         template <typename Token>
-        inline lexer_choice<Token> choice(lexer_repeat<Token> const& lhs)
+        inline parser_choice<Token> choice(parser_repeat<Token> const& lhs)
         {
             return { lhs.value };
         }
 
         template <typename Token>
-        inline lexer_repeat<Token> repeat(lexer_primitive<Token> const& lhs)
+        inline parser_repeat<Token> repeat(parser_primitive<Token> const& lhs)
         {
             return { lhs };
         }
 
         template <typename Token, typename... Args>
-        inline lexer_sequence<Token> sequence(Args&&... lhs)
+        inline parser_sequence<Token> sequence(Args&&... lhs)
         {
-            return typename lexer_sequence<Token>::value_type{ std::forward<Args>(lhs)... };
+            return typename parser_sequence<Token>::value_type{ std::forward<Args>(lhs)... };
         }
 
         template <typename Token>
-        inline lexer_range<Token> range(lexer_primitive<Token> const& lhs, lexer_primitive<Token> const& rhs)
+        inline parser_range<Token> range(parser_primitive<Token> const& lhs, parser_primitive<Token> const& rhs)
         {
             return { lhs, rhs };
         }
 
         template <typename Token>
-        inline lexer_optional<Token> optional(lexer_primitive<Token> const& lhs)
+        inline parser_optional<Token> optional(parser_primitive<Token> const& lhs)
         {
             return { lhs };
         }
 
         template <typename Token>
-        inline lexer_discard<Token> discard(lexer_primitive<Token> const& lhs)
+        inline parser_discard<Token> discard(parser_primitive<Token> const& lhs)
         {
             return { lhs };
         }
     }
 
-#define enable_neolib_lexer(token)\
-    inline token is_lexer_token(token) { return {}; }\
+#define enable_neolib_parser(symbol)\
+    inline symbol is_parser_symbol(symbol) { return {}; }\
     \
-    using neolib::lexer_operators::operator>>;\
-    using neolib::lexer_operators::operator<=>;\
-    using neolib::lexer_operators::operator|;\
-    using neolib::lexer_operators::operator,;\
+    using neolib::parser_operators::operator>>;\
+    using neolib::parser_operators::operator<=>;\
+    using neolib::parser_operators::operator|;\
+    using neolib::parser_operators::operator,;\
     \
-    inline neolib::lexer_terminal<token> operator"" _(const char* str, std::size_t len)\
+    inline neolib::parser_terminal<symbol> operator"" _(const char* str, std::size_t len)\
     {\
-        return neolib::lexer_terminal<token>{ str, len };\
+        return neolib::parser_terminal<symbol>{ str, len };\
     }\
-    inline neolib::lexer_terminal<token> operator"" _(char character)\
+    inline neolib::parser_terminal<symbol> operator"" _(char character)\
     {\
-        return neolib::lexer_terminal<token>{ character };\
+        return neolib::parser_terminal<symbol>{ character };\
     }\
-    inline neolib::lexer_concept<token> operator"" _concept(const char* str, std::size_t len)\
+    inline neolib::parser_concept<symbol> operator"" _concept(const char* str, std::size_t len)\
     {\
-        return neolib::lexer_concept<token>{ str, len };\
+        return neolib::parser_concept<symbol>{ str, len };\
     }\
-    inline neolib::lexer_concept<token> operator"" _concept_associate_left(const char* str, std::size_t len)\
+    inline neolib::parser_concept<symbol> operator"" _concept_associate_left(const char* str, std::size_t len)\
     {\
-        auto result = neolib::lexer_concept<token>{ str, len };\
+        auto result = neolib::parser_concept<symbol>{ str, len };\
         result.association = neolib::concept_association::Left;\
         return result;\
     }\
-    inline neolib::lexer_concept<token> operator"" _concept_associate_right(const char* str, std::size_t len)\
+    inline neolib::parser_concept<symbol> operator"" _concept_associate_right(const char* str, std::size_t len)\
     {\
-        auto result = neolib::lexer_concept<token>{ str, len };\
+        auto result = neolib::parser_concept<symbol>{ str, len };\
         result.association = neolib::concept_association::Right;\
         return result;\
     }\
     template <typename T>\
-    inline neolib::lexer_choice<token> choice(T&& lhs)\
+    inline neolib::parser_choice<symbol> choice(T&& lhs)\
     {\
-        return neolib::lexer_operators::choice<token>(std::forward<T>(lhs));\
+        return neolib::parser_operators::choice<symbol>(std::forward<T>(lhs));\
     }\
     template <typename T>\
-    inline neolib::lexer_repeat<token> repeat(T&& lhs)\
+    inline neolib::parser_repeat<symbol> repeat(T&& lhs)\
     {\
-        return neolib::lexer_operators::repeat<token>(std::forward<T>(lhs));\
+        return neolib::parser_operators::repeat<symbol>(std::forward<T>(lhs));\
     }\
     template <typename... T>\
-    inline neolib::lexer_sequence<token> sequence(T&&... lhs)\
+    inline neolib::parser_sequence<symbol> sequence(T&&... lhs)\
     {\
-        return neolib::lexer_operators::sequence<token>(std::forward<T>(lhs)...); \
+        return neolib::parser_operators::sequence<symbol>(std::forward<T>(lhs)...); \
     }\
     template <typename T>\
-    inline neolib::lexer_range<token> range(T&& lhs, T&& rhs)\
+    inline neolib::parser_range<symbol> range(T&& lhs, T&& rhs)\
     {\
-        return neolib::lexer_operators::range<token>(std::forward<T>(lhs), std::forward<T>(rhs)); \
+        return neolib::parser_operators::range<symbol>(std::forward<T>(lhs), std::forward<T>(rhs)); \
     }\
     template <typename T>\
-    inline neolib::lexer_optional<token> optional(T&& lhs)\
+    inline neolib::parser_optional<symbol> optional(T&& lhs)\
     {\
-        return neolib::lexer_operators::optional<token>(std::forward<T>(lhs)); \
+        return neolib::parser_operators::optional<symbol>(std::forward<T>(lhs)); \
     }\
     template <typename T>\
-        inline neolib::lexer_discard<token> discard(T&& lhs)\
+        inline neolib::parser_discard<symbol> discard(T&& lhs)\
     {\
-        return neolib::lexer_operators::discard<token>(std::forward<T>(lhs)); \
+        return neolib::parser_operators::discard<symbol>(std::forward<T>(lhs)); \
     }\
     template <typename T>\
-        inline neolib::lexer_discard<token> fold(T&& lhs)\
+        inline neolib::parser_discard<symbol> fold(T&& lhs)\
     {\
-        return ~neolib::lexer_operators::discard<token>(std::forward<T>(lhs)); \
+        return ~neolib::parser_operators::discard<symbol>(std::forward<T>(lhs)); \
     }
 }
