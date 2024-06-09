@@ -121,11 +121,11 @@ namespace neolib
         Right
     };
 
-    template <typename Token>
+    template <typename Symbol>
     class parser
     {
     public:
-        using symbol = Token;
+        using symbol = Symbol;
 
         using terminal_character = std::optional<char>;
 
@@ -657,8 +657,8 @@ namespace neolib
                     return &*e == aNode;
                 });
 
-                auto const ourToken = std::get<symbol>(aNode->rule->lhs[0]);
-                auto const parentToken = std::get<symbol>(aNode->parent->rule->lhs[0]);
+                auto const ourSymbol = std::get<symbol>(aNode->rule->lhs[0]);
+                auto const parentSymbol = std::get<symbol>(aNode->parent->rule->lhs[0]);
 
                 if (std::holds_alternative<range>(*aNode->atom))
                 {
@@ -668,7 +668,7 @@ namespace neolib
                         return existing;
                     }
                 }
-                else if ((ourToken == parentToken || (aNode->c.has_value() && aNode->c == aNode->parent->c)) && aNode->value == aNode->parent->value)
+                else if ((ourSymbol == parentSymbol || (aNode->c.has_value() && aNode->c == aNode->parent->c)) && aNode->value == aNode->parent->value)
                 {
                     for (auto& child2 : aNode->children)
                         child2->parent = aNode->parent;
@@ -748,7 +748,7 @@ namespace neolib
             return false;
         }
 
-        std::optional<parse_result> parse(symbol aToken, cst_node& aNode, std::string_view const& aSource)
+        std::optional<parse_result> parse(symbol aSymbol, cst_node& aNode, std::string_view const& aSource)
         {
             if (iError)
                 return {};
@@ -783,7 +783,7 @@ namespace neolib
 
             std::optional<scoped_debug_print> sdp;
             if (iDebugScan)
-                sdp.emplace(*this, aToken, aSource);
+                sdp.emplace(*this, aSymbol, aSource);
 
             // todo: if more than one rule matches take the deepest parse and/or resolve ambiguity via semantic analyis through IoC.
 
@@ -795,9 +795,9 @@ namespace neolib
             {
                 if (!std::holds_alternative<symbol>(rule.lhs[0]))
                     continue;
-                symbol const ruleToken = std::get<symbol>(rule.lhs[0]);
+                symbol const ruleSymbol = std::get<symbol>(rule.lhs[0]);
                 scoped_stack_entry sse{ *this, rule, aSource };
-                if (ruleToken == aToken && !left_recursion(aNode, rule))
+                if (ruleSymbol == aSymbol && !left_recursion(aNode, rule))
                 {
                     aNode.rule = &rule;
                     auto const& ruleAtom = rule.rhs[0];
@@ -858,10 +858,10 @@ namespace neolib
 
             if (std::holds_alternative<symbol>(aAtom))
             {
-                symbol const atomToken = std::get<symbol>(aAtom);
+                symbol const atomSymbol = std::get<symbol>(aAtom);
                 auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, aSource);
                 aNode.children.push_back(newChild);
-                auto const partialResult = parse(atomToken, *newChild, aSource);
+                auto const partialResult = parse(atomSymbol, *newChild, aSource);
                 if (partialResult)
                 {
                     if (!aNode.c.has_value())
@@ -1213,41 +1213,41 @@ namespace neolib
         bool iDebugCst = true;
     };
 
-    template <typename Token>
-    using parser_terminal = typename parser<Token>::terminal;
+    template <typename Symbol>
+    using parser_terminal = typename parser<Symbol>::terminal;
 
-    template <typename Token>
-    using parser_primitive = typename parser<Token>::primitive_atom;
+    template <typename Symbol>
+    using parser_primitive = typename parser<Symbol>::primitive_atom;
 
-    template <typename Token>
-    using parser_atom = typename parser<Token>::atom;
+    template <typename Symbol>
+    using parser_atom = typename parser<Symbol>::atom;
 
-    template <typename Token>
-    using parser_undefined = typename parser<Token>::undefined;
+    template <typename Symbol>
+    using parser_undefined = typename parser<Symbol>::undefined;
 
-    template <typename Token>
-    using parser_choice = typename parser<Token>::choice;
+    template <typename Symbol>
+    using parser_choice = typename parser<Symbol>::choice;
 
-    template <typename Token>
-    using parser_sequence = typename parser<Token>::sequence;
+    template <typename Symbol>
+    using parser_sequence = typename parser<Symbol>::sequence;
 
-    template <typename Token>
-    using parser_repeat = typename parser<Token>::repeat;
+    template <typename Symbol>
+    using parser_repeat = typename parser<Symbol>::repeat;
 
-    template <typename Token>
-    using parser_range = typename parser<Token>::range;
+    template <typename Symbol>
+    using parser_range = typename parser<Symbol>::range;
 
-    template <typename Token>
-    using parser_optional = typename parser<Token>::optional;
+    template <typename Symbol>
+    using parser_optional = typename parser<Symbol>::optional;
 
-    template <typename Token>
-    using parser_discard = typename parser<Token>::discard;
+    template <typename Symbol>
+    using parser_discard = typename parser<Symbol>::discard;
 
-    template <typename Token>
-    using parser_rule = typename parser<Token>::rule;
+    template <typename Symbol>
+    using parser_rule = typename parser<Symbol>::rule;
 
-    template <typename Token>
-    using parser_concept = typename parser<Token>::_concept;
+    template <typename Symbol>
+    using parser_concept = typename parser<Symbol>::_concept;
 
     template <typename T>
     concept ParserComponent = std::is_base_of_v<parser_component_base, T> && 
@@ -1290,14 +1290,14 @@ namespace neolib
     concept ParserConcept = std::is_base_of_v<parser_component<parser_component_type::Concept>, T>;
 
     template <typename T>
-    concept TokenEnum = std::is_enum_v<T> && std::is_convertible_v<T, decltype(is_parser_symbol(T{}))>;
+    concept SymbolEnum = std::is_enum_v<T> && std::is_convertible_v<T, decltype(is_parser_symbol(T{}))>;
 
     namespace parser_operators
     {
-        template <TokenEnum Token>
-        inline parser_rule<Token> operator>>(Token lhs, parser_primitive<Token> const& rhs)
+        template <SymbolEnum Symbol>
+        inline parser_rule<Symbol> operator>>(Symbol lhs, parser_primitive<Symbol> const& rhs)
         {
-            return parser_rule<Token>{ lhs, rhs };
+            return parser_rule<Symbol>{ lhs, rhs };
         }
 
         template <ParserRule Rule>
@@ -1328,22 +1328,22 @@ namespace neolib
             return Repeat{ lhs, rhs };
         }
 
-        template <TokenEnum Token>
-        inline parser_repeat<Token> operator|(Token lhs, Token rhs)
+        template <SymbolEnum Symbol>
+        inline parser_repeat<Symbol> operator|(Symbol lhs, Symbol rhs)
         {
-            return parser_repeat<Token>{ lhs, rhs };
+            return parser_repeat<Symbol>{ lhs, rhs };
         }
 
-        template <TokenEnum Token>
-        inline parser_repeat<Token> operator|(parser_primitive<Token> const& lhs, Token rhs)
+        template <SymbolEnum Symbol>
+        inline parser_repeat<Symbol> operator|(parser_primitive<Symbol> const& lhs, Symbol rhs)
         {
-            return parser_repeat<Token>{ lhs, rhs };
+            return parser_repeat<Symbol>{ lhs, rhs };
         }
 
-        template <TokenEnum Token>
-        inline parser_repeat<Token> operator|(Token lhs, parser_primitive<Token> const& rhs)
+        template <SymbolEnum Symbol>
+        inline parser_repeat<Symbol> operator|(Symbol lhs, parser_primitive<Symbol> const& rhs)
         {
-            return parser_repeat<Token>{ lhs, rhs };
+            return parser_repeat<Symbol>{ lhs, rhs };
         }
 
         template <ParserComponent Component1, ParserComponent Component2>
@@ -1370,10 +1370,10 @@ namespace neolib
             return Rule{ lhs.lhs, parser_sequence<typename Rule::symbol_type>{ lhs.rhs, rhs } };
         }
 
-        template <TokenEnum Token>
-        inline parser_sequence<Token> operator,(Token lhs, Token rhs)
+        template <SymbolEnum Symbol>
+        inline parser_sequence<Symbol> operator,(Symbol lhs, Symbol rhs)
         {
-            return parser_sequence<Token>{ lhs, rhs };
+            return parser_sequence<Symbol>{ lhs, rhs };
         }
 
         template <ParserComponent Component1, ParserComponent Component2>
@@ -1382,16 +1382,16 @@ namespace neolib
             return parser_sequence<typename Component1::symbol_type>{ lhs, rhs };
         }
 
-        template <ParserComponent Component, TokenEnum Token>
-        inline parser_sequence<Token> operator,(Component const& lhs, Token rhs)
+        template <ParserComponent Component, SymbolEnum Symbol>
+        inline parser_sequence<Symbol> operator,(Component const& lhs, Symbol rhs)
         {
-            return parser_sequence<Token>{ lhs, rhs };
+            return parser_sequence<Symbol>{ lhs, rhs };
         }
 
-        template <TokenEnum Token, ParserComponent Component>
-        inline parser_sequence<Token> operator,(Token lhs, Component const& rhs)
+        template <SymbolEnum Symbol, ParserComponent Component>
+        inline parser_sequence<Symbol> operator,(Symbol lhs, Component const& rhs)
         {
-            return parser_sequence<Token>{ lhs, rhs };
+            return parser_sequence<Symbol>{ lhs, rhs };
         }
 
         template <ParserTerminal Terminal>
@@ -1406,38 +1406,38 @@ namespace neolib
             return parser_sequence<typename Terminal::symbol_type>{ Terminal{ lhs }, rhs };
         }
 
-        template <typename Token>
-        inline parser_choice<Token> choice(parser_repeat<Token> const& lhs)
+        template <typename Symbol>
+        inline parser_choice<Symbol> choice(parser_repeat<Symbol> const& lhs)
         {
             return { lhs.value };
         }
 
-        template <typename Token>
-        inline parser_repeat<Token> repeat(parser_primitive<Token> const& lhs)
+        template <typename Symbol>
+        inline parser_repeat<Symbol> repeat(parser_primitive<Symbol> const& lhs)
         {
             return { lhs };
         }
 
-        template <typename Token, typename... Args>
-        inline parser_sequence<Token> sequence(Args&&... lhs)
+        template <typename Symbol, typename... Args>
+        inline parser_sequence<Symbol> sequence(Args&&... lhs)
         {
-            return typename parser_sequence<Token>::value_type{ std::forward<Args>(lhs)... };
+            return typename parser_sequence<Symbol>::value_type{ std::forward<Args>(lhs)... };
         }
 
-        template <typename Token>
-        inline parser_range<Token> range(parser_primitive<Token> const& lhs, parser_primitive<Token> const& rhs)
+        template <typename Symbol>
+        inline parser_range<Symbol> range(parser_primitive<Symbol> const& lhs, parser_primitive<Symbol> const& rhs)
         {
             return { lhs, rhs };
         }
 
-        template <typename Token>
-        inline parser_optional<Token> optional(parser_primitive<Token> const& lhs)
+        template <typename Symbol>
+        inline parser_optional<Symbol> optional(parser_primitive<Symbol> const& lhs)
         {
             return { lhs };
         }
 
-        template <typename Token>
-        inline parser_discard<Token> discard(parser_primitive<Token> const& lhs)
+        template <typename Symbol>
+        inline parser_discard<Symbol> discard(parser_primitive<Symbol> const& lhs)
         {
             return { lhs };
         }
