@@ -4,6 +4,7 @@
 #include <neolib/core/variant.hpp>
 #include <neolib/core/jar.hpp>
 #include <neolib/core/string.hpp>
+#include <neolib/core/string_view.hpp>
 #include <neolib/core/pair.hpp>
 #include <neolib/core/segmented_array.hpp>
 #include <neolib/core/vecarray.hpp>
@@ -50,6 +51,11 @@ namespace
 
 int main()
 {
+    neolib::string_view sv{ "hello" };
+    test_assert(sv == neolib::string_view{ "hello" });
+    test_assert(sv == std::string{ "hello" });
+    test_assert(sv == "hello");
+
     neolib::vecarray<int, 64, neolib::MaxSize> va;
     va.push_back(42);
     auto i = va.begin();
