@@ -532,9 +532,9 @@ namespace neolib
 
             auto error_print = [&](std::string const& errorPrefix, char const* pos) -> std::string
             {
-                linePos = std::count(aSource.data(), pos, '\n') + 1;
-                columnPos = std::distance(std::reverse_iterator(pos), 
-                    std::find(std::reverse_iterator(pos), std::reverse_iterator(aSource.data()), '\n')) + 1;
+                linePos = static_cast<std::uint32_t>(std::count(aSource.data(), pos, '\n') + 1);
+                columnPos = static_cast<std::uint32_t>(std::distance(std::reverse_iterator(pos),
+                    std::find(std::reverse_iterator(pos), std::reverse_iterator(aSource.data()), '\n')) + 1);
                 std::string error = errorPrefix + "(" + std::to_string(linePos) + "," + std::to_string(columnPos) + ") ";
                 error += "'" + debug_print(std::string_view{ pos, std::next(pos) }) + "' was unexpected here.";
                 return error;
@@ -552,9 +552,9 @@ namespace neolib
                     lines.push_back(line);
                 std::size_t numberWidth = std::to_string(lines.size()).size();
                 std::uint32_t lineNumber = 1;
-                for (auto const& line : lines)
+                for (auto const& outputLine : lines)
                 {
-                    (*iDebugOutput) << std::setw(numberWidth) << lineNumber << (iError && lineNumber == linePos ? ">" : "|") << line << std::endl;
+                    (*iDebugOutput) << std::setw(numberWidth) << lineNumber << (iError && lineNumber == linePos ? ">" : "|") << outputLine << std::endl;
                     ++lineNumber;
                 }
                 if (iError)
@@ -594,9 +594,9 @@ namespace neolib
                     lines.push_back(line);
                 std::size_t numberWidth = std::to_string(lines.size()).size();
                 std::uint32_t lineNumber = 1;
-                for (auto const& line : lines)
+                for (auto const& outputLine : lines)
                 {
-                    (*iDebugOutput) << std::setw(numberWidth) << lineNumber << "|" << line << std::endl;
+                    (*iDebugOutput) << std::setw(numberWidth) << lineNumber << "|" << outputLine << std::endl;
                     ++lineNumber;
                 }
                 if (iDebugCst)

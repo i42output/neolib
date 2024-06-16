@@ -53,7 +53,12 @@ namespace neolib
     public:
         virtual ~i_string_view() = default;
     public:
-        virtual i_string_view& operator=(const i_string_view& aOther) noexcept = 0;
+        i_string_view& operator=(const i_string_view& aOther) noexcept
+        {
+            assign(aOther);
+            return *this;
+
+        }
         i_string_view& operator=(const std::string_view& aOther) noexcept
         {
             assign(aOther); 
@@ -77,6 +82,10 @@ namespace neolib
         void assign(char const* aSource, size_type aSourceLength) noexcept
         {
             assign(aSource, std::next(aSource, aSourceLength));
+        }
+        void assign(i_string_view const& aSource) noexcept
+        {
+            assign(std::to_address(aSource.begin()), std::to_address(aSource.end()));
         }
         void assign(std::string_view const& aSource) noexcept
         {
