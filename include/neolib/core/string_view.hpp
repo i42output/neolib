@@ -43,71 +43,67 @@ namespace neolib
     class string_view : public i_string_view
     {
     public:
-        using size_type = std::size_t;
-        using const_iterator = char const*;
-        using iterator = const_iterator;
-    public:
-        string_view() :
+        constexpr string_view() noexcept :
             iFirst{ nullptr },
             iLast{ nullptr }
         {
         }
-        string_view(char const* aOther, size_type aCount) :
+        constexpr string_view(const_pointer aOther, size_type aCount) noexcept :
             iFirst{ aOther },
             iLast{ std::next(aOther, aCount) }
         {
         }
-        string_view(char const* aOther) :
+        constexpr string_view(const_pointer aOther) noexcept :
             iFirst{ aOther },
             iLast{ std::next(aOther, std::strlen(aOther)) }
         {
         }
-        string_view(string_view const& aOther) :
+        constexpr string_view(string_view const& aOther) noexcept :
             iFirst{ aOther.iFirst },
             iLast{ aOther.iLast }
         {
         }
-        string_view(i_string_view const& aOther) :
+        string_view(i_string_view const& aOther) noexcept :
             iFirst{ std::to_address(aOther.begin()) },
             iLast{ std::to_address(aOther.end()) }
         {
         }
-        string_view(std::string_view const& aOther) :
+        constexpr string_view(std::string_view const& aOther) noexcept :
             iFirst{ std::to_address(aOther.begin()) },
             iLast{ std::to_address(aOther.end()) }
         {
         }
-        string_view(i_string const& aOther) :
+        string_view(i_string const& aOther) noexcept :
             iFirst{ std::to_address(aOther.begin()) },
             iLast{ std::to_address(aOther.end()) }
         {
         }
-        string_view(std::string const& aOther) :
+        constexpr string_view(std::string const& aOther) noexcept :
             iFirst{ std::to_address(aOther.begin()) },
             iLast{ std::to_address(aOther.end()) }
         {
         }
     public:
-        bool empty() const noexcept
+        bool empty() const noexcept final
         {
             return iFirst == iLast;
         }
-        virtual char const* data() const noexcept
+        const_pointer data() const noexcept final
         {
             return iFirst;
         }
-        virtual size_type size() const noexcept
+        size_type size() const noexcept final
         {
             return std::distance(iFirst, iLast);
         }
     public:
-        void assign(char const* aFirst, char const* aLast) noexcept
+        void assign(const_pointer aFirst, const_pointer aLast) noexcept final
         {
             iFirst = aFirst;
             iLast = aLast;
         }
     private:
-        char const* iFirst;
-        char const* iLast;
+        const_pointer iFirst;
+        const_pointer iLast;
     };
 }

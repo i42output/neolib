@@ -47,9 +47,15 @@ namespace neolib
     class i_string_view
     {
     public:
-        using size_type = std::size_t;
+        using value_type = char;
+        using pointer = value_type*;
+        using const_pointer = value_type const*;
+        using reference = value_type&;
+        using const_reference = value_type const&;
         using const_iterator = char const*;
         using iterator = const_iterator;
+        using size_type = std::size_t;
+        using difference_type = std::ptrdiff_t;
     public:
         virtual ~i_string_view() = default;
     public:
@@ -71,15 +77,33 @@ namespace neolib
         }
     public:
         virtual bool empty() const noexcept = 0;
-        virtual char const* data() const noexcept = 0;
         virtual size_type size() const noexcept = 0;
         size_type length() const noexcept
         {
             return size();
         }
     public:
-        virtual void assign(char const* aFirst, char const* aLast) noexcept = 0;
-        void assign(char const* aSource, size_type aSourceLength) noexcept
+        const_reference operator[](size_type pos) const
+        {
+            return data()[pos];
+        }
+        const_reference at(size_type pos) const
+        {
+            if (pos < size())
+                return operator[](pos);
+            throw std::out_of_range("neolib::i_string_view");
+        }
+        const_reference front() const
+        {
+            return operator[](0);
+        }
+        const_reference back() const
+        {
+            return operator[](size() - 1);
+        }
+        virtual const_pointer data() const noexcept = 0;
+    public:
+        void assign(const_pointer aSource, size_type aSourceLength) noexcept
         {
             assign(aSource, std::next(aSource, aSourceLength));
         }
@@ -95,6 +119,7 @@ namespace neolib
         {
             assign(std::string_view{ aSource });
         }
+        virtual void assign(const_pointer aFirst, const_pointer aLast) noexcept = 0;
     public:
         const_iterator cbegin() const noexcept
         {
