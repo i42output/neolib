@@ -88,13 +88,6 @@ namespace neolib
         {
         }
     public:
-        i_string_view& operator=(const i_string_view& aOther) noexcept final
-        {
-            iFirst = std::to_address(aOther.begin());
-            iLast = std::to_address(aOther.end());
-            return *this;
-        }
-    public:
         bool empty() const noexcept
         {
             return iFirst == iLast;
