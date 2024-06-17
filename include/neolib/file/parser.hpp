@@ -907,9 +907,9 @@ namespace neolib
             }
             else if (std::holds_alternative<range>(aAtom))
             {
-                auto const min = std::get<terminal>(std::get<range>(aAtom).value[0]).value();
-                auto const max = std::get<terminal>(std::get<range>(aAtom).value[1]).value();
-                if (!aSource.empty() && aSource[0] >= min && aSource[0] <= max)
+                auto const min = static_cast<unsigned char>(std::get<terminal>(std::get<range>(aAtom).value[0]).value());
+                auto const max = static_cast<unsigned char>(std::get<terminal>(std::get<range>(aAtom).value[1]).value());
+                if (!aSource.empty() && static_cast<unsigned char>(aSource[0]) >= min && static_cast<unsigned char>(aSource[0]) <= max)
                 {
                     auto const partialResult = aSource.substr(0, 1);
                     auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
