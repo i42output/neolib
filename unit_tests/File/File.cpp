@@ -116,8 +116,8 @@ std::string_view const sourcePass1 = R"test(r f(){42!;})test";
 std::string_view const sourcePass2 = R"test(
     xyzzY0 foo()
     {
-        1234; /* a comment */
-        x := 1 + 2 + 3 - 4 - 5 + 6; 
+        1234; /* comment one */
+        x := 1 + 2 + 3 - 4 - 5 + 6; // comment two
         y := 7 + -42.001 * 1.0 * (5-1+2) + -x + x * 2;
     }
 )test";
@@ -216,10 +216,9 @@ int main(int argc, char** argv)
         // whitespace handling...
 
         ( symbol::Eof >> discard(symbol::Whitespace), "" ),
-        ( symbol::Whitespace >> (' '_ | '\r' | '\n' | '\t') ),
-        ( symbol::Whitespace >> discard(symbol::Comment) ),
+        ( symbol::Whitespace >> (' '_ | '\r' | '\n' | '\t' | symbol::Comment) ),
         ( symbol::Comment >> sequence("/*"_ , repeat(range('\0', '\xFF')) , "*/"_) ),
-        ( symbol::Comment >> discard(symbol::Whitespace) , symbol::Comment , discard(symbol::Whitespace) ),
+        ( symbol::Comment >> sequence("//"_ , repeat(range('\0', '\xFF')) , "\n"_) ),
         ( symbol::Program >> discard(symbol::Whitespace) , symbol::Program , discard(symbol::Whitespace) ),
         ( symbol::FunctionDefinition >> discard(symbol::Whitespace) , symbol::FunctionDefinition , discard(symbol::Whitespace) ),
         ( symbol::FunctionPrototype >> discard(symbol::Whitespace) , symbol::FunctionPrototype , discard(symbol::Whitespace) ),
