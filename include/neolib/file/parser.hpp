@@ -925,9 +925,19 @@ namespace neolib
                 char const* spanEnd = nullptr;
                 typename cst_node::child_list children;
                 std::swap(aNode.children, children);
-                for (auto const& a : std::get<sequence>(aAtom).value)
+                auto const& s = std::get<sequence>(aAtom).value;
+                for (auto ai = s.begin(); ai != s.end(); ++ai)
                 {
-                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });
+                    auto& a = *ai;
+                    auto lookaheadTo = sourceEnd;
+                    if (std::holds_alternative<repeat>(a) && std::next(ai) != s.end() && std::holds_alternative<terminal>(*std::next(ai)))
+                    {
+                        auto const& t = std::get<terminal>(*std::next(ai));
+                        auto found = std::string_view{ sourceNext, sourceEnd }.find(t);
+                        if (found != std::string_view::npos)
+                            lookaheadTo = sourceNext + found;
+                    }
+                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, lookaheadTo });
                     if (!partialResult)
                     {
                         std::swap(aNode.children, children);

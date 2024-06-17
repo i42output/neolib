@@ -25,6 +25,7 @@ namespace parser_test
         Program,
         Whitespace,
         Eof,
+        Comment,
         Identifier,
         FunctionDefinition,
         FunctionPrototype,
@@ -67,6 +68,7 @@ declare_symbols(parser_test::symbol)
 declare_symbol(parser_test::symbol, Program)
 declare_symbol(parser_test::symbol, Whitespace)
 declare_symbol(parser_test::symbol, Eof)
+declare_symbol(parser_test::symbol, Comment)
 declare_symbol(parser_test::symbol, Identifier)
 declare_symbol(parser_test::symbol, FunctionDefinition)
 declare_symbol(parser_test::symbol, FunctionPrototype)
@@ -114,7 +116,7 @@ std::string_view const sourcePass1 = R"test(r f(){42!;})test";
 std::string_view const sourcePass2 = R"test(
     xyzzY0 foo()
     {
-        1234;
+        1234; /* a comment */
         x := 1 + 2 + 3 - 4 - 5 + 6; 
         y := 7 + -42.001 * 1.0 * (5-1+2) + -x + x * 2;
     }
@@ -215,6 +217,9 @@ int main(int argc, char** argv)
 
         ( symbol::Eof >> discard(symbol::Whitespace), "" ),
         ( symbol::Whitespace >> (' '_ | '\r' | '\n' | '\t') ),
+        ( symbol::Whitespace >> discard(symbol::Comment) ),
+        ( symbol::Comment >> sequence("/*"_ , repeat(range('\0', '\xFF')) , "*/"_) ),
+        ( symbol::Comment >> discard(symbol::Whitespace) , symbol::Comment , discard(symbol::Whitespace) ),
         ( symbol::Program >> discard(symbol::Whitespace) , symbol::Program , discard(symbol::Whitespace) ),
         ( symbol::FunctionDefinition >> discard(symbol::Whitespace) , symbol::FunctionDefinition , discard(symbol::Whitespace) ),
         ( symbol::FunctionPrototype >> discard(symbol::Whitespace) , symbol::FunctionPrototype , discard(symbol::Whitespace) ),
