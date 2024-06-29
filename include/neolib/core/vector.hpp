@@ -46,14 +46,14 @@ namespace neolib
     template <typename T>
     class vector : public reference_counted<i_vector<abstract_t<T>>>
     {
-        typedef vector<T> self_type;
-        typedef reference_counted<i_vector<abstract_t<T>>> base_type;
+        using self_type = vector<T>;
+        using base_type = reference_counted<i_vector<abstract_t<T>>> ;
         // types
     public:
-        typedef i_vector<abstract_t<T>> abstract_type;
-        typedef T value_type;
-        typedef abstract_t<T> abstract_value_type;
-        typedef std::vector<value_type> std_type;
+        using abstract_type = i_vector<abstract_t<T>>;
+        using value_type = T;
+        using abstract_value_type = abstract_t<T>;
+        using std_type = std::vector<value_type>;
         using typename abstract_type::size_type;
         using typename abstract_type::const_iterator;
         using typename abstract_type::iterator;
@@ -62,8 +62,8 @@ namespace neolib
         using typename abstract_type::abstract_const_iterator;
         using typename abstract_type::abstract_iterator;
     protected:
-        typedef container::random_access_const_iterator<T, typename std_type::const_iterator> container_const_iterator;
-        typedef container::random_access_iterator<T, typename std_type::iterator, typename std_type::const_iterator> container_iterator;
+        using container_const_iterator = container::random_access_const_iterator<T, typename std_type::const_iterator>;
+        using container_iterator = container::random_access_iterator<T, typename std_type::iterator, typename std_type::const_iterator>;
         // construction
     public:
         vector() {}

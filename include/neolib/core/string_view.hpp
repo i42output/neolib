@@ -43,6 +43,8 @@ namespace neolib
     class string_view : public i_string_view
     {
     public:
+        using abstract_type = i_string_view;
+    public:
         constexpr string_view() noexcept :
             iFirst{ nullptr },
             iLast{ nullptr }
