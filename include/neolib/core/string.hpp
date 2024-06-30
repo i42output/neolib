@@ -197,3 +197,16 @@ namespace neolib
         }
     }
 }
+
+namespace std
+{
+    template <> struct hash<neolib::string>
+    {
+        typedef neolib::string argument_type;
+        typedef std::size_t result_type;
+        result_type operator()(argument_type const& aString) const
+        {
+            return hash<std::string>()(aString.as_std_string());
+        }
+    };
+}

@@ -122,3 +122,16 @@ namespace neolib
         return aStream;
     }
 }
+
+namespace std
+{
+    template <> struct hash<neolib::i_string>
+    {
+        typedef neolib::i_string argument_type;
+        typedef std::size_t result_type;
+        result_type operator()(argument_type const& aString) const
+        {
+            return hash<std::string>()(aString.to_std_string());
+        }
+    };
+}

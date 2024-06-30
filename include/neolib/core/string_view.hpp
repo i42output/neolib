@@ -109,3 +109,16 @@ namespace neolib
         const_pointer iLast;
     };
 }
+
+namespace std
+{
+    template <> struct hash<neolib::string_view>
+    {
+        typedef neolib::string_view argument_type;
+        typedef std::size_t result_type;
+        result_type operator()(argument_type const& aString) const
+        {
+            return hash<std::string_view>()(aString.to_std_string_view());
+        }
+    };
+}
