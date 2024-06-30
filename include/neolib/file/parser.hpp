@@ -624,6 +624,11 @@ namespace neolib
             }
         }
 
+        ast_node const& ast() const
+        {
+            return iAst;
+        }
+
     public:
         void set_debug_output(std::ostream& aDebugOutput)
         {
