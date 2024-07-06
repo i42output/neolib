@@ -10,6 +10,7 @@
 #include <neolib/core/vecarray.hpp>
 #include <neolib/core/polymorphic_vecarray.hpp>
 #include <neolib/core/gap_vector.hpp>
+#include <neolib/core/unordered_map.hpp>
 
 struct i_foo
 {
@@ -29,6 +30,9 @@ template class neolib::basic_std_vector_jar<foo>;
 template class neolib::vecarray<int, 64, neolib::MaxSize>;
 template class neolib::polymorphic::vecarray<int, 64, neolib::MaxSize>;
 template class neolib::gap_vector<int>;
+
+template class neolib::unordered_map<int, int>;
+template class neolib::unordered_flat_map<int, int>;
 
 void TestTree();
 

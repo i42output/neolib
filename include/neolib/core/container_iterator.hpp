@@ -82,7 +82,7 @@ namespace neolib
             operator container_iterator() const { return iContainerIterator; }
         public:
             abstract_iterator& operator++() override { ++iContainerIterator; return *this; }
-            abstract_iterator& operator--() override { --iContainerIterator; return *this; }
+            abstract_iterator& operator--() override { if constexpr(std::bidirectional_iterator<container_iterator>) --iContainerIterator; return *this; }
             reference operator*() const override { return to_abstract(*iContainerIterator); }
             pointer operator->() const override { return &(**this); }
             bool operator==(const abstract_base_iterator& aOther) const override { return iContainerIterator == static_cast<const self_type&>(aOther).iContainerIterator; }
@@ -91,7 +91,7 @@ namespace neolib
             abstract_iterator* clone(void* memory) const override { if constexpr (!std::is_abstract_v<self_type>) return new (memory) self_type{ iContainerIterator }; else throw pure_iterator(); }
         private:
             abstract_iterator* do_post_increment(void* memory) override { if constexpr (!std::is_abstract_v<self_type>) return new (memory) self_type{ iContainerIterator++ }; else throw pure_iterator(); }
-            abstract_iterator* do_post_decrement(void* memory) override { if constexpr (!std::is_abstract_v<self_type>) return new (memory) self_type{ iContainerIterator-- }; else throw pure_iterator(); }
+            abstract_iterator* do_post_decrement(void* memory) override { if constexpr (!std::is_abstract_v<self_type> && std::bidirectional_iterator<container_iterator>) return new (memory) self_type{ iContainerIterator-- }; else throw pure_iterator(); }
         protected:
             container_iterator iContainerIterator;
         };
@@ -179,7 +179,7 @@ namespace neolib
             operator container_iterator() const { return iContainerIterator; }
         public:
             abstract_iterator& operator++() override { ++iContainerIterator; return *this; }
-            abstract_iterator& operator--() override { --iContainerIterator; return *this; }
+            abstract_iterator& operator--() override { if constexpr (std::bidirectional_iterator<container_iterator>) --iContainerIterator; return *this; }
             reference operator*() const override { return to_abstract(*iContainerIterator); }
             pointer operator->() const override { return &(**this); }
             bool operator==(const abstract_base_iterator& aOther) const override { return iContainerIterator == static_cast<const self_type&>(aOther).iContainerIterator; }
@@ -189,7 +189,7 @@ namespace neolib
             abstract_const_iterator* const_clone(void* memory) const override { if constexpr (!std::is_abstract_v<self_type>) return new (memory) const_iterator<T, container_const_iterator, abstract_const_iterator>{ *this }; else throw pure_iterator(); }
         private:
             abstract_iterator* do_post_increment(void* memory) override { if constexpr (!std::is_abstract_v<self_type>) return new (memory) self_type{ iContainerIterator++ }; else throw pure_iterator(); }
-            abstract_iterator* do_post_decrement(void* memory) override { if constexpr (!std::is_abstract_v<self_type>) return new (memory) self_type{ iContainerIterator-- }; else throw pure_iterator(); }
+            abstract_iterator* do_post_decrement(void* memory) override { if constexpr (!std::is_abstract_v<self_type> && std::bidirectional_iterator<container_iterator>) return new (memory) self_type{ iContainerIterator-- }; else throw pure_iterator(); }
         protected:
             container_iterator iContainerIterator;
         };
