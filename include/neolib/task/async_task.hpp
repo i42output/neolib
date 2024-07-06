@@ -114,6 +114,7 @@ namespace neolib
         i_message_queue& message_queue() override;
         void register_event_queue(i_async_event_queue& aQueue) override;
         void unregister_event_queue(i_async_event_queue& aQueue) override;
+        bool pump_events() override;
         bool pump_messages() override;
         bool running() const noexcept override;
         bool halted() const noexcept override;

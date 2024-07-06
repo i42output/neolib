@@ -112,6 +112,7 @@ namespace neolib
         virtual i_message_queue& message_queue() = 0;
         virtual void register_event_queue(i_async_event_queue& aQueue) = 0;
         virtual void unregister_event_queue(i_async_event_queue& aQueue) = 0;
+        virtual bool pump_events() = 0;
         virtual bool pump_messages() = 0;
         virtual bool running() const noexcept = 0;
         virtual bool halted() const noexcept = 0;
