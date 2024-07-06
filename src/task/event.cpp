@@ -98,7 +98,10 @@ namespace neolib
         if (workLists.size() < stack)
             workLists.push_back(std::make_unique<work_list>());
         auto& workList = *workLists[stack - 1];
-        workList.swap(iQueue);
+        workList.swap(iQueue.multiple);
+        for (auto const& se : iQueue.single)
+            workList.push_back(se.second);
+        iQueue.single.clear();
         lock.unlock();
         bool didSome = false;
         for (auto& entry : workList)

@@ -37,6 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <vector>
+#include <boost/unordered/unordered_flat_map.hpp>
 #include <neolib/core/lifetime.hpp>
 #include <neolib/core/scoped.hpp>
 #include <neolib/task/i_async_task.hpp>
@@ -55,6 +56,11 @@ namespace neolib
             destroyed_flag slotDestroyed;
             std::function<void()> callback;
         };
+        struct queue
+        {
+            std::vector<queue_entry> multiple;
+            boost::unordered_flat_map<std::pair<void const*, void const*>, queue_entry> single;
+        };
     public:
         static async_event_queue& instance();
         static async_event_queue& instance(std::thread::id aThreadId);
@@ -72,16 +78,20 @@ namespace neolib
             {
                 std::apply([&](Args... aArgs) { aSlot.call(aArgs...); }, args);
             };
-            if (aNoDuplicates || aSlot.stateless())
+            bool const single = (aNoDuplicates || aSlot.stateless());
+            if (single)
             {
-                auto existing = std::find_if(iQueue.begin(), iQueue.end(), [&](auto const& e) { return e.event == &event && e.slot == &aSlot; });
-                if (existing != iQueue.end())
+                decltype(iQueue.single)::key_type const key{ &event, &aSlot };
+                auto existing = iQueue.single.find(key);
+                if (existing != iQueue.single.end())
                 {
-                    existing->callback = callback;
+                    existing->second.callback = callback;
                     return;
                 }
+                iQueue.single.emplace(key, queue_entry{ &event, event, &aSlot, aSlot, callback });
             }
-            iQueue.emplace_back(&event, event, &aSlot, aSlot, callback);
+            else
+                iQueue.multiple.emplace_back(&event, event, &aSlot, aSlot, callback);
         }
     public:
         void register_with_task(i_async_task& aTask) final;
@@ -89,7 +99,7 @@ namespace neolib
     private:
         i_async_task* iTask = nullptr;
         std::optional<destroyed_flag> iTaskDestroyed;
-        std::vector<queue_entry> iQueue;
+        queue iQueue;
     };
 
     template <typename... Args>
