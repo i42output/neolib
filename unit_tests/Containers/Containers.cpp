@@ -7,6 +7,7 @@
 #include <neolib/core/string_view.hpp>
 #include <neolib/core/pair.hpp>
 #include <neolib/core/segmented_array.hpp>
+#include <neolib/core/tag_array.hpp>
 #include <neolib/core/vecarray.hpp>
 #include <neolib/core/polymorphic_vecarray.hpp>
 #include <neolib/core/gap_vector.hpp>
@@ -27,12 +28,26 @@ struct foo : i_foo
 template class neolib::basic_jar<foo>;
 template class neolib::basic_std_vector_jar<foo>;
 
-template class neolib::vecarray<int, 64, neolib::MaxSize>;
+template class neolib::growable_static_vector<int, 64, neolib::MaxSize>;
 template class neolib::polymorphic::vecarray<int, 64, neolib::MaxSize>;
 template class neolib::gap_vector<int>;
 
 template class neolib::unordered_map<int, int>;
 template class neolib::unordered_flat_map<int, int>;
+
+template class neolib::segmented_array<int>;
+
+template <typename T>
+struct tag
+{
+    template <typename U> struct rebind { using type = tag<U>; };
+
+    tag(T, tag) {}
+
+    auto operator<=>(const tag&) const = default;
+};
+
+template class neolib::tag_array<tag<int>, int>;
 
 void TestTree();
 

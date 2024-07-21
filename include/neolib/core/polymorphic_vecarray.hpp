@@ -45,17 +45,16 @@ namespace neolib
 {
     namespace polymorphic
     {
-        template<typename T, std::size_t ArraySize, std::size_t MaxVectorSize = ArraySize>
+        template<typename T, std::size_t Capacity, std::size_t MaxCapacity = Capacity>
         class vecarray : public reference_counted<i_vector<abstract_t<T>>>
         {
-            using self_type = vecarray<T, ArraySize, MaxVectorSize>;
             using base_type = reference_counted<i_vector<abstract_t<T>>>;
             // types
         public:
             using abstract_type = i_vector<abstract_t<T>>;
             using value_type = T;
             using abstract_value_type = abstract_t<T>;
-            using allocator_type = small_buffer_allocator<T, ArraySize, MaxVectorSize>;
+            using allocator_type = small_buffer_allocator<T, Capacity, MaxCapacity>;
             using std_type = std::vector<value_type, allocator_type>;
             using size_type = typename abstract_type::size_type;
             using const_iterator = typename abstract_type::const_iterator;
@@ -72,39 +71,39 @@ namespace neolib
             vecarray() :
                 iVector{ allocator_type{ iSmallBuffer } }
             {
-                iVector.reserve(ArraySize);
+                iVector.reserve(Capacity);
             }
             vecarray(vecarray const& aOther) :
                 iVector{ aOther.iVector, allocator_type{ iSmallBuffer } }
             {
-                iVector.reserve(ArraySize);
+                iVector.reserve(Capacity);
             }
             vecarray(vecarray&& aOther) :
                 iVector{ std::move(aOther.iVector), allocator_type{ iSmallBuffer } }
             {
-                iVector.reserve(ArraySize);
+                iVector.reserve(Capacity);
             }
             vecarray(i_vector<abstract_value_type> const& aOther) :
                 iVector{ allocator_type{ iSmallBuffer } }
             {
-                iVector.reserve(ArraySize);
+                iVector.reserve(Capacity);
                 assign(aOther);
             }
             vecarray(std_type const& aOtherContainer) :
                 iVector{ aOtherContainer, allocator_type{ iSmallBuffer } }
             {
-                iVector.reserve(ArraySize);
+                iVector.reserve(Capacity);
             }
             vecarray(std::initializer_list<value_type> aValues) :
                 iVector{ aValues, allocator_type{ iSmallBuffer } }
             {
-                iVector.reserve(ArraySize);
+                iVector.reserve(Capacity);
             }
             template <typename InputIter>
             vecarray(InputIter aFirst, InputIter aLast) :
                 iVector{ aFirst, aLast, allocator_type{ iSmallBuffer } }
             {
-                iVector.reserve(ArraySize);
+                iVector.reserve(Capacity);
             }
             vecarray& operator=(vecarray const& aOther)
             {
@@ -155,11 +154,11 @@ namespace neolib
             }
             // comparison
         public:
-            constexpr bool operator==(const self_type& that) const noexcept
+            constexpr bool operator==(const vecarray& that) const noexcept
             {
                 return as_std_vector() == that.as_std_vector();
             }
-            constexpr std::partial_ordering operator<=>(const self_type& that) const noexcept
+            constexpr std::partial_ordering operator<=>(const vecarray& that) const noexcept
             {
                 return as_std_vector() <=> that.as_std_vector();
             }
@@ -311,7 +310,7 @@ namespace neolib
             }
             // attributes
         private:
-            small_buffer<value_type, ArraySize> iSmallBuffer;
+            small_buffer<value_type, Capacity> iSmallBuffer;
             std_type iVector;
         };
     }

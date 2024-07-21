@@ -1,4 +1,4 @@
-// vecarray.hpp
+// vecarray.hpp [deprecated]
 /*
  *  Copyright (c) 2007,2023,2024 Leigh Johnston.
  *
@@ -36,108 +36,35 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <vector>
-#include <neolib/core/small_buffer_allocator.hpp>
+#include <neolib/core/static_vector.hpp>
 
 namespace neolib
 {
-    template<typename T, std::size_t ArraySize, std::size_t MaxVectorSize = ArraySize, typename Alloc = std::allocator<T>>
-    class vecarray : private small_buffer<T, ArraySize>, public std::vector<T, small_buffer_allocator<T, ArraySize, MaxVectorSize, Alloc>>
+    namespace detail
     {
-        using self_type = vecarray<T, ArraySize, MaxVectorSize>;
-        using base_type = std::vector<T, small_buffer_allocator<T, ArraySize, MaxVectorSize, Alloc>>;
-        // types
-    public:
-        using value_type = T;
-        using std_type = base_type;
-        using allocator_type = typename std_type::allocator_type;
-        using size_type = typename std_type::size_type;
-        using const_iterator = typename std_type::const_iterator;
-        using iterator = typename std_type::iterator;
-        // construction
-    public:
-        constexpr vecarray() :
-            std_type{ allocator_type{ *this } }
+        // deprecated
+        template<typename T, std::size_t Capacity, std::size_t MaxCapacity, typename Alloc>
+        struct vecarray
         {
-            if (std_type::capacity() == 0)
-                std_type::reserve(ArraySize);
-        }
-        constexpr vecarray(vecarray const& aOther) :
-            std_type{ aOther, allocator_type{ *this } }
+            using type = growable_static_vector<T, Capacity, MaxCapacity, Alloc>;
+        };
+
+        // deprecated
+        template<typename T, std::size_t Capacity>
+        struct vecarray<T, Capacity, Capacity, std::allocator<T>>
         {
-            if (std_type::capacity() == 0)
-                std_type::reserve(ArraySize);
-        }
-        constexpr vecarray(vecarray&& aOther) :
-            std_type{ aOther, allocator_type{ *this } }
+            using type = static_vector<T, Capacity>;
+        };
+
+        // deprecated
+        template<typename T, std::size_t Capacity>
+        struct vecarray<T, Capacity, Capacity, void>
         {
-            if (std_type::capacity() == 0)
-                std_type::reserve(ArraySize);
-        }
-        constexpr vecarray(std_type const& aOtherContainer) :
-            std_type{ aOtherContainer, allocator_type{ *this } }
-        {
-            if (std_type::capacity() == 0)
-                std_type::reserve(ArraySize);
-        }
-        constexpr vecarray(size_type count, const T& value) : 
-            std_type{ count, value, allocator_type{ *this } }
-        {
-            if (std_type::capacity() == 0)
-                std_type::reserve(ArraySize);
-        }
-        constexpr explicit vecarray(size_type count) :
-            std_type{ count, allocator_type{ *this } }
-        {
-            if (std_type::capacity() == 0)
-                std_type::reserve(ArraySize);
-        }
-        constexpr vecarray(std::initializer_list<value_type> aValues) :
-            std_type{ aValues, allocator_type{ *this } }
-        {
-            if (std_type::capacity() == 0)
-                std_type::reserve(ArraySize);
-        }
-        template <typename InputIter>
-        constexpr vecarray(InputIter aFirst, InputIter aLast) :
-            std_type{ aFirst, aLast, allocator_type{ *this } }
-        {
-            if (std_type::capacity() == 0)
-                std_type::reserve(ArraySize);
-        }
-    public:
-        constexpr vecarray& operator=(const vecarray& other)
-        {
-            std_type::operator=(other);
-            return *this;
-        }
-        constexpr vecarray& operator=(vecarray&& other) noexcept
-        {
-            std_type::operator=(other);
-            return *this;
-        }
-        constexpr vecarray& operator=(std::initializer_list<T> ilist)
-        {
-            std_type::operator=(ilist);
-            return *this;
-        }
-        // operations
-    public:
-        const std_type& as_std_vector() const
-        {
-            return *this;
-        }
-        std_type& as_std_vector()
-        {
-            return *this;
-        }
-        std::vector<T, Alloc> to_std_vector() const
-        {
-            return std::vector<T, Alloc>{ std_type::begin(), std_type::end() };
-        }
-        size_type available() const noexcept
-        {
-            return std_type::max_size() - std_type::size();
-        }
-    };
+            using type = static_vector<T, Capacity>;
+        };
+    }
+
+    // deprecated
+    template<typename T, std::size_t Capacity, std::size_t MaxCapacity = Capacity, typename Alloc = std::allocator<T>>
+    using vecarray = typename detail::vecarray<T, Capacity, MaxCapacity, Alloc>::type;
 }

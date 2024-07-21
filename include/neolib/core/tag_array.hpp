@@ -47,22 +47,22 @@ namespace neolib
     template <typename Tag, typename T, std::size_t ArraySize = 16, std::size_t VectorSize = 256, typename Alloc = std::allocator<T> >
     class tag_array : private neolib::array_tree<Alloc>
     {
-        typedef neolib::array_tree<Alloc> base_type;
+        using base_type = neolib::array_tree<Alloc>;
     public:
-        typedef T value_type;
-        typedef value_type& reference;
-        typedef const value_type& const_reference;
-        typedef Alloc allocator_type;
-        typedef typename std::allocator_traits<allocator_type>::pointer pointer;
-        typedef typename std::allocator_traits<allocator_type>::const_pointer const_pointer;
-        typedef typename std::allocator_traits<allocator_type>::size_type size_type;
-        typedef typename std::allocator_traits<allocator_type>::difference_type difference_type;
+        using value_type = T;
+        using reference = value_type&;
+        using const_reference = const value_type&;
+        using allocator_type = Alloc;
+        using pointer = typename std::allocator_traits<allocator_type>::pointer;
+        using const_pointer = typename std::allocator_traits<allocator_type>::const_pointer;
+        using size_type = typename std::allocator_traits<allocator_type>::size_type;
+        using difference_type = typename std::allocator_traits<allocator_type>::difference_type;
     private:
         class node : public base_type::node
         {
         public:
-            typedef typename Tag::template rebind<node>::type tag_type;
-            class data : public neolib::vecarray<T, ArraySize, VectorSize, neolib::nocheck>
+            using tag_type = typename Tag::template rebind<node>::type;
+            class data : public neolib::vecarray<T, ArraySize, VectorSize>
             {
             public:
                 data(node& aNode, const tag_type& aTag) :
@@ -96,10 +96,10 @@ namespace neolib
             segment_type iSegment;
         };
     public:
-        typedef typename node::tag_type tag_type;
+        using tag_type = typename node::tag_type;
     private:
-        typedef typename node::segment_type segment_type;
-        typedef typename std::allocator_traits<allocator_type>:: template rebind_alloc<node> node_allocator_type;
+        using segment_type = typename node::segment_type;
+        using node_allocator_type = typename std::allocator_traits<allocator_type>:: template rebind_alloc<node>;
     public:
         class iterator
         {
@@ -107,11 +107,11 @@ namespace neolib
             friend class tag_array::const_iterator;
 
         public:
-            typedef std::random_access_iterator_tag iterator_category;
-            typedef tag_array::value_type value_type;
-            typedef tag_array::difference_type difference_type;
-            typedef tag_array::pointer pointer;
-            typedef tag_array::reference reference;
+            using iterator_category = std::random_access_iterator_tag ;
+            using value_type = tag_array::value_type;
+            using difference_type = tag_array::difference_type;
+            using pointer = tag_array::pointer;
+            using reference = tag_array::reference;
 
         public:
             iterator() :
@@ -222,11 +222,11 @@ namespace neolib
             friend class tag_array;
 
         public:
-            typedef std::random_access_iterator_tag iterator_category;
-            typedef tag_array::value_type value_type;
-            typedef tag_array::difference_type difference_type;
-            typedef tag_array::const_pointer pointer;
-            typedef tag_array::const_reference reference;
+            using iterator_category = std::random_access_iterator_tag;
+            using value_type = tag_array::value_type;
+            using difference_type = tag_array::difference_type;
+            using pointer = tag_array::const_pointer;
+            using reference = tag_array::const_reference;
 
         public:
             const_iterator() :
@@ -344,8 +344,8 @@ namespace neolib
             size_type iContainerPosition;
             size_type iSegmentPosition;
         };
-        typedef std::reverse_iterator<iterator> reverse_iterator;
-        typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+        using reverse_iterator = std::reverse_iterator<iterator>;
+        using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     public:
         tag_array(const Alloc& aAllocator = Alloc()) :
@@ -566,7 +566,7 @@ namespace neolib
                 return iterator(*this, aPosition.iNode, aPosition.iContainerPosition, aPosition.iSegmentPosition);
             if (aPosition.iNode != nullptr && static_cast<node*>(aPosition.iNode)->segment().tag() != aTag &&
                 aPosition.iNode->previous() != nullptr && static_cast<node*>(aPosition.iNode->previous())->segment().tag() == aTag &&
-                static_cast<node*>(aPosition.iNode->previous())->segment().available() >= count &&
+                available(static_cast<node*>(aPosition.iNode->previous())->segment()) >= count &&
                 aPosition.iSegmentPosition == 0)
             {
                 aPosition.iNode = static_cast<node*>(aPosition.iNode->previous());
@@ -575,7 +575,8 @@ namespace neolib
             node* before = aPosition.iNode;
             node* after = aPosition.iNode ? static_cast<node*>(aPosition.iNode->next()) : nullptr;
             node* lastNode = aPosition.iNode;
-            if (aPosition.iNode != nullptr && count <= static_cast<node*>(aPosition.iNode)->segment().available() && static_cast<node*>(aPosition.iNode)->segment().tag() == aTag)
+            if (aPosition.iNode != nullptr && count <= available(static_cast<node*>(aPosition.iNode)->segment()) && 
+                static_cast<node*>(aPosition.iNode)->segment().tag() == aTag)
             {
                 segment_type& segment = static_cast<node*>(aPosition.iNode)->segment();
                 segment.insert(segment.begin() + aPosition.iSegmentPosition, aFirst, aLast);
@@ -599,7 +600,7 @@ namespace neolib
                 }
                 for (node* nextNode = segment.tag() == aTag ? aPosition.iNode : static_cast<node*>(aPosition.iNode->next()); count > 0 && nextNode != lastNode; nextNode = static_cast<node*>(nextNode->next()))
                 {
-                    size_type addCount = std::min(count, nextNode->segment().available());
+                    size_type addCount = std::min(count, available(nextNode->segment()));
                     if (addCount != 0)
                     {
                         InputIterator stop = aFirst;
@@ -664,25 +665,27 @@ namespace neolib
             if (aCount == 0)
                 return aPosition.iNode;
             if (aPosition.iNode && aPosition.iNode->segment().tag() == aTag)
-                aCount -= std::min(aCount, (aPosition.iNode->segment().available()));
+                aCount -= std::min(aCount, available(aPosition.iNode->segment()));
             if (aCount == 0)
                 return aPosition.iNode;
             node* lastNode = nullptr;
-            if (aCount > 0 && aPosition.iNode && aPosition.iNode->next() != nullptr && aCount <= static_cast<node*>(aPosition.iNode->next())->segment().available() && static_cast<node*>(aPosition.iNode->next())->segment().tag() == aTag)
+            if (aCount > 0 && aPosition.iNode && aPosition.iNode->next() != nullptr && 
+                aCount <= available(static_cast<node*>(aPosition.iNode->next())->segment()) 
+                && static_cast<node*>(aPosition.iNode->next())->segment().tag() == aTag)
             {
                 if (aPosition.iNode->segment().tag() == aTag || aPosition.iSegmentPosition == aPosition.iNode->segment().size())
                 {
                     lastNode = static_cast<node*>(aPosition.iNode->next());
-                    aCount -= std::min(aCount, lastNode->segment().available());
+                    aCount -= std::min(aCount, available(lastNode->segment()));
                 }
             }
             node* nextNode = aPosition.iNode;
             while (aCount > 0)
-                aCount -= std::min(aCount, (nextNode = allocate_node(aTag, nextNode))->segment().available());
+                aCount -= std::min(aCount, available((nextNode = allocate_node(aTag, nextNode))->segment()));
             if (aPosition.iNode == nullptr)
                 aPosition = begin();
             segment_type& segment = aPosition.iNode->segment();
-            if (aPosition.iSegmentPosition < segment.size() && (nextNode->segment().available() < segment.size() - aPosition.iSegmentPosition || segment.tag() != aTag))
+            if (aPosition.iSegmentPosition < segment.size() && (available(nextNode->segment()) < segment.size() - aPosition.iSegmentPosition || segment.tag() != aTag))
                 lastNode = allocate_node(segment.tag(), nextNode);
             return lastNode ? lastNode : nextNode;
         }

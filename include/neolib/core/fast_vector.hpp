@@ -1,6 +1,6 @@
 // fast_vector.hpp
 /*
- *  Copyright (c) 2019 Leigh Johnston.
+ *  Copyright (c) 2024 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -36,29 +36,10 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <vector>
-#include <neolib/core/allocator.hpp>
+#include <boost/container/small_vector.hpp>
 
 namespace neolib
 {
-    template <typename T, std::size_t SmallBufferSize>
-    class fast_vector : private small_buffer_allocator<T, SmallBufferSize>::small_buffer, public std::vector<T, small_buffer_allocator<T, SmallBufferSize>>
-    {
-    public:
-        typedef small_buffer_allocator<T, SmallBufferSize> allocator_type;
-    private:
-        typedef typename small_buffer_allocator<T, SmallBufferSize>::small_buffer small_buffer_type;
-        typedef std::vector<T, small_buffer_allocator<T, SmallBufferSize>> std_type;
-    public:
-        fast_vector() :
-            std_type{ allocator_type{ *this } }
-        {
-            std_type::reserve(SmallBufferSize);
-        }
-    public:
-        bool using_small_buffer() const
-        {
-            return small_buffer_type::allocated;
-        }
-    };
+    template <typename T, std::size_t SmallBufferSize, typename Alloctor = void>
+    using fast_vector = boost::container::small_vector<T, SmallBufferSize, Allocator>;
 }
