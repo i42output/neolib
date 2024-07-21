@@ -81,7 +81,7 @@ namespace neolib
             bool const single = (aNoDuplicates || aSlot.stateless());
             if (single)
             {
-                decltype(iQueue.single)::key_type const key{ &event, &aSlot };
+                typename decltype(iQueue.single)::key_type const key{ &event, &aSlot };
                 auto existing = iQueue.single.find(key);
                 if (existing != iQueue.single.end())
                 {
