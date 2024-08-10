@@ -36,8 +36,13 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+
 #include <vector>
+#pragma warning ( push )
+#pragma warning ( disable : 4702 )
 #include <boost/container/static_vector.hpp>
+#pragma warning ( pop )
+
 #include <neolib/core/small_buffer_allocator.hpp>
 
 namespace neolib
