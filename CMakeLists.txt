@@ -21,7 +21,6 @@ if (MSVC)
 endif()
 
 # project
-add_definitions(-DBOOST_ASIO_DISABLE_CONCEPTS)
 if(MSVC)
     set(CMAKE_DEBUG_POSTFIX "d")
     add_definitions(-D_UNICODE)
