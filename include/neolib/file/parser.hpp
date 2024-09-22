@@ -533,19 +533,17 @@ namespace neolib
         bool parse(symbol aRoot, std::string_view const& aSource)
         {
             iSource = aSource;
-            iCst = {};
+            iCst = { nullptr, nullptr, nullptr, aSource };
             iAst = {};
             iStack = {};
             iDeepestParse = {};
             iError = {};
             iCache = {};
 
-            auto rootNode = std::make_shared<cst_node>(nullptr, nullptr, nullptr, aSource);
-
             auto const startTime = std::chrono::high_resolution_clock::now();
-            auto const result = parse(aRoot, *rootNode, aSource);
-            fixup_cst(*rootNode);
-            simplify_cst(*rootNode);
+            auto const result = parse(aRoot, iCst, aSource);
+            fixup_cst(iCst);
+            simplify_cst(iCst);
             auto const endTime = std::chrono::high_resolution_clock::now();
             std::uint32_t linePos;
             std::uint32_t columnPos;
@@ -589,13 +587,14 @@ namespace neolib
                         static_cast<std::uint32_t>(std::count(iSource.begin(), iSource.end(), '\n') / time) << " lines/second)" << std::endl;
                 }
                 if (iDebugCst)
-                    (*iDebugOutput) << debug_print_cst(*rootNode) << std::endl;
+                    (*iDebugOutput) << debug_print_cst(iCst) << std::endl;
             }
             
             if (iError)
+            {
+                iCst = {};
                 return false;
-
-            iCst = std::move(*rootNode);
+            }
 
             return true;
         }
@@ -773,6 +772,24 @@ namespace neolib
             return false;
         }
 
+        static cst_node const& root(cst_node const& aNode)
+        {
+            auto n = &aNode;
+            while (n->parent)
+                n = n->parent;
+            return *n;
+        }
+
+        static bool has_concept(cst_node const& aNode, std::string_view const& aConcept)
+        {
+            if (aNode.c == aConcept)
+                return true;
+            for (auto const& child : aNode.children)
+                if (has_concept(*child, aConcept))
+                    return true;
+            return false;
+        }
+
         std::optional<parse_result> parse(symbol aSymbol, cst_node& aNode, std::string_view const& aSource)
         {
             if (iError)
@@ -828,11 +845,17 @@ namespace neolib
                     auto const& ruleAtom = rule.rhs[0];
                     typename cst_node::child_list children;
                     std::swap(aNode.children, children);
-                    auto const match = parse(ruleAtom, aNode, std::string_view{ sourceNext, sourceEnd });
+                    auto const match = parse(aSymbol, ruleAtom, aNode, std::string_view{ sourceNext, sourceEnd });
                     std::swap(aNode.children, children);
                     if (match)
                     {
-                        if (!result || match.value().value.size() > result.value().value.size())
+                        auto const resultConcepts = std::count_if(resultChildren.begin(), resultChildren.end(),
+                            [](auto const& n) { return n->c.has_value(); });
+                        auto const matchConcepts = std::count_if(children.begin(), children.end(),
+                            [](auto const& n) { return n->c.has_value(); });
+                        if (!result || 
+                            match.value().value.size() > result.value().value.size() ||
+                            (match.value().value.size() == result.value().value.size() && matchConcepts > resultConcepts))
                         {
                             result = match;
                             resultRule = &rule;
@@ -855,7 +878,7 @@ namespace neolib
             return {};
         }
 
-        std::optional<parse_result> parse(primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
+        std::optional<parse_result> parse(symbol aSymbol, primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
         {
             if (iError)
                 return {};
@@ -942,7 +965,7 @@ namespace neolib
                         if (found != std::string_view::npos)
                             lookaheadTo = sourceNext + found;
                     }
-                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, lookaheadTo });
+                    auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, lookaheadTo });
                     if (!partialResult)
                     {
                         std::swap(aNode.children, children);
@@ -967,7 +990,8 @@ namespace neolib
                     aNode.set_concept(aAtom.c);
                 if (spanEnd == nullptr)
                     spanEnd = spanStart;
-                result = std::string_view{ spanStart, spanEnd };
+                aNode.value = std::string_view{ spanStart, spanEnd };
+                result = aNode.value;
                 result.value().sourceNext = sourceNext;
                 iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, result };
                 return ((sdp ? sdp->ok = true : true), result);
@@ -976,7 +1000,7 @@ namespace neolib
             {
                 for (auto const& a : std::get<optional>(aAtom).value)
                 {
-                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
+                    auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
                     if (partialResult)
                     {
                         if (!aNode.has_concept())
@@ -1003,7 +1027,7 @@ namespace neolib
                     found = false;
                     for (auto const& a : std::get<repeat>(aAtom).value)
                     {
-                        auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
+                        auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
                         if (partialResult)
                         {
                             if (!aNode.has_concept())
@@ -1051,7 +1075,7 @@ namespace neolib
                 bool found = false;
                 for (auto const& a : std::get<choice>(aAtom).value)
                 {
-                    auto const partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });;
+                    auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
                     if (partialResult)
                     {
                         if (!aNode.has_concept())
@@ -1075,7 +1099,7 @@ namespace neolib
                 {
                     typename cst_node::child_list children;
                     std::swap(aNode.children, children);
-                    auto partialResult = parse(a, aNode, std::string_view{ sourceNext, sourceEnd });
+                    auto partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });
                     std::swap(aNode.children, children);
                     if (partialResult)
                     {
