@@ -48,7 +48,9 @@
 namespace neolib
 {
     template<typename T, std::size_t Capacity, std::size_t MaxCapacity, typename Alloc = std::allocator<T>>
-    class growable_static_vector : private small_buffer<T, Capacity>, public std::vector<T, small_buffer_allocator<T, Capacity, MaxCapacity, Alloc>>
+    class growable_static_vector : 
+        private small_buffer<T, Capacity>, 
+        public std::vector<T, small_buffer_allocator<T, Capacity, MaxCapacity, Alloc>>
     {
         using base_type = std::vector<T, small_buffer_allocator<T, Capacity, MaxCapacity, Alloc>>;
         // types

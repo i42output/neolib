@@ -144,41 +144,41 @@ namespace neolib::ecs
             return *this;
         }
     public:
-        i_ecs& ecs() const override
+        i_ecs& ecs() const final
         {
             return iEcs;
         }
-        const component_id& id() const override
+        const component_id& id() const final
         {
             return data_meta_type::id();
         }
     public:
-        component_mutex<Data>& mutex() const override
+        component_mutex<Data>& mutex() const final
         {
             return iMutex;
         }
     public:
-        bool is_data_optional() const override
+        bool is_data_optional() const final
         {
             return detail::crack_component_data<Data>::optional;
         }
-        const neolib::i_string& name() const override
+        const neolib::i_string& name() const final
         {
             return data_meta_type::name();
         }
-        uint32_t field_count() const override
+        uint32_t field_count() const final
         {
             return data_meta_type::field_count();
         }
-        component_data_field_type field_type(uint32_t aFieldIndex) const override
+        component_data_field_type field_type(uint32_t aFieldIndex) const final
         {
             return data_meta_type::field_type(aFieldIndex);
         }
-        neolib::uuid field_type_id(uint32_t aFieldIndex) const override
+        neolib::uuid field_type_id(uint32_t aFieldIndex) const final
         {
             return data_meta_type::field_type_id(aFieldIndex);
         }
-        const neolib::i_string& field_name(uint32_t aFieldIndex) const override
+        const neolib::i_string& field_name(uint32_t aFieldIndex) const final
         {
             return data_meta_type::field_name(aFieldIndex);
         }
@@ -317,7 +317,7 @@ namespace neolib::ecs
                 return reverse_indices()[aEntity];
             return invalid;
         }
-        bool has_entity_record_no_lock(entity_id aEntity) const override
+        bool has_entity_record_no_lock(entity_id aEntity) const final
         {
             return reverse_index_no_lock(aEntity) != invalid;
         }
@@ -339,7 +339,7 @@ namespace neolib::ecs
             std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             return reverse_index_no_lock(aEntity);
         }
-        bool has_entity_record(entity_id aEntity) const override
+        bool has_entity_record(entity_id aEntity) const final
         {
             std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             return has_entity_record_no_lock(aEntity);
@@ -354,7 +354,7 @@ namespace neolib::ecs
             std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             return entity_record_no_lock(aEntity, aCreate);
         }
-        void destroy_entity_record(entity_id aEntity) override
+        void destroy_entity_record(entity_id aEntity) final
         {
             std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             auto reverseIndex = reverse_index(aEntity);
@@ -386,7 +386,7 @@ namespace neolib::ecs
             std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             return do_populate(aEntity, aData);
         }
-        const void* populate(entity_id aEntity, const void* aComponentData, std::size_t aComponentDataSize) override
+        const void* populate(entity_id aEntity, const void* aComponentData, std::size_t aComponentDataSize) final
         {
             std::scoped_lock<component_mutex<Data>> lock{ mutex() };
             if ((aComponentData == nullptr && !is_data_optional()) || aComponentDataSize != sizeof(data_type))
@@ -586,7 +586,7 @@ namespace neolib::ecs
                 mapped_type::meta::update(result, ecs(), null_entity);
             return shared<mapped_type> { &result };
         }
-        const void* populate(const std::string& aName, const void* aComponentData, std::size_t aComponentDataSize) override
+        const void* populate(const std::string& aName, const void* aComponentData, std::size_t aComponentDataSize) final
         {
             if ((aComponentData == nullptr && !is_data_optional()) || aComponentDataSize != sizeof(mapped_type))
                 throw invalid_data();
