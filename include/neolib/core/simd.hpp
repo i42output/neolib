@@ -69,7 +69,7 @@ namespace neolib
 #endif
 
 #if defined(USE_EMM) || defined(USE_EMM_DYNAMIC) 
-    inline uint32_t to_scalar(__m128i const& emmRegister, std::size_t index)
+    inline std::uint32_t to_scalar(__m128i const& emmRegister, std::size_t index)
     {
 #ifdef _WIN32
         return emmRegister.m128i_u32[index];
@@ -181,13 +181,13 @@ namespace neolib
     }
 
 #if defined(USE_EMM) || defined(USE_EMM_DYNAMIC)
-    inline void emm_simd_srand(uint32_t seed)
+    inline void emm_simd_srand(std::uint32_t seed)
     {
         detail::simd_rand_seed() = _mm_set_epi32(seed, seed + 1, seed, seed + 1);
     }
 #endif
 
-    inline void fake_simd_srand(uint32_t seed)
+    inline void fake_simd_srand(std::uint32_t seed)
     {
         std::srand(seed);
     }
@@ -195,7 +195,7 @@ namespace neolib
 #if defined(USE_EMM)
     #define simd_srand emm_simd_srand
 #elif defined(USE_EMM_DYNAMIC)
-    inline void simd_srand(uint32_t seed)
+    inline void simd_srand(std::uint32_t seed)
     {
         if (use_simd())
             emm_simd_srand(seed);
@@ -208,35 +208,28 @@ namespace neolib
         
     inline void simd_srand(std::thread::id seed)
     {
-        simd_srand(static_cast<uint32_t>(std::hash<std::thread::id>{}(seed)));
+        simd_srand(static_cast<std::uint32_t>(std::hash<std::thread::id>{}(seed)));
     }
 
 #if defined(USE_EMM) || defined(USE_EMM_DYNAMIC)
-    inline uint32_t emm_simd_rand()
+    inline std::uint32_t emm_simd_rand()
     {
-        thread_local std::array<uint32_t, 4> result = {};
-        thread_local std::size_t resultCounter = 4;
-        if (resultCounter < 4)
-            return result[resultCounter++];
-        alignas(16) __m128i cur_seed_split;
-        alignas(16) __m128i multiplier;
-        alignas(16) __m128i adder;
-        alignas(16) __m128i mod_mask;
-        alignas(16) __m128i sra_mask;
-        alignas(16) __m128i ans;
-        alignas(16) static const uint32_t mult[4] =
-        { 214013, 17405, 214013, 69069 };
-        alignas(16) static const uint32_t gadd[4] =
-        { 2531011, 10395331, 13737667, 1 };
-        alignas(16) static const uint32_t mask[4] =
-        { 0xFFFFFFFF, 0, 0xFFFFFFFF, 0 };
-        alignas(16) static const uint32_t masklo[4] =
-        { 0x00007FFF, 0x00007FFF, 0x00007FFF, 0x00007FFF };
+        thread_local std::array<std::uint32_t, 4u> result = {};
+        thread_local std::size_t resultCounter = 4u;
 
-        adder = _mm_load_si128((__m128i*) gadd);
-        multiplier = _mm_load_si128((__m128i*) mult);
-        mod_mask = _mm_load_si128((__m128i*) mask);
-        sra_mask = _mm_load_si128((__m128i*) masklo);
+        if (resultCounter < 4u)
+            return result[resultCounter++];
+
+        alignas(16) static const std::uint32_t mult[4] = { 214013u, 17405u, 214013u, 69069u };
+        alignas(16) static const std::uint32_t gadd[4] = { 2531011u, 10395331u, 13737667u, 1u };
+        alignas(16) static const std::uint32_t mask[4] = { 0xFFFFFFFFu, 0u, 0xFFFFFFFFu, 0u };
+        alignas(16) static const std::uint32_t masklo[4] = { 0x00007FFFu, 0x00007FFFu, 0x00007FFFu, 0x00007FFFu };
+        alignas(16) __m128i adder = _mm_load_si128((__m128i*) gadd);
+        alignas(16) __m128i multiplier = _mm_load_si128((__m128i*) mult);
+        alignas(16) __m128i mod_mask = _mm_load_si128((__m128i*) mask);
+        alignas(16) __m128i sra_mask = _mm_load_si128((__m128i*) masklo);
+        alignas(16) __m128i cur_seed_split;
+        alignas(16) __m128i ans;
 
         cur_seed_split = _mm_shuffle_epi32(detail::simd_rand_seed(), _MM_SHUFFLE(2, 3, 0, 1));
 
@@ -254,27 +247,33 @@ namespace neolib
         detail::simd_rand_seed() = _mm_add_epi32(detail::simd_rand_seed(), adder);
 
         _mm_storeu_si128(&ans, detail::simd_rand_seed());
+        
         result = { to_scalar(ans, 0), to_scalar(ans, 1), to_scalar(ans, 2), to_scalar(ans, 3) };
-        resultCounter = 0;
-        return result[resultCounter];
+
+        resultCounter = 0u;
+        return result[resultCounter++];
     }
 #endif
 
-    inline uint32_t fake_simd_rand()
+    inline std::uint32_t fake_simd_rand()
     {
-        thread_local std::array<uint32_t, 4> result = {};
-        thread_local std::size_t resultCounter = 4;
-        if (resultCounter < 4)
+        thread_local std::array<std::uint32_t, 4u> result = {};
+        thread_local std::size_t resultCounter = 4u;
+        if (resultCounter < 4u)
             return result[resultCounter++];
-        result = { static_cast<uint32_t>(std::rand()), static_cast<uint32_t>(std::rand()), static_cast<uint32_t>(std::rand()), static_cast<uint32_t>(std::rand()) };
-        resultCounter = 0;
-        return result[resultCounter];
+        result = { 
+            static_cast<std::uint32_t>(std::rand()), 
+            static_cast<std::uint32_t>(std::rand()), 
+            static_cast<std::uint32_t>(std::rand()), 
+            static_cast<std::uint32_t>(std::rand()) };
+        resultCounter = 0u;
+        return result[resultCounter++];
     }
 
 #if defined(USE_EMM)
     #define simd_rand emm_simd_rand
 #elif defined(USE_EMM_DYNAMIC)
-    inline uint32_t simd_rand()
+    inline std::uint32_t simd_rand()
     {
         if (use_simd())
             return emm_simd_rand();
@@ -288,6 +287,6 @@ namespace neolib
     template <typename T>
     inline T simd_rand(T aUpper)
     {
-        return static_cast<T>(simd_rand() % static_cast<uint32_t>(aUpper));
+        return static_cast<T>(simd_rand() % (static_cast<std::uint32_t>(aUpper) + 1u));
     }
 }
