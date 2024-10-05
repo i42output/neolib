@@ -77,7 +77,6 @@ namespace neolib::ecs
                 bool didWork = async_task::do_work(aYieldType);
                 if (iOwner.can_apply())
                     didWork = iOwner.apply() || didWork;
-                iOwner.yield();
                 if (iOwner.paused() && !iOwner.waiting())
                     iOwner.wait();
                 return didWork;
