@@ -72,7 +72,7 @@ namespace neolib::ecs
                     iOwner.signal();
             }
         public:
-            bool do_work(neolib::yield_type aYieldType = neolib::yield_type::NoYield) override
+            bool do_work(neolib::yield_type aYieldType = neolib::yield_type::NoYield) final
             {
                 bool didWork = async_task::do_work(aYieldType);
                 if (iOwner.can_apply())
@@ -122,55 +122,55 @@ namespace neolib::ecs
         {
         }
     public:
-        i_ecs& ecs() const override
+        i_ecs& ecs() const final
         {
             return iEcs;
         }
     public:
-        const i_set<component_id>& components() const override
+        const i_set<component_id>& components() const final
         {
             return iComponents;
         }
-        i_set<component_id>& components() override
+        i_set<component_id>& components() final
         {
             return iComponents;
         }
     public:
-        const i_component& component(component_id aComponentId) const override
+        const i_component& component(component_id aComponentId) const final
         {
             return ecs().component(aComponentId);
         }
-        i_component& component(component_id aComponentId) override
+        i_component& component(component_id aComponentId) final
         {
             return ecs().component(aComponentId);
         }
     public:
-        bool can_apply() const override
+        bool can_apply() const final
         {
             return !paused() && (!have_thread() || (have_thread() && get_thread().in()));
         }
-        bool paused() const override
+        bool paused() const final
         {
             return iPaused != 0u;
         }
-        void pause() override
+        void pause() final
         {
             ++iPaused;
         }
-        void resume() override
+        void resume() final
         {
             if (--iPaused == 0 && waiting())
                 signal();
         }
-        void terminate() override
+        void terminate() final
         {
             iThread = nullptr;
         }
-        bool waiting() const override
+        bool waiting() const final
         {
             return iWaiting;
         }
-        void wait() override
+        void wait() final
         {
             if (!have_thread())
                 throw no_thread();
@@ -182,7 +182,7 @@ namespace neolib::ecs
             iWaiting = true;
             iCondVar.wait(lock, [&]() { return !iWaiting; });
         }
-        void wait_for(scalar aDuration) override
+        void wait_for(scalar aDuration) final
         {
             if (!have_thread())
                 throw no_thread();
@@ -194,7 +194,7 @@ namespace neolib::ecs
             iWaiting = true;
             iCondVar.wait_for(lock, std::chrono::duration<double>(aDuration), [&](){ return !iWaiting; });
         }
-        void signal() override
+        void signal() final
         {
             if (have_thread() && get_thread().in())
                 throw wrong_thread();
@@ -211,21 +211,21 @@ namespace neolib::ecs
                 iCondVar.notify_one();
         }
     public:
-        void start_thread_if() override
+        void start_thread_if() final
         {
             if (ecs().run_threaded(id()))
                 start_thread();
         }
-        void start_thread() override
+        void start_thread() final
         {
             iThread = std::make_unique<thread>(*this);
         }
     public:
-        bool debug() const override
+        bool debug() const final
         {
             return iDebug;
         }
-        void set_debug(bool aDebug) override
+        void set_debug(bool aDebug) final
         {
             if (iDebug != aDebug)
             {
@@ -233,7 +233,7 @@ namespace neolib::ecs
                 iPerformanceMetrics.clear();
             }
         }
-        std::chrono::microseconds update_time(std::size_t aMetricsIndex = 0) const override
+        std::chrono::microseconds update_time(std::size_t aMetricsIndex = 0) const final
         {
             if (iPerformanceMetrics.size() <= aMetricsIndex || iPerformanceMetrics[aMetricsIndex].updateTimes.empty())
                 return std::chrono::microseconds{ 0 };
