@@ -43,6 +43,55 @@
 
 namespace neolib
 {
+    namespace this_thread
+    {
+        void sleep(const std::chrono::duration<double, std::milli>& aDuration)
+        {
+            std::this_thread::sleep_for(aDuration);
+        }
+
+        void yield() noexcept
+        {
+            std::this_thread::yield();
+        }
+
+        uint64_t elapsed_ms() noexcept
+        {
+            return elapsed_us() / 1000;
+        }
+
+        uint64_t elapsed_us() noexcept
+        {
+            return elapsed_ns() / 1000;
+        }
+
+        uint64_t elapsed_ns() noexcept
+        {
+            using namespace boost::chrono;
+            return duration_cast<nanoseconds>(thread_clock::time_point(thread_clock::now()).time_since_epoch()).count();
+        }
+
+        uint64_t program_elapsed_ms() noexcept
+        {
+            return program_elapsed_us() / 1000;
+        }
+
+        uint64_t program_elapsed_us() noexcept
+        {
+            return program_elapsed_ns() / 1000;
+        }
+
+        namespace
+        {
+            uint64_t sProgramStartTime_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::time_point(std::chrono::high_resolution_clock::now()).time_since_epoch()).count();
+        }
+
+        uint64_t program_elapsed_ns() noexcept
+        {
+            return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::time_point(std::chrono::high_resolution_clock::now()).time_since_epoch()).count() - sProgramStartTime_ns;
+        }
+    }
+
     thread::thread(const std::string& aName, bool aAttachToCurrentThread) : 
         iName(aName), 
         iUsingExistingThread(aAttachToCurrentThread), 
@@ -190,7 +239,7 @@ namespace neolib
                 return true;
             if (aMessageQueue.have_message())
                 return false;
-            yield();
+            this_thread::yield();
         }
     }
 
@@ -293,52 +342,6 @@ namespace neolib
         if (!has_thread_object()) 
             throw no_thread_object(); 
         return *iThreadObject; 
-    }
-
-    void thread::sleep(const std::chrono::duration<double, std::milli>& aDuration)
-    {
-        std::this_thread::sleep_for(aDuration);
-    }
-
-    void thread::yield() noexcept
-    {
-        std::this_thread::yield();
-    }
-
-    uint64_t thread::elapsed_ms() noexcept
-    {
-        return elapsed_us() / 1000;
-    }
-
-    uint64_t thread::elapsed_us() noexcept
-    {
-        return elapsed_ns() / 1000;
-    }
-
-    uint64_t thread::elapsed_ns() noexcept
-    {
-        using namespace boost::chrono;
-        return duration_cast<nanoseconds>(thread_clock::time_point(thread_clock::now()).time_since_epoch()).count();
-    }
-
-    uint64_t thread::program_elapsed_ms() noexcept
-    {
-        return program_elapsed_us() / 1000;
-    }
-
-    uint64_t thread::program_elapsed_us() noexcept
-    {
-        return program_elapsed_ns() / 1000;
-    }
-
-    namespace
-    {
-        uint64_t sProgramStartTime_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::time_point(std::chrono::high_resolution_clock::now()).time_since_epoch()).count();
-    }
-
-    uint64_t thread::program_elapsed_ns() noexcept
-    {
-        return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::time_point(std::chrono::high_resolution_clock::now()).time_since_epoch()).count() - sProgramStartTime_ns;
     }
 
     bool thread::waitable_ready() const noexcept

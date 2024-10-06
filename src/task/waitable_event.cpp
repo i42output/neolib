@@ -92,7 +92,7 @@ namespace neolib
                 return true;
             else if (aMessageQueue.have_message())
                 return false;
-            thread::yield();
+            this_thread::yield();
         }
     }
 
@@ -107,7 +107,7 @@ namespace neolib
                 return false;
             else if (std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startTime).count() > aTimeout_ms)
                 return false;
-            thread::yield();
+            this_thread::yield();
         }
     }
 
@@ -124,7 +124,7 @@ namespace neolib
             for (list_type::const_iterator i = iEvents.begin(); i != iEvents.end(); ++i)
                 if ((**i).wait(0))
                     return wait_result_event(**i);
-            thread::yield();
+            this_thread::yield();
         }
     }
 
@@ -137,7 +137,7 @@ namespace neolib
                     return wait_result_event(**i);
             if (aWaitable.waitable_ready())
                 return wait_result_waitable();
-            thread::yield();
+            this_thread::yield();
         }
     }
 
@@ -150,7 +150,7 @@ namespace neolib
                     return wait_result_event(**i);
             if (aMessageQueue.have_message())
                 return wait_result_message();
-            thread::yield();
+            this_thread::yield();
         }
     }
 
@@ -165,7 +165,7 @@ namespace neolib
                 return wait_result_message();
             if (aWaitable.waitable_ready())
                 return wait_result_waitable();
-            thread::yield();
+            this_thread::yield();
         }
     }
 } // namespace neolib

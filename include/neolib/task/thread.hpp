@@ -49,6 +49,24 @@
 
 namespace neolib
 {
+    namespace this_thread
+    {
+        void sleep(const std::chrono::duration<double, std::milli>& aDuration);
+        void yield() noexcept;
+        void relax() noexcept;
+        uint64_t elapsed_ms() noexcept;
+        uint64_t elapsed_us() noexcept;
+        uint64_t elapsed_ns() noexcept;
+        uint64_t program_elapsed_ms() noexcept;
+        uint64_t program_elapsed_us() noexcept;
+        uint64_t program_elapsed_ns() noexcept;
+
+        inline void relax() noexcept
+        {
+            cpu_relax();
+        }
+    }
+
     class NEOLIB_EXPORT thread : public i_thread, public waitable, private noncopyable
     {
         // types
@@ -96,15 +114,6 @@ namespace neolib
         bool blocked() const noexcept;
         bool has_thread_object() const noexcept;
         thread_object_type& thread_object() const;
-        static void sleep(const std::chrono::duration<double, std::milli>& aDuration);
-        static void yield() noexcept;
-        static void relax() noexcept;
-        static uint64_t elapsed_ms() noexcept;
-        static uint64_t elapsed_us() noexcept;
-        static uint64_t elapsed_ns() noexcept;
-        static uint64_t program_elapsed_ms() noexcept;
-        static uint64_t program_elapsed_us() noexcept;
-        static uint64_t program_elapsed_ns() noexcept;
         // implementation
     private:
         // from waitable
@@ -124,9 +133,4 @@ namespace neolib
         id_type iId;
         std::atomic<std::size_t> iBlockedCount;
     };
-
-    inline void thread::relax() noexcept
-    {
-        cpu_relax();
-    }
 }
