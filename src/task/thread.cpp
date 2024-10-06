@@ -45,24 +45,22 @@ namespace neolib
 {
     namespace this_thread
     {
-        void sleep(const std::chrono::duration<double, std::milli>& aDuration)
+        template<class Rep, class Period>
+        void sleep_for(const std::chrono::duration<Rep, Period>& aDuration)
         {
             std::this_thread::sleep_for(aDuration);
         }
 
+        template void sleep_for<std::chrono::nanoseconds::rep, std::chrono::nanoseconds::period>(const std::chrono::nanoseconds&);
+        template void sleep_for<std::chrono::microseconds::rep, std::chrono::microseconds::period>(const std::chrono::microseconds&);
+        template void sleep_for<std::chrono::milliseconds::rep, std::chrono::milliseconds::period>(const std::chrono::milliseconds&);
+        template void sleep_for<std::chrono::seconds::rep, std::chrono::seconds::period>(const std::chrono::seconds&);
+        template void sleep_for<std::chrono::minutes::rep, std::chrono::minutes::period>(const std::chrono::minutes&);
+        template void sleep_for<std::chrono::hours::rep, std::chrono::hours::period>(const std::chrono::hours&);
+
         void yield() noexcept
         {
             std::this_thread::yield();
-        }
-
-        std::uint64_t elapsed_ms() noexcept
-        {
-            return elapsed_us() / 1000;
-        }
-
-        std::uint64_t elapsed_us() noexcept
-        {
-            return elapsed_ns() / 1000;
         }
 
         std::uint64_t elapsed_ns() noexcept
@@ -70,20 +68,20 @@ namespace neolib
             using namespace boost::chrono;
             return duration_cast<nanoseconds>(thread_clock::now().time_since_epoch()).count();
         }
-    }
-
-    namespace this_process
-    {
-        std::uint64_t elapsed_ms() noexcept
-        {
-            return elapsed_us() / 1000;
-        }
 
         std::uint64_t elapsed_us() noexcept
         {
             return elapsed_ns() / 1000;
         }
 
+        std::uint64_t elapsed_ms() noexcept
+        {
+            return elapsed_us() / 1000;
+        }
+    }
+
+    namespace this_process
+    {
         namespace
         {
             std::uint64_t sProgramStartTime_ns = 
@@ -96,6 +94,16 @@ namespace neolib
             return std::chrono::duration_cast<std::chrono::nanoseconds>(
                 std::chrono::high_resolution_clock::now().time_since_epoch()).count() - 
                 sProgramStartTime_ns;
+        }
+
+        std::uint64_t elapsed_us() noexcept
+        {
+            return elapsed_ns() / 1000;
+        }
+
+        std::uint64_t elapsed_ms() noexcept
+        {
+            return elapsed_us() / 1000;
         }
     }
 

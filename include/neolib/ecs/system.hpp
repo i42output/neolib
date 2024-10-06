@@ -237,9 +237,9 @@ namespace neolib::ecs
         void yield(bool aSleep = false)
         {
             if (service<neolib::i_power>().green_mode_active() || aSleep)
-                neolib::thread::sleep(std::chrono::milliseconds{ 1 });
+                this_thread::sleep_for(std::chrono::milliseconds{ 1 });
             else
-                neolib::thread::yield();
+                this_thread::yield();
         }
         std::mutex& waiting_mutex()
         {

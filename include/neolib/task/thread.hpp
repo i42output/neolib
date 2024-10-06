@@ -51,7 +51,8 @@ namespace neolib
 {
     namespace this_thread
     {
-        void sleep(const std::chrono::duration<double, std::milli>& aDuration);
+        template<class Rep, class Period>
+        void sleep_for(const std::chrono::duration<Rep, Period>& aDuration);
         void yield() noexcept;
         void relax() noexcept;
         std::uint64_t elapsed_ms() noexcept;
