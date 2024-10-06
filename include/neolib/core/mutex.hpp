@@ -39,7 +39,6 @@
 #include <atomic>
 #include <mutex>
 #include <boost/thread/locks.hpp>
-#include <boost/fiber/detail/cpu_relax.hpp>
 #include <boost/lockfree/detail/freelist.hpp>
 #include <neolib/core/i_mutex.hpp>
 

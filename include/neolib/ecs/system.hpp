@@ -53,38 +53,23 @@ namespace neolib::ecs
 {
     class i_ecs;
 
+    class thread : public async_task, public async_thread
+    {
+    public:
+        thread(i_system& aOwner);
+        ~thread();
+    public:
+        bool do_work(neolib::yield_type aYieldType = neolib::yield_type::NoYield) final;
+    private:
+        i_system& iOwner;
+    };
+
     template <typename... ComponentData>
     class system : public i_system
     {
-        typedef system<ComponentData...> self_type;
     private:
-        class thread : public async_task, public async_thread
-        {
-        public:
-            thread(self_type& aOwner) : async_task{ "neolib::ecs::system::thread" }, async_thread{ *this, "neolib::ecs::system::thread" }, iOwner{ aOwner }
-            {
-                start();
-            }
-            ~thread()
-            {
-                set_destroying();
-                if (iOwner.waiting())
-                    iOwner.signal();
-            }
-        public:
-            bool do_work(neolib::yield_type aYieldType = neolib::yield_type::NoYield) final
-            {
-                bool didWork = async_task::do_work(aYieldType);
-                if (iOwner.can_apply())
-                    didWork = iOwner.apply() || didWork;
-                if (iOwner.paused() && !iOwner.waiting())
-                    iOwner.wait();
-                return didWork;
-            }
-        private:
-            self_type& iOwner;
-        };
-        typedef neolib::set<component_id, std::less<component_id>, neolib::fast_pool_allocator<component_id>> component_list;
+        using component_list = neolib::set<component_id, std::less<component_id>, neolib::fast_pool_allocator<component_id>>;
+        using thread = ecs::thread;
         struct performance_metrics
         {
             std::vector<std::chrono::microseconds> updateTimes;

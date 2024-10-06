@@ -96,7 +96,8 @@ namespace neolib
         bool has_thread_object() const noexcept;
         thread_object_type& thread_object() const;
         static void sleep(const std::chrono::duration<double, std::milli>& aDuration);
-        static void yield();
+        static void yield() noexcept;
+        static void relax() noexcept;
         static uint64_t elapsed_ms() noexcept;
         static uint64_t elapsed_us() noexcept;
         static uint64_t elapsed_ns() noexcept;
