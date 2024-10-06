@@ -41,6 +41,7 @@
 #include <thread>
 #include <atomic>
 #include <functional>
+#include <boost/fiber/detail/cpu_relax.hpp>
 #include <neolib/core/noncopyable.hpp>
 #include <neolib/task/waitable.hpp>
 #include <neolib/task/waitable_event.hpp>
@@ -123,4 +124,9 @@ namespace neolib
         id_type iId;
         std::atomic<std::size_t> iBlockedCount;
     };
+
+    inline void thread::relax() noexcept
+    {
+        cpu_relax();
+    }
 }

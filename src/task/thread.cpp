@@ -38,7 +38,6 @@
 #include <chrono>
 #include <functional>
 #include <boost/chrono/thread_clock.hpp>
-#include <boost/fiber/detail/cpu_relax.hpp>
 #include <neolib/core/singleton.hpp>
 #include <neolib/task/thread.hpp>
 
@@ -304,11 +303,6 @@ namespace neolib
     void thread::yield() noexcept
     {
         std::this_thread::yield();
-    }
-
-    void thread::relax() noexcept
-    {
-        cpu_relax();
     }
 
     uint64_t thread::elapsed_ms() noexcept
