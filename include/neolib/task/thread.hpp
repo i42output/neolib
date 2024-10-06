@@ -54,17 +54,21 @@ namespace neolib
         void sleep(const std::chrono::duration<double, std::milli>& aDuration);
         void yield() noexcept;
         void relax() noexcept;
-        uint64_t elapsed_ms() noexcept;
-        uint64_t elapsed_us() noexcept;
-        uint64_t elapsed_ns() noexcept;
-        uint64_t program_elapsed_ms() noexcept;
-        uint64_t program_elapsed_us() noexcept;
-        uint64_t program_elapsed_ns() noexcept;
+        std::uint64_t elapsed_ms() noexcept;
+        std::uint64_t elapsed_us() noexcept;
+        std::uint64_t elapsed_ns() noexcept;
 
         inline void relax() noexcept
         {
             cpu_relax();
         }
+    }
+
+    namespace this_process
+    {
+        std::uint64_t elapsed_ms() noexcept;
+        std::uint64_t elapsed_us() noexcept;
+        std::uint64_t elapsed_ns() noexcept;
     }
 
     class NEOLIB_EXPORT thread : public i_thread, public waitable, private noncopyable

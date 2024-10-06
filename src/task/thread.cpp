@@ -55,40 +55,47 @@ namespace neolib
             std::this_thread::yield();
         }
 
-        uint64_t elapsed_ms() noexcept
+        std::uint64_t elapsed_ms() noexcept
         {
             return elapsed_us() / 1000;
         }
 
-        uint64_t elapsed_us() noexcept
+        std::uint64_t elapsed_us() noexcept
         {
             return elapsed_ns() / 1000;
         }
 
-        uint64_t elapsed_ns() noexcept
+        std::uint64_t elapsed_ns() noexcept
         {
             using namespace boost::chrono;
-            return duration_cast<nanoseconds>(thread_clock::time_point(thread_clock::now()).time_since_epoch()).count();
+            return duration_cast<nanoseconds>(thread_clock::now().time_since_epoch()).count();
+        }
+    }
+
+    namespace this_process
+    {
+        std::uint64_t elapsed_ms() noexcept
+        {
+            return elapsed_us() / 1000;
         }
 
-        uint64_t program_elapsed_ms() noexcept
+        std::uint64_t elapsed_us() noexcept
         {
-            return program_elapsed_us() / 1000;
-        }
-
-        uint64_t program_elapsed_us() noexcept
-        {
-            return program_elapsed_ns() / 1000;
+            return elapsed_ns() / 1000;
         }
 
         namespace
         {
-            uint64_t sProgramStartTime_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::time_point(std::chrono::high_resolution_clock::now()).time_since_epoch()).count();
+            std::uint64_t sProgramStartTime_ns = 
+                std::chrono::duration_cast<std::chrono::nanoseconds>(
+                    std::chrono::high_resolution_clock::now().time_since_epoch()).count();
         }
 
-        uint64_t program_elapsed_ns() noexcept
+        std::uint64_t elapsed_ns() noexcept
         {
-            return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::time_point(std::chrono::high_resolution_clock::now()).time_since_epoch()).count() - sProgramStartTime_ns;
+            return std::chrono::duration_cast<std::chrono::nanoseconds>(
+                std::chrono::high_resolution_clock::now().time_since_epoch()).count() - 
+                sProgramStartTime_ns;
         }
     }
 
