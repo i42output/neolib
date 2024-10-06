@@ -181,6 +181,10 @@ namespace neolib
                 return trigger_result::Unaccepted;
             }
         }
+        trigger_result operator()(Args... aArgs) const
+        {
+            return trigger(aArgs...);
+        }
         slot_proxy<Args...> operator()(std::function<void(Args...)> const& aCallback) const
         {
             return slot_proxy<Args...>{ make_ref<slot<Args...>>(*this, aCallback) };

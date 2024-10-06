@@ -1,6 +1,7 @@
 #include <neolib/task/event.hpp>
 #include <neolib/task/async_thread.hpp>
 #include <neolib/task/timer.hpp>
+#include <boost/signals2/signal.hpp>
 
 namespace test
 {
@@ -61,4 +62,32 @@ int main()
 			throw std::logic_error("failed");
 		}
 	}
+
+	std::cout << std::endl;
+
+	neolib::event<int> e1;
+	int total1 = 0;
+	e1([&](int) 
+	{ 
+		++total1;
+	});
+	auto start1 = std::chrono::high_resolution_clock::now();
+	for (int i = 0; i < 10000000; ++i)
+		e1(42);
+	auto end1 = std::chrono::high_resolution_clock::now();
+	std::cout << "neolib event emit rate: " << std::fixed << 
+		total1 / std::chrono::duration<double>(end1 - start1).count() << "/sec" << std::endl;
+
+	boost::signals2::signal<void(int)> e2;
+	int total2 = 0;
+	e2.connect([&](int)
+		{
+			++total2;
+		});
+	auto start2 = std::chrono::high_resolution_clock::now();
+	for (int i = 0; i < 10000000; ++i)
+		e2(42);
+	auto end2 = std::chrono::high_resolution_clock::now();
+	std::cout << "Boost.Signals2 emit rate: " << std::fixed << 
+		total2 / std::chrono::duration<double>(end2 - start2).count() << "/sec" << std::endl;
 }
