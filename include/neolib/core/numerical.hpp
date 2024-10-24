@@ -1915,9 +1915,10 @@ namespace neolib
         }
 
         template <typename T>
-        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const std::vector<basic_vector<T, 3u>>& aVertices, const basic_matrix<T, 3u, 3u>& aTransformation = basic_matrix<T, 3u, 3u>::identity())
+        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const std::vector<basic_vector<T, 3u>>& aVertices, const basic_matrix<T, 4u, 4u>& aTransformation = basic_matrix<T, 4u, 4u>::identity())
         {
-            return to_aabb_2d(aVertices.begin(), aVertices.end(), aTransformation);
+            auto const partialResult = to_aabb(aVertices.begin(), aVertices.end(), aTransformation);
+            return basic_aabb_2d<basic_vector<T, 2u>>{ partialResult.min.xy, partialResult.max.xy };
         }
 
         template <typename Vertex>
