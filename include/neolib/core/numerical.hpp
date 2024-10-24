@@ -1547,7 +1547,7 @@ namespace neolib
             }
             else
             {
-                return mat33{ { std::cos(az), std::sin(az), zero },{ -std::sin(az), std::cos(az), zero },{ zero, zero, one } };
+                return basic_matrix<T, 3u, 3u>{ { std::cos(az), std::sin(az), zero },{ -std::sin(az), std::cos(az), zero },{ zero, zero, one } };
             }
         }
 
