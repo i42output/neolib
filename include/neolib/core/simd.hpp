@@ -66,6 +66,14 @@ namespace neolib
         return avxRegister[index];
 #endif
     }
+    inline float to_scalar(__m256 const& avxRegister, std::size_t index)
+    {
+#ifdef _WIN32
+        return avxRegister.m256_f32[index];
+#else
+        return avxRegister[index];
+#endif
+    }
 #endif
 
 #if defined(USE_EMM) || defined(USE_EMM_DYNAMIC) 
@@ -80,16 +88,28 @@ namespace neolib
 #endif
 
 #if defined(USE_AVX) || defined(USE_AVX_DYNAMIC)
-    inline double avx_simd_fma_4d(double x1, double x2, double y1, double y2, double z1, double z2, double w1, double w2)
+    template <std::floating_point T>
+    inline T avx_simd_fma_4d(T x1, T x2, T y1, T y2, T z1, T z2, T w1, T w2)
     {
-        alignas(32) __m256d lhs = _mm256_set_pd(x1, y1, z1, w1);
-        alignas(32) __m256d rhs = _mm256_set_pd(x2, y2, z2, w2);
-        alignas(32) __m256d ans = _mm256_mul_pd(lhs, rhs);
-        return to_scalar(ans, 0) + to_scalar(ans, 1) + to_scalar(ans, 2) + to_scalar(ans, 3);
+        if constexpr (std::is_same_v<T, double>)
+        {
+            alignas(32) __m256d lhs = _mm256_set_pd(x1, y1, z1, w1);
+            alignas(32) __m256d rhs = _mm256_set_pd(x2, y2, z2, w2);
+            alignas(32) __m256d ans = _mm256_mul_pd(lhs, rhs);
+            return to_scalar(ans, 0) + to_scalar(ans, 1) + to_scalar(ans, 2) + to_scalar(ans, 3);
+        }
+        else
+        {
+            alignas(32) __m256 lhs = _mm256_set_ps(x1, y1, z1, w1, 0.0f, 0.0f, 0.0f, 0.0f);
+            alignas(32) __m256 rhs = _mm256_set_ps(x2, y2, z2, w2, 0.0f, 0.0f, 0.0f, 0.0f);
+            alignas(32) __m256 ans = _mm256_mul_ps(lhs, rhs);
+            return to_scalar(ans, 0) + to_scalar(ans, 1) + to_scalar(ans, 2) + to_scalar(ans, 3);
+        }
     }
 #endif
 
-    inline double fake_simd_fma_4d(double x1, double x2, double y1, double y2, double z1, double z2, double w1, double w2)
+    template <std::floating_point T>
+    inline T fake_simd_fma_4d(T x1, T x2, T y1, T y2, T z1, T z2, T w1, T w2)
     {
         return x1 * x2 + y1 * y2 + z1 * z2 + w1 * w2;
     }
@@ -97,7 +117,8 @@ namespace neolib
 #if defined(USE_AVX)
     #define simd_fma_4d avx_simd_fma_4d
 #elif defined(USE_AVX_DYNAMIC)
-    inline double simd_fma_4d(double x1, double x2, double y1, double y2, double z1, double z2, double w1, double w2)
+    template <std::floating_point T>
+    inline T simd_fma_4d(T x1, T x2, T y1, T y2, T z1, T z2, T w1, T w2)
     {
         if (use_simd())
             return avx_simd_fma_4d(x1, x2, y1, y2, z1, z2, w1, w2);
@@ -109,19 +130,34 @@ namespace neolib
 #endif
 
 #if defined(USE_AVX) || defined(USE_AVX_DYNAMIC)
-    inline void avx_simd_mul_4d(double x1, double x2, double y1, double y2, double z1, double z2, double w1, double w2, double& a, double& b, double& c, double& d)
+    template <std::floating_point T>
+    inline void avx_simd_mul_4d(T x1, T x2, T y1, T y2, T z1, T z2, T w1, T w2, T& a, T& b, T& c, T& d)
     {
-        alignas(32) __m256d lhs = _mm256_set_pd(x1, y1, z1, w1);
-        alignas(32) __m256d rhs = _mm256_set_pd(x2, y2, z2, w2);
-        alignas(32) __m256d ans = _mm256_mul_pd(lhs, rhs);
-        a = to_scalar(ans, 0);
-        b = to_scalar(ans, 1);
-        c = to_scalar(ans, 2);
-        d = to_scalar(ans, 3);
+        if constexpr (std::is_same_v<T, double>)
+        {
+            alignas(32) __m256d lhs = _mm256_set_pd(x1, y1, z1, w1);
+            alignas(32) __m256d rhs = _mm256_set_pd(x2, y2, z2, w2);
+            alignas(32) __m256d ans = _mm256_mul_pd(lhs, rhs);
+            a = to_scalar(ans, 0);
+            b = to_scalar(ans, 1);
+            c = to_scalar(ans, 2);
+            d = to_scalar(ans, 3);
+        }
+        else
+        {
+            alignas(32) __m256 lhs = _mm256_set_ps(x1, y1, z1, w1, 0.0f, 0.0f, 0.0f, 0.0f);
+            alignas(32) __m256 rhs = _mm256_set_ps(x2, y2, z2, w2, 0.0f, 0.0f, 0.0f, 0.0f);
+            alignas(32) __m256 ans = _mm256_mul_ps(lhs, rhs);
+            a = to_scalar(ans, 0);
+            b = to_scalar(ans, 1);
+            c = to_scalar(ans, 2);
+            d = to_scalar(ans, 3);
+        }
     }
 #endif
 
-    inline void fake_simd_mul_4d(double x1, double x2, double y1, double y2, double z1, double z2, double w1, double w2, double& a, double& b, double& c, double& d)
+    template <std::floating_point T>
+    inline void fake_simd_mul_4d(T x1, T x2, T y1, T y2, T z1, T z2, T w1, T w2, T& a, T& b, T& c, T& d)
     {
         a = x1 * x2;
         b = y1 * y2;
@@ -132,7 +168,8 @@ namespace neolib
 #if defined(USE_AVX)
     #define simd_mul_4d avx_simd_mul_4d
 #elif defined(USE_AVX_DYNAMIC)
-    inline void simd_mul_4d(double x1, double x2, double y1, double y2, double z1, double z2, double w1, double w2, double& a, double& b, double& c, double& d)
+    template <std::floating_point T>
+    inline void simd_mul_4d(T x1, T x2, T y1, T y2, T z1, T z2, T w1, T w2, T& a, T& b, T& c, T& d)
     {
         if (use_simd())
             avx_simd_mul_4d(x1, x2, y1, y2, z1, z2, w1, w2, a, b, c, d);

@@ -565,6 +565,18 @@ namespace neolib
         using vec3f = vector3f;
         using vec4f = vector4f;
 
+        using vec2f_list = std::vector<vec2f>;
+        using vec3f_list = std::vector<vec3f>;
+
+        using optional_vec2f_list = optional<vec2f_list>;
+        using optional_vec3f_list = optional<vec3f_list>;
+
+        using vertices_2df = vec2f_list;
+        using verticesf = vec3f_list;
+
+        using optional_vertices_2d_t = optional_vec2_list;
+        using optional_vertices_t = optional_vec3_list;
+
         using i32 = int32_t;
         using i64 = int64_t;
 
@@ -961,7 +973,7 @@ namespace neolib
                 for (std::uint32_t column = 0; column < Columns; ++column)
                     for (std::uint32_t row = 0; row < Rows; ++row)
                     {
-                         std::modf((*this)[column][row] / aEpsilon + 0.5, &result[column][row]);
+                         std::modf((*this)[column][row] / aEpsilon + static_cast<value_type>(0.5), &result[column][row]);
                          result[column][row] *= aEpsilon;
                     }
                 return result;
@@ -1475,7 +1487,7 @@ namespace neolib
                 return right;
             basic_vector<T, 3u, column_vector> result;
             for (std::uint32_t row = 0u; row < 3u; ++row)
-                result[row] = static_cast<T>(simd_fma_4d(left[0][row], right[0], left[1][row], right[1], left[2][row], right[2], left[3][row], 1.0));
+                result[row] = static_cast<T>(simd_fma_4d(left[0][row], right[0], left[1][row], right[1], left[2][row], right[2], left[3][row], static_cast<T>(1.0)));
             return result;
         }
 
@@ -1491,64 +1503,72 @@ namespace neolib
             return result;
         }
 
-        inline mat33 rotation_matrix(const vec3& axis, scalar angle, scalar epsilon = 0.00001)
+        template <std::floating_point T>
+        inline basic_matrix<T, 3u, 3u> rotation_matrix(const basic_vector<T, 3u>& axis, T angle, T epsilon = static_cast<T>(0.00001))
         {
             if (std::abs(angle) <= epsilon)
-                return mat33::identity();
-            else if (std::abs(angle - boost::math::constants::pi<scalar>()) <= epsilon)
-                return -mat33::identity();
-            scalar const s = std::sin(angle);
-            scalar const c = std::cos(angle);
-            scalar const a = 1.0 - c;
-            scalar const ax = a * axis.x;
-            scalar const ay = a * axis.y;
-            scalar const az = a * axis.z;
-            return mat33{
+                return basic_matrix<T, 3u, 3u>::identity();
+            else if (std::abs(angle - boost::math::constants::pi<T>()) <= epsilon)
+                return -basic_matrix<T, 3u, 3u>::identity();
+            T const s = std::sin(angle);
+            T const c = std::cos(angle);
+            T const a = static_cast<T>(1.0) - c;
+            T const ax = a * axis.x;
+            T const ay = a * axis.y;
+            T const az = a * axis.z;
+            return basic_matrix<T, 3u, 3u>{
                 { ax * axis.x + c, ax * axis.y + axis.z * s, ax * axis.z - axis.y * s },
                 { ay * axis.x - axis.z * s, ay * axis.y + c, ay * axis.z + axis.x * s },
                 { az * axis.x + axis.y * s, az * axis.y - axis.x * s, az * axis.z + c } }.round_to(epsilon);
         }
 
-        inline mat33 rotation_matrix(const vec3& vectorA, const vec3& vectorB, scalar epsilon = 0.00001)
+        template <std::floating_point T>
+        inline basic_matrix<T, 3u, 3u> rotation_matrix(const basic_vector<T, 3u>& vectorA, const basic_vector<T, 3u>& vectorB, T epsilon = static_cast<T>(0.00001))
         {
             auto const nva = vectorA.normalized();
             auto const nvb = vectorB.normalized();
             return rotation_matrix(nva.cross(nvb).normalized(), std::acos(nva.dot(nvb)), epsilon);
         }
 
-        inline mat33 rotation_matrix(const vec3& angles)
+        template <std::floating_point T>
+        inline basic_matrix<T, 3u, 3u> rotation_matrix(const basic_vector<T, 3u>& angles)
         {
-            scalar ax = angles.x;
-            scalar ay = angles.y;
-            scalar az = angles.z;
-            if (ax != 0.0 || ay != 0.0)
+            T ax = angles.x;
+            T ay = angles.y;
+            T az = angles.z;
+            T const zero = constants::zero<T>;
+            T const one = constants::one<T>;
+            if (ax != zero || ay != zero)
             {
-                mat33 rx = { { 1.0, 0.0, 0.0 },{ 0.0, std::cos(ax), std::sin(ax) },{ 0.0, -std::sin(ax), std::cos(ax) } };
-                mat33 ry = { { std::cos(ay), 0.0, -std::sin(ay) },{ 0.0, 1.0, 0.0 },{ std::sin(ay), 0.0, std::cos(ay) } };
-                mat33 rz = { { std::cos(az), std::sin(az), 0.0 },{ -std::sin(az), std::cos(az), 0.0 },{ 0.0, 0.0, 1.0 } };
+                basic_matrix<T, 3u, 3u> rx = { { one, zero, zero },{ zero, std::cos(ax), std::sin(ax) },{ zero, -std::sin(ax), std::cos(ax) } };
+                basic_matrix<T, 3u, 3u> ry = { { std::cos(ay), zero, -std::sin(ay) },{ zero, one, zero },{ std::sin(ay), zero, std::cos(ay) } };
+                basic_matrix<T, 3u, 3u> rz = { { std::cos(az), std::sin(az), zero },{ -std::sin(az), std::cos(az), zero },{ zero, zero, one } };
                 return rz * ry * rx;
             }
             else
             {
-                return mat33{ { std::cos(az), std::sin(az), 0.0 },{ -std::sin(az), std::cos(az), 0.0 },{ 0.0, 0.0, 1.0 } };
+                return mat33{ { std::cos(az), std::sin(az), zero },{ -std::sin(az), std::cos(az), zero },{ zero, zero, one } };
             }
         }
 
-        inline mat44 affine_rotation_matrix(const vec3& angles)
+        template <std::floating_point T>
+        inline basic_matrix<T, 4u, 4u> affine_rotation_matrix(const basic_vector<T, 3u>& angles)
         {
-            scalar ax = angles.x;
-            scalar ay = angles.y;
-            scalar az = angles.z;
-            if (ax != 0.0 || ay != 0.0)
+            T ax = angles.x;
+            T ay = angles.y;
+            T az = angles.z;
+            T const zero = constants::zero<T>;
+            T const one = constants::one<T>;
+            if (ax != zero || ay != zero)
             {
-                mat44 rx = { { 1.0, 0.0, 0.0, 0.0 },{ 0.0, std::cos(ax), std::sin(ax), 0.0 },{ 0.0, -std::sin(ax), std::cos(ax), 0.0 },{0.0, 0.0, 0.0, 1.0} };
-                mat44 ry = { { std::cos(ay), 0.0, -std::sin(ay), 0.0 },{ 0.0, 1.0, 0.0, 0.0 },{ std::sin(ay), 0.0, std::cos(ay), 0.0 },{0.0, 0.0, 0.0, 1.0} };
-                mat44 rz = { { std::cos(az), std::sin(az), 0.0, 0.0 },{ -std::sin(az), std::cos(az), 0.0, 0.0 },{ 0.0, 0.0, 1.0, 0.0 },{0.0, 0.0, 0.0, 1.0} };
+                basic_matrix<T, 4u, 4u> rx = { { one, zero, zero, zero },{ zero, std::cos(ax), std::sin(ax), zero },{ zero, -std::sin(ax), std::cos(ax), zero },{zero, zero, zero, one} };
+                basic_matrix<T, 4u, 4u> ry = { { std::cos(ay), zero, -std::sin(ay), zero },{ zero, one, zero, zero },{ std::sin(ay), zero, std::cos(ay), zero },{zero, zero, zero, one} };
+                basic_matrix<T, 4u, 4u> rz = { { std::cos(az), std::sin(az), zero, zero },{ -std::sin(az), std::cos(az), zero, zero },{ zero, zero, one, zero },{zero, zero, zero, one} };
                 return rz * ry * rx;
             }
             else
             {
-                return mat44{ { std::cos(az), std::sin(az), 0.0, 0.0 },{ -std::sin(az), std::cos(az), 0.0, 0.0 },{ 0.0, 0.0, 1.0, 0.0 },{0.0, 0.0, 0.0, 1.0} };
+                return basic_matrix<T, 4u, 4u>{ { std::cos(az), std::sin(az), zero, zero },{ -std::sin(az), std::cos(az), zero, zero },{ zero, zero, one, zero },{zero, zero, zero, one} };
             }
         }
 
@@ -1631,41 +1651,53 @@ namespace neolib
 
         // AABB
 
-        struct aabb
+        template <typename Vertex>
+        struct basic_aabb
         {
-            using abstract_type = aabb;
+            using abstract_type = basic_aabb;
 
-            vec3 min;
-            vec3 max;
-            aabb() : min{}, max{} {}
-            aabb(const vec3& aMin, const vec3& aMax) : min{ aMin }, max{ aMax } {}
+            Vertex min;
+            Vertex max;
+            basic_aabb() : min{}, max{} {}
+            basic_aabb(const Vertex& aMin, const Vertex& aMax) : min{ aMin }, max{ aMax } {}
         };
 
-        inline vec3 aabb_origin(const aabb& aAabb)
+        using aabb = basic_aabb<vec3>;
+        using aabbf = basic_aabb<vec3f>;
+
+        template <typename Vertex>
+        inline Vertex aabb_origin(const basic_aabb<Vertex>& aAabb)
         {
             return aAabb.min + (aAabb.max - aAabb.min) / 2.0;
         }
 
-        inline vec3 aabb_extents(const aabb& aAabb)
+        template <typename Vertex>
+        inline Vertex aabb_extents(const basic_aabb<Vertex>& aAabb)
         {
             return aAabb.max - aAabb.min;
         }
 
-        template <typename... Transforms>
-        inline aabb aabb_transform(const aabb& aAabb, const Transforms&... aTransforms)
+        template <typename Vertex, typename FirstTransform, typename... RemainingTransforms>
+        inline basic_aabb<Vertex> aabb_transform(const basic_aabb<Vertex>& aAabb, const FirstTransform& aFirstTransform, const RemainingTransforms&... aRemainingTransforms)
         {
-            std::array<vec3, 8> boxVertices =
+            if constexpr (sizeof...(RemainingTransforms) == 0u)
             {
-                (aTransforms * ... * vec3{ aAabb.min.x, aAabb.min.y, aAabb.min.z }),
-                (aTransforms * ... * vec3{ aAabb.max.x, aAabb.min.y, aAabb.min.z }),
-                (aTransforms * ... * vec3{ aAabb.min.x, aAabb.max.y, aAabb.min.z }),
-                (aTransforms * ... * vec3{ aAabb.max.x, aAabb.max.y, aAabb.min.z }),
-                (aTransforms * ... * vec3{ aAabb.min.x, aAabb.min.y, aAabb.max.z }),
-                (aTransforms * ... * vec3{ aAabb.max.x, aAabb.min.y, aAabb.max.z }),
-                (aTransforms * ... * vec3{ aAabb.min.x, aAabb.max.y, aAabb.max.z }),
-                (aTransforms * ... * vec3{ aAabb.max.x, aAabb.max.y, aAabb.max.z })
+                if (aFirstTransform.is_identity())
+                    return aAabb;
+            }
+            using coordinate_t = typename Vertex::value_type;
+            std::array<Vertex, 8> boxVertices =
+            {
+                ((aFirstTransform * ... * aRemainingTransforms) * basic_vector<coordinate_t, 4u>{ aAabb.min.x, aAabb.min.y, aAabb.min.z, coordinate_t{} }).xyz,
+                ((aFirstTransform * ... * aRemainingTransforms) * basic_vector<coordinate_t, 4u>{ aAabb.max.x, aAabb.min.y, aAabb.min.z, coordinate_t{} }).xyz,
+                ((aFirstTransform * ... * aRemainingTransforms) * basic_vector<coordinate_t, 4u>{ aAabb.min.x, aAabb.max.y, aAabb.min.z, coordinate_t{} }).xyz,
+                ((aFirstTransform * ... * aRemainingTransforms) * basic_vector<coordinate_t, 4u>{ aAabb.max.x, aAabb.max.y, aAabb.min.z, coordinate_t{} }).xyz,
+                ((aFirstTransform * ... * aRemainingTransforms) * basic_vector<coordinate_t, 4u>{ aAabb.min.x, aAabb.min.y, aAabb.max.z, coordinate_t{} }).xyz,
+                ((aFirstTransform * ... * aRemainingTransforms) * basic_vector<coordinate_t, 4u>{ aAabb.max.x, aAabb.min.y, aAabb.max.z, coordinate_t{} }).xyz,
+                ((aFirstTransform * ... * aRemainingTransforms) * basic_vector<coordinate_t, 4u>{ aAabb.min.x, aAabb.max.y, aAabb.max.z, coordinate_t{} }).xyz,
+                ((aFirstTransform * ... * aRemainingTransforms) * basic_vector<coordinate_t, 4u>{ aAabb.max.x, aAabb.max.y, aAabb.max.z, coordinate_t{} }).xyz
             };
-            aabb result{ boxVertices[0], boxVertices[0] };
+            basic_aabb<Vertex> result{ boxVertices[0], boxVertices[0] };
             for (auto const& v : boxVertices)
             {
                 result.min = result.min.min(v);
@@ -1674,22 +1706,25 @@ namespace neolib
             return result;
         }
 
-        inline aabb to_aabb(const vec3& aOrigin, scalar aSize)
+        template <typename T>
+        inline basic_aabb<basic_vector<T, 3u>> to_aabb(const basic_vector<T, 3u>& aOrigin, scalar aSize)
         {
-            return aabb{ aOrigin - aSize / 2.0, aOrigin + aSize / 2.0 };
+            return basic_aabb<basic_vector<T, 3u>>{ aOrigin - aSize / 2.0, aOrigin + aSize / 2.0 };
         }
 
-        inline aabb to_aabb(const vec3& aOrigin, const vec3& aSize)
+        template <typename T>
+        inline basic_aabb<basic_vector<T, 3u>> to_aabb(const basic_vector<T, 3u>& aOrigin, const basic_vector<T, 3u>& aSize)
         {
-            return aabb{ aOrigin - aSize / 2.0, aOrigin + aSize / 2.0 };
+            return basic_aabb<basic_vector<T, 3u>>{ aOrigin - aSize / 2.0, aOrigin + aSize / 2.0 };
         }
 
-        template <typename VertexIter>
-        inline aabb to_aabb(VertexIter aBegin, VertexIter aEnd, const mat44& aTransformation = mat44::identity())
+        template <typename VertexIter, typename Vertex = typename std::iterator_traits<VertexIter>::value_type>
+        inline basic_aabb<Vertex> to_aabb(VertexIter aBegin, VertexIter aEnd, 
+            const basic_matrix<typename Vertex::value_type, 4u, 4u>& aTransformation = basic_matrix<typename Vertex::value_type, 4u, 4u>::identity())
         {
             if (aBegin == aEnd)
-                return aabb_transform(aabb{}, aTransformation);
-            aabb result{ aBegin->xyz, aBegin->xyz };
+                return aabb_transform(basic_aabb<Vertex>{}, aTransformation);
+            basic_aabb<Vertex> result{ aBegin->xyz, aBegin->xyz };
             for (auto i = std::next(aBegin); i != aEnd; ++i)
             {
                 result.min = result.min.min(i->xyz);
@@ -1698,52 +1733,62 @@ namespace neolib
             return aabb_transform(result, aTransformation);
         }
 
-        inline aabb to_aabb(const vertices& aVertices, const mat44& aTransformation = mat44::identity())
+        template <typename T>
+        inline basic_aabb<basic_vector<T, 3u>> to_aabb(const std::vector<basic_vector<T, 3u>>& aVertices, const basic_matrix<T, 4u, 4u>& aTransformation = basic_matrix<T, 4u, 4u>::identity())
         {
             return to_aabb(aVertices.begin(), aVertices.end(), aTransformation);
         }
 
-        inline bool operator==(const aabb& left, const aabb& right)
+        template <typename Vertex>
+        inline bool operator==(const basic_aabb<Vertex>& left, const basic_aabb<Vertex>& right)
         {
             return left.min == right.min && left.max == right.max;
         }
 
-        inline bool operator<(const aabb& left, const aabb& right)
+        template <typename Vertex>
+        inline bool operator<(const basic_aabb<Vertex>& left, const basic_aabb<Vertex>& right)
         {
             return std::forward_as_tuple(left.min.z, left.min.y, left.min.x, left.max.z, left.max.y, left.max.x) <
                 std::forward_as_tuple(right.min.z, right.min.y, right.min.x, right.max.z, right.max.y, right.max.x);
         }
 
-        inline std::partial_ordering operator<=>(const aabb& left, const aabb& right)
+        template <typename Vertex>
+        inline std::partial_ordering operator<=>(const basic_aabb<Vertex>& left, const basic_aabb<Vertex>& right)
         {
             return std::forward_as_tuple(left.min.z, left.min.y, left.min.x, left.max.z, left.max.y, left.max.x) <=>
                 std::forward_as_tuple(right.min.z, right.min.y, right.min.x, right.max.z, right.max.y, right.max.x);
         }
 
         using optional_aabb = optional<aabb>;
+        using optional_aabbf = optional<aabbf>;
 
-        inline aabb aabb_union(const aabb& left, const aabb& right)
+        template <typename Vertex>
+        inline basic_aabb<Vertex> aabb_union(const basic_aabb<Vertex>& left, const basic_aabb<Vertex>& right)
         {
-            return aabb{ left.min.min(right.min), left.max.max(right.max) };
+            return basic_aabb<Vertex>{ left.min.min(right.min), left.max.max(right.max) };
         }
 
-        inline scalar aabb_volume(const aabb& a)
+        template <typename Vertex>
+        inline scalar aabb_volume(const basic_aabb<Vertex>& a)
         {
             auto extents = a.max - a.min;
             return extents.x * extents.y * (extents.z != 0.0 ? extents.z : 1.0);
         }
 
-        inline bool aabb_contains(const aabb& outer, const aabb& inner)
+        template <typename Vertex>
+        inline bool aabb_contains(const basic_aabb<Vertex>& outer, const basic_aabb<Vertex>& inner)
         {
             return inner.min >= outer.min && inner.max <= outer.max;
         }
 
-        inline bool aabb_contains(const aabb& outer, const vec3& point)
+        template <typename Vertex>
+        inline bool aabb_contains(const basic_aabb<Vertex>& outer, const Vertex& point)
         {
             return point >= outer.min && point <= outer.max;
         }
 
-        inline bool aabb_intersects(const aabb& first, const aabb& second)
+        template <typename Vertex>
+        inline bool aabb_intersects(const basic_aabb<Vertex>& first, const basic_aabb<Vertex>& second)
         {
             if (first.max.x < second.min.x)
                 return false;
@@ -1760,59 +1805,74 @@ namespace neolib
             return true;
         }
 
-        inline bool aabb_intersects(const optional<aabb>& first, const std::optional<aabb>& second)
+        template <typename Vertex>
+        inline bool aabb_intersects(const optional<basic_aabb<Vertex>>& first, const std::optional<basic_aabb<Vertex>>& second)
         {
             if (first == std::nullopt || second == std::nullopt)
                 return false;
             return aabb_intersects(*first, *second);
         }
             
-        inline bool aabb_intersects(const optional<aabb>& first, const aabb& second)
+        template <typename Vertex>
+        inline bool aabb_intersects(const optional<basic_aabb<Vertex>>& first, const basic_aabb<Vertex>& second)
         {
             if (first == std::nullopt)
                 return false;
             return aabb_intersects(*first, second);
         }
 
-        inline bool aabb_intersects(const aabb& first, const std::optional<aabb>& second)
+        template <typename Vertex>
+        inline bool aabb_intersects(const basic_aabb<Vertex>& first, const std::optional<basic_aabb<Vertex>>& second)
         {
             if (second == std::nullopt)
                 return false;
             return aabb_intersects(first, *second);
         }
 
-        struct aabb_2d
+        template <typename Vertex>
+        struct basic_aabb_2d
         {
-            using abstract_type = aabb_2d;
+            using abstract_type = basic_aabb_2d;
 
-            vec2 min;
-            vec2 max;
-            aabb_2d() : min{}, max{} {}
-            aabb_2d(const vec2& aMin, const vec2& aMax) : min{ aMin }, max{ aMax } {}
-            aabb_2d(const aabb& aAabb) : min{ aAabb.min.xy }, max{ aAabb.max.xy } {}
+            Vertex min;
+            Vertex max;
+            basic_aabb_2d() : min{}, max{} {}
+            basic_aabb_2d(const Vertex& aMin, const Vertex& aMax) : min{ aMin }, max{ aMax } {}
+            basic_aabb_2d(const basic_aabb<Vertex>& aAabb) : min{ aAabb.min.xy }, max{ aAabb.max.xy } {}
         };
 
-        inline vec2 aabb_origin(const aabb_2d& aAabb)
+        using aabb_2d = basic_aabb_2d<vec2>;
+        using aabb_2df = basic_aabb_2d<vec2f>;
+
+        template <typename Vertex>
+        inline Vertex aabb_origin(const basic_aabb_2d<Vertex>& aAabb)
         {
             return aAabb.min + (aAabb.max - aAabb.min) / 2.0;
         }
 
-        inline vec2 aabb_extents(const aabb_2d& aAabb)
+        template <typename Vertex>
+        inline Vertex aabb_extents(const basic_aabb_2d<Vertex>& aAabb)
         {
             return aAabb.max - aAabb.min;
         }
 
-        template <typename... Transforms>
-        inline aabb_2d aabb_transform(const aabb_2d& aAabb, const Transforms&... aTransforms)
+        template <typename Vertex, typename FirstTransform, typename... RemainingTransforms>
+        inline basic_aabb_2d<Vertex> aabb_transform(const basic_aabb_2d<Vertex>& aAabb, const FirstTransform& aFirstTransform, const RemainingTransforms&... aRemainingTransforms)
         {
-            std::array<vec3, 4> boxVertices =
+            if constexpr (sizeof...(RemainingTransforms) == 0u)
             {
-                (aTransforms * ... * vec3{ aAabb.min.x, aAabb.min.y, 0.0 }),
-                (aTransforms * ... * vec3{ aAabb.max.x, aAabb.min.y, 0.0 }),
-                (aTransforms * ... * vec3{ aAabb.min.x, aAabb.max.y, 0.0 }),
-                (aTransforms * ... * vec3{ aAabb.max.x, aAabb.max.y, 0.0 })
+                if (aFirstTransform.is_identity())
+                    return aAabb;
+            }
+            using coordinate_t = typename Vertex::value_type;
+            std::array<Vertex, 4> boxVertices =
+            {
+                ((aFirstTransform * ... * aRemainingTransforms) * basic_vector<coordinate_t, 3u>{ aAabb.min.x, aAabb.min.y, coordinate_t{} }).xy,
+                ((aFirstTransform * ... * aRemainingTransforms) * basic_vector<coordinate_t, 3u>{ aAabb.max.x, aAabb.min.y, coordinate_t{} }).xy,
+                ((aFirstTransform * ... * aRemainingTransforms) * basic_vector<coordinate_t, 3u>{ aAabb.min.x, aAabb.max.y, coordinate_t{} }).xy,
+                ((aFirstTransform * ... * aRemainingTransforms) * basic_vector<coordinate_t, 3u>{ aAabb.max.x, aAabb.max.y, coordinate_t{} }).xy
             };
-            aabb_2d result{ boxVertices[0].xy, boxVertices[0].xy };
+            basic_aabb_2d<Vertex> result{ boxVertices[0].xy, boxVertices[0].xy };
             for (auto const& v : boxVertices)
             {
                 result.min = result.min.min(v.xy);
@@ -1821,22 +1881,25 @@ namespace neolib
             return result;
         }
 
-        inline aabb_2d to_aabb_2d(const vec3& aOrigin, scalar aSize)
+        template <typename T>
+        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const basic_vector<T, 2u>& aOrigin, scalar aSize)
         {
-            return aabb_2d{ (aOrigin - aSize / 2.0).xy, (aOrigin + aSize / 2.0).xy };
+            return basic_aabb_2d<basic_vector<T, 2u>>{ (aOrigin - aSize / 2.0).xy, (aOrigin + aSize / 2.0).xy };
         }
 
-        inline aabb_2d to_aabb_2d(const vec3& aOrigin, const vec3& aSize)
+        template <typename T>
+        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const basic_vector<T, 2u>& aOrigin, const basic_vector<T, 2u>& aSize)
         {
-            return aabb_2d{ (aOrigin - aSize / 2.0).xy, (aOrigin + aSize / 2.0).xy };
+            return basic_aabb_2d<basic_vector<T, 2u>>{ (aOrigin - aSize / 2.0).xy, (aOrigin + aSize / 2.0).xy };
         }
 
-        template <typename VertexIter>
-        inline aabb_2d to_aabb_2d(VertexIter aBegin, VertexIter aEnd, const mat44& aTransformation = mat44::identity())
+        template <typename VertexIter, typename Vertex = typename std::iterator_traits<VertexIter>::value_type>
+        inline basic_aabb_2d<Vertex> to_aabb_2d(VertexIter aBegin, VertexIter aEnd,
+            const basic_matrix<typename Vertex::value_type, 3u, 3u>& aTransformation = basic_matrix<typename Vertex::value_type, 3u, 3u>::identity())
         {
             if (aBegin == aEnd)
-                return aabb_transform(aabb_2d{}, aTransformation);
-            aabb_2d result{ aBegin->xy, aBegin->xy };
+                return aabb_transform(basic_aabb_2d<Vertex>{}, aTransformation);
+            basic_aabb_2d<Vertex> result{ aBegin->xy, aBegin->xy };
             for (auto i = std::next(aBegin); i != aEnd; ++i)
             {
                 result.min = result.min.min(i->xy);
@@ -1845,52 +1908,62 @@ namespace neolib
             return aabb_transform(result, aTransformation);
         }
 
-        inline aabb_2d to_aabb_2d(const vertices& aVertices, const mat44& aTransformation = mat44::identity())
+        template <typename T>
+        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb(const std::vector<basic_vector<T, 2u>>& aVertices, const basic_matrix<T, 3u, 3u>& aTransformation = basic_matrix<T, 3u, 3u>::identity())
         {
-            return to_aabb_2d(aVertices.begin(), aVertices.end(), aTransformation);
+            return to_aabb(aVertices.begin(), aVertices.end(), aTransformation);
         }
 
-        inline bool operator==(const aabb_2d& left, const aabb_2d& right)
+        template <typename Vertex>
+        inline bool operator==(const basic_aabb_2d<Vertex>& left, const basic_aabb_2d<Vertex>& right)
         {
             return left.min == right.min && left.max == right.max;
         }
 
-        inline bool operator<(const aabb_2d& left, const aabb_2d& right)
+        template <typename Vertex>
+        inline bool operator<(const basic_aabb_2d<Vertex>& left, const basic_aabb_2d<Vertex>& right)
         {
             return std::forward_as_tuple(left.min.y, left.min.x, left.max.y, left.max.x) <
                 std::forward_as_tuple(right.min.y, right.min.x, right.max.y, right.max.x);
         }
 
-        inline std::partial_ordering operator<=>(const aabb_2d& left, const aabb_2d& right)
+        template <typename Vertex>
+        inline std::partial_ordering operator<=>(const basic_aabb_2d<Vertex>& left, const basic_aabb_2d<Vertex>& right)
         {
             return std::forward_as_tuple(left.min.y, left.min.x, left.max.y, left.max.x) <=>
                 std::forward_as_tuple(right.min.y, right.min.x, right.max.y, right.max.x);
         }
 
         using optional_aabb_2d = optional<aabb_2d>;
+        using optional_aabb_2df = optional<aabb_2df>;
 
-        inline aabb_2d aabb_union(const aabb_2d& left, const aabb_2d& right)
+        template <typename Vertex>
+        inline basic_aabb_2d<Vertex> aabb_union(const basic_aabb_2d<Vertex>& left, const basic_aabb_2d<Vertex>& right)
         {
-            return aabb_2d{ left.min.min(right.min), left.max.max(right.max) };
+            return basic_aabb_2d<Vertex>{ left.min.min(right.min), left.max.max(right.max) };
         }
 
-        inline scalar aabb_volume(const aabb_2d& a)
+        template <typename Vertex>
+        inline scalar aabb_volume(const basic_aabb_2d<Vertex>& a)
         {
             auto extents = a.max - a.min;
             return extents.x * extents.y;
         }
 
-        inline bool aabb_contains(const aabb_2d& outer, const aabb_2d& inner)
+        template <typename Vertex>
+        inline bool aabb_contains(const basic_aabb_2d<Vertex>& outer, const basic_aabb_2d<Vertex>& inner)
         {
             return inner.min >= outer.min && inner.max <= outer.max;
         }
 
-        inline bool aabb_contains(const aabb_2d& outer, const vec2& point)
+        template <typename Vertex>
+        inline bool aabb_contains(const basic_aabb_2d<Vertex>& outer, const Vertex& point)
         {
             return point >= outer.min && point <= outer.max;
         }
 
-        inline bool aabb_intersects(const aabb_2d& first, const aabb_2d& second)
+        template <typename Vertex>
+        inline bool aabb_intersects(const basic_aabb_2d<Vertex>& first, const basic_aabb_2d<Vertex>& second)
         {
             if (first.max.x < second.min.x)
                 return false;
@@ -1903,21 +1976,24 @@ namespace neolib
             return true;
         }
 
-        inline bool aabb_intersects(const optional<aabb_2d>& first, const std::optional<aabb_2d>& second)
+        template <typename Vertex>
+        inline bool aabb_intersects(const optional<basic_aabb_2d<Vertex>>& first, const std::optional<basic_aabb_2d<Vertex>>& second)
         {
             if (first == std::nullopt || second == std::nullopt)
                 return false;
             return aabb_intersects(*first, *second);
         }
 
-        inline bool aabb_intersects(const optional<aabb_2d>& first, const aabb_2d& second)
+        template <typename Vertex>
+        inline bool aabb_intersects(const optional<basic_aabb_2d<Vertex>>& first, const basic_aabb_2d<Vertex>& second)
         {
             if (first == std::nullopt)
                 return false;
             return aabb_intersects(*first, second);
         }
 
-        inline bool aabb_intersects(const aabb_2d& first, const std::optional<aabb_2d>& second)
+        template <typename Vertex>
+        inline bool aabb_intersects(const basic_aabb_2d<Vertex>& first, const std::optional<basic_aabb_2d<Vertex>>& second)
         {
             if (second == std::nullopt)
                 return false;
