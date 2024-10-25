@@ -78,22 +78,24 @@ namespace neolib
             constexpr T four = static_cast<T>(4.0);
         }
 
-        template <typename T, typename SFINAE = std::enable_if_t<std::is_scalar_v<T>, sfinae>>
-        inline T lerp(T aX1, T aX2, double aAmount)
+        template <std::floating_point T>
+        inline T lerp(T aX1, T aX2, T aAmount)
         {
-            double x1 = aX1;
-            double x2 = aX2;
+            T x1 = aX1;
+            T x2 = aX2;
             return static_cast<T>((x2 - x1) * aAmount + x1);
         }
-
-        inline angle to_rad(angle aDegrees)
+        
+        template <std::floating_point T>
+        inline T to_rad(T aDegrees)
         {
-            return aDegrees / 180.0 * pi<angle>();
+            return aDegrees / static_cast<T>(180.0) * pi<T>();
         }
 
-        inline angle to_deg(angle aRadians)
+        template <std::floating_point T>
+        inline angle to_deg(T aRadians)
         {
-            return aRadians * 180.0 / pi<angle>();
+            return aRadians * static_cast<T>(180.0) / pi<T>();
         }
 
         struct column_vector {};
@@ -1572,7 +1574,8 @@ namespace neolib
             }
         }
 
-        inline mat44& apply_translation(mat44& aMatrix, const vec3& aTranslation)
+        template <std::floating_point T>
+        inline basic_matrix<T, 4u, 4u>& apply_translation(basic_matrix<T, 4u, 4u>& aMatrix, const basic_vector<T, 3u>& aTranslation)
         {
             // todo: SIMD
             aMatrix[3][0] += aTranslation.x;
@@ -1581,12 +1584,31 @@ namespace neolib
             return aMatrix;
         }
 
-        inline mat44& apply_scaling(mat44& aMatrix, const vec3& aScaling)
+        template <std::floating_point T>
+        inline basic_matrix<T, 4u, 4u>& apply_scaling(basic_matrix<T, 4u, 4u>& aMatrix, const basic_vector<T, 3u>& aScaling)
         {
             // todo: SIMD
             aMatrix[0][0] *= aScaling.x;
             aMatrix[1][1] *= aScaling.y;
             aMatrix[2][2] *= aScaling.z;
+            return aMatrix;
+        }
+
+        template <std::floating_point T>
+        inline basic_matrix<T, 4u, 4u>& apply_translation(basic_matrix<T, 4u, 4u>& aMatrix, const basic_vector<T, 2u>& aTranslation)
+        {
+            // todo: SIMD
+            aMatrix[3][0] += aTranslation.x;
+            aMatrix[3][1] += aTranslation.y;
+            return aMatrix;
+        }
+
+        template <std::floating_point T>
+        inline basic_matrix<T, 4u, 4u>& apply_scaling(basic_matrix<T, 4u, 4u>& aMatrix, const basic_vector<T, 2u>& aScaling)
+        {
+            // todo: SIMD
+            aMatrix[0][0] *= aScaling.x;
+            aMatrix[1][1] *= aScaling.y;
             return aMatrix;
         }
 
@@ -1668,7 +1690,7 @@ namespace neolib
         template <typename Vertex>
         inline Vertex aabb_origin(const basic_aabb<Vertex>& aAabb)
         {
-            return aAabb.min + (aAabb.max - aAabb.min) / 2.0;
+            return aAabb.min + (aAabb.max - aAabb.min) / static_cast<Vertex::value_type>(2.0);
         }
 
         template <typename Vertex>
@@ -1707,15 +1729,15 @@ namespace neolib
         }
 
         template <typename T>
-        inline basic_aabb<basic_vector<T, 3u>> to_aabb(const basic_vector<T, 3u>& aOrigin, scalar aSize)
+        inline basic_aabb<basic_vector<T, 3u>> to_aabb(const basic_vector<T, 3u>& aOrigin, T aSize)
         {
-            return basic_aabb<basic_vector<T, 3u>>{ aOrigin - aSize / 2.0, aOrigin + aSize / 2.0 };
+            return basic_aabb<basic_vector<T, 3u>>{ aOrigin - aSize / static_cast<T>(2.0), aOrigin + aSize / static_cast<T>(2.0) };
         }
 
         template <typename T>
         inline basic_aabb<basic_vector<T, 3u>> to_aabb(const basic_vector<T, 3u>& aOrigin, const basic_vector<T, 3u>& aSize)
         {
-            return basic_aabb<basic_vector<T, 3u>>{ aOrigin - aSize / 2.0, aOrigin + aSize / 2.0 };
+            return basic_aabb<basic_vector<T, 3u>>{ aOrigin - aSize / static_cast<T>(2.0), aOrigin + aSize / static_cast<T>(2.0) };
         }
 
         template <typename VertexIter, typename Vertex = typename std::iterator_traits<VertexIter>::value_type>
@@ -1847,7 +1869,7 @@ namespace neolib
         template <typename Vertex>
         inline Vertex aabb_origin(const basic_aabb_2d<Vertex>& aAabb)
         {
-            return aAabb.min + (aAabb.max - aAabb.min) / 2.0;
+            return aAabb.min + (aAabb.max - aAabb.min) / static_cast<Vertex::value_type>(2.0);
         }
 
         template <typename Vertex>
