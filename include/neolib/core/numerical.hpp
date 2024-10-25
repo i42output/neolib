@@ -1648,7 +1648,7 @@ namespace neolib
             return nearly_equal(*lhs, *rhs, epsilon);
         }
         template <typename T1, typename T2>
-        inline bool nearly_equal(std::pair<T1, T2> const& lhs, std::pair<T1, T2> const& rhs, T epsilon = static_cast<T>(0.00001))
+        inline bool nearly_equal(std::pair<T1, T2> const& lhs, std::pair<T1, T2> const& rhs, std::common_type_t<T1, T2> epsilon = static_cast<std::common_type_t<T1, T2>>(0.00001))
         {
             return nearly_equal(lhs.first, rhs.first, epsilon) && nearly_equal(lhs.second, rhs.second, epsilon);
         }
