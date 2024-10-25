@@ -318,7 +318,7 @@ namespace neolib
             return fake_simd_rand();
     }
 #else
-    #define simd_rand fake_simd_srand
+    #define simd_rand fake_simd_rand
 #endif
 
     template <typename T>
