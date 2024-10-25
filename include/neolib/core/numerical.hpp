@@ -90,7 +90,7 @@ namespace neolib
         }
 
         template <std::floating_point T>
-        inline angle to_deg(T aRadians)
+        inline T to_deg(T aRadians)
         {
             return aRadians * static_cast<T>(180.0) / pi<T>();
         }
