@@ -47,7 +47,7 @@ namespace neolib::ecs
     {
         i64 time = 0ll;
         i64 timestep = chrono::to_flicks(0.01).count();
-        scalar timestepGrowth = 1.75;
+        primitives::scalar timestepGrowth = 1.75;
         i64 maximumTimestep = chrono::to_flicks(0.001).count() * 20;
 
         struct meta : i_component_data::meta

@@ -58,8 +58,11 @@ namespace neolib
     {
         using namespace boost::math::constants;
 
-        using scalar    = double;
-        using angle     = double;
+        namespace primitives
+        {
+            using scalar = double;
+            using angle = double;
+        }
 
         namespace constants
         {
@@ -2026,17 +2029,17 @@ namespace neolib
             return aabb_intersects(first, *second);
         }
 
-        inline vec2 bezier_cubic(vec2 const& p0, vec2 const& p1, vec2 const& p2, vec2 const& p3, scalar t)
+        inline vec2 bezier_cubic(vec2 const& p0, vec2 const& p1, vec2 const& p2, vec2 const& p3, primitives::scalar t)
         {
             return std::pow(1.0 - t, 3.0) * p0 + 3.0 * std::pow(1.0 - t, 2.0) * t * p1 + 3 * (1.0 - t) * std::pow(t, 2.0) * p2 + std::pow(t, 3.0) * p3;
         }
 
-        inline vec2 bezier_cubic_x(vec2 const& p0, vec2 const& p1, vec2 const& p2, vec2 const& p3, scalar x)
+        inline vec2 bezier_cubic_x(vec2 const& p0, vec2 const& p1, vec2 const& p2, vec2 const& p3, primitives::scalar x)
         {
             return bezier_cubic(p0, p1, p2, p3, (x - p0.x) / (p3.x - p0.x));
         }
 
-        inline vec2 bezier_cubic_y(vec2 const& p0, vec2 const& p1, vec2 const& p2, vec2 const& p3, scalar y)
+        inline vec2 bezier_cubic_y(vec2 const& p0, vec2 const& p1, vec2 const& p2, vec2 const& p3, primitives::scalar y)
         {
             return bezier_cubic(p0, p1, p2, p3, (y - p0.y) / (p3.y - p0.y));
         }
@@ -2044,19 +2047,19 @@ namespace neolib
         template <typename T>
         inline basic_vector<T, 2> bezier_cubic(basic_vector<T, 2> const& p0, basic_vector<T, 2> const& p1, basic_vector<T, 2> const& p2, basic_vector<T, 2> const& p3, T t)
         {
-            return bezier_cubic(p0.template as<scalar>(), p1.template as<scalar>(), p2.template as<scalar>(), p3.template as<scalar>(), static_cast<scalar>(t)).template as<T>();
+            return bezier_cubic(p0.template as<primitives::scalar>(), p1.template as<primitives::scalar>(), p2.template as<primitives::scalar>(), p3.template as<primitives::scalar>(), static_cast<primitives::scalar>(t)).template as<T>();
         }
 
         template <typename T>
         inline basic_vector<T, 2> bezier_cubic_x(basic_vector<T, 2> const& p0, basic_vector<T, 2> const& p1, basic_vector<T, 2> const& p2, basic_vector<T, 2> const& p3, T x)
         {
-            return bezier_cubic_x(p0.template as<scalar>(), p1.template as<scalar>(), p2.template as<scalar>(), p3.template as<scalar>(), static_cast<scalar>(x)).template as<T>();
+            return bezier_cubic_x(p0.template as<primitives::scalar>(), p1.template as<primitives::scalar>(), p2.template as<primitives::scalar>(), p3.template as<primitives::scalar>(), static_cast<primitives::scalar>(x)).template as<T>();
         }
 
         template <typename T>
         inline basic_vector<T, 2> bezier_cubic_y(basic_vector<T, 2> const& p0, basic_vector<T, 2> const& p1, basic_vector<T, 2> const& p2, basic_vector<T, 2> const& p3, T y)
         {
-            return bezier_cubic_y(p0.template as<scalar>(), p1.template as<scalar>(), p2.template as<scalar>(), p3.template as<scalar>(), static_cast<scalar>(y)).template as<T>();
+            return bezier_cubic_y(p0.template as<primitives::scalar>(), p1.template as<primitives::scalar>(), p2.template as<primitives::scalar>(), p3.template as<primitives::scalar>(), static_cast<primitives::scalar>(y)).template as<T>();
         }
     }
 

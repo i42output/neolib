@@ -166,7 +166,7 @@ namespace neolib::ecs
             iWaiting = true;
             iCondVar.wait(lock, [&]() { return !iWaiting; });
         }
-        void wait_for(scalar aDuration) final
+        void wait_for(primitives::scalar aDuration) final
         {
             if (!have_thread())
                 throw no_thread();

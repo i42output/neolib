@@ -74,7 +74,7 @@ namespace neolib::ecs
         virtual void terminate() = 0;
         virtual bool waiting() const = 0;
         virtual void wait() = 0;
-        virtual void wait_for(scalar aDuration) = 0;
+        virtual void wait_for(primitives::scalar aDuration) = 0;
         virtual void signal() = 0;
     public:
         virtual void start_thread_if() = 0;

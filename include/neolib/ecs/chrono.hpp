@@ -52,12 +52,12 @@ namespace neolib::ecs
         }
     }
 
-    typedef scalar time_interval;
-    typedef std::optional<time_interval> optional_time_interval;
-    typedef int64_t step_time_interval;
-    typedef std::optional<step_time_interval> optional_step_time_interval;
-    typedef step_time_interval step_time;
-    typedef std::optional<step_time> optional_step_time;
+    using time_interval = primitives::scalar;
+    using optional_time_interval = std::optional<time_interval>;
+    using step_time_interval = std::int64_t;
+    using optional_step_time_interval = std::optional<step_time_interval>;
+    using step_time = step_time_interval;
+    using optional_step_time = std::optional<step_time>;
 
     inline step_time_interval to_step_time(time_interval aTime, step_time_interval aStepInterval)
     {
