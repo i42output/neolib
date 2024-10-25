@@ -894,13 +894,13 @@ namespace neolib
         }
 
         template <typename T, std::uint32_t Size, typename Type>
-        inline basic_vector<T, Size, Type> lerp(const basic_vector<T, Size, Type>& aV1, const basic_vector<T, Size, Type>& aV2, double aAmount)
+        inline basic_vector<T, Size, Type> lerp(const basic_vector<T, Size, Type>& aV1, const basic_vector<T, Size, Type>& aV2, T aAmount)
         {
             basic_vector<T, Size, Type> result;
             for (std::uint32_t i = 0; i < Size; ++i)
             {
-                double x1 = aV1[i];
-                double x2 = aV2[i];
+                T x1 = aV1[i];
+                T x2 = aV2[i];
                 result[i] = static_cast<T>((x2 - x1) * aAmount + x1);
             }
             return result;
