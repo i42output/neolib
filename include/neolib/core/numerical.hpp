@@ -1226,7 +1226,7 @@ namespace neolib
         }
 
         template <typename T, std::uint32_t Rows, std::uint32_t Columns>
-        inline basic_matrix<T, Rows, Columns> operator+(scalar left, const basic_matrix<T, Rows, Columns>& right)
+        inline basic_matrix<T, Rows, Columns> operator+(T left, const basic_matrix<T, Rows, Columns>& right)
         {
             basic_matrix<T, Rows, Columns> result = right;
             result += left;
@@ -1234,13 +1234,13 @@ namespace neolib
         }
 
         template <typename T, std::uint32_t Rows, std::uint32_t Columns>
-        inline basic_matrix<T, Rows, Columns> operator-(scalar left, const basic_matrix<T, Rows, Columns>& right)
+        inline basic_matrix<T, Rows, Columns> operator-(T left, const basic_matrix<T, Rows, Columns>& right)
         {
             return -right + left;
         }
 
         template <typename T, std::uint32_t Rows, std::uint32_t Columns>
-        inline basic_matrix<T, Rows, Columns> operator*(scalar left, const basic_matrix<T, Rows, Columns>& right)
+        inline basic_matrix<T, Rows, Columns> operator*(T left, const basic_matrix<T, Rows, Columns>& right)
         {
             basic_matrix<T, Rows, Columns> result = right;
             result *= left;
@@ -1612,17 +1612,17 @@ namespace neolib
         // Function
 
         template <typename T>
-        inline bool nearly_equal(T lhs, T rhs, scalar epsilon = 0.00001, std::enable_if_t<std::is_floating_point_v<T>, sfinae> = {})
+        inline bool nearly_equal(T lhs, T rhs, T epsilon = static_cast<T>(0.00001), std::enable_if_t<std::is_floating_point_v<T>, sfinae> = {})
         {
-            return static_cast<double>(std::abs(lhs - rhs)) < epsilon;
+            return static_cast<T>(std::abs(lhs - rhs)) < epsilon;
         }
         template <typename T>
-        inline bool nearly_equal(T lhs, T rhs, scalar epsilon = 0.00001, std::enable_if_t<std::is_integral_v<T>, sfinae> = {})
+        inline bool nearly_equal(T lhs, T rhs, T epsilon = static_cast<T>(0.00001), std::enable_if_t<std::is_integral_v<T>, sfinae> = {})
         {
             return lhs == rhs;
         }
         template <typename T, std::uint32_t Size, typename Type = column_vector>
-        inline bool nearly_equal(basic_vector<T, Size, Type> const& lhs, basic_vector<T, Size, Type> const& rhs, scalar epsilon = 0.00001)
+        inline bool nearly_equal(basic_vector<T, Size, Type> const& lhs, basic_vector<T, Size, Type> const& rhs, T epsilon = static_cast<T>(0.00001))
         {
             for (std::uint32_t index = 0; index < Size; ++index)
                 if (!nearly_equal(lhs[index], rhs[index], epsilon))
@@ -1630,7 +1630,7 @@ namespace neolib
             return true;
         }
         template <typename T>
-        inline bool nearly_equal(optional<T> const& lhs, optional<T> const& rhs, scalar epsilon = 0.00001)
+        inline bool nearly_equal(optional<T> const& lhs, optional<T> const& rhs, T epsilon = static_cast<T>(0.00001))
         {
             if (!!lhs != !!rhs)
                 return false;
@@ -1639,7 +1639,7 @@ namespace neolib
             return nearly_equal(*lhs, *rhs, epsilon);
         }
         template <typename T>
-        inline bool nearly_equal(std::optional<T> const& lhs, std::optional<T> const& rhs, scalar epsilon = 0.00001)
+        inline bool nearly_equal(std::optional<T> const& lhs, std::optional<T> const& rhs, T epsilon = static_cast<T>(0.00001))
         {
             if (!!lhs != !!rhs)
                 return false;
@@ -1648,12 +1648,12 @@ namespace neolib
             return nearly_equal(*lhs, *rhs, epsilon);
         }
         template <typename T1, typename T2>
-        inline bool nearly_equal(std::pair<T1, T2> const& lhs, std::pair<T1, T2> const& rhs, scalar epsilon = 0.00001)
+        inline bool nearly_equal(std::pair<T1, T2> const& lhs, std::pair<T1, T2> const& rhs, T epsilon = static_cast<T>(0.00001))
         {
             return nearly_equal(lhs.first, rhs.first, epsilon) && nearly_equal(lhs.second, rhs.second, epsilon);
         }
         template <typename T>
-        inline bool nearly_equal(std::vector<T> const& lhs, std::vector<T> const& rhs, scalar epsilon = 0.00001)
+        inline bool nearly_equal(std::vector<T> const& lhs, std::vector<T> const& rhs, T epsilon = static_cast<T>(0.00001))
         {
             return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(),
                 [epsilon](auto const& lhs, auto const& rhs) { return nearly_equal(lhs, rhs, epsilon); });
@@ -1788,7 +1788,7 @@ namespace neolib
         }
 
         template <typename Vertex>
-        inline scalar aabb_volume(const basic_aabb<Vertex>& a)
+        inline typename Vertex::value_type aabb_volume(const basic_aabb<Vertex>& a)
         {
             auto extents = a.max - a.min;
             return extents.x * extents.y * (extents.z != 0.0 ? extents.z : 1.0);
@@ -1901,7 +1901,7 @@ namespace neolib
         }
 
         template <typename T>
-        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const basic_vector<T, 2u>& aOrigin, scalar aSize)
+        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const basic_vector<T, 2u>& aOrigin, T aSize)
         {
             return basic_aabb_2d<basic_vector<T, 2u>>{ (aOrigin - aSize / 2.0).xy, (aOrigin + aSize / 2.0).xy };
         }
@@ -1970,7 +1970,7 @@ namespace neolib
         }
 
         template <typename Vertex>
-        inline scalar aabb_volume(const basic_aabb_2d<Vertex>& a)
+        inline typename Vertex::value_type aabb_volume(const basic_aabb_2d<Vertex>& a)
         {
             auto extents = a.max - a.min;
             return extents.x * extents.y;
