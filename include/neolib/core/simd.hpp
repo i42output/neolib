@@ -96,14 +96,17 @@ namespace neolib
             alignas(32) __m256d lhs = _mm256_set_pd(x1, y1, z1, w1);
             alignas(32) __m256d rhs = _mm256_set_pd(x2, y2, z2, w2);
             alignas(32) __m256d ans = _mm256_mul_pd(lhs, rhs);
-            return to_scalar(ans, 0) + to_scalar(ans, 1) + to_scalar(ans, 2) + to_scalar(ans, 3);
+            auto const result = to_scalar(ans, 0) + to_scalar(ans, 1) + to_scalar(ans, 2) + to_scalar(ans, 3);
+            return result;
         }
         else
         {
             alignas(32) __m256 lhs = _mm256_set_ps(x1, y1, z1, w1, 0.0f, 0.0f, 0.0f, 0.0f);
             alignas(32) __m256 rhs = _mm256_set_ps(x2, y2, z2, w2, 0.0f, 0.0f, 0.0f, 0.0f);
             alignas(32) __m256 ans = _mm256_mul_ps(lhs, rhs);
-            return to_scalar(ans, 0) + to_scalar(ans, 1) + to_scalar(ans, 2) + to_scalar(ans, 3);
+            auto const result = to_scalar(ans, 0) + to_scalar(ans, 1) + to_scalar(ans, 2) + to_scalar(ans, 3) +
+                to_scalar(ans, 4) + to_scalar(ans, 5) + to_scalar(ans, 6) + to_scalar(ans, 7);
+            return result;
         }
     }
 #endif
