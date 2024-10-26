@@ -606,10 +606,14 @@ namespace neolib
         using vec4u32 = vector4u32;
 
         template <std::size_t VertexCount>
+        using vec2_array = neolib::static_vector<vec2, VertexCount>;
+        template <std::size_t VertexCount>
         using vec3_array = neolib::static_vector<vec3, VertexCount>;
 
         template <std::size_t VertexCount>
-        using vec2_array = neolib::static_vector<vec2, VertexCount>;
+        using vec2f_array = neolib::static_vector<vec2f, VertexCount>;
+        template <std::size_t VertexCount>
+        using vec3f_array = neolib::static_vector<vec3f, VertexCount>;
 
         using avec1i8 = std::array<int8_t, 1>;
         using avec2i8 = std::array<int8_t, 2>;
