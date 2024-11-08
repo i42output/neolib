@@ -46,7 +46,7 @@
 #include <ostream>
 #include <istream>
 #include <boost/math/constants/constants.hpp>
-#include <neolib/core/vecarray.hpp>
+#include <neolib/core/small_vector.hpp>
 #include <neolib/core/swizzle.hpp>
 #include <neolib/core/simd.hpp>
 #include <neolib/core/optional.hpp>
@@ -1509,6 +1509,18 @@ namespace neolib
             return result;
         }
 
+        template <typename T, std::size_t Capacity, std::size_t MaxCapacity, typename Alloc>
+        inline small_vector<basic_vector<T, 3u, column_vector>, Capacity, MaxCapacity, Alloc> operator*(const basic_matrix<T, 4u, 4u>& left, const small_vector<basic_vector<T, 3u, column_vector>, Capacity, MaxCapacity, Alloc>& right)
+        {
+            if (left.is_identity())
+                return right;
+            small_vector<basic_vector<T, 3u, column_vector>, Capacity, MaxCapacity, Alloc> result;
+            result.reserve(right.size());
+            for (auto const& v : right)
+                result.push_back(left * v);
+            return result;
+        }
+
         template <std::floating_point T>
         inline basic_matrix<T, 3u, 3u> rotation_matrix(const basic_vector<T, 3u>& axis, T angle, T epsilon = static_cast<T>(0.00001))
         {
@@ -1665,6 +1677,12 @@ namespace neolib
             return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(),
                 [epsilon](auto const& lhs, auto const& rhs) { return nearly_equal(lhs, rhs, epsilon); });
         }
+        template <typename T, std::size_t Capacity, std::size_t MaxCapacity, typename Alloc>
+        inline bool nearly_equal(small_vector<T, Capacity, MaxCapacity, Alloc> const& lhs, small_vector<T, Capacity, MaxCapacity, Alloc> const& rhs, T epsilon = static_cast<T>(0.00001))
+        {
+            return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(),
+                [epsilon](auto const& lhs, auto const& rhs) { return nearly_equal(lhs, rhs, epsilon); });
+        }
 
         template <typename T, std::size_t D>
         inline basic_vector<T, D> quad_extents(std::array<basic_vector<T, D>, 4> const& aQuad)
@@ -1761,6 +1779,12 @@ namespace neolib
 
         template <typename T>
         inline basic_aabb<basic_vector<T, 3u>> to_aabb(const std::vector<basic_vector<T, 3u>>& aVertices, const basic_matrix<T, 4u, 4u>& aTransformation = basic_matrix<T, 4u, 4u>::identity())
+        {
+            return to_aabb(aVertices.begin(), aVertices.end(), aTransformation);
+        }
+
+        template <typename T, std::size_t Capacity, std::size_t MaxCapacity, typename Alloc>
+        inline basic_aabb<basic_vector<T, 3u>> to_aabb(const small_vector<basic_vector<T, 3u>, Capacity, MaxCapacity, Alloc>& aVertices, const basic_matrix<T, 4u, 4u>& aTransformation = basic_matrix<T, 4u, 4u>::identity())
         {
             return to_aabb(aVertices.begin(), aVertices.end(), aTransformation);
         }
@@ -1942,6 +1966,19 @@ namespace neolib
 
         template <typename T>
         inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const std::vector<basic_vector<T, 3u>>& aVertices, const basic_matrix<T, 4u, 4u>& aTransformation = basic_matrix<T, 4u, 4u>::identity())
+        {
+            auto const partialResult = to_aabb(aVertices.begin(), aVertices.end(), aTransformation);
+            return basic_aabb_2d<basic_vector<T, 2u>>{ partialResult.min.xy, partialResult.max.xy };
+        }
+
+        template <typename T, std::size_t Capacity, std::size_t MaxCapacity, typename Alloc>
+        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const small_vector<basic_vector<T, 2u>, Capacity, MaxCapacity, Alloc>& aVertices, const basic_matrix<T, 3u, 3u>& aTransformation = basic_matrix<T, 3u, 3u>::identity())
+        {
+            return to_aabb_2d(aVertices.begin(), aVertices.end(), aTransformation);
+        }
+
+        template <typename T, std::size_t Capacity, std::size_t MaxCapacity, typename Alloc>
+        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const small_vector<basic_vector<T, 3u>, Capacity, MaxCapacity, Alloc>& aVertices, const basic_matrix<T, 4u, 4u>& aTransformation = basic_matrix<T, 4u, 4u>::identity())
         {
             auto const partialResult = to_aabb(aVertices.begin(), aVertices.end(), aTransformation);
             return basic_aabb_2d<basic_vector<T, 2u>>{ partialResult.min.xy, partialResult.max.xy };
