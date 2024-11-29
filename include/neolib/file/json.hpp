@@ -463,6 +463,10 @@ namespace neolib
         {
             return cache().end();
         }
+        const json_value& operator[](std::size_t aIndex) const
+        {
+            return *cache().at(aIndex);
+        }
     public:
         json_value& push_back(const value_type& aValue)
         {
