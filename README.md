@@ -7,7 +7,6 @@
 * zlib
 
 # Features
-* vecarray container, see [http://i42.co.uk/stuff/vecarray.htm](http://i42.co.uk/stuff/vecarray.htm).
 * segmented_array container, see [http://i42.co.uk/stuff/segmented_array.htm](http://i42.co.uk/stuff/segmented_array.htm).
 * gap_vector container, a gap buffer.
 * neosigslot, see [http://i42.co.uk/stuff/neosigslot.htm](http://i42.co.uk/stuff/neosigslot.htm).
