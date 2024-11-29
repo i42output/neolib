@@ -572,7 +572,8 @@ namespace neolib
                 std::uint32_t lineNumber = 1;
                 for (auto const& outputLine : lines)
                 {
-                    (*iDebugOutput) << std::setw(numberWidth) << lineNumber << (iError && lineNumber == linePos ? ">" : "|") << outputLine << std::endl;
+                    if (std::abs<int>(linePos - lineNumber) <= 5)
+                        (*iDebugOutput) << std::setw(numberWidth) << lineNumber << (iError && lineNumber == linePos ? ">" : "|") << outputLine << std::endl;
                     ++lineNumber;
                 }
                 if (iError)
@@ -604,7 +605,7 @@ namespace neolib
             iAst = std::move(iCst);
             create_ast(&iAst);
 
-            if (iDebugOutput)
+            if (iDebugOutput && iDebugCst)
             {
                 std::vector<std::string> lines;
                 std::istringstream iss{ std::string{ iSource } };
@@ -618,8 +619,7 @@ namespace neolib
                     (*iDebugOutput) << std::setw(numberWidth) << lineNumber << "|" << outputLine << std::endl;
                     ++lineNumber;
                 }
-                if (iDebugCst)
-                    (*iDebugOutput) << debug_print_ast(iAst) << std::endl;
+                (*iDebugOutput) << debug_print_ast(iAst) << std::endl;
             }
         }
 
@@ -1272,8 +1272,7 @@ namespace neolib
         std::unordered_map<cache_key, cache_result, boost::hash<cache_key>> iCache;
         std::ostream* iDebugOutput = nullptr;
         bool iDebugScan = false;
-        bool iDebugSource = true;
-        bool iDebugCst = true;
+        bool iDebugCst = false;
     };
 
     template <typename Symbol>
