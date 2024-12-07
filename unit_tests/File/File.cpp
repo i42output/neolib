@@ -180,13 +180,13 @@ int main(int argc, char** argv)
         ( symbol::EndStatement >> ';' ),
         ( symbol::Expression >> ((symbol::Term , 
             +repeat((choice(
-                symbol::Add <=> "math.operator.add"_concept_associate_left | 
-                symbol::Subtract <=> "math.operator.subtract"_concept_associate_left), symbol::Term))) <=> "math.addition"_concept) ),
+                symbol::Add <=> "math.operator.add"_infix_concept | 
+                symbol::Subtract <=> "math.operator.subtract"_infix_concept), symbol::Term))) <=> "math.addition"_concept) ),
         ( symbol::Expression >> symbol::Term ),
         ( symbol::Term >> ((symbol::Factor ,
             +repeat((choice(
-                symbol::Multiply <=> "math.operator.multiply"_concept_associate_left | 
-                symbol::Divide <=> "math.operator.divide"_concept_associate_left), symbol::Factor))) <=> "math.multiplication"_concept) ),
+                symbol::Multiply <=> "math.operator.multiply"_infix_concept | 
+                symbol::Divide <=> "math.operator.divide"_infix_concept), symbol::Factor))) <=> "math.multiplication"_concept) ),
         ( symbol::Term >> symbol::Factor ),
         ( symbol::Factor >> symbol::Primary ),
         ( symbol::Primary >> 

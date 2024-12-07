@@ -117,8 +117,7 @@ namespace neolib
     enum class concept_association
     {
         None,
-        Left,
-        Right
+        Infix
     };
 
     template <typename Symbol>
@@ -731,7 +730,7 @@ namespace neolib
                         std::make_move_iterator(aNode->children.begin()), std::make_move_iterator(aNode->children.end()));
                     return std::prev(pos);
                 }
-                else if (aNode->c.value().association == concept_association::Left)
+                else if (aNode->c.value().association == concept_association::Infix)
                 {
                     aNode->set_concept(without_association(aNode->c));
                     auto lhs = std::prev(existing);
@@ -743,11 +742,6 @@ namespace neolib
                     existing = aNode->parent->children.erase(lhs);
                     rhs = std::next(existing);
                     return rhs;
-                }
-                else if (aNode->c.value().association == concept_association::Right)
-                {
-                    aNode->set_concept(without_association(aNode->c));
-                    // todo
                 }
             }
 
@@ -1525,16 +1519,10 @@ namespace neolib
     {\
         return neolib::parser_concept<symbol>{ str, len };\
     }\
-    inline neolib::parser_concept<symbol> operator"" _concept_associate_left(const char* str, std::size_t len)\
+    inline neolib::parser_concept<symbol> operator"" _infix_concept(const char* str, std::size_t len)\
     {\
         auto result = neolib::parser_concept<symbol>{ str, len };\
-        result.association = neolib::concept_association::Left;\
-        return result;\
-    }\
-    inline neolib::parser_concept<symbol> operator"" _concept_associate_right(const char* str, std::size_t len)\
-    {\
-        auto result = neolib::parser_concept<symbol>{ str, len };\
-        result.association = neolib::concept_association::Right;\
+        result.association = neolib::concept_association::Infix;\
         return result;\
     }\
     template <typename T>\
