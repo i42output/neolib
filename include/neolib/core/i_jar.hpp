@@ -1,6 +1,6 @@
 // i_jar.hpp
 /*
- *  Copyright (c) 2020 Leigh Johnston.
+ *  Copyright (c) 2020, 2024 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -41,9 +41,9 @@
 
 namespace neolib
 {
-    typedef uint32_t cookie;
-    typedef uint16_t small_cookie;
-    typedef uint64_t large_cookie;
+    using cookie = std::uint32_t;
+    using small_cookie = std::uint16_t;
+    using large_cookie = std::uint64_t;
 
     template<class CookieType>
     constexpr CookieType invalid_cookie = static_cast<CookieType>(~CookieType{});
@@ -52,7 +52,7 @@ namespace neolib
     class i_basic_cookie_consumer
     {
     public:
-        typedef CookieType cookie_type;
+        using cookie_type = CookieType;
     public:
         struct invalid_release : std::logic_error { invalid_release() : std::logic_error("i_basic_cookie_consumer::invalid_release") {} };
     public:
@@ -63,8 +63,8 @@ namespace neolib
         virtual long use_count(cookie_type aCookie) const = 0;
     };
 
-    typedef i_basic_cookie_consumer<cookie> i_cookie_consumer;
-    typedef i_basic_cookie_consumer<small_cookie> i_small_cookie_consumer;
+    using i_cookie_consumer = i_basic_cookie_consumer<cookie>;
+    using i_small_cookie_consumer = i_basic_cookie_consumer<small_cookie>;
 
     struct cookie_invalid : std::logic_error { cookie_invalid() : std::logic_error("neolib::cookie_invalid") {} };
     struct cookie_already_added : std::logic_error { cookie_already_added() : std::logic_error("neolib::cookie_already_added") {} };
@@ -74,15 +74,14 @@ namespace neolib
     template <typename T, typename Container = i_vector<T>, typename CookieType = cookie>
     class i_basic_jar : public i_reference_counted
     {
-        typedef i_basic_jar<T, CookieType> self_type;
     public:
-        typedef self_type abstract_type;
-        typedef CookieType cookie_type;
+        using abstract_type = i_basic_jar;
+        using cookie_type = CookieType;
     public:
-        typedef T value_type;
-        typedef Container container_type;
-        typedef typename container_type::const_iterator const_iterator;
-        typedef typename container_type::iterator iterator;
+        using value_type = T;
+        using container_type = Container;
+        using const_iterator = typename container_type::const_iterator;
+        using iterator = typename container_type::iterator;
     public:
         virtual ~i_basic_jar() = default;
     public:
