@@ -533,7 +533,7 @@ namespace neolib
         {
             iSource = aSource;
             iCst = { nullptr, nullptr, nullptr, aSource };
-            iAst = {};
+            ast() = {};
             iStack = {};
             iDeepestParse = {};
             iError = {};
@@ -601,8 +601,8 @@ namespace neolib
 
         void create_ast()
         {
-            iAst = std::move(iCst);
-            create_ast(&iAst);
+            ast() = std::move(iCst);
+            create_ast(&ast());
 
             if (iDebugOutput && iDebugCst)
             {
@@ -618,13 +618,18 @@ namespace neolib
                     (*iDebugOutput) << std::setw(numberWidth) << lineNumber << "|" << outputLine << std::endl;
                     ++lineNumber;
                 }
-                (*iDebugOutput) << debug_print_ast(iAst) << std::endl;
+                (*iDebugOutput) << debug_print_ast(ast()) << std::endl;
             }
         }
 
         ast_node const& ast() const
         {
-            return iAst;
+            return *iAst;
+        }
+
+        ast_node& ast()
+        {
+            return *iAst;
         }
 
     public:
@@ -1251,7 +1256,7 @@ namespace neolib
         std::vector<rule> iRules;
         std::string_view iSource;
         cst_node iCst = {};
-        cst_node iAst = {};
+        std::shared_ptr<cst_node> iAst = std::make_shared<cst_node>();
         std::vector<std::pair<rule const*, std::string_view>> iStack;
         std::uint32_t iMaxLevel = 256;
         std::uint32_t iLevel = 0;
