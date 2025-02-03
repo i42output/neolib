@@ -1383,46 +1383,46 @@ namespace neolib
             return result;
         }
 
-        template <ParserRepeat Repeat>
-        inline Repeat operator|(Repeat const& lhs, typename Repeat::symbol_type rhs)
+        template <ParserChoice Choice>
+        inline Choice operator|(Choice const& lhs, typename Choice::symbol_type rhs)
         {
-            return Repeat{ lhs, rhs };
+            return Choice{ lhs, rhs };
         }
 
         template <SymbolEnum Symbol>
-        inline parser_repeat<Symbol> operator|(Symbol lhs, Symbol rhs)
+        inline parser_choice<Symbol> operator|(Symbol lhs, Symbol rhs)
         {
-            return parser_repeat<Symbol>{ lhs, rhs };
+            return parser_choice<Symbol>{ lhs, rhs };
         }
 
         template <SymbolEnum Symbol>
-        inline parser_repeat<Symbol> operator|(parser_primitive<Symbol> const& lhs, Symbol rhs)
+        inline parser_choice<Symbol> operator|(parser_primitive<Symbol> const& lhs, Symbol rhs)
         {
-            return parser_repeat<Symbol>{ lhs, rhs };
+            return parser_choice<Symbol>{ lhs, rhs };
         }
 
         template <SymbolEnum Symbol>
-        inline parser_repeat<Symbol> operator|(Symbol lhs, parser_primitive<Symbol> const& rhs)
+        inline parser_choice<Symbol> operator|(Symbol lhs, parser_primitive<Symbol> const& rhs)
         {
-            return parser_repeat<Symbol>{ lhs, rhs };
+            return parser_choice<Symbol>{ lhs, rhs };
         }
 
         template <ParserComponent Component1, ParserComponent Component2>
-        inline parser_repeat<typename Component1::symbol_type> operator|(Component1 const& lhs, Component2 const& rhs)
+        inline parser_choice<typename Component1::symbol_type> operator|(Component1 const& lhs, Component2 const& rhs)
         {
-            return parser_repeat<typename Component1::symbol_type>{ lhs, rhs };
+            return parser_choice<typename Component1::symbol_type>{ lhs, rhs };
         }
 
         template <ParserComponent Component>
-        inline parser_repeat<typename Component::symbol_type> operator|(Component const& lhs, char rhs)
+        inline parser_choice<typename Component::symbol_type> operator|(Component const& lhs, char rhs)
         {
-            return parser_repeat<typename Component::symbol_type>{ lhs, parser_terminal<typename Component::symbol_type>{ rhs } };
+            return parser_choice<typename Component::symbol_type>{ lhs, parser_terminal<typename Component::symbol_type>{ rhs } };
         }
 
         template <ParserComponent Component>
-        inline parser_repeat<typename Component::symbol_type> operator|(char lhs, Component const& rhs)
+        inline parser_choice<typename Component::symbol_type> operator|(char lhs, Component const& rhs)
         {
-            return parser_repeat<typename Component::symbol_type>{ parser_terminal<typename Component::symbol_type>{ lhs },  rhs };
+            return parser_choice<typename Component::symbol_type>{ parser_terminal<typename Component::symbol_type>{ lhs },  rhs };
         }
 
         template <ParserRule Rule>
@@ -1468,7 +1468,7 @@ namespace neolib
         }
 
         template <typename Symbol>
-        inline parser_choice<Symbol> choice(parser_repeat<Symbol> const& lhs)
+        inline parser_choice<Symbol> choice(parser_choice<Symbol> const& lhs)
         {
             return { lhs.value };
         }

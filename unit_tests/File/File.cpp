@@ -172,21 +172,21 @@ int main(int argc, char** argv)
         ( symbol::FunctionParameter >> symbol::Type, symbol::Variable ),
         ( symbol::FunctionBody >> (~discard(symbol::OpenScope) , repeat(symbol::Statement) , ~discard(symbol::CloseScope)) ),
         ( symbol::Type >> symbol::Identifier ),
-        ( symbol::Identifier >> (+(range('A', 'Z') | range('a', 'z')) , 
-            (range('A', 'Z') | range('a', 'z') | range('0', '9'))) ),
+        ( symbol::Identifier >> (+repeat(range('A', 'Z') | range('a', 'z')) , 
+            repeat(range('A', 'Z') | range('a', 'z') | range('0', '9'))) ),
         ( symbol::OpenScope >> '{' ),
         ( symbol::CloseScope >> '}' ),
         ( symbol::Statement >> symbol::Expression , discard(symbol::EndStatement) ),
         ( symbol::EndStatement >> ';' ),
-        ( symbol::Expression >> ((symbol::Term , 
-            +repeat((choice(
+        ( symbol::Expression >> (symbol::Term , 
+            +repeat(sequence(
                 symbol::Add <=> "math.operator.add"_infix_concept | 
-                symbol::Subtract <=> "math.operator.subtract"_infix_concept), symbol::Term))) <=> "math.addition"_concept) ),
+                symbol::Subtract <=> "math.operator.subtract"_infix_concept , symbol::Term) <=> "math.addition"_concept)) ),
         ( symbol::Expression >> symbol::Term ),
-        ( symbol::Term >> ((symbol::Factor ,
-            +repeat((choice(
+        ( symbol::Term >> (symbol::Factor ,
+            +repeat(sequence(
                 symbol::Multiply <=> "math.operator.multiply"_infix_concept | 
-                symbol::Divide <=> "math.operator.divide"_infix_concept), symbol::Factor))) <=> "math.multiplication"_concept) ),
+                symbol::Divide <=> "math.operator.divide"_infix_concept , symbol::Factor) <=> "math.multiplication"_concept)) ),
         ( symbol::Term >> symbol::Factor ),
         ( symbol::Factor >> symbol::Primary ),
         ( symbol::Primary >> 
@@ -206,7 +206,7 @@ int main(int argc, char** argv)
         ( symbol::Assign >> ":=" ),
         ( symbol::Equal >> '=' ),
         ( symbol::Minus >> '-' ),
-        ( symbol::Number >> choice(symbol::Float | symbol::Integer) ),
+        ( symbol::Number >> (symbol::Float | symbol::Integer) ),
         ( symbol::Float >> (fold((optional(symbol::Minus), +repeat(symbol::Digit) , symbol::Decimal, +repeat(symbol::Digit))) <=> "number.float"_concept) ),
         ( symbol::Integer >> (fold((optional(symbol::Minus), +repeat(symbol::Digit))) <=> "number.integer"_concept) ),
         ( symbol::Digit >> range('0' , '9') ),
@@ -216,7 +216,7 @@ int main(int argc, char** argv)
         // whitespace handling...
 
         ( symbol::Eof >> discard(optional(symbol::Whitespace)), "" ),
-        ( symbol::Whitespace >> +(' '_ | '\r' | '\n' | '\t' | symbol::Comment) ),
+        ( symbol::Whitespace >> +repeat(' '_ | '\r' | '\n' | '\t' | symbol::Comment) ),
         ( symbol::Comment >> sequence("/*"_ , repeat(range('\0', '\xFF')) , "*/"_) ),
         ( symbol::Comment >> sequence("//"_ , repeat(range('\0', '\xFF')) , "\n"_) ),
         ( symbol::Program >> discard(optional(symbol::Whitespace)) , symbol::Program , discard(optional(symbol::Whitespace)) ),
