@@ -544,8 +544,8 @@ namespace neolib
             fixup_cst(iCst);
             simplify_cst(iCst);
             auto const endTime = std::chrono::high_resolution_clock::now();
-            std::uint32_t linePos;
-            std::uint32_t columnPos;
+            std::uint32_t linePos = 0u;
+            std::uint32_t columnPos = 0u;
 
             auto error_print = [&](std::string const& errorPrefix, char const* pos) -> std::string
             {
@@ -571,7 +571,7 @@ namespace neolib
                 std::uint32_t lineNumber = 1;
                 for (auto const& outputLine : lines)
                 {
-                    if (std::abs<int>(linePos - lineNumber) <= 5)
+                    if (iError && std::abs<int>(linePos - lineNumber) <= 5)
                         (*iDebugOutput) << std::setw(numberWidth) << lineNumber << (iError && lineNumber == linePos ? ">" : "|") << outputLine << std::endl;
                     ++lineNumber;
                 }
@@ -957,13 +957,7 @@ namespace neolib
                 {
                     auto& a = *ai;
                     auto lookaheadTo = sourceEnd;
-                    if (std::holds_alternative<repeat>(a) && std::next(ai) != s.end() && std::holds_alternative<terminal>(*std::next(ai)))
-                    {
-                        auto const& t = std::get<terminal>(*std::next(ai));
-                        auto found = std::string_view{ sourceNext, sourceEnd }.find(t);
-                        if (found != std::string_view::npos)
-                            lookaheadTo = sourceNext + found;
-                    }
+                    // todo: optimise lookahead
                     auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, lookaheadTo });
                     if (!partialResult)
                     {
