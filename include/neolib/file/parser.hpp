@@ -604,7 +604,7 @@ namespace neolib
             ast() = std::move(iCst);
             create_ast(&ast());
 
-            if (iDebugOutput && iDebugCst)
+            if (iDebugOutput && iDebugAst)
             {
                 std::vector<std::string> lines;
                 std::istringstream iss{ std::string{ iSource } };
@@ -633,9 +633,11 @@ namespace neolib
         }
 
     public:
-        void set_debug_output(std::ostream& aDebugOutput)
+        void set_debug_output(std::ostream& aDebugOutput, bool aDebugCst = false, bool aDebugAst = false)
         {
             iDebugOutput = &aDebugOutput;
+            iDebugCst = aDebugCst;
+            iDebugAst = aDebugAst;
         }
 
         void set_debug_scan(bool aDebugScan)
@@ -1266,6 +1268,7 @@ namespace neolib
         std::ostream* iDebugOutput = nullptr;
         bool iDebugScan = false;
         bool iDebugCst = false;
+        bool iDebugAst = false;
     };
 
     template <typename Symbol>
