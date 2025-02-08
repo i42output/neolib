@@ -24,7 +24,6 @@ namespace parser_test
     {
         Program,
         Whitespace,
-        Eof,
         Comment,
         Identifier,
         FunctionDefinition,
@@ -67,7 +66,6 @@ namespace parser_test
 declare_symbols(parser_test::symbol)
 declare_symbol(parser_test::symbol, Program)
 declare_symbol(parser_test::symbol, Whitespace)
-declare_symbol(parser_test::symbol, Eof)
 declare_symbol(parser_test::symbol, Comment)
 declare_symbol(parser_test::symbol, Identifier)
 declare_symbol(parser_test::symbol, FunctionDefinition)
@@ -116,8 +114,8 @@ std::string_view const sourcePass1 = R"test(r f(){42!;})test";
 std::string_view const sourcePass2 = R"test(
     xyzzY0 foo()
     {
-        1234; /* comment one */
-        x := 1 + 2 + 3 - 4 - 5 + 6; // comment two
+        1234;
+        x := 1+2 + 3 - 4 - 5 + 6;
         y := 7 + -42.001 * 1.0 * (5-1+2) + -x + x * 2;
     }
 )test";
@@ -156,46 +154,53 @@ int main(int argc, char** argv)
 {
     using namespace parser_test;
 
+    auto const WS = symbol::Whitespace;
+
     neolib::parser_rule<symbol> parserRules[] =
     {
-        ( symbol::Program >> repeat(symbol::FunctionDefinition) , discard(symbol::Eof)),
-        ( symbol::FunctionDefinition >> symbol::FunctionPrototype , symbol::FunctionBody ),
-        ( symbol::FunctionPrototype >> symbol::FunctionReturnType , symbol::FunctionName , symbol::FunctionParameterList ),
+        ( symbol::Program >> repeat(symbol::FunctionDefinition) ),
+        ( symbol::FunctionDefinition >> WS , symbol::FunctionPrototype , WS, symbol::FunctionBody , WS ),
+        ( symbol::FunctionPrototype >> WS, symbol::FunctionReturnType , WS, symbol::FunctionName , WS , symbol::FunctionParameterList , WS ),
         ( symbol::FunctionReturnType >> symbol::Type ),
         ( symbol::FunctionName >> symbol::Identifier ),
-        ( symbol::FunctionParameterList >> 
+        ( symbol::FunctionParameterList >>
+            WS ,
             ~discard(symbol::FunctionParameterListOpen) , 
-            optional(sequence(symbol::FunctionParameter, repeat(sequence(',' , symbol::FunctionParameter)))) , 
+            WS , 
+            optional(sequence(WS , symbol::FunctionParameter, WS , repeat(sequence(WS , ',' , WS , symbol::FunctionParameter , WS)))) , 
+            WS ,
             ~discard(symbol::FunctionParameterListClose) ),
         ( symbol::FunctionParameterListOpen >> '(' ),
         ( symbol::FunctionParameterListClose >> ')' ),
-        ( symbol::FunctionParameter >> symbol::Type, symbol::Variable ),
-        ( symbol::FunctionBody >> (~discard(symbol::OpenScope) , repeat(symbol::Statement) , ~discard(symbol::CloseScope)) ),
+        ( symbol::FunctionParameter >> symbol::Type, WS , symbol::Variable ),
+        ( symbol::FunctionBody >> (WS , ~discard(symbol::OpenScope) , WS , repeat(symbol::Statement) , WS , ~discard(symbol::CloseScope) , WS) ),
         ( symbol::Type >> symbol::Identifier ),
         ( symbol::Identifier >> (+repeat(range('A', 'Z') | range('a', 'z')) , 
             repeat(range('A', 'Z') | range('a', 'z') | range('0', '9'))) ),
         ( symbol::OpenScope >> '{' ),
         ( symbol::CloseScope >> '}' ),
-        ( symbol::Statement >> symbol::Expression , discard(symbol::EndStatement) ),
+        ( symbol::Statement >> WS , symbol::Expression , WS , discard(symbol::EndStatement) , WS ),
         ( symbol::EndStatement >> ';' ),
-        ( symbol::Expression >> (symbol::Term , 
+        ( symbol::Expression >> (WS , symbol::Term , WS , 
             +repeat(sequence(
+                WS ,
                 symbol::Add <=> "math.operator.add"_infix_concept | 
-                symbol::Subtract <=> "math.operator.subtract"_infix_concept , symbol::Term) <=> "math.addition"_concept)) ),
+                symbol::Subtract <=> "math.operator.subtract"_infix_concept , WS , symbol::Term , WS) <=> "math.addition"_concept)) ),
         ( symbol::Expression >> symbol::Term ),
-        ( symbol::Term >> (symbol::Factor ,
+        ( symbol::Term >> (WS , symbol::Factor , WS , 
             +repeat(sequence(
+                WS , 
                 symbol::Multiply <=> "math.operator.multiply"_infix_concept | 
-                symbol::Divide <=> "math.operator.divide"_infix_concept , symbol::Factor) <=> "math.multiplication"_concept)) ),
+                symbol::Divide <=> "math.operator.divide"_infix_concept , WS , symbol::Factor , WS) <=> "math.multiplication"_concept)) ),
         ( symbol::Term >> symbol::Factor ),
         ( symbol::Factor >> symbol::Primary ),
         ( symbol::Primary >> 
-            ((symbol::Variable <=> "object"_concept , symbol::Assign , symbol::Expression) <=> "object.assign"_concept)),
+            ((symbol::Variable <=> "object"_concept , WS , symbol::Assign , WS , symbol::Expression) <=> "object.assign"_concept)),
         ( symbol::Primary >> symbol::Number ),
         ( symbol::Primary >> ((symbol::Negate , symbol::Primary) <=> "math.operator.negate"_concept) ),
-        ( symbol::Primary >> (sequence(symbol::Integer , '!') <=> "math.operator.factorial"_concept) ),
+        ( symbol::Primary >> (sequence(symbol::Integer , WS , '!') <=> "math.operator.factorial"_concept) ),
         ( symbol::Primary >> (symbol::Variable <=> "object"_concept) ),
-        ( symbol::Primary >> ~discard(symbol::OpenExpression) , symbol::Expression , ~discard(symbol::CloseExpression) ),
+        ( symbol::Primary >> ~discard(symbol::OpenExpression) , WS , symbol::Expression , WS , ~discard(symbol::CloseExpression) ),
         ( symbol::OpenExpression >> '(' ),
         ( symbol::CloseExpression >> ')' ),
         ( symbol::Add >> '+' ),
@@ -215,41 +220,13 @@ int main(int argc, char** argv)
 
         // whitespace handling...
 
-        ( symbol::Eof >> discard(optional(symbol::Whitespace)), "" ),
-        ( symbol::Whitespace >> +repeat(' '_ | '\r' | '\n' | '\t' | symbol::Comment) ),
+        ( symbol::Whitespace >> repeat(' '_ | '\r' | '\n' | '\t' | symbol::Comment) ),
         ( symbol::Comment >> sequence("/*"_ , repeat(range('\0', '\xFF')) , "*/"_) ),
         ( symbol::Comment >> sequence("//"_ , repeat(range('\0', '\xFF')) , "\n"_) ),
-        ( symbol::Program >> discard(optional(symbol::Whitespace)) , symbol::Program , discard(optional(symbol::Whitespace)) ),
-        ( symbol::FunctionDefinition >> discard(optional(symbol::Whitespace)) , symbol::FunctionDefinition , discard(optional(symbol::Whitespace)) ),
-        ( symbol::FunctionPrototype >> discard(optional(symbol::Whitespace)) , symbol::FunctionPrototype , discard(optional(symbol::Whitespace)) ),
-        ( symbol::FunctionBody >> discard(optional(symbol::Whitespace)) , symbol::FunctionBody , discard(optional(symbol::Whitespace)) ),
-        ( symbol::FunctionReturnType >> discard(optional(symbol::Whitespace)) , symbol::FunctionReturnType , discard(optional(symbol::Whitespace)) ),
-        ( symbol::FunctionName >> discard(optional(symbol::Whitespace)) , symbol::FunctionName , discard(optional(symbol::Whitespace)) ),
-        ( symbol::FunctionParameter >> discard(optional(symbol::Whitespace)) , symbol::FunctionParameter , discard(optional(symbol::Whitespace)) ),
-        ( symbol::OpenScope >> discard(optional(symbol::Whitespace)) , symbol::OpenScope , discard(optional(symbol::Whitespace)) ),
-        ( symbol::CloseScope >> discard(optional(symbol::Whitespace)) , symbol::CloseScope , discard(optional(symbol::Whitespace)) ),
-        ( symbol::Statement >> discard(optional(symbol::Whitespace)) , symbol::Statement , discard(optional(symbol::Whitespace)) ),
-        ( symbol::EndStatement >> discard(optional(symbol::Whitespace)) , symbol::EndStatement , discard(optional(symbol::Whitespace)) ),
-        ( symbol::Expression >> discard(optional(symbol::Whitespace)) , symbol::Expression , discard(optional(symbol::Whitespace)) ),
-        ( symbol::OpenExpression >> discard(optional(symbol::Whitespace)) , symbol::OpenExpression , discard(optional(symbol::Whitespace)) ),
-        ( symbol::CloseExpression >> discard(optional(symbol::Whitespace)) , symbol::CloseExpression , discard(optional(symbol::Whitespace)) ),
-        ( symbol::Variable >> discard(optional(symbol::Whitespace)) , symbol::Variable , discard(optional(symbol::Whitespace)) ),
-        ( symbol::Identifier >> discard(optional(symbol::Whitespace)) , symbol::Identifier , discard(optional(symbol::Whitespace)) ),
-        ( symbol::Number >> discard(optional(symbol::Whitespace)) , symbol::Number, discard(optional(symbol::Whitespace)) ),
-        ( symbol::Assign >> discard(optional(symbol::Whitespace)) , symbol::Assign, discard(optional(symbol::Whitespace)) ),
-        ( symbol::Equal >> discard(optional(symbol::Whitespace)) , symbol::Equal, discard(optional(symbol::Whitespace)) ),
-        ( symbol::Add >> discard(optional(symbol::Whitespace)) , symbol::Add, discard(optional(symbol::Whitespace)) ),
-        ( symbol::Subtract >> discard(optional(symbol::Whitespace)) , symbol::Subtract, discard(optional(symbol::Whitespace)) ),
-        ( symbol::Multiply >> discard(optional(symbol::Whitespace)) , symbol::Multiply, discard(optional(symbol::Whitespace)) ),
-        ( symbol::Divide >> discard(optional(symbol::Whitespace)) , symbol::Divide, discard(optional(symbol::Whitespace)) ),
-        ( symbol::Negate >> discard(optional(symbol::Whitespace)) , symbol::Negate, discard(optional(symbol::Whitespace)) ),
-        ( symbol::Term >> discard(optional(symbol::Whitespace)) , symbol::Term , discard(optional(symbol::Whitespace)) ),
-        ( symbol::Factor >> discard(optional(symbol::Whitespace)) , symbol::Factor , discard(optional(symbol::Whitespace)) ),
-        ( symbol::Primary >> discard(optional(symbol::Whitespace)) , symbol::Primary , discard(optional(symbol::Whitespace)) )
     };
 
     neolib::parser<symbol> parser{ parserRules };
-    parser.set_debug_output(std::cerr);
+    parser.set_debug_output(std::cerr, false, true);
     parser.set_debug_scan(false);
     test_assert(parser.parse(symbol::Program, sourcePass1));
     parser.create_ast();
