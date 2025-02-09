@@ -41,6 +41,7 @@
 #include <memory>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include <variant>
 #include <optional>
 #include <string>
@@ -529,6 +530,10 @@ namespace neolib
         }
 
     public:
+        void ignore(symbol aIgnore)
+        {
+            iIgnore.insert(aIgnore);
+        }
         bool parse(symbol aRoot, std::string_view const& aSource)
         {
             iSource = aSource;
@@ -960,13 +965,20 @@ namespace neolib
                     auto& a = *ai;
                     auto lookaheadTo = sourceEnd;
                     // todo: optimise lookahead
+                    bool const doIgnore = (std::holds_alternative<symbol>(a) && iIgnore.find(std::get<symbol>(a)) != iIgnore.end());
+                    bool const doDiscard = (std::holds_alternative<discard>(a) && std::get<discard>(a).trim);
+                    typename cst_node::child_list children2;
+                    if (doIgnore || doDiscard)
+                        std::swap(aNode.children, children2);
                     auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, lookaheadTo });
+                    if (doIgnore || doDiscard)
+                        std::swap(aNode.children, children2);
                     if (!partialResult)
                     {
                         std::swap(aNode.children, children);
                         return {};
                     }
-                    if (std::holds_alternative<discard>(a) && std::get<discard>(a).trim)
+                    if (doIgnore || doDiscard)
                     {
                         if (spanEnd == nullptr)
                             spanStart = std::to_address(partialResult->value.end());
@@ -1029,7 +1041,7 @@ namespace neolib
                                 aNode.set_concept(aAtom.c);
                             foundAtLeastOne = true;
                             found = true;
-                            if (std::holds_alternative<discard>(a) && std::get<discard>(a).trim)
+                            if ((std::holds_alternative<discard>(a) && std::get<discard>(a).trim))
                             {
                                 if (spanEnd == nullptr)
                                     spanStart = std::to_address(partialResult->value.end());
@@ -1250,6 +1262,7 @@ namespace neolib
 
     private:
         std::vector<rule> iRules;
+        std::unordered_set<symbol> iIgnore;
         std::string_view iSource;
         cst_node iCst = {};
         std::shared_ptr<cst_node> iAst = std::make_shared<cst_node>();

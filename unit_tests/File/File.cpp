@@ -114,8 +114,8 @@ std::string_view const sourcePass1 = R"test(r f(){42!;})test";
 std::string_view const sourcePass2 = R"test(
     xyzzY0 foo()
     {
-        1234;
-        x := 1+2 + 3 - 4 - 5 + 6;
+        1234; /* comment one */
+        x := 1 + 2 + 3 - 4 - 5 + 6; // comment two
         y := 7 + -42.001 * 1.0 * (5-1+2) + -x + x * 2;
     }
 )test";
@@ -189,7 +189,7 @@ int main(int argc, char** argv)
         ( symbol::Expression >> symbol::Term ),
         ( symbol::Term >> (WS , symbol::Factor , WS , 
             +repeat(sequence(
-                WS , 
+                WS ,
                 symbol::Multiply <=> "math.operator.multiply"_infix_concept | 
                 symbol::Divide <=> "math.operator.divide"_infix_concept , WS , symbol::Factor , WS) <=> "math.multiplication"_concept)) ),
         ( symbol::Term >> symbol::Factor ),
@@ -221,11 +221,14 @@ int main(int argc, char** argv)
         // whitespace handling...
 
         ( symbol::Whitespace >> repeat(' '_ | '\r' | '\n' | '\t' | symbol::Comment) ),
-        ( symbol::Comment >> sequence("/*"_ , repeat(range('\0', '\xFF')) , "*/"_) ),
-        ( symbol::Comment >> sequence("//"_ , repeat(range('\0', '\xFF')) , "\n"_) ),
+        ( symbol::Comment >> sequence("/*"_ , repeat(
+            repeat(range('\x00', '\x29') | range('\x2B', '\xFF')) | 
+            ("*"_ , repeat(range('\x00', '\x2E') | range('\x30', '\xFF')))) , "*/"_)),
+        ( symbol::Comment >> sequence("//"_ , repeat(range('\x00', '\x09') | range('\x0B', '\xFF')) , "\n"_) )
     };
 
     neolib::parser<symbol> parser{ parserRules };
+    parser.ignore(symbol::Whitespace);
     parser.set_debug_output(std::cerr, false, true);
     parser.set_debug_scan(false);
     test_assert(parser.parse(symbol::Program, sourcePass1));
