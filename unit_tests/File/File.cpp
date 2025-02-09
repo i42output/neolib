@@ -222,8 +222,7 @@ int main(int argc, char** argv)
 
         ( symbol::Whitespace >> repeat(' '_ | '\r' | '\n' | '\t' | symbol::Comment) ),
         ( symbol::Comment >> sequence("/*"_ , repeat(
-            repeat(range('\x00', '\x29') | range('\x2B', '\xFF')) | 
-            ("*"_ , repeat(range('\x00', '\x2E') | range('\x30', '\xFF')))) , "*/"_)),
+            range('\x00', '\x29') | range('\x2B', '\xFF') | ("*"_ , (range('\x00', '\x2E') | range('\x30', '\xFF')))) , "*/"_) ),
         ( symbol::Comment >> sequence("//"_ , repeat(range('\x00', '\x09') | range('\x0B', '\xFF')) , "\n"_) )
     };
 

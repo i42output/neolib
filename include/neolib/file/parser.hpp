@@ -54,9 +54,9 @@
 
 namespace neolib
 {
-    #define declare_symbols begin_declare_enum
-    #define declare_symbol declare_enum_string
-    #define end_declare_symbols end_declare_enum
+#define declare_symbols begin_declare_enum
+#define declare_symbol declare_enum_string
+#define end_declare_symbols end_declare_enum
 
     enum class parser_component_type
     {
@@ -137,11 +137,11 @@ namespace neolib
             using base_type::base_type;
 
             terminal(char character) :
-                terminal_character{ character }, 
+                terminal_character{ character },
                 base_type{ &terminal_character::value(), &terminal_character::value() + 1 }
             {}
             terminal(terminal const& other) :
-                terminal_character{ other }, 
+                terminal_character{ other },
                 base_type{ other.has_value() ? std::string_view{ &terminal_character::value(), &terminal_character::value() + 1 } : std::string_view{ other } }
             {}
         };
@@ -335,7 +335,7 @@ namespace neolib
             }
 
             primitive_atom(primitive_atom&& other) :
-                base_type{ std::move(other) }, c{std::move(other.c)}
+                base_type{ std::move(other) }, c{ std::move(other.c) }
             {
             }
 
@@ -355,7 +355,7 @@ namespace neolib
 
             bool is_tuple() const
             {
-                return 
+                return
                     std::holds_alternative<choice>(*this) ||
                     std::holds_alternative<sequence>(*this) ||
                     std::holds_alternative<repeat>(*this);
@@ -391,7 +391,7 @@ namespace neolib
 
             template <typename T>
             atom(atom const& lhs, T&& rhs) :
-                base_type{ lhs}
+                base_type{ lhs }
             {
                 base_type::push_back(std::forward<T>(rhs));
             }
@@ -553,14 +553,14 @@ namespace neolib
             std::uint32_t columnPos = 0u;
 
             auto error_print = [&](std::string const& errorPrefix, char const* pos) -> std::string
-            {
-                linePos = static_cast<std::uint32_t>(std::count(aSource.data(), pos, '\n') + 1);
-                columnPos = static_cast<std::uint32_t>(std::distance(std::reverse_iterator(pos),
-                    std::find(std::reverse_iterator(pos), std::reverse_iterator(aSource.data()), '\n')) + 1);
-                std::string error = errorPrefix + "(" + std::to_string(linePos) + "," + std::to_string(columnPos) + ") ";
-                error += "'" + debug_print(std::string_view{ pos, std::next(pos) }) + "' was unexpected here.";
-                return error;
-            };
+                {
+                    linePos = static_cast<std::uint32_t>(std::count(aSource.data(), pos, '\n') + 1);
+                    columnPos = static_cast<std::uint32_t>(std::distance(std::reverse_iterator(pos),
+                        std::find(std::reverse_iterator(pos), std::reverse_iterator(aSource.data()), '\n')) + 1);
+                    std::string error = errorPrefix + "(" + std::to_string(linePos) + "," + std::to_string(columnPos) + ") ";
+                    error += "'" + debug_print(std::string_view{ pos, std::next(pos) }) + "' was unexpected here.";
+                    return error;
+                };
 
             if (!iError && iDeepestParse < aSource.data() + aSource.size())
                 iError = error_print("syntax error: ", iDeepestParse);
@@ -588,13 +588,13 @@ namespace neolib
                 {
                     auto const time = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() / 1000.0;
                     (*iDebugOutput) << "Parse time" << (iDebugScan ? " (debug)" : "") << ": " << std::setprecision(3) <<
-                        time << " seconds" << " (" << static_cast<std::uint32_t>(iSource.size() / time) << " characters/second, " << 
+                        time << " seconds" << " (" << static_cast<std::uint32_t>(iSource.size() / time) << " characters/second, " <<
                         static_cast<std::uint32_t>(std::count(iSource.begin(), iSource.end(), '\n') / time) << " lines/second)" << std::endl;
                 }
                 if (iDebugCst)
                     (*iDebugOutput) << debug_print_cst(iCst) << std::endl;
             }
-            
+
             if (iError)
             {
                 iCst = {};
@@ -664,7 +664,7 @@ namespace neolib
                 fixup_cst(&**child);
             }
         }
-                
+
         void simplify_cst(cst_node& aNode)
         {
             simplify_cst(&aNode);
@@ -688,9 +688,9 @@ namespace neolib
             if (aNode->parent && aNode->parent->rule)
             {
                 auto existing = std::find_if(aNode->parent->children.begin(), aNode->parent->children.end(), [&](auto const& e)
-                {
-                    return &*e == aNode;
-                });
+                    {
+                        return &*e == aNode;
+                    });
 
                 auto const ourSymbol = std::get<symbol>(aNode->rule->lhs[0]);
                 auto const parentSymbol = std::get<symbol>(aNode->parent->rule->lhs[0]);
@@ -733,7 +733,7 @@ namespace neolib
                     {
                         return &*e == aNode;
                     });
-    
+
                 if (!aNode->c.has_value())
                 {
                     for (auto& child2 : aNode->children)
@@ -859,7 +859,7 @@ namespace neolib
                             [](auto const& n) { return n->c.has_value(); });
                         auto const matchConcepts = std::count_if(children.begin(), children.end(),
                             [](auto const& n) { return n->c.has_value(); });
-                        if (!result || 
+                        if (!result ||
                             match.value().value.size() > result.value().value.size() ||
                             (match.value().value.size() == result.value().value.size() && matchConcepts > resultConcepts))
                         {
@@ -921,7 +921,7 @@ namespace neolib
                     if (!newChild->has_concept())
                         newChild->set_concept(aAtom.c);
                     newChild->value = partialResult.value().value;
-                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, apply_partial_result(result, partialResult)};
+                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, apply_partial_result(result, partialResult) };
                     return iCache[cache_key{ &aAtom, aSource.data() }].result;
                 }
                 aNode.children.pop_back();
@@ -929,7 +929,7 @@ namespace neolib
             else if (std::holds_alternative<terminal>(aAtom))
             {
                 auto const& t = std::get<terminal>(aAtom);
-                if ((!t.empty() && aSource.find(t) == 0) || (t.empty() && sourceNext == sourceEnd ))
+                if ((!t.empty() && aSource.find(t) == 0) || (t.empty() && sourceNext == sourceEnd))
                 {
                     auto const partialResult = aSource.substr(0, t.size());
                     auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
@@ -1079,22 +1079,31 @@ namespace neolib
             }
             else if (std::holds_alternative<choice>(aAtom))
             {
-                bool found = false;
+                std::optional<parse_result> bestResult;
+                typename cst_node::child_list children;
+                std::swap(aNode.children, children);
+                typename cst_node::child_list children2;
                 for (auto const& a : std::get<choice>(aAtom).value)
                 {
+                    typename cst_node::child_list children3;
+                    std::swap(aNode.children, children3);
                     auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
                     if (partialResult)
                     {
-                        if (!aNode.has_concept())
-                            aNode.set_concept(aAtom.c);
-                        result = apply_partial_result(result, partialResult);
-                        sourceNext = std::to_address(partialResult->sourceNext);
-                        found = true;
-                        break;
+                        if (!bestResult || partialResult.value().value.size() > bestResult.value().value.size())
+                        {
+                            bestResult = partialResult;
+                            std::swap(aNode.children, children2);
+                            result = apply_partial_result(result, partialResult);
+                        }
                     }
                 }
-                if (found)
+                std::swap(aNode.children, children);
+                if (bestResult)
                 {
+                    aNode.children.insert(aNode.children.end(), std::make_move_iterator(children2.begin()), std::make_move_iterator(children2.end()));
+                    if (!aNode.has_concept())
+                        aNode.set_concept(aAtom.c);
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, result };
                     return ((sdp ? sdp->ok = true : true), result);
                 }
@@ -1150,7 +1159,7 @@ namespace neolib
                 owner.iStack.pop_back();
             }
         };
- 
+
         struct scoped_debug_print
         {
             parser& owner;
@@ -1159,7 +1168,7 @@ namespace neolib
             bool ok = false;
 
             template <typename T>
-            scoped_debug_print(parser& aOwner, T const& aValue, std::string_view const& aSource) : 
+            scoped_debug_print(parser& aOwner, T const& aValue, std::string_view const& aSource) :
                 owner{ aOwner },
                 source{ aSource }
             {
@@ -1169,14 +1178,14 @@ namespace neolib
                 else if constexpr (std::is_same_v<std::decay_t<T>, primitive_atom>)
                 {
                     std::visit([&](auto const& pa)
-                    {
-                        if constexpr (std::is_same_v<symbol, std::decay_t<decltype(pa)>>)
-                            oss << "symbol(" << enum_to_string(pa) << ")";
-                        else if constexpr (std::is_same_v<terminal, std::decay_t<decltype(pa)>>)
-                            oss << "teminal(" << to_string(pa.type) << ":[" << debug_print(pa) << "])";
-                        else
-                            oss << "atom(" << to_string(pa.type) << ")";
-                    }, aValue);
+                        {
+                            if constexpr (std::is_same_v<symbol, std::decay_t<decltype(pa)>>)
+                                oss << "symbol(" << enum_to_string(pa) << ")";
+                            else if constexpr (std::is_same_v<terminal, std::decay_t<decltype(pa)>>)
+                                oss << "teminal(" << to_string(pa.type) << ":[" << debug_print(pa) << "])";
+                            else
+                                oss << "atom(" << to_string(pa.type) << ")";
+                        }, aValue);
                 }
                 else
                     oss << "(" << aValue << ")";
@@ -1321,7 +1330,7 @@ namespace neolib
     using parser_concept = typename parser<Symbol>::_concept;
 
     template <typename T>
-    concept ParserComponent = std::is_base_of_v<parser_component_base, T> && 
+    concept ParserComponent = std::is_base_of_v<parser_component_base, T> &&
         !std::is_base_of_v<parser_component<parser_component_type::Rule>, T>;
 
     template <typename T>
@@ -1361,7 +1370,7 @@ namespace neolib
     concept ParserConcept = std::is_base_of_v<parser_component<parser_component_type::Concept>, T>;
 
     template <typename T>
-    concept SymbolEnum = std::is_enum_v<T> && std::is_convertible_v<T, decltype(is_parser_symbol(T{}))>;
+    concept SymbolEnum = std::is_enum_v<T> && std::is_convertible_v < T, decltype(is_parser_symbol(T{})) > ;
 
     namespace parser_operators
     {
@@ -1432,7 +1441,7 @@ namespace neolib
         template <ParserComponent Component>
         inline parser_choice<typename Component::symbol_type> operator|(char lhs, Component const& rhs)
         {
-            return parser_choice<typename Component::symbol_type>{ parser_terminal<typename Component::symbol_type>{ lhs },  rhs };
+            return parser_choice<typename Component::symbol_type>{ parser_terminal<typename Component::symbol_type>{ lhs }, rhs };
         }
 
         template <ParserRule Rule>
