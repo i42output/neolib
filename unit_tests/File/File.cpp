@@ -158,21 +158,23 @@ int main(int argc, char** argv)
 
     neolib::parser_rule<symbol> parserRules[] =
     {
-        ( symbol::Program >> repeat(symbol::FunctionDefinition) ),
-        ( symbol::FunctionDefinition >> WS , symbol::FunctionPrototype , WS, symbol::FunctionBody , WS ),
-        ( symbol::FunctionPrototype >> WS, symbol::FunctionReturnType , WS, symbol::FunctionName , WS , symbol::FunctionParameterList , WS ),
+        ( symbol::Program >> repeat(symbol::FunctionDefinition <=> "language.function.definition"_concept)),
+        ( symbol::FunctionDefinition >> WS , symbol::FunctionPrototype <=> "language.function.prototype"_concept, WS, 
+            symbol::FunctionBody <=> "language.function.body"_concept, WS),
+        ( symbol::FunctionPrototype >> WS, symbol::FunctionReturnType <=> "language.function.return.type"_concept, WS, 
+            symbol::FunctionName <=> "language.function.name"_concept, WS , symbol::FunctionParameterList <=> "language.function.parameters"_concept, WS ),
         ( symbol::FunctionReturnType >> symbol::Type ),
         ( symbol::FunctionName >> symbol::Identifier ),
         ( symbol::FunctionParameterList >>
             WS ,
             ~discard(symbol::FunctionParameterListOpen) , 
             WS , 
-            optional(sequence(WS , symbol::FunctionParameter, WS , repeat(sequence(WS , ',' , WS , symbol::FunctionParameter , WS)))) , 
+            optional(sequence(WS , symbol::FunctionParameter <=> "language.function.parameter"_concept, WS , repeat(sequence(WS , ',' , WS , symbol::FunctionParameter <=> "language.function.parameter"_concept, WS)))) ,
             WS ,
             ~discard(symbol::FunctionParameterListClose) ),
         ( symbol::FunctionParameterListOpen >> '(' ),
         ( symbol::FunctionParameterListClose >> ')' ),
-        ( symbol::FunctionParameter >> symbol::Type, WS , symbol::Variable ),
+        ( symbol::FunctionParameter >> (symbol::Type <=> "language.function.parameter.type"_concept), WS , symbol::Variable <=> "language.function.parameter.name"_concept),
         ( symbol::FunctionBody >> (WS , ~discard(symbol::OpenScope) , WS , repeat(symbol::Statement) , WS , ~discard(symbol::CloseScope) , WS) ),
         ( symbol::Type >> symbol::Identifier ),
         ( symbol::Identifier >> (+repeat(range('A', 'Z') | range('a', 'z')) , 
