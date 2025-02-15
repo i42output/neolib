@@ -198,9 +198,9 @@ int main(int argc, char** argv)
         ( symbol::Factor >> symbol::Primary ),
         ( symbol::Primary >> 
             ((symbol::Variable <=> "object"_concept , WS , symbol::Assign , WS , symbol::Expression) <=> "object.assign"_concept)),
-        ( symbol::Primary >> symbol::Number ),
         ( symbol::Primary >> ((symbol::Negate , symbol::Primary) <=> "math.operator.negate"_concept) ),
-        ( symbol::Primary >> (sequence(symbol::Integer , WS , '!') <=> "math.operator.factorial"_concept) ),
+        ( symbol::Primary >> symbol::Number ),
+        ( symbol::Primary >> ((symbol::Integer , WS , '!'_) <=> "math.operator.factorial"_concept) ),
         ( symbol::Primary >> (symbol::Variable <=> "object"_concept) ),
         ( symbol::Primary >> ~discard(symbol::OpenExpression) , WS , symbol::Expression , WS , ~discard(symbol::CloseExpression) ),
         ( symbol::OpenExpression >> '(' ),
