@@ -914,10 +914,10 @@ namespace neolib
 
             if (std::holds_alternative<symbol>(aAtom))
             {
-                symbol const atomSymbol = std::get<symbol>(aAtom);
+                auto const& sym = std::get<symbol>(aAtom);
                 auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, aSource);
                 aNode.children.push_back(newChild);
-                auto const partialResult = parse(atomSymbol, *newChild, aSource);
+                auto const partialResult = parse(sym, *newChild, aSource);
                 if (partialResult)
                 {
                     if (!newChild->has_concept())
@@ -930,10 +930,10 @@ namespace neolib
             }
             else if (std::holds_alternative<terminal>(aAtom))
             {
-                auto const& t = std::get<terminal>(aAtom);
-                if ((!t.empty() && aSource.find(t) == 0) || (t.empty() && sourceNext == sourceEnd))
+                auto const& ter = std::get<terminal>(aAtom);
+                if ((!ter.empty() && aSource.find(ter) == 0) || (ter.empty() && sourceNext == sourceEnd))
                 {
-                    auto const partialResult = aSource.substr(0, t.size());
+                    auto const partialResult = aSource.substr(0, ter.size());
                     auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
                     newChild->set_concept(aAtom.c);
                     aNode.children.push_back(newChild);
@@ -943,8 +943,9 @@ namespace neolib
             }
             else if (std::holds_alternative<range>(aAtom))
             {
-                auto const min = static_cast<unsigned char>(std::get<terminal>(std::get<range>(aAtom).value[0]).value());
-                auto const max = static_cast<unsigned char>(std::get<terminal>(std::get<range>(aAtom).value[1]).value());
+                auto const& ran = std::get<range>(aAtom);
+                auto const min = static_cast<unsigned char>(std::get<terminal>(ran.value[0]).value());
+                auto const max = static_cast<unsigned char>(std::get<terminal>(ran.value[1]).value());
                 if (!aSource.empty() && static_cast<unsigned char>(aSource[0]) >= min && static_cast<unsigned char>(aSource[0]) <= max)
                 {
                     auto const partialResult = aSource.substr(0, 1);
@@ -957,11 +958,12 @@ namespace neolib
             }
             else if (std::holds_alternative<concatenation>(aAtom))
             {
+                auto const& con = std::get<concatenation>(aAtom);
                 char const* spanStart = nullptr;
                 char const* spanEnd = nullptr;
                 typename cst_node::child_list children;
                 std::swap(aNode.children, children);
-                auto const& s = std::get<concatenation>(aAtom).value;
+                auto const& s = con.value;
                 for (auto ai = s.begin(); ai != s.end(); ++ai)
                 {
                     auto& a = *ai;
@@ -1007,7 +1009,8 @@ namespace neolib
             }
             else if (std::holds_alternative<optional>(aAtom))
             {
-                for (auto const& a : std::get<optional>(aAtom).value)
+                auto const& opt = std::get<optional>(aAtom);
+                for (auto const& a : opt.value)
                 {
                     auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
                     if (partialResult)
@@ -1025,6 +1028,7 @@ namespace neolib
             }
             else if (std::holds_alternative<repetition>(aAtom))
             {
+                auto const& rep = std::get<repetition>(aAtom);
                 bool foundAtLeastOne = false;
                 bool found = false;
                 char const* previousSpanStart = nullptr;
@@ -1034,7 +1038,7 @@ namespace neolib
                 do
                 {
                     found = false;
-                    for (auto const& a : std::get<repetition>(aAtom).value)
+                    for (auto const& a : rep.value)
                     {
                         auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
                         if (partialResult)
@@ -1081,11 +1085,12 @@ namespace neolib
             }
             else if (std::holds_alternative<alternation>(aAtom))
             {
+                auto const& alt = std::get<alternation>(aAtom);
                 std::optional<parse_result> bestResult;
                 typename cst_node::child_list children;
                 std::swap(aNode.children, children);
                 typename cst_node::child_list children2;
-                for (auto const& a : std::get<alternation>(aAtom).value)
+                for (auto const& a : alt.value)
                 {
                     typename cst_node::child_list children3;
                     std::swap(aNode.children, children3);
@@ -1103,6 +1108,9 @@ namespace neolib
                 std::swap(aNode.children, children);
                 if (bestResult)
                 {
+                    for (auto& child : children2)
+                        if (!child->has_concept())
+                            child->set_concept(aAtom.c);
                     aNode.children.insert(aNode.children.end(), std::make_move_iterator(children2.begin()), std::make_move_iterator(children2.end()));
                     if (!aNode.has_concept())
                         aNode.set_concept(aAtom.c);
@@ -1113,7 +1121,8 @@ namespace neolib
             }
             else if (std::holds_alternative<discard>(aAtom))
             {
-                for (auto const& a : std::get<discard>(aAtom).value)
+                auto const& dis = std::get<discard>(aAtom);
+                for (auto const& a : dis.value)
                 {
                     typename cst_node::child_list children;
                     std::swap(aNode.children, children);
