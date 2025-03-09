@@ -62,9 +62,9 @@ namespace neolib
     {
         Terminal,
         Undefined,
-        Choice,
-        Sequence,
-        Repeat,
+        Alternation,
+        Concatenation,
+        Repetition,
         Range,
         Optional,
         Discard,
@@ -82,12 +82,12 @@ namespace neolib
             return "Terminal";
         case parser_component_type::Undefined:
             return "Undefined";
-        case parser_component_type::Choice:
-            return "Choice";
-        case parser_component_type::Sequence:
-            return "Sequence";
-        case parser_component_type::Repeat:
-            return "Repeat";
+        case parser_component_type::Alternation:
+            return "Alternation";
+        case parser_component_type::Concatenation:
+            return "Concatenation";
+        case parser_component_type::Repetition:
+            return "Repetition";
         case parser_component_type::Range:
             return "Range";
         case parser_component_type::Optional:
@@ -113,6 +113,8 @@ namespace neolib
     struct parser_component : parser_component_base
     {
         static constexpr parser_component_type type = Type;
+
+        bool debug = false;
     };
 
     enum class concept_association
@@ -236,31 +238,31 @@ namespace neolib
             using base_type::base_type;
         };
 
-        struct choice : tuple<choice>, parser_component<parser_component_type::Choice>
+        struct alternation : tuple<alternation>, parser_component<parser_component_type::Alternation>
         {
-            using base_type = tuple<choice>;
+            using base_type = tuple<alternation>;
             using base_type::base_type;
         };
 
-        struct sequence : tuple<sequence>, parser_component<parser_component_type::Sequence>
+        struct concatenation : tuple<concatenation>, parser_component<parser_component_type::Concatenation>
         {
-            using base_type = tuple<sequence>;
+            using base_type = tuple<concatenation>;
             using base_type::base_type;
         };
 
-        struct repeat_params
+        struct repetition_params
         {
             bool atLeastOne = false;
         };
 
-        struct repeat : tuple<repeat, repeat_params>, parser_component<parser_component_type::Repeat>
+        struct repetition : tuple<repetition, repetition_params>, parser_component<parser_component_type::Repetition>
         {
-            using base_type = tuple<repeat, repeat_params>;
+            using base_type = tuple<repetition, repetition_params>;
             using base_type::base_type;
 
-            repeat operator+() const
+            repetition operator+() const
             {
-                repeat result = *this;
+                repetition result = *this;
                 result.atLeastOne = true;
                 return result;
             }
@@ -320,11 +322,11 @@ namespace neolib
             return c.value().without_association();
         }
 
-        struct primitive_atom : std::variant<symbol, terminal, undefined, choice, sequence, repeat, range, optional, discard>, parser_component<parser_component_type::Primitive>
+        struct primitive_atom : std::variant<symbol, terminal, undefined, alternation, concatenation, repetition, range, optional, discard>, parser_component<parser_component_type::Primitive>
         {
             using symbol_type = symbol;
 
-            using base_type = std::variant<symbol, terminal, undefined, choice, sequence, repeat, range, optional, discard>;
+            using base_type = std::variant<symbol, terminal, undefined, alternation, concatenation, repetition, range, optional, discard>;
             using base_type::base_type;
 
             std::optional<_concept> c;
@@ -356,9 +358,9 @@ namespace neolib
             bool is_tuple() const
             {
                 return
-                    std::holds_alternative<choice>(*this) ||
-                    std::holds_alternative<sequence>(*this) ||
-                    std::holds_alternative<repeat>(*this);
+                    std::holds_alternative<alternation>(*this) ||
+                    std::holds_alternative<concatenation>(*this) ||
+                    std::holds_alternative<repetition>(*this);
             }
 
             bool has_concept() const
@@ -697,7 +699,7 @@ namespace neolib
 
                 if (std::holds_alternative<range>(*aNode->atom))
                 {
-                    if (std::holds_alternative<sequence>(aNode->parent->rule->rhs[0]) || std::holds_alternative<repeat>(aNode->parent->rule->rhs[0]))
+                    if (std::holds_alternative<concatenation>(aNode->parent->rule->rhs[0]) || std::holds_alternative<repetition>(aNode->parent->rule->rhs[0]))
                     {
                         aNode->parent->value = std::string_view{ aNode->parent->value.data(), std::to_address(aNode->value.end()) };
                         return existing;
@@ -953,13 +955,13 @@ namespace neolib
                     return ((sdp ? sdp->ok = true : true), iCache[cache_key{ &aAtom, aSource.data() }].result);
                 }
             }
-            else if (std::holds_alternative<sequence>(aAtom))
+            else if (std::holds_alternative<concatenation>(aAtom))
             {
                 char const* spanStart = nullptr;
                 char const* spanEnd = nullptr;
                 typename cst_node::child_list children;
                 std::swap(aNode.children, children);
-                auto const& s = std::get<sequence>(aAtom).value;
+                auto const& s = std::get<concatenation>(aAtom).value;
                 for (auto ai = s.begin(); ai != s.end(); ++ai)
                 {
                     auto& a = *ai;
@@ -1021,7 +1023,7 @@ namespace neolib
                 iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, result };
                 return ((sdp ? sdp->ok = true : true), result);
             }
-            else if (std::holds_alternative<repeat>(aAtom))
+            else if (std::holds_alternative<repetition>(aAtom))
             {
                 bool foundAtLeastOne = false;
                 bool found = false;
@@ -1032,7 +1034,7 @@ namespace neolib
                 do
                 {
                     found = false;
-                    for (auto const& a : std::get<repeat>(aAtom).value)
+                    for (auto const& a : std::get<repetition>(aAtom).value)
                     {
                         auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
                         if (partialResult)
@@ -1069,7 +1071,7 @@ namespace neolib
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, result };
                     return ((sdp ? sdp->ok = true : true), result);
                 }
-                else if (!std::get<repeat>(aAtom).atLeastOne)
+                else if (!std::get<repetition>(aAtom).atLeastOne)
                 {
                     result.emplace(sourceNext, sourceNext);
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, result };
@@ -1077,13 +1079,13 @@ namespace neolib
                 }
                 return {};
             }
-            else if (std::holds_alternative<choice>(aAtom))
+            else if (std::holds_alternative<alternation>(aAtom))
             {
                 std::optional<parse_result> bestResult;
                 typename cst_node::child_list children;
                 std::swap(aNode.children, children);
                 typename cst_node::child_list children2;
-                for (auto const& a : std::get<choice>(aAtom).value)
+                for (auto const& a : std::get<alternation>(aAtom).value)
                 {
                     typename cst_node::child_list children3;
                     std::swap(aNode.children, children3);
@@ -1306,13 +1308,13 @@ namespace neolib
     using parser_undefined = typename parser<Symbol>::undefined;
 
     template <typename Symbol>
-    using parser_choice = typename parser<Symbol>::choice;
+    using parser_alternation = typename parser<Symbol>::alternation;
 
     template <typename Symbol>
-    using parser_sequence = typename parser<Symbol>::sequence;
+    using parser_concatenation = typename parser<Symbol>::concatenation;
 
     template <typename Symbol>
-    using parser_repeat = typename parser<Symbol>::repeat;
+    using parser_repetition = typename parser<Symbol>::repetition;
 
     template <typename Symbol>
     using parser_range = typename parser<Symbol>::range;
@@ -1346,13 +1348,13 @@ namespace neolib
     concept ParserUndefined = std::is_base_of_v<parser_component<parser_component_type::Undefined>, T>;
 
     template <typename T>
-    concept ParserChoice = std::is_base_of_v<parser_component<parser_component_type::Choice>, T>;
+    concept ParserAlternation = std::is_base_of_v<parser_component<parser_component_type::Alternation>, T>;
 
     template <typename T>
-    concept ParserSequence = std::is_base_of_v<parser_component<parser_component_type::Sequence>, T>;
+    concept ParserConcatenation = std::is_base_of_v<parser_component<parser_component_type::Concatenation>, T>;
 
     template <typename T>
-    concept ParserRepeat = std::is_base_of_v<parser_component<parser_component_type::Repeat>, T>;
+    concept ParserRepetition = std::is_base_of_v<parser_component<parser_component_type::Repetition>, T>;
 
     template <typename T>
     concept ParserRange = std::is_base_of_v<parser_component<parser_component_type::Range>, T>;
@@ -1374,6 +1376,13 @@ namespace neolib
 
     namespace parser_operators
     {
+        template <typename T>
+        inline T&& debug(T&& lhs)
+        {
+            lhs.debug = true;
+            return std::forward<T>(lhs);
+        }
+
         template <SymbolEnum Symbol>
         inline parser_rule<Symbol> operator>>(Symbol lhs, parser_primitive<Symbol> const& rhs)
         {
@@ -1402,106 +1411,106 @@ namespace neolib
             return result;
         }
 
-        template <ParserChoice Choice>
-        inline Choice operator|(Choice const& lhs, typename Choice::symbol_type rhs)
+        template <ParserAlternation Alternation>
+        inline Alternation operator|(Alternation const& lhs, typename Alternation::symbol_type rhs)
         {
-            return Choice{ lhs, rhs };
+            return Alternation{ lhs, rhs };
         }
 
         template <SymbolEnum Symbol>
-        inline parser_choice<Symbol> operator|(Symbol lhs, Symbol rhs)
+        inline parser_alternation<Symbol> operator|(Symbol lhs, Symbol rhs)
         {
-            return parser_choice<Symbol>{ lhs, rhs };
+            return parser_alternation<Symbol>{ lhs, rhs };
         }
 
         template <SymbolEnum Symbol>
-        inline parser_choice<Symbol> operator|(parser_primitive<Symbol> const& lhs, Symbol rhs)
+        inline parser_alternation<Symbol> operator|(parser_primitive<Symbol> const& lhs, Symbol rhs)
         {
-            return parser_choice<Symbol>{ lhs, rhs };
+            return parser_alternation<Symbol>{ lhs, rhs };
         }
 
         template <SymbolEnum Symbol>
-        inline parser_choice<Symbol> operator|(Symbol lhs, parser_primitive<Symbol> const& rhs)
+        inline parser_alternation<Symbol> operator|(Symbol lhs, parser_primitive<Symbol> const& rhs)
         {
-            return parser_choice<Symbol>{ lhs, rhs };
+            return parser_alternation<Symbol>{ lhs, rhs };
         }
 
         template <ParserComponent Component1, ParserComponent Component2>
-        inline parser_choice<typename Component1::symbol_type> operator|(Component1 const& lhs, Component2 const& rhs)
+        inline parser_alternation<typename Component1::symbol_type> operator|(Component1 const& lhs, Component2 const& rhs)
         {
-            return parser_choice<typename Component1::symbol_type>{ lhs, rhs };
+            return parser_alternation<typename Component1::symbol_type>{ lhs, rhs };
         }
 
         template <ParserComponent Component>
-        inline parser_choice<typename Component::symbol_type> operator|(Component const& lhs, char rhs)
+        inline parser_alternation<typename Component::symbol_type> operator|(Component const& lhs, char rhs)
         {
-            return parser_choice<typename Component::symbol_type>{ lhs, parser_terminal<typename Component::symbol_type>{ rhs } };
+            return parser_alternation<typename Component::symbol_type>{ lhs, parser_terminal<typename Component::symbol_type>{ rhs } };
         }
 
         template <ParserComponent Component>
-        inline parser_choice<typename Component::symbol_type> operator|(char lhs, Component const& rhs)
+        inline parser_alternation<typename Component::symbol_type> operator|(char lhs, Component const& rhs)
         {
-            return parser_choice<typename Component::symbol_type>{ parser_terminal<typename Component::symbol_type>{ lhs }, rhs };
+            return parser_alternation<typename Component::symbol_type>{ parser_terminal<typename Component::symbol_type>{ lhs }, rhs };
         }
 
         template <ParserRule Rule>
         inline Rule operator,(Rule const& lhs, parser_primitive<typename Rule::symbol_type> const& rhs)
         {
-            return Rule{ lhs.lhs, parser_sequence<typename Rule::symbol_type>{ lhs.rhs, rhs } };
+            return Rule{ lhs.lhs, parser_concatenation<typename Rule::symbol_type>{ lhs.rhs, rhs } };
         }
 
         template <SymbolEnum Symbol>
-        inline parser_sequence<Symbol> operator,(Symbol lhs, Symbol rhs)
+        inline parser_concatenation<Symbol> operator,(Symbol lhs, Symbol rhs)
         {
-            return parser_sequence<Symbol>{ lhs, rhs };
+            return parser_concatenation<Symbol>{ lhs, rhs };
         }
 
         template <ParserComponent Component1, ParserComponent Component2>
-        inline parser_sequence<typename Component1::symbol_type> operator,(Component1 const& lhs, Component2 const& rhs)
+        inline parser_concatenation<typename Component1::symbol_type> operator,(Component1 const& lhs, Component2 const& rhs)
         {
-            return parser_sequence<typename Component1::symbol_type>{ lhs, rhs };
+            return parser_concatenation<typename Component1::symbol_type>{ lhs, rhs };
         }
 
         template <ParserComponent Component, SymbolEnum Symbol>
-        inline parser_sequence<Symbol> operator,(Component const& lhs, Symbol rhs)
+        inline parser_concatenation<Symbol> operator,(Component const& lhs, Symbol rhs)
         {
-            return parser_sequence<Symbol>{ lhs, rhs };
+            return parser_concatenation<Symbol>{ lhs, rhs };
         }
 
         template <SymbolEnum Symbol, ParserComponent Component>
-        inline parser_sequence<Symbol> operator,(Symbol lhs, Component const& rhs)
+        inline parser_concatenation<Symbol> operator,(Symbol lhs, Component const& rhs)
         {
-            return parser_sequence<Symbol>{ lhs, rhs };
+            return parser_concatenation<Symbol>{ lhs, rhs };
         }
 
         template <ParserTerminal Terminal>
-        inline parser_sequence<typename Terminal::symbol_type> operator,(Terminal const& lhs, char rhs)
+        inline parser_concatenation<typename Terminal::symbol_type> operator,(Terminal const& lhs, char rhs)
         {
-            return parser_sequence<typename Terminal::symbol_type>{ lhs, Terminal{ rhs } };
+            return parser_concatenation<typename Terminal::symbol_type>{ lhs, Terminal{ rhs } };
         }
 
         template <ParserTerminal Terminal>
-        inline parser_sequence<typename Terminal::symbol_type> operator,(char lhs, Terminal const& rhs)
+        inline parser_concatenation<typename Terminal::symbol_type> operator,(char lhs, Terminal const& rhs)
         {
-            return parser_sequence<typename Terminal::symbol_type>{ Terminal{ lhs }, rhs };
+            return parser_concatenation<typename Terminal::symbol_type>{ Terminal{ lhs }, rhs };
         }
 
         template <typename Symbol>
-        inline parser_choice<Symbol> choice(parser_choice<Symbol> const& lhs)
+        inline parser_alternation<Symbol> alternation(parser_alternation<Symbol> const& lhs)
         {
             return { lhs.value };
         }
 
         template <typename Symbol>
-        inline parser_repeat<Symbol> repeat(parser_primitive<Symbol> const& lhs)
+        inline parser_repetition<Symbol> repetition(parser_primitive<Symbol> const& lhs)
         {
             return { lhs };
         }
 
         template <typename Symbol, typename... Args>
-        inline parser_sequence<Symbol> sequence(Args&&... lhs)
+        inline parser_concatenation<Symbol> concatenation(Args&&... lhs)
         {
-            return typename parser_sequence<Symbol>::value_type{ std::forward<Args>(lhs)... };
+            return typename parser_concatenation<Symbol>::value_type{ std::forward<Args>(lhs)... };
         }
 
         template <typename Symbol>
@@ -1526,6 +1535,7 @@ namespace neolib
 #define enable_neolib_parser(symbol)\
     inline symbol is_parser_symbol(symbol) { return {}; }\
     \
+    using neolib::parser_operators::debug;\
     using neolib::parser_operators::operator>>;\
     using neolib::parser_operators::operator<=>;\
     using neolib::parser_operators::operator|;\
@@ -1550,19 +1560,34 @@ namespace neolib
         return result;\
     }\
     template <typename T>\
-    inline neolib::parser_choice<symbol> choice(T&& lhs)\
+    inline neolib::parser_alternation<symbol> alternation(T&& lhs)\
     {\
-        return neolib::parser_operators::choice<symbol>(std::forward<T>(lhs));\
+        return neolib::parser_operators::alternation<symbol>(std::forward<T>(lhs));\
     }\
     template <typename T>\
-    inline neolib::parser_repeat<symbol> repeat(T&& lhs)\
+    inline neolib::parser_alternation<symbol> choice(T&& lhs)\
     {\
-        return neolib::parser_operators::repeat<symbol>(std::forward<T>(lhs));\
+        return neolib::parser_operators::alternation<symbol>(std::forward<T>(lhs));\
+    }\
+    template <typename T>\
+    inline neolib::parser_repetition<symbol> repetition(T&& lhs)\
+    {\
+        return neolib::parser_operators::repetition<symbol>(std::forward<T>(lhs));\
+    }\
+    template <typename T>\
+    inline neolib::parser_repetition<symbol> repeat(T&& lhs)\
+    {\
+        return neolib::parser_operators::repetition<symbol>(std::forward<T>(lhs));\
     }\
     template <typename... T>\
-    inline neolib::parser_sequence<symbol> sequence(T&&... lhs)\
+    inline neolib::parser_concatenation<symbol> concatenation(T&&... lhs)\
     {\
-        return neolib::parser_operators::sequence<symbol>(std::forward<T>(lhs)...); \
+        return neolib::parser_operators::concatenation<symbol>(std::forward<T>(lhs)...); \
+    }\
+    template <typename... T>\
+    inline neolib::parser_concatenation<symbol> sequence(T&&... lhs)\
+    {\
+        return neolib::parser_operators::concatenation<symbol>(std::forward<T>(lhs)...); \
     }\
     template <typename T>\
     inline neolib::parser_range<symbol> range(T&& lhs, T&& rhs)\
