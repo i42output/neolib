@@ -1112,8 +1112,6 @@ namespace neolib
                         if (!child->has_concept())
                             child->set_concept(aAtom.c);
                     aNode.children.insert(aNode.children.end(), std::make_move_iterator(children2.begin()), std::make_move_iterator(children2.end()));
-                    if (!aNode.has_concept())
-                        aNode.set_concept(aAtom.c);
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, result };
                     return ((sdp ? sdp->ok = true : true), result);
                 }
