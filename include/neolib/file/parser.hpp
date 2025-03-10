@@ -435,18 +435,17 @@ namespace neolib
             {}
         };
 
-        struct parse_result
+        struct parse_result : std::string_view
         {
-            std::string_view value;
             char const* sourceNext;
 
             parse_result(std::string_view const& value) :
-                value{ value },
+                std::string_view{ value },
                 sourceNext{ std::to_address(value.end()) }
             {
             }
             parse_result(char const* begin, char const* end) :
-                value{ begin, end },
+                std::string_view{ begin, end },
                 sourceNext{ end }
             {
             }
@@ -862,8 +861,8 @@ namespace neolib
                         auto const matchConcepts = std::count_if(children.begin(), children.end(),
                             [](auto const& n) { return n->c.has_value(); });
                         if (!result ||
-                            match.value().value.size() > result.value().value.size() ||
-                            (match.value().value.size() == result.value().value.size() && matchConcepts > resultConcepts))
+                            match.value().size() > result.value().size() ||
+                            (match.value().size() == result.value().size() && matchConcepts > resultConcepts))
                         {
                             result = match;
                             resultRule = &rule;
@@ -922,7 +921,7 @@ namespace neolib
                 {
                     if (!newChild->has_concept())
                         newChild->set_concept(aAtom.c);
-                    newChild->value = partialResult.value().value;
+                    newChild->value = partialResult.value();
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, apply_partial_result(result, partialResult) };
                     return iCache[cache_key{ &aAtom, aSource.data() }].result;
                 }
@@ -985,13 +984,13 @@ namespace neolib
                     if (doIgnore || doDiscard)
                     {
                         if (spanEnd == nullptr)
-                            spanStart = std::to_address(partialResult->value.end());
+                            spanStart = std::to_address(partialResult->end());
                     }
                     else
                     {
                         if (spanStart == nullptr)
-                            spanStart = std::to_address(partialResult->value.begin());
-                        spanEnd = std::to_address(partialResult->value.end());
+                            spanStart = std::to_address(partialResult->begin());
+                        spanEnd = std::to_address(partialResult->end());
                     }
                     sourceNext = std::to_address(partialResult->sourceNext);
                 }
@@ -1037,26 +1036,24 @@ namespace neolib
                 char const* spanEnd = nullptr;
                 do
                 {
-                    found = false;
+                    found = false;  
                     for (auto const& a : rep.value)
                     {
                         auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
                         if (partialResult)
                         {
-                            if (!aNode.has_concept())
-                                aNode.set_concept(aAtom.c);
                             foundAtLeastOne = true;
                             found = true;
                             if ((std::holds_alternative<discard>(a) && std::get<discard>(a).trim))
                             {
                                 if (spanEnd == nullptr)
-                                    spanStart = std::to_address(partialResult->value.end());
+                                    spanStart = std::to_address(partialResult->end());
                             }
                             else
                             {
                                 if (spanStart == nullptr)
-                                    spanStart = std::to_address(partialResult->value.begin());
-                                spanEnd = std::to_address(partialResult->value.end());
+                                    spanStart = std::to_address(partialResult->begin());
+                                spanEnd = std::to_address(partialResult->end());
                             }
                             sourceNext = std::to_address(partialResult->sourceNext);
                         }
@@ -1072,6 +1069,15 @@ namespace neolib
                 result.value().sourceNext = sourceNext;
                 if (foundAtLeastOne)
                 {
+                    if (aAtom.c)
+                    {
+                        auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, result.value());
+                        newChild->set_concept(aAtom.c);
+                        typename cst_node::child_list children;
+                        std::swap(aNode.children, children);
+                        aNode.children.push_back(newChild);
+                        std::swap(newChild->children, children);
+                    }
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, result };
                     return ((sdp ? sdp->ok = true : true), result);
                 }
@@ -1097,7 +1103,7 @@ namespace neolib
                     auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
                     if (partialResult)
                     {
-                        if (!bestResult || partialResult.value().value.size() > bestResult.value().value.size())
+                        if (!bestResult || partialResult.value().size() > bestResult.value().size())
                         {
                             bestResult = partialResult;
                             std::swap(aNode.children, children2);
@@ -1145,10 +1151,10 @@ namespace neolib
         {
             if (!aResult)
                 return aPartialResult.value();
-            char const* resultFirst = std::to_address(aResult->value.begin());
-            char const* resultLast = std::to_address(aResult->value.end());
-            char const* partialResultFirst = std::to_address(aPartialResult->value.begin());
-            char const* partialResultLast = std::to_address(aPartialResult->value.end());
+            char const* resultFirst = std::to_address(aResult->begin());
+            char const* resultLast = std::to_address(aResult->end());
+            char const* partialResultFirst = std::to_address(aPartialResult->begin());
+            char const* partialResultLast = std::to_address(aPartialResult->end());
             std::string_view result{ std::min(resultFirst, partialResultFirst), std::max(resultLast, partialResultLast) };
             return result;
         }
