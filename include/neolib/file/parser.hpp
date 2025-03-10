@@ -524,6 +524,11 @@ namespace neolib
         using ast_node = cst_node;
 
     public:
+        parser() :
+            iRules{}
+        {
+        }
+
         template <std::size_t RuleCount>
         parser(rule const (&aRules)[RuleCount]) :
             iRules{ &aRules[0], &aRules[0] + RuleCount }
@@ -531,10 +536,21 @@ namespace neolib
         }
 
     public:
+        std::vector<rule> const& rules() const
+        {
+            return iRules;
+        }
+
+        std::vector<rule>& rules()
+        {
+            return iRules;
+        }
+
         void ignore(symbol aIgnore)
         {
             iIgnore.insert(aIgnore);
         }
+
         bool parse(symbol aRoot, std::string_view const& aSource)
         {
             iSource = aSource;
