@@ -163,6 +163,11 @@ namespace neolib
 
             value_type value;
 
+            tuple() :
+                value{}
+            {
+            }
+
             tuple(primitive_atom const& primitive) :
                 value{ primitive }
             {
