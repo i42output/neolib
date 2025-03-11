@@ -437,7 +437,12 @@ namespace neolib
                 rhs{ std::move(other.rhs) }
             {}
 
-            rule(symbol_type lhs) :
+            rule(atom const& lhs) :
+                lhs{ lhs },
+                rhs{}
+            {}
+
+            rule(primitive_atom const& lhs) :
                 lhs{ lhs },
                 rhs{}
             {}
