@@ -138,6 +138,9 @@ namespace neolib
             using base_type = std::string_view;
             using base_type::base_type;
 
+            terminal(std::string_view const& string) :
+                base_type{ string }
+            {}
             terminal(char character) :
                 terminal_character{ character },
                 base_type{ &terminal_character::value(), &terminal_character::value() + 1 }
@@ -685,6 +688,18 @@ namespace neolib
         }
 
     public:
+        bool has_debug_output() const
+        {
+            return iDebugOutput != nullptr;
+        }
+
+        std::ostream& debug_output() const
+        {
+            if (iDebugOutput != nullptr)
+               return *iDebugOutput;
+            throw std::logic_error("neolib::parser::debug_output");
+        }
+
         void set_debug_output(std::ostream& aDebugOutput, bool aDebugCst = false, bool aDebugAst = false)
         {
             iDebugOutput = &aDebugOutput;
