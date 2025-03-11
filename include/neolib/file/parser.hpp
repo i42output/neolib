@@ -381,6 +381,11 @@ namespace neolib
             using base_type = std::vector<primitive_atom>;
             using base_type::base_type;
 
+            atom() :
+                base_type{}
+            {
+            }
+
             atom(atom const& lhs) :
                 base_type{ lhs }
             {
@@ -421,6 +426,21 @@ namespace neolib
 
             atom lhs;
             atom rhs;
+
+            rule(rule const& other) :
+                lhs{ other.lhs },
+                rhs{ other.rhs }
+            {}
+
+            rule(rule&& other) :
+                lhs{ std::move(other.lhs) },
+                rhs{ std::move(other.rhs) }
+            {}
+
+            rule(symbol_type lhs) :
+                lhs{ lhs },
+                rhs{}
+            {}
 
             template <typename Lhs, typename Rhs>
             rule(Lhs&& lhs, Rhs&& rhs) :
@@ -531,7 +551,7 @@ namespace neolib
 
         template <std::size_t RuleCount>
         parser(rule const (&aRules)[RuleCount]) :
-            iRules{ &aRules[0], &aRules[0] + RuleCount }
+            iRules(&aRules[0], &aRules[0] + RuleCount)
         {
         }
 
