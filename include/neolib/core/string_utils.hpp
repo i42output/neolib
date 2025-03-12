@@ -44,6 +44,7 @@
 #include <variant>
 #include <locale>
 #include <format>
+#include <cctype> 
 #include <neolib/core/string.hpp>
 #include <neolib/core/string_numeric.hpp>
 #include <neolib/core/string_utf.hpp>
@@ -373,19 +374,90 @@ namespace neolib
         return std::basic_string<CharT, Traits, Alloc>::npos;
     }
 
-    inline std::string parse_escapes(const std::string& aString)
+    template <typename CharT, typename Traits, typename Alloc>
+    inline typename std::basic_string<CharT, Traits, Alloc> unescape(typename std::basic_string<CharT, Traits, Alloc> const& aString)
     {
-        std::string ret = aString;
-        std::string::size_type escapePos;
-        while((escapePos = ret.find("\\r")) != std::string::npos)
-            ret.replace(escapePos, 2, "\r");
-        while((escapePos = ret.find("\\n")) != std::string::npos)
-            ret.replace(escapePos, 2, "\n");
-        while((escapePos = ret.find("\\t")) != std::string::npos)
-            ret.replace(escapePos, 2, "\t");
-        return ret;
+        using size_type = typename std::basic_string<CharT, Traits, Alloc>::size_type;
+
+        std::string result;
+        
+        size_type const length = aString.size();
+
+        for (size_type i = 0u; i < length; ++i)
+        {
+            char const c = aString[i];
+            if (c == '\\' && i + 1u < length) 
+            {
+                char const nextChar = aString[i + 1u];
+                switch (nextChar) 
+                {
+                case 'n':
+                    result += '\n';
+                    ++i;
+                    break;
+                case 'r':
+                    result += '\r';
+                    ++i;
+                    break;
+                case 't':
+                    result += '\t';
+                    ++i;
+                    break;
+                case '\\':
+                    result += '\\';
+                    ++i;
+                    break;
+                case '"':
+                    result += '"';
+                    ++i;
+                    break;
+                case '\'':
+                    result += '\'';
+                    ++i;
+                    break;
+                case 'x':
+                    {
+                        ++i;
+                        std::uint32_t hexValue = 0u;
+                        bool foundHex = false;
+
+                        while ((i + 1u) < length && std::isxdigit(aString[i + 1u]))
+                        {
+                            ++i;
+                            foundHex = true;
+                            char const hexDigit = aString[i];
+                            hexValue *= 16u;
+                            if (hexDigit >= '0' && hexDigit <= '9')
+                                hexValue += (hexDigit - '0');
+                            else if (hexDigit >= 'a' && hexDigit <= 'f')
+                                hexValue += (hexDigit - 'a' + 10u);
+                            else if (hexDigit >= 'A' && hexDigit <= 'F')
+                                hexValue += (hexDigit - 'A' + 10u);
+                        }
+
+                        if (foundHex)
+                            result += static_cast<char>(hexValue & 0xFFu);
+                        else
+                            result += "\\x"; ///< If no hex digits followed \x, treat "\x" literally.
+                    }
+                    break;
+                default:
+                    result += nextChar;
+                    ++i;
+                    break;
+                }
+            }
+            else
+                result += c;
+        }
+        return result;
     }
 
+    inline std::string unescape(std::string_view const& aString)
+    {
+        return unescape(std::string{ aString });
+    }
+        
     inline std::string parse_url_escapes(const std::string& aString)
     {
         std::string ret = aString;

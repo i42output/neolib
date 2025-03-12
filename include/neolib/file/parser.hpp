@@ -129,25 +129,32 @@ namespace neolib
     public:
         using symbol = Symbol;
 
-        using terminal_character = std::optional<char>;
+        using terminal_character = char;
+        using terminal_string = std::string;
 
-        struct terminal : terminal_character, std::string_view, parser_component<parser_component_type::Terminal>
+        struct terminal : std::variant<std::monostate, terminal_character, terminal_string>, std::string_view, parser_component<parser_component_type::Terminal>
         {
             using symbol_type = symbol;
+            using value_type = std::variant<std::monostate, terminal_character, terminal_string>;
+            using view_type = std::string_view;
 
-            using base_type = std::string_view;
-            using base_type::base_type;
-
-            terminal(std::string_view const& string) :
-                base_type{ string }
+            using view_type::view_type;
+            terminal(terminal_character character) :
+                value_type{ character },
+                view_type{ &std::get<terminal_character>(*this), &std::get<terminal_character>(*this) + 1 }
             {}
-            terminal(char character) :
-                terminal_character{ character },
-                base_type{ &terminal_character::value(), &terminal_character::value() + 1 }
+            terminal(terminal_string const& string) :
+                value_type{ string },
+                view_type{ std::get<terminal_string>(*this) }
             {}
             terminal(terminal const& other) :
-                terminal_character{ other },
-                base_type{ other.has_value() ? std::string_view{ &terminal_character::value(), &terminal_character::value() + 1 } : std::string_view{ other } }
+                value_type{ other },
+                view_type{ 
+                    std::holds_alternative<terminal_character>(*this) ?
+                        view_type{ &std::get<terminal_character>(*this), &std::get<terminal_character>(*this) + 1 } :
+                        std::holds_alternative<terminal_string>(*this) ?
+                            view_type{ std::get<terminal_string>(*this) }  :
+                            view_type{ other } }
             {}
         };
 
@@ -280,6 +287,8 @@ namespace neolib
         {
             using base_type = tuple<range>;
             using base_type::base_type;
+
+            std::unordered_set<unsigned char> exclusions;
         };
 
         struct optional : tuple<optional>, parser_component<parser_component_type::Optional>
@@ -1005,9 +1014,11 @@ namespace neolib
             else if (std::holds_alternative<range>(aAtom))
             {
                 auto const& ran = std::get<range>(aAtom);
-                auto const min = static_cast<unsigned char>(std::get<terminal>(ran.value[0]).value());
-                auto const max = static_cast<unsigned char>(std::get<terminal>(ran.value[1]).value());
-                if (!aSource.empty() && static_cast<unsigned char>(aSource[0]) >= min && static_cast<unsigned char>(aSource[0]) <= max)
+                auto const min = static_cast<unsigned char>(std::get<terminal>(ran.value[0])[0]);
+                auto const max = static_cast<unsigned char>(std::get<terminal>(ran.value[1])[0]);
+                if (!aSource.empty() && 
+                    ran.exclusions.find(static_cast<unsigned char>(aSource[0])) == ran.exclusions.end() &&
+                    static_cast<unsigned char>(aSource[0]) >= min && static_cast<unsigned char>(aSource[0]) <= max)
                 {
                     auto const partialResult = aSource.substr(0, 1);
                     auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
