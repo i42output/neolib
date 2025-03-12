@@ -400,8 +400,9 @@ namespace neolib
             }
 
             atom(primitive_atom const& lhs) :
-                base_type{ 1, lhs }
+                base_type{}
             {
+                base_type::push_back(lhs);
             }
 
             template <typename T>
