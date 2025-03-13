@@ -348,6 +348,7 @@ namespace neolib
             using base_type::base_type;
 
             std::optional<_concept> c;
+            std::optional<std::string> constraint;
 
             primitive_atom(primitive_atom const& other) :
                 base_type{ other }, c{ other.c }
@@ -989,7 +990,7 @@ namespace neolib
                 auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, aSource);
                 aNode.children.push_back(newChild);
                 auto const partialResult = parse(sym, *newChild, aSource);
-                if (partialResult)
+                if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
                 {
                     if (!newChild->has_concept())
                         newChild->set_concept(aAtom.c);
@@ -1069,6 +1070,8 @@ namespace neolib
                     sourceNext = std::to_address(partialResult->sourceNext);
                 }
                 std::swap(aNode.children, children);
+                if (aAtom.constraint && std::string_view{ spanStart, spanEnd } != aAtom.constraint.value())
+                    return {};
                 aNode.children.insert(aNode.children.end(), std::make_move_iterator(children.begin()), std::make_move_iterator(children.end()));
                 if (aAtom.has_concept())
                     aNode.set_concept(aAtom.c);
@@ -1086,7 +1089,7 @@ namespace neolib
                 for (auto const& a : opt.value)
                 {
                     auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
-                    if (partialResult)
+                    if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
                     {
                         if (!aNode.has_concept())
                             aNode.set_concept(aAtom.c);
@@ -1139,6 +1142,8 @@ namespace neolib
                 } while (found);
                 if (spanEnd == nullptr)
                     spanEnd = spanStart;
+                if (aAtom.constraint && std::string_view{ spanStart, spanEnd } != aAtom.constraint.value())
+                    return {};
                 result = std::string_view{ spanStart, spanEnd };
                 result.value().sourceNext = sourceNext;
                 if (foundAtLeastOne)
@@ -1186,6 +1191,8 @@ namespace neolib
                     }
                 }
                 std::swap(aNode.children, children);
+                if (aAtom.constraint && result != aAtom.constraint.value())
+                    return {};
                 if (bestResult)
                 {
                     for (auto& child : children2)
