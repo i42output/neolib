@@ -288,6 +288,7 @@ namespace neolib
             using base_type = tuple<range>;
             using base_type::base_type;
 
+            bool negate = false;
             std::unordered_set<unsigned char> exclusions;
         };
 
@@ -1018,7 +1019,7 @@ namespace neolib
                 auto const max = static_cast<unsigned char>(std::get<terminal>(ran.value[1])[0]);
                 if (!aSource.empty() && 
                     ran.exclusions.find(static_cast<unsigned char>(aSource[0])) == ran.exclusions.end() &&
-                    static_cast<unsigned char>(aSource[0]) >= min && static_cast<unsigned char>(aSource[0]) <= max)
+                    ((static_cast<unsigned char>(aSource[0]) >= min && static_cast<unsigned char>(aSource[0]) <= max) || ran.negate))
                 {
                     auto const partialResult = aSource.substr(0, 1);
                     auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
