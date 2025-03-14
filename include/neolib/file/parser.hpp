@@ -1015,19 +1015,22 @@ namespace neolib
             }
             else if (std::holds_alternative<range>(aAtom))
             {
-                auto const& ran = std::get<range>(aAtom);
-                auto const min = static_cast<unsigned char>(std::get<terminal>(ran.value[0])[0]);
-                auto const max = static_cast<unsigned char>(std::get<terminal>(ran.value[1])[0]);
-                if (!aSource.empty() && 
-                    ran.exclusions.find(static_cast<unsigned char>(aSource[0])) == ran.exclusions.end() &&
-                    ((static_cast<unsigned char>(aSource[0]) >= min && static_cast<unsigned char>(aSource[0]) <= max) || ran.negate))
+                if (!aSource.empty())
                 {
-                    auto const partialResult = aSource.substr(0, 1);
-                    auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
-                    newChild->set_concept(aAtom.c);
-                    aNode.children.push_back(newChild);
-                    iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, apply_partial_result(result, partialResult) };
-                    return ((sdp ? sdp->ok = true : true), iCache[cache_key{ &aAtom, aSource.data() }].result);
+                    auto const& ran = std::get<range>(aAtom);
+                    auto const min = static_cast<unsigned char>(std::get<terminal>(ran.value[0])[0]);
+                    auto const max = static_cast<unsigned char>(std::get<terminal>(ran.value[1])[0]);
+                    bool const inRange = (static_cast<unsigned char>(aSource[0]) >= min && static_cast<unsigned char>(aSource[0]) <= max);
+                    if (((inRange && !ran.negate) || (!inRange && ran.negate)) &&
+                        ran.exclusions.find(static_cast<unsigned char>(aSource[0])) == ran.exclusions.end())
+                    {
+                        auto const partialResult = aSource.substr(0, 1);
+                        auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
+                        newChild->set_concept(aAtom.c);
+                        aNode.children.push_back(newChild);
+                        iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, apply_partial_result(result, partialResult) };
+                        return ((sdp ? sdp->ok = true : true), iCache[cache_key{ &aAtom, aSource.data() }].result);
+                    }
                 }
             }
             else if (std::holds_alternative<concatenation>(aAtom))
