@@ -576,9 +576,20 @@ namespace neolib
         {
         }
 
+        parser(std::shared_ptr<parser> const& aPreviousStage) :
+            iRules{}, iPreviousStage{ aPreviousStage }
+        {
+        }
+
         template <std::size_t RuleCount>
         parser(rule const (&aRules)[RuleCount]) :
             iRules(&aRules[0], &aRules[0] + RuleCount)
+        {
+        }
+
+        template <std::size_t RuleCount>
+        parser(rule const (&aRules)[RuleCount], std::shared_ptr<parser> const& aPreviousStage) :
+            iRules(&aRules[0], &aRules[0] + RuleCount), iPreviousStage{ aPreviousStage }
         {
         }
 
@@ -612,6 +623,12 @@ namespace neolib
             iDeepestParse = {};
             iError = {};
             iCache = {};
+
+            if (iPreviousStage)
+            {
+                iCursor = iPreviousStage->cst().children.begin();
+                iCursorEnd = iPreviousStage->cst().children.end();
+            }
 
             auto const startTime = std::chrono::high_resolution_clock::now();
             auto const result = parse(aRoot, iCst, aSource);
@@ -696,6 +713,16 @@ namespace neolib
             }
         }
 
+        cst_node const& cst() const
+        {
+            return iCst;
+        }
+
+        cst_node& cst()
+        {
+            return iCst;
+        }
+
         ast_node const& ast() const
         {
             return *iAst;
@@ -776,7 +803,7 @@ namespace neolib
                 auto const ourSymbol = std::get<symbol>(aNode->rule->lhs[0]);
                 auto const parentSymbol = std::get<symbol>(aNode->parent->rule->lhs[0]);
 
-                if (std::holds_alternative<range>(*aNode->atom))
+                if (aNode->atom && std::holds_alternative<range>(*aNode->atom))
                 {
                     if (std::holds_alternative<concatenation>(aNode->parent->rule->rhs[0]) || std::holds_alternative<repetition>(aNode->parent->rule->rhs[0]))
                     {
@@ -919,40 +946,53 @@ namespace neolib
                     // todo: if more than one rule matches take the deepest parse and/or resolve ambiguity via semantic analyis through IoC.
 
                     std::optional<parse_result> result;
-                    rule* resultRule = nullptr;
+                    rule const* resultRule = nullptr;
                     typename cst_node::child_list resultChildren;
 
-                    for (auto& rule : iRules)
+                    if (aSymbol && iCursor && iCursor != iCursorEnd && std::get<symbol>((**iCursor)->rule->lhs[0]) == aSymbol.value())
                     {
-                        if (!std::holds_alternative<symbol>(rule.lhs[0]))
-                            continue;
-                        symbol const ruleSymbol = std::get<symbol>(rule.lhs[0]);
-                        scoped_stack_entry sse{ *this, rule, aSource };
-                        if (ruleSymbol == aSymbol.value_or(ruleSymbol) && !left_recursion(aNode, rule))
+                        auto previousStageNode = **iCursor;
+                        result = previousStageNode->value;
+                        resultRule = previousStageNode->rule;
+                        resultChildren.push_back(previousStageNode);
+                        ++*iCursor;
+                    }
+                    else
+                        for (auto& rule : iRules)
                         {
-                            aNode.rule = &rule;
-                            auto const& ruleAtom = rule.rhs[0];
-                            typename cst_node::child_list children;
-                            std::swap(aNode.children, children);
-                            auto const match = parse(ruleSymbol, ruleAtom, aNode, std::string_view{ sourceNext, sourceEnd });
-                            std::swap(aNode.children, children);
-                            if (match)
+                            if (!std::holds_alternative<symbol>(rule.lhs[0]))
+                                continue;
+                            symbol const ruleSymbol = std::get<symbol>(rule.lhs[0]);
+                            scoped_stack_entry sse{ *this, rule, aSource };
+                            if (ruleSymbol == aSymbol.value_or(ruleSymbol) && !left_recursion(aNode, rule))
                             {
-                                auto const resultConcepts = std::count_if(resultChildren.begin(), resultChildren.end(),
-                                    [](auto const& n) { return n->c.has_value(); });
-                                auto const matchConcepts = std::count_if(children.begin(), children.end(),
-                                    [](auto const& n) { return n->c.has_value(); });
-                                if (!result ||
-                                    match.value().size() > result.value().size() ||
-                                    (match.value().size() == result.value().size() && matchConcepts > resultConcepts))
+                                aNode.rule = &rule;
+                                auto const& ruleAtom = rule.rhs[0];
+                                typename cst_node::child_list children;
+                                std::swap(aNode.children, children);
+                                std::optional<parse_result> match;
+                                auto const previousCursor = iCursor;
+                                match = parse(ruleSymbol, ruleAtom, aNode, std::string_view{ sourceNext, sourceEnd });
+                                std::swap(aNode.children, children);
+                                if (match)
                                 {
-                                    result = match;
-                                    resultRule = &rule;
-                                    resultChildren = children;
+                                    auto const resultConcepts = std::count_if(resultChildren.begin(), resultChildren.end(),
+                                        [](auto const& n) { return n->c.has_value(); });
+                                    auto const matchConcepts = std::count_if(children.begin(), children.end(),
+                                        [](auto const& n) { return n->c.has_value(); });
+                                    if (!result ||
+                                        match.value().size() > result.value().size() ||
+                                        (match.value().size() == result.value().size() && matchConcepts > resultConcepts))
+                                    {
+                                        result = match;
+                                        resultRule = &rule;
+                                        resultChildren = children;
+                                    }
                                 }
+                                else
+                                    iCursor = previousCursor;
                             }
                         }
-                    }
 
                     if (result)
                     {
@@ -1407,6 +1447,9 @@ namespace neolib
 
     private:
         std::vector<rule> iRules;
+        std::shared_ptr<parser> iPreviousStage;
+        std::optional<typename cst_node::child_list::const_iterator> iCursor;
+        std::optional<typename cst_node::child_list::const_iterator> iCursorEnd;
         std::unordered_set<symbol> iIgnore;
         std::string_view iSource;
         cst_node iCst = {};
