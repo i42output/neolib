@@ -351,12 +351,12 @@ namespace neolib
             std::optional<std::string> constraint;
 
             primitive_atom(primitive_atom const& other) :
-                base_type{ other }, c{ other.c }
+                base_type{ other }, c{ other.c }, constraint{ other.constraint }
             {
             }
 
             primitive_atom(primitive_atom&& other) :
-                base_type{ std::move(other) }, c{ std::move(other.c) }
+                base_type{ std::move(other) }, c{ std::move(other.c) }, constraint{ std::move(other.constraint) }
             {
             }
 
@@ -364,6 +364,7 @@ namespace neolib
             {
                 base_type::operator=(other);
                 c = other.c;
+                constraint = other.constraint;
                 return *this;
             }
 
@@ -371,6 +372,7 @@ namespace neolib
             {
                 base_type::operator=(std::move(other));
                 c = std::move(other.c);
+                constraint = std::move(other.constraint);
                 return *this;
             }
 
