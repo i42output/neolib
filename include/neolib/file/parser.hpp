@@ -958,6 +958,10 @@ namespace neolib
                         ++*iCursor;
                     }
                     else
+                    {
+                        auto const previousCursor = iCursor;
+                        auto newCursor = previousCursor;
+                        bool anyMatches = false;
                         for (auto& rule : iRules)
                         {
                             if (!std::holds_alternative<symbol>(rule.lhs[0]))
@@ -966,16 +970,17 @@ namespace neolib
                             scoped_stack_entry sse{ *this, rule, aSource };
                             if (ruleSymbol == aSymbol.value_or(ruleSymbol) && !left_recursion(aNode, rule))
                             {
+                                iCursor = previousCursor;
                                 aNode.rule = &rule;
                                 auto const& ruleAtom = rule.rhs[0];
                                 typename cst_node::child_list children;
                                 std::swap(aNode.children, children);
                                 std::optional<parse_result> match;
-                                auto const previousCursor = iCursor;
-                                match = parse(ruleSymbol, ruleAtom, aNode, std::string_view{ sourceNext, sourceEnd });
+                                match = parse(ruleSymbol, ruleAtom, aNode, std::string_view{ iCursor ? std::to_address((***iCursor).value.begin()) : sourceNext, sourceEnd });
                                 std::swap(aNode.children, children);
                                 if (match)
                                 {
+                                    anyMatches = true;
                                     auto const resultConcepts = std::count_if(resultChildren.begin(), resultChildren.end(),
                                         [](auto const& n) { return n->c.has_value(); });
                                     auto const matchConcepts = std::count_if(children.begin(), children.end(),
@@ -984,15 +989,19 @@ namespace neolib
                                         match.value().size() > result.value().size() ||
                                         (match.value().size() == result.value().size() && matchConcepts > resultConcepts))
                                     {
+                                        newCursor = iCursor;
                                         result = match;
                                         resultRule = &rule;
                                         resultChildren = children;
                                     }
                                 }
-                                else
-                                    iCursor = previousCursor;
                             }
                         }
+                        if (anyMatches)
+                            iCursor = newCursor;
+                        else
+                            iCursor = previousCursor;
+                    }
 
                     if (result)
                     {
