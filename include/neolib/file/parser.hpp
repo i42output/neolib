@@ -937,6 +937,8 @@ namespace neolib
 
                     // todo: if more than one rule matches take the deepest parse and/or resolve ambiguity via semantic analyis through IoC.
 
+                    scoped_object scopedCursor{ iCursor, iCursor };
+
                     std::optional<parse_result> result;
                     rule const* resultRule = nullptr;
                     typename cst_node::child_list resultChildren;
@@ -947,13 +949,13 @@ namespace neolib
                         result = previousStageNode->value;
                         resultRule = previousStageNode->rule;
                         resultChildren.push_back(previousStageNode);
+                        scopedCursor.ignore();
                         ++*iCursor;
                     }
                     else
                     {
-                        auto const previousCursor = iCursor;
-                        auto newCursor = previousCursor;
                         bool anyMatches = false;
+                        auto newCursor = iCursor;
                         for (auto& rule : iRules)
                         {
                             if (!std::holds_alternative<symbol>(rule.lhs[0]))
@@ -962,12 +964,12 @@ namespace neolib
                             scoped_stack_entry sse{ *this, rule, aSource };
                             if (ruleSymbol == aSymbol.value_or(ruleSymbol) && !left_recursion(aNode, rule))
                             {
-                                iCursor = previousCursor;
                                 aNode.rule = &rule;
                                 auto const& ruleAtom = rule.rhs[0];
                                 typename cst_node::child_list children;
                                 std::swap(aNode.children, children);
                                 std::optional<parse_result> match;
+                                iCursor = scopedCursor.saved();
                                 match = parse(ruleSymbol, ruleAtom, aNode, std::string_view{ sourceNext, sourceEnd });
                                 std::swap(aNode.children, children);
                                 if (match)
@@ -990,9 +992,10 @@ namespace neolib
                             }
                         }
                         if (anyMatches)
+                        {
+                            scopedCursor.ignore();
                             iCursor = newCursor;
-                        else
-                            iCursor = previousCursor;
+                        }
                     }
 
                     if (result)
@@ -1051,6 +1054,13 @@ namespace neolib
                     return cachedResult;
                 }
             }
+            else if (false && std::holds_alternative<symbol>(aAtom) && iCursor && iCursor != iCursorEnd && std::get<symbol>((**iCursor)->rule->lhs[0]) == std::get<symbol>(aAtom))
+            {
+                auto previousStageNode = **iCursor;
+                aNode.children.push_back(previousStageNode);
+                ++*iCursor;
+                return previousStageNode->value;
+            }
 
             std::optional<parse_result> result;
             char const* sourceNext = std::to_address(aSource.begin());
@@ -1065,6 +1075,8 @@ namespace neolib
 
             // todo: visitor?
 
+            scoped_object scopedCursor{ iCursor, iCursor };
+
             if (std::holds_alternative<symbol>(aAtom))
             {
                 auto const& sym = std::get<symbol>(aAtom);
@@ -1073,6 +1085,7 @@ namespace neolib
                 auto const partialResult = parse(sym, *newChild, aSource);
                 if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
                 {
+                    scopedCursor.ignore();
                     if (!newChild->has_concept())
                         newChild->set_concept(aAtom.c);
                     newChild->value = partialResult.value();
@@ -1091,6 +1104,7 @@ namespace neolib
                 auto const& ter = std::get<terminal>(aAtom);
                 if ((!ter.empty() && aSource.find(ter) == 0) || (ter.empty() && sourceNext == sourceEnd))
                 {
+                    scopedCursor.ignore();
                     auto const partialResult = aSource.substr(0, ter.size());
                     auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
                     newChild->set_concept(aAtom.c);
@@ -1115,6 +1129,7 @@ namespace neolib
                     if (((inRange && !ran.negate) || (!inRange && ran.negate)) &&
                         ran.exclusions.find(static_cast<unsigned char>(aSource[0])) == ran.exclusions.end())
                     {
+                        scopedCursor.ignore();
                         auto const partialResult = aSource.substr(0, 1);
                         auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
                         newChild->set_concept(aAtom.c);
@@ -1171,6 +1186,7 @@ namespace neolib
                 std::swap(aNode.children, children);
                 if (aAtom.constraint && std::string_view{ spanStart, spanEnd } != aAtom.constraint.value())
                     return {};
+                scopedCursor.ignore();
                 aNode.children.insert(aNode.children.end(), std::make_move_iterator(children.begin()), std::make_move_iterator(children.end()));
                 if (aAtom.has_concept())
                     aNode.set_concept(aAtom.c);
@@ -1199,6 +1215,7 @@ namespace neolib
                 }
                 if (!result)
                     result.emplace(sourceNext, sourceNext);
+                scopedCursor.ignore();
                 if (!iCursor)
                     iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, result };
                 return ((sdp ? sdp->ok = true : true), result);
@@ -1249,6 +1266,7 @@ namespace neolib
                 result.value().sourceNext = sourceNext;
                 if (foundAtLeastOne)
                 {
+                    scopedCursor.ignore();
                     if (aAtom.c)
                     {
                         auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, result.value());
@@ -1278,15 +1296,18 @@ namespace neolib
                 typename cst_node::child_list children;
                 std::swap(aNode.children, children);
                 typename cst_node::child_list children2;
+                auto newCursor = iCursor;
                 for (auto const& a : alt.value)
                 {
                     typename cst_node::child_list children3;
                     std::swap(aNode.children, children3);
+                    iCursor = scopedCursor.saved();
                     auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
                     if (partialResult)
                     {
                         if (!bestResult || partialResult.value().size() > bestResult.value().size())
                         {
+                            newCursor = iCursor;
                             bestResult = partialResult;
                             std::swap(aNode.children, children2);
                             result = apply_partial_result(result, partialResult);
@@ -1298,6 +1319,8 @@ namespace neolib
                     return {};
                 if (bestResult)
                 {
+                    scopedCursor.ignore();
+                    iCursor = newCursor;
                     for (auto& child : children2)
                         if (!child->has_concept())
                             child->set_concept(aAtom.c);
