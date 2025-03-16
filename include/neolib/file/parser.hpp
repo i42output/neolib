@@ -1004,7 +1004,9 @@ namespace neolib
                         aNode.value = result.value();
                         if (!aNode.has_concept())
                             aNode.set_concept(resultRule->rhs[0].c.has_value() ? resultRule->rhs[0].c : resultRule->lhs[0].c);
-                        aNode.children.insert(aNode.children.end(), std::make_move_iterator(resultChildren.begin()), std::make_move_iterator(resultChildren.end()));
+                        bool const doIgnore = aSymbol && iIgnore.find(aSymbol.value()) != iIgnore.end();
+                        if (!doIgnore)
+                            aNode.children.insert(aNode.children.end(), std::make_move_iterator(resultChildren.begin()), std::make_move_iterator(resultChildren.end()));
                         return ((sdp ? sdp->ok = true : true), result);
                     }
 
@@ -1081,10 +1083,12 @@ namespace neolib
             {
                 auto const& sym = std::get<symbol>(aAtom);
                 auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, aSource);
-                aNode.children.push_back(newChild);
                 auto const partialResult = parse(sym, *newChild, aSource);
                 if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
                 {
+                    bool const doIgnore = iIgnore.find(sym) != iIgnore.end();
+                    if (!doIgnore)
+                        aNode.children.push_back(newChild);
                     scopedCursor.ignore();
                     if (!newChild->has_concept())
                         newChild->set_concept(aAtom.c);
@@ -1097,7 +1101,6 @@ namespace neolib
                     else
                         return apply_partial_result(result, partialResult);
                 }
-                aNode.children.pop_back();
             }
             else if (std::holds_alternative<terminal>(aAtom))
             {
