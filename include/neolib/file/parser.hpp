@@ -803,15 +803,7 @@ namespace neolib
                 auto const ourSymbol = std::get<symbol>(aNode->rule->lhs[0]);
                 auto const parentSymbol = std::get<symbol>(aNode->parent->rule->lhs[0]);
 
-                if (aNode->atom && std::holds_alternative<range>(*aNode->atom))
-                {
-                    if (std::holds_alternative<concatenation>(aNode->parent->rule->rhs[0]) || std::holds_alternative<repetition>(aNode->parent->rule->rhs[0]))
-                    {
-                        aNode->parent->value = std::string_view{ aNode->parent->value.data(), std::to_address(aNode->value.end()) };
-                        return existing;
-                    }
-                }
-                else if ((ourSymbol == parentSymbol || (aNode->c.has_value() && aNode->c == aNode->parent->c)) && aNode->value == aNode->parent->value)
+                if ((ourSymbol == parentSymbol || (aNode->c.has_value() && aNode->c == aNode->parent->c)) && aNode->value == aNode->parent->value)
                 {
                     for (auto& child2 : aNode->children)
                         child2->parent = aNode->parent;
