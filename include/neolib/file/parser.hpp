@@ -1056,13 +1056,6 @@ namespace neolib
                     return cachedResult;
                 }
             }
-            else if (false && std::holds_alternative<symbol>(aAtom) && iCursor && iCursor != iCursorEnd && std::get<symbol>((**iCursor)->rule->lhs[0]) == std::get<symbol>(aAtom))
-            {
-                auto previousStageNode = **iCursor;
-                aNode.children.push_back(previousStageNode);
-                ++*iCursor;
-                return previousStageNode->value;
-            }
 
             std::optional<parse_result> result;
             char const* sourceNext = std::to_address(aSource.begin());
