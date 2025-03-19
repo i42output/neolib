@@ -1511,7 +1511,7 @@ namespace neolib
         cst_node iCst = {};
         std::shared_ptr<cst_node> iAst = std::make_shared<cst_node>();
         std::vector<std::pair<rule const*, std::string_view>> iStack;
-        std::uint32_t iMaxLevel = 256;
+        std::uint32_t iMaxLevel = 1024;
         std::uint32_t iLevel = 0;
         char const* iDeepestParse;
         std::optional<std::string> iError;
