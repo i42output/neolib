@@ -253,9 +253,14 @@ namespace neolib
             using base_type::base_type;
         };
 
-        struct alternation : tuple<alternation>, parser_component<parser_component_type::Alternation>
+        struct alternation_params
         {
-            using base_type = tuple<alternation>;
+            bool matchFirst = false;
+        };
+
+        struct alternation : tuple<alternation, alternation_params>, parser_component<parser_component_type::Alternation>
+        {
+            using base_type = tuple<alternation, alternation_params>;
             using base_type::base_type;
         };
 
@@ -1312,6 +1317,8 @@ namespace neolib
                             bestResult = partialResult;
                             std::swap(aNode.children, children2);
                             result = apply_partial_result(result, partialResult);
+                            if (alt.matchFirst)
+                                break;
                         }
                     }
                 }
@@ -1615,12 +1622,6 @@ namespace neolib
             return parser_rule<Symbol>{ lhs, rhs };
         }
 
-        template <ParserRule Rule>
-        inline Rule operator|(Rule const& lhs, parser_primitive<typename Rule::symbol_type> const& rhs)
-        {
-            return Rule{ lhs.lhs, parser_atom<typename Rule::symbol_type>{ lhs.rhs, rhs } };
-        }
-
         template <ParserConcept Concept>
         inline parser_primitive<typename Concept::symbol_type> operator<=>(typename Concept::symbol_type lhs, Concept const& rhs)
         {
@@ -1677,6 +1678,62 @@ namespace neolib
         inline parser_alternation<typename Component::symbol_type> operator|(char lhs, Component const& rhs)
         {
             return parser_alternation<typename Component::symbol_type>{ parser_terminal<typename Component::symbol_type>{ lhs }, rhs };
+        }
+
+        template <ParserAlternation Alternation>
+        inline Alternation operator/(Alternation const& lhs, typename Alternation::symbol_type rhs)
+        {
+            Alternation result{ lhs, rhs };
+            result.matchFirst = true;
+            return result;
+        }
+
+        template <SymbolEnum Symbol>
+        inline parser_alternation<Symbol> operator/(Symbol lhs, Symbol rhs)
+        {
+            parser_alternation<Symbol> result{ lhs, rhs };
+            result.matchFirst = true;
+            return result;
+        }
+
+        template <SymbolEnum Symbol>
+        inline parser_alternation<Symbol> operator/(parser_primitive<Symbol> const& lhs, Symbol rhs)
+        {
+            parser_alternation<Symbol> result{ lhs, rhs };
+            result.matchFirst = true;
+            return result;
+        }
+
+        template <SymbolEnum Symbol>
+        inline parser_alternation<Symbol> operator/(Symbol lhs, parser_primitive<Symbol> const& rhs)
+        {
+            parser_alternation<Symbol> result{ lhs, rhs };
+            result.matchFirst = true;
+            return result;
+        }
+
+        template <ParserComponent Component1, ParserComponent Component2>
+        inline parser_alternation<typename Component1::symbol_type> operator/(Component1 const& lhs, Component2 const& rhs)
+        {
+            parser_alternation<typename Component1::symbol_type> result{ lhs, rhs };
+            result.matchFirst = true;
+            return result;
+        }
+
+        template <ParserComponent Component>
+        inline parser_alternation<typename Component::symbol_type> operator/(Component const& lhs, char rhs)
+        {
+            parser_alternation<typename Component::symbol_type> result{ lhs, parser_terminal<typename Component::symbol_type>{ rhs } };
+            result.matchFirst = true;
+            return result;
+        }
+
+        template <ParserComponent Component>
+        inline parser_alternation<typename Component::symbol_type> operator/(char lhs, Component const& rhs)
+        {
+            parser_alternation<typename Component::symbol_type> result{ parser_terminal<typename Component::symbol_type>{ lhs }, rhs };
+            result.matchFirst = true;
+            return result;
         }
 
         template <ParserRule Rule>
@@ -1765,6 +1822,7 @@ namespace neolib
     using neolib::parser_operators::operator>>;\
     using neolib::parser_operators::operator<=>;\
     using neolib::parser_operators::operator|;\
+    using neolib::parser_operators::operator/;\
     using neolib::parser_operators::operator,;\
     \
     inline neolib::parser_terminal<symbol> operator"" _(const char* str, std::size_t len)\
