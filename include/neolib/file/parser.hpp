@@ -827,6 +827,24 @@ namespace neolib
                     ++child;
             }
 
+            for (auto child = aNode->children.begin(); child != aNode->children.end(); )
+            {
+                if ((**child).c.value().association == concept_association::Infix)
+                {
+                    (**child).set_concept(without_association((**child).c));
+                    auto lhs = std::prev(child);
+                    auto rhs = std::next(child);
+                    (**lhs).parent = (*child).get();
+                    (**rhs).parent = (*child).get();
+                    (**child).children.push_back(*lhs);
+                    (**child).children.push_back(*rhs);
+                    auto op = aNode->children.erase(lhs);
+                    child = aNode->children.erase(std::next(op));
+                }
+                else
+                    ++child;
+            }
+
             if (aNode->parent)
             {
                 auto existing = std::find_if(aNode->parent->children.begin(), aNode->parent->children.end(), [&](auto const& e)
@@ -841,19 +859,6 @@ namespace neolib
                     auto pos = aNode->parent->children.insert(std::next(existing),
                         std::make_move_iterator(aNode->children.begin()), std::make_move_iterator(aNode->children.end()));
                     return std::prev(pos);
-                }
-                else if (aNode->c.value().association == concept_association::Infix)
-                {
-                    aNode->set_concept(without_association(aNode->c));
-                    auto lhs = std::prev(existing);
-                    auto rhs = std::next(existing);
-                    (**lhs).parent = aNode;
-                    (**rhs).parent = aNode;
-                    aNode->children.push_back(*lhs);
-                    aNode->children.push_back(*rhs);
-                    existing = aNode->parent->children.erase(lhs);
-                    rhs = std::next(existing);
-                    return rhs;
                 }
             }
 
