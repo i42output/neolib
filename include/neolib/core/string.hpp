@@ -41,6 +41,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <neolib/core/reference_counted.hpp>
 #include <neolib/core/i_string.hpp>
+#include <neolib/core/string_view.hpp>
 #include <neolib/core/container_iterator.hpp>
 #include <neolib/core/quick_string.hpp>
 
@@ -72,6 +73,7 @@ namespace neolib
         string(const string& aOther) : iString{ aOther.as_std_string() } {}
         string(string&& aOther) : iString{ std::move(aOther.as_std_string()) } {}
         string(const i_string& aOther) : iString{ aOther.to_std_string_view() } {}
+        string(const i_string_view& aOther) : iString{ aOther.to_std_string_view() } {}
         template <typename Iter, typename SFINAE = std::enable_if_t<!std::is_scalar_v<Iter>, sfinae>>
         string(Iter aBegin, Iter aEnd) : iString{ aBegin, aEnd } {}
         ~string() {}
@@ -81,12 +83,14 @@ namespace neolib
         string& operator=(const string& aOther) { assign(aOther); return *this; }
         string& operator=(string&& aOther) { assign(std::move(aOther)); return *this; }
         string& operator=(const i_string& aOther) final { assign(aOther); return *this; }
+        string& operator=(const i_string_view& aOther) final { assign(aOther); return *this; }
         // operations
     public:
         const std_type& as_std_string() const { return iString; }
         std_type& as_std_string() { return iString; }
         std::string to_std_string() const { return iString; }
         std::string_view to_std_string_view() const noexcept { return std::string_view{ iString }; }
+        string_view to_string_view() const noexcept { return string_view{ iString }; }
         // implementation
         // from i_container
     public:
@@ -132,9 +136,11 @@ namespace neolib
         const char* c_str() const noexcept final { return iString.c_str(); }
         void assign(const string& aOther) { iString = aOther.to_std_string_view(); }
         void assign(const i_string& aOther) final { iString = aOther.to_std_string_view(); }
+        void assign(const i_string_view& aOther) final { iString = aOther.to_std_string_view(); }
         void assign(const char* aSource, size_type aSourceLength) final { iString.assign(aSource, aSourceLength); }
         void append(const string& aOther) { iString.append(aOther.to_std_string_view()); }
         void append(const i_string& aOther) final { iString.append(aOther.to_std_string_view()); }
+        void append(const i_string_view& aOther) final { iString.append(aOther.to_std_string_view()); }
         void append(const char* aSource, size_type aSourceLength) final { iString.append(aSource, aSourceLength); }
     public:
         void replace_all(const i_string& aSearch, const i_string& aReplace) final { boost::replace_all(iString, aSearch.to_std_string_view(), aReplace.to_std_string_view()); }

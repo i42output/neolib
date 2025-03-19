@@ -62,6 +62,7 @@ namespace std
 #include <cassert>
 #include <boost/locale.hpp> 
 #include <neolib/core/string.hpp>
+#include <neolib/core/string_view.hpp>
 
 namespace neolib 
 {
@@ -435,6 +436,11 @@ namespace neolib
     }
 
     inline bool check_utf8(const i_string& aString)
+    {
+        return check_utf8(aString.to_std_string_view());
+    }
+
+    inline bool check_utf8(const i_string_view& aString)
     {
         return check_utf8(aString.to_std_string_view());
     }

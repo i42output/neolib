@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include <neolib/core/string.hpp>
+#include <neolib/core/i_string.hpp>
 #include <neolib/core/i_string_view.hpp>
 
 namespace neolib

@@ -42,6 +42,7 @@
 #include <boost/algorithm/string.hpp>
 #include <neolib/core/fwd_abstract.hpp>
 #include <neolib/core/i_contiguous_random_access_container.hpp>
+#include <neolib/core/i_string_view.hpp>
 
 namespace neolib
 {
@@ -56,11 +57,14 @@ namespace neolib
         using typename base_type::size_type;
     public:
         virtual i_string& operator=(const i_string& aOther) = 0;
+        virtual i_string& operator=(const i_string_view& aOther) = 0;
     public:
         virtual const value_type* c_str() const noexcept = 0;
         virtual void assign(const i_string& aOther) = 0;
+        virtual void assign(const i_string_view& aOther) = 0;
         virtual void assign(const value_type* aSource, size_type aSourceLength) = 0;
         virtual void append(const i_string& aOther) = 0;
+        virtual void append(const i_string_view& aOther) = 0;
         virtual void append(const value_type* aSource, size_type aSourceLength) = 0;
     public:
         virtual void replace_all(const i_string& aSearch, const i_string& aReplace) = 0;
