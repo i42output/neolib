@@ -940,7 +940,10 @@ namespace neolib
 
             auto parse_rules = [&](std::optional<symbol> const& aSymbol, cst_node& aNode, std::string_view const& aSource) -> std::optional<parse_result>
                 {
-                    char const* sourceNext = std::to_address(aSource.begin());
+                    char const* sourceNext = std::to_address(!iCursor ? 
+                        aSource.begin() : 
+                        *iCursor != iCursorEnd ? 
+                            (***iCursor).value.begin() : aSource.end());
                     char const* sourceEnd = std::to_address(aSource.end());
 
                     iDeepestParse = std::max(iDeepestParse, sourceNext);
@@ -1068,7 +1071,10 @@ namespace neolib
             }
 
             std::optional<parse_result> result;
-            char const* sourceNext = std::to_address(aSource.begin());
+            char const* sourceNext = std::to_address(!iCursor ? 
+                aSource.begin() : 
+                *iCursor != iCursorEnd ? 
+                    (***iCursor).value.begin() : aSource.end());
             char const* sourceEnd = std::to_address(aSource.end());
 
             iDeepestParse = std::max(iDeepestParse, sourceNext);
