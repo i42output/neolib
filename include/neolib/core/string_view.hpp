@@ -60,6 +60,11 @@ namespace neolib
             iLast{ std::next(aOther, std::strlen(aOther)) }
         {
         }
+        constexpr string_view(const_iterator aFirst, const_iterator aLast) noexcept :
+            iFirst{ aFirst },
+            iLast{ aLast }
+        {
+        }
         constexpr string_view(string_view const& aOther) noexcept :
             iFirst{ aOther.iFirst },
             iLast{ aOther.iLast }
