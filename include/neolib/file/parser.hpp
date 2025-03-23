@@ -51,6 +51,7 @@
 
 #include <neolib/core/i_enum.hpp>
 #include <neolib/core/scoped.hpp>
+#include <neolib/core/string_utils.hpp>
 
 namespace neolib
 {
@@ -649,7 +650,7 @@ namespace neolib
                     columnPos = static_cast<std::uint32_t>(std::distance(std::reverse_iterator(pos),
                         std::find(std::reverse_iterator(pos), std::reverse_iterator(aSource.data()), '\n')) + 1);
                     std::string error = errorPrefix + "(" + std::to_string(linePos) + "," + std::to_string(columnPos) + ") ";
-                    error += "'" + debug_print(std::string_view{ pos, std::next(pos) }) + "' was unexpected here.";
+                    error += "'" + to_escaped_string(std::string_view{ pos, std::next(pos) }, 16u, true) + "' was unexpected here.";
                     return error;
                 };
 
@@ -1420,7 +1421,7 @@ namespace neolib
                             if constexpr (std::is_same_v<symbol, std::decay_t<decltype(pa)>>)
                                 oss << "symbol(" << enum_to_string(pa) << ")";
                             else if constexpr (std::is_same_v<terminal, std::decay_t<decltype(pa)>>)
-                                oss << "teminal(" << to_string(pa.type) << ":[" << debug_print(pa) << "])";
+                                oss << "teminal(" << to_string(pa.type) << ":[" << to_escaped_string(pa, 16u, true) << "])";
                             else
                                 oss << "atom(" << to_string(pa.type) << ")";
                         }, aValue);
@@ -1430,41 +1431,15 @@ namespace neolib
                 value = oss.str();
 
                 if (owner.iDebugOutput)
-                    (*owner.iDebugOutput) << std::string(static_cast<std::size_t>(owner.iLevel - 1), ' ') << value << ": " << "[" << debug_print(source) << "]" << std::endl;
+                    (*owner.iDebugOutput) << std::string(static_cast<std::size_t>(owner.iLevel - 1), ' ') << value << ": " << "[" << to_escaped_string(source, 16u, true) << "]" << std::endl;
             }
 
             ~scoped_debug_print()
             {
                 if (owner.iDebugOutput && ok)
-                    (*owner.iDebugOutput) << std::string(static_cast<std::size_t>(owner.iLevel - 1), ' ') << value << " ok: [" << debug_print(source) << "]" << std::endl;
+                    (*owner.iDebugOutput) << std::string(static_cast<std::size_t>(owner.iLevel - 1), ' ') << value << " ok: [" << to_escaped_string(source, 16u, true) << "]" << std::endl;
             }
         };
-
-        static std::string debug_print(std::string_view const& aSource, std::size_t aMaxChars = 16)
-        {
-            std::ostringstream result;
-            std::size_t charsAdded = 0;
-            for (auto ch : aSource)
-            {
-                if (charsAdded == aMaxChars)
-                {
-                    result << "...";
-                    break;
-                }
-                ++charsAdded;
-                if (ch >= ' ')
-                    result << ch;
-                else if (ch == '\n')
-                    result << "\\n";
-                else if (ch == '\r')
-                    result << "\\r";
-                else if (ch == '\t')
-                    result << "\\t";
-                else
-                    result << "\\x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<std::uint32_t>(static_cast<std::uint8_t>(ch));
-            }
-            return result.str();
-        }
 
         static std::string debug_print_cst(cst_node const& aNode, std::uint32_t aLevel = 0)
         {
@@ -1480,7 +1455,7 @@ namespace neolib
                             oss << to_string(pa.type);
                         if (aNode.c.has_value())
                             oss << " : " << aNode.c.value();
-                        oss << " = [" << debug_print(aNode.value, 64) << "]";
+                        oss << " = [" << to_escaped_string(aNode.value, 64, true) << "]";
                     }, *aNode.atom);
             }
             oss << std::endl;
@@ -1498,7 +1473,7 @@ namespace neolib
                 std::visit([&](auto const& pa)
                     {
                         oss << aNode.c.value();
-                        oss << " = [" << debug_print(aNode.value, 64) << "]";
+                        oss << " = [" << to_escaped_string(aNode.value, 64, true) << "]";
                     }, *aNode.atom);
             }
             oss << std::endl;

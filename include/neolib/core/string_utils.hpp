@@ -37,6 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <string>
+#include <sstream>
 #include <vector>
 #include <list>
 #include <set>
@@ -465,6 +466,33 @@ namespace neolib
             if (ret[pos] == '%' && pos + 2 < ret.length())
                 ret.replace(pos, 3, 1, static_cast<char>(string_to_int32(ret.substr(pos + 1, 2), 16)));
         return ret;
+    }
+
+    inline std::string to_escaped_string(std::string_view const& aString, std::size_t aMaxChars = 0u, bool aElipsis = false)
+    {
+        std::ostringstream result;
+        std::size_t charsAdded = 0;
+        for (auto ch : aString)
+        {
+            if (aMaxChars != 0u && charsAdded == aMaxChars)
+            {
+                if (aElipsis)
+                    result << "...";
+                break;
+            }
+            ++charsAdded;
+            if (ch >= ' ')
+                result << ch;
+            else if (ch == '\n')
+                result << "\\n";
+            else if (ch == '\r')
+                result << "\\r";
+            else if (ch == '\t')
+                result << "\\t";
+            else
+                result << "\\x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<std::uint32_t>(static_cast<std::uint8_t>(ch));
+        }
+        return result.str();
     }
 
     namespace detail
