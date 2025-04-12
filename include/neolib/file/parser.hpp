@@ -570,7 +570,8 @@ namespace neolib
 
             void set_concept(std::optional<_concept> const& newConcept)
             {
-                c = newConcept;
+                if (newConcept.has_value())
+                    c = newConcept;
             }
         };
 
@@ -1100,8 +1101,7 @@ namespace neolib
                     if (!doIgnore)
                         aNode.children.push_back(newChild);
                     scopedCursor.ignore();
-                    if (!newChild->has_concept())
-                        newChild->set_concept(aAtom.c);
+                    newChild->set_concept(aAtom.c);
                     newChild->value = partialResult.value();
                     if (!iCursor)
                     {
@@ -1201,8 +1201,7 @@ namespace neolib
                     return {};
                 scopedCursor.ignore();
                 aNode.children.insert(aNode.children.end(), std::make_move_iterator(children.begin()), std::make_move_iterator(children.end()));
-                if (aAtom.has_concept())
-                    aNode.set_concept(aAtom.c);
+                aNode.set_concept(aAtom.c);
                 if (spanEnd == nullptr)
                     spanEnd = spanStart;
                 aNode.value = std::string_view{ spanStart, spanEnd };
@@ -1220,8 +1219,7 @@ namespace neolib
                     auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
                     if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
                     {
-                        if (!aNode.has_concept())
-                            aNode.set_concept(aAtom.c);
+                        aNode.set_concept(aAtom.c);
                         result = apply_partial_result(result, partialResult);
                         sourceNext = std::to_address(partialResult->sourceNext);
                     }
@@ -1337,8 +1335,7 @@ namespace neolib
                     scopedCursor.ignore();
                     iCursor = newCursor;
                     for (auto& child : children2)
-                        if (!child->has_concept())
-                            child->set_concept(aAtom.c);
+                        child->set_concept(aAtom.c);
                     aNode.children.insert(aNode.children.end(), std::make_move_iterator(children2.begin()), std::make_move_iterator(children2.end()));
                     if (!iCursor)
                         iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, result };
@@ -1357,8 +1354,7 @@ namespace neolib
                     std::swap(aNode.children, children);
                     if (partialResult)
                     {
-                        if (!aNode.has_concept())
-                            aNode.set_concept(aAtom.c);
+                        aNode.set_concept(aAtom.c);
                         result = apply_partial_result(result, partialResult);
                         sourceNext = std::to_address(partialResult->sourceNext);
                     }
