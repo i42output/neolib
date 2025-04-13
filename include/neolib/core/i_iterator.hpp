@@ -127,6 +127,7 @@ namespace neolib
     {
         typedef const_iterator<T, Category, Difference, Pointer, Reference> self_type;
     public:
+        typedef self_type abstract_type;
         typedef T value_type;
         typedef Difference difference_type;
         typedef Pointer pointer;
@@ -231,14 +232,14 @@ namespace neolib
         typedef random_access_const_iterator<T, Category, Difference, Pointer, Reference> self_type;
         typedef const_iterator<T, Category, Difference, Pointer, Reference> base_type;
     public:
-        typedef i_random_access_const_iterator<T, Category, Difference, Pointer, Reference> abstract_type;
+        typedef self_type abstract_type;
         using typename base_type::value_type;
         using typename base_type::difference_type;
         using typename base_type::pointer;
         using typename base_type::reference;
         using typename base_type::iterator_category;
     public:
-        using abstract_iterator = abstract_type;
+        using abstract_iterator = i_random_access_const_iterator<T, Category, Difference, Pointer, Reference>;
         using abstract_const_iterator = abstract_type;
     public:
         random_access_const_iterator() :
@@ -398,14 +399,14 @@ namespace neolib
     {
         typedef iterator<T, Category, Difference, Pointer, Reference> self_type;
     public:
-        typedef i_iterator<T, Category, Difference, Pointer, Reference> abstract_type;
+        typedef self_type abstract_type;
         typedef T value_type;
         typedef Difference difference_type;
         typedef Pointer pointer;
         typedef Reference reference;
         typedef Category iterator_category;
     public:
-        typedef abstract_type abstract_iterator;
+        typedef i_iterator<T, Category, Difference, Pointer, Reference> abstract_iterator;
         typedef i_const_iterator<T, Category, Difference, const T*, const T&> abstract_const_iterator;
     public:
         iterator()
@@ -487,14 +488,14 @@ namespace neolib
         typedef random_access_iterator<T, Category, Difference, Pointer, Reference> self_type;
         typedef iterator<T, Category, Difference, Pointer, Reference> base_type;
     public:
-        typedef i_random_access_iterator<T, Category, Difference, Pointer, Reference> abstract_type;
+        typedef self_type abstract_type;
         using typename base_type::value_type;
         using typename base_type::difference_type;
         using typename base_type::pointer;
         using typename base_type::reference;
         using typename base_type::iterator_category;
     public:
-        using abstract_iterator = abstract_type;
+        using abstract_iterator = i_random_access_iterator<T, Category, Difference, Pointer, Reference>;
         using abstract_const_iterator = i_random_access_const_iterator<T, Category, Difference, const T*, const T&>;
     public:
         random_access_iterator() :
