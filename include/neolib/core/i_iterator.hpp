@@ -220,7 +220,7 @@ namespace neolib
         }
     protected:
         mutable bool iSingular = true;
-        mutable alignas(std::max_align_t) std::byte iStorage[sizeof(void*) * 10];
+        alignas(std::max_align_t) mutable std::byte iStorage[sizeof(void*) * 10];
     };
 
     template <typename, typename, typename, typename, typename>
@@ -479,7 +479,7 @@ namespace neolib
         }
     protected:
         mutable bool iSingular = true;
-        mutable alignas(std::max_align_t) std::byte iStorage[sizeof(void*) * 10];
+        alignas(std::max_align_t) mutable std::byte iStorage[sizeof(void*) * 10];
     };
 
     template <typename T, typename Category = std::random_access_iterator_tag, typename Difference = std::ptrdiff_t, typename Pointer = T*, typename Reference = T&>

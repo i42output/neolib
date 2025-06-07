@@ -277,7 +277,7 @@ namespace neolib
             static void assign(variant& aVariant, std::size_t aIndex, void const* aPtr) 
             {
                 if (aIndex == 1)
-                    aVariant.emplace<T>(*static_cast<abstract_t<T> const*>(aPtr));
+                    aVariant.template emplace<T>(*static_cast<abstract_t<T> const*>(aPtr));
                 else
                     RuntimeTypeDispatchToEmplace<Ts...>::assign(aVariant, aIndex - 1, aPtr);
             }
