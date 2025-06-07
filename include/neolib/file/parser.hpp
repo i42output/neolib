@@ -666,10 +666,10 @@ namespace neolib
                 while (std::getline(iss, line))
                     lines.push_back(line);
                 std::size_t numberWidth = std::to_string(lines.size()).size();
-                std::uint32_t lineNumber = 1;
+                std::uint32_t lineNumber = 1u;
                 for (auto const& outputLine : lines)
                 {
-                    if (iError && std::abs<int>(linePos - lineNumber) <= 5)
+                    if (iError && std::abs(static_cast<int>(linePos - lineNumber)) <= 5)
                         (*iDebugOutput) << std::setw(numberWidth) << lineNumber << (iError && lineNumber == linePos ? ">" : "|") << outputLine << std::endl;
                     ++lineNumber;
                 }
