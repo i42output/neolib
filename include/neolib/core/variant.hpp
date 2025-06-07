@@ -136,7 +136,6 @@ namespace neolib
     template <typename... Types>
     class variant : public reference_counted<i_variant<abstract_t<Types>...>>, public std::variant<std::monostate, Types...>
     {
-        using self_type = variant<Types...>;
         // types
     public:
         using abstract_type = i_variant<abstract_t<Types>...> ;
@@ -154,105 +153,105 @@ namespace neolib
             std_type{}
         {
         }
-        template <typename T, std::enable_if_t<std::is_base_of_v<self_type, T> && is_copy_constructible_v, int> = 0>
+        template <typename T, std::enable_if_t<std::is_base_of_v<variant, T> && is_copy_constructible_v, int> = 0>
         variant(T const& aOther) :
             std_type{ aOther }
         {
         }
-        template <typename T, std::enable_if_t<std::is_base_of_v<self_type, T> && is_move_constructible_v, int> = 0>
+        template <typename T, std::enable_if_t<std::is_base_of_v<variant, T> && is_move_constructible_v && !std::is_lvalue_reference_v<T>, int> = 0>
         variant(T&& aOther) :
             std_type{ std::move(aOther) }
         {
         }
         template <typename T, std::enable_if_t<std::is_same_v<T, abstract_type> && is_copy_constructible_v, int> = 0>
-        variant(T const& aOther) :
-            std_type{ static_cast<self_type const&>(aOther) } // todo: not plugin-safe
+        variant(T const& aOther)
         {
+            assign(aOther.index(), aOther.ptr());
         }
         template <typename T, std::enable_if_t<std::is_same_v<T, abstract_type> && is_move_constructible_v, int> = 0>
-        variant(abstract_type&& aOther) :
-            std_type{ static_cast<self_type&&>(aOther) } // todo: not plugin-safe
+        variant(abstract_type&& aOther)
         {
+            assign(aOther.index(), aOther.ptr());
         }
-        template <typename T, std::enable_if_t<!std::is_base_of_v<self_type, T> && !std::is_abstract_v<T>, int> = 0>
+        template <typename T, std::enable_if_t<!std::is_base_of_v<variant, T> && !std::is_abstract_v<T>, int> = 0>
         variant(T const& aValue) :
             std_type{ aValue }
         {
         }
-        template <typename T, std::enable_if_t<!std::is_base_of_v<self_type, T> && !std::is_abstract_v<T>, int> = 0>
+        template <typename T, std::enable_if_t<!std::is_base_of_v<variant, T> && !std::is_abstract_v<T> && !std::is_lvalue_reference_v<T>, int> = 0>
         variant(T&& aValue) :
             std_type{ std::move(aValue) }
         {
         }
         template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_type> && std::is_abstract_v<T>, int> = 0>
-        variant(T const& aValue) :
-            std_type{ static_cast<from_abstract_t<T, Types...> const&>(aValue) } // todo: not plugin-safe
+        variant(T const& aValue)
         {
+            abstract_type::operator=(aValue);
         }
-        template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_type> && std::is_abstract_v<T>, int> = 0>
-        variant(T&& aValue) :
-            std_type{ static_cast<from_abstract_t<T, Types...>&&>(aValue) } // todo: not plugin-safe
+        template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_type> && std::is_abstract_v<T> && !std::is_lvalue_reference_v<T>, int> = 0>
+        variant(T&& aValue)
         {
+            abstract_type::operator=(aValue);
         }
         // assignment
     public:
-        template <typename T, std::enable_if_t<std::is_base_of_v<self_type, T> && is_copy_assignable_v, int> = 0>
-        self_type& operator=(T const& aOther)
+        template <typename T, std::enable_if_t<std::is_base_of_v<variant, T> && is_copy_assignable_v, int> = 0>
+        variant& operator=(T const& aOther)
         {
             std_type::operator=(aOther);
             return *this;
         }
-        template <typename T, std::enable_if_t<std::is_base_of_v<self_type, T> && is_move_assignable_v, int> = 0>
-        self_type& operator=(T&& aOther)
+        template <typename T, std::enable_if_t<std::is_base_of_v<variant, T> && is_move_assignable_v && !std::is_lvalue_reference_v<T>, int> = 0>
+        variant& operator=(T&& aOther)
         {
             std_type::operator=(std::move(aOther));
             return *this;
         }
         template <typename T, std::enable_if_t<std::is_same_v<T, abstract_type> && is_copy_assignable_v, int> = 0>
-        self_type& operator=(T const& aOther)
+        variant& operator=(T const& aOther)
         {
-            std_type::operator=(static_cast<self_type const&>(aOther)); // todo: not plugin-safe
+            assign(aOther.index(), aOther.ptr());
             return *this;
         }
-        template <typename T, std::enable_if_t<std::is_same_v<T, abstract_type> && is_move_assignable_v, int> = 0>
-        self_type& operator=(T&& aOther)
+        template <typename T, std::enable_if_t<std::is_same_v<T, abstract_type> && is_move_assignable_v && !std::is_lvalue_reference_v<T>, int> = 0>
+        variant& operator=(T&& aOther)
         {
-            std_type::operator=(static_cast<self_type&&>(aOther)); // todo: not plugin-safe
+            assign(aOther.index(), aOther.ptr());
             return *this;
         }
-        template <typename T, std::enable_if_t<!std::is_base_of_v<self_type, T> && !std::is_abstract_v<T>, int> = 0>
-        self_type& operator=(T const& aValue)
+        template <typename T, std::enable_if_t<!std::is_base_of_v<variant, T> && !std::is_abstract_v<T>, int> = 0>
+        variant& operator=(T const& aValue)
         {
             std_type::operator=(aValue);
             return *this;
         }
-        template <typename T, std::enable_if_t<!std::is_base_of_v<self_type, T> && !std::is_abstract_v<T>, int> = 0>
-        self_type& operator=(T&& aValue)
+        template <typename T, std::enable_if_t<!std::is_base_of_v<variant, T> && !std::is_abstract_v<T> && !std::is_lvalue_reference_v<T>, int> = 0>
+        variant& operator=(T&& aValue)
         {
             std_type::operator=(std::move(aValue));
             return *this;
         }
         template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_type> && std::is_abstract_v<T>, int> = 0>
-        self_type& operator=(T const& aValue)
+        variant& operator=(T const& aValue)
         {
-            std_type::operator=(static_cast<from_abstract_t<T, Types...> const&>(aValue)); // todo: not plugin-safe
+            abstract_type::operator=(aValue);
             return *this;
         }
-        template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_type> && std::is_abstract_v<T>, int> = 0>
-        self_type& operator=(T&& aValue)
+        template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_type> && std::is_abstract_v<T> && !std::is_lvalue_reference_v<T>, int> = 0>
+        variant& operator=(T&& aValue)
         {
-            std_type::operator=(static_cast<from_abstract_t<T, Types...>&&>(aValue)); // todo: not plugin-safe
+            abstract_type::operator=(aValue);
             return *this;
         }
         // meta
     public:
-        std::size_t index() const override
+        std::size_t index() const final
         {
             return std_type::index();
         }
         // impl
-    private:
-        void const* ptr() const override
+    public:
+        void const* ptr() const final
         {
             void const* result = nullptr;
             std::visit([&](auto&& arg)
@@ -261,9 +260,32 @@ namespace neolib
             }, *this);
             return result;
         }
-        void* ptr() override
+        void* ptr() final
         {
             return const_cast<void*>(to_const(*this).ptr());
+        }
+        // impl
+    private:
+        template<typename... Ts>
+        struct RuntimeTypeDispatchToEmplace
+        {
+            static void assign(variant& aVariant, std::size_t aIndex, void const* aPtr) {}
+        };
+        template<typename T, typename... Ts>
+        struct RuntimeTypeDispatchToEmplace<T, Ts...>
+        {
+            static void assign(variant& aVariant, std::size_t aIndex, void const* aPtr) 
+            {
+                if (aIndex == 1)
+                    aVariant.emplace<T>(*static_cast<abstract_t<T> const*>(aPtr));
+                else
+                    RuntimeTypeDispatchToEmplace<Ts...>::assign(aVariant, aIndex - 1, aPtr);
+            }
+        };
+        abstract_type& assign(std::size_t aIndex, void const* aPtr) final
+        {
+            RuntimeTypeDispatchToEmplace<Types...>::assign(*this, aIndex, aPtr);
+            return *this;
         }
     };
 

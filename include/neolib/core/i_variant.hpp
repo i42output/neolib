@@ -47,21 +47,27 @@ namespace neolib
     template <typename... Types>
     class i_variant : public i_reference_counted
     {
-        typedef i_variant<Types...> self_type;
     public:
-        typedef self_type abstract_type;
+        using abstract_type = i_variant;
     public:
         virtual ~i_variant() = default;
     public:
         virtual std::size_t index() const = 0;
-    private:
+    public:
         virtual void const* ptr() const = 0;
         virtual void* ptr() = 0;
+    private:
+        virtual i_variant& assign(std::size_t aIndex, void const* aPtr) = 0;
     public:
+        template <typename T>
+        i_variant& operator=(T const& aValue)
+        {
+            return assign(variadic::index_v<abstract_t<T>, Types...> + 1, &aValue);
+        }
         template <typename T>
         bool holds_alternative() const
         {
-            return index() == variadic::index_v<T, Types...> + 1;
+            return index() == variadic::index_v<abstract_t<T>, Types...> + 1;
         }
         template <typename T>
         T const* get_if() const

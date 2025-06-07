@@ -238,6 +238,17 @@ int main()
     neolib::variant<neolib::string, int, double, foo> v4{ std::string{} };
     neolib::variant<neolib::string, int, double, foo> v5{ v4 };
     neolib::variant<neolib::string, int, double, foo> v6{ static_cast<neolib::abstract_t<decltype(v4)> const&>(v4) };
+    neolib::variant<neolib::string, int, double> v7;
+    neolib::i_variant<neolib::i_string, int, double>& iv7 = v7;
+
+    neolib::string s3 = "foo3";
+    neolib::string s4 = "foo4";
+    neolib::string s5 = "foo5";
+    neolib::string s6 = "foo6";
+    v7 = s3;
+    v7 = static_cast<neolib::i_string&>(s4);
+    iv7 = s5;
+    iv7 = static_cast<neolib::i_string&>(s6);
 
     using bv = neolib::variant<neolib::string, int, double, foo>;
 
