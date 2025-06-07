@@ -112,8 +112,8 @@ namespace neolib
             if (std_type::capacity() == 0)
                 std_type::reserve(Capacity);
         }
-        template <typename Alloc>
-        constexpr growable_static_vector(std::vector<value_type, Alloc> const& aVector) :
+        template <typename Alloc2>
+        constexpr growable_static_vector(std::vector<value_type, Alloc2> const& aVector) :
             std_type{ aVector.begin(), aVector.end(), allocator_type{ *this } }
         {
             if (std_type::capacity() == 0)
