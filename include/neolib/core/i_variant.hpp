@@ -84,7 +84,7 @@ namespace neolib
         T* get_if()
         {
             if (holds_alternative<T>())
-                return static_cast<T const*>(ptr());
+                return static_cast<T*>(ptr());
             return nullptr;
         }
         template <typename T>
