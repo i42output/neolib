@@ -59,8 +59,12 @@ namespace neolib
     private:
         virtual i_variant& assign(std::size_t aIndex, void const* aPtr) = 0;
     public:
+        i_variant& operator=(i_variant const& aOther)
+        {
+            return assign(aOther.index(), aOther.ptr());
+        }
         template <typename T>
-        i_variant& operator=(T const& aValue)
+        std::enable_if_t<!std::is_base_of_v<i_variant, T>, i_variant>& operator=(T const& aValue)
         {
             return assign(variadic::index_v<abstract_t<T>, Types...> + 1, &aValue);
         }
