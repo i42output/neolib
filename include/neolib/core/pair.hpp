@@ -109,3 +109,43 @@ namespace neolib
     }
 }
 
+namespace std
+{
+    template<typename First, typename Second>
+    struct tuple_size<neolib::pair<First, Second>>
+        : std::integral_constant<std::size_t, 2> {};
+
+    template<std::size_t I, typename First, typename Second>
+    struct tuple_element<I, neolib::pair<First, Second>>;
+
+    template<typename First, typename Second>
+    struct tuple_element<0, neolib::pair<First, Second>> {
+        using type = First;
+    };
+
+    template<typename First, typename Second>
+    struct tuple_element<1, neolib::pair<First, Second>> {
+        using type = Second;
+    };
+}
+
+namespace neolib
+{
+    template<std::size_t I, typename First, typename Second>
+    constexpr auto& get(pair<First, Second>& p) noexcept {
+        if constexpr (I == 0) return p.first();
+        else                  return p.second();
+    }
+
+    template<std::size_t I, typename First, typename Second>
+    constexpr auto& get(pair<First, Second> const& p) noexcept {
+        if constexpr (I == 0) return p.first();
+        else                  return p.second();
+    }
+
+    template<std::size_t I, typename First, typename Second>
+    constexpr auto&& get(pair<First, Second>&& p) noexcept {
+        if constexpr (I == 0) return std::move(p.first());
+        else                  return std::move(p.second());
+    }
+}
