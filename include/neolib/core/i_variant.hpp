@@ -37,6 +37,8 @@
 
 #include <neolib/neolib.hpp>
 #include <type_traits>
+#include <functional>
+#include <tuple>
 #include <optional>
 #include <variant>
 #include <neolib/core/reference_counted.hpp>
@@ -102,4 +104,101 @@ namespace neolib
             throw std::bad_variant_access();
         }
     };
+
+    namespace detail
+    {
+        // Compute a single return type R = common_type_t<invoke_result_t<Visitor, Types&>...>
+        template <typename Visitor, typename... Types>
+        struct visit_traits
+        {
+            using result_type = std::common_type_t<
+                std::invoke_result_t<Visitor, Types&>...>;
+        };
+
+        // Non-const dispatch
+        template <std::size_t I, typename Visitor, typename... Types>
+        auto visit_impl(Visitor&& vis, i_variant<Types...>& v)
+            -> typename visit_traits<Visitor, Types...>::result_type
+        {
+            constexpr std::size_t N = sizeof...(Types);
+            using traits = visit_traits<Visitor, Types...>;
+            using R = typename traits::result_type;
+
+            if constexpr (I < N)
+            {
+                if (v.index() == I + 1)
+                {
+                    using T = std::tuple_element_t<I, std::tuple<Types...>>;
+                    if constexpr (std::is_void_v<R>)
+                    {
+                        std::forward<Visitor>(vis)(v.template get<T>());
+                        return;    // void
+                    }
+                    else
+                    {
+                        return std::forward<Visitor>(vis)(v.template get<T>());
+                    }
+                }
+                else
+                {
+                    return visit_impl<I + 1>(std::forward<Visitor>(vis), v);
+                }
+            }
+            else
+            {
+                throw std::bad_variant_access{};
+            }
+        }
+
+        // Const dispatch
+        template <std::size_t I, typename Visitor, typename... Types>
+        auto visit_impl(Visitor&& vis, i_variant<Types...> const& v)
+            -> typename visit_traits<Visitor, Types...>::result_type
+        {
+            constexpr std::size_t N = sizeof...(Types);
+            using traits = visit_traits<Visitor, Types...>;
+            using R = typename traits::result_type;
+
+            if constexpr (I < N)
+            {
+                if (v.index() == I + 1)
+                {
+                    using T = std::tuple_element_t<I, std::tuple<Types...>>;
+                    if constexpr (std::is_void_v<R>)
+                    {
+                        std::forward<Visitor>(vis)(v.template get<T>());
+                        return;
+                    }
+                    else
+                    {
+                        return std::forward<Visitor>(vis)(v.template get<T>());
+                    }
+                }
+                else
+                {
+                    return visit_impl<I + 1>(std::forward<Visitor>(vis), v);
+                }
+            }
+            else
+            {
+                throw std::bad_variant_access{};
+            }
+        }
+    }
+
+    // Public API: non-const
+    template <typename Visitor, typename... Types>
+    auto visit(Visitor&& vis, i_variant<Types...>& v)
+        -> typename detail::visit_traits<Visitor, Types...>::result_type
+    {
+        return detail::visit_impl<0>(std::forward<Visitor>(vis), v);
+    }
+
+    // Public API: const
+    template <typename Visitor, typename... Types>
+    auto visit(Visitor&& vis, i_variant<Types...> const& v)
+        -> typename detail::visit_traits<Visitor, Types...>::result_type
+    {
+        return detail::visit_impl<0>(std::forward<Visitor>(vis), v);
+    }
 }
