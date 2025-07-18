@@ -1115,7 +1115,7 @@ namespace neolib
             else if (std::holds_alternative<terminal>(aAtom))
             {
                 auto const& ter = std::get<terminal>(aAtom);
-                if ((!ter.empty() && aSource.find(ter) == 0) || (ter.empty() && sourceNext == sourceEnd))
+                if ((!ter.empty() && aSource.starts_with(ter)) || (ter.empty() && sourceNext == sourceEnd))
                 {
                     scopedCursor.ignore();
                     auto const partialResult = aSource.substr(0, ter.size());
