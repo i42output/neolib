@@ -1144,9 +1144,12 @@ namespace neolib
                     {
                         scopedCursor.ignore();
                         auto const partialResult = aSource.substr(0, 1);
-                        auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
-                        newChild->set_concept(aAtom.c);
-                        aNode.children.push_back(newChild);
+                        if (aAtom.c)
+                        {
+                            auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
+                            newChild->set_concept(aAtom.c);
+                            aNode.children.push_back(newChild);
+                        }
                         if (!iCursor)
                         {
                             iCache[cache_key{ &aAtom, aSource.data() }] = cache_result{ aNode.children, apply_partial_result(result, partialResult) };
