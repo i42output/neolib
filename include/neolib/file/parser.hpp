@@ -40,13 +40,13 @@
 #include <concepts>
 #include <memory>
 #include <vector>
-#include <unordered_map>
-#include <unordered_set>
 #include <variant>
 #include <optional>
 #include <string>
 #include <istream>
 
+#include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/unordered/unordered_flat_set.hpp>
 #include <boost/functional/hash.hpp>
 
 #include <neolib/core/i_enum.hpp>
@@ -295,7 +295,7 @@ namespace neolib
             using base_type::base_type;
 
             bool negate = false;
-            std::unordered_set<unsigned char> exclusions;
+            boost::unordered_flat_set<unsigned char> exclusions;
         };
 
         struct optional : tuple<optional>, parser_component<parser_component_type::Optional>
@@ -1486,7 +1486,7 @@ namespace neolib
         std::shared_ptr<parser> iPreviousStage;
         std::optional<typename cst_node::child_list::const_iterator> iCursor;
         std::optional<typename cst_node::child_list::const_iterator> iCursorEnd;
-        std::unordered_set<symbol> iIgnore;
+        boost::unordered_flat_set<symbol> iIgnore;
         std::string_view iSource;
         cst_node iCst = {};
         std::shared_ptr<cst_node> iAst = std::make_shared<cst_node>();
@@ -1501,7 +1501,7 @@ namespace neolib
             std::optional<parse_result> result;
         };
         using cache_key = std::pair<primitive_atom const*, char const*>;
-        std::unordered_map<cache_key, cache_result, boost::hash<cache_key>> iCache;
+        boost::unordered_flat_map<cache_key, cache_result, boost::hash<cache_key>> iCache;
         std::ostream* iDebugOutput = nullptr;
         bool iDebugScan = false;
         bool iDebugCst = false;
