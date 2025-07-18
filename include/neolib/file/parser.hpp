@@ -506,7 +506,7 @@ namespace neolib
 
         // Why aren't we using std::unique_ptr? Because nodes are shared between the cache
         // and the partial CST currently being built via backtracking.
-        struct cst_node : std::enable_shared_from_this<cst_node>
+        struct cst_node
         {
             using child_list = std::vector<std::shared_ptr<cst_node>>;
 
@@ -541,7 +541,7 @@ namespace neolib
                 children{ std::move(other.children) }
             {
                 for (auto& child : children)
-                    child.parent = this;
+                    child->parent = this;
             }
 
             ~cst_node()
@@ -1039,10 +1039,11 @@ namespace neolib
                 bool finished = false;
                 while(!finished)
                 {
-                    auto newNode = std::make_shared<cst_node>(nullptr, nullptr, nullptr, source);
-                    auto result = parse_rules(aSymbol, *newNode, source);
+                    cst_node potentialChild{ nullptr, nullptr, nullptr, source };
+                    auto result = parse_rules(aSymbol, potentialChild, source);
                     if (result)
                     {
+                        auto newNode = std::make_shared<cst_node>(std::move(potentialChild));
                         newNode->parent = &aNode;
                         aNode.children.push_back(newNode);
                         source = { result->sourceNext, std::to_address(aSource.end()) };
@@ -1093,10 +1094,11 @@ namespace neolib
             if (std::holds_alternative<symbol>(aAtom))
             {
                 auto const& sym = std::get<symbol>(aAtom);
-                auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, aSource);
-                auto const partialResult = parse(sym, *newChild, aSource);
+                cst_node potentialChild{ &aNode, aNode.rule, &aAtom, aSource };
+                auto const partialResult = parse(sym, potentialChild, aSource);
                 if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
                 {
+                    auto newChild = std::make_shared<cst_node>(std::move(potentialChild));
                     bool const doIgnore = iIgnore.find(sym) != iIgnore.end();
                     if (!doIgnore)
                         aNode.children.push_back(newChild);
