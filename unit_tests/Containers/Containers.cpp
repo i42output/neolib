@@ -33,6 +33,7 @@ template class neolib::polymorphic::vecarray<int, 64, neolib::MaxSize>;
 template class neolib::gap_vector<int>;
 
 template class neolib::unordered_map<int, int>;
+template class neolib::unordered_multimap<int, int>;
 template class neolib::unordered_flat_map<int, int>;
 
 template class neolib::segmented_array<int>;

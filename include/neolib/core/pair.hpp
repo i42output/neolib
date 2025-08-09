@@ -44,54 +44,53 @@ namespace neolib
     template <typename T1, typename T2>
     class pair : public i_pair<abstract_t<T1>, abstract_t<T2>>, public std::pair<T1, T2>
     {
-        typedef pair<T1, T2> self_type;
-        typedef i_pair<abstract_t<T1>, abstract_t<T2>> base_type;
+        using base_type = i_pair<abstract_t<T1>, abstract_t<T2>>;
     public:
         using typename base_type::abstract_type;
-        typedef abstract_t<T1> first_abstract_type;
-        typedef abstract_t<T2> second_abstract_type;
-        typedef T1 first_type;
-        typedef T2 second_type;
+        using first_abstract_type = abstract_t<T1>;
+        using second_abstract_type = abstract_t<T2>;
+        using first_type = T1;
+        using second_type = T2;
     private:
-        typedef std::pair<first_type, second_type> concrete_type;
+        using std_type = std::pair<first_type, second_type>;
     public:
-        pair() : concrete_type{ first_type{}, second_type{} } {}
-        pair(const abstract_type& aPair) : concrete_type{ first_type{ aPair.first() }, second_type{ aPair.second() } } {}
-        pair(const concrete_type& aPair) : concrete_type{ aPair } {}
+        pair() : std_type{ first_type{}, second_type{} } {}
+        pair(const abstract_type& aPair) : std_type{ first_type{ aPair.first() }, second_type{ aPair.second() } } {}
+        pair(const std_type& aPair) : std_type{ aPair } {}
         template <typename T3, typename T4>
-        pair(T3&& aFirst, T4&& aSecond) : concrete_type{ std::forward<T3>(aFirst), std::forward<T4>(aSecond) } {}
+        pair(T3&& aFirst, T4&& aSecond) : std_type{ std::forward<T3>(aFirst), std::forward<T4>(aSecond) } {}
     public:
-        self_type& operator=(const self_type& aOther) { return assign(aOther); }
+        pair& operator=(const pair& aOther) { return assign(aOther); }
         abstract_type& operator=(const abstract_type& aOther) final { return assign(aOther); }
     public:
-        const first_type& first() const final { return concrete_type::first; }
-        first_type& first() final { return concrete_type::first; }
-        const second_type& second() const final { return concrete_type::second; }
-        second_type& second() final { return concrete_type::second; }
+        const first_type& first() const final { return std_type::first; }
+        first_type& first() final { return std_type::first; }
+        const second_type& second() const final { return std_type::second; }
+        second_type& second() final { return std_type::second; }
     public:
-        self_type& assign(const abstract_type& aOther)
+        pair& assign(const abstract_type& aOther)
         {
             if constexpr (!std::is_const_v<first_type> && !std::is_const_v<second_type>)
             {
-                concrete_type::operator=(concrete_type{ first_type{ aOther.first() }, second_type{ aOther.second() } });
+                std_type::operator=(std_type{ first_type{ aOther.first() }, second_type{ aOther.second() } });
                 return *this;
             }
             else
                 throw std::logic_error("neolib::pair isn't assignable (const value_type)");
         }
     public:
-        friend void swap(self_type& a, self_type& b)
+        friend void swap(pair& a, pair& b)
         {
             using std::swap;
             swap(a.first(), b.first());
             swap(a.second(), b.second());
         }
     public:
-        constexpr bool operator==(const self_type& that) const noexcept
+        constexpr bool operator==(const pair& that) const noexcept
         {
             return first() == that.first() && second() == that.second();
         }
-        constexpr std::partial_ordering operator<=>(const self_type& that) const noexcept
+        constexpr std::partial_ordering operator<=>(const pair& that) const noexcept
         {
             if (*this == that)
                 return std::partial_ordering::equivalent;

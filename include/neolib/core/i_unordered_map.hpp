@@ -71,4 +71,35 @@ namespace neolib
         virtual abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const = 0;
         virtual abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) = 0;
     };
+
+    template <typename Key, typename T>
+    class i_unordered_multimap : public i_container<i_pair<const Key, T>, i_const_iterator<i_pair<const Key, T>>, i_iterator<i_pair<const Key, T>>>
+    {
+        typedef i_unordered_multimap<Key, T> self_type;
+        typedef i_container<i_pair<const Key, T>, i_const_iterator<i_pair<const Key, T> >, i_iterator<i_pair<const Key, T>>> base_type;
+    public:
+        typedef self_type abstract_type;
+        typedef Key abstract_key_type;
+        typedef T abstract_mapped_type;
+        typedef i_pair<const abstract_key_type, abstract_mapped_type> abstract_value_type;
+    protected:
+        typedef typename base_type::abstract_const_iterator abstract_const_iterator;
+        typedef typename base_type::abstract_iterator abstract_iterator;
+    public:
+        typedef typename base_type::const_iterator const_iterator;
+        typedef typename base_type::iterator iterator;
+    public:
+        iterator insert(const abstract_value_type& aValue) { iterator result; return do_insert(result.storage(), aValue.first(), aValue.second()); }
+        iterator insert(const abstract_key_type& aKey, const abstract_mapped_type& aMapped) { iterator result; return do_insert(result.storage(), aKey, aMapped); }
+        const_iterator find(const abstract_key_type& aKey) const { const_iterator result; return do_find(result.storage(), aKey); }
+        iterator find(const abstract_key_type& aKey) { iterator result; return do_find(result.storage(), aKey); }
+        pair<const_iterator, const_iterator> equal_range(const abstract_key_type& aKey) const { pair<const_iterator, const_iterator> result; return do_equal_range(result.storage(), aKey); }
+        pair<iterator, iterator> equal_range(const abstract_key_type& aKey) { pair<iterator, iterator> result; return do_equal_range(result.storage(), aKey); }
+    private:
+        virtual abstract_iterator* do_insert(void* memory, const abstract_key_type& aKey, const abstract_mapped_type& aMapped) = 0;
+        virtual abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const = 0;
+        virtual abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) = 0;
+        virtual i_pair<abstract_const_iterator, abstract_const_iterator>* do_equal_range(void* memory, const abstract_key_type& aKey) const = 0;
+        virtual i_pair<abstract_iterator, abstract_iterator>* do_equal_range(void* memory, const abstract_key_type& aKey) = 0;
+    };
 }
