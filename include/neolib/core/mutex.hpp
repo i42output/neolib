@@ -38,6 +38,7 @@
 #include <neolib/neolib.hpp>
 #include <atomic>
 #include <mutex>
+#include <thread>
 #include <boost/thread/locks.hpp>
 #include <boost/lockfree/detail/freelist.hpp>
 #include <neolib/core/i_mutex.hpp>
