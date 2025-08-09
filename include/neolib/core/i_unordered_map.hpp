@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <neolib/core/scoped.hpp>
 #include <neolib/core/i_container.hpp>
 #include <neolib/core/i_pair.hpp>
 
@@ -62,14 +63,14 @@ namespace neolib
         virtual const abstract_mapped_type& at(const abstract_key_type& aKey) const = 0;
         virtual abstract_mapped_type& at(const abstract_key_type& aKey) = 0;
     public:
-        iterator insert(const abstract_value_type& aValue) { iterator result; return do_insert(result.storage(), aValue.first(), aValue.second()); }
-        iterator insert(const abstract_key_type& aKey, const abstract_mapped_type& aMapped) { iterator result; return do_insert(result.storage(), aKey, aMapped); }
-        const_iterator find(const abstract_key_type& aKey) const { const_iterator result; return do_find(result.storage(), aKey); }
-        iterator find(const abstract_key_type& aKey) { iterator result; return do_find(result.storage(), aKey); }
+        iterator insert(const abstract_value_type& aValue) { return do_insert(aValue.first(), aValue.second()); }
+        iterator insert(const abstract_key_type& aKey, const abstract_mapped_type& aMapped) { return do_insert(aKey, aMapped); }
+        const_iterator find(const abstract_key_type& aKey) const { return do_find(aKey); }
+        iterator find(const abstract_key_type& aKey) { return do_find(aKey); }
     private:
-        virtual abstract_iterator* do_insert(void* memory, const abstract_key_type& aKey, const abstract_mapped_type& aMapped) = 0;
-        virtual abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const = 0;
-        virtual abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) = 0;
+        virtual abstract_iterator* do_insert(const abstract_key_type& aKey, const abstract_mapped_type& aMapped) = 0;
+        virtual abstract_const_iterator* do_find(const abstract_key_type& aKey) const = 0;
+        virtual abstract_iterator* do_find(const abstract_key_type& aKey) = 0;
     };
 
     template <typename Key, typename T>
@@ -89,17 +90,27 @@ namespace neolib
         typedef typename base_type::const_iterator const_iterator;
         typedef typename base_type::iterator iterator;
     public:
-        iterator insert(const abstract_value_type& aValue) { iterator result; return do_insert(result.storage(), aValue.first(), aValue.second()); }
-        iterator insert(const abstract_key_type& aKey, const abstract_mapped_type& aMapped) { iterator result; return do_insert(result.storage(), aKey, aMapped); }
-        const_iterator find(const abstract_key_type& aKey) const { const_iterator result; return do_find(result.storage(), aKey); }
-        iterator find(const abstract_key_type& aKey) { iterator result; return do_find(result.storage(), aKey); }
-        pair<const_iterator, const_iterator> equal_range(const abstract_key_type& aKey) const { pair<const_iterator, const_iterator> result; return do_equal_range(result.storage(), aKey); }
-        pair<iterator, iterator> equal_range(const abstract_key_type& aKey) { pair<iterator, iterator> result; return do_equal_range(result.storage(), aKey); }
+        iterator insert(const abstract_value_type& aValue) { return do_insert(aValue.first(), aValue.second()); }
+        iterator insert(const abstract_key_type& aKey, const abstract_mapped_type& aMapped) { return do_insert(aKey, aMapped); }
+        const_iterator find(const abstract_key_type& aKey) const { return do_find(aKey); }
+        iterator find(const abstract_key_type& aKey) { return do_find(aKey); }
+        pair<const_iterator, const_iterator> equal_range(const abstract_key_type& aKey) const 
+        { 
+            auto result = do_equal_range(aKey); 
+            scoped_deleter deleter{ result }; 
+            return { result->first().clone(), result->second().clone()};
+        }
+        pair<iterator, iterator> equal_range(const abstract_key_type& aKey) 
+        { 
+            auto result = do_equal_range(aKey); 
+            scoped_deleter deleter{ result }; 
+            return { result->first().clone(), result->second().clone()};
+        }
     private:
-        virtual abstract_iterator* do_insert(void* memory, const abstract_key_type& aKey, const abstract_mapped_type& aMapped) = 0;
-        virtual abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const = 0;
-        virtual abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) = 0;
-        virtual i_pair<abstract_const_iterator, abstract_const_iterator>* do_equal_range(void* memory, const abstract_key_type& aKey) const = 0;
-        virtual i_pair<abstract_iterator, abstract_iterator>* do_equal_range(void* memory, const abstract_key_type& aKey) = 0;
+        virtual abstract_iterator* do_insert(const abstract_key_type& aKey, const abstract_mapped_type& aMapped) = 0;
+        virtual abstract_const_iterator* do_find(const abstract_key_type& aKey) const = 0;
+        virtual abstract_iterator* do_find(const abstract_key_type& aKey) = 0;
+        virtual i_pair<abstract_const_iterator, abstract_const_iterator>* do_equal_range(const abstract_key_type& aKey) const = 0;
+        virtual i_pair<abstract_iterator, abstract_iterator>* do_equal_range(const abstract_key_type& aKey) = 0;
     };
 }

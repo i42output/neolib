@@ -32,6 +32,8 @@ template class neolib::growable_static_vector<int, 64, neolib::MaxSize>;
 template class neolib::polymorphic::vecarray<int, 64, neolib::MaxSize>;
 template class neolib::gap_vector<int>;
 
+template class neolib::i_unordered_map<int, int>;
+template class neolib::i_unordered_multimap<int, int>;
 template class neolib::unordered_map<int, int>;
 template class neolib::unordered_multimap<int, int>;
 template class neolib::unordered_flat_map<int, int>;

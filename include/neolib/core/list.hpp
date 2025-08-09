@@ -135,29 +135,29 @@ namespace neolib
         }
     private:
         // from i_container
-        abstract_const_iterator* do_begin(void* memory) const final 
+        abstract_const_iterator* do_begin() const final 
         { 
-            return new(memory) container_const_iterator(iList.begin()); 
+            return new container_const_iterator(iList.begin()); 
         }
-        abstract_const_iterator* do_end(void* memory) const final 
+        abstract_const_iterator* do_end() const final 
         { 
-            return new(memory) container_const_iterator(iList.end()); 
+            return new container_const_iterator(iList.end()); 
         }
-        abstract_iterator* do_begin(void* memory) final 
+        abstract_iterator* do_begin() final 
         { 
-            return new(memory) container_iterator(iList.begin()); 
+            return new container_iterator(iList.begin()); 
         }
-        abstract_iterator* do_end(void* memory) final 
+        abstract_iterator* do_end() final 
         { 
-            return new(memory) container_iterator(iList.end()); 
+            return new container_iterator(iList.end()); 
         }
-        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) final 
+        abstract_iterator* do_erase(const abstract_const_iterator& aPosition) final 
         { 
-            return new (memory) container_iterator(iList.erase(static_cast<const container_const_iterator&>(aPosition))); 
+            return new container_iterator(iList.erase(static_cast<const container_const_iterator&>(aPosition))); 
         }
-        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) final 
+        abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) final 
         { 
-            return new (memory) container_iterator(iList.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); 
+            return new container_iterator(iList.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); 
         }
     public:
         // from i_sequence_container
@@ -200,7 +200,7 @@ namespace neolib
         }
     private:
         // from i_sequence_container
-        abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const abstract_value_type& aValue) final { return new (memory) container_iterator(iList.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
+        abstract_iterator* do_insert(const abstract_const_iterator& aPosition, const abstract_value_type& aValue) final { return new container_iterator(iList.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); }
     public:
         // from i_list
         void push_front(const abstract_value_type& aValue) final { iList.push_front(aValue); }

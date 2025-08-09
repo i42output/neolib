@@ -151,29 +151,29 @@ namespace neolib
         }
         // from i_container
     private:
-        abstract_const_iterator* do_begin(void* memory) const final 
+        abstract_const_iterator* do_begin() const final 
         { 
-            return new (memory) container_const_iterator(iDeque.begin()); 
+            return new container_const_iterator(iDeque.begin());
         }
-        abstract_const_iterator* do_end(void* memory) const final 
+        abstract_const_iterator* do_end() const final 
         { 
-            return new (memory) container_const_iterator(iDeque.end()); 
+            return new container_const_iterator(iDeque.end()); 
         }
-        abstract_iterator* do_begin(void* memory) final 
+        abstract_iterator* do_begin() final 
         { 
-            return new (memory) container_iterator(iDeque.begin()); 
+            return new container_iterator(iDeque.begin()); 
         }
-        abstract_iterator* do_end(void* memory) final 
+        abstract_iterator* do_end() final 
         { 
-            return new (memory) container_iterator(iDeque.end()); 
+            return new container_iterator(iDeque.end()); 
         }
-        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) final 
+        abstract_iterator* do_erase(const abstract_const_iterator& aPosition) final 
         { 
-            return new (memory) container_iterator(iDeque.erase(static_cast<const container_const_iterator&>(aPosition))); 
+            return new container_iterator(iDeque.erase(static_cast<const container_const_iterator&>(aPosition))); 
         }
-        abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) final 
+        abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) final 
         { 
-            return new (memory) container_iterator(iDeque.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); 
+            return new container_iterator(iDeque.erase(static_cast<const container_const_iterator&>(aFirst), static_cast<const container_const_iterator&>(aLast))); 
         }
         // from i_sequence_container
     public:
@@ -260,9 +260,9 @@ namespace neolib
         }
         // from i_sequence_container
     private:
-        abstract_iterator* do_insert(void* memory, const abstract_const_iterator& aPosition, const abstract_value_type& aValue) final 
+        abstract_iterator* do_insert(const abstract_const_iterator& aPosition, const abstract_value_type& aValue) final 
         { 
-            return new (memory) container_iterator(iDeque.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); 
+            return new container_iterator(iDeque.insert(static_cast<const container_const_iterator&>(aPosition), aValue)); 
         }
         // attributes
     private:

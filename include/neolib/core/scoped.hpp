@@ -98,6 +98,19 @@ namespace neolib
     };
 
     template <typename T>
+    class scoped_deleter
+    {
+    public:
+        scoped_deleter(T*& aPointer) : iPointer{ aPointer }, iIgnore{ false } {}
+        ~scoped_deleter() { if (!iIgnore) { delete iPointer; iPointer = nullptr; } }
+    public:
+        void ignore() { iIgnore = true; }
+    private:
+        T*& iPointer;
+        bool iIgnore;
+    };
+
+    template <typename T>
     class scoped_object
     {
     public:

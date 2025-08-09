@@ -61,22 +61,22 @@ namespace neolib
         virtual size_type size() const noexcept = 0;
         virtual size_type max_size() const noexcept = 0;
         bool empty() const noexcept { return size() == 0; }
-        const_iterator cbegin() const { const_iterator result; return do_begin(result.storage()); }
+        const_iterator cbegin() const { return do_begin(); }
         const_iterator begin() const { return cbegin(); }
-        iterator begin() { iterator result; return do_begin(result.storage()); }
-        const_iterator cend() const { const_iterator result; return do_end(result.storage()); }
+        iterator begin() { return do_begin(); }
+        const_iterator cend() const { return do_end(); }
         const_iterator end() const { return cend(); }
-        iterator end() { iterator result; return do_end(result.storage()); }
+        iterator end() { return do_end(); }
         const_reverse_iterator crbegin() const { return const_reverse_iterator{ end() }; }
         const_reverse_iterator rbegin() const { return crbegin(); }
         reverse_iterator rbegin() { return reverse_iterator{ end() }; }
         const_reverse_iterator crend() const { return const_reverse_iterator{ begin() }; }
         const_reverse_iterator rend() const { return crend(); }
         reverse_iterator rend() { return reverse_iterator{ begin() }; }
-        iterator erase(const abstract_iterator& aPosition) { iterator result; return do_erase(result.storage(), const_iterator(aPosition)); }
-        iterator erase(const abstract_const_iterator& aPosition) { iterator result; return do_erase(result.storage(), aPosition); }
-        iterator erase(const abstract_iterator& aFirst, const abstract_iterator& aLast) { iterator result; return do_erase(result.storage(), const_iterator(aFirst), const_iterator(aLast)); }
-        iterator erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { iterator result; return do_erase(result.storage(), aFirst, aLast); }
+        iterator erase(const abstract_iterator& aPosition) { return do_erase(const_iterator(aPosition)); }
+        iterator erase(const abstract_const_iterator& aPosition) { return do_erase(aPosition); }
+        iterator erase(const abstract_iterator& aFirst, const abstract_iterator& aLast) { return do_erase(const_iterator(aFirst), const_iterator(aLast)); }
+        iterator erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) { return do_erase(aFirst, aLast); }
         virtual void clear() = 0;
         virtual void assign(const i_container& aRhs) = 0;
     public:
@@ -86,12 +86,12 @@ namespace neolib
             return *this;
         }
     private:
-        virtual abstract_const_iterator* do_begin(void* memory) const = 0;
-        virtual abstract_const_iterator* do_end(void* memory) const = 0;
-        virtual abstract_iterator* do_begin(void* memory) = 0;
-        virtual abstract_iterator* do_end(void* memory) = 0;
-        virtual abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aPosition) = 0;
-        virtual abstract_iterator* do_erase(void* memory, const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) = 0;
+        virtual abstract_const_iterator* do_begin() const = 0;
+        virtual abstract_const_iterator* do_end() const = 0;
+        virtual abstract_iterator* do_begin() = 0;
+        virtual abstract_iterator* do_end() = 0;
+        virtual abstract_iterator* do_erase(const abstract_const_iterator& aPosition) = 0;
+        virtual abstract_iterator* do_erase(const abstract_const_iterator& aFirst, const abstract_const_iterator& aLast) = 0;
     };
 
     template <typename T, typename ConstIteratorType, typename IteratorType>

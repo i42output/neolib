@@ -57,13 +57,13 @@ namespace neolib
         typedef typename base_type::const_iterator const_iterator;
         typedef typename base_type::iterator iterator;
     public:
-        iterator insert(const abstract_value_type& aValue) { iterator result; return do_insert(result.storage(), aValue); }
-        const_iterator find(const abstract_key_type& aKey) const { const_iterator result; return do_find(result.storage(), aKey); }
-        iterator find(const abstract_key_type& aKey) { iterator result; return do_find(result.storage(), aKey); }
+        iterator insert(const abstract_value_type& aValue) { return do_insert(aValue); }
+        const_iterator find(const abstract_key_type& aKey) const { return do_find(aKey); }
+        iterator find(const abstract_key_type& aKey) { return do_find(aKey); }
     private:
-        virtual abstract_iterator* do_insert(void* memory, const abstract_value_type& aValue) = 0;
-        virtual abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const = 0;
-        virtual abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) = 0;
+        virtual abstract_iterator* do_insert(const abstract_value_type& aValue) = 0;
+        virtual abstract_const_iterator* do_find(const abstract_key_type& aKey) const = 0;
+        virtual abstract_iterator* do_find(const abstract_key_type& aKey) = 0;
     };
 
     template <typename T>
@@ -83,13 +83,13 @@ namespace neolib
         typedef typename base_type::const_iterator const_iterator;
         typedef typename base_type::iterator iterator;
     public:
-        iterator insert(const abstract_value_type& aValue) { iterator result; return do_insert(result.storage(), aValue); }
-        const_iterator find(const abstract_key_type& aKey) const { const_iterator result; return do_find(result.storage(), aKey); }
-        iterator find(const abstract_key_type& aKey) { iterator result; return do_find(result.storage(), aKey); }
+        iterator insert(const abstract_value_type& aValue) { return do_insert(aValue); }
+        const_iterator find(const abstract_key_type& aKey) const { return do_find(aKey); }
+        iterator find(const abstract_key_type& aKey) { do_find(aKey); }
         // todo: equal_range, lower_bound, upper_bound
     private:
-        virtual abstract_iterator* do_insert(void* memory, const abstract_value_type& aValue) = 0;
-        virtual abstract_const_iterator* do_find(void* memory, const abstract_key_type& aKey) const = 0;
-        virtual abstract_iterator* do_find(void* memory, const abstract_key_type& aKey) = 0;
+        virtual abstract_iterator* do_insert(const abstract_value_type& aValue) = 0;
+        virtual abstract_const_iterator* do_find(const abstract_key_type& aKey) const = 0;
+        virtual abstract_iterator* do_find(const abstract_key_type& aKey) = 0;
     };
 }

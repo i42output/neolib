@@ -80,7 +80,8 @@ namespace neolib
                     std_type::second = aOther.second();
                     return *this;
                 }
-                throw std::logic_error("neolib::pair isn't assignable (abstract value_type)");
+                else
+                    throw std::logic_error("neolib::pair isn't assignable (abstract value_type)");
             }
             else
                 throw std::logic_error("neolib::pair isn't assignable (const value_type)");
