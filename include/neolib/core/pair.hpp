@@ -72,8 +72,15 @@ namespace neolib
         {
             if constexpr (!std::is_const_v<first_type> && !std::is_const_v<second_type>)
             {
-                std_type::operator=(std_type{ first_type{ aOther.first() }, second_type{ aOther.second() } });
-                return *this;
+                if constexpr (
+                    std::is_assignable_v<decltype(std_type::first), decltype(aOther.first())> &&
+                    std::is_assignable_v<decltype(std_type::second), decltype(aOther.second())>)
+                {
+                    std_type::first = aOther.first();
+                    std_type::second = aOther.second();
+                    return *this;
+                }
+                throw std::logic_error("neolib::pair isn't assignable (abstract value_type)");
             }
             else
                 throw std::logic_error("neolib::pair isn't assignable (const value_type)");
