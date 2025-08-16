@@ -626,16 +626,16 @@ namespace neolib
         return ref_ptr<ConcreteType>{ new ConcreteType{ std::forward<Args>(args)... } };
     }
 
-    template <typename ConcreteType, typename... Args>
-    inline ref_ptr<abstract_t<ConcreteType>> make_iref(Args&&... args)
-    {
-        return ref_ptr<abstract_t<ConcreteType>>{ new ConcreteType{ std::forward<Args>(args)... } };
-    }
-
     template <typename ConcreteType, typename AbstractType, typename... Args>
-    inline ref_ptr<AbstractType> make_iref_as(Args&&... args)
+    inline ref_ptr<AbstractType> make_ref(Args&&... args)
     {
         return ref_ptr<AbstractType>{ new ConcreteType{ std::forward<Args>(args)... } };
+    }
+
+    template <typename ConcreteType, typename... Args>
+    inline ref_ptr<abstract_t<ConcreteType>> make_abstract_ref(Args&&... args)
+    {
+        return ref_ptr<abstract_t<ConcreteType>>{ new ConcreteType{ std::forward<Args>(args)... } };
     }
 
     template <class T, class U>
