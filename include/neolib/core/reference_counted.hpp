@@ -632,6 +632,12 @@ namespace neolib
         return ref_ptr<abstract_t<ConcreteType>>{ new ConcreteType{ std::forward<Args>(args)... } };
     }
 
+    template <typename ConcreteType, typename AbstractType, typename... Args>
+    inline ref_ptr<AbstractType> make_iref_as(Args&&... args)
+    {
+        return ref_ptr<AbstractType>{ new ConcreteType{ std::forward<Args>(args)... } };
+    }
+
     template <class T, class U>
     ref_ptr<T> static_pointer_cast(ref_ptr<U> const& aOther) noexcept 
     {
