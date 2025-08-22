@@ -113,6 +113,14 @@ namespace neolib
         const_pointer iFirst;
         const_pointer iLast;
     };
+
+    namespace string_literals
+    {
+        inline string_view operator"" _sv(const char* str, size_t len)
+        {
+            return string_view{ str, str + len };
+        }
+    }
 }
 
 namespace std
