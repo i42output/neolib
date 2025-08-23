@@ -46,7 +46,6 @@ namespace neolib
     template <typename T>
     class deque : public reference_counted<i_deque<abstract_t<T>>>
     {
-        typedef deque<T> self_type;
         typedef reference_counted<i_deque<abstract_t<T>>> base_type;
         // types
     public:
@@ -119,11 +118,11 @@ namespace neolib
         }
         // comparison
     public:
-        constexpr bool operator==(const self_type& that) const noexcept
+        constexpr bool operator==(const deque& that) const noexcept
         {
             return as_std_deque() == that.as_std_deque();
         }
-        constexpr std::partial_ordering operator<=>(const self_type& that) const noexcept
+        constexpr std::partial_ordering operator<=>(const deque& that) const noexcept
         { 
             return as_std_deque() <=> that.as_std_deque();
         }

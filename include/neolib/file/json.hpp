@@ -149,7 +149,6 @@ namespace neolib
         template <typename T>
         class basic_json_node
         {
-            typedef basic_json_node<T> self_type;
             template <json_syntax Syntax, typename Alloc , typename CharT, typename Traits, typename CharAlloc>
             friend class basic_json_value;
         public:
@@ -304,7 +303,6 @@ namespace neolib
     template <typename T>
     class basic_json_object
     {
-        typedef basic_json_object<T> self_type;
         template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
         friend class basic_json;
         template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
@@ -417,7 +415,6 @@ namespace neolib
     template <typename T>
     class basic_json_array
     {
-        typedef basic_json_array<T> self_type;
         template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
         friend class basic_json;
         template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
@@ -544,7 +541,6 @@ namespace neolib
     template <json_syntax Syntax = json_syntax::Standard, typename Alloc = std::allocator<json_type>, typename CharT = char, typename Traits = std::char_traits<CharT>, typename CharAlloc = std::allocator<CharT>>
     class basic_json_value
     {
-        typedef basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc> self_type;
         friend class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>;
         template <typename T>
         friend class json_detail::basic_json_node;
@@ -558,14 +554,14 @@ namespace neolib
         typedef Traits character_traits_type;
         typedef CharAlloc character_allocator_type;
     public:
-        typedef self_type node_value_type;
+        typedef basic_json_value node_value_type;
     public:
-        typedef typename std::allocator_traits<allocator_type>::template rebind_alloc<self_type> value_allocator;
+        typedef typename std::allocator_traits<allocator_type>::template rebind_alloc<basic_json_value> value_allocator;
     public:
-        typedef const self_type* const_pointer;
-        typedef self_type* pointer;
-        typedef const self_type& const_reference;
-        typedef self_type& reference;
+        typedef const basic_json_value* const_pointer;
+        typedef basic_json_value* pointer;
+        typedef const basic_json_value& const_reference;
+        typedef basic_json_value& reference;
     private:
         template <typename IteratorTraits>
         class iterator_base;
@@ -574,16 +570,16 @@ namespace neolib
         class iterator;
     public:
         typedef basic_quick_string<character_type, character_traits_type, character_allocator_type> json_string;
-        typedef basic_json_object<self_type> json_object;
-        typedef basic_json_array<self_type> json_array;
+        typedef basic_json_object<basic_json_value> json_object;
+        typedef basic_json_array<basic_json_value> json_array;
         typedef double json_double;
         typedef int64_t json_int64;
         typedef uint64_t json_uint64;
         typedef int32_t json_int;
         typedef uint32_t json_uint;
         typedef bool json_bool;
-        typedef basic_json_null<self_type> json_null;
-        typedef basic_json_keyword<self_type> json_keyword;
+        typedef basic_json_null<basic_json_value> json_null;
+        typedef basic_json_keyword<basic_json_value> json_keyword;
     public:
         typedef std::variant<std::monostate, json_string, json_keyword> name_t;
     public:
@@ -900,7 +896,6 @@ namespace neolib
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
     class basic_json
     {
-        typedef basic_json<Syntax, Alloc, CharT, Traits, CharAlloc> self_type;
     public:
         static constexpr json_syntax syntax = Syntax;
         typedef Alloc allocator_type;

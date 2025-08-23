@@ -43,10 +43,9 @@ namespace neolib
     template <typename T>
     class i_list : public i_sequence_container<T, i_const_iterator<T>, i_iterator<T> >
     {
-        typedef i_list<T> self_type;
         typedef i_sequence_container<T, i_const_iterator<T>, i_iterator<T> > base_type;
     public:
-        typedef self_type abstract_type;
+        typedef i_list abstract_type;
         typedef typename base_type::size_type size_type;
     public:
         virtual void push_front(const T& aValue) = 0;

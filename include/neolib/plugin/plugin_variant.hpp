@@ -99,7 +99,6 @@ namespace neolib
         public reference_counted<i_plugin_variant<Id, abstract_t<Types>...>>,
         public std::variant<std::monostate, Types...>
     {
-        typedef plugin_variant<Id, Types...> self_type;
         typedef reference_counted<i_plugin_variant<Id, abstract_t<Types>...>> base_type;
         // types
     public:
@@ -110,12 +109,12 @@ namespace neolib
         // construction/assignment
     public:
         using variant_type::variant_type;
-        plugin_variant(const self_type& aOther)
+        plugin_variant(const plugin_variant& aOther)
         {
             if (!aOther.empty())
                 do_assign(aOther.which(), aOther.data());
         }
-        plugin_variant(self_type&& aOther) noexcept
+        plugin_variant(plugin_variant&& aOther) noexcept
         {
             if (!aOther.empty())
                 do_move_assign(aOther.which(), aOther.data());
@@ -130,17 +129,17 @@ namespace neolib
             if (!aOther.empty())
                 do_move_assign(aOther.which(), aOther.data());
         }
-        self_type& operator=(const self_type& aOther)
+        plugin_variant& operator=(const plugin_variant& aOther)
         {
             variant_type::operator=(aOther);
             return *this;
         }
-        self_type& operator=(self_type&& aOther) noexcept
+        plugin_variant& operator=(plugin_variant&& aOther) noexcept
         {
             variant_type::operator=(std::move(aOther));
             return *this;
         }
-        self_type& operator=(none_t)
+        plugin_variant& operator=(none_t)
         {
             variant_type::operator=(std::monostate{});
             return *this;
@@ -186,7 +185,7 @@ namespace neolib
             },  as_std_variant());
             return result;
         }
-        std::partial_ordering operator<=>(const self_type& that) const
+        std::partial_ordering operator<=>(const plugin_variant& that) const
         {
             if (*this == that)
                 return std::partial_ordering::equivalent;
@@ -249,7 +248,7 @@ namespace neolib
         }
         abstract_type* do_clone() const final
         {
-            return new self_type{ *this };
+            return new plugin_variant{ *this };
         }
         abstract_type& do_assign(id_t aType, const void* aData) final
         {

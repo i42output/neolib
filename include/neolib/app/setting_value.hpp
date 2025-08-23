@@ -57,7 +57,6 @@ namespace neolib
     template <typename T>
     class setting_value : public i_setting_value
     {
-        typedef setting_value<T> self_type;
     public:
         typedef i_setting_value abstract_type;
         typedef typename setting_container_type<T>::type container_type;
@@ -70,7 +69,7 @@ namespace neolib
             iValue{ aDefaultValue }
         {
         }
-        setting_value(self_type const& aOther) :
+        setting_value(setting_value const& aOther) :
             iValue{ aOther.iValue }
         {
         }

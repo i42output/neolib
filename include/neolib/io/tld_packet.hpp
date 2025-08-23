@@ -44,7 +44,6 @@ namespace neolib
     template <typename IdType, std::size_t MaxPacketSize = 1024, typename CharType = char, typename PacketTraits = DefaultPacketTraits>
     class basic_tld_packet : basic_binary_data_packet<CharType, PacketTraits>
     {
-        typedef tld_packet<IdType, CharType, PacketTraits> self_type;
         typedef basic_binary_data_packet<CharType> base_type;
         // types
     public:
@@ -97,7 +96,7 @@ namespace neolib
         }
         virtual clone_pointer clone() const
         {
-            return clone_pointer(new self_type(*this));
+            return clone_pointer(new basic_tld_packet(*this));
         }
         virtual void copy_from(const basic_packet<CharType>& aSource)
         {

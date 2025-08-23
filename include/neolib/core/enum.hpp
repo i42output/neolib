@@ -46,7 +46,6 @@ namespace neolib
     template <typename Enum>
     class basic_enum : public reference_counted<i_basic_enum<std::underlying_type_t<Enum>>>
     {
-        typedef basic_enum<Enum> self_type;
         typedef reference_counted<i_basic_enum<std::underlying_type_t<Enum>>> base_type;
         // exceptions
     public:
@@ -112,7 +111,7 @@ namespace neolib
     private:
         abstract_type* do_clone() const final
         {
-            return new self_type{ *this };
+            return new basic_enum{ *this };
         }
         abstract_type& do_assign(const abstract_type& aRhs) final
         {

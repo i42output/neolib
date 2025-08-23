@@ -149,9 +149,8 @@ namespace neolib
     template <typename... Args>
     class i_event : public i_lifetime
     {
-        typedef i_event<Args...> self_type;
     public:
-        typedef self_type abstract_type;
+        typedef i_event abstract_type;
     public:
         virtual ~i_event() = default;
     public:
@@ -194,7 +193,6 @@ namespace neolib
     template <typename... Args>
     class slot : public reference_counted<lifetime<i_slot<Args...>>>
     {
-        typedef slot<Args...> self_type;
     public:
         slot(i_event<Args...> const& aEvent, std::function<void(Args...)> const& aCallable) :
             iEvent{ aEvent },

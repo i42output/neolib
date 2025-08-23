@@ -43,10 +43,9 @@ namespace neolib
     template <typename T, typename ConstIteratorType, typename IteratorType>
     class i_sequence_container : public i_container<T, ConstIteratorType, IteratorType>
     {
-        typedef i_sequence_container<T, ConstIteratorType, IteratorType> self_type;
         typedef i_container<T, ConstIteratorType, IteratorType> base_type;
     public:
-        typedef self_type abstract_type;
+        typedef i_sequence_container abstract_type;
     public:
         using typename base_type::value_type;
         using typename base_type::size_type;

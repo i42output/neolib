@@ -142,32 +142,31 @@ namespace neolib
     template <typename UnderlyingType>
     class i_basic_enum : public i_reference_counted
     {
-        typedef i_basic_enum<UnderlyingType> self_type;
         // exceptions
     public:
         struct bad_enum_string : std::logic_error { bad_enum_string() : std::logic_error("i_basic_enum::bad_enum_string") {} };
         // types
     public:
-        typedef self_type abstract_type;
+        typedef i_basic_enum abstract_type;
         typedef UnderlyingType underlying_type;
         typedef i_multimap<underlying_type, i_string> enumerators_t;
         // construction/assignment
     public:
-        ref_ptr<self_type> clone() const
+        ref_ptr<i_basic_enum> clone() const
         {
             return do_clone();
         }
-        self_type& operator=(const self_type& aRhs)
+        i_basic_enum& operator=(const i_basic_enum& aRhs)
         {
             return do_assign(aRhs);
         }
         // comparison
     public:
-        bool operator==(const self_type& that) const
+        bool operator==(const i_basic_enum& that) const
         {
             return value() == that.value();
         }
-        std::strong_ordering operator<=>(const self_type& that) const
+        std::strong_ordering operator<=>(const i_basic_enum& that) const
         {
             return value() <=> that.value();
         }
@@ -186,8 +185,8 @@ namespace neolib
         virtual const enumerators_t& enumerators() const = 0;
         // implementation
     private:
-        virtual self_type* do_clone() const = 0;
-        virtual self_type& do_assign(const self_type& aRhs) = 0;
+        virtual i_basic_enum* do_clone() const = 0;
+        virtual i_basic_enum& do_assign(const i_basic_enum& aRhs) = 0;
         // helpers
     public:
         template <typename Enum>

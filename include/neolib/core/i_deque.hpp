@@ -43,10 +43,9 @@ namespace neolib
     template <typename T>
     class i_deque : public i_random_access_container<T>
     {
-        typedef i_deque<T> self_type;
         typedef i_random_access_container<T> base_type;
     public:
-        typedef self_type abstract_type;
+        typedef i_deque abstract_type;
         using typename base_type::const_iterator;
         using typename base_type::iterator;
         using typename base_type::const_reverse_iterator;

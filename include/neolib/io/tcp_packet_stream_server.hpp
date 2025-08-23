@@ -51,7 +51,6 @@ namespace neolib
     template <typename PacketType>
     class tcp_packet_stream_server : public lifetime<>
     {
-        typedef tcp_packet_stream_server<PacketType> self_type;
         // types
     public:
         typedef PacketType packet_type;
@@ -73,7 +72,7 @@ namespace neolib
         class handler_proxy
         {
         public:
-            handler_proxy(self_type& aParent) : iParentDestroyed{ aParent }, iParent{ aParent }
+            handler_proxy(tcp_packet_stream_server& aParent) : iParentDestroyed{ aParent }, iParent{ aParent }
             {
             }
         public:
@@ -85,7 +84,7 @@ namespace neolib
             }
         private:
             destroyed_flag iParentDestroyed;
-            self_type& iParent;
+            tcp_packet_stream_server& iParent;
         };
 
         // exceptions

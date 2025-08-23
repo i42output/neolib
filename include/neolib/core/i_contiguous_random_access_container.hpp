@@ -54,7 +54,6 @@ namespace neolib
     {
         template <typename T2>
         friend class offset_iterator;
-        typedef offset_iterator<T> self_type;
     public:
         using iterator_category = std::random_access_iterator_tag;
         using value_type = T;
@@ -74,12 +73,12 @@ namespace neolib
             iElement{ aElement }, iOffset{ aOffset }
         {
         }
-        offset_iterator(const self_type& aOther) :
+        offset_iterator(const offset_iterator& aOther) :
             iElement{ aOther.iElement }, iOffset{ aOther.iOffset }
         {
         }
         template <typename Iterator>
-        offset_iterator(const Iterator& aOther, std::enable_if_t<!std::is_same_v<Iterator, self_type> && std::is_same_v<Iterator, offset_iterator<std::remove_const_t<value_type>>>, sfinae> = {}) :
+        offset_iterator(const Iterator& aOther, std::enable_if_t<!std::is_same_v<Iterator, offset_iterator> && std::is_same_v<Iterator, offset_iterator<std::remove_const_t<value_type>>>, sfinae> = {}) :
             iElement{ aOther.iElement }, iOffset{ aOther.iOffset }
         {
         }
@@ -112,10 +111,9 @@ namespace neolib
     template <typename T>
     class i_contiguous_random_access_container : public i_random_access_container<T>
     {
-        typedef i_contiguous_random_access_container<T> self_type;
         typedef i_random_access_container<T> base_type;
     public:
-        typedef self_type abstract_type;
+        typedef i_contiguous_random_access_container abstract_type;
     public:
         using typename base_type::value_type;
         using typename base_type::size_type;

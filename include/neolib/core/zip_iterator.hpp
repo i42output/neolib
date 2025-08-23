@@ -57,7 +57,6 @@ namespace neolib
     template <typename... Iterators>
     class zip_iterator
     {
-        typedef zip_iterator<Iterators...> self_type;
     private:
         typedef zip_iterator_traits<Iterators...> traits;
         typedef typename traits::iterators iterators;
@@ -86,53 +85,53 @@ namespace neolib
             set_pointer<0>(result);
             return result;
         }
-        self_type& operator++()
+        zip_iterator& operator++()
         {
             increment<0>();
             return *this;
         }
-        self_type operator++(int)
+        zip_iterator operator++(int)
         {
-            self_type old{ *this };
+            zip_iterator old{ *this };
             increment<0>();
             return old;
         }
-        self_type& operator--()
+        zip_iterator& operator--()
         {
             decrement<0>();
             return *this;
         }
-        self_type operator--(int)
+        zip_iterator operator--(int)
         {
-            self_type old{ *this };
+            zip_iterator old{ *this };
             decrement<0>();
             return old;
         }
-        difference_type operator-(const self_type& aOther) const
+        difference_type operator-(const zip_iterator& aOther) const
         {
             return std::get<0>(contents()) - std::get<0>(aOther.contents());
         }
-        self_type operator+(difference_type aAmount) const
+        zip_iterator operator+(difference_type aAmount) const
         {
-            self_type result{ *this };
+            zip_iterator result{ *this };
             result.add<0>(aAmount);
             return result;
         }
-        self_type operator-(difference_type aAmount) const
+        zip_iterator operator-(difference_type aAmount) const
         {
-            self_type result{ *this };
+            zip_iterator result{ *this };
             result.subtract<0>(aAmount);
             return result;
         }
-        bool operator<(const self_type& aOther) const
+        bool operator<(const zip_iterator& aOther) const
         {
             return std::get<0>(contents()) < std::get<0>(aOther.contents());
         }
-        bool operator==(const self_type& aOther) const
+        bool operator==(const zip_iterator& aOther) const
         {
             return std::get<0>(contents()) == std::get<0>(aOther.contents());
         }
-        bool operator!=(const self_type& aOther) const
+        bool operator!=(const zip_iterator& aOther) const
         {
             return std::get<0>(contents()) != std::get<0>(aOther.contents());
         }

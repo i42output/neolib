@@ -51,7 +51,6 @@ namespace neolib
     class setting : public reference_counted<i_setting>
     {
         friend class settings;
-        typedef setting<T> self_type;
         typedef reference_counted<i_setting> base_type;
     public:
         typedef T value_type;
@@ -69,7 +68,7 @@ namespace neolib
             iDefaultValue{ aDefaultValue },
             iValue{}
         {}
-        setting(const self_type& aOther) : 
+        setting(const setting& aOther) : 
             base_type{ aOther },
             iManager{ aOther.iManager },
             iKey{ aOther.iKey },

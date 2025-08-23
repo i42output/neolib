@@ -45,10 +45,9 @@ namespace neolib
     template <typename Key, typename T>
     class i_unordered_map : public i_container<i_pair<const Key, T>, i_const_iterator<i_pair<const Key, T>>, i_iterator<i_pair<const Key, T>>>
     {
-        typedef i_unordered_map<Key, T> self_type;
         typedef i_container<i_pair<const Key, T>, i_const_iterator<i_pair<const Key, T> >, i_iterator<i_pair<const Key, T>>> base_type;
     public:
-        typedef self_type abstract_type;
+        typedef i_unordered_map abstract_type;
         typedef Key abstract_key_type;
         typedef T abstract_mapped_type;
         typedef i_pair<const abstract_key_type, abstract_mapped_type> abstract_value_type;
@@ -76,10 +75,9 @@ namespace neolib
     template <typename Key, typename T>
     class i_unordered_multimap : public i_container<i_pair<const Key, T>, i_const_iterator<i_pair<const Key, T>>, i_iterator<i_pair<const Key, T>>>
     {
-        typedef i_unordered_multimap<Key, T> self_type;
         typedef i_container<i_pair<const Key, T>, i_const_iterator<i_pair<const Key, T> >, i_iterator<i_pair<const Key, T>>> base_type;
     public:
-        typedef self_type abstract_type;
+        typedef i_unordered_multimap abstract_type;
         typedef Key abstract_key_type;
         typedef T abstract_mapped_type;
         typedef i_pair<const abstract_key_type, abstract_mapped_type> abstract_value_type;

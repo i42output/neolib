@@ -45,8 +45,7 @@ namespace neolib
     template <typename T, size_t N = 64, typename Alloc = std::allocator<T> >
     class segmented_tree
     {
-        typedef segmented_tree<T, N, Alloc> self_type;
-        typedef self_type tree_type;
+        typedef segmented_tree tree_type;
     public:
         typedef T value_type;
         typedef Alloc allocator_type;
@@ -264,7 +263,6 @@ namespace neolib
         template <iterator_type Type>
         class basic_iterator
         {
-            typedef basic_iterator<Type> self_type;
             friend class segmented_tree<T, N, Alloc>;
         public:
             typedef std::bidirectional_iterator_tag iterator_category; // todo: make iterator random access when logarithmic complexty indexing available
@@ -289,7 +287,7 @@ namespace neolib
                 return !(*this == other);
             }
         public:
-            self_type& operator++()
+            basic_iterator& operator++()
             {
                 if constexpr (Type == iterator_type::Sibling)
                     ++iBaseIterator;
@@ -299,39 +297,39 @@ namespace neolib
                     {
                         ++iBaseIterator;
                         while (iBaseIterator == parent_node().children().end() && !parent_node().is_root())
-                            *this = self_type{ parent_node().parent(), std::next(parent_node().parent().children().iter(parent_node())) };
+                            *this = basic_iterator{ parent_node().parent(), std::next(parent_node().parent().children().iter(parent_node())) };
                     }
                     else
-                        *this = self_type{ our_node(), children().begin() };
+                        *this = basic_iterator{ our_node(), children().begin() };
                 }
                 return *this;
             }
-            self_type operator++(int) const
+            basic_iterator operator++(int) const
             {
-                self_type temp = *this;
+                basic_iterator temp = *this;
                 ++temp;
                 return temp;
             }
-            self_type& operator--()
+            basic_iterator& operator--()
             {
                 if constexpr (Type == iterator_type::Sibling)
                     --iBaseIterator;
                 else
                 {
                     if (iBaseIterator == parent_node().children().begin())
-                        *this = self_type{ parent_node().parent(), parent_node().parent().children().iter(parent_node()) };
+                        *this = basic_iterator{ parent_node().parent(), parent_node().parent().children().iter(parent_node()) };
                     else
                     {
                         --iBaseIterator;
                         while (!children().empty() && !(Type == iterator_type::Skip && children_skipped()))
-                            *this = self_type{ our_node(), std::prev(children().end()) };
+                            *this = basic_iterator{ our_node(), std::prev(children().end()) };
                     }
                 }
                 return *this;
             }
-            self_type operator--(int) const
+            basic_iterator operator--(int) const
             {
-                self_type temp = *this;
+                basic_iterator temp = *this;
                 --temp;
                 return temp;
             }
@@ -443,7 +441,6 @@ namespace neolib
         template <iterator_type Type>
         class basic_const_iterator
         {
-            typedef basic_const_iterator<Type> self_type;
             friend class segmented_tree<T, N, Alloc>;
         public:
             typedef std::bidirectional_iterator_tag iterator_category; // todo: make iterator random access when logarithmic complexty indexing available
@@ -470,7 +467,7 @@ namespace neolib
                 return !(*this == other);
             }
         public:
-            self_type& operator++()
+            basic_const_iterator& operator++()
             {
                 if constexpr (Type == iterator_type::Sibling)
                     ++iBaseIterator;
@@ -480,39 +477,39 @@ namespace neolib
                     {
                         ++iBaseIterator;
                         while (iBaseIterator == parent_node().children().end() && !parent_node().is_root())
-                            *this = self_type{ parent_node().parent(), std::next(parent_node().parent().children().iter(parent_node())) };
+                            *this = basic_const_iterator{ parent_node().parent(), std::next(parent_node().parent().children().iter(parent_node())) };
                     }
                     else
-                        *this = self_type{ our_node(), children().begin() };
+                        *this = basic_const_iterator{ our_node(), children().begin() };
                 }
                 return *this;
             }
-            self_type operator++(int) const
+            basic_const_iterator operator++(int) const
             {
-                self_type temp = *this;
+                basic_const_iterator temp = *this;
                 ++temp;
                 return temp;
             }
-            self_type& operator--()
+            basic_const_iterator& operator--()
             {
                 if constexpr (Type == iterator_type::Sibling)
                     --iBaseIterator;
                 else
                 {
                     if (iBaseIterator == parent_node().children().begin())
-                        *this = self_type{ parent_node().parent(), parent_node().parent().children().iter(parent_node()) };
+                        *this = basic_const_iterator{ parent_node().parent(), parent_node().parent().children().iter(parent_node()) };
                     else
                     {
                         --iBaseIterator;
                         while (!children().empty() && !(Type == iterator_type::Skip && children_skipped()))
-                            *this = self_type{ our_node(), std::prev(children().end()) };
+                            *this = basic_const_iterator{ our_node(), std::prev(children().end()) };
                     }
                 }
                 return *this;
             }
-            self_type operator--(int) const
+            basic_const_iterator operator--(int) const
             {
-                self_type temp = *this;
+                basic_const_iterator temp = *this;
                 --temp;
                 return temp;
             }
@@ -848,7 +845,7 @@ namespace neolib
         }
         node& first_node()
         {
-            return const_cast<node&>(const_cast<const self_type&>(*this).first_node());
+            return const_cast<node&>(const_cast<const segmented_tree&>(*this).first_node());
         }
         node const& last_node() const
         {
@@ -859,7 +856,7 @@ namespace neolib
         }
         node& last_node()
         {
-            return const_cast<node&>(const_cast<const self_type&>(*this).last_node());
+            return const_cast<node&>(const_cast<const segmented_tree&>(*this).last_node());
         }
     private:
         void push_back(node& parent, const value_type& value)

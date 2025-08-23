@@ -43,10 +43,9 @@ namespace neolib
     template <typename T>
     class i_random_access_container : public i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T>>
     {
-        typedef i_random_access_container<T> self_type;
         typedef i_sequence_container<T, i_random_access_const_iterator<T>, i_random_access_iterator<T>> base_type;
     public:
-        typedef self_type abstract_type;
+        typedef i_random_access_container abstract_type;
     public:
         using typename base_type::value_type;
         using typename base_type::size_type;

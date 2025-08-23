@@ -42,31 +42,30 @@ namespace neolib
     template <typename T1, typename T2>
     class i_pair
     {
-        typedef i_pair<T1, T2> self_type;
     public:
-        typedef self_type abstract_type;
+        typedef i_pair abstract_type;
         typedef T1 first_type;
         typedef T2 second_type;
     public:
-        virtual self_type& operator=(const self_type& aRhs) = 0;
+        virtual i_pair& operator=(const i_pair& aRhs) = 0;
     public:
         virtual const first_type& first() const = 0;
         virtual first_type& first() = 0;
         virtual const second_type& second() const = 0;
         virtual second_type& second() = 0;
     public:
-        friend void swap(self_type& a, self_type& b)
+        friend void swap(i_pair& a, i_pair& b)
         {
             using std::swap;
             swap(a.first(), b.first());
             swap(a.second(), b.second());
         }
     public:
-        constexpr bool operator==(const self_type& that) const noexcept
+        constexpr bool operator==(const i_pair& that) const noexcept
         {
             return first() == that.first() && second() == that.second();
         }
-        constexpr std::partial_ordering operator<=>(const self_type& that) const noexcept
+        constexpr std::partial_ordering operator<=>(const i_pair& that) const noexcept
         {
             if (*this == that)
                 return std::partial_ordering::equivalent;

@@ -46,7 +46,6 @@ namespace neolib
     template <typename T>
     class vector : public reference_counted<i_vector<abstract_t<T>>>
     {
-        using self_type = vector<T>;
         using base_type = reference_counted<i_vector<abstract_t<T>>> ;
         // types
     public:
@@ -119,11 +118,11 @@ namespace neolib
         }
         // comparison
     public:
-        constexpr bool operator==(const self_type& that) const noexcept
+        constexpr bool operator==(const vector& that) const noexcept
         {
             return as_std_vector() == that.as_std_vector();
         }
-        constexpr std::partial_ordering operator<=>(const self_type& that) const noexcept
+        constexpr std::partial_ordering operator<=>(const vector& that) const noexcept
         {
             return as_std_vector() <=> that.as_std_vector();
         }

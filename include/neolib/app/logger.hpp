@@ -54,7 +54,6 @@ namespace neolib
         template <std::size_t Instance = 0>
         class logger : public i_logger, public lifetime<>
         {
-            typedef logger<Instance> self_type;
         public:
             define_declared_event(NewLogMessage, new_log_message, i_string const&)
         protected:
@@ -346,7 +345,7 @@ namespace neolib
             }
             severity& message_severity_ref()
             {
-                return const_cast<severity&>(const_cast<self_type const&>(*this).message_severity_ref());
+                return const_cast<severity&>(const_cast<logger const&>(*this).message_severity_ref());
             }
             category_id const& message_category_ref() const
             {
@@ -355,7 +354,7 @@ namespace neolib
             }
             category_id& message_category_ref()
             {
-                return const_cast<category_id&>(const_cast<self_type const&>(*this).message_category_ref());
+                return const_cast<category_id&>(const_cast<logger const&>(*this).message_category_ref());
             }
             bool any_available() const
             {

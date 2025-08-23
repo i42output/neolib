@@ -105,7 +105,6 @@ namespace neolib
     template <typename... Args>
     class event : public lifetime<i_event<Args...>>
     {
-        typedef event<Args...> self_type;
         typedef lifetime<i_event<Args...>> base_type;
     public:
         using typename base_type::abstract_type;

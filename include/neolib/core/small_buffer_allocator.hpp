@@ -64,7 +64,6 @@ namespace neolib
     template <typename T, typename R, std::size_t SmallBufferSize, std::size_t MaxSize, typename Alloc>
     class basic_small_buffer_allocator<small_buffer_allocator_types<T, R>, SmallBufferSize, MaxSize, Alloc> : public std::allocator_traits<Alloc>::template rebind_alloc<R>
     {
-        typedef basic_small_buffer_allocator<small_buffer_allocator_types<T, R>, SmallBufferSize, MaxSize, Alloc> self_type;
     public:
         struct no_small_buffer : std::logic_error { no_small_buffer() : std::logic_error("neolib::basic_small_buffer_allocator::no_small_buffer") {} };
     public:

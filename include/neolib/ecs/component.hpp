@@ -118,7 +118,6 @@ namespace neolib::ecs
     template <typename Data, typename Base>
     class component_base : public Base
     {
-        typedef component_base<ecs_data_type_t<Data>, Base> self_type;
     public:
         struct entity_record_not_found : std::logic_error { entity_record_not_found() : std::logic_error("neolib::component::entity_record_not_found") {} };
         struct invalid_data : std::logic_error { invalid_data() : std::logic_error("neolib::component::invalid_data") {} };
@@ -132,13 +131,13 @@ namespace neolib::ecs
             iEcs{ aEcs }
         {
         }
-        component_base(const self_type& aOther) :
+        component_base(const component_base& aOther) :
             iEcs{ aOther.iEcs },
             iComponentData{ aOther.iComponentData }
         {
         }
     public:
-        self_type& operator=(const self_type& aRhs)
+        component_base& operator=(const component_base& aRhs)
         {
             iComponentData = aRhs.iComponentData;
             return *this;
@@ -208,7 +207,6 @@ namespace neolib::ecs
     template <typename Data>
     class component : public component_base<Data, i_component>
     {
-        typedef component<Data> self_type;
         typedef component_base<Data, i_component> base_type;
     public:
         using typename base_type::entity_record_not_found;
@@ -222,11 +220,11 @@ namespace neolib::ecs
         typedef typename component_data_t::size_type reverse_index_t;
         typedef std::vector<reverse_index_t> reverse_indices_t;
     public:
-        typedef std::unique_ptr<self_type> snapshot_ptr;
+        typedef std::unique_ptr<component> snapshot_ptr;
         class scoped_snapshot
         {
         public:
-            scoped_snapshot(self_type& aOwner) :
+            scoped_snapshot(component& aOwner) :
                 iOwner{ aOwner }
             {
                 ++iOwner.iUsingSnapshot;
@@ -241,12 +239,12 @@ namespace neolib::ecs
                 --iOwner.iUsingSnapshot;
             }
         public:
-            self_type& data() const
+            component& data() const
             {
                 return *iOwner.iSnapshot;
             }
         private:
-            self_type& iOwner;
+            component& iOwner;
         };
     private:
         static constexpr reverse_index_t invalid = ~reverse_index_t{};
@@ -257,7 +255,7 @@ namespace neolib::ecs
             iUsingSnapshot{ 0u }
         {
         }
-        component(const self_type& aOther) :
+        component(const component& aOther) :
             base_type{ aOther },
             iEntities{ aOther.iEntities },
             iReverseIndices{ aOther.iReverseIndices },
@@ -266,7 +264,7 @@ namespace neolib::ecs
         {
         }
     public:
-        self_type& operator=(const self_type& aRhs)
+        component& operator=(const component& aRhs)
         {
             base_type::operator=(aRhs);
             iEntities = aRhs.iEntities;    
@@ -407,7 +405,7 @@ namespace neolib::ecs
             if (!iUsingSnapshot)
             {
                 if (iSnapshot == nullptr)
-                    iSnapshot = snapshot_ptr{ new self_type{*this} };
+                    iSnapshot = snapshot_ptr{ new component{*this} };
                 else
                     *iSnapshot = *this;
                 iHaveSnapshot = true;
@@ -523,7 +521,6 @@ namespace neolib::ecs
     template <typename Data>
     class shared_component : public component_base<shared<ecs_data_type_t<Data>>, i_shared_component>
     {
-        typedef shared_component<Data> self_type;
         typedef component_base<shared<ecs_data_type_t<Data>>, i_shared_component> base_type;
     public:
         using typename base_type::entity_record_not_found;

@@ -43,10 +43,9 @@ namespace neolib
     template <typename T>
     class i_vector : public i_contiguous_random_access_container<T>
     {
-        typedef i_vector<T> self_type;
         typedef i_contiguous_random_access_container<T> base_type;
     public:
-        typedef self_type abstract_type;
+        typedef i_vector abstract_type;
     public:
         using typename base_type::value_type;
         using typename base_type::const_iterator;

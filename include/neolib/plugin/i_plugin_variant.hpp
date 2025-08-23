@@ -78,30 +78,29 @@ namespace neolib
     template <typename Id, typename... Types>
     class i_plugin_variant : public i_reference_counted
     {
-        typedef i_plugin_variant<Id, Types...> self_type;
         template <typename, typename...>
         friend class plugin_variant;
         // exceptions
     public:
         // types
     public:
-        typedef self_type abstract_type;
+        typedef i_plugin_variant abstract_type;
         typedef Id id_t;
         typedef std::size_t index_type;
         // construction/assignment
     public:
-        ref_ptr<self_type> clone() const
+        ref_ptr<i_plugin_variant> clone() const
         {
             return do_clone();
         }
-        self_type& operator=(const self_type& aOther)
+        i_plugin_variant& operator=(const i_plugin_variant& aOther)
         {
             if (!aOther.empty())
                 return do_assign(aOther.which(), aOther.data());
             clear();
             return *this;
         }
-        self_type& operator=(self_type&& aOther)
+        i_plugin_variant& operator=(i_plugin_variant&& aOther)
         {
             if (!aOther.empty())
             {
@@ -113,25 +112,25 @@ namespace neolib
             return *this;
         }
         template <typename T>
-        std::enable_if_t<!std::is_base_of_v<self_type, T>, self_type>& operator=(const T& aArgument)
+        std::enable_if_t<!std::is_base_of_v<i_plugin_variant, T>, i_plugin_variant>& operator=(const T& aArgument)
         {
             return do_assign(static_cast<id_t>(variadic::index_v<T, Types...>), &aArgument);
         }
         template <typename T>
-        std::enable_if_t<!std::is_base_of_v<self_type, std::remove_reference_t<T>>, self_type>& operator=(T&& aArgument)
+        std::enable_if_t<!std::is_base_of_v<i_plugin_variant, std::remove_reference_t<T>>, i_plugin_variant>& operator=(T&& aArgument)
         {
             return do_move_assign(static_cast<id_t>(variadic::no_reference_index_v<T, Types...>), &aArgument);
         }
-        self_type& operator=(const none_t)
+        i_plugin_variant& operator=(const none_t)
         {
             clear();
             return *this;
         }
         // comparison
     public:
-        virtual bool operator==(const self_type& that) const = 0;
-        virtual bool operator<(const self_type& that) const = 0;
-        std::partial_ordering operator<=>(const self_type& that) const
+        virtual bool operator==(const i_plugin_variant& that) const = 0;
+        virtual bool operator<(const i_plugin_variant& that) const = 0;
+        std::partial_ordering operator<=>(const i_plugin_variant& that) const
         {
             if (*this == that)
                 return std::partial_ordering::equivalent;
@@ -175,9 +174,9 @@ namespace neolib
         virtual std::size_t index() const = 0;
         virtual const void* data() const = 0;
         virtual void* data() = 0;
-        virtual self_type* do_clone() const = 0;
-        virtual self_type& do_assign(id_t aType, const void* aData) = 0;
-        virtual self_type& do_move_assign(id_t aType, void* aData) = 0;
+        virtual i_plugin_variant* do_clone() const = 0;
+        virtual i_plugin_variant& do_assign(id_t aType, const void* aData) = 0;
+        virtual i_plugin_variant& do_move_assign(id_t aType, void* aData) = 0;
     };
 
     namespace variant_visitors

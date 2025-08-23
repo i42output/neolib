@@ -48,10 +48,9 @@ namespace neolib
 {
     class i_string : public i_contiguous_random_access_container<char>
     {
-        typedef i_string self_type;
         typedef i_contiguous_random_access_container<char> base_type;
     public:
-        typedef self_type abstract_type;
+        typedef i_string abstract_type;
     public:
         using typename base_type::value_type;
         using typename base_type::size_type;

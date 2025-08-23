@@ -43,10 +43,9 @@ namespace neolib
     template <typename T>
     class i_set : public i_container<T, i_const_iterator<T>, i_iterator<T> >
     {
-        typedef i_set<T> self_type;
         typedef i_container<T, i_const_iterator<T>, i_iterator<T> > base_type;
     public:
-        typedef self_type abstract_type;
+        typedef i_set abstract_type;
         typedef T abstract_key_type;
         typedef T abstract_value_type;
         typedef base_type abstract_container;
@@ -69,10 +68,9 @@ namespace neolib
     template <typename T>
     class i_multiset : public i_container<T, i_const_iterator<T>, i_iterator<T> >
     {
-        typedef i_multiset<T> self_type;
         typedef i_container<T, i_const_iterator<T>, i_iterator<T> > base_type;
     public:
-        typedef self_type abstract_type;
+        typedef i_multiset abstract_type;
         typedef T abstract_key_type;
         typedef T abstract_value_type;
         typedef base_type abstract_container;

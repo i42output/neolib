@@ -60,8 +60,6 @@ namespace neolib
     template <typename CookieType, CookieConsumer<CookieType> ConsumerType = i_basic_cookie_consumer<CookieType>>
     class basic_cookie_ref_ptr
     {
-    private:
-        using self_type = basic_cookie_ref_ptr<CookieType, ConsumerType>;
     public:
         using cookie_type = CookieType;
         using consumer_type = ConsumerType;
@@ -82,13 +80,13 @@ namespace neolib
         {
             release();
         }
-        basic_cookie_ref_ptr(self_type const& aOther) :
+        basic_cookie_ref_ptr(basic_cookie_ref_ptr const& aOther) :
             iConsumer{ aOther.iConsumer },
             iCookie{ aOther.iCookie }
         {
             add_ref();
         }
-        basic_cookie_ref_ptr(self_type&& aOther) :
+        basic_cookie_ref_ptr(basic_cookie_ref_ptr&& aOther) :
             iConsumer{ aOther.iConsumer },
             iCookie{ aOther.iCookie }
         {
@@ -96,21 +94,21 @@ namespace neolib
             aOther.release();
         }
     public:
-        self_type& operator=(self_type const& aOther)
+        basic_cookie_ref_ptr& operator=(basic_cookie_ref_ptr const& aOther)
         {
             if (&aOther == this)
                 return *this;
-            self_type temp{ std::move(*this) };
+            basic_cookie_ref_ptr temp{ std::move(*this) };
             iConsumer = aOther.iConsumer;
             iCookie = aOther.iCookie;
             add_ref();
             return *this;
         }
-        self_type& operator=(self_type&& aOther)
+        basic_cookie_ref_ptr& operator=(basic_cookie_ref_ptr&& aOther)
         {
             if (&aOther == this)
                 return *this;
-            self_type temp{ std::move(*this) };
+            basic_cookie_ref_ptr temp{ std::move(*this) };
             iConsumer = aOther.iConsumer;
             iCookie = aOther.iCookie;
             add_ref();
@@ -118,15 +116,15 @@ namespace neolib
             return *this;
         }
     public:
-        bool operator==(self_type const& aRhs) const
+        bool operator==(basic_cookie_ref_ptr const& aRhs) const
         {
             return iConsumer == aRhs.iConsumer && iCookie == aRhs.iCookie;
         }
-        bool operator!=(self_type const& aRhs) const
+        bool operator!=(basic_cookie_ref_ptr const& aRhs) const
         {
             return !(*this == aRhs);
         }
-        bool operator<(self_type const& aRhs) const
+        bool operator<(basic_cookie_ref_ptr const& aRhs) const
         {
             return std::forward_as_tuple(iConsumer, iCookie) < std::forward_as_tuple(aRhs.iConsumer, aRhs.iCookie);
         }
@@ -192,8 +190,6 @@ namespace neolib
     template <typename T, typename Container = vector<T>, typename CookieType = cookie, typename MutexType = null_mutex>
     class basic_jar : public reference_counted<i_basic_jar<abstract_t<T>, abstract_t<Container>, CookieType>>
     {
-    private:
-        using self_type = basic_jar<T, Container, CookieType, MutexType>;
     public:
         using cookie_type = CookieType;
     public:
@@ -213,7 +209,7 @@ namespace neolib
         basic_jar() : iNextAvailableCookie{}
         {
         }
-        basic_jar(self_type const& aOther) :
+        basic_jar(basic_jar const& aOther) :
             iNextAvailableCookie{ aOther.iNextAvailableCookie.load() },
             iAllocatedCookies{ aOther.iAllocatedCookies },
             iItems{ aOther.iItems },
@@ -221,7 +217,7 @@ namespace neolib
             iReverseIndices{ aOther.iReverseIndices }
         {
         }
-        basic_jar(self_type&& aOther) :
+        basic_jar(basic_jar&& aOther) :
             iNextAvailableCookie{ aOther.iNextAvailableCookie.load() },
             iAllocatedCookies{ std::move(aOther.iAllocatedCookies) },
             iItems{ std::move(aOther.iItems) },
@@ -231,7 +227,7 @@ namespace neolib
             aOther.iNextAvailableCookie.store({});
         }
     public:
-        self_type& operator=(self_type const& aOther)
+        basic_jar& operator=(basic_jar const& aOther)
         {
             iNextAvailableCookie = aOther.iNextAvailableCookie.load();
             iAllocatedCookies = aOther.iAllocatedCookies;
@@ -241,7 +237,7 @@ namespace neolib
 
             return *this;
         }
-        self_type& operator=(self_type&& aOther)
+        basic_jar& operator=(basic_jar&& aOther)
         {
             iNextAvailableCookie = aOther.iNextAvailableCookie.load();
             iAllocatedCookies = std::move(aOther.iAllocatedCookies);
@@ -510,8 +506,6 @@ namespace neolib
     template <typename T, typename CookieType = cookie, typename MutexType = null_mutex>
     class basic_std_vector_jar
     {
-    private:
-        using self_type = basic_std_vector_jar<T, CookieType, MutexType>;
     public:
         using cookie_type = CookieType;
     public:
@@ -531,7 +525,7 @@ namespace neolib
         basic_std_vector_jar() : iNextAvailableCookie{}
         {
         }
-        basic_std_vector_jar(self_type const& aOther) :
+        basic_std_vector_jar(basic_std_vector_jar const& aOther) :
             iNextAvailableCookie{ aOther.iNextAvailableCookie.load() },
             iAllocatedCookies{ aOther.iAllocatedCookies },
             iItems{ aOther.iItems },
@@ -539,7 +533,7 @@ namespace neolib
             iReverseIndices{ aOther.iReverseIndices }
         {
         }
-        basic_std_vector_jar(self_type&& aOther) :
+        basic_std_vector_jar(basic_std_vector_jar&& aOther) :
             iNextAvailableCookie{ aOther.iNextAvailableCookie.load() },
             iAllocatedCookies{ std::move(aOther.iAllocatedCookies) },
             iItems{ std::move(aOther.iItems) },
@@ -549,7 +543,7 @@ namespace neolib
             aOther.iNextAvailableCookie.store({});
         }
     public:
-        self_type& operator=(self_type const& aOther)
+        basic_std_vector_jar& operator=(basic_std_vector_jar const& aOther)
         {
             iNextAvailableCookie = aOther.iNextAvailableCookie.load();
             iAllocatedCookies = aOther.iAllocatedCookies;
@@ -559,7 +553,7 @@ namespace neolib
             
             return *this;
         }
-        self_type& operator=(self_type&& aOther)
+        basic_std_vector_jar& operator=(basic_std_vector_jar&& aOther)
         {
             iNextAvailableCookie = aOther.iNextAvailableCookie.load();
             iAllocatedCookies = std::move(aOther.iAllocatedCookies);

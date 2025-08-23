@@ -46,7 +46,6 @@ namespace neolib
     template <typename T>
     class list : public reference_counted<i_list<abstract_t<T>>>
     {
-        typedef list<T> self_type;
         typedef reference_counted<i_list<abstract_t<T>>> base_type;
         // types
     public:
@@ -104,11 +103,11 @@ namespace neolib
         }
         // comparison
     public:
-        constexpr bool operator==(const self_type& that) const noexcept
+        constexpr bool operator==(const list& that) const noexcept
         {
             return as_std_list() == that.as_std_list();
         }
-        constexpr std::partial_ordering operator<=>(const self_type& that) const noexcept
+        constexpr std::partial_ordering operator<=>(const list& that) const noexcept
         {
             return as_std_list() <=> that.as_std_list();
         }

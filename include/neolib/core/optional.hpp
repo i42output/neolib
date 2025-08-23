@@ -53,7 +53,6 @@ namespace neolib
     template<typename T>
     class optional : public reference_counted<i_optional<abstract_t<T>>>
     {
-        typedef optional<T> self_type;
         // types
     public:
         typedef i_optional<abstract_t<T>> abstract_type;
@@ -172,12 +171,12 @@ namespace neolib
         {
             iData.reset();
         }
-        self_type& operator=(std::nullopt_t) noexcept final
+        optional& operator=(std::nullopt_t) noexcept final
         {
             iData = std::nullopt;
             return *this;
         }
-        self_type& operator=(const self_type& rhs)
+        optional& operator=(const optional& rhs)
         {
             if (rhs.has_value())
                 iData = rhs.value();
@@ -185,7 +184,7 @@ namespace neolib
                 iData = std::nullopt;
             return *this;
         }
-        self_type& operator=(const abstract_type& rhs) final
+        optional& operator=(const abstract_type& rhs) final
         {
             if (rhs.has_value())
                 iData = T{ rhs.value() };
@@ -193,7 +192,7 @@ namespace neolib
                 iData = std::nullopt;
             return *this;
         }
-        self_type& operator=(const abstract_t<T>& value) final
+        optional& operator=(const abstract_t<T>& value) final
         {
             iData = T{ value };
             return *this;

@@ -76,13 +76,12 @@ namespace neolib
     template <typename Interface>
     class i_ref_ptr
     {
-        typedef i_ref_ptr<Interface> self_type;
     public:
         struct no_object : std::logic_error { no_object() : std::logic_error("i_ref_ptr::no_object") {} };
         struct no_managed_object : std::logic_error { no_managed_object() : std::logic_error("i_ref_ptr::no_managed_object") {} };
         struct interface_not_found : std::logic_error { interface_not_found() : std::logic_error("i_ref_ptr::interface_not_found") {} };
     public:
-        typedef self_type abstract_type;
+        typedef i_ref_ptr abstract_type;
     public:
         virtual ~i_ref_ptr() = default;
     public:
