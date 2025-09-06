@@ -3,6 +3,8 @@
 #include <iostream>
 #include <neolib/app/i_shared_thread_local.hpp>
 
+void TestTime();
+
 int next_sequence()
 {
     static std::atomic<int> sequence = 0;
@@ -58,6 +60,8 @@ namespace
 
 int main()
 {
+    TestTime();
+
     neolib::allocate_service_provider();
 
     auto test = []()
