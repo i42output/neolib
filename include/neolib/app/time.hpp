@@ -44,12 +44,12 @@
 
 namespace neolib 
 {
-    std::string to_iso8601(std::chrono::utc_clock::time_point const& aTimePoint) 
+    inline std::string to_iso8601(std::chrono::utc_clock::time_point const& aTimePoint) 
     {
         return std::format("{:%FT%T}Z", aTimePoint);
     }
 
-    std::chrono::utc_clock::time_point from_iso8601(std::string const& aDateTime) 
+    inline std::chrono::utc_clock::time_point from_iso8601(std::string const& aDateTime) 
     {
         std::chrono::utc_clock::time_point result;
 
