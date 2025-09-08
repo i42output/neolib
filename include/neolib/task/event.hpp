@@ -181,10 +181,13 @@ namespace neolib
             std::scoped_lock lock{ event_mutex() };
             return !iSlots.empty();
         }
-        void add_slot(i_slot<Args...>& aSlot) const final
+        void add_slot(i_slot<Args...>& aSlot, bool aPriority = false) const final
         {
             std::scoped_lock lock{ event_mutex() };
-            iSlots.push_back(&aSlot);
+            if (!aPriority)
+                iSlots.push_back(&aSlot);
+            else
+                iSlots.insert(iSlots.begin(), &aSlot);
         }
         void remove_slot(i_slot<Args...>& aSlot) const final
         {

@@ -162,7 +162,7 @@ namespace neolib
         virtual void accept() const = 0;
     public:
         virtual bool has_slots() const = 0;
-        virtual void add_slot(i_slot<Args...>& aSlot) const = 0;
+        virtual void add_slot(i_slot<Args...>& aSlot, bool aPriority = false) const = 0;
         virtual void remove_slot(i_slot<Args...>& aSlot) const = 0;
     public:
         trigger_result trigger(Args... aArgs) const
@@ -184,9 +184,9 @@ namespace neolib
         {
             return trigger(aArgs...);
         }
-        slot_proxy<Args...> operator()(std::function<void(Args...)> const& aCallback) const
+        slot_proxy<Args...> operator()(std::function<void(Args...)> const& aCallback, bool aPriority = false) const
         {
-            return slot_proxy<Args...>{ make_ref<slot<Args...>>(*this, aCallback) };
+            return slot_proxy<Args...>{ make_ref<slot<Args...>>(*this, aCallback, aPriority) };
         }
     };
 
@@ -194,13 +194,13 @@ namespace neolib
     class slot : public reference_counted<lifetime<i_slot<Args...>>>
     {
     public:
-        slot(i_event<Args...> const& aEvent, std::function<void(Args...)> const& aCallable) :
+        slot(i_event<Args...> const& aEvent, std::function<void(Args...)> const& aCallable, bool aPriority = false) :
             iEvent{ aEvent },
             iEventDestroyed{ aEvent },
             iCallable{ aCallable },
             iCallThread{ std::this_thread::get_id() }
         {
-            event().add_slot(*this);
+            event().add_slot(*this, aPriority);
         }
         ~slot()
         {
@@ -301,8 +301,8 @@ namespace neolib
     };
 
     #define detail_event_subscribe( declName, ... ) \
-            neolib::slot_proxy<__VA_ARGS__> declName(const std::function<void(__VA_ARGS__)>& aCallback) const { return declName()(aCallback); }\
-            neolib::slot_proxy<__VA_ARGS__> declName(const std::function<void(__VA_ARGS__)>& aCallback) { return declName()(aCallback); }
+            neolib::slot_proxy<__VA_ARGS__> declName(const std::function<void(__VA_ARGS__)>& aCallback, bool aPriority = false) const { return declName()(aCallback, aPriority); }\
+            neolib::slot_proxy<__VA_ARGS__> declName(const std::function<void(__VA_ARGS__)>& aCallback, bool aPriority = false) { return declName()(aCallback, aPriority); }
 
     #define declare_event( declName, ... ) \
             virtual const neolib::i_event<__VA_ARGS__>& ev_##declName() const = 0;\
