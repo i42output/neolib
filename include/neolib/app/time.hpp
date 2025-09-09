@@ -48,15 +48,14 @@ namespace neolib
     {
         if (aFractionalSeconds)
         {
-            return std::format("{:%Y-%m-%dT%H:%M:%S}Z", aTimePoint);
+            return std::format("{:%FT%T}Z", aTimePoint);
         }
         else
         {
             auto const nowSeconds = std::chrono::floor<std::chrono::seconds>(aTimePoint);
-            auto const nowSysSeconds = std::chrono::clock_cast<std::chrono::system_clock>(nowSeconds);
-            auto const sysDays = std::chrono::floor<std::chrono::days>(nowSysSeconds);
+            auto const sysDays = std::chrono::floor<std::chrono::days>(std::chrono::utc_clock::to_sys(nowSeconds));
             auto const ymd = std::chrono::year_month_day{ sysDays };
-            auto const utcDays = std::chrono::floor<std::chrono::days>(nowSeconds);
+            auto const utcDays = std::chrono::utc_clock::from_sys(sysDays);
             auto const hms = std::chrono::hh_mm_ss{ nowSeconds - utcDays };
 
             return std::format("{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}Z",
