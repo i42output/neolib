@@ -44,9 +44,29 @@
 
 namespace neolib 
 {
-    inline std::string to_iso8601(std::chrono::utc_clock::time_point const& aTimePoint) 
+    inline std::string to_iso8601(std::chrono::utc_clock::time_point const& aTimePoint, bool aFractionalSeconds = true) 
     {
-        return std::format("{:%FT%T}Z", aTimePoint);
+        if (aFractionalSeconds)
+        {
+            return std::format("{:%Y-%m-%dT%H:%M:%S}Z", aTimePoint);
+        }
+        else
+        {
+            auto const nowSeconds = std::chrono::floor<std::chrono::seconds>(aTimePoint);
+            auto const nowSysSeconds = std::chrono::clock_cast<std::chrono::system_clock>(nowSeconds);
+            auto const sysDays = std::chrono::floor<std::chrono::days>(nowSysSeconds);
+            auto const ymd = std::chrono::year_month_day{ sysDays };
+            auto const utcDays = std::chrono::floor<std::chrono::days>(nowSeconds);
+            auto const hms = std::chrono::hh_mm_ss{ nowSeconds - utcDays };
+
+            return std::format("{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}Z",
+                static_cast<int>(ymd.year()),
+                static_cast<unsigned>(ymd.month()),
+                static_cast<unsigned>(ymd.day()),
+                hms.hours().count(),
+                hms.minutes().count(),
+                hms.seconds().count());
+        }
     }
 
     inline std::chrono::utc_clock::time_point from_iso8601(std::string const& aDateTime) 
