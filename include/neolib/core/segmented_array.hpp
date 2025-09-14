@@ -453,7 +453,8 @@ namespace neolib
         }
         const_iterator citer(const value_type& aValue) const
         {
-            return cbegin() + (&aValue - &(*this)[0]);
+            // todo: optimise
+            return std::find_if(cbegin(), cend(), [&](auto const& e) { return &e == &aValue; });
         }
         const_iterator iter(const value_type& aValue) const
         {
@@ -461,7 +462,8 @@ namespace neolib
         }
         iterator iter(const value_type& aValue)
         {
-            return begin() + (&aValue - &(*this)[0]);
+            // todo: optimise
+            return std::find_if(begin(), end(), [&](auto const& e) { return &e == &aValue; });
         }
         const_reference front() const
         {

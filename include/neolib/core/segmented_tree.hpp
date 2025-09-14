@@ -345,11 +345,17 @@ namespace neolib
         public:
             basic_const_iterator<iterator_type::Sibling> cparent() const
             {
-                return basic_const_iterator<iterator_type::Sibling>{ parent_node().parent(), parent_node().parent().children().iter(parent_node()) };
+                auto& parentNode = parent_node();
+                auto& grandparentNode = parentNode.parent();
+                auto iterParent = grandparentNode.children().iter(parentNode);
+                return basic_const_iterator<iterator_type::Sibling>{ grandparentNode, iterParent };
             }
             basic_iterator<iterator_type::Sibling> parent() const
             {
-                return basic_iterator<iterator_type::Sibling>{ parent_node().parent(), parent_node().parent().children().iter(parent_node()) };
+                auto& parentNode = parent_node();
+                auto& grandparentNode = parentNode.parent();
+                auto iterParent = grandparentNode.children().iter(parentNode);
+                return basic_iterator<iterator_type::Sibling>{ grandparentNode, iterParent };
             }
             basic_const_iterator<iterator_type::Sibling> cbegin() const
             {
@@ -505,7 +511,10 @@ namespace neolib
         public:
             basic_const_iterator<iterator_type::Sibling> cparent() const
             {
-                return basic_const_iterator<iterator_type::Sibling>{ parent_node().parent(), parent_node().parent().children().iter(parent_node()) };
+                auto& parentNode = parent_node();
+                auto& grandparentNode = parentNode.parent();
+                auto iterParent = grandparentNode.children().iter(parentNode);
+                return basic_const_iterator<iterator_type::Sibling>{ grandparentNode, iterParent };
             }
             basic_const_iterator<iterator_type::Sibling> parent() const
             {
