@@ -347,11 +347,7 @@ namespace neolib
             {
                 return basic_const_iterator<iterator_type::Sibling>{ parent_node().parent(), parent_node().parent().children().iter(parent_node()) };
             }
-            basic_const_iterator<iterator_type::Sibling> parent() const
-            {
-                return cparent();
-            }
-            basic_iterator<iterator_type::Sibling> parent()
+            basic_iterator<iterator_type::Sibling> parent() const
             {
                 return basic_iterator<iterator_type::Sibling>{ parent_node().parent(), parent_node().parent().children().iter(parent_node()) };
             }
@@ -359,11 +355,7 @@ namespace neolib
             {
                 return basic_const_iterator<iterator_type::Sibling>{ our_node(), children().begin() };
             }
-            basic_const_iterator<iterator_type::Sibling> begin() const
-            {
-                return cbegin();
-            }
-            basic_iterator<iterator_type::Sibling> begin()
+            basic_iterator<iterator_type::Sibling> begin() const
             {
                 return basic_iterator<iterator_type::Sibling>{ our_node(), children().begin() };
             }
@@ -371,11 +363,7 @@ namespace neolib
             {
                 return basic_const_iterator<iterator_type::Sibling>{ our_node(), children().end() };
             }
-            basic_const_iterator<iterator_type::Sibling> end() const
-            {
-                return cend();
-            }
-            basic_iterator<iterator_type::Sibling> end()
+            basic_iterator<iterator_type::Sibling> end() const
             {
                 return basic_iterator<iterator_type::Sibling>{ our_node(), children().end() };
             }
@@ -383,11 +371,7 @@ namespace neolib
             {
                 return std::make_reverse_iterator(cend());
             }
-            std::reverse_iterator<basic_const_iterator<iterator_type::Sibling>> rbegin() const
-            {
-                return std::make_reverse_iterator(cend());
-            }
-            std::reverse_iterator<basic_iterator<iterator_type::Sibling>> rbegin()
+            std::reverse_iterator<basic_iterator<iterator_type::Sibling>> rbegin() const
             {
                 return std::make_reverse_iterator(end());
             }
@@ -395,11 +379,7 @@ namespace neolib
             {
                 return std::make_reverse_iterator(cbegin());
             }
-            std::reverse_iterator<basic_const_iterator<iterator_type::Sibling>> rend() const
-            {
-                return std::make_reverse_iterator(cbegin());
-            }
-            std::reverse_iterator<basic_iterator<iterator_type::Sibling>> rend()
+            std::reverse_iterator<basic_iterator<iterator_type::Sibling>> rend() const
             {
                 return std::make_reverse_iterator(begin());
             }

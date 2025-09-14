@@ -73,6 +73,8 @@ namespace
 
 int main()
 {
+    TestTree();
+
     neolib::string_view sv{ "hello" };
     test_assert(sv == neolib::string_view{ "hello" });
     test_assert(sv == std::string{ "hello" });
@@ -330,7 +332,5 @@ int main()
     --++sa.cbegin();
     (++sa.begin())--;
     (++sa.cbegin())--;
-
-    TestTree();
 }
 

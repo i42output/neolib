@@ -4,7 +4,7 @@
 
 void TestTree()
 {
-    neolib::tree<int> tree0;
+    neolib::tree<int, 2> tree0;
     for (int i = 0; i < 100; ++i)
         tree0.insert(tree0.kend(), 42);
     for (int i = 0; i < 10000; ++i)
