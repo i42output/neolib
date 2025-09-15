@@ -12,6 +12,7 @@
 #include <neolib/core/polymorphic_vecarray.hpp>
 #include <neolib/core/gap_vector.hpp>
 #include <neolib/core/unordered_map.hpp>
+#include <neolib/core/generic_iterator.hpp>
 
 struct i_foo
 {
@@ -53,6 +54,8 @@ struct tag
 template class neolib::tag_array<tag<int>, int>;
 
 void TestTree();
+
+template class neolib::specialized_generic_iterator<char*>;
 
 namespace
 {
@@ -332,5 +335,9 @@ int main()
     --++sa.cbegin();
     (++sa.begin())--;
     (++sa.cbegin())--;
+
+    std::vector<char> vc{ 1, 2, 3 };
+    neolib::specialized_generic_iterator<std::vector<char>::iterator> sgi{ vc.begin() };
+    sgi.get<std::vector<char>::const_iterator, std::vector<char>::iterator, std::vector<char>::const_iterator>();
 }
 

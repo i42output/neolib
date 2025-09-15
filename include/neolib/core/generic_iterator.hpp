@@ -1,6 +1,6 @@
 // generic_iterator.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2007, 2025 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -36,16 +36,17 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <cstddef>
 #include <type_traits>
-#include <boost/aligned_storage.hpp>
+#include <iterator>
 
 namespace neolib
 {
     class generic_iterator
     {
     public:
-        typedef std::bidirectional_iterator_tag iterator_category;
-        typedef std::ptrdiff_t difference_type;
+        using iterator_category = std::bidirectional_iterator_tag;
+        using difference_type = std::ptrdiff_t;
     public:
         struct wrong_iterator_type : std::logic_error { wrong_iterator_type() : std::logic_error("neolib::generic_iterator::wrong_iterator_type") {} };
     protected:
@@ -68,8 +69,9 @@ namespace neolib
         class wrapper : public i_wrapper
         {
         public:
-            typedef typename std::iterator_traits<Iterator>::pointer pointer;
-            typedef typename std::iterator_traits<Iterator>::reference reference;
+            using value_type = typename std::iterator_traits<Iterator>::value_type;
+            using pointer = typename std::iterator_traits<Iterator>::pointer;
+            using reference = typename std::iterator_traits<Iterator>::reference;
         public:
             wrapper(Iterator aIterator) : iIterator(aIterator)
             {
@@ -91,21 +93,21 @@ namespace neolib
         public:
             reference operator*() const
             {
-                return iIterator.operator*();
+                return *iIterator;
             }
             pointer operator->() const
             {
-                return iIterator.operator->();
+                return &*iIterator;
             }
         public:
             wrapper& operator++() override
             {
-                iIterator.operator++();
+                ++iIterator;
                 return *this;
             }
             wrapper& operator--() override
             {
-                iIterator.operator--();
+                --iIterator;
                 return *this;
             }
             wrapper& operator+=(difference_type aDelta) override
@@ -131,14 +133,18 @@ namespace neolib
         };
     public:
         generic_iterator() :
+            iIteratorStorage{},
             iWrappedIterator{ nullptr }, 
             iInPlace{ false }
         {
         }
         generic_iterator(const generic_iterator& aOther) :
-            iWrappedIterator{ aOther.iInPlace ? aOther.iWrappedIterator->clone(iIteratorStorage) : aOther.iWrappedIterator->clone() }, 
+            iIteratorStorage{},
+            iWrappedIterator{ nullptr },
             iInPlace{ aOther.iInPlace }
         {
+            if (aOther.iWrappedIterator != nullptr)
+                iWrappedIterator = aOther.iInPlace ? aOther.iWrappedIterator->clone(iIteratorStorage) : aOther.iWrappedIterator->clone();
         }
         virtual ~generic_iterator()
         {
@@ -216,7 +222,7 @@ namespace neolib
         {
             if (is_one_of<Iterator>())
             {
-                return static_cast<Iterator>(dynamic_cast<const wrapper<Iterator>&>(wrapped_iterator()).get());
+                return dynamic_cast<const wrapper<Iterator>&>(wrapped_iterator()).get();
             }
             else
             {
@@ -228,7 +234,7 @@ namespace neolib
         {
             if (is_one_of<NextIterator>())
             {
-                return static_cast<Iterator>(dynamic_cast<const wrapper<NextIterator>&>(wrapped_iterator()).get());
+                return dynamic_cast<const wrapper<NextIterator>&>(wrapped_iterator()).get();
             }
             else
             {
@@ -264,11 +270,7 @@ namespace neolib
             return *iWrappedIterator;
         }
     private:
-        union
-        {
-            std::aligned_storage<sizeof(void*) * 4>::type iPad;
-            char iIteratorStorage[sizeof(void*) * 4];
-        };
+        alignas(std::max_align_t) std::byte iIteratorStorage[sizeof(void*) * 4];
         i_wrapper* iWrappedIterator;
         bool iInPlace;
     };
@@ -313,7 +315,7 @@ namespace neolib
         }
         specialized_generic_iterator operator--(int)
         {
-            generic_iterator old = *this;
+            specialized_generic_iterator old = *this;
             wrapped_iterator().operator--();
             return old;
         }
@@ -329,19 +331,19 @@ namespace neolib
         }
         specialized_generic_iterator operator+(difference_type aDelta)
         {
-            return wrapped_iterator().operator+(aDelta);
+            return generic_iterator::operator+(aDelta);
         }
         specialized_generic_iterator operator-(difference_type aDelta)
         {
-            return wrapped_iterator().operator-(aDelta);
+            return generic_iterator::operator-(aDelta);
         }
         reference operator*() const
         {
-            return wrapped_iterator().operator*();
+            return dynamic_cast<const wrapper<Iterator>&>(wrapped_iterator()).operator*();
         }
         pointer operator->() const
         {
-            return wrapped_iterator().operator->();
+            return dynamic_cast<const wrapper<Iterator>&>(wrapped_iterator()).operator->();
         }
         bool operator==(const specialized_generic_iterator& aOther) const
         {
