@@ -106,5 +106,6 @@ if(NEOLIB_TESTS)
   add_neolib_test_executable(Event unit_tests/Event/src/Event.cpp)
   add_neolib_test_executable(App unit_tests/App/src/App.cpp unit_tests/App/src/Time.cpp)
   add_neolib_test_executable(File unit_tests/File/File.cpp)
+  add_neolib_test_executable(Io unit_tests/Io/Io.cpp)
 
 endif()

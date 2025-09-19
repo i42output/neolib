@@ -570,7 +570,7 @@ namespace neolib
             if (!aError)
             {
                 typename packet_type::const_pointer start = reinterpret_cast<typename packet_type::pointer>(&iReceiveBuffer[0]);
-                typename packet_type::const_pointer end = start + aBytesTransferred / sizeof(CharType);
+                typename packet_type::const_pointer end = iReceiveBufferPtr + aBytesTransferred / sizeof(CharType);
                 while(iReceivePacket->take_some(start, end))
                 {
                     if (!iReceivePacket->empty())
@@ -583,7 +583,7 @@ namespace neolib
                 }
                 iReceiveBufferPtr = std::copy(
                     reinterpret_cast<typename receive_buffer::const_pointer>(start), 
-                    reinterpret_cast<typename receive_buffer::const_pointer>(iReceiveBufferPtr + aBytesTransferred),
+                    reinterpret_cast<typename receive_buffer::const_pointer>(end),
                     &iReceiveBuffer[0]);
                 receive_any();
             }

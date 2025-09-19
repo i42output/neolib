@@ -112,20 +112,28 @@ namespace neolib
         {
             if (aFirst == aLast)
                 return false;
-            while (aFirst != aLast && is_delimiter(*aFirst))
-                ++aFirst;
-            const_pointer start = aFirst;
+
+            if (skip_delimiters(aFirst, aLast))
+                return true;
+
+            if (aFirst == aLast)
+                return false;
+
+            const_pointer const contentStart = aFirst;
             while (aFirst != aLast && !is_delimiter(*aFirst))
                 ++aFirst;
-            const_pointer end = aFirst;
-            if (has_max_length() && length() + (end - start) > max_length())
-                throw typename base_type::packet_too_big();
-            iContents.insert(iContents.end(), start, end);
-            while (aFirst != aLast && !is_terminating_delimiter(*aFirst))
-                ++aFirst;
-            if (aFirst != aLast)
-                ++aFirst;
-            return end != aLast || (start == end && !iContents.empty());
+            const_pointer const contentEnd = aFirst;
+
+            if (contentStart != contentEnd)
+            {
+                if (has_max_length() && length() + (contentEnd - contentStart) > max_length())
+                    throw typename base_type::packet_too_big();
+                iContents.insert(iContents.end(), contentStart, contentEnd);
+            }
+
+            bool const terminated = skip_delimiters(aFirst, aLast);
+
+            return terminated || contentEnd != aLast || (contentStart == contentEnd && !iContents.empty());
         }
         virtual clone_pointer clone() const
         {
@@ -159,6 +167,18 @@ namespace neolib
         virtual bool is_terminating_delimiter(character_type aCharacter) const 
         {
             return has_delimiters() && aCharacter == CHAR_LF;
+        }
+    private:
+        bool skip_delimiters(const_pointer& aFirst, const_pointer aLast) const
+        {
+            while (aFirst != aLast && is_delimiter(*aFirst))
+            {
+                bool terminated = is_terminating_delimiter(*aFirst);
+                ++aFirst;
+                if (terminated)
+                    return true;
+            }
+            return false;
         }
         // attributes
     private:
