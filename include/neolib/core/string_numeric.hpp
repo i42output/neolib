@@ -45,16 +45,16 @@
 namespace neolib 
 {
     template <typename CharT, typename Traits>
-    inline int32_t string_to_int32(const std::basic_string_view<CharT, Traits>& aStringView)
+    inline std::int32_t string_to_int32(const std::basic_string_view<CharT, Traits>& aStringView)
     {
         namespace qi = boost::spirit::qi;
-        int32_t result = 0;
+        std::int32_t result = 0;
         qi::parse(aStringView.begin(), aStringView.end(), qi::int_, result);
         return result;
     }
 
     template <typename CharT, typename Traits, typename Alloc>
-    inline int32_t string_to_int32(const std::basic_string<CharT, Traits, Alloc>& aString, int aBase = 10)
+    inline std::int32_t string_to_int32(const std::basic_string<CharT, Traits, Alloc>& aString, int aBase = 10)
     {
         if (aBase == 10) // todo: does spirit provide other bases?
             string_to_int32(static_cast<std::basic_string_view<CharT, Traits>>(aString));
@@ -62,16 +62,16 @@ namespace neolib
     }
         
     template <typename CharT, typename Traits>
-    inline int64_t string_to_int64(const std::basic_string_view<CharT, Traits>& aStringView)
+    inline std::int64_t string_to_int64(const std::basic_string_view<CharT, Traits>& aStringView)
     {
         namespace qi = boost::spirit::qi;
-        int64_t result = 0ll;
+        std::int64_t result = 0ll;
         qi::parse(aStringView.begin(), aStringView.end(), qi::long_long, result);
         return result;
     }
 
     template <typename CharT, typename Traits, typename Alloc>
-    inline int64_t string_to_int64(const std::basic_string<CharT, Traits, Alloc>& aString, int aBase = 10)
+    inline std::int64_t string_to_int64(const std::basic_string<CharT, Traits, Alloc>& aString, int aBase = 10)
     {
         if (aBase == 10) // todo: does spirit provide other bases?
             return string_to_int64(static_cast<std::basic_string_view<CharT, Traits>>(aString));
@@ -79,16 +79,16 @@ namespace neolib
     }
 
     template <typename CharT, typename Traits>
-    inline uint32_t string_to_uint32(const std::basic_string_view<CharT, Traits>& aStringView)
+    inline std::uint32_t string_to_uint32(const std::basic_string_view<CharT, Traits>& aStringView)
     {
         namespace qi = boost::spirit::qi;
-        uint32_t result = 0u;
+        std::uint32_t result = 0u;
         qi::parse(aStringView.begin(), aStringView.end(), qi::uint_, result);
         return result;
     }
 
     template <typename CharT, typename Traits, typename Alloc>
-    inline uint32_t string_to_uint32(const std::basic_string<CharT, Traits, Alloc>& aString, int aBase = 10)
+    inline std::uint32_t string_to_uint32(const std::basic_string<CharT, Traits, Alloc>& aString, int aBase = 10)
     {
         if (aBase == 10)
             return string_to_uint32(static_cast<std::basic_string_view<CharT, Traits>>(aString));
@@ -96,23 +96,23 @@ namespace neolib
     }
 
     template <typename CharT, typename Traits>
-    inline uint64_t string_to_uint64(const std::basic_string_view<CharT, Traits>& aStringView)
+    inline std::uint64_t string_to_uint64(const std::basic_string_view<CharT, Traits>& aStringView)
     {
         namespace qi = boost::spirit::qi;
-        uint64_t result = 0ull;
+        std::uint64_t result = 0ull;
         qi::parse(aStringView.begin(), aStringView.end(), qi::ulong_long, result);
         return result;
     }
 
     template <typename CharT, typename Traits, typename Alloc>
-    inline uint64_t string_to_uint64(const std::basic_string<CharT, Traits, Alloc>& aString, int aBase = 10)
+    inline std::uint64_t string_to_uint64(const std::basic_string<CharT, Traits, Alloc>& aString, int aBase = 10)
     {
         if (aBase == 10)
             return string_to_uint64(static_cast<std::basic_string_view<CharT, Traits>>(aString));
         return strtoull(aString.c_str(), 0, aBase);
     }
 
-    typedef variant<double, int32_t, uint32_t, int64_t, uint64_t> number_t;
+    typedef variant<double, std::int32_t, std::uint32_t, std::int64_t, std::uint64_t> number_t;
 
     struct string_to_number_failure : std::logic_error { string_to_number_failure() : std::logic_error("neolib::string_to_number_failure") {} };
 
@@ -121,22 +121,22 @@ namespace neolib
     {
         namespace qi = boost::spirit::qi;
         {
-            int32_t result = 0;
+            std::int32_t result = 0;
             if (qi::parse(aStringView.begin(), aStringView.end(), qi::int_, result))
                 return result;
         }
         {
-            uint32_t result = 0u;
+            std::uint32_t result = 0u;
             if (qi::parse(aStringView.begin(), aStringView.end(), qi::uint_, result))
                 return result;
         }
         {
-            int64_t result = 0ll;
+            std::int64_t result = 0ll;
             if (qi::parse(aStringView.begin(), aStringView.end(), qi::long_long, result))
                 return result;
         }
         {
-            uint64_t result = 0ull;
+            std::uint64_t result = 0ull;
             if (qi::parse(aStringView.begin(), aStringView.end(), qi::ulong_long, result))
                 return result;
         }
@@ -163,32 +163,21 @@ namespace neolib
         return string_to_double(static_cast<std::basic_string_view<CharT, Traits>>(aString));
     }
 
-    template <typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
-    inline std::basic_string<CharT, Traits, Alloc> int32_to_string(int32_t aint32, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0')
-    {
-        std::basic_stringstream<CharT, Traits, Alloc> string;
-        if (aBase == 16)
-            string << std::hex << std::uppercase;
-        if (aWidth != 0)
-        {
-            string.width(aWidth);
-            string.fill(aFill);
-        }
-        string << aint32;
-        return string.str();
-    }
-
-    template <typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
-    inline std::basic_string<CharT, Traits, Alloc> int64_to_string(int64_t aint32, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0')
+    template <typename Integer, typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
+    inline std::basic_string<CharT, Traits, Alloc> integer_to_string(Integer aInt, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0', bool aShowBase = true)
     {
         std::basic_stringstream<CharT, Traits, Alloc> string;
         switch (aBase)
         {
         case 8:
             string << std::oct;
+            if (aShowBase)
+                string << std::showbase;
             break;
         case 16:
             string << std::hex << std::uppercase;
+            if (aShowBase)
+                string << std::showbase;
             break;
         }
         if (aWidth != 0)
@@ -196,38 +185,32 @@ namespace neolib
             string.width(aWidth);
             string.fill(aFill);
         }
-        string << aint32;
+        string << aInt;
         return string.str();
     }
 
     template <typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
-    inline std::basic_string<CharT, Traits, Alloc> uint32_to_string(uint32_t aint32, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0')
+    inline std::basic_string<CharT, Traits, Alloc> int32_to_string(std::int32_t aInt32, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0', bool aShowBase = false)
     {
-        std::basic_stringstream<CharT, Traits, Alloc> string;
-        if (aBase == 16)
-            string << std::hex << std::uppercase;
-        if (aWidth != 0)
-        {
-            string.width(aWidth);
-            string.fill(aFill);
-        }
-        string << aint32;
-        return string.str();
+        return integer_to_string<std::int32_t, CharT, Traits, Alloc>(aInt32, aBase, aWidth, aFill, aShowBase);
     }
 
     template <typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
-    inline std::basic_string<CharT, Traits, Alloc> uint64_to_string(uint64_t aint32, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0')
+    inline std::basic_string<CharT, Traits, Alloc> int64_to_string(std::int64_t aInt64, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0', bool aShowBase = false)
     {
-        std::basic_stringstream<CharT, Traits, Alloc> string;
-        if (aBase == 16)
-            string << std::hex << std::uppercase;
-        if (aWidth != 0)
-        {
-            string.width(aWidth);
-            string.fill(aFill);
-        }
-        string << aint32;
-        return string.str();
+        return integer_to_string<std::int64_t, CharT, Traits, Alloc>(aInt64, aBase, aWidth, aFill, aShowBase);
+    }
+
+    template <typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
+    inline std::basic_string<CharT, Traits, Alloc> uint32_to_string(std::uint32_t aUint32, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0', bool aShowBase = false)
+    {
+        return integer_to_string<std::uint32_t, CharT, Traits, Alloc>(aUint32, aBase, aWidth, aFill, aShowBase);
+    }
+
+    template <typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
+    inline std::basic_string<CharT, Traits, Alloc> uint64_to_string(std::uint64_t aUint64, int aBase = 10, std::size_t aWidth = 0, CharT aFill = '0', bool aShowBase = false)
+    {
+        return integer_to_string<std::uint64_t, CharT, Traits, Alloc>(aUint64, aBase, aWidth, aFill, aShowBase);
     }
 
     template <typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
