@@ -1,6 +1,6 @@
 // string_packet.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2007, 2025 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -42,73 +42,95 @@
 namespace neolib
 {
     template <typename CharType>
+    struct default_string_packet_traits
+    {
+        using character_type = CharType;
+
+        static constexpr character_type CHAR_CR = static_cast<character_type>('\r');
+        static constexpr character_type CHAR_LF = static_cast<character_type>('\n');
+
+        static bool constexpr has_delimiters() 
+        { 
+            return true; 
+        }
+        static bool constexpr is_delimiter(character_type aCharacter)
+        {
+            return has_delimiters() && (aCharacter == CHAR_CR || aCharacter == CHAR_LF);
+        }
+        static bool constexpr is_terminating_delimiter(character_type aCharacter)
+        {
+            return has_delimiters() && aCharacter == CHAR_LF;
+        }
+    };
+
+    template <typename CharType, typename Traits = default_string_packet_traits<CharType>>
     class basic_string_packet : public i_basic_packet<CharType>
     {
-        typedef i_basic_packet<CharType> base_type;
-        // constants
-    public:
-        static constexpr CharType CHAR_CR = static_cast<CharType>('\r');
-        static constexpr CharType CHAR_LF = static_cast<CharType>('\n');
+        using base_type = i_basic_packet<CharType>;
+        
         // types
     public:
-        typedef typename base_type::character_type character_type;
-        typedef typename base_type::const_pointer const_pointer;
-        typedef typename base_type::pointer pointer;
-        typedef typename base_type::size_type size_type;
-        typedef typename base_type::clone_pointer clone_pointer;
-        typedef std::basic_string<CharType> contents_type;
+        using character_type  = typename base_type::character_type;
+        using const_pointer = typename base_type::const_pointer;
+        using pointer = typename base_type::pointer;
+        using size_type = typename base_type::size_type;
+        using clone_pointer = typename base_type::clone_pointer;
+        using contents_type = std::basic_string<CharType>;
+        using traits = Traits;
+        
         // construction
     public:
-        basic_string_packet(const contents_type& aContents = contents_type()) : 
-            iContents(aContents) 
+        basic_string_packet(const contents_type& aContents = contents_type{}) :
+            iContents{ aContents }
         {
         }
         basic_string_packet(const character_type* aPointer, size_type aLength) : 
-            iContents(aPointer, aLength) 
+            iContents{ aPointer, aLength }
         {
         }
         basic_string_packet(const basic_string_packet& aOther) :
-            iContents(aOther.iContents)
+            iContents{ aOther.iContents }
         {
         }
         basic_string_packet& operator=(const basic_string_packet& aOther)
         {
             if (this != &aOther)
-                iContents = aOther.iContents;
+                contents() = aOther.contents();
             return *this;
         }
+
         // operations
     public:
         // from i_basic_packet
-        virtual const_pointer data() const 
+        const_pointer data() const final
         { 
             if (base_type::empty())
                 throw typename base_type::packet_empty();
-            return &iContents[0]; 
+            return &contents()[0]; 
         }
-        virtual pointer data()
+        pointer data() final
         { 
             if (base_type::empty())
                 throw typename base_type::packet_empty();
-            return &iContents[0]; 
+            return &contents()[0]; 
         }
-        virtual size_type length() const
+        size_type length() const final
         {
-            return iContents.size();
+            return contents().size();
         }
-        virtual bool has_max_length() const
+        bool has_max_length() const final
         {
             return false;
         }
-        virtual size_type max_length() const
+        size_type max_length() const final
         {
-            return iContents.max_size();
+            return contents().max_size();
         }
-        virtual void clear()
+        void clear() final
         {
-            iContents.clear();
+            contents().clear();
         }
-        virtual bool take_some(const_pointer& aFirst, const_pointer aLast)
+        bool take_some(const_pointer& aFirst, const_pointer aLast) final
         {
             if (aFirst == aLast)
                 return false;
@@ -120,7 +142,7 @@ namespace neolib
                 return false;
 
             const_pointer const contentStart = aFirst;
-            while (aFirst != aLast && !is_delimiter(*aFirst))
+            while (aFirst != aLast && !traits::is_delimiter(*aFirst))
                 ++aFirst;
             const_pointer const contentEnd = aFirst;
 
@@ -128,22 +150,22 @@ namespace neolib
             {
                 if (has_max_length() && length() + (contentEnd - contentStart) > max_length())
                     throw typename base_type::packet_too_big();
-                iContents.insert(iContents.end(), contentStart, contentEnd);
+                contents().insert(contents().end(), contentStart, contentEnd);
             }
 
             bool const terminated = skip_delimiters(aFirst, aLast);
 
-            return terminated || contentEnd != aLast || (contentStart == contentEnd && !iContents.empty());
+            return terminated || contentEnd != aLast || (contentStart == contentEnd && !contents().empty());
         }
-        virtual clone_pointer clone() const
+        clone_pointer clone() const final
         {
             return clone_pointer(new basic_string_packet(*this));
         }
-        virtual void copy_from(const i_basic_packet<CharType>& aSource)
+        void copy_from(const i_basic_packet<CharType>& aSource) final
         {
-            iContents.clear();
+            contents().clear();
             if (aSource.length() != 0)
-                iContents.assign(aSource.data(), aSource.length());
+                contents().assign(aSource.data(), aSource.length());
         }
         // own
         const contents_type& contents() const
@@ -154,26 +176,14 @@ namespace neolib
         {
             return iContents;
         }
+
         // implementation
-    private:
-        virtual bool has_delimiters() const
-        {
-            return true;
-        }
-        virtual bool is_delimiter(character_type aCharacter) const 
-        {
-            return has_delimiters() && (aCharacter == CHAR_CR || aCharacter == CHAR_LF);
-        }
-        virtual bool is_terminating_delimiter(character_type aCharacter) const 
-        {
-            return has_delimiters() && aCharacter == CHAR_LF;
-        }
     private:
         bool skip_delimiters(const_pointer& aFirst, const_pointer aLast) const
         {
-            while (aFirst != aLast && is_delimiter(*aFirst))
+            while (aFirst != aLast && traits::is_delimiter(*aFirst))
             {
-                bool terminated = is_terminating_delimiter(*aFirst);
+                bool terminated = traits::is_terminating_delimiter(*aFirst);
                 ++aFirst;
                 if (terminated)
                     return true;
@@ -185,5 +195,5 @@ namespace neolib
         contents_type iContents;
     };
 
-    typedef basic_string_packet<char> string_packet;
+    using string_packet = basic_string_packet<char>;
 }

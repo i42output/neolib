@@ -46,13 +46,13 @@ namespace neolib
     {
         // types
     public:
-        typedef CharType character_type;
-        typedef const character_type* const_pointer;
-        typedef character_type* pointer;
-        typedef std::size_t size_type;
-        typedef const_pointer const_iterator;
-        typedef pointer iterator;
-        typedef std::unique_ptr<i_basic_packet> clone_pointer;
+        using character_type = CharType;
+        using const_pointer = const character_type*;
+        using pointer = character_type*;
+        using size_type = std::size_t;
+        using const_iterator = const_pointer;
+        using iterator = pointer;
+        using clone_pointer = std::unique_ptr<i_basic_packet>;
         // exceptions
     public:
         struct packet_empty : std::logic_error { packet_empty() : std::logic_error("i_basic_packet::packet_empty") {} };
@@ -78,5 +78,5 @@ namespace neolib
         virtual void copy_from(const i_basic_packet<CharType>& aSource) = 0;
     };
 
-    typedef i_basic_packet<char> i_packet;
+    using i_packet = i_basic_packet<char>;
 }

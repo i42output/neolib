@@ -1,6 +1,6 @@
 // packet_connection.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2007, 2025 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -61,8 +61,8 @@ namespace neolib
     {
         // types
     public:
-        typedef i_basic_packet<CharType> packet_type;
-        typedef typename packet_type::clone_pointer packet_clone_pointer;
+        using packet_type = i_basic_packet<CharType>;
+        using packet_clone_pointer = typename packet_type::clone_pointer;
         // interface
     public:
         virtual packet_clone_pointer handle_create_empty_packet() const = 0;
@@ -74,31 +74,31 @@ namespace neolib
         virtual void handle_connection_closed() = 0;
     };
 
-    typedef i_basic_packet_connection_owner<char> packet_connection_owner;
+    using packet_connection_owner = i_basic_packet_connection_owner<char>;
 
     template <typename CharType, typename Protocol, size_t ReceiveBufferSize = 1024>
     class basic_packet_connection : public lifetime<>
     {
         // types
     public:
-        typedef Protocol protocol_type;
+        using protocol_type = Protocol;
     private:
-        typedef basic_packet_connection<CharType, Protocol, ReceiveBufferSize> our_type;
-        typedef i_basic_packet_connection_owner<CharType> owner_type;
-        typedef i_basic_packet<CharType> packet_type;
-        typedef const packet_type* const_packet_pointer;
-        typedef std::deque<const_packet_pointer> send_queue;
-        typedef typename protocol_type::socket socket_type;
-        typedef std::shared_ptr<socket_type> socket_pointer;
-        typedef boost::asio::ssl::stream<tcp_protocol::socket> secure_stream_type;
-        typedef std::shared_ptr<secure_stream_type> secure_stream_pointer;
-        typedef std::variant<std::monostate, socket_pointer, secure_stream_pointer> socket_holder_type;
-        typedef boost::asio::ssl::context secure_stream_context;
-        typedef std::unique_ptr<secure_stream_context> secure_stream_context_pointer;
-        typedef typename protocol_type::endpoint endpoint_type;
-        typedef typename protocol_type::resolver resolver_type;
-        typedef std::array<char, ReceiveBufferSize * sizeof(CharType)> receive_buffer;
-        typedef boost::asio::ssl::context secure_context;
+        using our_type = basic_packet_connection<CharType, Protocol, ReceiveBufferSize>;
+        using owner_type = i_basic_packet_connection_owner<CharType>;
+        using packet_type = i_basic_packet<CharType>;
+        using const_packet_pointer = const packet_type*;
+        using send_queue = std::deque<const_packet_pointer>;
+        using socket_type = typename protocol_type::socket;
+        using socket_pointer = std::shared_ptr<socket_type>;
+        using secure_stream_type = boost::asio::ssl::stream<tcp_protocol::socket>;
+        using secure_stream_pointer = std::shared_ptr<secure_stream_type>;
+        using socket_holder_type = std::variant<std::monostate, socket_pointer, secure_stream_pointer>;
+        using secure_stream_context = boost::asio::ssl::context;
+        using secure_stream_context_pointer = std::unique_ptr<secure_stream_context>;
+        using endpoint_type = typename protocol_type::endpoint;
+        using resolver_type = typename protocol_type::resolver;
+        using receive_buffer = std::array<char, ReceiveBufferSize * sizeof(CharType)>;
+        using secure_context = boost::asio::ssl::context;
         class handler_proxy
         {
         public:
