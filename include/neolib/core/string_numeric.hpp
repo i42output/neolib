@@ -172,12 +172,12 @@ namespace neolib
         case 8:
             string << std::oct;
             if (aShowBase)
-                string << std::showbase;
+                string << "0";
             break;
         case 16:
             string << std::hex << std::uppercase;
             if (aShowBase)
-                string << std::showbase;
+                string << "0x";
             break;
         }
         if (aWidth != 0)
