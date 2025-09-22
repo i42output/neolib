@@ -174,6 +174,8 @@ namespace neolib
         struct abstract_type<std::monostate> : std::true_type { typedef std::monostate type; };
         template <typename Rep, typename Period>
         struct abstract_type<std::chrono::duration<Rep, Period>> : std::true_type { typedef std::chrono::duration<Rep, Period> type; };
+        template <typename Clock, typename Duration>
+        struct abstract_type<std::chrono::time_point<Clock, Duration>> : std::true_type { typedef std::chrono::time_point<Clock, Duration> type; };
     }
 
     template <typename T>
