@@ -83,6 +83,10 @@ namespace neolib
         {
             *this = other;
         }
+        explicit optional(std_type const& other) :
+            iData{ other }
+        {
+        }
         template <typename U, typename = std::enable_if_t<std::is_constructible_v<T, U>, sfinae>>
         optional(U const& value) :
             iData{ value }
