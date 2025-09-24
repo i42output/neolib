@@ -102,7 +102,8 @@ namespace neolib
         class handler_proxy
         {
         public:
-            handler_proxy(our_type& aParent) : iParentDestroyed{ aParent }, iParent{ aParent }, iOrphaned{ false }
+            handler_proxy(our_type& aParent) : 
+                iParentDestroyed{ aParent }, iParent{ aParent }, iReceiveBuffer{ aParent.iReceiveBuffer }
             {
             }
         public:
@@ -142,7 +143,8 @@ namespace neolib
         private:
             destroyed_flag iParentDestroyed;
             our_type& iParent;
-            bool iOrphaned;
+            bool iOrphaned = false;
+            std::shared_ptr<receive_buffer> iReceiveBuffer;
         };
 
         // exceptions
@@ -159,7 +161,6 @@ namespace neolib
             protocol_family aProtocolFamily = IPv4) :
             iIoTask(aIoTask), 
             iOwner(aOwner),
-            iHandlerProxy(new handler_proxy(*this)),
             iLocalHostName(),
             iLocalPort(0),
             iRemoteHostName(),
@@ -170,8 +171,9 @@ namespace neolib
             iResolver(aIoTask.io_service().native_object<boost::asio::io_service>()),
             iConnected(false),
             iPacketBeingSent(nullptr),
-            iReceiveBufferPtr(&iReceiveBuffer[0]),
-            iReceivePacket(aOwner.handle_create_empty_packet())
+            iReceiveBufferPtr(&buffer()[0]),
+            iReceivePacket(aOwner.handle_create_empty_packet()),
+            iHandlerProxy(new handler_proxy(*this))
         {
         }
         basic_packet_connection(
@@ -183,7 +185,6 @@ namespace neolib
             protocol_family aProtocolFamily = IPv4) : 
             iIoTask(aIoTask), 
             iOwner(aOwner),
-            iHandlerProxy(new handler_proxy(*this)),
             iLocalHostName(),
             iLocalPort(0),
             iRemoteHostName(aRemoteHostName),
@@ -194,8 +195,9 @@ namespace neolib
             iResolver(aIoTask.io_service().native_object<boost::asio::io_service>()),
             iConnected(false),
             iPacketBeingSent(nullptr),
-            iReceiveBufferPtr(&iReceiveBuffer[0]),
-            iReceivePacket(aOwner.handle_create_empty_packet())
+            iReceiveBufferPtr(&buffer()[0]),
+            iReceivePacket(aOwner.handle_create_empty_packet()),
+            iHandlerProxy(new handler_proxy(*this))
         {
             open();
         }
@@ -254,7 +256,7 @@ namespace neolib
             iSocketHolder = none;
             bool wasConnected = iConnected;
             iConnected = false;
-            iReceiveBufferPtr = &iReceiveBuffer[0];
+            iReceiveBufferPtr = &buffer()[0];
             if (wasConnected)
                 iOwner.handle_connection_closed();
         }
@@ -399,6 +401,10 @@ namespace neolib
 
         // implementation
     private:
+        receive_buffer& buffer() const
+        {
+            return *iReceiveBuffer;
+        }
         void handle_resolve(const boost::system::error_code& aError, typename resolver_type::iterator aEndPointIterator)
         {
             if (closed())
@@ -520,7 +526,7 @@ namespace neolib
             if (!secure())
             {
                 socket().async_read_some(
-                    boost::asio::buffer(iReceiveBufferPtr, iReceiveBuffer.size() - (iReceiveBufferPtr - &iReceiveBuffer[0])),
+                    boost::asio::buffer(iReceiveBufferPtr, buffer().size() - (iReceiveBufferPtr - &buffer()[0])),
                     boost::bind(
                     &handler_proxy::handle_read, 
                     iHandlerProxy,
@@ -530,7 +536,7 @@ namespace neolib
             else
             {
                 secure_stream().async_read_some(
-                    boost::asio::buffer(iReceiveBufferPtr, iReceiveBuffer.size() - (iReceiveBufferPtr - &iReceiveBuffer[0])),
+                    boost::asio::buffer(iReceiveBufferPtr, buffer().size() - (iReceiveBufferPtr - &buffer()[0])),
                     boost::bind(
                     &handler_proxy::handle_read, 
                     iHandlerProxy,
@@ -569,7 +575,7 @@ namespace neolib
                 return;
             if (!aError)
             {
-                typename packet_type::const_pointer start = reinterpret_cast<typename packet_type::pointer>(&iReceiveBuffer[0]);
+                typename packet_type::const_pointer start = reinterpret_cast<typename packet_type::pointer>(&buffer()[0]);
                 typename packet_type::const_pointer end = iReceiveBufferPtr + aBytesTransferred / sizeof(CharType);
                 while(iReceivePacket->take_some(start, end))
                 {
@@ -584,7 +590,7 @@ namespace neolib
                 iReceiveBufferPtr = std::copy(
                     reinterpret_cast<typename receive_buffer::const_pointer>(start), 
                     reinterpret_cast<typename receive_buffer::const_pointer>(end),
-                    &iReceiveBuffer[0]);
+                    &buffer()[0]);
                 receive_any();
             }
             else
@@ -606,7 +612,6 @@ namespace neolib
     private:
         i_async_task& iIoTask;
         owner_type& iOwner;
-        std::shared_ptr<handler_proxy> iHandlerProxy;
         std::string iLocalHostName;
         unsigned short iLocalPort;
         std::string iRemoteHostName;
@@ -623,9 +628,10 @@ namespace neolib
         bool iConnected;
         send_queue iSendQueue;
         const_packet_pointer iPacketBeingSent;
-        receive_buffer iReceiveBuffer;
+        std::shared_ptr<receive_buffer> iReceiveBuffer = std::make_shared<receive_buffer>();
         typename receive_buffer::pointer iReceiveBufferPtr;
         typename packet_type::clone_pointer iReceivePacket;
+        std::shared_ptr<handler_proxy> iHandlerProxy;
     };
 
     template <typename CharType, size_t ReceiveBufferSize>
