@@ -188,6 +188,13 @@ namespace neolib
                 return construct_child(allocate_child(), aParent, std::move(aValue));
             }
         public:
+            void unlink()
+            {
+                if (iPrevious != nullptr)
+                    iPrevious->iNode.iNext = iNext;
+                if (iNext != nullptr)
+                    iNext->iNode.iPrevious = iPrevious;
+            }
             bool has_parent() const
             {
                 return iParent != nullptr;
@@ -224,6 +231,18 @@ namespace neolib
             {
                 return iNext == nullptr;
             }
+            const json_value* previous_sibling() const
+            {
+                return iPrevious;
+            }
+            json_value* previous_sibling()
+            {
+                return iPrevious;
+            }
+            void set_previous_sibling(json_value* aPrevious)
+            {
+                iPrevious = aPrevious;
+            }
             const json_value* next_sibling() const
             {
                 return iNext;
@@ -231,6 +250,10 @@ namespace neolib
             json_value* next_sibling()
             {
                 return iNext;
+            }
+            void set_next_sibling(json_value* aNext)
+            {
+                iNext = aNext;
             }
             const json_value* next_parent_sibling() const
             {
@@ -603,6 +626,10 @@ namespace neolib
         {
             update_contents();
         }
+        ~basic_json_value()
+        {
+            clear(true);
+        }
     public:
         basic_json_value(const basic_json_value&) = delete;
         basic_json_value(basic_json_value&&) = delete;
@@ -836,8 +863,10 @@ namespace neolib
         {
             return std::distance(begin(), end()); // todo: this is O(n); have a size member instead for O(1)?
         }
-        void clear()
+        void clear(bool aUnlink = false)
         {
+            auto previous = iNode.previous_sibling();
+            auto next = iNode.next_sibling();
             if (has_parent())
             {
                 auto& p = parent();
@@ -848,6 +877,12 @@ namespace neolib
             {
                 iNode.~node_type();
                 new(&iNode) node_type{};
+            }
+            iNode.set_previous_sibling(previous);
+            iNode.set_next_sibling(next);
+            if (aUnlink)
+            {
+                iNode.unlink();
             }
         }
         template <typename... Args>
