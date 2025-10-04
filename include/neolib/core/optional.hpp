@@ -233,6 +233,12 @@ namespace neolib
     };
 
     template <typename T>
+    inline constexpr optional<std::decay_t<T>> make_optional(T&& value)
+    {
+        return optional<std::decay_t<T>>(std::forward<T>(value));
+    }
+
+    template <typename T>
     inline bool operator==(const optional<T>& lhs, const abstract_t<optional<T>>& rhs)
     {
         if (lhs.has_value() != rhs.has_value())
