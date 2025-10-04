@@ -103,11 +103,15 @@ namespace neolib
     template <typename T>
     inline T from_std_string(std::string const& aValueAsString)
     {
-        T result;
-        std::istringstream iss{ aValueAsString };
-        iss >> result;
-        return result;
-
+        if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, string>)
+            return aValueAsString;
+        else
+        {
+            T result;
+            std::istringstream iss{ aValueAsString };
+            iss >> result;
+            return result;
+        }
     }
 
     template <typename T>
