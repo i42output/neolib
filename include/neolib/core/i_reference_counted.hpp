@@ -67,6 +67,7 @@ namespace neolib
         virtual long use_count() const noexcept = 0;
         virtual const i_reference_counted* release_and_take_ownership() const = 0;
         virtual i_reference_counted* release_and_take_ownership() = 0;
+        virtual bool pinned() const noexcept = 0;
         virtual void pin() const noexcept = 0;
         virtual void unpin() const = 0;
     public:

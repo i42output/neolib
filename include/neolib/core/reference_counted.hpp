@@ -35,6 +35,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <neolib/neolib.hpp>
 #include <atomic>
 #include <vector>
@@ -43,6 +44,9 @@
 
 namespace neolib
 {
+    bool reference_count_checked();
+    void check_reference_count(bool aCheck);
+
     template <typename, bool>
     class reference_counted;
 
@@ -106,6 +110,7 @@ namespace neolib
         }
         ~reference_counted()
         {
+            assert(!(reference_count_checked() && use_count() && !pinned()) && "Destroying in-use reference counted object!");            
             iDestroying = true;
             bool expected = true;
             if (iControlled.compare_exchange_strong(expected, false))
@@ -145,6 +150,10 @@ namespace neolib
         base_type* release_and_take_ownership() final
         {
             return const_cast<base_type*>(to_const(*this).release_and_take_ownership());
+        }
+        bool pinned() const noexcept final
+        {
+            return iPinned;
         }
         void pin() const noexcept final
         {
