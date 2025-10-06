@@ -75,6 +75,7 @@ namespace neolib
         plugin_file_extensions_t& plugin_file_extensions() override;
         const plugin_folders_t& plugin_folders() const override;
         plugin_folders_t& plugin_folders() override;
+    public:
         bool load_plugins() override;
         bool load_plugin(const i_string& aPluginPath, bool aDeferInitialization = false) override;
         bool initialize_plugin(i_plugin& aPlugin) override;
@@ -82,10 +83,13 @@ namespace neolib
         bool plugin_enabled(const i_plugin& aPlugin) const override;
         bool unload_plugins() override;
         bool unload_plugin(i_plugin& aPlugin) override;
+    public:
         const plugins_t& plugins() const override;
         const i_ref_ptr<i_plugin>& find_plugin(const uuid& aId) const override;
         i_ref_ptr<i_plugin>& find_plugin(const uuid& aId) override;
         bool open_uri(const i_string& aUri) override;
+    public:
+        void debug_dont_unload_modules() override;
         // implementation
     private:
         // own
@@ -98,5 +102,6 @@ namespace neolib
         modules_t iModules;
         plugins_t iPlugins;
         bool iInitializing;
+        bool iDebugDontUnloadModules = false;
     };
 }

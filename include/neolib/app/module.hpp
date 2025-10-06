@@ -64,6 +64,7 @@ namespace neolib
         const std::string& path() const { return iPath; }
         bool load();
         void unload();
+        os_module* release();
         bool loaded() const;
         void* procedure_address(const std::string& aProcedureName);
         template <typename FunctionType>

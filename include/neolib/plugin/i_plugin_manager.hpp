@@ -70,6 +70,7 @@ namespace neolib
         virtual plugin_file_extensions_t& plugin_file_extensions() = 0;
         virtual const plugin_folders_t& plugin_folders() const = 0;
         virtual plugin_folders_t& plugin_folders() = 0;
+    public:
         virtual bool load_plugins() = 0;
         virtual bool load_plugin(const i_string& aPluginPath, bool aDeferInitialization = false) = 0;
         virtual bool initialize_plugin(i_plugin& aPlugin) = 0;
@@ -77,9 +78,12 @@ namespace neolib
         virtual bool plugin_enabled(const i_plugin& aPlugin) const = 0;
         virtual bool unload_plugins() = 0;
         virtual bool unload_plugin(i_plugin& aPlugin) = 0;
+    public:
         virtual const plugins_t& plugins() const = 0;
         virtual const i_ref_ptr<i_plugin>& find_plugin(const uuid& aId) const = 0;
         virtual i_ref_ptr<i_plugin>& find_plugin(const uuid& aId) = 0;
         virtual bool open_uri(const i_string& aUri) = 0;
+    public:
+        virtual void debug_dont_unload_modules() = 0;
     };
 }

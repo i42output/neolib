@@ -55,6 +55,7 @@ namespace neolib
         // construction
     public:
         io_service(async_task& aTask, bool aMultiThreaded = false);
+        ~io_service();
         // operations
     public:
         bool poll(bool aProcessEvents = true, std::size_t aMaximumPollCount = kDefaultPollCount) override;
@@ -69,6 +70,11 @@ namespace neolib
         iTask{ aTask },
         iNativeIoService{ aMultiThreaded ? BOOST_ASIO_CONCURRENCY_HINT_DEFAULT : BOOST_ASIO_CONCURRENCY_HINT_1 }
     {
+    }
+
+    io_service::~io_service()
+    {
+        iNativeIoService.stop();
     }
 
     bool io_service::poll(bool aProcessEvents, std::size_t aMaximumPollCount)

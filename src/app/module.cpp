@@ -104,6 +104,11 @@ namespace neolib
         iOsModule.reset();
     }
 
+    os_module* module::release()
+    {
+        return iOsModule.release();
+    }
+
     bool module::loaded() const
     {
         return iOsModule != nullptr;

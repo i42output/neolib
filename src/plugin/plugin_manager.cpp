@@ -186,6 +186,8 @@ namespace neolib
                 moduleToUnload = std::move(existingModule->second);
                 iModules.erase(existingModule);
             }
+            if (moduleToUnload && iDebugDontUnloadModules)
+                (*moduleToUnload).release();
             PluginUnloaded.trigger(aPlugin);
             auto existingPlugin = std::find_if(iPlugins.begin(), iPlugins.end(), [&](auto const& p) { return &aPlugin == p.ptr(); });
             if (existingPlugin != iPlugins.end())
@@ -224,6 +226,11 @@ namespace neolib
             if ((*i)->open_uri(aUri))
                 return true;
         return false;
+    }
+
+    void plugin_manager::debug_dont_unload_modules()
+    {
+        iDebugDontUnloadModules = true;
     }
 
     i_ref_ptr<i_plugin>& plugin_manager::create_plugin(const i_string& aPluginPath)
