@@ -192,6 +192,7 @@ namespace neolib
     {
     public:
         using cookie_type = CookieType;
+        using underlying_cookie_type = underlying_cookie_type_t<cookie_type>;
     public:
         using value_type = T;
         using container_type = Container;
@@ -261,28 +262,29 @@ namespace neolib
         bool contains(cookie_type aCookie) const final
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
-            return aCookie < reverse_indices().size() && reverse_indices()[aCookie] != INVALID_REVERSE_INDEX;
+            return static_cast<underlying_cookie_type>(aCookie) < reverse_indices().size() && 
+                reverse_indices()[static_cast<underlying_cookie_type>(aCookie)] != INVALID_REVERSE_INDEX;
         }
         const_iterator find(cookie_type aCookie) const final
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
             if (contains(aCookie))
-                return std::next(begin(), reverse_indices()[aCookie]);
+                return std::next(begin(), reverse_indices()[static_cast<underlying_cookie_type>(aCookie)]);
             return end();
         }
         iterator find(cookie_type aCookie) final
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
             if (contains(aCookie))
-                return std::next(begin(), reverse_indices()[aCookie]);
+                return std::next(begin(), reverse_indices()[static_cast<underlying_cookie_type>(aCookie)]);
             return end();
         }
         const value_type& operator[](cookie_type aCookie) const final
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
-            if (aCookie >= reverse_indices().size())
+            if (static_cast<underlying_cookie_type>(aCookie) >= reverse_indices().size())
                 throw cookie_invalid();
-            auto reverseIndex = reverse_indices()[aCookie];
+            auto reverseIndex = reverse_indices()[static_cast<underlying_cookie_type>(aCookie)];
             if (reverseIndex == INVALID_REVERSE_INDEX)
                 throw cookie_invalid();
             return items()[reverseIndex];
@@ -341,9 +343,10 @@ namespace neolib
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
             assert(std::find(free_cookies().begin(), free_cookies().end(), aCookie) == free_cookies().end());
-            if (reverse_indices().size() <= aCookie)
-                reverse_indices().insert(reverse_indices().end(), (aCookie + 1) - reverse_indices().size(), INVALID_REVERSE_INDEX);
-            if (reverse_indices()[aCookie] != INVALID_REVERSE_INDEX)
+            if (reverse_indices().size() <= static_cast<underlying_cookie_type>(aCookie))
+                reverse_indices().insert(reverse_indices().end(), 
+                    (static_cast<underlying_cookie_type>(aCookie) + underlying_cookie_type{ 1 }) - reverse_indices().size(), INVALID_REVERSE_INDEX);
+            if (reverse_indices()[static_cast<underlying_cookie_type>(aCookie)] != INVALID_REVERSE_INDEX)
                 throw cookie_already_added();
             std::optional<iterator> result;
             if constexpr (!detail::is_smart_ptr_v<value_type>)
@@ -361,7 +364,7 @@ namespace neolib
                 items().pop_back();
                 throw;
             }
-            reverse_indices()[aCookie] = items().size() - 1;
+            reverse_indices()[static_cast<underlying_cookie_type>(aCookie)] = items().size() - 1;
             return *result;
         }
         iterator remove(abstract_t<value_type> const& aItem) final
@@ -373,9 +376,9 @@ namespace neolib
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
             assert(std::find(free_cookies().begin(), free_cookies().end(), aCookie) == free_cookies().end());
-            if (aCookie >= reverse_indices().size())
+            if (static_cast<underlying_cookie_type>(aCookie) >= reverse_indices().size())
                 throw cookie_invalid();
-            auto& reverseIndex = reverse_indices()[aCookie];
+            auto& reverseIndex = reverse_indices()[static_cast<underlying_cookie_type>(aCookie)];
             if (reverseIndex == INVALID_REVERSE_INDEX)
                 throw cookie_invalid();
             if (reverseIndex < items().size() - 1)
@@ -384,7 +387,7 @@ namespace neolib
                 std::swap(item, items().back());
                 auto& cookie = allocated_cookies()[reverseIndex];
                 std::swap(cookie, allocated_cookies().back());
-                reverse_indices()[cookie] = reverseIndex;
+                reverse_indices()[static_cast<underlying_cookie_type>(cookie)] = reverseIndex;
             }
             auto resultIndex = reverseIndex;
             reverseIndex = INVALID_REVERSE_INDEX;
@@ -406,11 +409,12 @@ namespace neolib
             std::scoped_lock<mutex_type> lock{ mutex() };
             if (!free_cookies().empty())
             {
-                auto nextCookie = free_cookies().back();
+                auto const nextCookie = free_cookies().back();
                 free_cookies().pop_back();
                 return nextCookie;
             }
-            auto nextCookie = ++iNextAvailableCookie;
+            auto const nextCookie = cookie_type{ static_cast<underlying_cookie_type>(iNextAvailableCookie.load()) + underlying_cookie_type{ 1 } };
+            iNextAvailableCookie = nextCookie;
             if (nextCookie == INVALID_COOKIE)
                 throw cookies_exhausted();
             assert(std::find(free_cookies().begin(), free_cookies().end(), nextCookie) == free_cookies().end());
@@ -455,7 +459,7 @@ namespace neolib
         void clear() final
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
-            iNextAvailableCookie = 0ul;
+            iNextAvailableCookie = cookie_type{};
             allocated_cookies().clear();
             free_cookies().clear();
             items().clear();
@@ -508,6 +512,7 @@ namespace neolib
     {
     public:
         using cookie_type = CookieType;
+        using underlying_cookie_type = underlying_cookie_type_t<cookie_type>;
     public:
         using value_type = T;
         using container_type = std::vector<value_type>;
@@ -577,28 +582,29 @@ namespace neolib
         bool contains(cookie_type aCookie) const
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
-            return aCookie < reverse_indices().size() && reverse_indices()[aCookie] != INVALID_REVERSE_INDEX;
+            return static_cast<underlying_cookie_type>(aCookie) < reverse_indices().size() && 
+                reverse_indices()[static_cast<underlying_cookie_type>(aCookie)] != INVALID_REVERSE_INDEX;
         }
         const_iterator find(cookie_type aCookie) const
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
             if (contains(aCookie))
-                return std::next(begin(), reverse_indices()[aCookie]);
+                return std::next(begin(), reverse_indices()[static_cast<underlying_cookie_type>(aCookie)]);
             return end();
         }
         iterator find(cookie_type aCookie)
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
             if (contains(aCookie))
-                return std::next(begin(), reverse_indices()[aCookie]);
+                return std::next(begin(), reverse_indices()[static_cast<underlying_cookie_type>(aCookie)]);
             return end();
         }
         const value_type& operator[](cookie_type aCookie) const
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
-            if (aCookie >= reverse_indices().size())
+            if (static_cast<underlying_cookie_type>(aCookie) >= reverse_indices().size())
                 throw cookie_invalid();
-            auto reverseIndex = reverse_indices()[aCookie];
+            auto reverseIndex = reverse_indices()[static_cast<underlying_cookie_type>(aCookie)];
             if (reverseIndex == INVALID_REVERSE_INDEX)
                 throw cookie_invalid();
             return items()[reverseIndex];
@@ -657,9 +663,10 @@ namespace neolib
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
             assert(std::find(free_cookies().begin(), free_cookies().end(), aCookie) == free_cookies().end());
-            if (reverse_indices().size() <= aCookie)
-                reverse_indices().insert(reverse_indices().end(), (aCookie + 1) - reverse_indices().size(), INVALID_REVERSE_INDEX);
-            if (reverse_indices()[aCookie] != INVALID_REVERSE_INDEX)
+            if (reverse_indices().size() <= static_cast<underlying_cookie_type>(aCookie))
+                reverse_indices().insert(reverse_indices().end(), 
+                    (static_cast<underlying_cookie_type>(aCookie) + underlying_cookie_type{ 1 }) - reverse_indices().size(), INVALID_REVERSE_INDEX);
+            if (reverse_indices()[static_cast<underlying_cookie_type>(aCookie)] != INVALID_REVERSE_INDEX)
                 throw cookie_already_added();
             std::optional<iterator> result;
             if constexpr (!detail::is_smart_ptr_v<value_type> || (sizeof...(Args) == 1 && detail::is_smart_ptr_v<std::decay_t<std::tuple_element_t<0, std::tuple<Args...>>>>))
@@ -677,7 +684,7 @@ namespace neolib
                 items().pop_back();
                 throw;
             }
-            reverse_indices()[aCookie] = items().size() - 1;
+            reverse_indices()[static_cast<underlying_cookie_type>(aCookie)] = items().size() - 1;
             return *result;
         }
         iterator remove(value_type const& aItem)
@@ -689,9 +696,9 @@ namespace neolib
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
             assert(std::find(free_cookies().begin(), free_cookies().end(), aCookie) == free_cookies().end());
-            if (aCookie >= reverse_indices().size())
+            if (static_cast<underlying_cookie_type>(aCookie) >= reverse_indices().size())
                 throw cookie_invalid();
-            auto& reverseIndex = reverse_indices()[aCookie];
+            auto& reverseIndex = reverse_indices()[static_cast<underlying_cookie_type>(aCookie)];
             if (reverseIndex == INVALID_REVERSE_INDEX)
                 throw cookie_invalid();
             if (reverseIndex < items().size() - 1)
@@ -700,7 +707,7 @@ namespace neolib
                 std::swap(item, items().back());
                 auto& cookie = allocated_cookies()[reverseIndex];
                 std::swap(cookie, allocated_cookies().back());
-                reverse_indices()[cookie] = reverseIndex;
+                reverse_indices()[static_cast<underlying_cookie_type>(cookie)] = reverseIndex;
             }
             auto resultIndex = reverseIndex;
             reverseIndex = INVALID_REVERSE_INDEX;
@@ -722,11 +729,12 @@ namespace neolib
             std::scoped_lock<mutex_type> lock{ mutex() };
             if (!free_cookies().empty())
             {
-                auto nextCookie = free_cookies().back();
+                auto const nextCookie = free_cookies().back();
                 free_cookies().pop_back();
                 return nextCookie;
             }
-            auto nextCookie = ++iNextAvailableCookie;
+            auto const nextCookie = cookie_type{ static_cast<underlying_cookie_type>(iNextAvailableCookie.load()) + underlying_cookie_type{ 1 } };
+            iNextAvailableCookie = nextCookie;
             if (nextCookie == INVALID_COOKIE)
                 throw cookies_exhausted();
             assert(std::find(free_cookies().begin(), free_cookies().end(), nextCookie) == free_cookies().end());
@@ -771,7 +779,7 @@ namespace neolib
         void clear()
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
-            iNextAvailableCookie = 0ul;
+            iNextAvailableCookie = cookie_type{};
             allocated_cookies().clear();
             free_cookies().clear();
             items().clear();

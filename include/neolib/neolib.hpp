@@ -110,6 +110,9 @@ namespace neolib
     struct sfinae {};
 
     template <typename T>
+    concept EnumClass = std::is_enum_v<T> && !std::is_convertible_v<T, std::underlying_type_t<T>>;
+
+    template <typename T>
     using to_const_reference_t = const std::remove_reference_t<T>&;
     template <typename T>
     inline to_const_reference_t<T> to_const(T&& object)

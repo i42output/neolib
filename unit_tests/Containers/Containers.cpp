@@ -26,8 +26,12 @@ struct foo : i_foo
     foo(i_foo const&) {}
 };
 
+enum class foo_cookie : neolib::cookie {};
+
 template class neolib::basic_jar<foo>;
+template class neolib::basic_jar<foo, neolib::vector<foo>, foo_cookie>;
 template class neolib::basic_std_vector_jar<foo>;
+template class neolib::basic_std_vector_jar<foo, foo_cookie>;
 
 template class neolib::growable_static_vector<int, 64, neolib::MaxSize>;
 template class neolib::polymorphic::vecarray<int, 64, neolib::MaxSize>;
@@ -77,6 +81,20 @@ namespace
 int main()
 {
     TestTree();
+
+    neolib::basic_jar<foo> jar;
+    jar.emplace();
+    jar.emplace();
+    jar.emplace();
+
+    jar.item_cookie(jar.at_index(1));
+
+    neolib::basic_std_vector_jar<foo, foo_cookie> jar2;
+    jar2.emplace(foo{});
+    jar2.emplace(foo{});
+    jar2.emplace(foo{});
+
+    jar2.item_cookie(jar2.at_index(1));
 
     neolib::string_view sv{ "hello" };
     test_assert(sv == neolib::string_view{ "hello" });
@@ -314,13 +332,6 @@ int main()
     test_assert(*so2 == true);
     test_assert(*so3 == false);
     test_assert(*so4 == false);
-
-    neolib::basic_jar<foo> jar;
-    jar.emplace();
-    jar.emplace();
-    jar.emplace();
-
-    jar.item_cookie(jar.at_index(1));
 
     neolib::segmented_array<int> sa;
     sa.push_back(1);

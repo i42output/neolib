@@ -45,8 +45,15 @@ namespace neolib
     using small_cookie = std::uint16_t;
     using large_cookie = std::uint64_t;
 
+    template <class CookieType>
+    struct cookie_type_helper { using type = CookieType; };
+    template <class CookieType> requires EnumClass<CookieType>
+    struct cookie_type_helper<CookieType> { using type = std::underlying_type_t<CookieType>; };
+    template <class CookieType>
+    using underlying_cookie_type_t = typename cookie_type_helper<CookieType>::type;
+
     template<class CookieType>
-    constexpr CookieType invalid_cookie = static_cast<CookieType>(~CookieType{});
+    constexpr CookieType invalid_cookie = static_cast<CookieType>(~underlying_cookie_type_t<CookieType>{});
 
     template <typename CookieType>
     class i_basic_cookie_consumer
