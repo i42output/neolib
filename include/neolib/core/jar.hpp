@@ -413,7 +413,7 @@ namespace neolib
                 free_cookies().pop_back();
                 return nextCookie;
             }
-            auto const nextCookie = cookie_type{ static_cast<underlying_cookie_type>(iNextAvailableCookie.load()) + underlying_cookie_type{ 1 } };
+            auto const nextCookie = static_cast<cookie_type>(static_cast<underlying_cookie_type>(iNextAvailableCookie.load()) + underlying_cookie_type{ 1 });
             iNextAvailableCookie = nextCookie;
             if (nextCookie == INVALID_COOKIE)
                 throw cookies_exhausted();
@@ -733,7 +733,7 @@ namespace neolib
                 free_cookies().pop_back();
                 return nextCookie;
             }
-            auto const nextCookie = cookie_type{ static_cast<underlying_cookie_type>(iNextAvailableCookie.load()) + underlying_cookie_type{ 1 } };
+            auto const nextCookie = static_cast<cookie_type>(static_cast<underlying_cookie_type>(iNextAvailableCookie.load()) + underlying_cookie_type{ 1 });
             iNextAvailableCookie = nextCookie;
             if (nextCookie == INVALID_COOKIE)
                 throw cookies_exhausted();
