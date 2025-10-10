@@ -152,33 +152,33 @@ namespace neolib
         template <typename T, typename AT, typename = sfinae>
         struct correct_const;
         template <typename T, typename AT>
-        struct correct_const<T, AT, typename std::enable_if_t<!std::is_const_v<T>, sfinae>> { typedef AT type; };
+        struct correct_const<T, AT, typename std::enable_if_t<!std::is_const_v<T>, sfinae>> { using type = AT; };
         template <typename T, typename AT>
-        struct correct_const<T, AT, typename std::enable_if_t<std::is_const_v<T>, sfinae>> { typedef const AT type; };
+        struct correct_const<T, AT, typename std::enable_if_t<std::is_const_v<T>, sfinae>> { using type = const AT ; };
 
         template <typename T, typename AT>
         using correct_const_t = typename correct_const<T, AT>::type;
 
         template <typename, typename = sfinae>
-        struct abstract_type : std::false_type {};
+        struct abstract_type : std::false_type { using type = void; };
         template <typename T>
-        struct abstract_type<T, typename std::enable_if_t<abstract_class_possible_v<T>, sfinae>> : std::true_type { typedef correct_const_t<T, typename T::abstract_type> type; };
+        struct abstract_type<T, typename std::enable_if_t<abstract_class_possible_v<T>, sfinae>> : std::true_type { using type = correct_const_t<T, typename T::abstract_type>; };
         template <typename T>
-        struct abstract_type<T, typename std::enable_if_t<std::is_arithmetic_v<T>, sfinae>> : std::true_type { typedef correct_const_t<T, T> type; };
+        struct abstract_type<T, typename std::enable_if_t<std::is_arithmetic_v<T>, sfinae>> : std::true_type { using type = correct_const_t<T, T>; };
         template <typename T>
-        struct abstract_type<T, typename std::enable_if_t<std::is_enum_v<T>, sfinae>> : std::true_type { typedef correct_const_t<T, T> type; };
+        struct abstract_type<T, typename std::enable_if_t<std::is_enum_v<T>, sfinae>> : std::true_type { using type = correct_const_t<T, T>; };
         template <typename T>
-        struct abstract_type<T, typename std::enable_if_t<std::is_pointer_v<T>, sfinae>> : std::true_type { typedef correct_const_t<T, T> type; };
+        struct abstract_type<T, typename std::enable_if_t<std::is_pointer_v<T>, sfinae>> : std::true_type { using type = correct_const_t<T, T>; };
         template <typename T1, typename T2>
-        struct abstract_type<std::pair<T1, pair<T1, T2>>> : std::false_type { typedef typename abstract_type<pair<T1, T2>>::type type; };
+        struct abstract_type<std::pair<T1, pair<T1, T2>>> : std::false_type { using type = typename abstract_type<pair<T1, T2>>::type; };
         template <typename T1, typename T2>
-        struct abstract_type<const std::pair<T1, pair<T1, T2>>> : std::false_type { typedef typename abstract_type<const pair<T1, T2>>::type type; };
+        struct abstract_type<const std::pair<T1, pair<T1, T2>>> : std::false_type { using type = typename abstract_type<const pair<T1, T2>>::type; };
         template <>
-        struct abstract_type<std::monostate> : std::true_type { typedef std::monostate type; };
+        struct abstract_type<std::monostate> : std::true_type { using type = std::monostate; };
         template <typename Rep, typename Period>
-        struct abstract_type<std::chrono::duration<Rep, Period>> : std::true_type { typedef std::chrono::duration<Rep, Period> type; };
+        struct abstract_type<std::chrono::duration<Rep, Period>> : std::true_type { using type = std::chrono::duration<Rep, Period>; };
         template <typename Clock, typename Duration>
-        struct abstract_type<std::chrono::time_point<Clock, Duration>> : std::true_type { typedef std::chrono::time_point<Clock, Duration> type; };
+        struct abstract_type<std::chrono::time_point<Clock, Duration>> : std::true_type { using type = std::chrono::time_point<Clock, Duration>; };
     }
 
     template <typename T>
@@ -211,9 +211,9 @@ namespace neolib
     namespace detail
     {
         template <typename T, typename = sfinae>
-        struct abstract_return_type { typedef abstract_t<T>& type; };
+        struct abstract_return_type { using type = abstract_t<T>&; };
         template <typename T>
-        struct abstract_return_type<T, std::enable_if_t<std::is_scalar_v<T>, sfinae>> { typedef std::remove_const_t<T> type; };
+        struct abstract_return_type<T, std::enable_if_t<std::is_scalar_v<T>, sfinae>> { using type = std::remove_const_t<T>; };
     }
 
     template <typename T>
