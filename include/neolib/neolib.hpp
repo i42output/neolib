@@ -182,6 +182,9 @@ namespace neolib
     }
 
     template <typename T>
+    constexpr bool have_abstract_base_v = detail::abstract_class_possible_v<T>;
+
+    template <typename T>
     using abstract_t = typename detail::abstract_type<T>::type;
 
     template <typename T, typename = std::enable_if_t<detail::abstract_type<T>::value, sfinae>>
