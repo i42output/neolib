@@ -1,6 +1,6 @@
-// module.hpp v1.0.1
+// i_module_services.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2025 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -39,47 +39,22 @@
 #include <string>
 #include <memory>
 #include <neolib/core/reference_counted.hpp>
+#include <neolib/task/i_async_task.hpp>
 
 namespace neolib
 {
-    class i_module_services;
-
-    class os_module;
-
-    class NEOLIB_EXPORT module
+    class i_module_services
     {
-        // types
-    private:
-        typedef std::unique_ptr<os_module> os_module_ptr;
-        // construction
     public:
-        module();
-        module(const module& aOther);
-        module(module&& aOther);
-        module(const std::string& aPath);
-        ~module();
-        // assignment
+        virtual ~i_module_services() = default;
     public:
-        module& operator=(const module& aOther);
-        module& operator=(module&& aOther);
-        // operations
+        virtual void io_service_factory(i_async_task& aTask, bool aMultiThreaded, i_ref_ptr<i_async_service>& aResult) = 0;
     public:
-        const std::string& path() const { return iPath; }
-        bool load();
-        void unload();
-        os_module* release();
-        bool loaded() const;
-        void* procedure_address(const std::string& aProcedureName);
-        template <typename FunctionType>
-        FunctionType procedure(const std::string& aProcedureName)
+        ref_ptr<i_async_service> io_service_factory(i_async_task& aTask, bool aMultiThreaded = false)
         {
-            return reinterpret_cast<FunctionType>(procedure_address(aProcedureName));
+            ref_ptr<i_async_service> result;
+            io_service_factory(aTask, aMultiThreaded, result);
+            return result;
         }
-        // attributes
-    private:
-        std::string iPath;
-        os_module_ptr iOsModule;
     };
-
-    i_module_services& module_services();
 }

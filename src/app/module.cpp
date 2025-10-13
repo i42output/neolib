@@ -35,7 +35,9 @@
 
 #include <neolib/neolib.hpp>
 #include <neolib/file/file.hpp>
+#include <neolib/app/i_module_services.hpp>
 #include <neolib/app/module.hpp>
+#include <neolib/task/i_async_task.hpp>
 
 #ifdef _WIN32
 #include "../win32/app/win32_module.hpp"
@@ -119,5 +121,19 @@ namespace neolib
         if (!loaded())
             return 0;
         return iOsModule->procedure_address(aProcedureName);
+    }
+
+    void io_service_factory(i_async_task& aTask, bool aMultiThreaded, i_ref_ptr<i_async_service>& aResult);
+        
+    i_module_services& module_services()
+    {
+        static struct : i_module_services
+        {
+            void io_service_factory(i_async_task& aTask, bool aMultiThreaded, i_ref_ptr<i_async_service>& aResult) final
+            {
+                neolib::io_service_factory(aTask, aMultiThreaded, aResult);
+            }
+        } sDefaultModuleServices;
+        return sDefaultModuleServices;
     }
 }

@@ -38,6 +38,7 @@
 #include <neolib/neolib.hpp>
 #include <atomic>
 #include <neolib/core/lifetime.hpp>
+#include <neolib/app/module.hpp>
 #include <neolib/task/i_thread.hpp>
 #include <neolib/task/task.hpp>
 #include <neolib/task/i_async_task.hpp>
@@ -48,7 +49,7 @@ namespace neolib
 {
     class async_task;
 
-    class NEOLIB_EXPORT timer_service : public i_timer_service
+    class NEOLIB_EXPORT timer_service : public reference_counted<i_timer_service>
     {
         // types
     public:
@@ -106,10 +107,11 @@ namespace neolib
         void join(i_thread& aThread) override;
         void detach() override;
         neolib::timer_service& timer_service() override;
-        neolib::i_async_service& io_service() override;
+        neolib::i_async_service& io_service(i_module_services& aModuleServices = module_services()) override;
+        void cancel_io_service(i_module_services& aModuleServices = module_services()) override;
         bool have_message_queue() const override;
         bool have_messages() const override;
-        i_message_queue& create_message_queue(std::function<bool()> aIdleFunction = std::function<bool()>()) override;
+        i_message_queue& create_message_queue(std::function<bool()> aIdleFunction = std::function<bool()>{}) override;
         const i_message_queue& message_queue() const override;
         i_message_queue& message_queue() override;
         void register_event_queue(i_async_event_queue& aQueue) override;
@@ -136,7 +138,7 @@ namespace neolib
         std::recursive_mutex iMutex;
         std::atomic<i_thread*> iThread;
         std::optional<neolib::timer_service> iTimerService;
-        std::unique_ptr<i_async_service> iIoService;
+        std::unordered_map<i_module_services*, std::unique_ptr<i_async_service>> iIoServices;
         message_queue_pointer iMessageQueue;
         std::vector<i_async_event_queue*> iEventQueues;
         std::atomic<async_task_state> iState;

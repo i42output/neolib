@@ -21,6 +21,7 @@
 
 #include <neolib/neolib.hpp>
 #include <neolib/app/i_application.hpp>
+#include <neolib/app/module.hpp>
 #include <neolib/app/version.hpp>
 #include <neolib/plugin/i_plugin.hpp>
 
@@ -32,6 +33,10 @@ namespace neolib
     public:
         using abstract_type = Interface;
     public:
+        i_module_services& module_services() const final
+        {
+            return neolib::module_services();
+        }
         bool loaded() const final
         {
             return iLoaded;

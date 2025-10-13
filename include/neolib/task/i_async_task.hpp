@@ -36,7 +36,9 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <neolib/core/i_reference_counted.hpp>
 #include <neolib/app/services.hpp>
+#include <neolib/app/module.hpp>
 #include <neolib/task/i_thread.hpp>
 #include <neolib/task/i_message_queue.hpp>
 #include <neolib/task/i_task.hpp>
@@ -46,7 +48,7 @@ namespace neolib
 {
     class i_timer_object;
 
-    class i_async_service
+    class i_async_service : public i_reference_counted
     {
         // types
     public:
@@ -104,10 +106,11 @@ namespace neolib
         virtual void join(i_thread& aThread) = 0;
         virtual void detach() = 0;
         virtual i_timer_service& timer_service() = 0;
-        virtual i_async_service& io_service() = 0;
+        virtual i_async_service& io_service(i_module_services& aModuleServices = module_services()) = 0;
+        virtual void cancel_io_service(i_module_services& aModuleServices = module_services()) = 0;
         virtual bool have_message_queue() const = 0;
         virtual bool have_messages() const = 0;
-        virtual i_message_queue& create_message_queue(std::function<bool()> aIdleFunction = std::function<bool()>()) = 0;
+        virtual i_message_queue& create_message_queue(std::function<bool()> aIdleFunction = std::function<bool()>{}) = 0;
         virtual const i_message_queue& message_queue() const = 0;
         virtual i_message_queue& message_queue() = 0;
         virtual void register_event_queue(i_async_event_queue& aQueue) = 0;

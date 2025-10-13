@@ -40,6 +40,7 @@
 #include <neolib/core/i_string.hpp>
 #include <neolib/core/i_discoverable.hpp>
 #include <neolib/app/i_version.hpp>
+#include <neolib/app/module.hpp>
 
 namespace neolib
 {
@@ -53,6 +54,7 @@ namespace neolib
         virtual const i_string& description() const = 0;
         virtual const i_version& version() const = 0;
         virtual const i_string& copyright() const = 0;
+        virtual i_module_services& module_services() const = 0;
         virtual bool loaded() const = 0;
         virtual bool initialized() const = 0;
         virtual bool enabled() const = 0;

@@ -36,6 +36,7 @@
 #include <neolib/neolib.hpp>
 #include <boost/asio.hpp>
 #include <neolib/core/scoped.hpp>
+#include <neolib/app/i_module_services.hpp>
 #include <neolib/task/thread.hpp>
 #include <neolib/task/async_task.hpp>
 #include <neolib/task/timer_object.hpp>
@@ -47,14 +48,14 @@
 
 namespace neolib
 {
-    class NEOLIB_EXPORT io_service : public i_async_service
+    class NEOLIB_EXPORT io_service : public reference_counted<i_async_service>
     {
         // types
     public:
         typedef boost::asio::io_service native_io_service_type;
         // construction
     public:
-        io_service(async_task& aTask, bool aMultiThreaded = false);
+        io_service(i_async_task& aTask, bool aMultiThreaded = false);
         ~io_service();
         // operations
     public:
@@ -62,11 +63,16 @@ namespace neolib
         void* native_object() override;
         // attributes
     private:
-        async_task& iTask;
+        i_async_task& iTask;
         native_io_service_type iNativeIoService;
     };
 
-    io_service::io_service(async_task& aTask, bool aMultiThreaded) :
+    void io_service_factory(i_async_task& aTask, bool aMultiThreaded, i_ref_ptr<i_async_service>& aResult)
+    {
+        aResult = neolib::make_ref<io_service>(aTask, aMultiThreaded);
+    }
+
+    io_service::io_service(i_async_task& aTask, bool aMultiThreaded) :
         iTask{ aTask },
         iNativeIoService{ aMultiThreaded ? BOOST_ASIO_CONCURRENCY_HINT_DEFAULT : BOOST_ASIO_CONCURRENCY_HINT_1 }
     {
@@ -225,11 +231,17 @@ namespace neolib
         return *iTimerService;
     }
 
-    i_async_service& async_task::io_service()
+    i_async_service& async_task::io_service(i_module_services& aModuleServices)
     {
-        if (iIoService == nullptr)
-            iIoService = std::make_unique<neolib::io_service>(*this);
-        return *iIoService;
+        auto& moduleIoService = iIoServices[&aModuleServices];
+        if (moduleIoService == nullptr)
+            moduleIoService.reset(aModuleServices.io_service_factory(*this).release());
+        return *moduleIoService;
+    }
+
+    void async_task::cancel_io_service(i_module_services& aModuleServices)
+    {
+        iIoServices[&aModuleServices].reset();
     }
 
     bool async_task::do_work(yield_type aYieldIfNoWork)
@@ -240,8 +252,8 @@ namespace neolib
         didSome = (pump_messages() || didSome);
         if (iTimerService)
             didSome = (iTimerService->poll() || didSome);
-        if (iIoService)
-            didSome = (iIoService->poll() || didSome);
+        for (auto& service : iIoServices)
+            didSome = (service.second->poll() || didSome);
         if (!didSome && aYieldIfNoWork != yield_type::NoYield)
         {
             if (aYieldIfNoWork == yield_type::Yield)
@@ -386,7 +398,7 @@ namespace neolib
         while (running())
             std::this_thread::sleep_for(std::chrono::milliseconds{ 1 });
         iTimerService.reset();
-        iIoService.reset();
+        cancel_io_service();
     }
 
     void async_task::idle()
