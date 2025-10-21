@@ -630,7 +630,7 @@ namespace neolib
                 if (existing != args.begin())
                     --existing;
             }
-            if (existing != args.end())
+            if (existing != args.end() && aPos >= existing->begin)
                 ++existing;
             return existing;
         }
