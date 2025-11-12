@@ -1807,19 +1807,19 @@ namespace neolib
     using neolib::parser_operators::operator/;\
     using neolib::parser_operators::operator,;\
     \
-    inline neolib::parser_terminal<symbol> operator"" _(const char* str, std::size_t len)\
+    inline neolib::parser_terminal<symbol> operator""_(const char* str, std::size_t len)\
     {\
         return neolib::parser_terminal<symbol>{ str, len };\
     }\
-    inline neolib::parser_terminal<symbol> operator"" _(char character)\
+    inline neolib::parser_terminal<symbol> operator""_(char character)\
     {\
         return neolib::parser_terminal<symbol>{ character };\
     }\
-    inline neolib::parser_concept<symbol> operator"" _concept(const char* str, std::size_t len)\
+    inline neolib::parser_concept<symbol> operator""_concept(const char* str, std::size_t len)\
     {\
         return neolib::parser_concept<symbol>{ str, len };\
     }\
-    inline neolib::parser_concept<symbol> operator"" _infix_concept(const char* str, std::size_t len)\
+    inline neolib::parser_concept<symbol> operator""_infix_concept(const char* str, std::size_t len)\
     {\
         auto result = neolib::parser_concept<symbol>{ str, len };\
         result.association = neolib::concept_association::Infix;\

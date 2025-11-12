@@ -77,7 +77,7 @@ namespace neolib
         Subject* iSubject;
     };
 
-    class alignas(BOOST_LOCKFREE_CACHELINE_BYTES) recursive_spinlock : public i_lockable
+    class alignas(boost::lockfree::detail::cacheline_bytes) recursive_spinlock : public i_lockable
     {
     public:
         recursive_spinlock() :
@@ -133,7 +133,7 @@ namespace neolib
         std::atomic<std::thread::id> iLockingThread;
     };
 
-    class alignas(BOOST_LOCKFREE_CACHELINE_BYTES) switchable_mutex : public i_lockable
+    class alignas(boost::lockfree::detail::cacheline_bytes) switchable_mutex : public i_lockable
     {
     public:
         switchable_mutex()

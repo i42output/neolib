@@ -116,7 +116,7 @@ namespace neolib
 
     namespace string_literals
     {
-        inline string_view operator"" _sv(const char* str, size_t len)
+        inline string_view operator""_sv(const char* str, size_t len)
         {
             return string_view{ str, str + len };
         }

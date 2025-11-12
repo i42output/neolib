@@ -197,7 +197,7 @@ namespace neolib
 
     namespace string_literals
     {
-        inline string operator"" _s(const char* str, size_t len)
+        inline string operator""_s(const char* str, size_t len)
         {
             return string{ str, len };
         }

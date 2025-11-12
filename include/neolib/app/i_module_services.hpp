@@ -48,12 +48,12 @@ namespace neolib
     public:
         virtual ~i_module_services() = default;
     public:
-        virtual void io_service_factory(i_async_task& aTask, bool aMultiThreaded, i_ref_ptr<i_async_service>& aResult) = 0;
+        virtual void io_context_factory(i_async_task& aTask, bool aMultiThreaded, i_ref_ptr<i_async_service>& aResult) = 0;
     public:
-        ref_ptr<i_async_service> io_service_factory(i_async_task& aTask, bool aMultiThreaded = false)
+        ref_ptr<i_async_service> io_context_factory(i_async_task& aTask, bool aMultiThreaded = false)
         {
             ref_ptr<i_async_service> result;
-            io_service_factory(aTask, aMultiThreaded, result);
+            io_context_factory(aTask, aMultiThreaded, result);
             return result;
         }
     };

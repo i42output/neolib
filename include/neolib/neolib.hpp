@@ -256,7 +256,18 @@ namespace neolib
 
 #ifdef USING_BOOST
 #ifndef API
+
+#if defined(_MSC_VER) && !defined(__clang__) && !defined(__GNUC__)
+#pragma warning ( push )
+#pragma warning ( disable : 4456 )
+#endif
+
 #include <boost/dll.hpp>
+
+#if defined(_MSC_VER) && !defined(__clang__) && !defined(__GNUC__)
+#pragma warning ( pop )
+#endif
+
 #define API extern "C" BOOST_SYMBOL_EXPORT
 #endif
 #endif

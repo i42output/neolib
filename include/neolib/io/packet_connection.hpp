@@ -107,7 +107,7 @@ namespace neolib
             {
             }
         public:
-            void handle_resolve(const boost::system::error_code& aError, typename resolver_type::iterator aEndPointIterator)
+            void handle_resolve(const boost::system::error_code& aError, typename resolver_type::results_type::iterator aEndPointIterator)
             {
                 if (!iParentDestroyed && !iOrphaned)
                     iParent.handle_resolve(aError, aEndPointIterator);
@@ -168,7 +168,7 @@ namespace neolib
             iSecure(aSecure),
             iProtocolFamily(aProtocolFamily),
             iError(false),
-            iResolver(aIoTask.io_service().native_object<boost::asio::io_service>()),
+            iResolver(aIoTask.io_context().native_object<boost::asio::io_context>()),
             iConnected(false),
             iPacketBeingSent(nullptr),
             iReceiveBufferPtr(&buffer()[0]),
@@ -192,7 +192,7 @@ namespace neolib
             iSecure(aSecure),
             iProtocolFamily(aProtocolFamily),
             iError(false),
-            iResolver(aIoTask.io_service().native_object<boost::asio::io_service>()),
+            iResolver(aIoTask.io_context().native_object<boost::asio::io_context>()),
             iConnected(false),
             iPacketBeingSent(nullptr),
             iReceiveBufferPtr(&buffer()[0]),
@@ -228,13 +228,13 @@ namespace neolib
                 throw already_open();
             if (!secure())
             {
-                iSocketHolder = socket_pointer(new socket_type(iIoTask.io_service().native_object<boost::asio::io_service>()));
+                iSocketHolder = socket_pointer(new socket_type(iIoTask.io_context().native_object<boost::asio::io_context>()));
             }
             else
             {
                 if (iSecureStreamContext == nullptr)
                     iSecureStreamContext.reset(new secure_stream_context(boost::asio::ssl::context::sslv23));
-                iSocketHolder = secure_stream_pointer(new secure_stream_type(iIoTask.io_service().native_object<boost::asio::io_service>(), *iSecureStreamContext));
+                iSocketHolder = secure_stream_pointer(new secure_stream_type(iIoTask.io_context().native_object<boost::asio::io_context>(), *iSecureStreamContext));
             }
             if (aAcceptingSocket)
                 return true;
@@ -354,11 +354,11 @@ namespace neolib
                 socket().bind(endpoint_type(to_protocol<protocol_type>(iProtocolFamily), iLocalPort), ec);
             else
             {
-                typename resolver_type::iterator result = iResolver.resolve(typename resolver_type::query(iLocalHostName, uint32_to_string<char>(iLocalPort)), ec);
+                auto result = iResolver.resolve(iLocalHostName, uint32_to_string<char>(iLocalPort), ec);
                 if (!ec)
                 {
                     bool foundGoodMatch = false;
-                    for (typename resolver_type::iterator i = result; !foundGoodMatch && i != typename resolver_type::iterator(); ++i)
+                    for (auto i = result.begin(); !foundGoodMatch && i != result.end(); ++i)
                     {
                         endpoint_type endpoint = *i;
                         if (to_protocol_family(endpoint.protocol()) & iProtocolFamily)
@@ -370,7 +370,7 @@ namespace neolib
                     }
                     if (!foundGoodMatch)
                     {
-                        iLocalEndPoint = *result;
+                        iLocalEndPoint = *result.begin();
                         socket().bind(iLocalEndPoint, ec);
                     }
                 }
@@ -394,8 +394,11 @@ namespace neolib
         {
             if (!iRemoteHostName.empty())
             {
-                iResolver.async_resolve(typename resolver_type::query(iRemoteHostName, uint32_to_string<char>(iRemotePort)),
-                    boost::bind(&handler_proxy::handle_resolve, iHandlerProxy, boost::asio::placeholders::error, boost::asio::placeholders::iterator));
+                iResolver.async_resolve(iRemoteHostName, uint32_to_string<char>(iRemotePort),
+                    [&](const boost::system::error_code& ec, resolver_type::results_type results)
+                    {
+                        handle_resolve(ec, results);
+                    });
             }
         }
 
@@ -405,14 +408,14 @@ namespace neolib
         {
             return *iReceiveBuffer;
         }
-        void handle_resolve(const boost::system::error_code& aError, typename resolver_type::iterator aEndPointIterator)
+        void handle_resolve(const boost::system::error_code& aError, typename resolver_type::results_type aResults)
         {
             if (closed())
                 return;
             if (!aError)
             {
                 bool foundGoodMatch = false;
-                for (typename resolver_type::iterator i = aEndPointIterator; !foundGoodMatch && i != typename resolver_type::iterator(); ++i)
+                for (auto i = aResults.begin(); !foundGoodMatch && i != aResults.end(); ++i)
                 {
                     endpoint_type endpoint = *i;
                     if (to_protocol_family(endpoint.protocol()) & iProtocolFamily)
@@ -424,7 +427,7 @@ namespace neolib
                 }
                 if (!foundGoodMatch)
                 {
-                    iRemoteEndPoint = *aEndPointIterator;
+                    iRemoteEndPoint = *aResults.begin();
                     socket().async_connect(iRemoteEndPoint, boost::bind(&handler_proxy::handle_connect, iHandlerProxy, boost::asio::placeholders::error));
                 }
             }

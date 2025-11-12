@@ -48,15 +48,15 @@
 
 namespace neolib
 {
-    class NEOLIB_EXPORT io_service : public reference_counted<i_async_service>
+    class NEOLIB_EXPORT io_context : public reference_counted<i_async_service>
     {
         // types
     public:
-        typedef boost::asio::io_service native_io_service_type;
+        typedef boost::asio::io_context native_io_context_type;
         // construction
     public:
-        io_service(i_async_task& aTask, bool aMultiThreaded = false);
-        ~io_service();
+        io_context(i_async_task& aTask, bool aMultiThreaded = false);
+        ~io_context();
         // operations
     public:
         bool poll(bool aProcessEvents = true, std::size_t aMaximumPollCount = kDefaultPollCount) override;
@@ -64,26 +64,26 @@ namespace neolib
         // attributes
     private:
         i_async_task& iTask;
-        native_io_service_type iNativeIoService;
+        native_io_context_type iNativeIoService;
     };
 
-    void io_service_factory(i_async_task& aTask, bool aMultiThreaded, i_ref_ptr<i_async_service>& aResult)
+    void io_context_factory(i_async_task& aTask, bool aMultiThreaded, i_ref_ptr<i_async_service>& aResult)
     {
-        aResult = neolib::make_ref<io_service>(aTask, aMultiThreaded);
+        aResult = neolib::make_ref<io_context>(aTask, aMultiThreaded);
     }
 
-    io_service::io_service(i_async_task& aTask, bool aMultiThreaded) :
+    io_context::io_context(i_async_task& aTask, bool aMultiThreaded) :
         iTask{ aTask },
         iNativeIoService{ aMultiThreaded ? BOOST_ASIO_CONCURRENCY_HINT_DEFAULT : BOOST_ASIO_CONCURRENCY_HINT_1 }
     {
     }
 
-    io_service::~io_service()
+    io_context::~io_context()
     {
         iNativeIoService.stop();
     }
 
-    bool io_service::poll(bool aProcessEvents, std::size_t aMaximumPollCount)
+    bool io_context::poll(bool aProcessEvents, std::size_t aMaximumPollCount)
     {
         std::size_t iterationsLeft = aMaximumPollCount;
         bool didSome = false;
@@ -103,7 +103,7 @@ namespace neolib
         return didSome;
     }
 
-    void* io_service::native_object()
+    void* io_context::native_object()
     {
         return &iNativeIoService;
     }
@@ -231,15 +231,15 @@ namespace neolib
         return *iTimerService;
     }
 
-    i_async_service& async_task::io_service(i_module_services& aModuleServices)
+    i_async_service& async_task::io_context(i_module_services& aModuleServices)
     {
         auto& moduleIoService = iIoServices[&aModuleServices];
         if (moduleIoService == nullptr)
-            moduleIoService.reset(aModuleServices.io_service_factory(*this).release());
+            moduleIoService.reset(aModuleServices.io_context_factory(*this).release());
         return *moduleIoService;
     }
 
-    void async_task::cancel_io_service(i_module_services& aModuleServices)
+    void async_task::cancel_io_context(i_module_services& aModuleServices)
     {
         iIoServices[&aModuleServices].reset();
     }
@@ -398,7 +398,7 @@ namespace neolib
         while (running())
             std::this_thread::sleep_for(std::chrono::milliseconds{ 1 });
         iTimerService.reset();
-        cancel_io_service();
+        cancel_io_context();
     }
 
     void async_task::idle()

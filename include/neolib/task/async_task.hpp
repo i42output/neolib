@@ -107,8 +107,8 @@ namespace neolib
         void join(i_thread& aThread) override;
         void detach() override;
         neolib::timer_service& timer_service() override;
-        neolib::i_async_service& io_service(i_module_services& aModuleServices = module_services()) override;
-        void cancel_io_service(i_module_services& aModuleServices = module_services()) override;
+        neolib::i_async_service& io_context(i_module_services& aModuleServices = module_services()) override;
+        void cancel_io_context(i_module_services& aModuleServices = module_services()) override;
         bool have_message_queue() const override;
         bool have_messages() const override;
         i_message_queue& create_message_queue(std::function<bool()> aIdleFunction = std::function<bool()>{}) override;

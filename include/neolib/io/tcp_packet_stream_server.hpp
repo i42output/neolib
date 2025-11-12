@@ -101,7 +101,7 @@ namespace neolib
             iSecure(aSecure),
             iProtocolFamily(aProtocolFamily & IPv4 ? protocol_type::v4() : protocol_type::v6()),
             iLocalEndpoint(iProtocolFamily, iLocalPort),
-            iAcceptor(aIoTask.io_service().native_object<boost::asio::io_service>(), iLocalEndpoint)
+            iAcceptor(aIoTask.io_context().native_object<boost::asio::io_context>(), iLocalEndpoint)
         {
             accept_connection();
         }
@@ -113,7 +113,7 @@ namespace neolib
             iSecure(aSecure),
             iProtocolFamily(aProtocolFamily & IPv4 ? protocol_type::v4() : protocol_type::v6()),
             iLocalEndpoint(resolve(aIoTask, iLocalHostName, iLocalPort, iProtocolFamily)),
-            iAcceptor(aIoTask.io_service().native_object<boost::asio::io_service>(), iLocalEndpoint)
+            iAcceptor(aIoTask.io_context().native_object<boost::asio::io_context>(), iLocalEndpoint)
         {
             accept_connection();
         }
@@ -149,7 +149,7 @@ namespace neolib
         // own
         static endpoint_type resolve(async_task& aIoTask, const std::string& aHostname, unsigned short aPort, protocol_type aProtocolFamily)
         {
-            resolver_type resolver(aIoTask.io_service().native_object());
+            resolver_type resolver(aIoTask.io_context().native_object());
             boost::system::error_code ec;
             typename resolver_type::iterator result = resolver.resolve(resolver_type::query(aHostname, std::to_string(aPort), ec));
             if (!ec)

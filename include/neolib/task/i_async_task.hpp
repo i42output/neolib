@@ -106,8 +106,8 @@ namespace neolib
         virtual void join(i_thread& aThread) = 0;
         virtual void detach() = 0;
         virtual i_timer_service& timer_service() = 0;
-        virtual i_async_service& io_service(i_module_services& aModuleServices = module_services()) = 0;
-        virtual void cancel_io_service(i_module_services& aModuleServices = module_services()) = 0;
+        virtual i_async_service& io_context(i_module_services& aModuleServices = module_services()) = 0;
+        virtual void cancel_io_context(i_module_services& aModuleServices = module_services()) = 0;
         virtual bool have_message_queue() const = 0;
         virtual bool have_messages() const = 0;
         virtual i_message_queue& create_message_queue(std::function<bool()> aIdleFunction = std::function<bool()>{}) = 0;
