@@ -152,10 +152,10 @@ namespace neolib
             template <json_syntax Syntax, typename Alloc , typename CharT, typename Traits, typename CharAlloc>
             friend class basic_json_value;
         public:
-            typedef T json_value;
-            typedef typename json_value::value_type value_type;
+            using json_value = T;
+            using value_type = typename json_value::value_type;
         private:
-            typedef typename json_value::value_allocator value_allocator;
+            using value_allocator = typename json_value::value_allocator;
         public:
             basic_json_node() : 
                 iParent{ nullptr },
@@ -331,17 +331,17 @@ namespace neolib
         template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
         friend class basic_json_value;
     public:
-        typedef T json_value;
-        typedef typename json_value::value_type value_type;
-        typedef typename json_value::json_string json_string;
+        using json_value = T;
+        using value_type = typename json_value::value_type;
+        using json_string = typename json_value::json_string;
     private:
-        typedef typename json_value::value_allocator allocator_type;
-        typedef std::unordered_multimap<
+        using allocator_type = typename json_value::value_allocator;
+        using dictionary_type = std::unordered_multimap<
             json_string, 
             json_value*, 
             boost::hash<json_string>, 
             std::equal_to<json_string>, 
-            typename std::allocator_traits<allocator_type>::template rebind_alloc<std::pair<const json_string, json_value*>>> dictionary_type;
+            typename std::allocator_traits<allocator_type>::template rebind_alloc<std::pair<const json_string, json_value*>>>;
     public:
         basic_json_object() :
             iContents{ nullptr }
@@ -443,12 +443,12 @@ namespace neolib
         template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
         friend class basic_json_value;
     public:
-        typedef T json_value;
-        typedef typename json_value::value_type value_type;
-        typedef typename json_value::json_string json_string;
+        using json_value = T;
+        using value_type = typename json_value::value_type;
+        using json_string = typename json_value::json_string;
     private:
-        typedef typename json_value::value_allocator allocator_type;
-        typedef std::vector<json_value*> array_type;
+        using allocator_type = typename json_value::value_allocator;
+        using array_type = std::vector<json_value*>;
     public:
         basic_json_array() :
             iContents{ nullptr }
@@ -542,8 +542,8 @@ namespace neolib
     struct basic_json_keyword
     {
     public:
-        typedef T json_value;
-        typedef typename json_value::json_string json_string;
+        using json_value = T;
+        using json_string = typename json_value::json_string;
     public:
         json_string text;
     };
@@ -552,7 +552,7 @@ namespace neolib
     struct basic_json_null
     {
     public:
-        typedef T json_value;
+        using json_value = T;
     public:
         bool operator==(std::nullptr_t) const { return true; }
         bool operator!=(std::nullptr_t) const { return false; }
@@ -572,19 +572,19 @@ namespace neolib
         struct bad_conversion : std::runtime_error { bad_conversion() : std::runtime_error("neolib::basic_json_value::bad_conversion") {} };
     public:
         static constexpr json_syntax syntax = Syntax;
-        typedef Alloc allocator_type;
-        typedef CharT character_type;
-        typedef Traits character_traits_type;
-        typedef CharAlloc character_allocator_type;
+        using allocator_type = Alloc;
+        using character_type = CharT;
+        using character_traits_type = Traits;
+        using character_allocator_type = CharAlloc;
     public:
-        typedef basic_json_value node_value_type;
+        using node_value_type = basic_json_value;
     public:
-        typedef typename std::allocator_traits<allocator_type>::template rebind_alloc<basic_json_value> value_allocator;
+        using value_allocator = typename std::allocator_traits<allocator_type>::template rebind_alloc<basic_json_value>;
     public:
-        typedef const basic_json_value* const_pointer;
-        typedef basic_json_value* pointer;
-        typedef const basic_json_value& const_reference;
-        typedef basic_json_value& reference;
+        using const_pointer = const basic_json_value*;
+        using pointer = basic_json_value*;
+        using const_reference = const basic_json_value&;
+        using reference = basic_json_value&;
     private:
         template <typename IteratorTraits>
         class iterator_base;
@@ -592,25 +592,25 @@ namespace neolib
         class const_iterator;
         class iterator;
     public:
-        typedef basic_quick_string<character_type, character_traits_type, character_allocator_type> json_string;
-        typedef basic_json_object<basic_json_value> json_object;
-        typedef basic_json_array<basic_json_value> json_array;
-        typedef double json_double;
-        typedef int64_t json_int64;
-        typedef uint64_t json_uint64;
-        typedef int32_t json_int;
-        typedef uint32_t json_uint;
-        typedef bool json_bool;
-        typedef basic_json_null<basic_json_value> json_null;
-        typedef basic_json_keyword<basic_json_value> json_keyword;
+        using json_string = basic_quick_string<character_type, character_traits_type, character_allocator_type>;
+        using json_object = basic_json_object<basic_json_value>;
+        using json_array = basic_json_array<basic_json_value>;
+        using json_double = double;
+        using json_int64 = std::int64_t;
+        using json_uint64 = std::uint64_t;
+        using json_int = std::int32_t;
+        using json_uint = std::uint32_t;
+        using json_bool = bool;
+        using json_null = basic_json_null<basic_json_value>;
+        using json_keyword = basic_json_keyword<basic_json_value>;
     public:
-        typedef std::variant<std::monostate, json_string, json_keyword> name_t;
+        using name_t = std::variant<std::monostate, json_string, json_keyword>;
     public:
-        typedef std::optional<json_string> optional_json_string;
+        using optional_json_string = std::optional<json_string>;
     public:
-        typedef std::variant<std::monostate, json_object, json_array, json_double, json_int64, json_uint64, json_int, json_uint, json_string, json_bool, json_null, json_keyword> value_type;
+        using value_type = std::variant<std::monostate, json_object, json_array, json_double, json_int64, json_uint64, json_int, json_uint, json_string, json_bool, json_null, json_keyword>;
     private:
-        typedef json_detail::basic_json_node<basic_json_value> node_type;
+        using node_type = json_detail::basic_json_node<basic_json_value>;
     public:
         basic_json_value() :
             iNode{}, iValue{}, iDocumentSourceLocation{}
@@ -933,29 +933,29 @@ namespace neolib
     {
     public:
         static constexpr json_syntax syntax = Syntax;
-        typedef Alloc allocator_type;
-        typedef CharT character_type;
-        typedef Traits character_traits_type;
-        typedef CharAlloc character_allocator_type;
-        typedef basic_json_value<syntax, allocator_type, character_type, character_traits_type, character_allocator_type> json_value;
-        typedef std::optional<json_value> optional_json_value;
-        typedef typename json_value::json_object json_object;
-        typedef typename json_value::json_array json_array;
-        typedef typename json_value::json_double json_double;
-        typedef typename json_value::json_int64 json_int64;
-        typedef typename json_value::json_uint64 json_uint64;
-        typedef typename json_value::json_int json_int;
-        typedef typename json_value::json_uint json_uint;
-        typedef typename json_value::json_string json_string;
-        typedef typename json_value::json_bool json_bool;
-        typedef typename json_value::json_null json_null;
-        typedef typename json_value::json_keyword json_keyword;
+        using allocator_type = Alloc;
+        using character_type = CharT;
+        using character_traits_type = Traits;
+        using character_allocator_type = CharAlloc;
+        using json_value = basic_json_value<syntax, allocator_type, character_type, character_traits_type, character_allocator_type>;
+        using optional_json_value = std::optional<json_value>;
+        using json_object = typename json_value::json_object;
+        using json_array = typename json_value::json_array;
+        using json_double = typename json_value::json_double;
+        using json_int64 = typename json_value::json_int64;
+        using json_uint64 = typename json_value::json_uint64;
+        using json_int = typename json_value::json_int;
+        using json_uint = typename json_value::json_uint;
+        using json_string = typename json_value::json_string;
+        using json_bool = typename json_value::json_bool;
+        using json_null = typename json_value::json_null;
+        using json_keyword = typename json_value::json_keyword;
     public:
-        typedef typename json_value::value_type value_type;
-        typedef value_type* pointer;
-        typedef const value_type* const_pointer;
-        typedef value_type& reference;
-        typedef const value_type& const_reference;
+        using value_type = typename json_value::value_type;
+        using pointer = value_type*;
+        using const_pointer = const value_type*;
+        using reference = value_type&;
+        using const_reference = const value_type&;
     private:
         template <typename IteratorTraits>
         class iterator_base;
@@ -963,7 +963,7 @@ namespace neolib
         class const_iterator;
         class iterator;
     private:
-        typedef std::basic_string<CharT, Traits, CharAlloc> string_type;
+        using string_type = std::basic_string<CharT, Traits, CharAlloc>;
         struct element
         {
             enum type_e
@@ -1039,89 +1039,89 @@ namespace neolib
         std::optional<char16_t> iUtf16HighSurrogate;
     };
 
-    typedef basic_json<json_syntax::Standard> json;
-    typedef json::json_value json_value;
-    typedef json::json_object json_object;
-    typedef json::json_array json_array;
-    typedef json::json_double json_double;
-    typedef json::json_int64 json_int64;
-    typedef json::json_uint64 json_uint64;
-    typedef json::json_int json_int;
-    typedef json::json_uint json_uint;
-    typedef json::json_string json_string;
-    typedef json::json_bool json_bool;
-    typedef json::json_null json_null;
-    typedef json::json_keyword json_keyword;
+    using json = basic_json<json_syntax::Standard>;
+    using json_value = json::json_value;
+    using json_object = json::json_object;
+    using json_array = json::json_array;
+    using json_double = json::json_double;
+    using json_int64 = json::json_int64;
+    using json_uint64 = json::json_uint64;
+    using json_int = json::json_int;
+    using json_uint = json::json_uint;
+    using json_string = json::json_string;
+    using json_bool = json::json_bool;
+    using json_null = json::json_null;
+    using json_keyword = json::json_keyword;
+    
+    using fast_json = basic_json<json_syntax::Standard, neolib::fast_pool_allocator<json_type>>;
+    using fast_json_value = fast_json::json_value;
+    using fast_json_object = fast_json::json_object;
+    using fast_json_array = fast_json::json_array;
+    using fast_json_double = fast_json::json_double;
+    using fast_json_int64 = fast_json::json_int64;
+    using fast_json_uint64 = fast_json::json_uint64;
+    using fast_json_int = fast_json::json_int;
+    using fast_json_uint = fast_json::json_uint;
+    using fast_json_string = fast_json::json_string;
+    using fast_json_bool = fast_json::json_bool;
+    using fast_json_null = fast_json::json_null;
+    using fast_json_keyword = fast_json::json_keyword;
 
-    typedef basic_json<json_syntax::Standard, neolib::fast_pool_allocator<json_type>> fast_json;
-    typedef fast_json::json_value fast_json_value;
-    typedef fast_json::json_object fast_json_object;
-    typedef fast_json::json_array fast_json_array;
-    typedef fast_json::json_double fast_json_double;
-    typedef fast_json::json_int64 fast_json_int64;
-    typedef fast_json::json_uint64 fast_json_uint64;
-    typedef fast_json::json_int fast_json_int;
-    typedef fast_json::json_uint fast_json_uint;
-    typedef fast_json::json_string fast_json_string;
-    typedef fast_json::json_bool fast_json_bool;
-    typedef fast_json::json_null fast_json_null;
-    typedef fast_json::json_keyword fast_json_keyword;
+    using rjson = basic_json<json_syntax::Relaxed>;
+    using rjson_value = rjson::json_value;
+    using rjson_object = rjson::json_object;
+    using rjson_array = rjson::json_array;
+    using rjson_double = rjson::json_double;
+    using rjson_int64 = rjson::json_int64;
+    using rjson_uint64 = rjson::json_uint64;
+    using rjson_int = rjson::json_int;
+    using rjson_uint = rjson::json_uint;
+    using rjson_string = rjson::json_string;
+    using rjson_bool = rjson::json_bool;
+    using rjson_null = rjson::json_null;
+    using rjson_keyword = rjson::json_keyword;
 
-    typedef basic_json<json_syntax::Relaxed> rjson;
-    typedef rjson::json_value rjson_value;
-    typedef rjson::json_object rjson_object;
-    typedef rjson::json_array rjson_array;
-    typedef rjson::json_double rjson_double;
-    typedef rjson::json_int64 rjson_int64;
-    typedef rjson::json_uint64 rjson_uint64;
-    typedef rjson::json_int rjson_int;
-    typedef rjson::json_uint rjson_uint;
-    typedef rjson::json_string rjson_string;
-    typedef rjson::json_bool rjson_bool;
-    typedef rjson::json_null rjson_null;
-    typedef rjson::json_keyword rjson_keyword;
+    using fast_rjson = basic_json<json_syntax::Relaxed, neolib::fast_pool_allocator<json_type>>;
+    using fast_rjson_value = fast_rjson::json_value;
+    using fast_rjson_object = fast_rjson::json_object;
+    using fast_rjson_array = fast_rjson::json_array;
+    using fast_rjson_double = fast_rjson::json_double;
+    using fast_rjson_int64 = fast_rjson::json_int64;
+    using fast_rjson_uint64 = fast_rjson::json_uint64;
+    using fast_rjson_int = fast_rjson::json_int;
+    using fast_rjson_uint = fast_rjson::json_uint;
+    using fast_rjson_string = fast_rjson::json_string;
+    using fast_rjson_bool = fast_rjson::json_bool;
+    using fast_rjson_null = fast_rjson::json_null;
+    using fast_rjson_keyword = fast_rjson::json_keyword;
 
-    typedef basic_json<json_syntax::Relaxed, neolib::fast_pool_allocator<json_type>> fast_rjson;
-    typedef fast_rjson::json_value fast_rjson_value;
-    typedef fast_rjson::json_object fast_rjson_object;
-    typedef fast_rjson::json_array fast_rjson_array;
-    typedef fast_rjson::json_double fast_rjson_double;
-    typedef fast_rjson::json_int64 fast_rjson_int64;
-    typedef fast_rjson::json_uint64 fast_rjson_uint64;
-    typedef fast_rjson::json_int fast_rjson_int;
-    typedef fast_rjson::json_uint fast_rjson_uint;
-    typedef fast_rjson::json_string fast_rjson_string;
-    typedef fast_rjson::json_bool fast_rjson_bool;
-    typedef fast_rjson::json_null fast_rjson_null;
-    typedef fast_rjson::json_keyword fast_rjson_keyword; 
+    using fjson = basic_json<json_syntax::Functional>;
+    using fjson_value = fjson::json_value;
+    using fjson_object = fjson::json_object;
+    using fjson_array = fjson::json_array;
+    using fjson_double = fjson::json_double;
+    using fjson_int64 = fjson::json_int64;
+    using fjson_uint64 = fjson::json_uint64;
+    using fjson_int = fjson::json_int;
+    using fjson_uint = fjson::json_uint;
+    using fjson_string = fjson::json_string;
+    using fjson_bool = fjson::json_bool;
+    using fjson_null = fjson::json_null;
+    using fjson_keyword = fjson::json_keyword;
 
-    typedef basic_json<json_syntax::Functional> fjson;
-    typedef fjson::json_value fjson_value;
-    typedef fjson::json_object fjson_object;
-    typedef fjson::json_array fjson_array;
-    typedef fjson::json_double fjson_double;
-    typedef fjson::json_int64 fjson_int64;
-    typedef fjson::json_uint64 fjson_uint64;
-    typedef fjson::json_int fjson_int;
-    typedef fjson::json_uint fjson_uint;
-    typedef fjson::json_string fjson_string;
-    typedef fjson::json_bool fjson_bool;
-    typedef fjson::json_null fjson_null;
-    typedef fjson::json_keyword fjson_keyword;
-
-    typedef basic_json<json_syntax::Functional, neolib::fast_pool_allocator<json_type>> fast_fjson;
-    typedef fast_fjson::json_value fast_fjson_value;
-    typedef fast_fjson::json_object fast_fjson_object;
-    typedef fast_fjson::json_array fast_fjson_array;
-    typedef fast_fjson::json_double fast_fjson_double;
-    typedef fast_fjson::json_int64 fast_fjson_int64;
-    typedef fast_fjson::json_uint64 fast_fjson_uint64;
-    typedef fast_fjson::json_int fast_fjson_int;
-    typedef fast_fjson::json_uint fast_fjson_uint;
-    typedef fast_fjson::json_string fast_fjson_string;
-    typedef fast_fjson::json_bool fast_fjson_bool;
-    typedef fast_fjson::json_null fast_fjson_null;
-    typedef fast_fjson::json_keyword fast_fjson_keyword;
+    using fast_fjson = basic_json<json_syntax::Functional, neolib::fast_pool_allocator<json_type>>;
+    using fast_fjson_value = fast_fjson::json_value;
+    using fast_fjson_object = fast_fjson::json_object;
+    using fast_fjson_array = fast_fjson::json_array;
+    using fast_fjson_double = fast_fjson::json_double;
+    using fast_fjson_int64 = fast_fjson::json_int64;
+    using fast_fjson_uint64 = fast_fjson::json_uint64;
+    using fast_fjson_int = fast_fjson::json_int;
+    using fast_fjson_uint = fast_fjson::json_uint;
+    using fast_fjson_string = fast_fjson::json_string;
+    using fast_fjson_bool = fast_fjson::json_bool;
+    using fast_fjson_null = fast_fjson::json_null;
+    using fast_fjson_keyword = fast_fjson::json_keyword;
 }
 
 #include <neolib/file/json.inl>

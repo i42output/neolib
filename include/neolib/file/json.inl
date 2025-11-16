@@ -66,7 +66,7 @@ namespace neolib
             Null
         };
 
-        enum class token : uint8_t
+        enum class token : std::uint8_t
         {
             Invalid,
             OpenObject,
@@ -652,25 +652,25 @@ namespace neolib
         template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
         struct iterator_traits
         {
-            typedef std::bidirectional_iterator_tag iterator_category;
-            typedef neolib::basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc> value_type;
-            typedef std::ptrdiff_t difference_type;
-            typedef value_type* pointer;
-            typedef value_type& reference;
+            using iterator_category = std::bidirectional_iterator_tag;
+            using value_type = neolib::basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>;
+            using difference_type = std::ptrdiff_t;
+            using pointer = value_type*;
+            using reference = value_type&;
 
-            typedef neolib::basic_json<Syntax, Alloc, CharT, Traits, CharAlloc> document_type;
+            using document_type = neolib::basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>;
         };
 
         template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
         struct const_iterator_traits
         {
-            typedef std::bidirectional_iterator_tag iterator_category;
-            typedef neolib::basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc> value_type;
-            typedef std::ptrdiff_t difference_type;
-            typedef const value_type* pointer;
-            typedef const value_type& reference;
-
-            typedef neolib::basic_json<Syntax, Alloc, CharT, Traits, CharAlloc> document_type;
+            using iterator_category = std::bidirectional_iterator_tag;
+            using value_type = neolib::basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>;
+            using difference_type = std::ptrdiff_t;
+            using pointer = const value_type*;
+            using reference = const value_type&;
+            
+            using document_type = neolib::basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>;
         };
     }
 
@@ -679,7 +679,7 @@ namespace neolib
     class basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator_base : public IteratorTraits
     {
     private:
-        typedef IteratorTraits traits;
+        using traits = IteratorTraits;
     protected:
         using typename traits::iterator_category;
         using typename traits::value_type;
@@ -687,8 +687,8 @@ namespace neolib
         using typename traits::pointer;
         using typename traits::reference;
     protected:
-        typedef typename const_selector_from_pointer<const value_type*, value_type*, pointer>::type value_pointer;
-        typedef typename const_selector_from_pointer<const value_type&, value_type&, pointer>::type value_reference;
+        using value_pointer = typename const_selector_from_pointer<const value_type*, value_type*, pointer>::type;
+        using value_reference = typename const_selector_from_pointer<const value_type&, value_type&, pointer>::type;
     protected:
         iterator_base() : iValue{ nullptr }
         {
@@ -750,7 +750,7 @@ namespace neolib
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
     class basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator : iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>>
     {
-        typedef iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>> base_type;
+        using base_type = iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>>;
         friend class basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>;
     public:
         using typename base_type::iterator_category;
@@ -813,7 +813,7 @@ namespace neolib
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
     class basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator : iterator_base<typename json_detail::const_iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>>
     {
-        typedef iterator_base<typename json_detail::const_iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>> base_type;
+        using base_type = iterator_base<typename json_detail::const_iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>>;
         friend class basic_json_value<Syntax, Alloc, CharT, Traits, CharAlloc>;
     public:
         using typename base_type::iterator_category;
@@ -881,7 +881,7 @@ namespace neolib
     class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator_base : public IteratorTraits
     {
     private:
-        typedef IteratorTraits traits;
+        using traits = IteratorTraits;
     protected:
         using typename traits::iterator_category;
         using typename traits::value_type;
@@ -889,8 +889,8 @@ namespace neolib
         using typename traits::pointer;
         using typename traits::reference;
     protected:
-        typedef typename const_selector_from_pointer<const value_type*, value_type*, pointer>::type value_pointer;
-        typedef typename const_selector_from_pointer<const value_type&, value_type&, pointer>::type value_reference;
+        using value_pointer = typename const_selector_from_pointer<const value_type*, value_type*, pointer>::type;
+        using value_reference = typename const_selector_from_pointer<const value_type&, value_type&, pointer>::type;
     protected:
         iterator_base() : iValue{ nullptr }
         {
@@ -957,7 +957,7 @@ namespace neolib
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
     class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::iterator : public iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>>
     {
-        typedef iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>> base_type;
+        using base_type = iterator_base<typename json_detail::iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>>;
         friend class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>;
     public:
         using typename base_type::iterator_category;
@@ -1020,7 +1020,7 @@ namespace neolib
     template <json_syntax Syntax, typename Alloc, typename CharT, typename Traits, typename CharAlloc>
     class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>::const_iterator : public iterator_base<typename json_detail::const_iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>>
     {
-        typedef iterator_base<typename json_detail::const_iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>> base_type;
+        using base_type = iterator_base<typename json_detail::const_iterator_traits<Syntax, Alloc, CharT, Traits, CharAlloc>>;
         friend class basic_json<Syntax, Alloc, CharT, Traits, CharAlloc>;
     public:
         using typename base_type::iterator_category;
@@ -1168,7 +1168,7 @@ namespace neolib
             return false;
         }
 
-        typedef typename std::basic_istream<CharT, Traits>::pos_type pos_type;
+        using pos_type = typename std::basic_istream<CharT, Traits>::pos_type;
         pos_type count = 0;
         aInput.seekg(0, std::ios::end);
         if (aInput)
@@ -1205,7 +1205,7 @@ namespace neolib
 
         if constexpr (std::is_same_v<CharT, char> || std::is_same_v<CharT, char8_t>)
         {
-            std::string const utf8BOM = "﻿ï»¿";
+            std::string const utf8BOM = "﻿\xEF\xBB\xBF";
             if (document().starts_with(utf8BOM) && document().size() == utf8BOM.size())
             {
                 iErrorText = "empty document";
@@ -1236,16 +1236,19 @@ namespace neolib
         json_detail::state nextState;
         element currentElement = {};
 
-        iCursor.line = 1;
-        iCursor.column = 1;
+        iCursor.line = 1u;
+        iCursor.column = 1u;
             
         auto nextInputCh = &*document().begin();
 
         if constexpr (std::is_same_v<CharT, char> || std::is_same_v<CharT, char8_t>)
         {
-            std::string const utf8BOM = "﻿ï»¿";
+            std::string const utf8BOM = "\xEF\xBB\xBF";
             if (document().starts_with(utf8BOM))
+            {
+                iCursor.column += static_cast<std::uint32_t>(utf8BOM.size());
                 nextInputCh += utf8BOM.size();
+            }
         }
 
         auto nextOutputCh = nextInputCh;
@@ -1256,7 +1259,7 @@ namespace neolib
                 ++iCursor.column;
             else
             {
-                iCursor.column = 1;
+                iCursor.column = 1u;
                 ++iCursor.line;
             }
         };
@@ -1775,7 +1778,7 @@ namespace neolib
                         aOutput << "\\t";
                         break;
                     default:
-                        if (static_cast<uint32_t>(ch) >= 32u)
+                        if (static_cast<std::uint32_t>(ch) >= 32u)
                             aOutput << ch;
                         else
                             aOutput << "\\u" << std::hex << std::setw(4) << std::setfill('0') << (int)ch;
