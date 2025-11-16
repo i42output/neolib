@@ -50,11 +50,11 @@
 
 namespace neolib 
 {
-    template <typename charT, typename Traits = std::char_traits<charT>, typename Alloc = std::allocator<charT> >
+    template <typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT> >
     class basic_quick_string
     {
     public:
-        typedef typename std::basic_string<charT, Traits, Alloc> string_type;
+        typedef typename std::basic_string<CharT, Traits, Alloc> string_type;
         typedef typename string_type::traits_type traits_type;
         typedef typename string_type::allocator_type allocator_type;
         typedef typename string_type::value_type value_type;
@@ -68,7 +68,7 @@ namespace neolib
         typedef typename string_type::const_iterator const_iterator;
         typedef std::reverse_iterator<iterator> reverse_iterator;
         typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-        typedef typename std::basic_string_view<charT, Traits> string_view_type;
+        typedef typename std::basic_string_view<CharT, Traits> string_view_type;
         typedef typename string_view_type::const_reference view_const_reference;
         typedef typename string_view_type::const_pointer view_const_pointer;
         typedef typename string_view_type::const_iterator view_const_iterator;
@@ -101,25 +101,25 @@ namespace neolib
             iContents{ view_contents_type{ string_view_type{ str.cbegin() + pos, (n == npos ? str.size() - pos : n) }, str.get_allocator() } } 
         {
         }
-        basic_quick_string(const charT* s, size_type n, const Alloc& a = Alloc()) : 
+        basic_quick_string(const CharT* s, size_type n, const Alloc& a = Alloc()) : 
             iContents{ view_contents_type{ string_view_type{ s, n }, a } } 
         {
         }
-        basic_quick_string(const charT* s, const Alloc& a = Alloc()) : 
+        basic_quick_string(const CharT* s, const Alloc& a = Alloc()) : 
             iContents{ view_contents_type{ string_view_type{ s }, a } } 
         {
         }
-        basic_quick_string(size_type n, charT c, const Alloc& a = Alloc()) : 
+        basic_quick_string(size_type n, CharT c, const Alloc& a = Alloc()) : 
             iContents{ string_type{ n, c, a } } 
         {
         }
         template <typename SFINAE = void*>
-        basic_quick_string(const charT* begin, const charT* end, const Alloc& a = Alloc(), typename std::enable_if<!std::is_same<view_const_iterator, const charT*>::value, SFINAE>::type=0) :
+        basic_quick_string(const CharT* begin, const CharT* end, const Alloc& a = Alloc(), typename std::enable_if<!std::is_same<view_const_iterator, const CharT*>::value, SFINAE>::type=0) :
             iContents{ view_contents_type{ string_view_type{ begin, static_cast<size_type>(end - begin) }, a } }
         {
         }
-        basic_quick_string(charT* begin, charT* end, const Alloc& a = Alloc()) :
-            iContents{ view_contents_type{ string_view_type{ const_cast<const charT*>(begin), static_cast<size_type>(end - begin) }, a } }
+        basic_quick_string(CharT* begin, CharT* end, const Alloc& a = Alloc()) :
+            iContents{ view_contents_type{ string_view_type{ const_cast<const CharT*>(begin), static_cast<size_type>(end - begin) }, a } }
         {
         }
         template<class InputIterator>
@@ -146,12 +146,12 @@ namespace neolib
             iContents = str.iContents; 
             return *this; 
         }
-        basic_quick_string& operator=(const charT* s) 
+        basic_quick_string& operator=(const CharT* s) 
         { 
             iContents = view_contents_type{ string_view_type{ s }, Alloc{} }; 
             return *this; 
         }
-        basic_quick_string& operator=(charT c) 
+        basic_quick_string& operator=(CharT c) 
         { 
             iContents = string_type{ 1, c }; 
             return *this; 
@@ -173,7 +173,7 @@ namespace neolib
         size_type size() const { return is_view() ? get_view_string().end() - get_view_string().begin() : get_string().size(); }
         size_type length() const { return is_view() ? get_view_string().end() - get_view_string().begin() : get_string().length(); }
         size_type max_size() const { return get_string().max_size(); }
-        void resize(size_type n, charT c) { get_string().resize(n, c); }
+        void resize(size_type n, CharT c) { get_string().resize(n, c); }
         void resize(size_type n) { get_string().resize(n); }
         size_type capacity() const { return get_string().capacity(); }
         void reserve(size_type res_arg = 0) { get_string().reserve(res_arg); }
@@ -217,36 +217,36 @@ namespace neolib
         // modifiers
         basic_quick_string& operator+=(const basic_quick_string& str) { get_string().operator+=(str.to_std_string_view()); return *this; }
         basic_quick_string& operator+=(const string_type& str) { get_string().operator+=(str); return *this; }
-        basic_quick_string& operator+=(const charT* s) { get_string().operator+=(s); return *this; }
-        basic_quick_string& operator+=(charT c) { get_string().operator+=(c); return *this; }
+        basic_quick_string& operator+=(const CharT* s) { get_string().operator+=(s); return *this; }
+        basic_quick_string& operator+=(CharT c) { get_string().operator+=(c); return *this; }
         basic_quick_string& append(const basic_quick_string& str) { get_string().append(str.to_std_string_view()); return *this; }
         basic_quick_string& append(const string_type& str) { get_string().append(str); return *this; }
         basic_quick_string& append(const basic_quick_string& str, size_type pos, size_type n) { get_string().append(str.to_std_string_view(), pos, n); return *this; }
         basic_quick_string& append(const string_type& str, size_type pos, size_type n) { get_string().append(str, pos, n); return *this; }
-        basic_quick_string& append(const charT* s, size_type n) { get_string().append(s, n); return *this; }
-        basic_quick_string& append(const charT* s) { get_string().append(s); return *this; }
-        basic_quick_string& append(size_type n, charT c) { get_string().append(n, c); return *this;  }
+        basic_quick_string& append(const CharT* s, size_type n) { get_string().append(s, n); return *this; }
+        basic_quick_string& append(const CharT* s) { get_string().append(s); return *this; }
+        basic_quick_string& append(size_type n, CharT c) { get_string().append(n, c); return *this;  }
         template<class InputIterator>
         basic_quick_string& append(InputIterator first, InputIterator last) { get_string().append(first, last); return *this; }
-        void push_back(charT c) { get_string().push_back(c); }
+        void push_back(CharT c) { get_string().push_back(c); }
         basic_quick_string& assign(const basic_quick_string& str) { get_string().assign(str.to_std_string_view()); return *this; }
         basic_quick_string& assign(const string_type& str) { get_string().assign(str); return *this; }
         basic_quick_string& assign(const basic_quick_string& str, size_type pos, size_type n) { get_string().assign(str.to_std_string_view(), pos, n); return *this; }
         basic_quick_string& assign(const string_type& str, size_type pos, size_type n) { get_string().assign(str, pos, n); return *this; }
-        basic_quick_string& assign(const charT* s, size_type n) { get_string().assign(s, n); return *this; }
-        basic_quick_string& assign(const charT* s) { get_string().assign(s); return *this; }
-        basic_quick_string& assign(size_type n, charT c) { get_string().assign(n, c); return *this; }
+        basic_quick_string& assign(const CharT* s, size_type n) { get_string().assign(s, n); return *this; }
+        basic_quick_string& assign(const CharT* s) { get_string().assign(s); return *this; }
+        basic_quick_string& assign(size_type n, CharT c) { get_string().assign(n, c); return *this; }
         template<class InputIterator>
         basic_quick_string& assign(InputIterator first, InputIterator last) { get_string().assign(first, last); return *this; }
         basic_quick_string& insert(size_type pos1, const basic_quick_string& str) { get_string().insert(pos1, str.to_std_string_view()); return *this; }
         basic_quick_string& insert(size_type pos1, const string_type& str) { get_string().insert(pos1, str); return *this; }
         basic_quick_string& insert(size_type pos1, const basic_quick_string& str, size_type pos2, size_type n) { get_string().insert(pos1, str.to_std_string_view(), pos2, n); return *this; }
         basic_quick_string& insert(size_type pos1, const string_type& str, size_type pos2, size_type n) { get_string().insert(pos1, str, pos2, n); return *this; }
-        basic_quick_string& insert(size_type pos, const charT* s, size_type n) { get_string().insert(pos, s, n); return *this; }
-        basic_quick_string& insert(size_type pos, const charT* s) { get_string().insert(pos, s); return *this; }
-        basic_quick_string& insert(size_type pos, size_type n, charT c) { get_string().insert(pos, n, c); return *this; }
-        iterator insert(const_iterator p, charT c) { return get_string().insert(p, c); }
-        iterator insert(const_iterator p, size_type n, charT c) { return get_string().insert(p, n, c); }
+        basic_quick_string& insert(size_type pos, const CharT* s, size_type n) { get_string().insert(pos, s, n); return *this; }
+        basic_quick_string& insert(size_type pos, const CharT* s) { get_string().insert(pos, s); return *this; }
+        basic_quick_string& insert(size_type pos, size_type n, CharT c) { get_string().insert(pos, n, c); return *this; }
+        iterator insert(const_iterator p, CharT c) { return get_string().insert(p, c); }
+        iterator insert(const_iterator p, size_type n, CharT c) { return get_string().insert(p, n, c); }
         template<class InputIterator>
         iterator insert(const_iterator p, InputIterator first, InputIterator last) { return get_string().insert(p, first, last); }
         basic_quick_string& erase(size_type pos = 0, size_type n = npos) { get_string().erase(pos, n); return *this; }
@@ -256,17 +256,17 @@ namespace neolib
         basic_quick_string& replace(size_type pos1, size_type n1, const string_type& str) { get_string().replace(pos1, n1, str); return *this; }
         basic_quick_string& replace(size_type pos1, size_type n1, const basic_quick_string& str, size_type pos2, size_type n2) { get_string().replace(pos1, n1, str.to_std_string_view(), pos2, n2); return *this; }
         basic_quick_string& replace(size_type pos1, size_type n1, const string_type& str, size_type pos2, size_type n2) { get_string().replace(pos1, n1, str, pos2, n2); return *this; }
-        basic_quick_string& replace(size_type pos, size_type n1, const charT* s, size_type n2) { get_string().replace(pos, n1, s, n2); return *this; }
-        basic_quick_string& replace(size_type pos, size_type n1, const charT* s) { get_string().replace(pos, n1, s); return *this; }
-        basic_quick_string& replace(size_type pos, size_type n1, size_type n2, charT c) { get_string().replace(pos, n1, n2, c); return *this; }
+        basic_quick_string& replace(size_type pos, size_type n1, const CharT* s, size_type n2) { get_string().replace(pos, n1, s, n2); return *this; }
+        basic_quick_string& replace(size_type pos, size_type n1, const CharT* s) { get_string().replace(pos, n1, s); return *this; }
+        basic_quick_string& replace(size_type pos, size_type n1, size_type n2, CharT c) { get_string().replace(pos, n1, n2, c); return *this; }
         basic_quick_string& replace(iterator i1, iterator i2, const basic_quick_string& str) { get_string().replace(i1, i2, str.to_std_string_view()); return *this; }
         basic_quick_string& replace(iterator i1, iterator i2, const string_type& str) { get_string().replace(i1, i2, str); return *this; }
-        basic_quick_string& replace(iterator i1, iterator i2, const charT* s, size_type n) { get_string().replace(i1, i2, s, n); return *this; }
-        basic_quick_string& replace(iterator i1, iterator i2, const charT* s) { get_string().replace(i1, i2, s); return *this; }
-        basic_quick_string& replace(iterator i1, iterator i2, size_type n, charT c) { get_string().replace(i1, i2, n, c); return *this; }
+        basic_quick_string& replace(iterator i1, iterator i2, const CharT* s, size_type n) { get_string().replace(i1, i2, s, n); return *this; }
+        basic_quick_string& replace(iterator i1, iterator i2, const CharT* s) { get_string().replace(i1, i2, s); return *this; }
+        basic_quick_string& replace(iterator i1, iterator i2, size_type n, CharT c) { get_string().replace(i1, i2, n, c); return *this; }
         template<class InputIterator>
         basic_quick_string& replace(iterator i1, iterator i2, InputIterator j1, InputIterator j2) { get_string().replace(i1, i2, j1, j2); return *this; }
-        size_type copy(charT* s, size_type n, size_type pos = 0) const 
+        size_type copy(CharT* s, size_type n, size_type pos = 0) const 
         {
             if (is_view())
                 return get_view_string().copy(s, n, pos);
@@ -278,11 +278,11 @@ namespace neolib
             std::swap(iContents, str.iContents);
         }
         // string_type operations:
-        const charT* c_str() const // explicit
+        const CharT* c_str() const // explicit
         { 
             return get_string().c_str(); 
         } 
-        const charT* data() const 
+        const CharT* data() const 
         { 
             if (is_view())
                 return get_view_string().data();
@@ -295,6 +295,27 @@ namespace neolib
                 return std::get<view_contents_type>(iContents).second;
             else
                 return get_string().get_allocator(); 
+        }
+        constexpr bool starts_with(std::basic_string_view<CharT, Traits> sv) const noexcept
+        {
+            if (is_view())
+                return get_view_string().starts_with(sv);
+            else
+                return get_string().starts_with(sv);
+        }
+        constexpr bool starts_with(CharT ch) const noexcept
+        {
+            if (is_view())
+                return get_view_string().starts_with(ch);
+            else
+                return get_string().starts_with(ch);
+}
+        constexpr bool starts_with(const CharT* s) const
+        {
+            if (is_view())
+                return get_view_string().starts_with(s);
+            else
+                return get_string().starts_with(s);
         }
         size_type find(const basic_quick_string& str, size_type pos = 0) const
         {
@@ -310,21 +331,21 @@ namespace neolib
             else
                 return get_string().find(str, pos);
         }
-        size_type find(const charT* s, size_type pos, size_type n) const
+        size_type find(const CharT* s, size_type pos, size_type n) const
         { 
             if (is_view())
                 return get_view_string().find(s, pos, n);
             else
                 return get_string().find(s, pos, n);
         }
-        size_type find(const charT* s, size_type pos = 0) const
+        size_type find(const CharT* s, size_type pos = 0) const
         { 
             if (is_view())
                 return get_view_string().find(s, pos);
             else
                 return get_string().find(s, pos);
         }
-        size_type find(charT c, size_type pos = 0) const
+        size_type find(CharT c, size_type pos = 0) const
         { 
             if (is_view())
                 return get_view_string().find(c, pos);
@@ -345,21 +366,21 @@ namespace neolib
             else
                 return get_string().rfind(str, pos);
         }
-        size_type rfind(const charT* s, size_type pos, size_type n) const
+        size_type rfind(const CharT* s, size_type pos, size_type n) const
         { 
             if (is_view())
                 return get_view_string().rfind(s, pos, n);
             else
                 return get_string().rfind(s, pos, n);
         }
-        size_type rfind(const charT* s, size_type pos = npos) const
+        size_type rfind(const CharT* s, size_type pos = npos) const
         { 
             if (is_view())
                 return get_view_string().rfind(s, pos);
             else
                 return get_string().rfind(s, pos);
         }
-        size_type rfind(charT c, size_type pos = npos) const
+        size_type rfind(CharT c, size_type pos = npos) const
         { 
             if (is_view())
                 return get_view_string().rfind(c, pos);
@@ -380,21 +401,21 @@ namespace neolib
             else
                 return get_string().find_first_of(str, pos);
         }
-        size_type find_first_of(const charT* s, size_type pos, size_type n) const
+        size_type find_first_of(const CharT* s, size_type pos, size_type n) const
         { 
             if (is_view())
                 return get_view_string().find_first_of(s, pos, n);
             else
                 return get_string().find_first_of(s, pos, n);
         }
-        size_type find_first_of(const charT* s, size_type pos = 0) const
+        size_type find_first_of(const CharT* s, size_type pos = 0) const
         { 
             if (is_view())
                 return get_view_string().find_first_of(s, pos);
             else
                 return get_string().find_first_of(s, pos);
         }
-        size_type find_first_of(charT c, size_type pos = 0) const
+        size_type find_first_of(CharT c, size_type pos = 0) const
         { 
             if (is_view())
                 return get_view_string().find_first_of(c, pos);
@@ -415,21 +436,21 @@ namespace neolib
             else
                 return get_string().find_last_of(str, pos);
         }
-        size_type find_last_of(const charT* s, size_type pos, size_type n) const
+        size_type find_last_of(const CharT* s, size_type pos, size_type n) const
         {
             if (is_view())
                 return get_view_string().find_last_of(s, pos, n);
             else
                 return get_string().find_last_of(s, pos, n);
         }
-        size_type find_last_of(const charT* s, size_type pos = npos) const
+        size_type find_last_of(const CharT* s, size_type pos = npos) const
         {
             if (is_view())
                 return get_view_string().find_last_of(s, pos);
             else
                 return get_string().find_last_of(s, pos);
         }
-        size_type find_last_of(charT c, size_type pos = npos) const
+        size_type find_last_of(CharT c, size_type pos = npos) const
         {
             if (is_view())
                 return get_view_string().find_last_of(c, pos);
@@ -450,21 +471,21 @@ namespace neolib
             else
                 return get_string().find_first_not_of(str, pos);
         }
-        size_type find_first_not_of(const charT* s, size_type pos, size_type n) const
+        size_type find_first_not_of(const CharT* s, size_type pos, size_type n) const
         { 
             if (is_view())
                 return get_view_string().find_first_not_of(s, pos, n);
             else
                 return get_string().find_first_not_of(s, pos, n);
         }
-        size_type find_first_not_of(const charT* s, size_type pos = 0) const
+        size_type find_first_not_of(const CharT* s, size_type pos = 0) const
         { 
             if (is_view())
                 return get_view_string().find_first_not_of(s, pos);
             else
                 return get_string().find_first_not_of(s, pos);
         }
-        size_type find_first_not_of(charT c, size_type pos = 0) const
+        size_type find_first_not_of(CharT c, size_type pos = 0) const
         { 
             if (is_view())
                 return get_view_string().find_first_not_of(c, pos);
@@ -485,21 +506,21 @@ namespace neolib
             else
                 return get_string().find_last_of(str, pos);
         }
-        size_type find_last_not_of(const charT* s, size_type pos, size_type n) const
+        size_type find_last_not_of(const CharT* s, size_type pos, size_type n) const
         {
             if (is_view())
                 return get_view_string().find_last_of(s, pos, n);
             else
                 return get_string().find_last_of(s, pos, n);
         }
-        size_type find_last_not_of(const charT* s, size_type pos = npos) const
+        size_type find_last_not_of(const CharT* s, size_type pos = npos) const
         {
             if (is_view())
                 return get_view_string().find_last_of(s, pos);
             else
                 return get_string().find_last_of(s, pos);
         }
-        size_type find_last_not_of(charT c, size_type pos = npos) const
+        size_type find_last_not_of(CharT c, size_type pos = npos) const
         {
             if (is_view())
                 return get_view_string().find_last_of(c, pos);
@@ -535,15 +556,15 @@ namespace neolib
         {
             return basic_quick_string(*this, pos1, n1).compare(basic_quick_string(basic_quick_string(str.begin(), str.end()), pos2, n2));
         }
-        int compare(const charT* s) const
+        int compare(const CharT* s) const
         {
             return compare(basic_quick_string(s));
         }
-        int compare(size_type pos1, size_type n1, const charT* s) const
+        int compare(size_type pos1, size_type n1, const CharT* s) const
         {
             return basic_quick_string(*this, pos1, n1).compare(basic_quick_string(s));
         }
-        int compare(size_type pos1, size_type n1, const charT* s, size_type n2) const
+        int compare(size_type pos1, size_type n1, const CharT* s, size_type n2) const
         {
             return basic_quick_string(*this, pos1, n1).compare(basic_quick_string(s, n2));
         }
@@ -614,93 +635,93 @@ namespace neolib
         mutable contents_type iContents;
     };
 
-    template <typename charT, typename Traits, typename Alloc>
-    const typename basic_quick_string<charT, Traits, Alloc>::size_type basic_quick_string<charT, Traits, Alloc>::npos = basic_quick_string<charT, Traits, Alloc>::string_type::npos;
+    template <typename CharT, typename Traits, typename Alloc>
+    const typename basic_quick_string<CharT, Traits, Alloc>::size_type basic_quick_string<CharT, Traits, Alloc>::npos = basic_quick_string<CharT, Traits, Alloc>::string_type::npos;
 
-    template<class charT,
+    template<class CharT,
         class Traits,
         class Alloc> inline
-        basic_quick_string<charT, Traits, Alloc> operator+(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
+        basic_quick_string<CharT, Traits, Alloc> operator+(
+            const basic_quick_string<CharT, Traits, Alloc>& _Left,
+            const basic_quick_string<CharT, Traits, Alloc>& _Right)
         {    // return basic_quick_string + basic_quick_string
-        return (basic_quick_string<charT, Traits, Alloc>(_Left) += _Right);
+        return (basic_quick_string<CharT, Traits, Alloc>(_Left) += _Right);
         }
 
-    template<class charT,
+    template<class CharT,
         class Traits,
         class Alloc> inline
-        std::basic_string<charT, Traits, Alloc> operator+(
-            const std::basic_string<charT, Traits, Alloc>& _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
+        std::basic_string<CharT, Traits, Alloc> operator+(
+            const std::basic_string<CharT, Traits, Alloc>& _Left,
+            const basic_quick_string<CharT, Traits, Alloc>& _Right)
         {    // return NTCS + basic_quick_string
-        return _Left + static_cast<std::basic_string<charT, Traits, Alloc>>(_Right);
+        return _Left + static_cast<std::basic_string<CharT, Traits, Alloc>>(_Right);
         }
 
-    template<class charT,
+    template<class CharT,
         class Traits,
         class Alloc> inline
-        std::basic_string<charT, Traits, Alloc> operator+(
-            const charT *_Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
+        std::basic_string<CharT, Traits, Alloc> operator+(
+            const CharT *_Left,
+            const basic_quick_string<CharT, Traits, Alloc>& _Right)
         {    // return NTCS + basic_quick_string
-        return _Left + static_cast<std::basic_string<charT, Traits, Alloc>>(_Right);
+        return _Left + static_cast<std::basic_string<CharT, Traits, Alloc>>(_Right);
         }
 
-    template<class charT,
+    template<class CharT,
         class Traits,
         class Alloc> inline
-        std::basic_string<charT, Traits, Alloc> operator+(
-            const charT _Left,
-            const basic_quick_string<charT, Traits, Alloc>& _Right)
+        std::basic_string<CharT, Traits, Alloc> operator+(
+            const CharT _Left,
+            const basic_quick_string<CharT, Traits, Alloc>& _Right)
         {    // return character + basic_quick_string
-        return _Left + static_cast<std::basic_string<charT, Traits, Alloc>>(_Right);
+        return _Left + static_cast<std::basic_string<CharT, Traits, Alloc>>(_Right);
         }
 
-    template<class charT,
+    template<class CharT,
         class Traits,
         class Alloc> inline
-        std::basic_string<charT, Traits, Alloc> operator+(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const std::basic_string<charT, Traits, Alloc>& _Right)
+        std::basic_string<CharT, Traits, Alloc> operator+(
+            const basic_quick_string<CharT, Traits, Alloc>& _Left,
+            const std::basic_string<CharT, Traits, Alloc>& _Right)
         {    // return basic_quick_string + NTCS
-        return static_cast<std::basic_string<charT, Traits, Alloc>>(_Left) + _Right;
+        return static_cast<std::basic_string<CharT, Traits, Alloc>>(_Left) + _Right;
         }
 
-    template<class charT,
+    template<class CharT,
         class Traits,
         class Alloc> inline
-        std::basic_string<charT, Traits, Alloc> operator+(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const charT *_Right)
+        std::basic_string<CharT, Traits, Alloc> operator+(
+            const basic_quick_string<CharT, Traits, Alloc>& _Left,
+            const CharT *_Right)
         {    // return basic_quick_string + NTCS
-        return static_cast<std::basic_string<charT, Traits, Alloc>>(_Left) + _Right;
+        return static_cast<std::basic_string<CharT, Traits, Alloc>>(_Left) + _Right;
         }
 
-    template<class charT,
+    template<class CharT,
         class Traits,
         class Alloc> inline
-        std::basic_string<charT, Traits, Alloc> operator+(
-            const basic_quick_string<charT, Traits, Alloc>& _Left,
-            const charT _Right)
+        std::basic_string<CharT, Traits, Alloc> operator+(
+            const basic_quick_string<CharT, Traits, Alloc>& _Left,
+            const CharT _Right)
         {    // return basic_quick_string + character
-        return static_cast<std::basic_string<charT, Traits, Alloc>>(_Left) + _Right;
+        return static_cast<std::basic_string<CharT, Traits, Alloc>>(_Left) + _Right;
         }
 
-    template <typename charT>
+    template <typename CharT>
     class basic_character_map
     {
     public:
-        basic_character_map(const std::basic_string<charT>& Characters) : 
+        basic_character_map(const std::basic_string<CharT>& Characters) : 
             iMap()
         {
-            for (typename std::basic_string<charT>::const_iterator i = Characters.begin(); i != Characters.end(); ++i)
-                iMap[static_cast<typename std::make_unsigned<charT>::type>(*i)] = true;
+            for (typename std::basic_string<CharT>::const_iterator i = Characters.begin(); i != Characters.end(); ++i)
+                iMap[static_cast<typename std::make_unsigned<CharT>::type>(*i)] = true;
         }
     public:
-        bool find(charT Character) const
+        bool find(CharT Character) const
         {
-            return iMap[static_cast<typename std::make_unsigned<charT>::type>(Character)];
+            return iMap[static_cast<typename std::make_unsigned<CharT>::type>(Character)];
         }
     private:
         std::array<bool, 256> iMap;
@@ -733,8 +754,8 @@ namespace neolib
 
     typedef basic_quick_string<char> quick_string;             
 
-    template <typename charT, typename Traits, typename Alloc>
-    inline std::size_t hash_value(const neolib::basic_quick_string<charT, Traits, Alloc>& sv) 
+    template <typename CharT, typename Traits, typename Alloc>
+    inline std::size_t hash_value(const neolib::basic_quick_string<CharT, Traits, Alloc>& sv) 
     {
         return neolib::fast_hash(&*sv.to_std_string_view().cbegin(), sv.size());
     }

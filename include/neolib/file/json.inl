@@ -1203,6 +1203,16 @@ namespace neolib
             return false;
         }
 
+        if constexpr (std::is_same_v<CharT, char> || std::is_same_v<CharT, char8_t>)
+        {
+            std::string const utf8BOM = "﻿ï»¿";
+            if (document().starts_with(utf8BOM) && document().size() == utf8BOM.size())
+            {
+                iErrorText = "empty document";
+                return false;
+            }
+        }
+
         if (json_detail::next_state<syntax>(json_detail::state::Value, document().back()) != json_detail::state::Ignore)
             document().push_back(character_type{ '\n' });
         document().push_back(character_type{ '\0' });
@@ -1230,6 +1240,14 @@ namespace neolib
         iCursor.column = 1;
             
         auto nextInputCh = &*document().begin();
+
+        if constexpr (std::is_same_v<CharT, char> || std::is_same_v<CharT, char8_t>)
+        {
+            std::string const utf8BOM = "﻿ï»¿";
+            if (document().starts_with(utf8BOM))
+                nextInputCh += utf8BOM.size();
+        }
+
         auto nextOutputCh = nextInputCh;
 
         auto increment_cursor = [&nextInputCh, this]()
