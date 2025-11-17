@@ -38,9 +38,32 @@
 #include <neolib/neolib.hpp>
 #include <atomic>
 #include <neolib/core/i_lifetime.hpp>
+#include <neolib/core/reference_counted.hpp>
 
 namespace neolib
 {
+    class lifetime_control_block : public reference_counted<i_lifetime_control_block>
+    {
+    public:
+        using abstract_type = i_lifetime_control_block;
+    public:
+        lifetime_control_block(lifetime_state aState) :
+            iState{ aState }
+        {
+        }
+    public:
+        lifetime_state state() const
+        {
+            return iState.load();
+        }
+        void set_state(lifetime_state aState)
+        {
+            iState.store(aState);
+        };
+    private:
+        std::atomic<lifetime_state> iState;
+    };
+
     template <lifetime_state RequiredState>
     class lifetime_flag : public i_lifetime_flag
     {
@@ -68,7 +91,7 @@ namespace neolib
         bool debug() const override;
         void set_debug(bool aDebug = true) override;
     private:
-        std::shared_ptr<std::atomic<lifetime_state>> iState;
+        ref_ptr<i_lifetime_control_block> iState;
         bool iDebug;
     };
 
@@ -90,7 +113,7 @@ namespace neolib
         virtual ~lifetime();
     public:
         lifetime_state object_state() const final;
-        std::shared_ptr<std::atomic<lifetime_state>> object_state_ptr() const final;
+        i_ref_ptr<i_lifetime_control_block>& object_state_ptr() const final;
         bool is_creating() const final;
         bool is_alive() const final;
         bool is_destroying() const final;
@@ -99,11 +122,11 @@ namespace neolib
         void set_destroying() override;
         void set_destroyed() override;
     private:
-        std::shared_ptr<std::atomic<lifetime_state>> iState;
+        mutable ref_ptr<i_lifetime_control_block> iState;
     };
 
     template <typename Base>
-    inline lifetime<Base>::lifetime(lifetime_state aState) : iState{ std::make_shared<std::atomic<lifetime_state>>(aState) }
+    inline lifetime<Base>::lifetime(lifetime_state aState) : iState{ make_ref<lifetime_control_block>(aState) }
     {
     }
 
@@ -124,7 +147,7 @@ namespace neolib
     }
 
     template <typename Base>
-    inline std::shared_ptr<std::atomic<lifetime_state>> lifetime<Base>::object_state_ptr() const
+    i_ref_ptr<i_lifetime_control_block>& lifetime<Base>::object_state_ptr() const
     {
         return iState;
     }

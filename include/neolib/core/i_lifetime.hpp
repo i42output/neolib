@@ -39,6 +39,7 @@
 #include <memory>
 #include <atomic>
 #include <neolib/neolib.hpp>
+#include <neolib/core/i_reference_counted.hpp>
 
 namespace neolib
 {
@@ -65,6 +66,18 @@ namespace neolib
         Destroyed
     };
 
+    class i_lifetime_control_block : public i_reference_counted
+    {
+    public:
+        using abstract_type = i_lifetime_control_block;
+    public:
+        virtual lifetime_state state() const = 0;
+        virtual void set_state(lifetime_state aState) = 0;
+    public:
+        operator lifetime_state() const { return state(); }
+        i_lifetime_control_block& operator=(lifetime_state aState) { set_state(aState); return *this; }
+    };
+
     class i_lifetime
     {
     public:
@@ -74,7 +87,7 @@ namespace neolib
         virtual ~i_lifetime() = default;
     public:
         virtual lifetime_state object_state() const = 0;
-        virtual std::shared_ptr<std::atomic<lifetime_state>> object_state_ptr() const = 0; // todo: not polymorphic; use ref_ptr?
+        virtual i_ref_ptr<i_lifetime_control_block>& object_state_ptr() const = 0;
         virtual bool is_creating() const = 0;
         virtual bool is_alive() const = 0;
         virtual bool is_destroying() const = 0;
