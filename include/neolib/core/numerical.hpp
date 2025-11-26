@@ -593,7 +593,7 @@ namespace neolib
         using vec4i32 = vector4i32;
 
         using u32 = std::uint32_t;
-        using u64 = std::uint32_t;
+        using u64 = std::uint64_t;
 
         using vector1u32 = basic_vector<u32, 1>;
         using vector2u32 = basic_vector<u32, 2>;
