@@ -1,6 +1,6 @@
 // numerical.hpp
 /*
- *  Copyright (c) 2015, 2020, 2024 Leigh Johnston.
+ *  Copyright (c) 2015, 2020, 2025 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -46,11 +46,16 @@
 #include <ostream>
 #include <istream>
 #include <boost/math/constants/constants.hpp>
+#include <boost/unordered/unordered_flat_set.hpp>
 #include <neolib/core/small_vector.hpp>
 #include <neolib/core/swizzle.hpp>
 #include <neolib/core/simd.hpp>
 #include <neolib/core/optional.hpp>
 #include <neolib/core/string_utils.hpp>
+
+#if !defined(DISABLE_IDENTITY_MATRIX_OPTIMISATIONS)
+    #define IDENTITY_MATRIX_OPTIMISATIONS
+#endif
 
 namespace neolib
 { 
@@ -927,18 +932,28 @@ namespace neolib
         public:
             basic_matrix() : m{ {} } {}
             basic_matrix(std::initializer_list<std::initializer_list<value_type>> aColumns) { std::copy(aColumns.begin(), aColumns.end(), m.begin()); }
-            basic_matrix(const basic_matrix& other) : m{ other.m }, isIdentity{ other.isIdentity } {}
-            basic_matrix(basic_matrix&& other) : m{ std::move(other.m) }, isIdentity{ other.isIdentity } {}
+            basic_matrix(const basic_matrix& other) : m{ other.m } {}
+            basic_matrix(basic_matrix&& other) : m{ std::move(other.m) } {}
             template <typename T2>
             basic_matrix(const basic_matrix<T2, Rows, Columns>& other)
             {
                 for (std::uint32_t column = 0; column < Columns; ++column)
                     for (std::uint32_t row = 0; row < Rows; ++row)
                         (*this)[column][row] = static_cast<value_type>(other[column][row]);
-                isIdentity = other.maybe_identity();
             }
-            basic_matrix& operator=(const basic_matrix& other) { m = other.m; isIdentity = other.isIdentity; return *this; }
-            basic_matrix& operator=(basic_matrix&& other) { m = std::move(other.m); isIdentity = other.isIdentity; return *this; }
+            ~basic_matrix()
+            {
+            }
+            basic_matrix& operator=(const basic_matrix& other) 
+            { 
+                m = other.m; 
+                return *this; 
+            }
+            basic_matrix& operator=(basic_matrix&& other) 
+            { 
+                m = std::move(other.m); 
+                return *this;
+            }
         public:
             template <typename T2>
             basic_matrix<T2, Rows, Columns> as() const
@@ -948,7 +963,7 @@ namespace neolib
         public:
             std::pair<std::uint32_t, std::uint32_t> size() const { return std::make_pair(Rows, Columns); }
             const column_type& operator[](std::uint32_t aColumn) const { return m[aColumn]; }
-            column_type& operator[](std::uint32_t aColumn) { isIdentity = std::nullopt; return m[aColumn]; }
+            column_type& operator[](std::uint32_t aColumn) { return m[aColumn]; }
             const value_type* data() const { return &m[0].v[0]; }
         public:
             bool operator==(const basic_matrix& right) const { return m == right.m; }
@@ -1000,7 +1015,6 @@ namespace neolib
                     basic_matrix result;
                     for (std::uint32_t diag = 0; diag < Rows; ++diag)
                         result[diag][diag] = static_cast<value_type>(1.0);
-                    result.isIdentity = true;
                     return result;
                 };
                 static basic_matrix const sIdentity = make_identity();
@@ -1008,25 +1022,16 @@ namespace neolib
             }
             bool is_identity() const
             {
-                if (isIdentity)
-                    return *isIdentity;
-                else
-                    return *(isIdentity = ((*this) == identity()));
-            }
-            const std::optional<bool>& maybe_identity() const
-            {
-                return isIdentity;
+                return std::memcmp(&m, &identity().m, sizeof(m)) == 0;
             }
         public:
             friend void swap(basic_matrix& a, basic_matrix& b)
             {
                 using std::swap;
                 swap(a.m, b.m);
-                swap(a.isIdentity, b.isIdentity);
             }
         private:
             array_type m;
-            mutable std::optional<bool> isIdentity;
         };
 
         using matrix11 = basic_matrix<double, 1, 1>;
@@ -1273,10 +1278,12 @@ namespace neolib
         template <typename T, std::uint32_t D1, std::uint32_t D2>
         inline basic_matrix<T, D1, D1> operator*(const basic_matrix<T, D1, D2>& left, const basic_matrix<T, D2, D1>& right)
         {
+            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
             if (right.is_identity())
                 return left;
+            #endif
             basic_matrix<T, D1, D1> result;
             for (std::uint32_t column = 0u; column < D1; ++column)
                 for (std::uint32_t row = 0u; row < D1; ++row)
@@ -1288,10 +1295,12 @@ namespace neolib
         template <typename T>
         inline basic_matrix<T, 4u, 4u> operator*(const basic_matrix<T, 4u, 4u>& left, const basic_matrix<T, 4u, 4u>& right)
         {
+            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
             if (right.is_identity())
                 return left;
+            #endif
             basic_matrix<T, 4u, 4u> result;
             for (std::uint32_t column = 0u; column < 4u; ++column)
                 for (std::uint32_t row = 0u; row < 4u; ++row)
@@ -1302,8 +1311,10 @@ namespace neolib
         template <typename T, std::uint32_t D>
         inline basic_vector<T, D, column_vector> operator*(const basic_matrix<T, D, D>& left, const basic_vector<T, D, column_vector>& right)
         {
+            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
+            #endif
             basic_vector<T, D, column_vector> result;
             for (std::uint32_t row = 0; row < D; ++row)
                 for (std::uint32_t index = 0; index < D; ++index)
@@ -1314,8 +1325,10 @@ namespace neolib
         template <typename T, std::uint32_t D, std::size_t VertexCount>
         inline std::array<basic_vector<T, D, column_vector>, VertexCount> operator*(const basic_matrix<T, D, D>& left, const std::array<basic_vector<T, D, column_vector>, VertexCount>& right)
         {
+            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
+            #endif
             std::array<basic_vector<T, D, column_vector>, VertexCount> result;
             for (std::size_t vector = 0; vector < VertexCount; ++vector)
                 result[vector] = left * right[vector];
@@ -1325,8 +1338,10 @@ namespace neolib
         template <typename T>
         inline basic_vector<T, 4u, column_vector> operator*(const basic_matrix<T, 4u, 4u>& left, const basic_vector<T, 4u, column_vector>& right)
         {
+            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
+            #endif
             basic_vector<T, 4u, column_vector> result;
             for (std::uint32_t row = 0u; row < 4u; ++row)
                 result[row] = simd_fma_4d(left[0][row], right[0], left[1][row], right[1], left[2][row], right[2], left[3][row], right[3]);
@@ -1336,8 +1351,10 @@ namespace neolib
         template <typename T, std::size_t VertexCount>
         inline std::array<basic_vector<T, 4u, column_vector>, VertexCount> operator*(const basic_matrix<T, 4u, 4u>& left, const std::array<basic_vector<T, 4u, column_vector>, VertexCount>& right)
         {
+            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
+            #endif
             std::array<basic_vector<T, 4u, column_vector>, VertexCount> result;
             for (std::size_t vector = 0; vector < VertexCount; ++vector)
                 result[vector] = left * right[vector];
@@ -1347,8 +1364,10 @@ namespace neolib
         template <typename T, std::uint32_t D>
         inline basic_vector<T, D, row_vector> operator*(const basic_vector<T, D, row_vector>& left, const basic_matrix<T, D, D>& right)
         {
+            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (right.is_identity())
                 return left;
+            #endif
             basic_vector<T, D, row_vector> result;
             for (std::uint32_t column = 0; column < D; ++column)
                 for (std::uint32_t index = 0; index < D; ++index)
@@ -1359,8 +1378,10 @@ namespace neolib
         template <typename T, std::uint32_t D, std::size_t VertexCount>
         inline std::array<basic_vector<T, D, row_vector>, VertexCount> operator*(const std::array<basic_vector<T, D, row_vector>, VertexCount>& left, const basic_matrix<T, D, D>& right)
         {
+            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (right.is_identity())
                 return left;
+            #endif
             std::array<basic_vector<T, D, row_vector>, VertexCount> result;
             for (std::size_t vector = 0; vector < VertexCount; ++vector)
                 result[vector] = left[vector] * right;
@@ -1370,8 +1391,10 @@ namespace neolib
         template <typename T>
         inline basic_vector<T, 4u, row_vector> operator*(const basic_vector<T, 4u, row_vector>& left, const basic_matrix<T, 4u, 4u>& right)
         {
+            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (right.is_identity())
                 return left;
+            #endif
             basic_vector<T, 4u, row_vector> result;
             for (std::uint32_t column = 0u; column < 4u; ++column)
                 result[column] = simd_fma_4d(left[0], right[column][0], left[1], right[column][1], left[2], right[column][2], left[3], right[column][3]);
@@ -1379,10 +1402,12 @@ namespace neolib
         }
 
         template <typename T, std::size_t VertexCount>
-        inline basic_vector<T, 4u, row_vector> operator*(const std::array<basic_vector<T, 4u, row_vector>, VertexCount>& left, const basic_matrix<T, 4u, 4u>& right)
+        inline std::array<basic_vector<T, 4u, row_vector>, VertexCount> operator*(const std::array<basic_vector<T, 4u, row_vector>, VertexCount>& left, const basic_matrix<T, 4u, 4u>& right)
         {
+            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (right.is_identity())
                 return left;
+            #endif
             std::array<basic_vector<T, 4u, row_vector>, VertexCount> result;
             for (std::size_t vector = 0; vector < VertexCount; ++vector)
                 result[vector] = left[vector] * right;
@@ -1489,8 +1514,10 @@ namespace neolib
         template <typename T>
         inline basic_vector<T, 3u, column_vector> operator*(const basic_matrix<T, 4u, 4u>& left, const basic_vector<T, 3u, column_vector>& right)
         {
+            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
+            #endif
             basic_vector<T, 3u, column_vector> result;
             for (std::uint32_t row = 0u; row < 3u; ++row)
                 result[row] = static_cast<T>(simd_fma_4d(left[0][row], right[0], left[1][row], right[1], left[2][row], right[2], left[3][row], static_cast<T>(1.0)));
@@ -1500,8 +1527,10 @@ namespace neolib
         template <typename T>
         inline std::vector<basic_vector<T, 3u, column_vector>> operator*(const basic_matrix<T, 4u, 4u>& left, const std::vector<basic_vector<T, 3u, column_vector>>& right)
         {
+            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
+            #endif
             std::vector<basic_vector<T, 3u, column_vector>> result;
             result.reserve(right.size());
             for (auto const& v : right)
@@ -1512,8 +1541,10 @@ namespace neolib
         template <typename T, std::size_t Capacity, std::size_t MaxCapacity, typename Alloc>
         inline small_vector<basic_vector<T, 3u, column_vector>, Capacity, MaxCapacity, Alloc> operator*(const basic_matrix<T, 4u, 4u>& left, const small_vector<basic_vector<T, 3u, column_vector>, Capacity, MaxCapacity, Alloc>& right)
         {
+            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
+            #endif
             small_vector<basic_vector<T, 3u, column_vector>, Capacity, MaxCapacity, Alloc> result;
             result.reserve(right.size());
             for (auto const& v : right)
@@ -1712,7 +1743,7 @@ namespace neolib
         template <typename Vertex>
         inline Vertex aabb_origin(const basic_aabb<Vertex>& aAabb)
         {
-            return aAabb.min + (aAabb.max - aAabb.min) / static_cast<Vertex::value_type>(2.0);
+            return aAabb.min + (aAabb.max - aAabb.min) / static_cast<typename Vertex::value_type>(2.0);
         }
 
         template <typename Vertex>
@@ -1897,7 +1928,7 @@ namespace neolib
         template <typename Vertex>
         inline Vertex aabb_origin(const basic_aabb_2d<Vertex>& aAabb)
         {
-            return aAabb.min + (aAabb.max - aAabb.min) / static_cast<Vertex::value_type>(2.0);
+            return aAabb.min + (aAabb.max - aAabb.min) / static_cast<typename Vertex::value_type>(2.0);
         }
 
         template <typename Vertex>
