@@ -37,6 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <atomic>
+#include <functional>
 #include <neolib/core/optional.hpp>
 
 namespace neolib
@@ -44,11 +45,11 @@ namespace neolib
     class scoped_flag
     {
     public:
-        scoped_flag(bool& aFlag, bool aValue = true) : iFlag{ aFlag }, iSaved{ aFlag }, iIgnore{ false } { iFlag = aValue; }
-        ~scoped_flag() { if (!iIgnore) iFlag = iSaved; }
+        scoped_flag(bool& aFlag, bool aValue = true) noexcept : iFlag{ aFlag }, iSaved{ aFlag }, iIgnore{ false } { iFlag = aValue; }
+        ~scoped_flag() noexcept { if (!iIgnore) iFlag = iSaved; }
     public:
-        bool saved() const { return iSaved; }
-        void ignore() { iIgnore = true; }
+        bool saved() const noexcept { return iSaved; }
+        void ignore() noexcept { iIgnore = true; }
     private:
         bool& iFlag;
         bool iSaved;
@@ -58,11 +59,11 @@ namespace neolib
     class scoped_atomic_flag
     {
     public:
-        scoped_atomic_flag(std::atomic<bool>& aFlag, bool aValue = true) : iFlag{ aFlag }, iSaved{ aFlag }, iIgnore{ false } { iFlag = aValue; }
-        ~scoped_atomic_flag() { if (!iIgnore) iFlag = iSaved; }
+        scoped_atomic_flag(std::atomic<bool>& aFlag, bool aValue = true) noexcept : iFlag{ aFlag }, iSaved{ aFlag }, iIgnore{ false } { iFlag = aValue; }
+        ~scoped_atomic_flag() noexcept { if (!iIgnore) iFlag = iSaved; }
     public:
-        bool saved() const { return iSaved; }
-        void ignore() { iIgnore = true; }
+        bool saved() const noexcept { return iSaved; }
+        void ignore() noexcept { iIgnore = true; }
     private:
         std::atomic<bool>& iFlag;
         bool iSaved;
@@ -73,10 +74,10 @@ namespace neolib
     class scoped_counter
     {
     public:
-        scoped_counter(T& aCounter) : iCounter{ aCounter }, iIgnore{ false } { ++iCounter; }
-        ~scoped_counter() { if (!iIgnore) --iCounter; }
+        scoped_counter(T& aCounter) noexcept : iCounter{ aCounter }, iIgnore{ false } { ++iCounter; }
+        ~scoped_counter() noexcept { if (!iIgnore) --iCounter; }
     public:
-        void ignore() { iIgnore = true; }
+        void ignore() noexcept { iIgnore = true; }
     private:
         T& iCounter;
         bool iIgnore;
@@ -86,11 +87,11 @@ namespace neolib
     class scoped_pointer
     {
     public:
-        scoped_pointer(T*& aPointer, T* aValue) : iPointer{ aPointer }, iSaved{ aPointer }, iIgnore{ false } { iPointer = aValue; }
-        ~scoped_pointer() { if (!iIgnore) iPointer = iSaved; }
+        scoped_pointer(T*& aPointer, T* aValue) noexcept : iPointer{ aPointer }, iSaved{ aPointer }, iIgnore{ false } { iPointer = aValue; }
+        ~scoped_pointer() noexcept { if (!iIgnore) iPointer = iSaved; }
     public:
-        T const& saved() const { return iSaved; }
-        void ignore() { iIgnore = true; }
+        T const& saved() const noexcept { return iSaved; }
+        void ignore() noexcept { iIgnore = true; }
     private:
         T*& iPointer;
         T* iSaved;
@@ -101,12 +102,25 @@ namespace neolib
     class scoped_deleter
     {
     public:
-        scoped_deleter(T*& aPointer) : iPointer{ aPointer }, iIgnore{ false } {}
-        ~scoped_deleter() { if (!iIgnore) { delete iPointer; iPointer = nullptr; } }
+        scoped_deleter(T*& aPointer) noexcept : iPointer{ aPointer }, iIgnore{ false } {}
+        ~scoped_deleter() noexcept { if (!iIgnore) { delete iPointer; iPointer = nullptr; } }
     public:
-        void ignore() { iIgnore = true; }
+        void ignore() noexcept { iIgnore = true; }
     private:
         T*& iPointer;
+        bool iIgnore;
+    };
+
+    template <typename T>
+    class scoped_cleanup
+    {
+    public:
+        scoped_cleanup(T aCleanupFunction) noexcept : iCleanupFunction{ aCleanupFunction }, iIgnore{ false } {}
+        ~scoped_cleanup() noexcept { if (!iIgnore) { iCleanupFunction(); } }
+    public:
+        void ignore() noexcept { iIgnore = true; }
+    private:
+        T iCleanupFunction;
         bool iIgnore;
     };
 
@@ -114,11 +128,11 @@ namespace neolib
     class scoped_object
     {
     public:
-        scoped_object(T& aObject, T aValue = {}) : iObject{ aObject }, iSaved{ aObject }, iIgnore{ false } { iObject = aValue; }
-        ~scoped_object() { if (!iIgnore) iObject = iSaved; }
+        scoped_object(T& aObject, T aValue = {}) noexcept : iObject{ aObject }, iSaved{ aObject }, iIgnore{ false } { iObject = aValue; }
+        ~scoped_object() noexcept { if (!iIgnore) iObject = iSaved; }
     public:
-        T const& saved() const { return iSaved; }
-        void ignore() { iIgnore = true; }
+        T const& saved() const noexcept { return iSaved; }
+        void ignore() noexcept { iIgnore = true; }
     private:
         T& iObject;
         T iSaved;
@@ -129,10 +143,10 @@ namespace neolib
     class scoped_optional
     {
     public:
-        scoped_optional(i_optional<abstract_t<T>>& aOptional, T aValue) : iOptional{ aOptional }, iSaved{ aOptional }, iIgnore{ false } { iOptional = aValue; }
-        ~scoped_optional() { if (!iIgnore) iOptional = iSaved; }
+        scoped_optional(i_optional<abstract_t<T>>& aOptional, T aValue) noexcept : iOptional{ aOptional }, iSaved{ aOptional }, iIgnore{ false } { iOptional = aValue; }
+        ~scoped_optional() noexcept { if (!iIgnore) iOptional = iSaved; }
     public:
-        void ignore() { iIgnore = true; }
+        void ignore() noexcept { iIgnore = true; }
     private:
         i_optional<abstract_t<T>>& iOptional;
         optional<T> iSaved;
@@ -143,10 +157,10 @@ namespace neolib
     class scoped_optional_if
     {
     public:
-        scoped_optional_if(i_optional<abstract_t<T>>& aOptional, T aValue) : iOptional{ aOptional }, iSaved{ aOptional }, iIgnore{ false } { if (iOptional == std::nullopt) iOptional = aValue; }
-        ~scoped_optional_if() { if (!iIgnore) iOptional = iSaved; }
+        scoped_optional_if(i_optional<abstract_t<T>>& aOptional, T aValue) noexcept : iOptional{ aOptional }, iSaved{ aOptional }, iIgnore{ false } { if (iOptional == std::nullopt) iOptional = aValue; }
+        ~scoped_optional_if() noexcept { if (!iIgnore) iOptional = iSaved; }
     public:
-        void ignore() { iIgnore = true; }
+        void ignore() noexcept { iIgnore = true; }
     private:
         i_optional<abstract_t<T>>& iOptional;
         optional<T> iSaved;
