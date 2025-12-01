@@ -48,7 +48,8 @@ namespace neolib
     class application : public reference_counted<Base>
     {
     public:
-        application(const i_application_info& aApplicationInfo, i_service_provider& aServiceProvider = allocate_service_provider()) :
+        application(const i_application_info& aApplicationInfo, 
+            i_service_provider& aServiceProvider = (service_provider_allocated() ? get_service_provider() : allocate_service_provider())) :
             iServiceProvider{ aServiceProvider },
             iApplicationInfo{ get_application_info(aApplicationInfo) },
             iPluginManager{ *this }

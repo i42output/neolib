@@ -46,6 +46,11 @@ namespace neolib::services
         mutable std::recursive_mutex mutex;
         std::unordered_map<uuid, i_service*> services;
 
+        bool try_lock() final
+        {
+            return mutex.try_lock();
+        }
+
         void lock() final
         {
             mutex.lock();
@@ -88,6 +93,14 @@ namespace neolib::services
             }
             throw service_not_found();
         }
+
+        void migrate_to(i_service_provider& aOtherProvider) final
+        {
+            std::scoped_lock lock{ mutex, aOtherProvider };
+            for (auto& service : services)
+                aOtherProvider.register_service(*service.second, service.first);
+            services.clear();
+        }
     };
 
     struct service_provider_instance
@@ -100,6 +113,13 @@ namespace neolib::services
     {
         static service_provider_instance sInstance;
         return sInstance;
+    }
+
+    bool service_provider_allocated()
+    {
+        auto& instance = get_service_provider_instance();
+        std::unique_lock lock{ instance.mutex };
+        return instance.instance != nullptr;
     }
 
     i_service_provider& allocate_service_provider()
@@ -125,8 +145,9 @@ namespace neolib::services
     {
         auto& instance = get_service_provider_instance();
         std::unique_lock lock{ instance.mutex };
-        if (instance.instance != nullptr)
-            throw service_provider_instance_exists();
+        auto previous = instance.instance;
         instance.instance = std::shared_ptr<i_service_provider>{ std::shared_ptr<i_service_provider>{}, &aServiceProvider };
+        if (previous != nullptr)
+            previous->migrate_to(aServiceProvider);
     }
 }

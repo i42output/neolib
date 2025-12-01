@@ -43,24 +43,41 @@
 
 namespace neolib
 {
-    inline switchable_mutex& event_mutex()
+    enum class event_system_locking_strategy
     {
-        static switchable_mutex sMutex;
-        return sMutex;
-    }
+        SingleThreaded,
+        MultiThreaded,
+        MultiThreadedSpinlock
+    };
 
-    namespace event_system
+    class i_event_system : public i_service
     {
-        inline void set_single_threaded()
-        {
-            event_mutex().set_single_threaded();
-        }
+    public:
+        virtual event_system_locking_strategy locking_strategy() const noexcept = 0;
+        virtual void set_locking_strategy(event_system_locking_strategy aStrategy) noexcept = 0;
+    public:
+        static uuid const& iid() { static uuid const sIid{ 0x9f84fbad, 0xc980, 0x4d71, 0xb4b0, { 0x89, 0xb5, 0x7b, 0x94, 0xdb, 0xfe } }; return sIid; }
+    };
 
-        inline void set_multi_threaded()
+    class event_mutex : public switchable_mutex
+    {
+    public:
+        event_mutex()
         {
-            event_mutex().set_multi_threaded_spinlock();
+            switch (service<i_event_system>().locking_strategy())
+            {
+            case event_system_locking_strategy::SingleThreaded:
+                set_single_threaded();
+                break;
+            case event_system_locking_strategy::MultiThreaded:
+                set_multi_threaded();
+                break;
+            case event_system_locking_strategy::MultiThreadedSpinlock:
+                set_multi_threaded_spinlock();
+                break;
+            }
         }
-    }
+    };
 
     class i_async_task;
 
@@ -259,6 +276,11 @@ namespace neolib
         sink()
         {
         }
+        sink(sink const& aOther)
+        {
+            std::scoped_lock lock{ iMutex, aOther.iMutex };
+            iSlots = aOther.iSlots;
+        }
         template <typename... Args>
         sink(slot_proxy<Args...>&& aSlot)
         {
@@ -269,6 +291,14 @@ namespace neolib
             clear();
         }
     public:
+        sink& operator=(sink const& aOther)
+        {
+            std::scoped_lock lock{ iMutex, aOther.iMutex };
+            clear();
+            iSlots = aOther.iSlots;
+            return *this;
+        }
+    public:
         bool empty() const
         {
             return iSlots.empty();
@@ -277,7 +307,7 @@ namespace neolib
         template <typename... Args>
         slot_proxy<Args...>&& operator=(slot_proxy<Args...>&& aSlot)
         {
-            std::scoped_lock lock{ event_mutex() };
+            std::unique_lock lock{ iMutex };
             clear();
             iSlots.push_back(aSlot.slot);
             return std::move(aSlot);
@@ -285,18 +315,19 @@ namespace neolib
         template <typename... Args>
         slot_proxy<Args...>&& operator+=(slot_proxy<Args...>&& aSlot)
         {
-            std::scoped_lock lock{ event_mutex() };
+            std::unique_lock lock{ iMutex };
             iSlots.push_back(aSlot.slot);
             return std::move(aSlot);
         }
         void clear()
         {
-            std::scoped_lock lock{ event_mutex() };
+            std::unique_lock lock{ iMutex };
             for (auto& slot : iSlots)
                 slot->remove();
             iSlots.clear();
         }
     private:
+        mutable event_mutex iMutex;
         std::vector<ref_ptr<i_slot_base>> iSlots;
     };
 

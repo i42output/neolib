@@ -45,6 +45,21 @@
 
 namespace neolib
 {
+    class event_system : public i_event_system
+    {
+    public:
+        event_system_locking_strategy locking_strategy() const noexcept final
+        {
+            return iStrategy;
+        }
+        void set_locking_strategy(event_system_locking_strategy aStrategy) noexcept final
+        {
+            iStrategy = aStrategy;
+        }
+    private:
+        event_system_locking_strategy iStrategy = event_system_locking_strategy::MultiThreadedSpinlock;
+    };
+
     class async_event_queue : public lifetime<i_async_event_queue>
     {
     private:
@@ -71,7 +86,7 @@ namespace neolib
         template <typename... Args>
         void enqueue(i_slot<Args...>& aSlot, bool aNoDuplicates, Args... aArgs)
         {
-            std::scoped_lock lock{ event_mutex() };
+            std::scoped_lock lock{ iMutex };
             auto& event = aSlot.event();
             std::tuple<Args...> args{ aArgs... };
             auto callback = [&, args]()
@@ -97,6 +112,7 @@ namespace neolib
         void register_with_task(i_async_task& aTask) final;
         bool pump_events() final;
     private:
+        mutable event_mutex iMutex;
         i_async_task* iTask = nullptr;
         std::optional<destroyed_flag> iTaskDestroyed;
         queue iQueue;
@@ -119,8 +135,21 @@ namespace neolib
         event()
         {
         }
+        event(event const& aOther) : 
+            iTriggerType{ aOther.iTriggerType }
+        {
+        }
         ~event()
         {
+        }
+    public:
+        event& operator=(event const& aOther)
+        {
+            std::unique_lock lock{ iMutex };
+            iTriggerType = aOther.iTriggerType;
+            iSlots = {};
+            iActiveWorkList = {};
+            return *this;
         }
     public:
         neolib::trigger_type trigger_type() const final
@@ -134,7 +163,7 @@ namespace neolib
     public:
         trigger_result sync_trigger(Args... aArgs) const final
         {
-            std::unique_lock lock{ event_mutex() };
+            std::unique_lock lock{ iMutex };
             destroyed_flag destroyed{ *this };
             thread_local std::size_t stack;
             scoped_counter<std::size_t> stackCounter{ stack };
@@ -165,25 +194,25 @@ namespace neolib
         }
         void async_trigger(Args... aArgs) const final
         {
-            std::unique_lock lock{ event_mutex() };
+            std::unique_lock lock{ iMutex };
             for (auto slot : iSlots)
                 async_trigger(async_event_queue::instance(slot->call_thread()), *slot, trigger_type() == neolib::trigger_type::AsynchronousDontQueue, aArgs...);
         }
         void accept() const final
         {
-            std::unique_lock lock{ event_mutex() };
+            std::unique_lock lock{ iMutex };
             if (iActiveWorkList)
                 iActiveWorkList->accepted = true;
         }
     public:
         bool has_slots() const final
         {
-            std::scoped_lock lock{ event_mutex() };
+            std::scoped_lock lock{ iMutex };
             return !iSlots.empty();
         }
         void add_slot(i_slot<Args...>& aSlot, bool aPriority = false) const final
         {
-            std::scoped_lock lock{ event_mutex() };
+            std::scoped_lock lock{ iMutex };
             if (!aPriority)
                 iSlots.push_back(&aSlot);
             else
@@ -191,7 +220,7 @@ namespace neolib
         }
         void remove_slot(i_slot<Args...>& aSlot) const final
         {
-            std::scoped_lock lock{ event_mutex() };
+            std::scoped_lock lock{ iMutex };
             auto existing = std::find_if(iSlots.begin(), iSlots.end(), [&](auto const& s) { return &aSlot == s.ptr(); });
             if (existing != iSlots.end())
                 iSlots.erase(existing);
@@ -202,6 +231,7 @@ namespace neolib
             aQueue.enqueue<Args...>(aSlot, aNoDuplicates, aArgs...);
         }
     private:
+        mutable event_mutex iMutex;
         neolib::trigger_type iTriggerType = neolib::trigger_type::Synchronous;
         mutable slot_list iSlots;
         mutable work_list* iActiveWorkList = nullptr;

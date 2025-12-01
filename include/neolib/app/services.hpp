@@ -64,6 +64,7 @@ namespace neolib::services
     public:
         virtual ~i_service_provider() = default;
     public:
+        virtual bool try_lock() = 0;
         virtual void lock() = 0;
         virtual void unlock() = 0;
     public:
@@ -72,6 +73,8 @@ namespace neolib::services
         virtual void register_service(i_service& aService, uuid aServiceIid) = 0;
         virtual void unregister_service(uuid aServiceIid) = 0;
     public:
+        virtual void migrate_to(i_service_provider& aOtherProvider) = 0;
+    public:
         template <typename Service>
         Service& service()
         {
@@ -79,6 +82,7 @@ namespace neolib::services
         }
     };
 
+    bool service_provider_allocated();
     i_service_provider& allocate_service_provider();
     i_service_provider& get_service_provider();
     void set_service_provider(i_service_provider& aServiceProvider);

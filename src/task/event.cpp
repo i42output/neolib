@@ -39,11 +39,22 @@
 
 namespace neolib
 { 
+    template<> i_event_system& services::start_service<i_event_system>()
+    {
+        static event_system sEventSystem;
+        return sEventSystem;
+    }
+
     namespace
     {
-        std::unordered_map<std::thread::id, async_event_queue*>& instance_map()
+        struct instance_map_type : std::unordered_map<std::thread::id, async_event_queue*>
         {
-            static std::unordered_map<std::thread::id, async_event_queue*> sMap;
+            event_mutex mutex;
+        };
+
+        instance_map_type& instance_map()
+        {
+            static instance_map_type sMap;
             return sMap;
         }
     }
@@ -56,7 +67,7 @@ namespace neolib
 
     async_event_queue& async_event_queue::instance(std::thread::id aThreadId)
     {
-        std::scoped_lock lock{ event_mutex() };
+        std::scoped_lock lock{ instance_map().mutex };
         (void)instance();
         auto existing = instance_map().find(aThreadId);
         if (existing != instance_map().end())
@@ -66,14 +77,14 @@ namespace neolib
 
     async_event_queue::async_event_queue()
     {
-        std::scoped_lock lock{ event_mutex() };
+        std::scoped_lock lock{ iMutex };
         if (instance_map().find(std::this_thread::get_id()) == instance_map().end())
             instance_map()[std::this_thread::get_id()] = this;
     }
 
     async_event_queue::~async_event_queue()
     {
-        std::scoped_lock lock{ event_mutex() };
+        std::scoped_lock lock{ iMutex };
         auto existing = instance_map().find(std::this_thread::get_id());
         if (existing != instance_map().end())
             instance_map().erase(existing);
@@ -90,7 +101,7 @@ namespace neolib
 
     bool async_event_queue::pump_events()
     {
-        std::unique_lock lock{ event_mutex() };
+        std::unique_lock lock{ iMutex };
         thread_local std::size_t stack;
         scoped_counter<std::size_t> stackCounter{ stack };
         typedef std::vector<queue_entry> work_list;
