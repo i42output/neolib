@@ -61,7 +61,7 @@ namespace neolib::ecs
         ecs(ecs_flags aCreationFlags = ecs_flags::Default);
         ~ecs();
     public:
-        neolib::recursive_spinlock& mutex() const final;
+        neolib::recursive_spinlock<ecs>& mutex() const final;
         neolib::thread_pool& thread_pool() const final;
     public:
         ecs_flags flags() const final;
@@ -143,7 +143,7 @@ namespace neolib::ecs
         using i_ecs::system_registered;
         using i_ecs::register_system;
     private:
-        mutable neolib::recursive_spinlock iMutex;
+        mutable neolib::recursive_spinlock<ecs> iMutex;
         mutable std::optional<neolib::thread_pool> iThreadPool;
         ecs_flags iFlags;
         archetype_registry_t iArchetypeRegistry;

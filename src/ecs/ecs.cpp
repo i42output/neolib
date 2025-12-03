@@ -249,14 +249,14 @@ namespace neolib::ecs
             system.second->terminate();
     }
 
-    neolib::recursive_spinlock& ecs::mutex() const
+    neolib::recursive_spinlock<ecs>& ecs::mutex() const
     {
         return iMutex;
     }
 
     neolib::thread_pool& ecs::thread_pool() const
     {
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
         if (!iThreadPool)
             iThreadPool.emplace();
         return *iThreadPool;
@@ -341,7 +341,7 @@ namespace neolib::ecs
         if (iSystemsPaused)
             return;
 
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
 
         for (auto& s : systems())
             s.second->pause();
@@ -357,7 +357,7 @@ namespace neolib::ecs
         if (!iSystemsPaused)
             return;
 
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
 
         for (auto& s : systems())
             s.second->resume();
@@ -370,72 +370,72 @@ namespace neolib::ecs
 
     bool ecs::archetype_registered(const i_entity_archetype& aArchetype) const
     {
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
         return archetypes().find(aArchetype.id()) != archetypes().end();
     }
 
     void ecs::register_archetype(const i_entity_archetype& aArchetype)
     {
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
         if (!archetypes().emplace(aArchetype.id(), std::shared_ptr<const i_entity_archetype>{ std::shared_ptr<const i_entity_archetype>{}, &aArchetype}).second)
             throw uuid_exists("register_archetype");
     }
 
     void ecs::register_archetype(std::shared_ptr<const i_entity_archetype> aArchetype)
     {
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
         if (!archetypes().emplace(aArchetype->id(), aArchetype).second)
             throw uuid_exists("register_archetype");
     }
 
     bool ecs::component_registered(component_id aComponentId) const
     {
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
         return component_factories().find(aComponentId) != component_factories().end();
     }
 
     void ecs::register_component(component_id aComponentId, component_factory aFactory)
     {
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
         if (!component_factories().emplace(aComponentId, aFactory).second)
             throw uuid_exists("register_component");
     }
 
     bool ecs::shared_component_registered(component_id aComponentId) const
     {
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
         return shared_component_factories().find(aComponentId) != shared_component_factories().end();
     }
 
     void ecs::register_shared_component(component_id aComponentId, shared_component_factory aFactory)
     {
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
         if (!shared_component_factories().emplace(aComponentId, aFactory).second)
             throw uuid_exists("register_shared_component");
     }
 
     bool ecs::system_registered(system_id aSystemId) const
     {
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
         return system_factories().find(aSystemId) != system_factories().end();
     }
 
     void ecs::register_system(system_id aSystemId, system_factory aFactory)
     {
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
         if (!system_factories().emplace(aSystemId, aFactory).second)
             throw uuid_exists("register_system");
     }
 
     ecs::handle_t ecs::to_handle(handle_id aId) const
     {
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
         return iHandles[aId];
     }
 
     handle_id ecs::add_handle(const std::type_info&, handle_t aHandle)
     {
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
         auto nextHandleId = next_handle_id();
         if (iHandles.size() <= nextHandleId)
             iHandles.resize(nextHandleId);
@@ -445,7 +445,7 @@ namespace neolib::ecs
 
     ecs::handle_t ecs::update_handle(handle_id aId, const std::type_info&, handle_t aHandle)
     {
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
         if (iHandles.size() <= aId)
             throw invalid_handle_id();
         iHandles[aId] = aHandle;
@@ -454,7 +454,7 @@ namespace neolib::ecs
 
     ecs::handle_t ecs::release_handle(handle_id aId)
     {
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
         if (iHandles.size() <= aId)
             throw invalid_handle_id();
         auto handle = iHandles[aId];
@@ -465,7 +465,7 @@ namespace neolib::ecs
 
     handle_id ecs::next_handle_id()
     {
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
         if (!iFreedHandleIds.empty())
         {
             auto nextId = iFreedHandleIds.back();
@@ -479,7 +479,7 @@ namespace neolib::ecs
 
     void ecs::free_handle_id(handle_id aId)
     {
-        std::scoped_lock<neolib::recursive_spinlock> lock{ mutex() };
+        std::scoped_lock lock{ mutex() };
         iFreedHandleIds.push_back(aId);
     }
 }

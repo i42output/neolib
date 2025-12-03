@@ -49,7 +49,7 @@ namespace neolib
     {
         struct instance_map_type : std::unordered_map<std::thread::id, async_event_queue*>
         {
-            event_mutex mutex;
+            event_mutex<instance_map_type> mutex;
         };
 
         instance_map_type& instance_map()

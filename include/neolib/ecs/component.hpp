@@ -111,9 +111,9 @@ namespace neolib::ecs
 
     // Mutex tagged with component data type (visible in debugger) to help debugging multi-threaded issues
     template <typename Data>
-    struct component_mutex : neolib::recursive_spinlock
-    {
-    };
+    struct ecs_component_data_debug_tag {};
+    template <typename Data>
+    using component_mutex = recursive_spinlock<ecs_component_data_debug_tag<Data>>;
 
     template <typename Data, typename Base>
     class component_base : public Base

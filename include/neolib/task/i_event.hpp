@@ -59,7 +59,8 @@ namespace neolib
         static uuid const& iid() { static uuid const sIid{ 0x9f84fbad, 0xc980, 0x4d71, 0xb4b0, { 0x89, 0xb5, 0x7b, 0x94, 0xdb, 0xfe } }; return sIid; }
     };
 
-    class event_mutex : public switchable_mutex
+    template <typename ProfilerInfo = void>
+    class event_mutex : public switchable_mutex<ProfilerInfo>
     {
     public:
         event_mutex()
@@ -67,13 +68,13 @@ namespace neolib
             switch (service<i_event_system>().locking_strategy())
             {
             case event_system_locking_strategy::SingleThreaded:
-                set_single_threaded();
+                this->set_single_threaded();
                 break;
             case event_system_locking_strategy::MultiThreaded:
-                set_multi_threaded();
+                this->set_multi_threaded();
                 break;
             case event_system_locking_strategy::MultiThreadedSpinlock:
-                set_multi_threaded_spinlock();
+                this->set_multi_threaded_spinlock();
                 break;
             }
         }
@@ -327,7 +328,7 @@ namespace neolib
             iSlots.clear();
         }
     private:
-        mutable event_mutex iMutex;
+        mutable event_mutex<sink> iMutex;
         std::vector<ref_ptr<i_slot_base>> iSlots;
     };
 

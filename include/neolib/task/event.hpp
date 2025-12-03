@@ -86,7 +86,6 @@ namespace neolib
         template <typename... Args>
         void enqueue(i_slot<Args...>& aSlot, bool aNoDuplicates, Args... aArgs)
         {
-            std::scoped_lock lock{ iMutex };
             auto& event = aSlot.event();
             std::tuple<Args...> args{ aArgs... };
             auto callback = [&, args]()
@@ -94,6 +93,7 @@ namespace neolib
                 std::apply([&](Args... aArgs) { aSlot.call(aArgs...); }, args);
             };
             bool const single = (aNoDuplicates || aSlot.stateless());
+            std::scoped_lock lock{ iMutex };
             if (single)
             {
                 typename decltype(iQueue.single)::key_type const key{ &event, &aSlot };
@@ -112,7 +112,7 @@ namespace neolib
         void register_with_task(i_async_task& aTask) final;
         bool pump_events() final;
     private:
-        mutable event_mutex iMutex;
+        mutable event_mutex<async_event_queue> iMutex;
         i_async_task* iTask = nullptr;
         std::optional<destroyed_flag> iTaskDestroyed;
         queue iQueue;
@@ -231,7 +231,7 @@ namespace neolib
             aQueue.enqueue<Args...>(aSlot, aNoDuplicates, aArgs...);
         }
     private:
-        mutable event_mutex iMutex;
+        mutable event_mutex<event> iMutex;
         neolib::trigger_type iTriggerType = neolib::trigger_type::Synchronous;
         mutable slot_list iSlots;
         mutable work_list* iActiveWorkList = nullptr;
