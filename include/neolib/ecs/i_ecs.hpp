@@ -36,7 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <unordered_map>
+#include <boost/unordered/unordered_flat_map.hpp>
 #include <neolib/core/i_mutex.hpp>
 #include <neolib/task/thread_pool.hpp>
 #include <neolib/task/event.hpp>
@@ -102,13 +102,13 @@ namespace neolib::ecs
         typedef std::function<std::unique_ptr<i_shared_component>()> shared_component_factory;
         typedef std::function<std::unique_ptr<i_system>()> system_factory;
     protected:
-        typedef std::unordered_map<entity_archetype_id, std::shared_ptr<const i_entity_archetype>, quick_uuid_hash> archetype_registry_t;
-        typedef std::unordered_map<component_id, component_factory, quick_uuid_hash> component_factories_t;
-        typedef std::unordered_map<component_id, std::unique_ptr<i_component>, quick_uuid_hash> components_t;
-        typedef std::unordered_map<component_id, shared_component_factory, quick_uuid_hash> shared_component_factories_t;
-        typedef std::unordered_map<component_id, std::unique_ptr<i_shared_component>, quick_uuid_hash> shared_components_t;
-        typedef std::unordered_map<system_id, system_factory, quick_uuid_hash> system_factories_t;
-        typedef std::unordered_map<system_id, std::unique_ptr<i_system>, quick_uuid_hash> systems_t;
+        typedef boost::unordered_flat_map<entity_archetype_id, std::shared_ptr<const i_entity_archetype>, quick_uuid_hash> archetype_registry_t;
+        typedef boost::unordered_flat_map<component_id, component_factory, quick_uuid_hash> component_factories_t;
+        typedef boost::unordered_flat_map<component_id, std::unique_ptr<i_component>, quick_uuid_hash> components_t;
+        typedef boost::unordered_flat_map<component_id, shared_component_factory, quick_uuid_hash> shared_component_factories_t;
+        typedef boost::unordered_flat_map<component_id, std::unique_ptr<i_shared_component>, quick_uuid_hash> shared_components_t;
+        typedef boost::unordered_flat_map<system_id, system_factory, quick_uuid_hash> system_factories_t;
+        typedef boost::unordered_flat_map<system_id, std::unique_ptr<i_system>, quick_uuid_hash> systems_t;
     public:
         typedef void* handle_t;
     public:
@@ -356,17 +356,17 @@ namespace neolib::ecs
             {
             }
         public:
-            void lock() noexcept override
+            void lock() noexcept final
             {
                 if (linked())
                     subject().lock();
             }
-            void unlock() noexcept override
+            void unlock() noexcept final
             {
                 if (linked())
                     subject().unlock();
             }
-            bool try_lock() noexcept override
+            bool try_lock() noexcept final
             {
                 if (linked())
                     return subject().try_lock();
