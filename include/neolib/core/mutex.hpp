@@ -95,21 +95,21 @@ namespace neolib
         void lock() noexcept final
         {
             auto const thisThread = std::this_thread::get_id();
-            if (iState.test(std::memory_order_acquire) && iLockingThread.load(std::memory_order_acquire) == thisThread)
+            if (iState.test(std::memory_order_acquire) && iLockingThread.load(std::memory_order_relaxed) == thisThread)
             {
                 ++iLockCount;
                 return;
             }
             while (iState.test_and_set(std::memory_order_acquire))
                 iState.wait(true, std::memory_order_relaxed);
-            iLockingThread.store(thisThread);
+            iLockingThread.store(thisThread, std::memory_order_relaxed);
             ++iLockCount;
         }
         void unlock() noexcept final
         {
             if (--iLockCount == 0u)
             {
-                iLockingThread.store(std::thread::id{}, std::memory_order_release);
+                iLockingThread.store(std::thread::id{}, std::memory_order_relaxed);
                 iState.clear(std::memory_order_release);
                 iState.notify_one();
             }
@@ -117,14 +117,14 @@ namespace neolib
         bool try_lock() noexcept final
         {
             auto const thisThread = std::this_thread::get_id();
-            if (iState.test(std::memory_order_acquire) && iLockingThread.load(std::memory_order_acquire) == thisThread)
+            if (iState.test(std::memory_order_acquire) && iLockingThread.load(std::memory_order_relaxed) == thisThread)
             {
                 ++iLockCount;
                 return true;
             }
             if (iState.test_and_set(std::memory_order_acquire))
                 return false;
-            iLockingThread.store(thisThread);
+            iLockingThread.store(thisThread, std::memory_order_relaxed);
             ++iLockCount;
             return true;
         }
