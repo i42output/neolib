@@ -341,18 +341,13 @@ namespace neolib::ecs
     private:
         template <typename T, typename>
         static T fwd(T o) { return o; }
-        template <typename Data2>
-        class proxy_mutex : public i_lockable
+        class proxy_mutex_base : public i_lockable
         {
         public:
             struct not_linked : std::logic_error { not_linked() : std::logic_error{"neolib::neolib::ecs::scoped_component_lock::proxy_mutex::not_linked"} {} };
         public:
-            proxy_mutex(const i_ecs& aEcs) :
-                iSubject{ &aEcs.component<Data2>().mutex() }
-            {
-            }
-            proxy_mutex(i_ecs& aEcs) :
-                iSubject{ &aEcs.component<Data2>().mutex() }
+            proxy_mutex_base(i_lockable& aSubject) :
+                iSubject{ &aSubject }
             {
             }
         public:
@@ -371,7 +366,12 @@ namespace neolib::ecs
                 if (linked())
                     return subject().try_lock();
                 else
-                    return false;
+                    return true;
+            }
+        public:
+            bool operator<(proxy_mutex_base const& rhs) const
+            {
+                return std::less<i_lockable*>{}(iSubject, rhs.iSubject);
             }
         public:
             i_lockable& subject()
@@ -398,6 +398,21 @@ namespace neolib::ecs
         private:
             i_lockable* iSubject;
         };
+
+        template <typename Data2>
+        class proxy_mutex : public proxy_mutex_base
+        {
+        public:
+            proxy_mutex(const i_ecs& aEcs) :
+                proxy_mutex_base{ aEcs.component<Data2>().mutex() }
+            {
+            }
+            proxy_mutex(i_ecs& aEcs) :
+                proxy_mutex_base{ aEcs.component<Data2>().mutex() }
+            {
+            }
+        };
+
     public:
         scoped_component_lock(const i_ecs& aEcs) :
             iProxies{ fwd<const i_ecs&, Data>(aEcs)... }
@@ -428,37 +443,39 @@ namespace neolib::ecs
             if (!iDontUnlock)
                 unlock();
         }
+
     public:
         void lock()
         {
-            for (auto& lockable : iLockables)
-                if (lockable)
-                    lockable->lock();
+            if constexpr (sizeof...(Data) >= 2)
+                std::apply([](auto&... mx) {
+                    std::lock(*mx...);
+                        }, iLockables);
+            else if constexpr (sizeof...(Data) == 1)
+                iLockables[0]->lock();
         }
         void unlock()
         {
             for (std::size_t lockable = iLockables.size(); lockable-- > 0; )
-                if (iLockables[lockable])
-                    iLockables[lockable]->unlock();
+                iLockables[lockable]->unlock();
         }
         bool try_lock()
         {
             for (std::size_t lockable = 0u; lockable < iLockables.size(); ++lockable)
-                if (iLockables[lockable] && !iLockables[lockable]->try_lock())
+                if (!iLockables[lockable]->try_lock())
                 {
                     for (std::size_t lockable2 = lockable; lockable2-- > 0;)
-                        if (iLockables[lockable2])
-                            iLockables[lockable2]->unlock();
+                        iLockables[lockable2]->unlock();
                     return false;
                 }
             return true;
         }
+
     public:
         template <typename Data2>
         i_lockable& mutex()
         {
             auto& m = std::get<index_of_v<Data2, Data...>>(iProxies).unlink();
-            std::replace(iLockables.begin(), iLockables.end(), &m, nullptr);
             return m;
         }
         template <typename Data2>
@@ -474,13 +491,10 @@ namespace neolib::ecs
 
             for (auto lockable : iLockables)
             {
-                if (!lockable)
-                    continue;
-
                 bool shouldLock =
                     ((
                         controlling<Data2>() &&
-                        (&std::get<index_of_v<Data2, Data...>>(iProxies).subject() == lockable)
+                        (&std::get<index_of_v<Data2, Data...>>(iProxies) == lockable)
                         ) || ...);
 
                 if (shouldLock)
@@ -497,19 +511,17 @@ namespace neolib::ecs
             {
                 auto lockable = iLockables[i];
 
-                if (!lockable)
-                    continue;
-
                 bool shouldUnlock =
                     ((
                         controlling<Data2>() &&
-                        (&std::get<index_of_v<Data2, Data...>>(iProxies).subject() == lockable)
+                        (&std::get<index_of_v<Data2, Data...>>(iProxies) == lockable)
                         ) || ...);
 
                 if (shouldUnlock)
                     lockable->unlock();
             }
         }
+
     private:
         void create_lockable_array()
         {
@@ -517,21 +529,16 @@ namespace neolib::ecs
             std::apply(
                 [&](auto&... proxies)
                     {
-                        ((iLockables[index++] = &proxies.subject()), ...);
+                        ((iLockables[index++] = &proxies), ...);
                     },
                 iProxies
             );
-            std::sort(
-                iLockables.begin(), iLockables.end(),
-                [](i_lockable* lhs, i_lockable* rhs)
-                    {
-                        return std::less<i_lockable*>{}(lhs, rhs);
-                    }
-            );
+            std::sort(iLockables.begin(), iLockables.end(), [](proxy_mutex_base* lhs, proxy_mutex_base* rhs) { return *lhs < *rhs; });
         }
+
     private:
         std::tuple<proxy_mutex<Data>...> iProxies;
-        std::array<i_lockable*, sizeof...(Data)> iLockables;
+        std::array<proxy_mutex_base*, sizeof...(Data)> iLockables;
         std::optional<dont_lock_t> iDontUnlock;
     };
 
