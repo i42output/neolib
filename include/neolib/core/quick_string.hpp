@@ -89,7 +89,7 @@ namespace neolib
             iContents{ str } 
         {
         }
-        basic_quick_string(const basic_quick_string& str) : 
+        basic_quick_string(const basic_quick_string& str) :
             iContents{ str.iContents } 
         {
         }
@@ -101,7 +101,11 @@ namespace neolib
             iContents{ view_contents_type{ string_view_type{ str.cbegin() + pos, (n == npos ? str.size() - pos : n) }, str.get_allocator() } } 
         {
         }
-        basic_quick_string(const CharT* s, size_type n, const Alloc& a = Alloc()) : 
+        basic_quick_string(const string_view_type& view, const Alloc& a = Alloc()) :
+            iContents{ view_contents_type{ view, a } }
+        {
+        }
+        basic_quick_string(const CharT* s, size_type n, const Alloc& a = Alloc()) :
             iContents{ view_contents_type{ string_view_type{ s, n }, a } } 
         {
         }
