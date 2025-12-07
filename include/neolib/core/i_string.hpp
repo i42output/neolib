@@ -55,6 +55,8 @@ namespace neolib
         using typename base_type::value_type;
         using typename base_type::size_type;
     public:
+        static constexpr auto npos{ static_cast<size_type>(-1) };
+    public:
         virtual i_string& operator=(const i_string& aOther) = 0;
         virtual i_string& operator=(const i_string_view& aOther) = 0;
     public:
@@ -68,11 +70,16 @@ namespace neolib
     public:
         virtual void replace_all(const i_string& aSearch, const i_string& aReplace) = 0;
     public:
-        operator std::string() const { return to_std_string(); }
+        explicit operator std::string() const { return to_std_string(); }
+        operator std::string_view() const { return to_std_string_view(); }
+        i_string& operator=(const char* aOther) { assign(aOther); return *this; }
         i_string& operator=(const std::string& aOther) { assign(aOther); return *this; }
+        i_string& operator=(const std::string_view& aOther) { assign(aOther); return *this; }
         size_type length() const { return size(); }
-        void assign(const std::string& aSource) { assign(aSource.c_str(), aSource.size()); }
+        void assign(const char* aSource) { assign(std::string_view{ aSource }); }
+        void assign(const std::string& aSource) { assign(aSource.c_str( ), aSource.size()); }
         void assign(const std::string_view& aSource) { assign(aSource.data(), aSource.size()); }
+        void append(const char* aSource) { append(std::string_view{ aSource }); }
         void append(const std::string& aSource) { append(aSource.c_str(), aSource.size()); }
         void append(const std::string_view& aSource) { append(aSource.data(), aSource.size()); }
         std::string to_std_string() const { return std::string{ c_str(), size() }; }

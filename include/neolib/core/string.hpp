@@ -68,7 +68,7 @@ namespace neolib
         string(const char* aString) : iString{ aString } {}
         string(const char* aString, std::size_t aLength) : iString{ aString, aLength } {}
         string(const std::string& aString = {}) : iString{ aString } {}
-        string(const std::string_view& aStringView) : iString{ aStringView } {}
+        explicit string(const std::string_view& aStringView) : iString{ aStringView } {}
         string(const neolib::quick_string& aOther) : iString{ aOther } {}
         string(const string& aOther) : iString{ aOther.as_std_string() } {}
         string(string&& aOther) : iString{ std::move(aOther.as_std_string()) } {}

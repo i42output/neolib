@@ -154,11 +154,14 @@ namespace neolib
         iPluginExtension{ aPluginExtension },
         iRemovable{ false }
     {
+        auto first = std::next(arguments().as_vector().as_std_vector().begin());
+        auto last = arguments().as_vector().as_std_vector().end();
         if (!arguments().as_vector().empty())
-            if (std::find(std::next(arguments().as_vector().as_std_vector().begin()), arguments().as_vector().as_std_vector().end(), neolib::ci_string("/pocket")) != arguments().as_vector().as_std_vector().end() ||
-                std::find(std::next(arguments().as_vector().as_std_vector().begin()), arguments().as_vector().as_std_vector().end(), neolib::ci_string("-pocket")) != arguments().as_vector().as_std_vector().end() ||
-                std::find(std::next(arguments().as_vector().as_std_vector().begin()), arguments().as_vector().as_std_vector().end(), neolib::ci_string("/removable")) != arguments().as_vector().as_std_vector().end() ||
-                std::find(std::next(arguments().as_vector().as_std_vector().begin()), arguments().as_vector().as_std_vector().end(), neolib::ci_string("-removable")) != arguments().as_vector().as_std_vector().end())
+            if (std::find_if(first, last, [](auto const& arg) { return
+                arg == neolib::ci_string("/pocket") ||
+                arg == neolib::ci_string("-pocket") ||
+                arg == neolib::ci_string("/removable") ||
+                arg == neolib::ci_string("-removable"); }) != last)
             {
                 iRemovable = true;
             }
@@ -219,7 +222,7 @@ namespace neolib
         if (iSettingsFolder.empty() && aUseDefault)
         {
             if (iDefaultSettingsFolder.empty())
-                iDefaultSettingsFolder = neolib::settings_folder(name(), company());
+                iDefaultSettingsFolder = neolib::settings_folder(name().to_std_string(), company().to_std_string());
             return iDefaultSettingsFolder;
         }
         return iSettingsFolder;

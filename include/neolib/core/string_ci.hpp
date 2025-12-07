@@ -132,7 +132,32 @@ namespace neolib
         return ci_string(s1.begin(), s1.end()) < s2;
     }
 
-    template <typename CharT, typename Traits, typename Alloc>    
+    inline bool operator==(const ci_string& s1, const std::string_view& s2)
+    {
+        return s1 == ci_string(s2.begin(), s2.end());
+    }
+    inline bool operator==(const std::string_view& s1, const ci_string& s2)
+    {
+        return ci_string(s1.begin(), s1.end()) == s2;
+    }
+    inline bool operator!=(const ci_string& s1, const std::string_view& s2)
+    {
+        return s1 != ci_string(s2.begin(), s2.end());
+    }
+    inline bool operator!=(const std::string_view& s1, const ci_string& s2)
+    {
+        return ci_string(s1.begin(), s1.end()) != s2;
+    }
+    inline bool operator<(const ci_string& s1, const std::string_view& s2)
+    {
+        return s1 < ci_string(s2.begin(), s2.end());
+    }
+    inline bool operator<(const std::string_view& s1, const ci_string& s2)
+    {
+        return ci_string(s1.begin(), s1.end()) < s2;
+    }
+
+    template <typename CharT, typename Traits, typename Alloc>
     inline bool lexicographical_compare_ignoring_case(const std::basic_string<CharT, Traits, Alloc>& s1, 
         const std::basic_string<CharT, Traits, Alloc>& s2)
     {

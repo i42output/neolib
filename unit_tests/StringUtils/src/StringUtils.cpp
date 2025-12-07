@@ -17,7 +17,7 @@ int main()
     auto result3 = neolib::format("{0}:{{1}}", "xyzzy", 42);
     auto result4 = neolib::format("{0}:{0}:{1}", "xyzzy", 42);
 
-    test_assert((result1.text == "xyzzy:42"));
+    test_assert((result1 == "xyzzy:42"));
     test_assert((result1.args == neolib::format_result::arg_list{ { 0, 0, 5 }, { 1, 6, 8 } }));
     test_assert((result1.arg_span(0) == "xyzzy"));
     test_assert((result1.arg_span(1) == "42"));
@@ -27,15 +27,15 @@ int main()
     test_assert((result1.arg_after(5) == std::next(result1.args.begin(), 1)));
     test_assert((result1.arg_after(7) == std::next(result1.args.begin(), 2)));
     test_assert((result1.arg_after(8) == std::next(result1.args.begin(), 2)));
-    test_assert((result2.text == "{{0}}:42"));
+    test_assert((result2 == "{{0}}:42"));
     test_assert((result2.args == neolib::format_result::arg_list{ { 1, 6, 8 } }));
     test_assert((result2.arg_span(1) == "42"));
     test_assert((result2.arg_spanning(7) == std::next(result2.args.begin(), 0)));
-    test_assert((result3.text == "xyzzy:{{1}}"));
+    test_assert((result3 == "xyzzy:{{1}}"));
     test_assert((result3.args == neolib::format_result::arg_list{ { 0, 0, 5 } }));
     test_assert((result3.arg_span(0) == "xyzzy"));
     test_assert((result3.arg_spanning(3) == std::next(result3.args.begin(), 0)));
-    test_assert((result4.text == "xyzzy:xyzzy:42"));
+    test_assert((result4 == "xyzzy:xyzzy:42"));
     test_assert((result4.args == neolib::format_result::arg_list{ { 0, 0, 5 }, { 0, 6, 11 }, { 1, 12, 14 } }));
     test_assert((result4.arg_span(0) == "xyzzy"));
     test_assert((result4.arg_span(1) == "42"));

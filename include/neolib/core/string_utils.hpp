@@ -50,7 +50,7 @@
 #include <neolib/core/string_numeric.hpp>
 #include <neolib/core/string_utf.hpp>
 
-namespace neolib 
+namespace neolib
 {
     struct NEOLIB_EXPORT comma_as_whitespace : std::ctype<char>
     {
@@ -141,7 +141,7 @@ namespace neolib
         FwdIter1 e = aDelimeterIsSubsequence ? std::search(b, aLast, aDelimeterFirst, aDelimiterLast) : std::find_first_of(b, aLast, aDelimeterFirst, aDelimiterLast);
         std::size_t tokens = 0;
         std::optional<FwdIter1> last;
-        while(e != aLast && (aMaxTokens == 0 || tokens < aMaxTokens))
+        while (e != aLast && (aMaxTokens == 0 || tokens < aMaxTokens))
         {
             if (b == e && !aSkipEmptyTokens)
             {
@@ -168,7 +168,7 @@ namespace neolib
             aTokens.push_back(value_type{ e, e });
         return b;
     }
-    
+
     template <typename FwdIter, typename CharT, typename Traits, typename Alloc, typename ResultContainer>
     inline void tokens(FwdIter aFirst, FwdIter aLast, const std::basic_string<CharT, Traits, Alloc>& aDelimeter, ResultContainer& aTokens, std::size_t aMaxTokens = 0, bool aSkipEmptyTokens = true, bool aDelimeterIsSubsequence = false)
     {
@@ -256,7 +256,7 @@ namespace neolib
             {
                 if (aNewSpanType && aSpans->empty())
                     aSpans->push_back(string_span(pos, pos + aReplace.size(), *aNewSpanType));
-                else 
+                else
                 {
                     for (string_spans::iterator i = aSpans->begin(); i != aSpans->end(); ++i)
                     {
@@ -385,16 +385,16 @@ namespace neolib
         using size_type = typename std::basic_string<CharT, Traits, Alloc>::size_type;
 
         std::string result;
-        
+
         size_type const length = aString.size();
 
         for (size_type i = 0u; i < length; ++i)
         {
             char const c = aString[i];
-            if (c == '\\' && i + 1u < length) 
+            if (c == '\\' && i + 1u < length)
             {
                 char const nextChar = aString[i + 1u];
-                switch (nextChar) 
+                switch (nextChar)
                 {
                 case 'n':
                     result += '\n';
@@ -421,31 +421,31 @@ namespace neolib
                     ++i;
                     break;
                 case 'x':
+                {
+                    ++i;
+                    std::uint32_t hexValue = 0u;
+                    bool foundHex = false;
+
+                    while ((i + 1u) < length && std::isxdigit(aString[i + 1u]))
                     {
                         ++i;
-                        std::uint32_t hexValue = 0u;
-                        bool foundHex = false;
-
-                        while ((i + 1u) < length && std::isxdigit(aString[i + 1u]))
-                        {
-                            ++i;
-                            foundHex = true;
-                            char const hexDigit = aString[i];
-                            hexValue *= 16u;
-                            if (hexDigit >= '0' && hexDigit <= '9')
-                                hexValue += (hexDigit - '0');
-                            else if (hexDigit >= 'a' && hexDigit <= 'f')
-                                hexValue += (hexDigit - 'a' + 10u);
-                            else if (hexDigit >= 'A' && hexDigit <= 'F')
-                                hexValue += (hexDigit - 'A' + 10u);
-                        }
-
-                        if (foundHex)
-                            result += static_cast<char>(hexValue & 0xFFu);
-                        else
-                            result += "\\x"; ///< If no hex digits followed \x, treat "\x" literally.
+                        foundHex = true;
+                        char const hexDigit = aString[i];
+                        hexValue *= 16u;
+                        if (hexDigit >= '0' && hexDigit <= '9')
+                            hexValue += (hexDigit - '0');
+                        else if (hexDigit >= 'a' && hexDigit <= 'f')
+                            hexValue += (hexDigit - 'a' + 10u);
+                        else if (hexDigit >= 'A' && hexDigit <= 'F')
+                            hexValue += (hexDigit - 'A' + 10u);
                     }
-                    break;
+
+                    if (foundHex)
+                        result += static_cast<char>(hexValue & 0xFFu);
+                    else
+                        result += "\\x"; ///< If no hex digits followed \x, treat "\x" literally.
+                }
+                break;
                 default:
                     result += nextChar;
                     ++i;
@@ -462,7 +462,7 @@ namespace neolib
     {
         return unescape(std::string{ aString });
     }
-        
+
     inline std::string parse_url_escapes(const std::string& aString)
     {
         std::string ret = aString;
@@ -531,7 +531,7 @@ namespace neolib
         typedef std::vector<substring_t> substrings_t;
         substrings_t substrings;
         CharT any_string = detail::wildcard_match_any_string<CharT>();
-        neolib::tokens(aPatternBegin, aPatternEnd, &any_string, &any_string+1, substrings);
+        neolib::tokens(aPatternBegin, aPatternEnd, &any_string, &any_string + 1, substrings);
 
         FwdIter previousMatch = aTextBegin;
         for (typename substrings_t::const_iterator i = substrings.begin(); i != substrings.end();)
@@ -587,7 +587,7 @@ namespace neolib
         state iRoot;
     };
 
-    struct format_result
+    struct format_result : std::string
     {
         struct formatted_arg
         {
@@ -597,9 +597,9 @@ namespace neolib
 
             constexpr std::strong_ordering operator<=>(formatted_arg const&) const noexcept = default;
         };
-        typedef std::vector<formatted_arg> arg_list;
 
-        std::string text;
+        using arg_list = std::vector<formatted_arg>;
+
         arg_list args;
 
         arg_list::const_iterator find_arg(std::size_t aArgIndex) const
@@ -614,7 +614,7 @@ namespace neolib
         {
             auto existing = find_arg(aArgIndex);
             if (existing != args.end())
-                return { std::next(text.begin(), existing->begin), std::next(text.begin(), existing->end) };
+                return { std::next(begin(), existing->begin), std::next(begin(), existing->end) };
             throw std::format_error("neolib::format_result");
         }
         arg_list::const_iterator arg_spanning(std::ptrdiff_t aPos) const
@@ -646,37 +646,38 @@ namespace neolib
             auto nextArg = std::find(next, aFormat.end(), '{');
             if (nextArg == aFormat.end())
             {
-                result.text.append(next, nextArg);
+                result.append(next, nextArg);
                 next = nextArg;
             }
             else if (std::next(nextArg) == aFormat.end())
                 throw std::format_error("neolib::format");
             else if (*std::next(nextArg) == '{')
             {
-                result.text.append(next, std::next(nextArg, 2));
+                result.append(next, std::next(nextArg, 2));
                 next = std::next(nextArg, 2);
             }
             else
             {
-                result.text.append(next, nextArg);
+                result.append(next, nextArg);
                 auto nextArgEnd = std::find(nextArg, aFormat.end(), '}');
                 if (nextArgEnd == aFormat.end())
                     throw std::format_error("neolib::format");
                 else
                 {
-                    // todo: add support for omission of arg-id in format string
                     ++nextArgEnd;
                     next = nextArgEnd;
                     auto argIdTerminators = { ':', '}' };
                     auto argIdEnd = std::find_first_of(nextArg, nextArgEnd, argIdTerminators.begin(), argIdTerminators.end());
                     std::optional<std::size_t> argId;
-                    if (argIdEnd - nextArg >= 2)
+                    if (argIdEnd - nextArg == 1)
+                        argId = result.args.size();
+                    else if (argIdEnd - nextArg >= 2)
                         argId = static_cast<std::size_t>(std::stoi(std::string{ std::next(nextArg), argIdEnd }));
                     if (argId)
-                        result.args.emplace_back(argId.value(), result.text.size());
-                    result.text.append(std::vformat(std::string_view{ nextArg, nextArgEnd }, std::make_format_args(aArgs...)));
+                        result.args.emplace_back(argId.value(), result.size());
+                    result.append(std::vformat(std::string_view{ nextArg, nextArgEnd }, std::make_format_args(aArgs...)));
                     if (argId)
-                        result.args.back().end = result.text.size();
+                        result.args.back().end = result.size();
                 }
             }
         }

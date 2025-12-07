@@ -124,7 +124,7 @@ namespace neolib
                 if (!aDeferInitialization)
                 {
                     if (!initialize_plugin(*newPlugin))
-                        throw std::runtime_error("Failed to initialize plugin '" + aPluginPath + "'");
+                        throw std::runtime_error("Failed to initialize plugin '" + aPluginPath.to_std_string() + "'");
                 }
             }
             else
