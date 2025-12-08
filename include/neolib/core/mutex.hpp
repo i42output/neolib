@@ -1,6 +1,6 @@
 // mutex.hpp
 /*
- *  Copyright (c) 2020 Leigh Johnston.
+ *  Copyright (c) 2020-2025 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -43,6 +43,10 @@
 #include <boost/lockfree/detail/freelist.hpp>
 #include <neolib/core/i_mutex.hpp>
 
+#if !defined(DISABLE_NEOS_PROFILE_MUTEXES)
+    #define NEOS_PROFILE_MUTEXES
+#endif
+
 namespace neolib
 {
     struct null_mutex : public i_lockable
@@ -80,6 +84,21 @@ namespace neolib
     template <typename ProfilerInfo = void>
     class alignas(boost::lockfree::detail::cacheline_bytes) recursive_spinlock : public i_lockable
     {
+    private:
+#if defined(NEOS_PROFILE_MUTEXES)
+        static inline int sIcfSingleton;
+        void prevent_icf() const noexcept
+        {
+            static volatile int sink = 42;
+            (void)sink;
+            (void)sIcfSingleton;
+        }
+#else
+        void prevent_icf() const noexcept
+        {
+        }
+#endif
+
     public:
         recursive_spinlock() :
             iState{},
@@ -94,6 +113,7 @@ namespace neolib
     public:
         void lock() noexcept final
         {
+            prevent_icf();
             auto const thisThread = std::this_thread::get_id();
             if (iState.test(std::memory_order_acquire) && iLockingThread.load(std::memory_order_relaxed) == thisThread)
             {
@@ -107,6 +127,7 @@ namespace neolib
         }
         void unlock() noexcept final
         {
+            prevent_icf();
             if (--iLockCount == 0u)
             {
                 iLockingThread.store(std::thread::id{}, std::memory_order_relaxed);
@@ -116,6 +137,7 @@ namespace neolib
         }
         bool try_lock() noexcept final
         {
+            prevent_icf();
             auto const thisThread = std::this_thread::get_id();
             if (iState.test(std::memory_order_acquire) && iLockingThread.load(std::memory_order_relaxed) == thisThread)
             {
