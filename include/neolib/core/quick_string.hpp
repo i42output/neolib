@@ -101,7 +101,7 @@ namespace neolib
             iContents{ view_contents_type{ string_view_type{ str.cbegin() + pos, (n == npos ? str.size() - pos : n) }, str.get_allocator() } } 
         {
         }
-        basic_quick_string(const string_view_type& view, const Alloc& a = Alloc()) :
+        explicit basic_quick_string(const string_view_type& view, const Alloc& a = Alloc()) :
             iContents{ view_contents_type{ view, a } }
         {
         }

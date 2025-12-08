@@ -114,6 +114,7 @@ namespace neolib::ecs
 
     const i_entity_archetype& ecs::archetype(entity_archetype_id aArchetypeId) const
     {
+        std::unique_lock lock{ archetype_mutex() };
         auto existingArchetype = archetypes().find(aArchetypeId);
         if (existingArchetype != archetypes().end())
             return *existingArchetype->second;
@@ -127,11 +128,14 @@ namespace neolib::ecs
 
     bool ecs::component_instantiated(component_id aComponentId) const
     {
+        std::unique_lock lock{ component_mutex() };
         return components().find(aComponentId) != components().end();
     }
 
     const i_component& ecs::component(component_id aComponentId) const
     {
+
+        std::unique_lock lock{ component_mutex() };
         auto existingComponent = components().find(aComponentId);
         if (existingComponent != components().end())
             return *existingComponent->second;
@@ -152,11 +156,13 @@ namespace neolib::ecs
 
     bool ecs::shared_component_instantiated(component_id aComponentId) const
     {
+        std::unique_lock lock{ shared_component_mutex() };
         return shared_components().find(aComponentId) != shared_components().end();
     }
 
     const i_shared_component& ecs::shared_component(component_id aComponentId) const
     {
+        std::unique_lock lock{ shared_component_mutex() };
         auto existingComponent = shared_components().find(aComponentId);
         if (existingComponent != shared_components().end())
             return *existingComponent->second;
@@ -178,6 +184,7 @@ namespace neolib::ecs
 
     const i_system& ecs::system(system_id aSystemId) const
     {
+        std::unique_lock lock{ system_mutex() };
         auto existingSystem = systems().find(aSystemId);
         if (existingSystem != systems().end())
             return *existingSystem->second;
@@ -199,6 +206,7 @@ namespace neolib::ecs
 
     entity_id ecs::next_entity_id()
     {
+        std::unique_lock lock{ entity_mutex() };
         if (!iFreedEntityIds.empty())
         {
             auto nextId = iFreedEntityIds.back();
@@ -212,6 +220,7 @@ namespace neolib::ecs
 
     void ecs::free_entity_id(entity_id aId)
     {
+        std::unique_lock lock{ entity_mutex() };
         iFreedEntityIds.push_back(aId);
     }
 
@@ -249,14 +258,39 @@ namespace neolib::ecs
             system.second->terminate();
     }
 
-    neolib::recursive_spinlock<ecs>& ecs::mutex() const
+    recursive_spinlock<ecs>& ecs::mutex() const
     {
         return iMutex;
+    }
+                
+    recursive_spinlock<ecs::entity_mutex_tag>& ecs::entity_mutex() const
+    {
+        return iEntityMutex;
+    }
+
+    recursive_spinlock<ecs::archetype_mutex_tag>& ecs::archetype_mutex() const
+    {
+        return iArchetypeMutex;
+    }
+
+    neolib::recursive_spinlock<ecs::component_mutex_tag>& ecs::component_mutex() const
+    {
+        return iComponentMutex;
+    }
+
+    recursive_spinlock<ecs::shared_component_mutex_tag>& ecs::shared_component_mutex() const
+    {
+        return iSharedComponentMutex;
+    }
+
+    recursive_spinlock<ecs::system_mutex_tag>& ecs::system_mutex() const
+    {
+        return iSystemMutex;
     }
 
     neolib::thread_pool& ecs::thread_pool() const
     {
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ mutex() };
         if (!iThreadPool)
             iThreadPool.emplace();
         return *iThreadPool;
@@ -269,24 +303,28 @@ namespace neolib::ecs
 
     entity_id ecs::create_entity(const entity_archetype_id& aArchetypeId)
     {
+        std::unique_lock lock{ entity_mutex() };
         auto entityId = next_entity_id();
         if ((flags() & ecs_flags::PopulateEntityInfo) == ecs_flags::PopulateEntityInfo)
             component<entity_info>().populate(entityId, entity_info{ aArchetypeId, system<time>().world_time() });
+        lock.unlock();
         EntityCreated.trigger(entityId);
         return entityId;
     }
 
     void ecs::async_create_entity(const std::function<void()>& aCreator)
     {
-        scoped_component_lock<entity_info> lock{ *this };
+        std::unique_lock lock1{ entity_mutex() };
+        scoped_component_lock<entity_info> lock2{ *this };
         iEntitiesToCreate.emplace_back(aCreator);
     }
 
     void ecs::commit_async_entity_creation()
     {
+        std::unique_lock lock1{ entity_mutex() };
         if (iEntitiesToCreate.empty())
             return;
-        scoped_multi_lock<decltype(iComponentMutexes)> lock{ iComponentMutexes };
+        scoped_multi_lock<decltype(iComponentMutexes)> lock2{ iComponentMutexes };
         while (!iEntitiesToCreate.empty())
         {
             auto next = iEntitiesToCreate.back();
@@ -299,7 +337,8 @@ namespace neolib::ecs
     {
         if (aNotify)
             EntityDestroyed.trigger(aEntityId);
-        scoped_multi_lock<decltype(iComponentMutexes)> lock{ iComponentMutexes };
+        std::unique_lock lock1{ entity_mutex() };
+        scoped_multi_lock<decltype(iComponentMutexes)> lock2{ iComponentMutexes };
         for (auto& component : iComponents)
             if (component.second->has_entity_record(aEntityId))
                 component.second->destroy_entity_record(aEntityId);
@@ -308,21 +347,25 @@ namespace neolib::ecs
 
     void ecs::async_destroy_entity(entity_id aEntityId, bool aNotify)
     {
-        scoped_component_lock<entity_info> lock{ *this };
+        std::unique_lock lock1{ entity_mutex() };
+        scoped_component_lock<entity_info> lock2{ *this };
         component<entity_info>().entity_record(aEntityId).destroyed = true;
         iEntitiesToDestroy.emplace_back(aEntityId, aNotify);
     }
 
     void ecs::commit_async_entity_destruction()
     {
+        std::unique_lock lock1{ entity_mutex() };
         if (iEntitiesToDestroy.empty())
             return;
-        scoped_multi_lock<decltype(iComponentMutexes)> lock{ iComponentMutexes };
+        scoped_multi_lock<decltype(iComponentMutexes)> lock2{ iComponentMutexes };
         while (!iEntitiesToDestroy.empty())
         {
             auto next = iEntitiesToDestroy.back();
             iEntitiesToDestroy.pop_back();
+            lock1.unlock();
             destroy_entity(next.first, next.second);
+            lock1.lock();
         }
     }
 
@@ -341,11 +384,14 @@ namespace neolib::ecs
         if (iSystemsPaused)
             return;
 
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ system_mutex() };
 
         for (auto& s : systems())
             s.second->pause();
         iSystemsPaused = true;
+
+        lock.unlock();
+
         SystemsPaused.trigger();
 
         if ((flags() & ecs_flags::Turbo) == ecs_flags::Turbo)
@@ -357,11 +403,14 @@ namespace neolib::ecs
         if (!iSystemsPaused)
             return;
 
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ system_mutex() };
 
         for (auto& s : systems())
             s.second->resume();
         iSystemsPaused = false;
+
+        lock.unlock();
+
         SystemsResumed.trigger();
 
         if ((flags() & ecs_flags::Turbo) == ecs_flags::Turbo)
@@ -370,72 +419,72 @@ namespace neolib::ecs
 
     bool ecs::archetype_registered(const i_entity_archetype& aArchetype) const
     {
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ archetype_mutex() };
         return archetypes().find(aArchetype.id()) != archetypes().end();
     }
 
     void ecs::register_archetype(const i_entity_archetype& aArchetype)
     {
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ archetype_mutex() };
         if (!archetypes().emplace(aArchetype.id(), std::shared_ptr<const i_entity_archetype>{ std::shared_ptr<const i_entity_archetype>{}, &aArchetype}).second)
             throw uuid_exists("register_archetype");
     }
 
     void ecs::register_archetype(std::shared_ptr<const i_entity_archetype> aArchetype)
     {
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ archetype_mutex() };
         if (!archetypes().emplace(aArchetype->id(), aArchetype).second)
             throw uuid_exists("register_archetype");
     }
 
     bool ecs::component_registered(component_id aComponentId) const
     {
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ component_mutex() };
         return component_factories().find(aComponentId) != component_factories().end();
     }
 
     void ecs::register_component(component_id aComponentId, component_factory aFactory)
     {
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ component_mutex() };
         if (!component_factories().emplace(aComponentId, aFactory).second)
             throw uuid_exists("register_component");
     }
 
     bool ecs::shared_component_registered(component_id aComponentId) const
     {
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ shared_component_mutex() };
         return shared_component_factories().find(aComponentId) != shared_component_factories().end();
     }
 
     void ecs::register_shared_component(component_id aComponentId, shared_component_factory aFactory)
     {
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ shared_component_mutex() };
         if (!shared_component_factories().emplace(aComponentId, aFactory).second)
             throw uuid_exists("register_shared_component");
     }
 
     bool ecs::system_registered(system_id aSystemId) const
     {
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ system_mutex() };
         return system_factories().find(aSystemId) != system_factories().end();
     }
 
     void ecs::register_system(system_id aSystemId, system_factory aFactory)
     {
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ system_mutex() };
         if (!system_factories().emplace(aSystemId, aFactory).second)
             throw uuid_exists("register_system");
     }
 
     ecs::handle_t ecs::to_handle(handle_id aId) const
     {
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ mutex() };
         return iHandles[aId];
     }
 
     handle_id ecs::add_handle(const std::type_info&, handle_t aHandle)
     {
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ mutex() };
         auto nextHandleId = next_handle_id();
         if (iHandles.size() <= nextHandleId)
             iHandles.resize(nextHandleId);
@@ -445,7 +494,7 @@ namespace neolib::ecs
 
     ecs::handle_t ecs::update_handle(handle_id aId, const std::type_info&, handle_t aHandle)
     {
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ mutex() };
         if (iHandles.size() <= aId)
             throw invalid_handle_id();
         iHandles[aId] = aHandle;
@@ -454,7 +503,7 @@ namespace neolib::ecs
 
     ecs::handle_t ecs::release_handle(handle_id aId)
     {
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ mutex() };
         if (iHandles.size() <= aId)
             throw invalid_handle_id();
         auto handle = iHandles[aId];
@@ -465,7 +514,7 @@ namespace neolib::ecs
 
     handle_id ecs::next_handle_id()
     {
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ mutex() };
         if (!iFreedHandleIds.empty())
         {
             auto nextId = iFreedHandleIds.back();
@@ -479,7 +528,7 @@ namespace neolib::ecs
 
     void ecs::free_handle_id(handle_id aId)
     {
-        std::scoped_lock lock{ mutex() };
+        std::unique_lock lock{ mutex() };
         iFreedHandleIds.push_back(aId);
     }
 }
