@@ -81,6 +81,82 @@ namespace neolib::ecs
         return aLhs = static_cast<ecs_flags>(static_cast<uint32_t>(aLhs) & static_cast<uint32_t>(aRhs));
     }
 
+    class i_ecs;
+
+    template <typename Map>
+    struct update_ecs_generation
+    {
+        Map const& map;
+
+        update_ecs_generation(Map const& map) : map{ map } 
+        {
+        }
+
+        ~update_ecs_generation()
+        {
+            ++map.generation;
+        }
+    };
+
+    template <typename Key, typename Data, typename MutexTag>
+    struct ecs_map : boost::unordered_flat_map<Key, Data, quick_uuid_hash>
+    {
+        using base_type = boost::unordered_flat_map<Key, Data, quick_uuid_hash>;
+
+        i_ecs& owner;
+        mutable recursive_spinlock<MutexTag> mutex;
+        mutable std::atomic<std::uint64_t> generation = 1;
+        mutable std::shared_ptr<std::atomic<bool>> destroyed;
+
+        ecs_map& operator=(ecs_map const& other)
+        {
+            base_type::operator=(other);
+            generation.store(other.generation.load(std::memory_order_relaxed), std::memory_order_release);
+            destroyed = other.destroyed;
+            return *this;
+        }
+
+        auto& cache_map() const
+        {
+            thread_local boost::unordered_flat_map<i_ecs*, ecs_map> tCache;
+            return tCache;
+        }
+
+        ecs_map<Key, Data, MutexTag>& cache() const
+        {
+            auto existing = cache_map().find(&owner);
+            if (existing == cache_map().end() ||
+                existing->second.destroyed->load() ||
+                existing->second.generation != generation)
+            {
+                std::unique_lock lock{ mutex };
+                if (existing == cache_map().end())
+                    existing = cache_map().try_emplace(&owner, *this).first;
+                else
+                    existing->second = *this;
+            }
+            return existing->second;
+        }
+
+        ecs_map(i_ecs& owner) : 
+            owner{ owner },
+            destroyed{ std::make_shared<std::atomic_bool>() }
+        {
+        }
+
+        ecs_map(ecs_map const& other) :
+            base_type{ other },
+            owner{ other.owner },
+            destroyed{ other.destroyed }
+        {
+        }
+
+        ~ecs_map()
+        {
+            destroyed->store(true);
+        }
+    };
+
     class i_ecs : public i_object
     {
     public:
@@ -98,26 +174,30 @@ namespace neolib::ecs
         struct handle_ids_exhausted : std::runtime_error { handle_ids_exhausted() : std::runtime_error("i_ecs::handle_ids_exhausted") {} };
         struct invalid_handle_id : std::logic_error { invalid_handle_id() : std::logic_error("i_ecs::invalid_handle_id") {} };
     public:
-        typedef std::function<std::unique_ptr<i_component>()> component_factory;
-        typedef std::function<std::unique_ptr<i_shared_component>()> shared_component_factory;
-        typedef std::function<std::unique_ptr<i_system>()> system_factory;
+        using component_factory = std::function<std::unique_ptr<i_component>()>;
+        using shared_component_factory = std::function<std::unique_ptr<i_shared_component>()>;
+        using system_factory = std::function<std::unique_ptr<i_system>()>;
     protected:
-        typedef boost::unordered_flat_map<entity_archetype_id, std::shared_ptr<const i_entity_archetype>, quick_uuid_hash> archetype_registry_t;
-        typedef boost::unordered_flat_map<component_id, component_factory, quick_uuid_hash> component_factories_t;
-        typedef boost::unordered_flat_map<component_id, std::unique_ptr<i_component>, quick_uuid_hash> components_t;
-        typedef boost::unordered_flat_map<component_id, shared_component_factory, quick_uuid_hash> shared_component_factories_t;
-        typedef boost::unordered_flat_map<component_id, std::unique_ptr<i_shared_component>, quick_uuid_hash> shared_components_t;
-        typedef boost::unordered_flat_map<system_id, system_factory, quick_uuid_hash> system_factories_t;
-        typedef boost::unordered_flat_map<system_id, std::unique_ptr<i_system>, quick_uuid_hash> systems_t;
+        struct entity_mutex_tag {};
+        struct archetype_mutex_tag {};
+        struct component_factory_mutex_tag {};
+        struct component_mutex_tag {};
+        struct shared_component_factory_mutex_tag {};
+        struct shared_component_mutex_tag {};
+        struct system_factory_mutex_tag {};
+        struct system_mutex_tag {};
+        using archetype_registry_t = ecs_map<entity_archetype_id, std::shared_ptr<const i_entity_archetype>, archetype_mutex_tag>;
+        using component_factories_t = ecs_map<component_id, component_factory, component_factory_mutex_tag>;
+        using components_t = ecs_map<component_id, std::shared_ptr<i_component>, component_mutex_tag>;
+        using shared_component_factories_t = ecs_map<component_id, shared_component_factory, shared_component_factory_mutex_tag>;
+        using shared_components_t = ecs_map<component_id, std::shared_ptr<i_shared_component>, shared_component_mutex_tag>;
+        using system_factories_t = ecs_map<system_id, system_factory, system_factory_mutex_tag>;
+        using systems_t = ecs_map<system_id, std::shared_ptr<i_system>, system_mutex_tag>;
     public:
-        typedef void* handle_t;
+        using handle_t = void*;
     public:
         virtual neolib::i_lockable& mutex() const = 0;
         virtual neolib::i_lockable& entity_mutex() const = 0;
-        virtual neolib::i_lockable& archetype_mutex() const = 0;
-        virtual neolib::i_lockable& component_mutex() const = 0;
-        virtual neolib::i_lockable& shared_component_mutex() const = 0;
-        virtual neolib::i_lockable& system_mutex() const = 0;
         virtual neolib::thread_pool& thread_pool() const = 0; // todo: polymorphic threadpool
     public:
         virtual ecs_flags flags() const = 0;

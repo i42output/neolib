@@ -52,11 +52,11 @@ namespace neolib
         {
         }
     public:
-        lifetime_state state() const
+        lifetime_state state() const final
         {
             return iState.load();
         }
-        void set_state(lifetime_state aState)
+        void set_state(lifetime_state aState) final
         {
             iState.store(aState);
         };

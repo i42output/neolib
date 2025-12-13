@@ -114,7 +114,7 @@ namespace neolib::ecs
 
     const i_entity_archetype& ecs::archetype(entity_archetype_id aArchetypeId) const
     {
-        std::unique_lock lock{ archetype_mutex() };
+        std::unique_lock lock{ archetypes().mutex };
         auto existingArchetype = archetypes().find(aArchetypeId);
         if (existingArchetype != archetypes().end())
             return *existingArchetype->second;
@@ -128,21 +128,21 @@ namespace neolib::ecs
 
     bool ecs::component_instantiated(component_id aComponentId) const
     {
-        std::unique_lock lock{ component_mutex() };
-        return components().find(aComponentId) != components().end();
+        return components().cache().find(aComponentId) != components().cache().end();
     }
 
     const i_component& ecs::component(component_id aComponentId) const
     {
+        if (component_instantiated(aComponentId))
+            return *components().cache()[aComponentId];
 
-        std::unique_lock lock{ component_mutex() };
-        auto existingComponent = components().find(aComponentId);
-        if (existingComponent != components().end())
-            return *existingComponent->second;
+        std::unique_lock lock{ components().mutex };
         auto existingFactory = component_factories().find(aComponentId);
         if (existingFactory != component_factories().end())
         {
-            auto& c = *iComponents.emplace(aComponentId, existingFactory->second()).first->second;
+            update_ecs_generation ueg{ components() };
+            auto& c = *iComponents.emplace(aComponentId, 
+                std::shared_ptr<i_component>{ existingFactory->second().release() }).first->second;
             iComponentMutexes.emplace_back(c.mutex());
             return c;
         }
@@ -156,19 +156,22 @@ namespace neolib::ecs
 
     bool ecs::shared_component_instantiated(component_id aComponentId) const
     {
-        std::unique_lock lock{ shared_component_mutex() };
-        return shared_components().find(aComponentId) != shared_components().end();
+        return shared_components().cache().find(aComponentId) != shared_components().cache().end();
     }
 
     const i_shared_component& ecs::shared_component(component_id aComponentId) const
     {
-        std::unique_lock lock{ shared_component_mutex() };
-        auto existingComponent = shared_components().find(aComponentId);
-        if (existingComponent != shared_components().end())
-            return *existingComponent->second;
+        if (shared_component_instantiated(aComponentId))
+            return *shared_components().cache()[aComponentId];
+
+        std::unique_lock lock{ shared_components().mutex };
         auto existingFactory = shared_component_factories().find(aComponentId);
         if (existingFactory != shared_component_factories().end())
-            return *iSharedComponents.emplace(aComponentId, existingFactory->second()).first->second;
+        {
+            update_ecs_generation ueg{ shared_components() };
+            return *iSharedComponents.emplace(aComponentId, 
+                std::shared_ptr<i_shared_component>{ existingFactory->second().release() }).first->second;
+        }
         throw component_not_found();
     }
 
@@ -179,19 +182,21 @@ namespace neolib::ecs
 
     bool ecs::system_instantiated(system_id aSystemId) const
     {
-        return systems().find(aSystemId) != systems().end();
+        return systems().cache().find(aSystemId) != systems().cache().end();
     }
 
     const i_system& ecs::system(system_id aSystemId) const
     {
-        std::unique_lock lock{ system_mutex() };
-        auto existingSystem = systems().find(aSystemId);
-        if (existingSystem != systems().end())
-            return *existingSystem->second;
+        if (system_instantiated(aSystemId))
+            return *systems().cache()[aSystemId];
+
+        std::unique_lock lock{ systems().mutex };
         auto existingFactory = system_factories().find(aSystemId);
         if (existingFactory != system_factories().end())
         {
-            auto& newSystem = *iSystems.emplace(aSystemId, existingFactory->second()).first->second;
+            update_ecs_generation ueg{ systems() };
+            auto& newSystem = *iSystems.emplace(aSystemId, 
+                std::shared_ptr<i_system>{ existingFactory->second().release() }).first->second;
             if (all_systems_paused())
                 newSystem.pause();
             return newSystem;
@@ -226,6 +231,13 @@ namespace neolib::ecs
 
     ecs::ecs(ecs_flags aCreationFlags) :
         iFlags{ aCreationFlags }, iNextEntityId { null_entity }, iNextHandleId{ null_id },
+        iArchetypeRegistry{ *this },
+        iComponentFactories{ *this },
+        iComponents{ *this },
+        iSharedComponentFactories{ *this },
+        iSharedComponents{ *this },
+        iSystemFactories{ *this },
+        iSystems{ *this },
         iSystemTimer
         {
             service<i_async_task>(),
@@ -266,26 +278,6 @@ namespace neolib::ecs
     recursive_spinlock<ecs::entity_mutex_tag>& ecs::entity_mutex() const
     {
         return iEntityMutex;
-    }
-
-    recursive_spinlock<ecs::archetype_mutex_tag>& ecs::archetype_mutex() const
-    {
-        return iArchetypeMutex;
-    }
-
-    neolib::recursive_spinlock<ecs::component_mutex_tag>& ecs::component_mutex() const
-    {
-        return iComponentMutex;
-    }
-
-    recursive_spinlock<ecs::shared_component_mutex_tag>& ecs::shared_component_mutex() const
-    {
-        return iSharedComponentMutex;
-    }
-
-    recursive_spinlock<ecs::system_mutex_tag>& ecs::system_mutex() const
-    {
-        return iSystemMutex;
     }
 
     neolib::thread_pool& ecs::thread_pool() const
@@ -384,7 +376,7 @@ namespace neolib::ecs
         if (iSystemsPaused)
             return;
 
-        std::unique_lock lock{ system_mutex() };
+        std::unique_lock lock{ systems().mutex };
 
         for (auto& s : systems())
             s.second->pause();
@@ -403,7 +395,7 @@ namespace neolib::ecs
         if (!iSystemsPaused)
             return;
 
-        std::unique_lock lock{ system_mutex() };
+        std::unique_lock lock{ systems().mutex };
 
         for (auto& s : systems())
             s.second->resume();
@@ -419,59 +411,60 @@ namespace neolib::ecs
 
     bool ecs::archetype_registered(const i_entity_archetype& aArchetype) const
     {
-        std::unique_lock lock{ archetype_mutex() };
-        return archetypes().find(aArchetype.id()) != archetypes().end();
+        return archetypes().cache().find(aArchetype.id()) != archetypes().end();
     }
 
     void ecs::register_archetype(const i_entity_archetype& aArchetype)
     {
-        std::unique_lock lock{ archetype_mutex() };
+        std::unique_lock lock{ archetypes().mutex };
+        update_ecs_generation ueg{ archetypes() };
         if (!archetypes().emplace(aArchetype.id(), std::shared_ptr<const i_entity_archetype>{ std::shared_ptr<const i_entity_archetype>{}, &aArchetype}).second)
             throw uuid_exists("register_archetype");
     }
 
     void ecs::register_archetype(std::shared_ptr<const i_entity_archetype> aArchetype)
     {
-        std::unique_lock lock{ archetype_mutex() };
+        std::unique_lock lock{ archetypes().mutex };
+        update_ecs_generation ueg{ archetypes() };
         if (!archetypes().emplace(aArchetype->id(), aArchetype).second)
             throw uuid_exists("register_archetype");
     }
 
     bool ecs::component_registered(component_id aComponentId) const
     {
-        std::unique_lock lock{ component_mutex() };
-        return component_factories().find(aComponentId) != component_factories().end();
+        return component_factories().cache().find(aComponentId) != component_factories().end();
     }
 
     void ecs::register_component(component_id aComponentId, component_factory aFactory)
     {
-        std::unique_lock lock{ component_mutex() };
+        std::unique_lock lock{ component_factories().mutex };
+        update_ecs_generation ueg{ component_factories() };
         if (!component_factories().emplace(aComponentId, aFactory).second)
             throw uuid_exists("register_component");
     }
 
     bool ecs::shared_component_registered(component_id aComponentId) const
     {
-        std::unique_lock lock{ shared_component_mutex() };
-        return shared_component_factories().find(aComponentId) != shared_component_factories().end();
+        return shared_component_factories().cache().find(aComponentId) != shared_component_factories().end();
     }
 
     void ecs::register_shared_component(component_id aComponentId, shared_component_factory aFactory)
     {
-        std::unique_lock lock{ shared_component_mutex() };
+        std::unique_lock lock{ shared_component_factories().mutex };
+        update_ecs_generation ueg{ shared_component_factories() };
         if (!shared_component_factories().emplace(aComponentId, aFactory).second)
             throw uuid_exists("register_shared_component");
     }
 
     bool ecs::system_registered(system_id aSystemId) const
     {
-        std::unique_lock lock{ system_mutex() };
-        return system_factories().find(aSystemId) != system_factories().end();
+        return system_factories().cache().find(aSystemId) != system_factories().end();
     }
 
     void ecs::register_system(system_id aSystemId, system_factory aFactory)
     {
-        std::unique_lock lock{ system_mutex() };
+        std::unique_lock lock{ system_factories().mutex };
+        update_ecs_generation ueg{ system_factories() };
         if (!system_factories().emplace(aSystemId, aFactory).second)
             throw uuid_exists("register_system");
     }
