@@ -87,6 +87,7 @@ namespace neolib::ecs
     struct update_ecs_generation
     {
         Map const& map;
+        bool ignore = false;
 
         update_ecs_generation(Map const& map) : map{ map } 
         {
@@ -94,7 +95,8 @@ namespace neolib::ecs
 
         ~update_ecs_generation()
         {
-            ++map.generation;
+            if (!ignore)
+                ++map.generation;
         }
     };
 
