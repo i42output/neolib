@@ -78,7 +78,10 @@ namespace neolib::ecs
 
     entity_id entity::detach()
     {
-        ecs().archetype(ecs().component<entity_info>().entity_record(id()).archetypeId).populate_default_components(ecs(), id());
+        auto& comp = ecs().component<entity_info>();
+        auto& rec = comp.entity_record(id());
+        auto& arc = ecs().archetype(rec.archetypeId);
+        arc.populate_default_components(ecs(), id());
         auto id = iId;
         iId = null_entity;
         return id;

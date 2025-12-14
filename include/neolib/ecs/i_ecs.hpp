@@ -36,7 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <boost/unordered/unordered_flat_map.hpp>
+#include <unordered_map>
 #include <neolib/core/i_mutex.hpp>
 #include <neolib/task/thread_pool.hpp>
 #include <neolib/task/event.hpp>
@@ -105,10 +105,13 @@ namespace neolib::ecs
     {
         using base_type = boost::unordered_flat_map<Key, Data, quick_uuid_hash>;
 
-        i_ecs& owner;
         mutable recursive_spinlock<MutexTag> mutex;
+
+        i_ecs& owner;
+        bool const isCache = false;
         mutable std::atomic<std::uint64_t> generation = 1;
-        mutable std::shared_ptr<std::atomic<bool>> destroyed;
+        std::shared_ptr<std::atomic_bool> destroyed;
+        mutable std::int32_t cacheLocked = 0;
 
         ecs_map& operator=(ecs_map const& other)
         {
@@ -118,30 +121,58 @@ namespace neolib::ecs
             return *this;
         }
 
-        auto& cache_map() const
+        ecs_map& cache() const
         {
-            thread_local boost::unordered_flat_map<i_ecs*, ecs_map> tCache;
-            return tCache;
-        }
+            struct cache_tls
+            {
+                std::unordered_map<i_ecs*, std::unique_ptr<ecs_map>> map;
+                i_ecs* mruOwner = nullptr;
+                ecs_map* mruSnap = nullptr;
+                std::uint64_t mruGen = 0;
+            };
 
-        ecs_map<Key, Data, MutexTag>& cache() const
-        {
-            auto existing = cache_map().find(&owner);
-            if (existing == cache_map().end() ||
-                existing->second.destroyed->load() ||
-                existing->second.generation != generation)
+            thread_local cache_tls tCacheTls;
+
+            auto const g = generation.load(std::memory_order_relaxed);
+
+            if (tCacheTls.mruOwner == &owner && tCacheTls.mruSnap &&
+                (tCacheTls.mruGen == g || tCacheTls.mruSnap->cacheLocked) &&
+                !tCacheTls.mruSnap->destroyed->load(std::memory_order_relaxed))
+                return *tCacheTls.mruSnap;
+
+            auto [it, inserted] = tCacheTls.map.try_emplace(&owner, nullptr);
+            (void)inserted;
+
+            ecs_map* snap = it->second.get();
+            bool const oldSnap = (snap && snap->generation.load(std::memory_order_relaxed) != g);
+            bool const expiredSnap = (snap && snap->destroyed->load(std::memory_order_relaxed));
+
+            if (snap && (!oldSnap || snap->cacheLocked) && !expiredSnap)
+            {
+                tCacheTls.mruOwner = &owner;
+                tCacheTls.mruSnap = snap;
+                tCacheTls.mruGen = snap->generation.load(std::memory_order_relaxed);;
+                return *snap;
+            }
+
+            std::unique_ptr<ecs_map> fresh;
             {
                 std::unique_lock lock{ mutex };
-                if (existing == cache_map().end())
-                    existing = cache_map().try_emplace(&owner, *this).first;
-                else
-                    existing->second = *this;
+                fresh = std::make_unique<ecs_map>(*this);
             }
-            return existing->second;
+            
+            it->second = std::move(fresh);
+
+            tCacheTls.mruOwner = &owner;
+            tCacheTls.mruSnap = it->second.get();
+            tCacheTls.mruGen = g;
+
+            return *tCacheTls.mruSnap;
         }
 
         ecs_map(i_ecs& owner) : 
             owner{ owner },
+            generation{},
             destroyed{ std::make_shared<std::atomic_bool>() }
         {
         }
@@ -149,14 +180,34 @@ namespace neolib::ecs
         ecs_map(ecs_map const& other) :
             base_type{ other },
             owner{ other.owner },
+            isCache{ true },
+            generation{ other.generation.load(std::memory_order_relaxed) },
             destroyed{ other.destroyed }
         {
         }
 
         ~ecs_map()
         {
-            destroyed->store(true);
+            if (!isCache)
+                destroyed->store(true);
         }
+    };
+
+    template <typename Key, typename Data, typename MutexTag>
+    class scoped_cache_lock
+    {
+    public:
+        scoped_cache_lock(ecs_map<Key, Data, MutexTag> const& aMap) :
+            iCachedMap{ aMap.cache()}
+        {
+            ++iCachedMap.cacheLocked;
+        }
+        ~scoped_cache_lock()
+        {
+            --iCachedMap.cacheLocked;
+        }
+    private:
+        ecs_map<Key, Data, MutexTag> const& iCachedMap;
     };
 
     class i_ecs : public i_object

@@ -114,6 +114,7 @@ namespace neolib::ecs
 
     const i_entity_archetype& ecs::archetype(entity_archetype_id aArchetypeId) const
     {
+        scoped_cache_lock cacheLock{ archetypes() };
         auto existingArchetype = archetypes().cache().find(aArchetypeId);
         if (existingArchetype != archetypes().cache().end())
             return *existingArchetype->second;
@@ -127,11 +128,13 @@ namespace neolib::ecs
 
     bool ecs::component_instantiated(component_id aComponentId) const
     {
+        scoped_cache_lock cacheLock{ components() };
         return components().cache().find(aComponentId) != components().cache().end();
     }
 
     const i_component& ecs::component(component_id aComponentId) const
     {
+        scoped_cache_lock cacheLock{ components() };
         if (component_instantiated(aComponentId))
             return *components().cache().at(aComponentId);
 
@@ -157,11 +160,13 @@ namespace neolib::ecs
 
     bool ecs::shared_component_instantiated(component_id aComponentId) const
     {
+        scoped_cache_lock cacheLock{ shared_components() };
         return shared_components().cache().find(aComponentId) != shared_components().cache().end();
     }
 
     const i_shared_component& ecs::shared_component(component_id aComponentId) const
     {
+        scoped_cache_lock cacheLock{ shared_components() };
         if (shared_component_instantiated(aComponentId))
             return *shared_components().cache().at(aComponentId);
 
@@ -185,11 +190,13 @@ namespace neolib::ecs
 
     bool ecs::system_instantiated(system_id aSystemId) const
     {
+        scoped_cache_lock cacheLock{ systems() };
         return systems().cache().find(aSystemId) != systems().cache().end();
     }
 
     const i_system& ecs::system(system_id aSystemId) const
     {
+        scoped_cache_lock cacheLock{ systems() };
         if (system_instantiated(aSystemId))
             return *systems().cache().at(aSystemId);
 
@@ -415,6 +422,7 @@ namespace neolib::ecs
 
     bool ecs::archetype_registered(const i_entity_archetype& aArchetype) const
     {
+        scoped_cache_lock cacheLock{ archetypes() };
         return archetypes().cache().find(aArchetype.id()) != archetypes().cache().end();
     }
 
@@ -436,6 +444,7 @@ namespace neolib::ecs
 
     bool ecs::component_registered(component_id aComponentId) const
     {
+        scoped_cache_lock cacheLock{ component_factories() };
         return component_factories().cache().find(aComponentId) != component_factories().cache().end();
     }
 
@@ -449,6 +458,7 @@ namespace neolib::ecs
 
     bool ecs::shared_component_registered(component_id aComponentId) const
     {
+        scoped_cache_lock cacheLock{ shared_component_factories() };
         return shared_component_factories().cache().find(aComponentId) != shared_component_factories().cache().end();
     }
 
@@ -462,6 +472,7 @@ namespace neolib::ecs
 
     bool ecs::system_registered(system_id aSystemId) const
     {
+        scoped_cache_lock cacheLock{ system_factories() };
         return system_factories().cache().find(aSystemId) != system_factories().cache().end();
     }
 
