@@ -56,8 +56,17 @@ namespace neolib
         {
             iStrategy = aStrategy;
         }
+        std::optional<event_system_locking_profile_info> const& locking_profile_info() const noexcept final
+        {
+            return iProfileInfo;
+        }
+        void set_locking_profiling_info(event_system_locking_profile_info const& aInfo) noexcept final
+        {
+            iProfileInfo = aInfo;
+        }
     private:
         event_system_locking_strategy iStrategy = event_system_locking_strategy::MultiThreadedSpinlock;
+        std::optional<event_system_locking_profile_info> iProfileInfo;
     };
 
     class async_event_queue : public lifetime<i_async_event_queue>

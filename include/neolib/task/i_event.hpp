@@ -50,11 +50,19 @@ namespace neolib
         MultiThreadedSpinlock
     };
 
+    struct event_system_locking_profile_info
+    {
+        std::chrono::milliseconds pathologicalContentionTimeout;
+        std::uint32_t pathologicalContentionMaxCount;
+    };
+
     class i_event_system : public i_service
     {
     public:
         virtual event_system_locking_strategy locking_strategy() const noexcept = 0;
         virtual void set_locking_strategy(event_system_locking_strategy aStrategy) noexcept = 0;
+        virtual std::optional<event_system_locking_profile_info> const& locking_profile_info() const noexcept = 0;
+        virtual void set_locking_profiling_info(event_system_locking_profile_info const& aInfo) noexcept = 0;
     public:
         static uuid const& iid() { static uuid const sIid{ 0x9f84fbad, 0xc980, 0x4d71, 0xb4b0, { 0x89, 0xb5, 0x7b, 0x94, 0xdb, 0xfe } }; return sIid; }
     };
@@ -75,6 +83,10 @@ namespace neolib
                 break;
             case event_system_locking_strategy::MultiThreadedSpinlock:
                 this->set_multi_threaded_spinlock();
+                if (service<i_event_system>().locking_profile_info() != std::nullopt)
+                    this->throw_on_pathological_contention(
+                        service<i_event_system>().locking_profile_info().value().pathologicalContentionTimeout,
+                        service<i_event_system>().locking_profile_info().value().pathologicalContentionMaxCount);
                 break;
             }
         }
