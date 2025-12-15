@@ -115,8 +115,11 @@ namespace neolib::ecs
         virtual neolib::i_lockable& mutex() const = 0;
         virtual neolib::i_lockable& entity_mutex() const = 0;
         virtual neolib::i_lockable& archetype_mutex() const = 0;
+        virtual neolib::i_lockable& component_factory_mutex() const = 0;
         virtual neolib::i_lockable& component_mutex() const = 0;
+        virtual neolib::i_lockable& shared_component_factory_mutex() const = 0;
         virtual neolib::i_lockable& shared_component_mutex() const = 0;
+        virtual neolib::i_lockable& system_factory_mutex() const = 0;
         virtual neolib::i_lockable& system_mutex() const = 0;
         virtual neolib::thread_pool& thread_pool() const = 0; // todo: polymorphic threadpool
     public:

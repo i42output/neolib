@@ -59,8 +59,11 @@ namespace neolib::ecs
         typedef std::vector<handle_t> handles_t;
         struct entity_mutex_tag {};
         struct archetype_mutex_tag {};
+        struct component_factory_mutex_tag {};
         struct component_mutex_tag {};
+        struct shared_component_factory_mutex_tag {};
         struct shared_component_mutex_tag {};
+        struct system_factory_mutex_tag {};
         struct system_mutex_tag {};
     public:
         ecs(ecs_flags aCreationFlags = ecs_flags::Default);
@@ -69,8 +72,11 @@ namespace neolib::ecs
         recursive_spinlock<ecs>& mutex() const final;
         recursive_spinlock<entity_mutex_tag>& entity_mutex() const final;
         recursive_spinlock<archetype_mutex_tag>& archetype_mutex() const final;
+        recursive_spinlock<component_factory_mutex_tag>& component_factory_mutex() const final;
         recursive_spinlock<component_mutex_tag>& component_mutex() const final;
+        recursive_spinlock<shared_component_factory_mutex_tag>& shared_component_factory_mutex() const final;
         recursive_spinlock<shared_component_mutex_tag>& shared_component_mutex() const final;
+        recursive_spinlock<system_factory_mutex_tag>& system_factory_mutex() const final;
         recursive_spinlock<system_mutex_tag>& system_mutex() const final;
         neolib::thread_pool& thread_pool() const final;
     public:
@@ -156,8 +162,11 @@ namespace neolib::ecs
         mutable recursive_spinlock<ecs> iMutex;
         mutable recursive_spinlock<entity_mutex_tag> iEntityMutex;
         mutable recursive_spinlock<archetype_mutex_tag> iArchetypeMutex;
+        mutable recursive_spinlock<component_factory_mutex_tag> iComponentFactoryMutex;
         mutable recursive_spinlock<component_mutex_tag> iComponentMutex;
+        mutable recursive_spinlock<shared_component_factory_mutex_tag> iSharedComponentFactoryMutex;;
         mutable recursive_spinlock<shared_component_mutex_tag> iSharedComponentMutex;;
+        mutable recursive_spinlock<system_factory_mutex_tag> iSystemFactoryMutex;
         mutable recursive_spinlock<system_mutex_tag> iSystemMutex;
         mutable std::optional<neolib::thread_pool> iThreadPool;
         ecs_flags iFlags;

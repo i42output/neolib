@@ -83,22 +83,26 @@ namespace neolib::ecs
             iEcs{ aEcs }, iComponents{ ComponentData::meta::id()... }, iPaused{ 0u }
         {
             (ecs().template component<ComponentData>(), ...);
+            update_component_availability();
         }
         system(const system& aOther) :
             iEcs{ aOther.iEcs }, iComponents{ aOther.iComponents }, iPaused{ 0u }
         {
             (ecs().template component<ComponentData>(), ...);
+            update_component_availability();
         }
         system(system&& aOther) :
             iEcs{ aOther.iEcs }, iComponents{ std::move(aOther.iComponents) }, iPaused{ 0u }
         {
             (ecs().template component<ComponentData>(), ...);
+            update_component_availability();
         }
         template <typename ComponentIdIter>
         system(i_ecs& aEcs, ComponentIdIter aFirstComponent, ComponentIdIter aLastComponent) :
             iEcs{ aEcs }, iComponents{ aFirstComponent, aLastComponent }, iPaused{ 0u }
         {
             (ecs().template component<ComponentData>(), ...);
+            update_component_availability();
             if (ecs().all_systems_paused())
                 pause();
         }
@@ -129,6 +133,14 @@ namespace neolib::ecs
             return ecs().component(aComponentId);
         }
     public:
+        bool components_available() const final
+        {
+            return iComponentsAvailable.load();
+        }
+        void update_component_availability() final
+        {
+            iComponentsAvailable.store((ecs().template component_instantiated<ComponentData>() && ...));
+        }
         bool can_apply() const final
         {
             return !paused() && (!have_thread() || (have_thread() && get_thread().in()));
@@ -275,6 +287,7 @@ namespace neolib::ecs
     private:
         i_ecs& iEcs;
         component_list iComponents;
+        mutable std::atomic<bool> iComponentsAvailable = false;
         std::atomic<uint32_t> iPaused = 0u;
         std::mutex iMutex;
         std::condition_variable iCondVar;

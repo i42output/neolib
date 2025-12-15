@@ -66,6 +66,8 @@ namespace neolib::ecs
         virtual const i_component& component(component_id aComponentId) const = 0;
         virtual const i_component& component(component_id aComponentId) = 0;
     public:
+        virtual bool components_available() const = 0;
+        virtual void update_component_availability() = 0;
         virtual bool can_apply() const = 0;
         virtual bool apply() = 0;
         virtual bool paused() const = 0;
