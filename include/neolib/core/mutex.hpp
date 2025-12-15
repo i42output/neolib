@@ -47,6 +47,15 @@
     #define NEOS_PROFILE_MUTEXES
 #endif
 
+#if defined(NEOS_PROFILE_MUTEXES)
+    #if !defined(PATHOLOGICAL_CONTENTION_TIMEOUT_MS)
+        #define PATHOLOGICAL_CONTENTION_TIMEOUT_MS 10
+    #endif
+    #if !defined(PATHOLOGICAL_CONTENTION_MAX_COUNT)
+        #define PATHOLOGICAL_CONTENTION_MAX_COUNT 10
+    #endif
+#endif
+
 namespace neolib
 {
     struct null_mutex : public i_lockable
@@ -111,7 +120,7 @@ namespace neolib
             assert(!iState.test(std::memory_order_acquire));
         }
     public:
-        void lock() noexcept final
+        void lock() final
         {
             prevent_icf();
             auto const thisThread = std::this_thread::get_id();
@@ -120,8 +129,26 @@ namespace neolib
                 ++iLockCount;
                 return;
             }
+#if !defined(NEOS_PROFILE_MUTEXES)
             while (iState.test_and_set(std::memory_order_acquire))
                 iState.wait(true, std::memory_order_relaxed);
+#else
+            if (!iThrowOnPathologicalContention)
+            {
+                while (iState.test_and_set(std::memory_order_acquire))
+                    iState.wait(true, std::memory_order_relaxed);
+            }
+            else
+            {
+                auto const start = std::chrono::high_resolution_clock::now();
+                while (iState.test_and_set(std::memory_order_acquire))
+                    iState.wait(true, std::memory_order_relaxed);
+                auto const end = std::chrono::high_resolution_clock::now();
+                if (end - start > std::chrono::milliseconds{ PATHOLOGICAL_CONTENTION_TIMEOUT_MS })
+                    if (++iPathologicalContentionCounter > PATHOLOGICAL_CONTENTION_MAX_COUNT)
+                        throw pathological_contention();
+            }
+#endif
             iLockingThread.store(thisThread, std::memory_order_relaxed);
             ++iLockCount;
         }
@@ -150,10 +177,16 @@ namespace neolib
             ++iLockCount;
             return true;
         }
+        void throw_on_pathological_contention() noexcept final
+        {
+            iThrowOnPathologicalContention = true;
+        }
     private:
         std::atomic_flag iState;
         std::atomic<std::uint32_t> iLockCount;
         std::atomic<std::thread::id> iLockingThread;
+        std::atomic<bool> iThrowOnPathologicalContention = false;
+        std::atomic<std::uint32_t> iPathologicalContentionCounter = 0u;
     };
 
     template <typename ProfilerInfo = void>

@@ -41,8 +41,11 @@ namespace neolib
 {
     struct i_lockable
     {
-        virtual void lock() noexcept = 0;
+        struct pathological_contention : std::logic_error { pathological_contention() : std::logic_error{"neolib::i_lockable::pathological_contention"} {} };
+
+        virtual void lock() = 0;
         virtual void unlock() noexcept = 0;
         virtual bool try_lock() noexcept = 0;
+        virtual void throw_on_pathological_contention() noexcept {}
     };
 }
