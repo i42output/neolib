@@ -36,16 +36,26 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <thread>
+#include <chrono>
 
 namespace neolib
 {
     struct i_lockable
     {
-        struct pathological_contention : std::logic_error { pathological_contention() : std::logic_error{"neolib::i_lockable::pathological_contention"} {} };
+        struct pathological_contention : std::logic_error 
+        { 
+            std::thread::id previousLockingThreadId;
+
+            pathological_contention(std::thread::id aPreviousLockingThreadId) :
+                std::logic_error{"neolib::i_lockable::pathological_contention"},
+                previousLockingThreadId{ aPreviousLockingThreadId }
+            {} 
+        };
 
         virtual void lock() = 0;
         virtual void unlock() noexcept = 0;
         virtual bool try_lock() noexcept = 0;
-        virtual void throw_on_pathological_contention() noexcept {}
+        virtual void throw_on_pathological_contention(std::chrono::milliseconds aTimeout = std::chrono::milliseconds{ 10 }, std::uint32_t aMaxCount = 10u) noexcept {}
     };
 }
