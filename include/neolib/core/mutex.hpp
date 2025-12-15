@@ -214,7 +214,7 @@ namespace neolib
             iActiveMutex.emplace<neolib::recursive_spinlock<ProfilerInfo>>();
         }
     public:
-        void lock() noexcept final
+        void lock() final
         {
             if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
                 std::get<std::recursive_mutex>(iActiveMutex).lock();
@@ -240,6 +240,11 @@ namespace neolib
                 return std::get<neolib::recursive_spinlock<ProfilerInfo>>(iActiveMutex).try_lock();
             else
                 return std::get<neolib::null_mutex>(iActiveMutex).try_lock();
+        }
+        void throw_on_pathological_contention(std::chrono::milliseconds aTimeout = std::chrono::milliseconds{ 10 }, std::uint32_t aMaxCount = 10u) noexcept final
+        {
+            if (std::holds_alternative<neolib::recursive_spinlock<ProfilerInfo>>(iActiveMutex))
+                std::get<neolib::recursive_spinlock<ProfilerInfo>>(iActiveMutex).throw_on_pathological_contention(aTimeout, aMaxCount);
         }
     private:
         std::variant<std::recursive_mutex, neolib::recursive_spinlock<ProfilerInfo>, neolib::null_mutex> iActiveMutex;
