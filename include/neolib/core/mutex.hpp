@@ -81,7 +81,7 @@ namespace neolib
         Subject* iSubject;
     };
 
-    template <typename ProfilerInfo = void>
+    template <typename ProfilerTag = void>
     class alignas(boost::lockfree::detail::cacheline_bytes) recursive_spinlock : public i_lockable
     {
     private:
@@ -192,7 +192,7 @@ namespace neolib
 #endif
     };
 
-    template <typename ProfilerInfo = void>
+    template <typename ProfilerTag = void>
     class alignas(boost::lockfree::detail::cacheline_bytes) switchable_mutex : public i_lockable
     {
     public:
@@ -211,15 +211,15 @@ namespace neolib
         }
         void set_multi_threaded_spinlock()
         {
-            iActiveMutex.emplace<neolib::recursive_spinlock<ProfilerInfo>>();
+            iActiveMutex.emplace<neolib::recursive_spinlock<ProfilerTag>>();
         }
     public:
         void lock() final
         {
             if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
                 std::get<std::recursive_mutex>(iActiveMutex).lock();
-            else if (std::holds_alternative<neolib::recursive_spinlock<ProfilerInfo>>(iActiveMutex))
-                std::get<neolib::recursive_spinlock<ProfilerInfo>>(iActiveMutex).lock();
+            else if (std::holds_alternative<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex))
+                std::get<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex).lock();
             else
                 std::get<neolib::null_mutex>(iActiveMutex).lock();
         }
@@ -227,8 +227,8 @@ namespace neolib
         {
             if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
                 std::get<std::recursive_mutex>(iActiveMutex).unlock();
-            else if (std::holds_alternative<neolib::recursive_spinlock<ProfilerInfo>>(iActiveMutex))
-                std::get<neolib::recursive_spinlock<ProfilerInfo>>(iActiveMutex).unlock();
+            else if (std::holds_alternative<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex))
+                std::get<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex).unlock();
             else
                 std::get<neolib::null_mutex>(iActiveMutex).unlock();
         }
@@ -236,18 +236,18 @@ namespace neolib
         {
             if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
                 return std::get<std::recursive_mutex>(iActiveMutex).try_lock();
-            else if (std::holds_alternative<neolib::recursive_spinlock<ProfilerInfo>>(iActiveMutex))
-                return std::get<neolib::recursive_spinlock<ProfilerInfo>>(iActiveMutex).try_lock();
+            else if (std::holds_alternative<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex))
+                return std::get<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex).try_lock();
             else
                 return std::get<neolib::null_mutex>(iActiveMutex).try_lock();
         }
         void throw_on_pathological_contention(std::chrono::milliseconds aTimeout = std::chrono::milliseconds{ 10 }, std::uint32_t aMaxCount = 10u) noexcept final
         {
-            if (std::holds_alternative<neolib::recursive_spinlock<ProfilerInfo>>(iActiveMutex))
-                std::get<neolib::recursive_spinlock<ProfilerInfo>>(iActiveMutex).throw_on_pathological_contention(aTimeout, aMaxCount);
+            if (std::holds_alternative<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex))
+                std::get<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex).throw_on_pathological_contention(aTimeout, aMaxCount);
         }
     private:
-        std::variant<std::recursive_mutex, neolib::recursive_spinlock<ProfilerInfo>, neolib::null_mutex> iActiveMutex;
+        std::variant<std::recursive_mutex, neolib::recursive_spinlock<ProfilerTag>, neolib::null_mutex> iActiveMutex;
     };
 
     template <typename Mutexes>

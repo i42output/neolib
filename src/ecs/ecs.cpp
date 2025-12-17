@@ -324,30 +324,33 @@ namespace neolib::ecs
     {
         std::unique_lock lock{ entity_mutex() };
         auto entityId = next_entity_id();
+        lock.unlock();
         if ((flags() & ecs_flags::PopulateEntityInfo) == ecs_flags::PopulateEntityInfo)
             component<entity_info>().populate(entityId, entity_info{ aArchetypeId, system<time>().world_time() });
-        lock.unlock();
         EntityCreated.trigger(entityId);
         return entityId;
     }
 
     void ecs::async_create_entity(const std::function<void()>& aCreator)
     {
-        std::unique_lock lock1{ entity_mutex() };
-        scoped_component_lock<entity_info> lock2{ *this };
+        std::unique_lock lock{ entity_mutex() };
         iEntitiesToCreate.emplace_back(aCreator);
     }
 
     void ecs::commit_async_entity_creation()
     {
-        std::unique_lock lock1{ entity_mutex() };
-        if (iEntitiesToCreate.empty())
-            return;
-        scoped_multi_lock<decltype(iComponentMutexes)> lock2{ iComponentMutexes };
-        while (!iEntitiesToCreate.empty())
+        auto entitiesToCreate = decltype(iEntitiesToCreate){};
         {
-            auto next = iEntitiesToCreate.back();
-            iEntitiesToCreate.pop_back();
+            std::unique_lock lock{ entity_mutex() };
+            if (iEntitiesToCreate.empty())
+                return;
+            entitiesToCreate.swap(iEntitiesToCreate);
+        }
+        scoped_multi_lock<decltype(iComponentMutexes)> lock{ iComponentMutexes };
+        while (!entitiesToCreate.empty())
+        {
+            auto next = entitiesToCreate.back();
+            entitiesToCreate.pop_back();
             next();
         }
     }
@@ -356,35 +359,45 @@ namespace neolib::ecs
     {
         if (aNotify)
             EntityDestroyed.trigger(aEntityId);
-        std::unique_lock lock1{ entity_mutex() };
-        scoped_multi_lock<decltype(iComponentMutexes)> lock2{ iComponentMutexes };
-        for (auto& component : iComponents)
-            if (component.second->has_entity_record(aEntityId))
-                component.second->destroy_entity_record(aEntityId);
-        free_entity_id(aEntityId);
+        {
+            scoped_multi_lock<decltype(iComponentMutexes)> lock{ iComponentMutexes };
+            for (auto& component : iComponents)
+                if (component.second->has_entity_record(aEntityId))
+                    component.second->destroy_entity_record(aEntityId);
+        }
+        {
+            std::unique_lock lock{ entity_mutex() };
+            free_entity_id(aEntityId);
+        }
     }
 
     void ecs::async_destroy_entity(entity_id aEntityId, bool aNotify)
     {
-        std::unique_lock lock1{ entity_mutex() };
-        scoped_component_lock<entity_info> lock2{ *this };
-        component<entity_info>().entity_record(aEntityId).destroyed = true;
-        iEntitiesToDestroy.emplace_back(aEntityId, aNotify);
+        {
+            scoped_component_lock<entity_info> lock{ *this };
+            component<entity_info>().entity_record(aEntityId).destroyed = true;
+        }
+        {
+            std::unique_lock lock{ entity_mutex() };
+            iEntitiesToDestroy.emplace_back(aEntityId, aNotify);
+        }
     }
 
     void ecs::commit_async_entity_destruction()
     {
-        std::unique_lock lock1{ entity_mutex() };
-        if (iEntitiesToDestroy.empty())
-            return;
-        scoped_multi_lock<decltype(iComponentMutexes)> lock2{ iComponentMutexes };
-        while (!iEntitiesToDestroy.empty())
+        auto entitiesToDestroy = decltype(iEntitiesToDestroy){};
         {
-            auto next = iEntitiesToDestroy.back();
-            iEntitiesToDestroy.pop_back();
-            lock1.unlock();
+            std::unique_lock lock{ entity_mutex() };
+            if (iEntitiesToDestroy.empty())
+                return;
+            entitiesToDestroy.swap(iEntitiesToDestroy);
+        }
+        scoped_multi_lock<decltype(iComponentMutexes)> lock{ iComponentMutexes };
+        while (!entitiesToDestroy.empty())
+        {
+            auto next = entitiesToDestroy.back();
+            entitiesToDestroy.pop_back();
             destroy_entity(next.first, next.second);
-            lock1.lock();
         }
     }
 

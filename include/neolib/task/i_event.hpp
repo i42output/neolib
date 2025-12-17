@@ -67,8 +67,8 @@ namespace neolib
         static uuid const& iid() { static uuid const sIid{ 0x9f84fbad, 0xc980, 0x4d71, 0xb4b0, { 0x89, 0xb5, 0x7b, 0x94, 0xdb, 0xfe } }; return sIid; }
     };
 
-    template <typename ProfilerInfo = void>
-    class event_mutex : public switchable_mutex<ProfilerInfo>
+    template <typename ProfilerTag = void>
+    class event_mutex : public switchable_mutex<ProfilerTag>
     {
     public:
         event_mutex()
