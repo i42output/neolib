@@ -52,7 +52,7 @@ namespace neolib
 
     struct event_system_locking_profile_info
     {
-        std::chrono::milliseconds pathologicalContentionTimeout;
+        std::chrono::microseconds pathologicalContentionTimeout;
         std::uint32_t pathologicalContentionMaxCount;
     };
 

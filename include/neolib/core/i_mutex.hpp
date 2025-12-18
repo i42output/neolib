@@ -56,6 +56,6 @@ namespace neolib
         virtual void lock() = 0;
         virtual void unlock() noexcept = 0;
         virtual bool try_lock() noexcept = 0;
-        virtual void throw_on_pathological_contention(std::chrono::milliseconds aTimeout = std::chrono::milliseconds{ 10 }, std::uint32_t aMaxCount = 10u) noexcept {}
+        virtual void throw_on_pathological_contention(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u) noexcept {}
     };
 }

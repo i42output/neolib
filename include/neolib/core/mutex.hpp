@@ -172,7 +172,7 @@ namespace neolib
             ++iLockCount;
             return true;
         }
-        void throw_on_pathological_contention(std::chrono::milliseconds aTimeout = std::chrono::milliseconds{ 10 }, std::uint32_t aMaxCount = 10u) noexcept final
+        void throw_on_pathological_contention(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u) noexcept final
         {
 #if defined(NEOS_PROFILE_MUTEXES)
             iPathologicalContentionCounterTimeout = aTimeout;
@@ -186,7 +186,7 @@ namespace neolib
         std::atomic<std::thread::id> iLockingThread;
 #if defined(NEOS_PROFILE_MUTEXES)
         std::atomic<bool> iThrowOnPathologicalContention = false;
-        std::atomic<std::chrono::milliseconds> iPathologicalContentionCounterTimeout;
+        std::atomic<std::chrono::microseconds> iPathologicalContentionCounterTimeout;
         std::atomic<std::uint32_t> iPathologicalContentionCounterMaxCount;
         std::atomic<std::uint32_t> iPathologicalContentionCounter = 0u;
 #endif
@@ -241,7 +241,7 @@ namespace neolib
             else
                 return std::get<neolib::null_mutex>(iActiveMutex).try_lock();
         }
-        void throw_on_pathological_contention(std::chrono::milliseconds aTimeout = std::chrono::milliseconds{ 10 }, std::uint32_t aMaxCount = 10u) noexcept final
+        void throw_on_pathological_contention(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u) noexcept final
         {
             if (std::holds_alternative<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex))
                 std::get<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex).throw_on_pathological_contention(aTimeout, aMaxCount);
