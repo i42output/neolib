@@ -125,11 +125,6 @@ namespace neolib
             iLockCount{ 0u },
             iLockingThread{}
         {
-#if defined(NEOS_PROFILE_MUTEXES)
-            if (service<i_mutex_profiler>().params().has_value())
-                throw_on_pathological_contention(
-                    service<i_mutex_profiler>().params().value().timeout, service<i_mutex_profiler>().params().value().maxCount);
-#endif
         }
         ~recursive_spinlock()
         {
@@ -149,12 +144,8 @@ namespace neolib
             while (iState.test_and_set(std::memory_order_acquire))
                 iState.wait(true, std::memory_order_relaxed);
 #else
-            if (!iThrowOnPathologicalContention)
-            {
-                while (iState.test_and_set(std::memory_order_acquire))
-                    iState.wait(true, std::memory_order_relaxed);
-            }
-            else
+            static auto& serviceProfiler = service<i_mutex_profiler>();
+            if (iThrowOnPathologicalContention)
             {
                 auto previousLockingThread = iLockingThread.load();
                 auto const start = std::chrono::high_resolution_clock::now();
@@ -167,6 +158,25 @@ namespace neolib
                 if (end - start > iPathologicalContentionCounterTimeout.load())
                     if (++iPathologicalContentionCounter > iPathologicalContentionCounterMaxCount.load())
                         throw pathological_contention(previousLockingThread);
+            }
+            else if (serviceProfiler.params().has_value())
+            {
+                auto previousLockingThread = iLockingThread.load();
+                auto const start = std::chrono::high_resolution_clock::now();
+                while (iState.test_and_set(std::memory_order_acquire))
+                {
+                    previousLockingThread = iLockingThread.load();
+                    iState.wait(true, std::memory_order_relaxed);
+                }
+                auto const end = std::chrono::high_resolution_clock::now();
+                if (end - start > serviceProfiler.params().value().timeout)
+                    if (++iPathologicalContentionCounter > serviceProfiler.params().value().maxCount)
+                        throw pathological_contention(previousLockingThread);
+            }
+            else
+            {
+                while (iState.test_and_set(std::memory_order_acquire))
+                    iState.wait(true, std::memory_order_relaxed);
             }
 #endif
             iLockingThread.store(thisThread, std::memory_order_relaxed);
