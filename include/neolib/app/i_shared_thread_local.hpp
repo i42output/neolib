@@ -36,7 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <neolib/app/services.hpp>
+#include <neolib/core/service.hpp>
 
 namespace neolib
 {

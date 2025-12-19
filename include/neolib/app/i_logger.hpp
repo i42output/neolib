@@ -41,7 +41,7 @@
 #include <sstream>
 #include <neolib/core/string.hpp>
 #include <neolib/task/event.hpp>
-#include <neolib/app/services.hpp>
+#include <neolib/core/service.hpp>
 
 namespace neolib
 {

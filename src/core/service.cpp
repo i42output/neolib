@@ -1,6 +1,6 @@
-// services.cpp
+// service.cpp
 /*
- *  Copyright (c) 2020 Leigh Johnston.
+ *  Copyright (c) 2020-2025 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -37,7 +37,7 @@
 #include <unordered_map>
 #include <memory>
 #include <mutex>
-#include <neolib/app/services.hpp>
+#include <neolib/core/service.hpp>
 
 namespace neolib::services
 {

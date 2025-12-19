@@ -1,6 +1,6 @@
 // event.cpp
 /*
- *  Copyright (c) 2021 Leigh Johnston.
+ *  Copyright (c) 2021-2025 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -77,6 +77,7 @@ namespace neolib
 
     async_event_queue::async_event_queue()
     {
+        iMutex.throw_on_pathological_contention(std::chrono::microseconds{ 10 });
         std::scoped_lock lock{ iMutex };
         if (instance_map().find(std::this_thread::get_id()) == instance_map().end())
             instance_map()[std::this_thread::get_id()] = this;

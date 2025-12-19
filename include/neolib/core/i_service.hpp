@@ -1,6 +1,6 @@
-// i_application.hpp
+// i_service.hpp
 /*
- *  Copyright (c) 2007 Leigh Johnston.
+ *  Copyright (c) 2020-2025 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -35,21 +35,48 @@
 
 #pragma once
 
-#include <neolib/neolib.hpp>
-#include <neolib/core/i_discoverable.hpp>
-#include <neolib/core/i_string.hpp>
-#include <neolib/core/service.hpp>
-#include <neolib/app/i_application_info.hpp>
-#include <neolib/plugin/i_plugin_manager.hpp>
+#include <stdexcept>
+#include <atomic>
+#include <mutex>
+#include <neolib/core/uuid.hpp>
 
 namespace neolib
 {
-    class i_application : public i_discoverable
+    namespace services
     {
-    public:
-        virtual i_service_provider& service_provider() const = 0;
-    public:
-        virtual const i_application_info& info() const = 0;
-        virtual i_plugin_manager& plugin_manager() = 0;
-    };
+        struct no_service_provider_instance : std::logic_error { no_service_provider_instance() : std::logic_error{ "neolib::services::no_service_provider_instance" } {} };
+        struct service_provider_instance_exists : std::logic_error { service_provider_instance_exists() : std::logic_error{ "neolib::services::service_provider_instance_exists" } {} };
+        struct service_not_found : std::logic_error { service_not_found() : std::logic_error{ "neolib::services::service_not_found" } {} };
+
+        class i_service
+        {
+        public:
+            virtual ~i_service() = default;
+        };
+
+        class i_service_provider
+        {
+        public:
+            virtual ~i_service_provider() = default;
+        public:
+            virtual bool try_lock() = 0;
+            virtual void lock() = 0;
+            virtual void unlock() = 0;
+        public:
+            virtual bool service_registered(uuid aServiceIid) const = 0;
+            virtual i_service& service(uuid aServiceIid) = 0;
+            virtual void register_service(i_service& aService, uuid aServiceIid) = 0;
+            virtual void unregister_service(uuid aServiceIid) = 0;
+        public:
+            virtual void migrate_to(i_service_provider& aOtherProvider) = 0;
+        public:
+            template <typename Service>
+            Service& service()
+            {
+                return static_cast<Service&>(service(Service::iid()));
+            }
+        };
+    }
+
+    using namespace services;
 }

@@ -1,6 +1,6 @@
-// i_mutex.hpp
+// mutex.cpp
 /*
- *  Copyright (c) 2020 Leigh Johnston.
+ *  Copyright (c) 2025 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -36,45 +36,14 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <thread>
-#include <chrono>
-#include <neolib/core/i_optional.hpp>
-#include <neolib/core/i_service.hpp>
+#include <neolib/core/mutex.hpp>
+#include <neolib/core/service.hpp>
 
 namespace neolib
 {
-    struct mutex_profiler_params
+    template<> i_mutex_profiler& services::start_service<i_mutex_profiler>()
     {
-        using abstract_type = mutex_profiler_params;
-
-        std::chrono::microseconds timeout = std::chrono::microseconds{ 100 };
-        std::uint32_t maxCount = 10u;
-    };
-
-    struct i_mutex_profiler : i_service
-    {
-        virtual i_optional<mutex_profiler_params> const& params() const noexcept = 0;
-        virtual void throw_on_pathological_contention(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u) noexcept = 0;
-        virtual void dont_throw_on_pathological_contention() noexcept = 0;
-    public:
-        static uuid const& iid() { static uuid const sIid{ 0xc1546ec1, 0x9cfb, 0x4fe7, 0xb93e, { 0x1, 0xc1, 0x2a, 0x5f, 0xf1, 0x62 } }; return sIid; }
-    };
-
-    struct i_lockable
-    {
-        struct pathological_contention : std::logic_error 
-        { 
-            std::thread::id previousLockingThreadId;
-
-            pathological_contention(std::thread::id aPreviousLockingThreadId) :
-                std::logic_error{"neolib::i_lockable::pathological_contention"},
-                previousLockingThreadId{ aPreviousLockingThreadId }
-            {} 
-        };
-
-        virtual void lock() = 0;
-        virtual void unlock() noexcept = 0;
-        virtual bool try_lock() noexcept = 0;
-        virtual void throw_on_pathological_contention(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u) noexcept {}
-    };
+        static mutex_profiler sMutexProfiler;
+        return sMutexProfiler;
+    }
 }

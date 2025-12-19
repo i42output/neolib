@@ -34,6 +34,7 @@
  */
 
 #include <neolib/neolib.hpp>
+#include <neolib/core/service.hpp>
 #include <neolib/task/async_task.hpp>
 #include <neolib/app/power.hpp>
 

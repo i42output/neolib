@@ -37,7 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <neolib/core/i_reference_counted.hpp>
-#include <neolib/app/services.hpp>
+#include <neolib/core/service.hpp>
 #include <neolib/app/module.hpp>
 #include <neolib/task/i_thread.hpp>
 #include <neolib/task/i_message_queue.hpp>

@@ -41,7 +41,9 @@
 #include <thread>
 #include <boost/thread/locks.hpp>
 #include <boost/lockfree/detail/freelist.hpp>
+#include <neolib/core/optional.hpp>
 #include <neolib/core/i_mutex.hpp>
+#include <neolib/core/service.hpp>
 
 #if !defined(DISABLE_NEOS_PROFILE_MUTEXES)
     #define NEOS_PROFILE_MUTEXES
@@ -49,6 +51,24 @@
 
 namespace neolib
 {
+    struct mutex_profiler : i_mutex_profiler
+    {
+        optional<mutex_profiler_params> profilerParams;
+
+        optional<mutex_profiler_params> const& params() const noexcept final
+        {
+            return profilerParams;
+        }
+        void throw_on_pathological_contention(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u) noexcept final
+        {
+            profilerParams = mutex_profiler_params{ aTimeout, aMaxCount };
+        }
+        void dont_throw_on_pathological_contention() noexcept final
+        {
+            profilerParams = std::nullopt;
+        }
+    };
+
     struct null_mutex : public i_lockable
     {
         void lock() noexcept final {}
@@ -105,6 +125,11 @@ namespace neolib
             iLockCount{ 0u },
             iLockingThread{}
         {
+#if defined(NEOS_PROFILE_MUTEXES)
+            if (service<i_mutex_profiler>().params().has_value())
+                throw_on_pathological_contention(
+                    service<i_mutex_profiler>().params().value().timeout, service<i_mutex_profiler>().params().value().maxCount);
+#endif
         }
         ~recursive_spinlock()
         {

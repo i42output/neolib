@@ -37,7 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <chrono>
-#include <neolib/app/services.hpp>
+#include <neolib/core/service.hpp>
 #include <neolib/task/i_event.hpp>
 
 namespace neolib
