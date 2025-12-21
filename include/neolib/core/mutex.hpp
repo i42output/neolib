@@ -51,22 +51,62 @@
 
 namespace neolib
 {
-    struct mutex_profiler : i_mutex_profiler
+    class mutex_profiler : public i_mutex_profiler
     {
-        optional<mutex_profiler_params> profilerParams;
+        struct params
+        {
+            std::uint32_t timeout_us = 100u;
+            std::uint16_t maxCount = 10u;
+            bool enabled = false;
+        };
+        static_assert(std::atomic<params>::is_always_lock_free, "neolib::mutex_profiler::params must be lock-free on all platforms!");
+    public:
+        bool enabled(std::chrono::microseconds& aTimeout, std::uint32_t& aMaxCount) const noexcept final
+        {
+            auto const p = iParams.load();
+            if (p.enabled)
+            {
+                aTimeout = std::chrono::microseconds{ p.timeout_us };
+                aMaxCount = p.maxCount;
+            }
+            return p.enabled;
+        }
+        void enable(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u) final
+        {
+            if (aTimeout.count() > std::numeric_limits<decltype(params{}.timeout_us)>::max() ||
+                aMaxCount > std::numeric_limits<decltype(params{}.maxCount)>::max())
+                throw std::logic_error("neolib::mutex_profiler::enable: param(s) exceed limit(s)");
+            iParams.store(params{ static_cast<decltype(params{}.timeout_us)>(aTimeout.count()), static_cast<decltype(params{}.maxCount)>(aMaxCount), true });
+        }
+        void disable() noexcept final
+        {
+            iParams.store(params{});
+        }
+    public:
+        void subscribe(i_mutex_profiler_observer& aObserver) final
+        {
+            std::unique_lock lock{ iMutex };
+            iSubscribers.push_back(&aObserver);
+        }
+        void unsubscribe(i_mutex_profiler_observer& aObserver) final
+        {
+            std::unique_lock lock{ iMutex };
+            auto existing = std::find(iSubscribers.begin(), iSubscribers.end(), &aObserver);
+            if (existing != iSubscribers.end())
+                iSubscribers.erase(existing);
+        }
+    private:
+        void notify_contention(i_lockable& aMutex, std::thread::id aPreviousLockingThread) noexcept final
+        {
+            std::unique_lock lock{ iMutex };
+            for (auto& subscriber : iSubscribers)
+                subscriber->mutex_contended(aMutex, aPreviousLockingThread);
+        }
+    private:
+        std::atomic<params> iParams;
+        mutable std::recursive_mutex iMutex;
+        std::vector<i_mutex_profiler_observer*> iSubscribers;
 
-        optional<mutex_profiler_params> const& params() const noexcept final
-        {
-            return profilerParams;
-        }
-        void throw_on_pathological_contention(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u) noexcept final
-        {
-            profilerParams = mutex_profiler_params{ aTimeout, aMaxCount };
-        }
-        void dont_throw_on_pathological_contention() noexcept final
-        {
-            profilerParams = std::nullopt;
-        }
     };
 
     struct null_mutex : public i_lockable
@@ -131,7 +171,7 @@ namespace neolib
             assert(!iState.test(std::memory_order_acquire));
         }
     public:
-        void lock() final
+        void lock() noexcept final
         {
             prevent_icf();
             auto const thisThread = std::this_thread::get_id();
@@ -145,7 +185,9 @@ namespace neolib
                 iState.wait(true, std::memory_order_relaxed);
 #else
             static auto& serviceProfiler = service<i_mutex_profiler>();
-            if (iThrowOnPathologicalContention)
+            std::chrono::microseconds timeout;
+            std::uint32_t maxCount;
+            if (serviceProfiler.enabled(timeout, maxCount))
             {
                 auto previousLockingThread = iLockingThread.load();
                 auto const start = std::chrono::high_resolution_clock::now();
@@ -155,23 +197,12 @@ namespace neolib
                     iState.wait(true, std::memory_order_relaxed);
                 }
                 auto const end = std::chrono::high_resolution_clock::now();
-                if (end - start > iPathologicalContentionCounterTimeout.load())
-                    if (++iPathologicalContentionCounter > iPathologicalContentionCounterMaxCount.load())
-                        throw pathological_contention(previousLockingThread);
-            }
-            else if (serviceProfiler.params().has_value())
-            {
-                auto previousLockingThread = iLockingThread.load();
-                auto const start = std::chrono::high_resolution_clock::now();
-                while (iState.test_and_set(std::memory_order_acquire))
-                {
-                    previousLockingThread = iLockingThread.load();
-                    iState.wait(true, std::memory_order_relaxed);
-                }
-                auto const end = std::chrono::high_resolution_clock::now();
-                if (end - start > serviceProfiler.params().value().timeout)
-                    if (++iPathologicalContentionCounter > serviceProfiler.params().value().maxCount)
-                        throw pathological_contention(previousLockingThread);
+                if (end - start > timeout)
+                    if (++iPathologicalContentionCounter > maxCount)
+                    {
+                        serviceProfiler.notify_contention(*this, previousLockingThread);
+                        iPathologicalContentionCounter = 0u;
+                    }
             }
             else
             {
@@ -207,22 +238,11 @@ namespace neolib
             ++iLockCount;
             return true;
         }
-        void throw_on_pathological_contention(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u) noexcept final
-        {
-#if defined(NEOS_PROFILE_MUTEXES)
-            iPathologicalContentionCounterTimeout = aTimeout;
-            iPathologicalContentionCounterMaxCount = aMaxCount;
-            iThrowOnPathologicalContention = true;
-#endif
-        }
     private:
         std::atomic_flag iState;
         std::atomic<std::uint32_t> iLockCount;
         std::atomic<std::thread::id> iLockingThread;
 #if defined(NEOS_PROFILE_MUTEXES)
-        std::atomic<bool> iThrowOnPathologicalContention = false;
-        std::atomic<std::chrono::microseconds> iPathologicalContentionCounterTimeout;
-        std::atomic<std::uint32_t> iPathologicalContentionCounterMaxCount;
         std::atomic<std::uint32_t> iPathologicalContentionCounter = 0u;
 #endif
     };
@@ -249,7 +269,7 @@ namespace neolib
             iActiveMutex.emplace<neolib::recursive_spinlock<ProfilerTag>>();
         }
     public:
-        void lock() final
+        void lock() noexcept final
         {
             if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
                 std::get<std::recursive_mutex>(iActiveMutex).lock();
@@ -275,11 +295,6 @@ namespace neolib
                 return std::get<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex).try_lock();
             else
                 return std::get<neolib::null_mutex>(iActiveMutex).try_lock();
-        }
-        void throw_on_pathological_contention(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u) noexcept final
-        {
-            if (std::holds_alternative<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex))
-                std::get<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex).throw_on_pathological_contention(aTimeout, aMaxCount);
         }
     private:
         std::variant<std::recursive_mutex, neolib::recursive_spinlock<ProfilerTag>, neolib::null_mutex> iActiveMutex;

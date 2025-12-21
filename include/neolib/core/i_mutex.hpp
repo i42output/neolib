@@ -43,38 +43,34 @@
 
 namespace neolib
 {
-    struct mutex_profiler_params
+    struct i_lockable
     {
-        using abstract_type = mutex_profiler_params;
+        virtual void lock() noexcept = 0;
+        virtual void unlock() noexcept = 0;
+        virtual bool try_lock() noexcept = 0;
+    };
 
-        std::chrono::microseconds timeout = std::chrono::microseconds{ 100 };
-        std::uint32_t maxCount = 10u;
+    class i_mutex_profiler_observer
+    {
+    public:
+        virtual void mutex_contended(i_lockable& aMutex, std::thread::id aPreviousLockingThread) noexcept = 0;
     };
 
     struct i_mutex_profiler : i_service
     {
-        virtual i_optional<mutex_profiler_params> const& params() const noexcept = 0;
-        virtual void throw_on_pathological_contention(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u) noexcept = 0;
-        virtual void dont_throw_on_pathological_contention() noexcept = 0;
+        template <typename ProfilerTag>
+        friend class recursive_spinlock;
+    public:
+        virtual bool enabled(std::chrono::microseconds& aTimeout, std::uint32_t& aMaxCount) const noexcept = 0;
+        virtual void enable(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u) = 0;
+        virtual void disable() noexcept = 0;
+    public:
+        virtual void subscribe(i_mutex_profiler_observer& aObserver) = 0;
+        virtual void unsubscribe(i_mutex_profiler_observer& aObserver) = 0;
+    private:
+        virtual void notify_contention(i_lockable& aMutex, std::thread::id aPreviousLockingThread) noexcept = 0;
     public:
         static uuid const& iid() { static uuid const sIid{ 0xc1546ec1, 0x9cfb, 0x4fe7, 0xb93e, { 0x1, 0xc1, 0x2a, 0x5f, 0xf1, 0x62 } }; return sIid; }
     };
 
-    struct i_lockable
-    {
-        struct pathological_contention : std::logic_error 
-        { 
-            std::thread::id previousLockingThreadId;
-
-            pathological_contention(std::thread::id aPreviousLockingThreadId) :
-                std::logic_error{"neolib::i_lockable::pathological_contention"},
-                previousLockingThreadId{ aPreviousLockingThreadId }
-            {} 
-        };
-
-        virtual void lock() = 0;
-        virtual void unlock() noexcept = 0;
-        virtual bool try_lock() noexcept = 0;
-        virtual void throw_on_pathological_contention(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u) noexcept {}
-    };
 }

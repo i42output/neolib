@@ -453,7 +453,7 @@ namespace neolib::ecs
         }
 
     public:
-        void lock()
+        void lock() noexcept
         {
             if constexpr (sizeof...(Data) >= 2)
                 std::apply([](auto&... mx) {
@@ -462,12 +462,12 @@ namespace neolib::ecs
             else if constexpr (sizeof...(Data) == 1)
                 iLockables[0]->lock();
         }
-        void unlock()
+        void unlock() noexcept
         {
             for (std::size_t lockable = iLockables.size(); lockable-- > 0; )
                 iLockables[lockable]->unlock();
         }
-        bool try_lock()
+        bool try_lock() noexcept
         {
             for (std::size_t lockable = 0u; lockable < iLockables.size(); ++lockable)
                 if (!iLockables[lockable]->try_lock())

@@ -148,6 +148,7 @@ namespace neolib
             std::unique_lock lock{ iMutex };
             iTriggerType = aOther.iTriggerType;
             iSlots = {};
+            iHasSlots = false;
             iActiveWorkList = {};
             return *this;
         }
@@ -163,6 +164,9 @@ namespace neolib
     public:
         trigger_result sync_trigger(Args... aArgs) const final
         {
+            if (!has_slots())
+                return trigger_result::Unaccepted;
+
             std::unique_lock lock{ iMutex };
             destroyed_flag destroyed{ *this };
             thread_local std::size_t stack;
@@ -174,6 +178,7 @@ namespace neolib
             scoped_pointer<work_list> activeWorkList{ iActiveWorkList, &workList };
             workList.slots = iSlots;
             lock.unlock();
+
             for (auto slot : workList.slots)
             {
                 if (slot->call_in_emitter_thread() || slot->call_thread() == std::this_thread::get_id())
@@ -188,8 +193,10 @@ namespace neolib
                     return trigger_result::Accepted;
                 }
             }
+
             workList.slots.clear();
             workList.accepted = false;
+
             return trigger_result::Unaccepted;
         }
         void async_trigger(Args... aArgs) const final
@@ -207,8 +214,7 @@ namespace neolib
     public:
         bool has_slots() const final
         {
-            std::scoped_lock lock{ iMutex };
-            return !iSlots.empty();
+            return iHasSlots;
         }
         void add_slot(i_slot<Args...>& aSlot, bool aPriority = false) const final
         {
@@ -217,6 +223,7 @@ namespace neolib
                 iSlots.push_back(&aSlot);
             else
                 iSlots.insert(iSlots.begin(), &aSlot);
+            iHasSlots = true;
         }
         void remove_slot(i_slot<Args...>& aSlot) const final
         {
@@ -224,6 +231,7 @@ namespace neolib
             auto existing = std::find_if(iSlots.begin(), iSlots.end(), [&](auto const& s) { return &aSlot == s.ptr(); });
             if (existing != iSlots.end())
                 iSlots.erase(existing);
+            iHasSlots = !iSlots.empty();
         }
     private:
         void async_trigger(async_event_queue& aQueue, i_slot<Args...>& aSlot, bool aNoDuplicates, Args... aArgs) const
@@ -234,6 +242,7 @@ namespace neolib
         mutable event_mutex<event> iMutex;
         neolib::trigger_type iTriggerType = neolib::trigger_type::Synchronous;
         mutable slot_list iSlots;
+        mutable std::atomic<bool> iHasSlots = false;
         mutable work_list* iActiveWorkList = nullptr;
     };
 
