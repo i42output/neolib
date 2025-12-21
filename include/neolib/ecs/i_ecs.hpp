@@ -550,6 +550,25 @@ namespace neolib::ecs
         std::optional<dont_lock_t> iDontUnlock;
     };
 
+    template <typename... UnlockData>
+    class scoped_component_relock
+    {
+    public:
+        template <typename... Data>
+        scoped_component_relock(scoped_component_lock<Data...>& aLock, bool aUnlock = true) : 
+            iRelock{ [&]() { aLock.template lock_if<UnlockData...>(); } }
+        {
+            if (aUnlock)
+                aLock.template unlock_if<UnlockData...>();
+        }
+        ~scoped_component_relock()
+        {
+            iRelock();
+        }
+    private:
+        std::function<void()> iRelock;
+    };
+
     template <typename... ComponentData>
     inline entity_id i_ecs::create_entity(const entity_archetype_id& aArchetypeId, ComponentData&&... aComponentData)
     {
