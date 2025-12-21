@@ -550,16 +550,16 @@ namespace neolib::ecs
         std::optional<dont_lock_t> iDontUnlock;
     };
 
-    template <typename... UnlockData>
+    template <typename... RelockData>
     class scoped_component_relock
     {
     public:
         template <typename... Data>
         scoped_component_relock(scoped_component_lock<Data...>& aLock, bool aUnlock = true) : 
-            iRelock{ [&]() { aLock.template lock_if<UnlockData...>(); } }
+            iRelock{ [&]() { aLock.template lock_if<RelockData...>(); } }
         {
             if (aUnlock)
-                aLock.template unlock_if<UnlockData...>();
+                aLock.template unlock_if<RelockData...>();
         }
         ~scoped_component_relock()
         {
