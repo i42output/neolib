@@ -41,6 +41,7 @@
 #include <thread>
 #include <boost/thread/locks.hpp>
 #include <boost/lockfree/detail/freelist.hpp>
+#include <boost/unordered/unordered_flat_map.hpp>
 #include <neolib/core/optional.hpp>
 #include <neolib/core/i_mutex.hpp>
 #include <neolib/core/service.hpp>
@@ -152,6 +153,9 @@ namespace neolib
     class alignas(boost::lockfree::detail::cacheline_bytes) recursive_spinlock : public i_lockable
     {
     private:
+        using metrics_list = std::vector<mutex_lock_info>;
+        using metrics_map = boost::unordered_flat_map<recursive_spinlock const*, metrics_list>;
+    private:
 #if defined(NEOS_PROFILE_MUTEXES)
         static inline int sIcfSingleton;
         void prevent_icf() const noexcept
@@ -197,19 +201,20 @@ namespace neolib
             bool enhancedMetrics;
             if (serviceProfiler.enabled(timeout, maxCount, enhancedMetrics))
             {
-                thread_local std::vector<mutex_lock_info> metrics;
-                metrics.clear();
+                auto& m = metrics();
+                if (enhancedMetrics)
+                    m.clear();
                 auto const start = std::chrono::high_resolution_clock::now();
                 auto next = start;
                 while (iState.test_and_set(std::memory_order_acquire))
                 {
                     if (enhancedMetrics)
-                        metrics.emplace_back(iLockingThread.load(), std::chrono::microseconds{});
+                        m.emplace_back(iLockingThread.load(), std::chrono::microseconds{});
                     iState.wait(true, std::memory_order_relaxed);
                     if (enhancedMetrics)
                     {
                         auto const now = std::chrono::high_resolution_clock::now();
-                        metrics.back().duration = std::chrono::duration_cast<std::chrono::microseconds>(now - next);
+                        m.back().duration = std::chrono::duration_cast<std::chrono::microseconds>(now - next);
                         next = now;
                     }
                 }
@@ -217,7 +222,7 @@ namespace neolib
                 if (end - start > timeout)
                     if (++iPathologicalContentionCounter > maxCount)
                     {
-                        serviceProfiler.notify_contention(*this, std::chrono::duration_cast<std::chrono::microseconds>(end - start), metrics.empty() ? nullptr : metrics.data(), metrics.size());
+                        serviceProfiler.notify_contention(*this, std::chrono::duration_cast<std::chrono::microseconds>(end - start), m.empty() ? nullptr : m.data(), m.size());
                         iPathologicalContentionCounter = 0u;
                     }
             }
@@ -254,6 +259,12 @@ namespace neolib
             iLockingThread.store(thisThread, std::memory_order_relaxed);
             ++iLockCount;
             return true;
+        }
+    private:
+        metrics_list& metrics() const noexcept
+        {
+            thread_local metrics_map tMap;
+            return tMap[std::launder(this)];
         }
     private:
         std::atomic_flag iState;
