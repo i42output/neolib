@@ -96,11 +96,11 @@ namespace neolib
                 iSubscribers.erase(existing);
         }
     private:
-        void notify_contention(i_lockable& aMutex, std::thread::id aPreviousLockingThread) noexcept final
+        void notify_contention(i_lockable& aMutex, std::thread::id aPreviouslyLockedBy, const std::chrono::microseconds& aPreviouslyLockedFor) noexcept final
         {
             std::unique_lock lock{ iMutex };
             for (auto& subscriber : iSubscribers)
-                subscriber->mutex_contended(aMutex, aPreviousLockingThread);
+                subscriber->mutex_contended(aMutex, aPreviouslyLockedBy, aPreviouslyLockedFor);
         }
     private:
         std::atomic<params> iParams;
@@ -189,18 +189,18 @@ namespace neolib
             std::uint32_t maxCount;
             if (serviceProfiler.enabled(timeout, maxCount))
             {
-                auto previousLockingThread = iLockingThread.load();
+                auto previouslyLockedBy = iLockingThread.load();
                 auto const start = std::chrono::high_resolution_clock::now();
                 while (iState.test_and_set(std::memory_order_acquire))
                 {
-                    previousLockingThread = iLockingThread.load();
+                    previouslyLockedBy = iLockingThread.load();
                     iState.wait(true, std::memory_order_relaxed);
                 }
                 auto const end = std::chrono::high_resolution_clock::now();
                 if (end - start > timeout)
                     if (++iPathologicalContentionCounter > maxCount)
                     {
-                        serviceProfiler.notify_contention(*this, previousLockingThread);
+                        serviceProfiler.notify_contention(*this, previouslyLockedBy, std::chrono::duration_cast<std::chrono::microseconds>(end - start));
                         iPathologicalContentionCounter = 0u;
                     }
             }

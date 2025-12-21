@@ -53,7 +53,7 @@ namespace neolib
     class i_mutex_profiler_observer
     {
     public:
-        virtual void mutex_contended(i_lockable& aMutex, std::thread::id aPreviousLockingThread) noexcept = 0;
+        virtual void mutex_contended(i_lockable& aMutex, std::thread::id aPreviouslyLockedBy, const std::chrono::microseconds& aPreviouslyLockedFor) noexcept = 0;
     };
 
     struct i_mutex_profiler : i_service
@@ -68,7 +68,7 @@ namespace neolib
         virtual void subscribe(i_mutex_profiler_observer& aObserver) = 0;
         virtual void unsubscribe(i_mutex_profiler_observer& aObserver) = 0;
     private:
-        virtual void notify_contention(i_lockable& aMutex, std::thread::id aPreviousLockingThread) noexcept = 0;
+        virtual void notify_contention(i_lockable& aMutex, std::thread::id aPreviouslyLockedBy, const std::chrono::microseconds& aPreviouslyLockedFor) noexcept = 0;
     public:
         static uuid const& iid() { static uuid const sIid{ 0xc1546ec1, 0x9cfb, 0x4fe7, 0xb93e, { 0x1, 0xc1, 0x2a, 0x5f, 0xf1, 0x62 } }; return sIid; }
     };
