@@ -50,10 +50,16 @@ namespace neolib
         virtual bool try_lock() noexcept = 0;
     };
 
+    struct mutex_lock_info
+    {
+        std::thread::id threadId;
+        std::chrono::microseconds duration;
+    };
+
     class i_mutex_profiler_observer
     {
     public:
-        virtual void mutex_contended(i_lockable& aMutex, std::thread::id aPreviouslyLockedBy, const std::chrono::microseconds& aPreviouslyLockedFor) noexcept = 0;
+        virtual void mutex_contended(i_lockable& aMutex, const std::chrono::microseconds& aContendedFor, mutex_lock_info const* aPreviousLocks, std::size_t aPreviousLocksCount) noexcept = 0;
     };
 
     struct i_mutex_profiler : i_service
@@ -61,14 +67,14 @@ namespace neolib
         template <typename ProfilerTag>
         friend class recursive_spinlock;
     public:
-        virtual bool enabled(std::chrono::microseconds& aTimeout, std::uint32_t& aMaxCount) const noexcept = 0;
-        virtual void enable(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u) = 0;
+        virtual bool enabled(std::chrono::microseconds& aTimeout, std::uint32_t& aMaxCount, bool& aEnhancedMetrics) const noexcept = 0;
+        virtual void enable(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u, bool aEnhancedMetrics = false) = 0;
         virtual void disable() noexcept = 0;
     public:
         virtual void subscribe(i_mutex_profiler_observer& aObserver) = 0;
         virtual void unsubscribe(i_mutex_profiler_observer& aObserver) = 0;
     private:
-        virtual void notify_contention(i_lockable& aMutex, std::thread::id aPreviouslyLockedBy, const std::chrono::microseconds& aPreviouslyLockedFor) noexcept = 0;
+        virtual void notify_contention(i_lockable& aMutex, const std::chrono::microseconds& aContendedFor, mutex_lock_info const* aPreviousLocks, std::size_t aPreviousLocksCount) noexcept = 0;
     public:
         static uuid const& iid() { static uuid const sIid{ 0xc1546ec1, 0x9cfb, 0x4fe7, 0xb93e, { 0x1, 0xc1, 0x2a, 0x5f, 0xf1, 0x62 } }; return sIid; }
     };

@@ -58,25 +58,31 @@ namespace neolib
             std::uint32_t timeout_us = 100u;
             std::uint16_t maxCount = 10u;
             bool enabled = false;
+            bool enhancedMetrics = false;
         };
         static_assert(std::atomic<params>::is_always_lock_free, "neolib::mutex_profiler::params must be lock-free on all platforms!");
     public:
-        bool enabled(std::chrono::microseconds& aTimeout, std::uint32_t& aMaxCount) const noexcept final
+        bool enabled(std::chrono::microseconds& aTimeout, std::uint32_t& aMaxCount, bool& aEnhancedMetrics) const noexcept final
         {
             auto const p = iParams.load();
             if (p.enabled)
             {
                 aTimeout = std::chrono::microseconds{ p.timeout_us };
                 aMaxCount = p.maxCount;
+                aEnhancedMetrics = p.enhancedMetrics;
             }
             return p.enabled;
         }
-        void enable(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u) final
+        void enable(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u, bool aEnhancedMetrics = false) final
         {
             if (aTimeout.count() > std::numeric_limits<decltype(params{}.timeout_us)>::max() ||
                 aMaxCount > std::numeric_limits<decltype(params{}.maxCount)>::max())
                 throw std::logic_error("neolib::mutex_profiler::enable: param(s) exceed limit(s)");
-            iParams.store(params{ static_cast<decltype(params{}.timeout_us)>(aTimeout.count()), static_cast<decltype(params{}.maxCount)>(aMaxCount), true });
+            iParams.store(params{ 
+                static_cast<decltype(params{}.timeout_us)>(aTimeout.count()), 
+                static_cast<decltype(params{}.maxCount)>(aMaxCount), 
+                true, 
+                aEnhancedMetrics });
         }
         void disable() noexcept final
         {
@@ -96,11 +102,12 @@ namespace neolib
                 iSubscribers.erase(existing);
         }
     private:
-        void notify_contention(i_lockable& aMutex, std::thread::id aPreviouslyLockedBy, const std::chrono::microseconds& aPreviouslyLockedFor) noexcept final
+        void notify_contention(
+            i_lockable& aMutex, const std::chrono::microseconds& aContendedFor, mutex_lock_info const* aPreviousLocks, std::size_t aPreviousLocksCount) noexcept final
         {
             std::unique_lock lock{ iMutex };
             for (auto& subscriber : iSubscribers)
-                subscriber->mutex_contended(aMutex, aPreviouslyLockedBy, aPreviouslyLockedFor);
+                subscriber->mutex_contended(aMutex, aContendedFor, aPreviousLocks, aPreviousLocksCount);
         }
     private:
         std::atomic<params> iParams;
@@ -187,20 +194,30 @@ namespace neolib
             static auto& serviceProfiler = service<i_mutex_profiler>();
             std::chrono::microseconds timeout;
             std::uint32_t maxCount;
-            if (serviceProfiler.enabled(timeout, maxCount))
+            bool enhancedMetrics;
+            if (serviceProfiler.enabled(timeout, maxCount, enhancedMetrics))
             {
-                auto previouslyLockedBy = iLockingThread.load();
+                thread_local std::vector<mutex_lock_info> metrics;
+                metrics.clear();
                 auto const start = std::chrono::high_resolution_clock::now();
+                auto next = start;
                 while (iState.test_and_set(std::memory_order_acquire))
                 {
-                    previouslyLockedBy = iLockingThread.load();
+                    if (enhancedMetrics)
+                        metrics.emplace_back(iLockingThread.load(), std::chrono::microseconds{});
                     iState.wait(true, std::memory_order_relaxed);
+                    if (enhancedMetrics)
+                    {
+                        auto const now = std::chrono::high_resolution_clock::now();
+                        metrics.back().duration = std::chrono::duration_cast<std::chrono::microseconds>(now - next);
+                        next = now;
+                    }
                 }
                 auto const end = std::chrono::high_resolution_clock::now();
                 if (end - start > timeout)
                     if (++iPathologicalContentionCounter > maxCount)
                     {
-                        serviceProfiler.notify_contention(*this, previouslyLockedBy, std::chrono::duration_cast<std::chrono::microseconds>(end - start));
+                        serviceProfiler.notify_contention(*this, std::chrono::duration_cast<std::chrono::microseconds>(end - start), metrics.empty() ? nullptr : metrics.data(), metrics.size());
                         iPathologicalContentionCounter = 0u;
                     }
             }
