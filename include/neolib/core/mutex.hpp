@@ -201,7 +201,8 @@ namespace neolib
             bool enhancedMetrics;
             if (serviceProfiler.enabled(timeout, maxCount, enhancedMetrics))
             {
-                auto& m = metrics();
+                static metrics_list sNullMetrics;
+                auto& m = (enhancedMetrics ? metrics() : sNullMetrics);
                 if (enhancedMetrics)
                     m.clear();
                 auto const start = std::chrono::high_resolution_clock::now();
