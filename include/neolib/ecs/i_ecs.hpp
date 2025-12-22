@@ -563,10 +563,17 @@ namespace neolib::ecs
         }
         ~scoped_component_relock()
         {
-            iRelock();
+            if (!iCancelled)
+                iRelock();
+        }
+    public:
+        void cancel()
+        {
+            iCancelled = true;
         }
     private:
         std::function<void()> iRelock;
+        bool iCancelled = false;
     };
 
     template <typename... ComponentData>

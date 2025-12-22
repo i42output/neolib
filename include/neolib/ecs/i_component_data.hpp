@@ -95,10 +95,12 @@ namespace neolib::ecs
         Mat22f              = BasicMat22 | Float32,
         Mat33f              = BasicMat33 | Float32,
         Mat44f              = BasicMat44 | Float32,
-        Aabb                = 0x00001000 | Float64,
+        Aabb3d              = 0x00001000 | Float64,
         Aabb2d              = 0x00002000 | Float64,
-        Aabbf               = 0x00001000 | Float32,
+        Aabb3df             = 0x00001000 | Float32,
         Aabb2df             = 0x00002000 | Float32,
+        Aabb                = Aabb3d,
+        Aabbf               = Aabb3df,
         String              = 0x00010000,
         Enum                = 0x000B0000,
         Uuid                = 0x000C0000,
@@ -108,8 +110,9 @@ namespace neolib::ecs
         Optional            = 0x01000000,
         Array               = 0x02000000,
         Shared              = 0x04000000,
+        Atomic              = 0x08000000,
         Cache               = 0x40000000,
-        Internal            = 0x80000000,
+        Internal            = 0x80000000
     };
 
     inline constexpr component_data_field_type operator|(component_data_field_type aLhs, component_data_field_type aRhs)
