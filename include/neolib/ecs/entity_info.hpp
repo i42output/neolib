@@ -1,6 +1,6 @@
 // entity_info.hpp
 /*
- *  Copyright (c) 2018, 2020 Leigh Johnston.
+ *  Copyright (c) 2018-2025 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -48,10 +48,81 @@ namespace neolib::ecs
     {
         neolib::uuid archetypeId;
         i64 creationTime;
-        bool destroyed;
+        std::atomic<bool> destroyed = false;
         #ifndef NDEBUG
-        bool debug = false;
+        std::atomic<bool> debug = false;
         #endif
+
+        entity_info()
+        {
+        }
+
+        entity_info(neolib::uuid const& archetypeId, i64 creationTime) :
+            archetypeId{ archetypeId },
+            creationTime{ creationTime }
+        {
+        }
+
+        entity_info(entity_info const& other) :
+            archetypeId{ other.archetypeId },
+            creationTime{ other.creationTime },
+            destroyed{ other.destroyed.load() }
+            #ifndef NDEBUG
+            , debug{ other.debug.load() }
+            #endif
+        {
+        }
+
+        entity_info(entity_info&& other) noexcept :
+            archetypeId{ std::move(other.archetypeId) },
+            creationTime{ std::move(other.creationTime) },
+            destroyed{ other.destroyed.load() }
+            #ifndef NDEBUG
+            , debug{ other.debug.load() }
+            #endif
+        {
+        }
+
+        entity_info& operator=(entity_info const& other)
+        {
+            if (this != &other)
+            {
+                archetypeId = other.archetypeId;
+                creationTime = other.creationTime;
+                destroyed = other.destroyed.load();
+                #ifndef NDEBUG
+                debug = other.debug.load();
+                #endif
+            }
+            return *this;
+        }
+
+        entity_info& operator=(entity_info&& other) noexcept
+        {
+            if (this != &other)
+            {
+                archetypeId = std::move(other.archetypeId);
+                creationTime = std::move(other.creationTime);
+                destroyed = other.destroyed.load();
+                #ifndef NDEBUG
+                debug = other.debug.load();
+                #endif
+            }
+            return *this;
+        }
+
+        friend void swap(entity_info& lhs, entity_info& rhs) noexcept
+        {
+            using std::swap;
+            swap(lhs.archetypeId, rhs.archetypeId);
+            swap(lhs.creationTime, rhs.creationTime);
+            auto const temp = rhs.destroyed.exchange(lhs.destroyed.load());
+            lhs.destroyed.exchange(temp);
+            #ifndef NDEBUG
+            auto const temp2 = rhs.debug.exchange(lhs.debug.load());
+            lhs.debug.exchange(temp2);
+            #endif
+        }
 
         struct meta : i_component_data::meta
         {
@@ -82,10 +153,10 @@ namespace neolib::ecs
                 case 1:
                     return component_data_field_type::Int64;
                 case 2:
-                    return component_data_field_type::Bool;
+                    return component_data_field_type::Bool | component_data_field_type::Atomic;
                 #ifndef NDEBUG
                 case 3:
-                    return component_data_field_type::Bool;
+                    return component_data_field_type::Bool | component_data_field_type::Atomic;
                 #endif
                 default:
                     throw invalid_field_index();
