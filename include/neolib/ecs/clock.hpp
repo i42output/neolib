@@ -99,4 +99,10 @@ namespace neolib::ecs
     {
         return to_step_time(aTime, aWorldClock.timestep);
     }
+
+    inline step_time_interval to_step_time(i_ecs const& aEcs, time_interval aTime)
+    {
+        auto& worldClock = aEcs.shared_component<clock>()[0];
+        return to_step_time(worldClock, aTime);
+    }
 }
