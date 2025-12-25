@@ -34,21 +34,26 @@
  */
 
 #include <neolib/neolib.hpp>
-#include <neolib/ecs/chrono.hpp>
-#include <neolib/ecs/ecs.hpp>
 #include <neolib/ecs/time.hpp>
-#include <neolib/ecs/clock.hpp>
 
 namespace neolib::ecs
 {
-    time::time(ecs::i_ecs& aEcs) :
-        system{ aEcs }
+    clock& world_clock(ecs::i_ecs& aEcs)
     {
-        if (!ecs().shared_component_registered<clock>())
+        if (!aEcs.shared_component_registered<clock>())
         {
-            ecs().register_shared_component<clock>();
-            ecs().populate_shared<clock>("World Clock", clock{});
+            aEcs.register_shared_component<clock>();
+            aEcs.populate_shared<clock>("World Clock", clock{});
         }
+        return aEcs.shared_component<clock>()[0];
+    }
+
+    time::time(ecs::i_ecs& aEcs) :
+        system{ aEcs },
+        iInfos{ aEcs.component<entity_info>() },
+        iLifeSpans{ aEcs.component<entity_life_span>() },
+        iWorldClock{ world_clock(aEcs) }
+    {
         start_thread_if();
     }
 
@@ -66,24 +71,20 @@ namespace neolib::ecs
     {
         if (!can_apply())
             throw cannot_apply();
-        if (!ecs().component_instantiated<entity_life_span>())
-            return false;
         if (paused())
             return false;
 
         auto waitDuration = std::numeric_limits<i64>::max();
 
         {
-            scoped_component_lock<entity_info, entity_life_span> lock{ ecs() };
-            auto const& infos = ecs().component<entity_info>();
-            auto const& lifeSpans = ecs().component<entity_life_span>();
+            scoped_component_lock<entity_life_span> lock{ ecs() };
 
-            for (auto entity : lifeSpans.entities())
+            for (auto entity : iLifeSpans.entities())
             {
-                auto const& info = infos.entity_record(entity);
+                auto const& info = iInfos.entity_record_no_lock(entity);
                 if (info.destroyed)
                     continue;
-                auto const& lifeSpan = lifeSpans.entity_record(entity);
+                auto const& lifeSpan = iLifeSpans.entity_record(entity);
                 auto const age = world_time() - info.creationTime;
                 waitDuration = std::min(waitDuration, lifeSpan.lifeSpan - age);
                 if (age > lifeSpan.lifeSpan)
@@ -99,7 +100,9 @@ namespace neolib::ecs
 
     step_time time::system_time() const
     {
-        auto systemTime = to_step_time(ecs(), chrono::to_seconds(std::chrono::duration_cast<chrono::flicks>(std::chrono::high_resolution_clock::now().time_since_epoch())));
+        auto systemTime = to_step_time(iWorldClock, 
+            chrono::to_seconds(std::chrono::duration_cast<chrono::flicks>(
+                std::chrono::high_resolution_clock::now().time_since_epoch())));
         if (iSystemTimeOffset == std::nullopt)
             iSystemTimeOffset = systemTime;
         return systemTime - *iSystemTimeOffset;
@@ -107,7 +110,6 @@ namespace neolib::ecs
 
     step_time time::world_time() const
     {
-        auto& worldClock = ecs().shared_component<clock>()[0];
-        return worldClock.time;
+        return iWorldClock.time;
     }
 }

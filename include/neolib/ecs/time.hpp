@@ -36,13 +36,15 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <neolib/ecs/ecs.hpp>
 #include <neolib/ecs/chrono.hpp>
 #include <neolib/ecs/system.hpp>
 #include <neolib/ecs/entity_life_span.hpp>
+#include <neolib/ecs/clock.hpp>
 
 namespace neolib::ecs
 {
-    class NEOLIB_EXPORT time : public system<entity_info, entity_life_span>
+    class NEOLIB_EXPORT time : public system<entity_life_span>
     {
     private:
         class thread;
@@ -71,6 +73,9 @@ namespace neolib::ecs
             }
         };
     private:
+        neolib::ecs::component<entity_info>& iInfos;
+        neolib::ecs::component<entity_life_span>& iLifeSpans;
+        clock& iWorldClock;
         mutable optional_step_time iSystemTimeOffset;
     };
 }

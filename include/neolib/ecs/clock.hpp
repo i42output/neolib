@@ -95,9 +95,8 @@ namespace neolib::ecs
         };
     };
 
-    inline step_time_interval to_step_time(const i_ecs& aEcs, time_interval aTime)
+    inline step_time_interval to_step_time(clock const& aWorldClock, time_interval aTime)
     {
-        auto& worldClock = aEcs.shared_component<clock>()[0];
-        return to_step_time(aTime, worldClock.timestep);
+        return to_step_time(aTime, aWorldClock.timestep);
     }
 }
