@@ -238,7 +238,11 @@ namespace neolib::ecs
                 aTimer.again();
                 for (auto& system : systems())
                     if (system.second->can_apply())
-                        system.second->apply();
+                    {
+                        system_id ignore;
+                        if (!is_child(system.first, ignore))
+                            system.second->apply();
+                    }
                 commit_async_entity_destruction();
                 commit_async_entity_creation();
             }, std::chrono::milliseconds{1}, true
@@ -404,6 +408,13 @@ namespace neolib::ecs
     bool ecs::run_threaded(const system_id& aSystemId) const
     {
         return (flags() & ecs_flags::NoThreads) != ecs_flags::NoThreads;
+    }
+
+    bool ecs::is_child(const system_id& aSystemId, system_id& aParentSystemId) const
+    {
+        (void)aSystemId;
+        (void)aParentSystemId;
+        return false;
     }
 
     bool ecs::all_systems_paused() const

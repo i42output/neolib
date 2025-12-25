@@ -89,6 +89,7 @@ namespace neolib::ecs
         void commit_async_entity_destruction() final;
     public:
         bool run_threaded(const system_id& aSystemId) const override;
+        bool is_child(const system_id& aSystemId, system_id& aParentSystemId) const override;
         bool all_systems_paused() const final;
         void pause_all_systems() final;
         void resume_all_systems() final;

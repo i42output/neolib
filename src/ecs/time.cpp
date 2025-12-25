@@ -68,6 +68,8 @@ namespace neolib::ecs
             throw cannot_apply();
         if (!ecs().component_instantiated<entity_life_span>())
             return false;
+        if (paused())
+            return false;
 
         auto waitDuration = std::numeric_limits<i64>::max();
 

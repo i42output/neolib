@@ -298,10 +298,8 @@ namespace neolib
             basic_vector(const swizzle<V, A, S, Indexes...>& aSwizzle) : basic_vector{ ~aSwizzle } {}
             basic_vector(const basic_vector& other) : v{ other.v } {}
             basic_vector(basic_vector&& other) : v{ std::move(other.v) } {}
-            template <typename T2>
-            basic_vector(const basic_vector<T2, Size, Type>& other) { std::transform(other.begin(), other.end(), v.begin(), [](T2 source) { return static_cast<value_type>(source); }); }
-            template <typename T2, std::uint32_t Size2, typename SFINAE = int>
-            basic_vector(const basic_vector<T2, Size2, Type>& other, typename std::enable_if_t < Size2 < Size, SFINAE> = 0) : v{} { std::transform(other.begin(), other.end(), v.begin(), [](T2 source) { return static_cast<value_type>(source); }); }
+            template <typename T2, std::uint32_t Size2>
+            explicit basic_vector(const basic_vector<T2, Size2, Type>& other) : v{} { std::transform(other.begin(), std::next(other.begin(), std::min(Size, Size2)), v.begin(), [](T2 source) { return static_cast<value_type>(source); }); }
             basic_vector& operator=(const basic_vector& other) { v = other.v; return *this; }
             basic_vector& operator=(basic_vector&& other) { v = std::move(other.v); return *this; }
             basic_vector& operator=(std::initializer_list<value_type> values) { if (values.size() > Size) throw std::out_of_range("neolib::basic_vector: initializer list too big"); std::copy(values.begin(), values.end(), v.begin()); std::fill(v.begin() + (values.end() - values.begin()), v.end(), value_type{}); return *this; }

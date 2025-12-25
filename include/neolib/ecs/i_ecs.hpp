@@ -132,6 +132,7 @@ namespace neolib::ecs
         virtual void commit_async_entity_destruction() = 0;
     public:
         virtual bool run_threaded(const system_id& aSystemId) const = 0;
+        virtual bool is_child(const system_id& aSystemId, system_id& aParentSystemId) const = 0;
         virtual bool all_systems_paused() const = 0;
         virtual void pause_all_systems() = 0;
         virtual void resume_all_systems() = 0;

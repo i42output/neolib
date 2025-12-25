@@ -143,7 +143,7 @@ namespace neolib::ecs
         }
         bool can_apply() const final
         {
-            return !paused() && (!have_thread() || (have_thread() && get_thread().in()));
+            return !have_thread() || (have_thread() && get_thread().in());
         }
         bool paused() const final
         {
