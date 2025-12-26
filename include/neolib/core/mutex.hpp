@@ -205,27 +205,34 @@ namespace neolib
                 auto& m = (enhancedMetrics ? metrics() : sNullMetrics);
                 if (enhancedMetrics)
                     m.clear();
-                auto const start = std::chrono::high_resolution_clock::now();
-                auto next = start;
+                std::optional<std::chrono::high_resolution_clock::time_point> start;
+                std::optional<std::chrono::high_resolution_clock::time_point> next;
                 while (iState.test_and_set(std::memory_order_acquire))
                 {
+                    if (!start.has_value())
+                    {
+                        start = std::chrono::high_resolution_clock::now();
+                        next = start;
+                    }
                     if (enhancedMetrics)
                         m.emplace_back(iLockingThread.load(), std::chrono::microseconds{});
                     iState.wait(true, std::memory_order_relaxed);
                     if (enhancedMetrics)
                     {
                         auto const now = std::chrono::high_resolution_clock::now();
-                        m.back().duration = std::chrono::duration_cast<std::chrono::microseconds>(now - next);
+                        m.back().duration = std::chrono::duration_cast<std::chrono::microseconds>(now - next.value());
                         next = now;
                     }
                 }
-                auto const end = std::chrono::high_resolution_clock::now();
-                if (end - start > timeout)
-                    if (++iPathologicalContentionCounter > maxCount)
+                if (start.has_value())
+                {
+                    auto const end = std::chrono::high_resolution_clock::now();
+                    if (end - start.value() > timeout && ++iPathologicalContentionCounter > maxCount)
                     {
-                        serviceProfiler.notify_contention(*this, std::chrono::duration_cast<std::chrono::microseconds>(end - start), m.empty() ? nullptr : m.data(), m.size());
+                        serviceProfiler.notify_contention(*this, std::chrono::duration_cast<std::chrono::microseconds>(end - start.value()), m.empty() ? nullptr : m.data(), m.size());
                         iPathologicalContentionCounter = 0u;
                     }
+                }
             }
             else
             {
