@@ -378,7 +378,7 @@ namespace neolib::ecs
     void ecs::async_destroy_entity(entity_id aEntityId, bool aNotify)
     {
         {
-            scoped_component_lock<entity_info> lock{ *this };
+            scoped_component_data_lock<entity_info> lock{ *this };
             component<entity_info>().entity_record(aEntityId).destroyed = true;
         }
         {

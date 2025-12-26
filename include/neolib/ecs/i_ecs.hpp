@@ -327,15 +327,67 @@ namespace neolib::ecs
         }
     };
 
-    template <typename Data>
-    class shared_component_scoped_lock
+    template <typename... Component>
+    class scoped_component_lock
     {
     public:
-        shared_component_scoped_lock(const i_ecs& aEcs) :
+        explicit scoped_component_lock(Component&... aComponents) :
+            iLockFunction{ [&]() { iLock.emplace(aComponents.mutex()...); } }
+        {
+            lock();
+        }
+        ~scoped_component_lock()
+        {
+            unlock();
+        }
+    public:
+        void lock()
+        {
+            iLockFunction();
+        }
+        void unlock()
+        {
+            iLock.reset();
+        }
+    private:
+        std::optional<std::scoped_lock<std::conditional_t<true, i_lockable, Component>...>> iLock;
+        std::function<void()> iLockFunction;
+    };
+
+    template <typename... RelockComponent>
+    class scoped_component_relock
+    {
+    public:
+        scoped_component_relock(scoped_component_lock<RelockComponent...>& aLock, bool aUnlock = true) :
+            iRelock{ [&]() { aLock.lock(); } }
+        {
+            if (aUnlock)
+                aLock.unlock();
+        }
+        ~scoped_component_relock()
+        {
+            if (!iCancelled)
+                iRelock();
+        }
+    public:
+        void cancel()
+        {
+            iCancelled = true;
+        }
+    private:
+        std::function<void()> iRelock;
+        bool iCancelled = false;
+    };
+
+    template <typename Data>
+    class scoped_shared_component_data_lock
+    {
+    public:
+        scoped_shared_component_data_lock(const i_ecs& aEcs) :
             iLock{ aEcs.shared_component<Data>().mutex() }
         {
         }
-        ~shared_component_scoped_lock()
+        ~scoped_shared_component_data_lock()
         {
         }
     private:
@@ -345,7 +397,7 @@ namespace neolib::ecs
     const struct dont_lock_t {} dont_lock;
 
     template <typename... Data>
-    class scoped_component_lock
+    class scoped_component_data_lock
     {
     private:
         template <typename T, typename>
@@ -353,7 +405,7 @@ namespace neolib::ecs
         class proxy_mutex_base : public i_lockable
         {
         public:
-            struct not_linked : std::logic_error { not_linked() : std::logic_error{"neolib::neolib::ecs::scoped_component_lock::proxy_mutex::not_linked"} {} };
+            struct not_linked : std::logic_error { not_linked() : std::logic_error{"neolib::neolib::ecs::scoped_component_data_lock::proxy_mutex::not_linked"} {} };
         public:
             proxy_mutex_base(i_lockable& aSubject) :
                 iSubject{ &aSubject }
@@ -423,31 +475,31 @@ namespace neolib::ecs
         };
 
     public:
-        scoped_component_lock(const i_ecs& aEcs) :
+        scoped_component_data_lock(const i_ecs& aEcs) :
             iProxies{ fwd<const i_ecs&, Data>(aEcs)... }
         {
             create_lockable_array();
             lock();
         }
-        scoped_component_lock(i_ecs& aEcs) :
+        scoped_component_data_lock(i_ecs& aEcs) :
             iProxies{ fwd<i_ecs&, Data>(aEcs)... }
         {
             create_lockable_array();
             lock();
         }
-        scoped_component_lock(const i_ecs& aEcs, dont_lock_t) :
+        scoped_component_data_lock(const i_ecs& aEcs, dont_lock_t) :
             iProxies{ fwd<const i_ecs&, Data>(aEcs)... }
         {
             create_lockable_array();
             iDontUnlock.emplace();
         }
-        scoped_component_lock(i_ecs& aEcs, dont_lock_t) :
+        scoped_component_data_lock(i_ecs& aEcs, dont_lock_t) :
             iProxies{ fwd<i_ecs&, Data>(aEcs)... }
         {
             create_lockable_array();
             iDontUnlock.emplace();
         }
-        ~scoped_component_lock()
+        ~scoped_component_data_lock()
         {
             if (!iDontUnlock)
                 unlock();
@@ -552,17 +604,17 @@ namespace neolib::ecs
     };
 
     template <typename... RelockData>
-    class scoped_component_relock
+    class scoped_component_data_relock
     {
     public:
         template <typename... Data>
-        scoped_component_relock(scoped_component_lock<Data...>& aLock, bool aUnlock = true) : 
+        scoped_component_data_relock(scoped_component_data_lock<Data...>& aLock, bool aUnlock = true) :
             iRelock{ [&]() { aLock.template lock_if<RelockData...>(); } }
         {
             if (aUnlock)
                 aLock.template unlock_if<RelockData...>();
         }
-        ~scoped_component_relock()
+        ~scoped_component_data_relock()
         {
             if (!iCancelled)
                 iRelock();
@@ -580,7 +632,7 @@ namespace neolib::ecs
     template <typename... ComponentData>
     inline entity_id i_ecs::create_entity(const entity_archetype_id& aArchetypeId, ComponentData&&... aComponentData)
     {
-        scoped_component_lock<std::decay_t<ComponentData>...> lock{ *this };
+        scoped_component_data_lock<std::decay_t<ComponentData>...> lock{ *this };
         auto newEntity = create_entity(aArchetypeId);
         populate(newEntity, std::forward<ComponentData>(aComponentData)...);
         archetype(aArchetypeId).populate_default_components(*this, newEntity);

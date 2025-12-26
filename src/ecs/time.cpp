@@ -77,7 +77,7 @@ namespace neolib::ecs
         auto waitDuration = std::numeric_limits<i64>::max();
 
         {
-            scoped_component_lock<entity_life_span> lock{ ecs() };
+            scoped_component_lock lock{ iLifeSpans };
 
             for (auto entity : iLifeSpans.entities())
             {
