@@ -39,15 +39,24 @@
 #include <atomic>
 #include <mutex>
 #include <thread>
+#include <chrono>
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
+#include <immintrin.h>
+#endif
+#include <boost/unordered/unordered_flat_map.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/lockfree/detail/freelist.hpp>
-#include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/fiber/detail/cpu_relax.hpp>
 #include <neolib/core/optional.hpp>
 #include <neolib/core/i_mutex.hpp>
 #include <neolib/core/service.hpp>
 
-#if !defined(DISABLE_NEOS_PROFILE_MUTEXES)
-    #define NEOS_PROFILE_MUTEXES
+#if !defined(NEOS_DISABLE_PROFILE_MUTEXES)
+#define NEOS_PROFILE_MUTEXES
+#endif
+
+#if !defined(NEOS_DISABLE_ADAPTIVE_MUTEXES)
+#define NEOS_ADAPTIVE_MUTEXES
 #endif
 
 namespace neolib
@@ -79,10 +88,10 @@ namespace neolib
             if (aTimeout.count() > std::numeric_limits<decltype(params{}.timeout_us)>::max() ||
                 aMaxCount > std::numeric_limits<decltype(params{}.maxCount)>::max())
                 throw std::logic_error("neolib::mutex_profiler::enable: param(s) exceed limit(s)");
-            iParams.store(params{ 
-                static_cast<decltype(params{}.timeout_us)>(aTimeout.count()), 
-                static_cast<decltype(params{}.maxCount)>(aMaxCount), 
-                true, 
+            iParams.store(params{
+                static_cast<decltype(params{}.timeout_us)>(aTimeout.count()),
+                static_cast<decltype(params{}.maxCount)>(aMaxCount),
+                true,
                 aEnhancedMetrics });
         }
         void disable() noexcept final
@@ -170,6 +179,81 @@ namespace neolib
         }
 #endif
 
+#if defined(NEOS_ADAPTIVE_MUTEXES)
+        struct tuning
+        {
+            std::uint32_t spinIters;
+            std::uint32_t yieldEvery;
+        };
+
+        enum class tuning_state : std::uint8_t
+        {
+            Uninitialized = 0,
+            Initializing = 1,
+            Initialized = 2
+        };
+
+        static inline std::atomic<tuning_state> sTuningState{ tuning_state::Uninitialized };
+        static inline tuning sTuning{ 200u, 50u }; // safe fallback
+
+        static tuning compute_tuning() noexcept
+        {
+            using clock = std::chrono::high_resolution_clock;
+            using ns = std::chrono::nanoseconds;
+
+            constexpr ns spinBudget = std::chrono::microseconds{ 5 };
+            constexpr ns yieldPeriod = std::chrono::microseconds{ 1 };
+
+            constexpr std::uint32_t warmupIters = 128;
+            constexpr std::uint32_t sampleIters = 1024;
+
+            for (std::uint32_t i = 0; i < warmupIters; ++i)
+                cpu_relax();
+
+            auto const t0 = clock::now();
+            for (std::uint32_t i = 0; i < sampleIters; ++i)
+                cpu_relax();
+            auto const t1 = clock::now();
+
+            auto const total = std::chrono::duration_cast<ns>(t1 - t0);
+            auto const perRelax = (total.count() > 0) ? (total / sampleIters) : ns{ 1 };
+
+            std::uint64_t spinIters64 =
+                (perRelax.count() > 0) ? static_cast<std::uint64_t>(spinBudget / perRelax) : 200ull;
+
+            // Clamp to avoid pathological CPU burn or weird clock behaviour.
+            if (spinIters64 < 50ull)   spinIters64 = 50ull;
+            if (spinIters64 > 5000ull) spinIters64 = 5000ull;
+
+            std::uint64_t yieldEvery64 =
+                (perRelax.count() > 0) ? static_cast<std::uint64_t>(yieldPeriod / perRelax) : 50ull;
+
+            if (yieldEvery64 < 1ull) yieldEvery64 = 1ull;
+            if (yieldEvery64 > spinIters64) yieldEvery64 = spinIters64;
+
+            return tuning{ static_cast<std::uint32_t>(spinIters64), static_cast<std::uint32_t>(yieldEvery64) };
+        }
+
+        static tuning get_tuning() noexcept
+        {
+            if (sTuningState.load(std::memory_order_acquire) == tuning_state::Initialized)
+                return sTuning;
+
+            auto expected = tuning_state::Uninitialized;
+            if (sTuningState.compare_exchange_strong(expected, tuning_state::Initializing, std::memory_order_acq_rel))
+            {
+                sTuning = compute_tuning();
+                sTuningState.store(tuning_state::Initialized, std::memory_order_release);
+                return sTuning;
+            }
+
+            while (sTuningState.load(std::memory_order_acquire) != tuning_state::Initialized)
+                cpu_relax();
+
+            return sTuning;
+        }
+#endif
+
     public:
         recursive_spinlock() :
             iState{},
@@ -191,9 +275,42 @@ namespace neolib
                 ++iLockCount;
                 return;
             }
+
+            auto spin_acquire = [&](
+                auto&& on_contended,
+                auto&& on_before_wait,
+                auto&& on_after_wait)
+                {
+                    for (;;)
+                    {
+                        if (!iState.test_and_set(std::memory_order_acquire))
+                            return;
+
+                        on_contended();
+
+#if defined(NEOS_ADAPTIVE_MUTEXES)
+                        auto const tune = get_tuning();
+                        for (std::uint32_t i = 0; i < tune.spinIters; ++i)
+                        {
+                            cpu_relax();
+                            if ((i % tune.yieldEvery) == 0)
+                                std::this_thread::yield();
+
+                            if (!iState.test(std::memory_order_relaxed) &&
+                                !iState.test_and_set(std::memory_order_acquire))
+                            {
+                                return;
+                            }
+                        }
+#endif
+
+                        on_before_wait();
+                        iState.wait(true, std::memory_order_relaxed);
+                        on_after_wait();
+                    }
+                };
 #if !defined(NEOS_PROFILE_MUTEXES)
-            while (iState.test_and_set(std::memory_order_acquire))
-                iState.wait(true, std::memory_order_relaxed);
+            spin_acquire([]{}, []{}, []{});
 #else
             static auto& serviceProfiler = service<i_mutex_profiler>();
             std::chrono::microseconds timeout;
@@ -207,23 +324,30 @@ namespace neolib
                     m.clear();
                 std::optional<std::chrono::high_resolution_clock::time_point> start;
                 std::optional<std::chrono::high_resolution_clock::time_point> next;
-                while (iState.test_and_set(std::memory_order_acquire))
-                {
-                    if (!start.has_value())
+                spin_acquire(
+                    [&]
                     {
-                        start = std::chrono::high_resolution_clock::now();
-                        next = start;
-                    }
-                    if (enhancedMetrics)
-                        m.emplace_back(iLockingThread.load(), std::chrono::microseconds{});
-                    iState.wait(true, std::memory_order_relaxed);
-                    if (enhancedMetrics)
+                        if (!start.has_value())
+                        {
+                            start = std::chrono::high_resolution_clock::now();
+                            next = start;
+                        }
+                    },
+                    [&]
                     {
-                        auto const now = std::chrono::high_resolution_clock::now();
-                        m.back().duration = std::chrono::duration_cast<std::chrono::microseconds>(now - next.value());
-                        next = now;
-                    }
-                }
+                        if (enhancedMetrics)
+                            m.emplace_back(iLockingThread.load(), std::chrono::microseconds{});
+                    },
+                    [&]
+                    {
+                        if (enhancedMetrics)
+                        {
+                            auto const now = std::chrono::high_resolution_clock::now();
+                            m.back().duration = std::chrono::duration_cast<std::chrono::microseconds>(now - next.value());
+                            next = now;
+                        }
+                    });
+
                 if (start.has_value())
                 {
                     auto const end = std::chrono::high_resolution_clock::now();
@@ -236,8 +360,7 @@ namespace neolib
             }
             else
             {
-                while (iState.test_and_set(std::memory_order_acquire))
-                    iState.wait(true, std::memory_order_relaxed);
+                spin_acquire([]{}, []{}, []{});
             }
 #endif
             iLockingThread.store(thisThread, std::memory_order_relaxed);
