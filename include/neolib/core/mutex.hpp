@@ -37,6 +37,7 @@
 
 #include <neolib/neolib.hpp>
 #include <atomic>
+#include <cstdint>
 #include <mutex>
 #include <thread>
 #include <chrono>
@@ -163,10 +164,34 @@ namespace neolib
     {
     private:
         using metrics_list = std::vector<mutex_lock_info>;
+#if defined(NEOS_PROFILE_MUTEXES)
+        struct metrics_key
+        {
+            recursive_spinlock const* ptr;
+            std::uint64_t generation;
+            friend bool operator==(metrics_key const& a, metrics_key const& b) noexcept
+            {
+                return a.ptr == b.ptr && a.generation == b.generation;
+            }
+        };
+
+        struct metrics_key_hash
+        {
+            std::size_t operator()(metrics_key const& k) const noexcept
+            {
+                auto const p = reinterpret_cast<std::uintptr_t>(k.ptr);
+                auto const g = static_cast<std::uintptr_t>(k.generation);
+                return static_cast<std::size_t>(p ^ (g + 0x9e3779b97f4a7c15ULL + (p << 6) + (p >> 2)));
+            }
+        };
+        using metrics_map = boost::unordered_flat_map<metrics_key, metrics_list, metrics_key_hash>;
+#else
         using metrics_map = boost::unordered_flat_map<recursive_spinlock const*, metrics_list>;
+#endif
     private:
 #if defined(NEOS_PROFILE_MUTEXES)
         static inline int sIcfSingleton;
+        static inline std::atomic<std::uint64_t> sGenerationCounter{ 0u };
         void prevent_icf() const noexcept
         {
             static volatile int sink = 42;
@@ -259,6 +284,9 @@ namespace neolib
             iState{},
             iLockCount{ 0u },
             iLockingThread{}
+#if defined(NEOS_PROFILE_MUTEXES)
+            , iGeneration{ sGenerationCounter.fetch_add(1u, std::memory_order_relaxed) + 1u }
+#endif
         {
         }
         ~recursive_spinlock()
@@ -395,7 +423,11 @@ namespace neolib
         metrics_list& metrics() const noexcept
         {
             thread_local metrics_map tMap;
+#if defined(NEOS_PROFILE_MUTEXES)
+            return tMap[metrics_key{ std::launder(this), iGeneration }];
+#else
             return tMap[std::launder(this)];
+#endif
         }
     private:
         std::atomic_flag iState;
@@ -403,6 +435,7 @@ namespace neolib
         std::atomic<std::thread::id> iLockingThread;
 #if defined(NEOS_PROFILE_MUTEXES)
         std::atomic<std::uint32_t> iPathologicalContentionCounter = 0u;
+        std::uint64_t iGeneration = 0u;
 #endif
     };
 
