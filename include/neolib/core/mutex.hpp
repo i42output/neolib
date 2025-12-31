@@ -309,6 +309,9 @@ namespace neolib
                 auto&& on_before_wait,
                 auto&& on_after_wait)
                 {
+#if defined(NEOS_ADAPTIVE_MUTEXES)
+                    auto const tune = get_tuning();
+#endif
                     for (;;)
                     {
                         if (!iState.test_and_set(std::memory_order_acquire))
@@ -317,12 +320,15 @@ namespace neolib
                         on_contended();
 
 #if defined(NEOS_ADAPTIVE_MUTEXES)
-                        auto const tune = get_tuning();
+                        std::uint32_t untilNextYield = tune.yieldEvery;
                         for (std::uint32_t i = 0; i < tune.spinIters; ++i)
                         {
                             cpu_relax();
-                            if ((i % tune.yieldEvery) == 0)
+                            if (--untilNextYield == 0)
+                            {
+                                untilNextYield = tune.yieldEvery;
                                 std::this_thread::yield();
+                            }
 
                             if (!iState.test(std::memory_order_relaxed) &&
                                 !iState.test_and_set(std::memory_order_acquire))
