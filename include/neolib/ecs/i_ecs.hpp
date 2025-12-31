@@ -50,6 +50,43 @@ namespace neolib::ecs
 {
     using neolib::to_const;
 
+    enum class ecs_system_locking_strategy
+    {
+        SingleThreaded,
+        MultiThreaded,
+        MultiThreadedSpinlock
+    };
+
+    class i_ecs_system : public i_service
+    {
+    public:
+        virtual ecs_system_locking_strategy locking_strategy() const noexcept = 0;
+        virtual void set_locking_strategy(ecs_system_locking_strategy aStrategy) noexcept = 0;
+    public:
+        static uuid const& iid() { static uuid const sIid{ 0x3b0f6643, 0xc2f1, 0x47ff, 0x92ac, { 0x81, 0xcd, 0x51, 0x7e, 0xac, 0xc2 } }; return sIid; }
+    };
+
+    template <typename ProfilerTag = void>
+    class ecs_mutex : public switchable_mutex<ProfilerTag>
+    {
+    public:
+        ecs_mutex()
+        {
+            switch (services::service<i_ecs_system>().locking_strategy())
+            {
+            case ecs_system_locking_strategy::SingleThreaded:
+                this->set_single_threaded();
+                break;
+            case ecs_system_locking_strategy::MultiThreaded:
+                this->set_multi_threaded();
+                break;
+            case ecs_system_locking_strategy::MultiThreadedSpinlock:
+                this->set_multi_threaded_spinlock();
+                break;
+            }
+        }
+    };
+
     enum class ecs_flags : uint32_t
     {
         None                = 0x0000,

@@ -40,6 +40,15 @@
 #include <neolib/ecs/time.hpp>
 #include <neolib/core/numerical.hpp>
 
+namespace neolib
+{
+    template<> ecs::i_ecs_system& services::start_service<ecs::i_ecs_system>()
+    {
+        static ecs::ecs_system sEcsSystem;
+        return sEcsSystem;
+    }
+}
+    
 namespace neolib::ecs
 {
     const ecs::archetype_registry_t& ecs::archetypes() const
@@ -266,47 +275,47 @@ namespace neolib::ecs
             system.second->terminate();
     }
 
-    recursive_spinlock<ecs>& ecs::mutex() const
+    ecs_mutex<ecs>& ecs::mutex() const
     {
         return iMutex;
     }
                 
-    recursive_spinlock<ecs::entity_mutex_tag>& ecs::entity_mutex() const
+    ecs_mutex<ecs::entity_mutex_tag>& ecs::entity_mutex() const
     {
         return iEntityMutex;
     }
 
-    recursive_spinlock<ecs::archetype_mutex_tag>& ecs::archetype_mutex() const
+    ecs_mutex<ecs::archetype_mutex_tag>& ecs::archetype_mutex() const
     {
         return iArchetypeMutex;
     }
 
-    neolib::recursive_spinlock<ecs::component_factory_mutex_tag>& ecs::component_factory_mutex() const
+    ecs_mutex<ecs::component_factory_mutex_tag>& ecs::component_factory_mutex() const
     {
         return iComponentFactoryMutex;
     }
 
-    neolib::recursive_spinlock<ecs::component_mutex_tag>& ecs::component_mutex() const
+    ecs_mutex<ecs::component_mutex_tag>& ecs::component_mutex() const
     {
         return iComponentMutex;
     }
 
-    recursive_spinlock<ecs::shared_component_factory_mutex_tag>& ecs::shared_component_factory_mutex() const
+    ecs_mutex<ecs::shared_component_factory_mutex_tag>& ecs::shared_component_factory_mutex() const
     {
         return iSharedComponentFactoryMutex;
     }
 
-    recursive_spinlock<ecs::shared_component_mutex_tag>& ecs::shared_component_mutex() const
+    ecs_mutex<ecs::shared_component_mutex_tag>& ecs::shared_component_mutex() const
     {
         return iSharedComponentMutex;
     }
 
-    recursive_spinlock<ecs::system_factory_mutex_tag>& ecs::system_factory_mutex() const
+    ecs_mutex<ecs::system_factory_mutex_tag>& ecs::system_factory_mutex() const
     {
         return iSystemFactoryMutex;
     }
 
-    recursive_spinlock<ecs::system_mutex_tag>& ecs::system_mutex() const
+    ecs_mutex<ecs::system_mutex_tag>& ecs::system_mutex() const
     {
         return iSystemMutex;
     }

@@ -47,6 +47,21 @@
 
 namespace neolib::ecs
 {
+    class ecs_system : public i_ecs_system
+    {
+    public:
+        ecs_system_locking_strategy locking_strategy() const noexcept final
+        {
+            return iStrategy;
+        }
+        void set_locking_strategy(ecs_system_locking_strategy aStrategy) noexcept final
+        {
+            iStrategy = aStrategy;
+        }
+    private:
+        ecs_system_locking_strategy iStrategy = ecs_system_locking_strategy::MultiThreaded;
+    };
+
     class NEOLIB_EXPORT ecs : public neolib::object<i_ecs>
     {
     public:
@@ -69,15 +84,15 @@ namespace neolib::ecs
         ecs(ecs_flags aCreationFlags = ecs_flags::Default);
         ~ecs();
     public:
-        recursive_spinlock<ecs>& mutex() const final;
-        recursive_spinlock<entity_mutex_tag>& entity_mutex() const final;
-        recursive_spinlock<archetype_mutex_tag>& archetype_mutex() const final;
-        recursive_spinlock<component_factory_mutex_tag>& component_factory_mutex() const final;
-        recursive_spinlock<component_mutex_tag>& component_mutex() const final;
-        recursive_spinlock<shared_component_factory_mutex_tag>& shared_component_factory_mutex() const final;
-        recursive_spinlock<shared_component_mutex_tag>& shared_component_mutex() const final;
-        recursive_spinlock<system_factory_mutex_tag>& system_factory_mutex() const final;
-        recursive_spinlock<system_mutex_tag>& system_mutex() const final;
+        ecs_mutex<ecs>& mutex() const final;
+        ecs_mutex<entity_mutex_tag>& entity_mutex() const final;
+        ecs_mutex<archetype_mutex_tag>& archetype_mutex() const final;
+        ecs_mutex<component_factory_mutex_tag>& component_factory_mutex() const final;
+        ecs_mutex<component_mutex_tag>& component_mutex() const final;
+        ecs_mutex<shared_component_factory_mutex_tag>& shared_component_factory_mutex() const final;
+        ecs_mutex<shared_component_mutex_tag>& shared_component_mutex() const final;
+        ecs_mutex<system_factory_mutex_tag>& system_factory_mutex() const final;
+        ecs_mutex<system_mutex_tag>& system_mutex() const final;
         neolib::thread_pool& thread_pool() const final;
     public:
         ecs_flags flags() const final;
@@ -160,15 +175,15 @@ namespace neolib::ecs
         using i_ecs::system_registered;
         using i_ecs::register_system;
     private:
-        mutable recursive_spinlock<ecs> iMutex;
-        mutable recursive_spinlock<entity_mutex_tag> iEntityMutex;
-        mutable recursive_spinlock<archetype_mutex_tag> iArchetypeMutex;
-        mutable recursive_spinlock<component_factory_mutex_tag> iComponentFactoryMutex;
-        mutable recursive_spinlock<component_mutex_tag> iComponentMutex;
-        mutable recursive_spinlock<shared_component_factory_mutex_tag> iSharedComponentFactoryMutex;;
-        mutable recursive_spinlock<shared_component_mutex_tag> iSharedComponentMutex;;
-        mutable recursive_spinlock<system_factory_mutex_tag> iSystemFactoryMutex;
-        mutable recursive_spinlock<system_mutex_tag> iSystemMutex;
+        mutable ecs_mutex<ecs> iMutex;
+        mutable ecs_mutex<entity_mutex_tag> iEntityMutex;
+        mutable ecs_mutex<archetype_mutex_tag> iArchetypeMutex;
+        mutable ecs_mutex<component_factory_mutex_tag> iComponentFactoryMutex;
+        mutable ecs_mutex<component_mutex_tag> iComponentMutex;
+        mutable ecs_mutex<shared_component_factory_mutex_tag> iSharedComponentFactoryMutex;;
+        mutable ecs_mutex<shared_component_mutex_tag> iSharedComponentMutex;;
+        mutable ecs_mutex<system_factory_mutex_tag> iSystemFactoryMutex;
+        mutable ecs_mutex<system_mutex_tag> iSystemMutex;
         mutable std::optional<neolib::thread_pool> iThreadPool;
         ecs_flags iFlags;
         archetype_registry_t iArchetypeRegistry;

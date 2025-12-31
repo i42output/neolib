@@ -57,7 +57,7 @@ namespace neolib
             iStrategy = aStrategy;
         }
     private:
-        event_system_locking_strategy iStrategy = event_system_locking_strategy::MultiThreadedSpinlock;
+        event_system_locking_strategy iStrategy = event_system_locking_strategy::MultiThreaded;
     };
 
     class async_event_queue : public lifetime<i_async_event_queue>
