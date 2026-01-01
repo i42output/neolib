@@ -58,6 +58,9 @@
 
 #if !defined(NEOS_DISABLE_ADAPTIVE_MUTEXES)
 #define NEOS_ADAPTIVE_MUTEXES
+#if defined(NEOS_ENABLE_ADAPTIVE_MUTEX_YIELD)
+#define NEOS_ADAPTIVE_MUTEX_YIELD
+#endif
 #endif
 
 namespace neolib
@@ -159,6 +162,20 @@ namespace neolib
         Subject* iSubject;
     };
 
+    namespace this_thread
+    {
+        namespace lightweight
+        {
+            using thread_id = std::thread::id const*;
+
+            inline thread_id get_id()
+            {
+                thread_local std::thread::id tId = std::this_thread::get_id();
+                return &tId;
+            }
+        }
+    }
+
     template <typename ProfilerTag = void>
     class alignas(boost::lockfree::detail::cacheline_bytes) recursive_spinlock : public i_lockable
     {
@@ -208,7 +225,9 @@ namespace neolib
         struct tuning
         {
             std::uint32_t spinIters;
+#if defined(NEOS_ADAPTIVE_MUTEX_YIELD)
             std::uint32_t yieldEvery;
+#endif
         };
 
         enum class tuning_state : std::uint8_t
@@ -219,16 +238,21 @@ namespace neolib
         };
 
         static inline std::atomic<tuning_state> sTuningState{ tuning_state::Uninitialized };
+#if !defined(NEOS_ADAPTIVE_MUTEX_YIELD)
+        static inline tuning sTuning{ 200u }; // safe fallback
+#else
         static inline tuning sTuning{ 200u, 50u }; // safe fallback
+#endif
 
         static tuning compute_tuning() noexcept
         {
             using clock = std::chrono::high_resolution_clock;
             using ns = std::chrono::nanoseconds;
 
-            constexpr ns spinBudget = std::chrono::microseconds{ 5 };
+            constexpr ns spinBudget = std::chrono::nanoseconds{ 500 };
+#if defined(NEOS_ADAPTIVE_MUTEX_YIELD)
             constexpr ns yieldPeriod = std::chrono::microseconds{ 1 };
-
+#endif
             constexpr std::uint32_t warmupIters = 128;
             constexpr std::uint32_t sampleIters = 1024;
 
@@ -250,13 +274,18 @@ namespace neolib
             if (spinIters64 < 50ull)   spinIters64 = 50ull;
             if (spinIters64 > 5000ull) spinIters64 = 5000ull;
 
+#if defined(NEOS_ADAPTIVE_MUTEX_YIELD)
             std::uint64_t yieldEvery64 =
                 (perRelax.count() > 0) ? static_cast<std::uint64_t>(yieldPeriod / perRelax) : 50ull;
 
             if (yieldEvery64 < 1ull) yieldEvery64 = 1ull;
             if (yieldEvery64 > spinIters64) yieldEvery64 = spinIters64;
-
+#endif
+#if !defined(NEOS_ADAPTIVE_MUTEX_YIELD)
+            return tuning{ static_cast<std::uint32_t>(spinIters64) };
+#else
             return tuning{ static_cast<std::uint32_t>(spinIters64), static_cast<std::uint32_t>(yieldEvery64) };
+#endif
         }
 
         static tuning get_tuning() noexcept
@@ -281,9 +310,9 @@ namespace neolib
 
     public:
         recursive_spinlock() :
-            iState{},
             iLockCount{ 0u },
-            iLockingThread{}
+            iLockingThread{},
+            iState{}
 #if defined(NEOS_PROFILE_MUTEXES)
             , iGeneration{ sGenerationCounter.fetch_add(1u, std::memory_order_relaxed) + 1u }
 #endif
@@ -297,8 +326,9 @@ namespace neolib
         void lock() noexcept final
         {
             prevent_icf();
-            auto const thisThread = std::this_thread::get_id();
-            if (iState.test(std::memory_order_acquire) && iLockingThread.load(std::memory_order_relaxed) == thisThread)
+            auto const thisThread = this_thread::lightweight::get_id();
+            if (iState.test(std::memory_order_relaxed) && 
+                iLockingThread.load(std::memory_order_relaxed) == thisThread)
             {
                 ++iLockCount;
                 return;
@@ -314,22 +344,26 @@ namespace neolib
 #endif
                     for (;;)
                     {
-                        if (!iState.test_and_set(std::memory_order_acquire))
+                        if (!iState.test(std::memory_order_relaxed) &&
+                            !iState.test_and_set(std::memory_order_acquire))
                             return;
 
                         on_contended();
 
 #if defined(NEOS_ADAPTIVE_MUTEXES)
+#if defined(NEOS_ADAPTIVE_MUTEX_YIELD)
                         std::uint32_t untilNextYield = tune.yieldEvery;
+#endif
                         for (std::uint32_t i = 0; i < tune.spinIters; ++i)
                         {
                             cpu_relax();
+#if defined(NEOS_ADAPTIVE_MUTEX_YIELD)
                             if (--untilNextYield == 0)
                             {
                                 untilNextYield = tune.yieldEvery;
                                 std::this_thread::yield();
                             }
-
+#endif
                             if (!iState.test(std::memory_order_relaxed) &&
                                 !iState.test_and_set(std::memory_order_acquire))
                             {
@@ -370,7 +404,10 @@ namespace neolib
                     [&]
                     {
                         if (enhancedMetrics)
-                            m.emplace_back(iLockingThread.load(), std::chrono::microseconds{});
+                        {
+                            auto const lockingThread = iLockingThread.load();
+                            m.emplace_back(lockingThread != nullptr ? *lockingThread : std::thread::id{}, std::chrono::microseconds{});
+                        }
                     },
                     [&]
                     {
@@ -405,7 +442,7 @@ namespace neolib
             prevent_icf();
             if (--iLockCount == 0u)
             {
-                iLockingThread.store(std::thread::id{}, std::memory_order_relaxed);
+                iLockingThread.store(nullptr, std::memory_order_relaxed);
                 iState.clear(std::memory_order_release);
                 iState.notify_one();
             }
@@ -413,8 +450,9 @@ namespace neolib
         bool try_lock() noexcept final
         {
             prevent_icf();
-            auto const thisThread = std::this_thread::get_id();
-            if (iState.test(std::memory_order_acquire) && iLockingThread.load(std::memory_order_relaxed) == thisThread)
+            auto const thisThread = this_thread::lightweight::get_id();
+            if (iState.test(std::memory_order_relaxed) && 
+                iLockingThread.load(std::memory_order_relaxed) == thisThread)
             {
                 ++iLockCount;
                 return true;
@@ -436,10 +474,11 @@ namespace neolib
 #endif
         }
     private:
-        std::atomic_flag iState;
         std::atomic<std::uint32_t> iLockCount;
-        std::atomic<std::thread::id> iLockingThread;
+        std::atomic<this_thread::lightweight::thread_id> iLockingThread;
+        std::atomic_flag iState;
 #if defined(NEOS_PROFILE_MUTEXES)
+        std::atomic<std::thread::id> iLockingThreadNativeId;
         std::atomic<std::uint32_t> iPathologicalContentionCounter = 0u;
         std::uint64_t iGeneration = 0u;
 #endif
