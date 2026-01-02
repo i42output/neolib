@@ -50,18 +50,19 @@ namespace neolib::ecs
 {
     using neolib::to_const;
 
-    enum class ecs_system_locking_strategy
+    enum class ecs_locking_strategy
     {
         SingleThreaded,
         MultiThreaded,
+        MultiThreadedProfiled,
         MultiThreadedSpinlock
     };
 
-    class i_ecs_system : public i_service
+    class i_ecs_params : public i_service
     {
     public:
-        virtual ecs_system_locking_strategy locking_strategy() const noexcept = 0;
-        virtual void set_locking_strategy(ecs_system_locking_strategy aStrategy) noexcept = 0;
+        virtual ecs_locking_strategy locking_strategy() const noexcept = 0;
+        virtual void set_locking_strategy(ecs_locking_strategy aStrategy) noexcept = 0;
     public:
         static uuid const& iid() { static uuid const sIid{ 0x3b0f6643, 0xc2f1, 0x47ff, 0x92ac, { 0x81, 0xcd, 0x51, 0x7e, 0xac, 0xc2 } }; return sIid; }
     };
@@ -72,15 +73,18 @@ namespace neolib::ecs
     public:
         ecs_mutex()
         {
-            switch (services::service<i_ecs_system>().locking_strategy())
+            switch (services::service<i_ecs_params>().locking_strategy())
             {
-            case ecs_system_locking_strategy::SingleThreaded:
+            case ecs_locking_strategy::SingleThreaded:
                 this->set_single_threaded();
                 break;
-            case ecs_system_locking_strategy::MultiThreaded:
+            case ecs_locking_strategy::MultiThreaded:
                 this->set_multi_threaded();
                 break;
-            case ecs_system_locking_strategy::MultiThreadedSpinlock:
+            case ecs_locking_strategy::MultiThreadedProfiled:
+                this->set_multi_threaded_profiled();
+                break;
+            case ecs_locking_strategy::MultiThreadedSpinlock:
                 this->set_multi_threaded_spinlock();
                 break;
             }

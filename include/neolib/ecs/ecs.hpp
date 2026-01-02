@@ -47,19 +47,19 @@
 
 namespace neolib::ecs
 {
-    class ecs_system : public i_ecs_system
+    class ecs_params : public i_ecs_params
     {
     public:
-        ecs_system_locking_strategy locking_strategy() const noexcept final
+        ecs_locking_strategy locking_strategy() const noexcept final
         {
             return iStrategy;
         }
-        void set_locking_strategy(ecs_system_locking_strategy aStrategy) noexcept final
+        void set_locking_strategy(ecs_locking_strategy aStrategy) noexcept final
         {
             iStrategy = aStrategy;
         }
     private:
-        ecs_system_locking_strategy iStrategy = ecs_system_locking_strategy::MultiThreaded;
+        ecs_locking_strategy iStrategy = ecs_locking_strategy::MultiThreaded;
     };
 
     class NEOLIB_EXPORT ecs : public neolib::object<i_ecs>

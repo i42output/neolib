@@ -41,6 +41,10 @@
 #include <neolib/core/i_optional.hpp>
 #include <neolib/core/i_service.hpp>
 
+#if !defined(NEOS_DISABLE_PROFILE_MUTEX)
+#define NEOS_PROFILE_MUTEX
+#endif
+
 namespace neolib
 {
     struct i_lockable
@@ -64,8 +68,8 @@ namespace neolib
 
     struct i_mutex_profiler : i_service
     {
-        template <typename ProfilerTag>
-        friend class recursive_spinlock;
+        template <typename ProfilerTag, bool Spinlock, bool Yield>
+        friend class recursive_mutex;
     public:
         virtual bool enabled(std::chrono::microseconds& aTimeout, std::uint32_t& aMaxCount, bool& aEnhancedMetrics) const noexcept = 0;
         virtual void enable(std::chrono::microseconds aTimeout = std::chrono::microseconds{ 100 }, std::uint32_t aMaxCount = 10u, bool aEnhancedMetrics = false) = 0;

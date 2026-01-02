@@ -47,6 +47,7 @@ namespace neolib
     {
         SingleThreaded,
         MultiThreaded,
+        MultiThreadedProfiled,
         MultiThreadedSpinlock
     };
 
@@ -72,6 +73,9 @@ namespace neolib
                 break;
             case event_system_locking_strategy::MultiThreaded:
                 this->set_multi_threaded();
+                break;
+            case event_system_locking_strategy::MultiThreadedProfiled:
+                this->set_multi_threaded_profiled();
                 break;
             case event_system_locking_strategy::MultiThreadedSpinlock:
                 this->set_multi_threaded_spinlock();

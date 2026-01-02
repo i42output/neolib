@@ -42,10 +42,10 @@
 
 namespace neolib
 {
-    template<> ecs::i_ecs_system& services::start_service<ecs::i_ecs_system>()
+    template<> ecs::i_ecs_params& services::start_service<ecs::i_ecs_params>()
     {
-        static ecs::ecs_system sEcsSystem;
-        return sEcsSystem;
+        static ecs::ecs_params sEcsParams;
+        return sEcsParams;
     }
 }
     

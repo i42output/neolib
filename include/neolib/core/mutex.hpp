@@ -52,17 +52,6 @@
 #include <neolib/core/i_mutex.hpp>
 #include <neolib/core/service.hpp>
 
-#if !defined(NEOS_DISABLE_PROFILE_MUTEXES)
-#define NEOS_PROFILE_MUTEXES
-#endif
-
-#if !defined(NEOS_DISABLE_ADAPTIVE_MUTEXES)
-#define NEOS_ADAPTIVE_MUTEXES
-#if defined(NEOS_ENABLE_ADAPTIVE_MUTEX_YIELD)
-#define NEOS_ADAPTIVE_MUTEX_YIELD
-#endif
-#endif
-
 namespace neolib
 {
     class mutex_profiler : public i_mutex_profiler
@@ -176,15 +165,15 @@ namespace neolib
         }
     }
 
-    template <typename ProfilerTag = void>
-    class alignas(boost::lockfree::detail::cacheline_bytes) recursive_spinlock : public i_lockable
+    template <typename ProfilerTag = void, bool Spinlock = false, bool Yield = false>
+    class alignas(boost::lockfree::detail::cacheline_bytes) recursive_mutex : public i_lockable
     {
     private:
         using metrics_list = std::vector<mutex_lock_info>;
-#if defined(NEOS_PROFILE_MUTEXES)
+#if defined(NEOS_PROFILE_MUTEX)
         struct metrics_key
         {
-            recursive_spinlock const* ptr;
+            recursive_mutex const* ptr;
             std::uint64_t generation;
             friend bool operator==(metrics_key const& a, metrics_key const& b) noexcept
             {
@@ -203,10 +192,10 @@ namespace neolib
         };
         using metrics_map = boost::unordered_flat_map<metrics_key, metrics_list, metrics_key_hash>;
 #else
-        using metrics_map = boost::unordered_flat_map<recursive_spinlock const*, metrics_list>;
+        using metrics_map = boost::unordered_flat_map<recursive_mutex const*, metrics_list>;
 #endif
     private:
-#if defined(NEOS_PROFILE_MUTEXES)
+#if defined(NEOS_PROFILE_MUTEX)
         static inline int sIcfSingleton;
         static inline std::atomic<std::uint64_t> sGenerationCounter{ 0u };
         void prevent_icf() const noexcept
@@ -221,13 +210,10 @@ namespace neolib
         }
 #endif
 
-#if defined(NEOS_ADAPTIVE_MUTEXES)
         struct tuning
         {
             std::uint32_t spinIters;
-#if defined(NEOS_ADAPTIVE_MUTEX_YIELD)
             std::uint32_t yieldEvery;
-#endif
         };
 
         enum class tuning_state : std::uint8_t
@@ -238,11 +224,7 @@ namespace neolib
         };
 
         static inline std::atomic<tuning_state> sTuningState{ tuning_state::Uninitialized };
-#if !defined(NEOS_ADAPTIVE_MUTEX_YIELD)
-        static inline tuning sTuning{ 200u }; // safe fallback
-#else
         static inline tuning sTuning{ 200u, 50u }; // safe fallback
-#endif
 
         static tuning compute_tuning() noexcept
         {
@@ -250,9 +232,7 @@ namespace neolib
             using ns = std::chrono::nanoseconds;
 
             constexpr ns spinBudget = std::chrono::nanoseconds{ 500 };
-#if defined(NEOS_ADAPTIVE_MUTEX_YIELD)
             constexpr ns yieldPeriod = std::chrono::microseconds{ 1 };
-#endif
             constexpr std::uint32_t warmupIters = 128;
             constexpr std::uint32_t sampleIters = 1024;
 
@@ -274,22 +254,20 @@ namespace neolib
             if (spinIters64 < 50ull)   spinIters64 = 50ull;
             if (spinIters64 > 5000ull) spinIters64 = 5000ull;
 
-#if defined(NEOS_ADAPTIVE_MUTEX_YIELD)
             std::uint64_t yieldEvery64 =
                 (perRelax.count() > 0) ? static_cast<std::uint64_t>(yieldPeriod / perRelax) : 50ull;
 
             if (yieldEvery64 < 1ull) yieldEvery64 = 1ull;
             if (yieldEvery64 > spinIters64) yieldEvery64 = spinIters64;
-#endif
-#if !defined(NEOS_ADAPTIVE_MUTEX_YIELD)
-            return tuning{ static_cast<std::uint32_t>(spinIters64) };
-#else
+
             return tuning{ static_cast<std::uint32_t>(spinIters64), static_cast<std::uint32_t>(yieldEvery64) };
-#endif
         }
 
         static tuning get_tuning() noexcept
         {
+            if constexpr (!Spinlock)
+                return {};
+
             if (sTuningState.load(std::memory_order_acquire) == tuning_state::Initialized)
                 return sTuning;
 
@@ -306,19 +284,18 @@ namespace neolib
 
             return sTuning;
         }
-#endif
 
     public:
-        recursive_spinlock() :
+        recursive_mutex() :
             iLockCount{ 0u },
             iLockingThread{},
             iState{}
-#if defined(NEOS_PROFILE_MUTEXES)
+#if defined(NEOS_PROFILE_MUTEX)
             , iGeneration{ sGenerationCounter.fetch_add(1u, std::memory_order_relaxed) + 1u }
 #endif
         {
         }
-        ~recursive_spinlock()
+        ~recursive_mutex()
         {
             assert(!iState.test(std::memory_order_acquire));
         }
@@ -334,14 +311,12 @@ namespace neolib
                 return;
             }
 
-            auto spin_acquire = [&](
+            auto acquire_lock = [&](
                 auto&& on_contended,
                 auto&& on_before_wait,
                 auto&& on_after_wait)
                 {
-#if defined(NEOS_ADAPTIVE_MUTEXES)
                     auto const tune = get_tuning();
-#endif
                     for (;;)
                     {
                         if (!iState.test(std::memory_order_relaxed) &&
@@ -350,35 +325,35 @@ namespace neolib
 
                         on_contended();
 
-#if defined(NEOS_ADAPTIVE_MUTEXES)
-#if defined(NEOS_ADAPTIVE_MUTEX_YIELD)
-                        std::uint32_t untilNextYield = tune.yieldEvery;
-#endif
-                        for (std::uint32_t i = 0; i < tune.spinIters; ++i)
+                        if constexpr (Spinlock)
                         {
-                            cpu_relax();
-#if defined(NEOS_ADAPTIVE_MUTEX_YIELD)
-                            if (--untilNextYield == 0)
+                            std::uint32_t untilNextYield = tune.yieldEvery;
+                            for (std::uint32_t i = 0; i < tune.spinIters; ++i)
                             {
-                                untilNextYield = tune.yieldEvery;
-                                std::this_thread::yield();
-                            }
-#endif
-                            if (!iState.test(std::memory_order_relaxed) &&
-                                !iState.test_and_set(std::memory_order_acquire))
-                            {
-                                return;
+                                cpu_relax();
+                                if constexpr (Yield)
+                                {
+                                    if (--untilNextYield == 0)
+                                    {
+                                        untilNextYield = tune.yieldEvery;
+                                        std::this_thread::yield();
+                                    }
+                                }
+                                if (!iState.test(std::memory_order_relaxed) &&
+                                    !iState.test_and_set(std::memory_order_acquire))
+                                {
+                                    return;
+                                }
                             }
                         }
-#endif
 
                         on_before_wait();
                         iState.wait(true, std::memory_order_relaxed);
                         on_after_wait();
                     }
                 };
-#if !defined(NEOS_PROFILE_MUTEXES)
-            spin_acquire([]{}, []{}, []{});
+#if !defined(NEOS_PROFILE_MUTEX)
+            acquire_lock([]{}, []{}, []{});
 #else
             static auto& serviceProfiler = service<i_mutex_profiler>();
             std::chrono::microseconds timeout;
@@ -392,7 +367,7 @@ namespace neolib
                     m.clear();
                 std::optional<std::chrono::high_resolution_clock::time_point> start;
                 std::optional<std::chrono::high_resolution_clock::time_point> next;
-                spin_acquire(
+                acquire_lock(
                     [&]
                     {
                         if (!start.has_value())
@@ -431,7 +406,7 @@ namespace neolib
             }
             else
             {
-                spin_acquire([]{}, []{}, []{});
+                acquire_lock([]{}, []{}, []{});
             }
 #endif
             iLockingThread.store(thisThread, std::memory_order_relaxed);
@@ -467,7 +442,7 @@ namespace neolib
         metrics_list& metrics() const noexcept
         {
             thread_local metrics_map tMap;
-#if defined(NEOS_PROFILE_MUTEXES)
+#if defined(NEOS_PROFILE_MUTEX)
             return tMap[metrics_key{ std::launder(this), iGeneration }];
 #else
             return tMap[std::launder(this)];
@@ -477,8 +452,7 @@ namespace neolib
         std::atomic<std::uint32_t> iLockCount;
         std::atomic<this_thread::lightweight::thread_id> iLockingThread;
         std::atomic_flag iState;
-#if defined(NEOS_PROFILE_MUTEXES)
-        std::atomic<std::thread::id> iLockingThreadNativeId;
+#if defined(NEOS_PROFILE_MUTEX)
         std::atomic<std::uint32_t> iPathologicalContentionCounter = 0u;
         std::uint64_t iGeneration = 0u;
 #endif
@@ -501,40 +475,31 @@ namespace neolib
         {
             iActiveMutex.emplace<std::recursive_mutex>();
         }
+        void set_multi_threaded_profiled()
+        {
+            iActiveMutex.emplace<neolib::recursive_mutex<ProfilerTag>>();
+        }
         void set_multi_threaded_spinlock()
         {
-            iActiveMutex.emplace<neolib::recursive_spinlock<ProfilerTag>>();
+            iActiveMutex.emplace<neolib::recursive_mutex<ProfilerTag, true>>();
         }
     public:
         void lock() noexcept final
         {
-            if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
-                std::get<std::recursive_mutex>(iActiveMutex).lock();
-            else if (std::holds_alternative<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex))
-                std::get<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex).lock();
-            else
-                std::get<neolib::null_mutex>(iActiveMutex).lock();
+            std::visit([](auto& mutex) { mutex.lock(); }, iActiveMutex);
         }
         void unlock() noexcept final
         {
-            if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
-                std::get<std::recursive_mutex>(iActiveMutex).unlock();
-            else if (std::holds_alternative<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex))
-                std::get<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex).unlock();
-            else
-                std::get<neolib::null_mutex>(iActiveMutex).unlock();
+            std::visit([](auto& mutex) { mutex.unlock(); }, iActiveMutex);
         }
         bool try_lock() noexcept final
         {
-            if (std::holds_alternative<std::recursive_mutex>(iActiveMutex))
-                return std::get<std::recursive_mutex>(iActiveMutex).try_lock();
-            else if (std::holds_alternative<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex))
-                return std::get<neolib::recursive_spinlock<ProfilerTag>>(iActiveMutex).try_lock();
-            else
-                return std::get<neolib::null_mutex>(iActiveMutex).try_lock();
+            bool result = false;
+            std::visit([&](auto& mutex) { result = mutex.try_lock(); }, iActiveMutex);
+            return result;
         }
     private:
-        std::variant<std::recursive_mutex, neolib::recursive_spinlock<ProfilerTag>, neolib::null_mutex> iActiveMutex;
+        std::variant<std::recursive_mutex, neolib::recursive_mutex<ProfilerTag>, neolib::recursive_mutex<ProfilerTag, true>, neolib::null_mutex> iActiveMutex;
     };
 
     template <typename Mutexes>
