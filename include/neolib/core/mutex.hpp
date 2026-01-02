@@ -267,22 +267,25 @@ namespace neolib
         {
             if constexpr (!Spinlock)
                 return {};
-
-            if (sTuningState.load(std::memory_order_acquire) == tuning_state::Initialized)
-                return sTuning;
-
-            auto expected = tuning_state::Uninitialized;
-            if (sTuningState.compare_exchange_strong(expected, tuning_state::Initializing, std::memory_order_acq_rel))
+            else
             {
-                sTuning = compute_tuning();
-                sTuningState.store(tuning_state::Initialized, std::memory_order_release);
+
+                if (sTuningState.load(std::memory_order_acquire) == tuning_state::Initialized)
+                    return sTuning;
+
+                auto expected = tuning_state::Uninitialized;
+                if (sTuningState.compare_exchange_strong(expected, tuning_state::Initializing, std::memory_order_acq_rel))
+                {
+                    sTuning = compute_tuning();
+                    sTuningState.store(tuning_state::Initialized, std::memory_order_release);
+                    return sTuning;
+                }
+
+                while (sTuningState.load(std::memory_order_acquire) != tuning_state::Initialized)
+                    cpu_relax();
+
                 return sTuning;
             }
-
-            while (sTuningState.load(std::memory_order_acquire) != tuning_state::Initialized)
-                cpu_relax();
-
-            return sTuning;
         }
 
     public:
