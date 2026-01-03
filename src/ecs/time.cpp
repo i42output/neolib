@@ -88,7 +88,7 @@ namespace neolib::ecs
                 auto const age = world_time() - info.creationTime;
                 waitDuration = std::min(waitDuration, lifeSpan.lifeSpan - age);
                 if (age > lifeSpan.lifeSpan)
-                    ecs().async_destroy_entity(entity, false);
+                    ecs().async_destroy_entity(entity);
             }
         }
 
