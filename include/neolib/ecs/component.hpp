@@ -113,7 +113,7 @@ namespace neolib::ecs
     template <typename Data>
     struct ecs_component_data {};
     template <typename Data>
-    using component_mutex = recursive_mutex<ecs_component_data<Data>>;
+    using component_mutex = ecs_mutex<ecs_component_data<Data>>;
 
     template <typename Data, typename Base>
     class component_base : public Base
