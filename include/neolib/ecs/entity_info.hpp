@@ -49,9 +49,7 @@ namespace neolib::ecs
         neolib::uuid archetypeId;
         i64 creationTime;
         std::atomic<bool> destroyed = false;
-        #ifndef NDEBUG
         std::atomic<bool> debug = false;
-        #endif
 
         entity_info()
         {
@@ -66,20 +64,16 @@ namespace neolib::ecs
         entity_info(entity_info const& other) :
             archetypeId{ other.archetypeId },
             creationTime{ other.creationTime },
-            destroyed{ other.destroyed.load() }
-            #ifndef NDEBUG
-            , debug{ other.debug.load() }
-            #endif
+            destroyed{ other.destroyed.load() },
+            debug{ other.debug.load() }
         {
         }
 
         entity_info(entity_info&& other) noexcept :
             archetypeId{ std::move(other.archetypeId) },
             creationTime{ std::move(other.creationTime) },
-            destroyed{ other.destroyed.load() }
-            #ifndef NDEBUG
-            , debug{ other.debug.load() }
-            #endif
+            destroyed{ other.destroyed.load() },
+            debug{ other.debug.load() }
         {
         }
 
@@ -90,9 +84,7 @@ namespace neolib::ecs
                 archetypeId = other.archetypeId;
                 creationTime = other.creationTime;
                 destroyed = other.destroyed.load();
-                #ifndef NDEBUG
                 debug = other.debug.load();
-                #endif
             }
             return *this;
         }
@@ -104,9 +96,7 @@ namespace neolib::ecs
                 archetypeId = std::move(other.archetypeId);
                 creationTime = std::move(other.creationTime);
                 destroyed = other.destroyed.load();
-                #ifndef NDEBUG
                 debug = other.debug.load();
-                #endif
             }
             return *this;
         }
@@ -118,10 +108,8 @@ namespace neolib::ecs
             swap(lhs.creationTime, rhs.creationTime);
             auto const temp = rhs.destroyed.exchange(lhs.destroyed.load());
             lhs.destroyed.exchange(temp);
-            #ifndef NDEBUG
             auto const temp2 = rhs.debug.exchange(lhs.debug.load());
             lhs.debug.exchange(temp2);
-            #endif
         }
 
         struct meta : i_component_data::meta
@@ -138,11 +126,7 @@ namespace neolib::ecs
             }
             static uint32_t field_count()
             { 
-                #ifdef NDEBUG
-                return 3;
-                #else
                 return 4;
-                #endif
             }
             static component_data_field_type field_type(uint32_t aFieldIndex)
             {
@@ -154,10 +138,8 @@ namespace neolib::ecs
                     return component_data_field_type::Int64;
                 case 2:
                     return component_data_field_type::Bool | component_data_field_type::Atomic;
-                #ifndef NDEBUG
                 case 3:
                     return component_data_field_type::Bool | component_data_field_type::Atomic;
-                #endif
                 default:
                     throw invalid_field_index();
                 }
@@ -169,9 +151,7 @@ namespace neolib::ecs
                     "Archetype Id",
                     "Creation Time",
                     "Destroyed",
-                    #ifndef NDEBUG
-                    "Debug",
-                    #endif
+                    "Debug"
                 };
                 return sFieldNames[aFieldIndex];
             }
