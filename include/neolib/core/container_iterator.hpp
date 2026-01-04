@@ -49,9 +49,9 @@ namespace neolib
         class iterator;
 
         template <typename T, typename ContainerIterator, typename AbstractIterator = i_const_iterator<abstract_t<T>>>
-        class const_iterator : public reference_counted<AbstractIterator, false>
+        class const_iterator : public reference_counted<AbstractIterator>
         {
-            using base_type = reference_counted<AbstractIterator, false>;
+            using base_type = reference_counted<AbstractIterator>;
         public:
             using abstract_type = AbstractIterator;
         public:
@@ -141,9 +141,9 @@ namespace neolib
         };
 
         template <typename T, typename ContainerIterator, typename ContainerConstIterator, typename AbstractIterator = i_iterator<abstract_t<T>>>
-        class iterator : public reference_counted<AbstractIterator, false>
+        class iterator : public reference_counted<AbstractIterator>
         {
-            using base_type = reference_counted<AbstractIterator, false>;
+            using base_type = reference_counted<AbstractIterator>;
             template <typename, typename, typename>
             friend class const_iterator;
         public:
