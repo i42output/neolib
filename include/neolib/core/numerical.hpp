@@ -1804,6 +1804,16 @@ namespace neolib
                 return result;
             }
         public:
+            template <typename F>
+            basic_matrix<value_type, Rows, Columns> apply(F const& f) const
+            {
+                basic_matrix<value_type, Rows, Columns> result;
+                for (std::uint32_t column = 0; column < Columns; ++column)
+                    for (std::uint32_t row = 0; row < Rows; ++row)
+                        result[row][column] = f((*this)[column][row]);
+                return result;
+            }
+        public:
             friend void swap(matrix_array& a, matrix_array& b)
             {
                 using std::swap;
