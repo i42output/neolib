@@ -1810,7 +1810,7 @@ namespace neolib
                 basic_matrix<value_type, Rows, Columns> result;
                 for (std::uint32_t column = 0; column < Columns; ++column)
                     for (std::uint32_t row = 0; row < Rows; ++row)
-                        result[row][column] = f((*this)[column][row]);
+                        result[column][row] = f((*this)[column][row]);
                 return result;
             }
         public:
