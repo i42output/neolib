@@ -1804,10 +1804,12 @@ namespace neolib
                 return result;
             }
         public:
+            // Matrix-valued function
             template <typename F>
-            basic_matrix<value_type, Rows, Columns> apply(F const& f) const
+            basic_matrix<std::invoke_result_t<F, value_type const&>, Rows, Columns> apply(F const& f) const
             {
-                basic_matrix<value_type, Rows, Columns> result;
+                using matrix_value_type = std::invoke_result_t<F, value_type const&>;
+                basic_matrix<matrix_value_type, Rows, Columns> result;
                 for (std::uint32_t column = 0; column < Columns; ++column)
                     for (std::uint32_t row = 0; row < Rows; ++row)
                         result[column][row] = f((*this)[column][row]);
