@@ -1745,8 +1745,8 @@ namespace neolib
             using column_type = std::array<T, Rows>;
             using array_type = std::array<column_type, Columns>;
         public:
-            template <typename T2>
-            struct rebind { using type = basic_matrix<T2, Rows, Columns>; };
+            template <typename T2, typename Base2 = base_type>
+            struct rebind { using type = matrix_array<T2, Rows, Columns, Base2>; };
         public:
             matrix_array() :
                 base_type{ Rows, Columns }, m{}
@@ -1759,6 +1759,14 @@ namespace neolib
             matrix_array(matrix_array const& other) :
                 base_type{ Rows, Columns }, m{ other.m }
             {
+            }
+            template <typename T2>
+            matrix_array(matrix_array<T2, Rows, Columns, base_type> const& other) :
+                base_type{ Rows, Columns }
+            {
+                for (std::uint32_t column = 0; column < Columns; ++column)
+                    for (std::uint32_t row = 0; row < Rows; ++row)
+                        (*this)[column][row] = static_cast<value_type>(other[column][row]);
             }
             ~matrix_array()
             {
