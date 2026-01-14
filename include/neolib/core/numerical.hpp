@@ -921,7 +921,6 @@ namespace neolib
             using abstract_type = basic_matrix; // todo: abstract base
         public:
             using value_type    = T;
-            using row_type      = basic_vector<T, Columns, row_vector>;
             using column_type   = basic_vector<T, Rows, column_vector>;
             using array_type    = std::array<column_type, Columns>;
         public:
@@ -1722,7 +1721,94 @@ namespace neolib
             };
         }
 
-        // AABB
+        // Matrix array
+
+        struct matrix_array_base
+        {
+            matrix_array_base(std::uint32_t, std::uint32_t) {}
+        };
+
+        struct matrix_array_base_ex
+        {
+            std::uint32_t rows;
+            std::uint32_t columns;
+        };
+
+        template <typename T, std::uint32_t Rows, std::uint32_t Columns, typename Base = matrix_array_base>
+        class matrix_array : public Base
+        {
+        public:
+            using abstract_type = basic_matrix; // todo: abstract base
+        public:
+            using base_type = Base;
+            using value_type = T;
+            using column_type = std::array<T, Rows>;
+            using array_type = std::array<column_type, Columns>;
+        public:
+            template <typename T2>
+            struct rebind { using type = basic_matrix<T2, Rows, Columns>; };
+        public:
+            matrix_array() :
+                base_type{ Rows, Columns }, m{}
+            {
+            }
+            matrix_array(array_type const& m) :
+                base_type{ Rows, Columns }, m { m }
+            {
+            }
+            matrix_array(matrix_array const& other) :
+                base_type{ Rows, Columns }, m{ other.m }
+            {
+            }
+            ~matrix_array()
+            {
+            }
+            matrix_array& operator=(const matrix_array& other)
+            {
+                m = other.m;
+                return *this;
+            }
+            matrix_array& operator=(matrix_array&& other)
+            {
+                m = std::move(other.m);
+                return *this;
+            }
+        public:
+            template <typename T2>
+            matrix_array<T2, Rows, Columns> as() const
+            {
+                return matrix_array<T2, Rows, Columns>{ *this };
+            }
+        public:
+            std::pair<std::uint32_t, std::uint32_t> size() const { return std::make_pair(Rows, Columns); }
+            const column_type& operator[](std::uint32_t aColumn) const { return m[aColumn]; }
+            column_type& operator[](std::uint32_t aColumn) { return m[aColumn]; }
+            const value_type* data() const { return &m[0][0]; }
+        public:
+            bool operator==(const matrix_array& right) const { return m == right.m; }
+            bool operator!=(const matrix_array& right) const { return m != right.m; }
+            matrix_array<T, Columns, Rows> transposed() const
+            {
+                matrix_array<T, Columns, Rows> result;
+                for (std::uint32_t column = 0; column < Columns; ++column)
+                    for (std::uint32_t row = 0; row < Rows; ++row)
+                        result[row][column] = (*this)[column][row];
+                return result;
+            }
+        public:
+            friend void swap(matrix_array& a, matrix_array& b)
+            {
+                using std::swap;
+                swap(a.m, b.m);
+            }
+        private:
+            array_type m;
+        };
+
+        template <typename T, std::uint32_t Rows, std::uint32_t Columns>
+        using matrix_array_ex = matrix_array<T, Rows, Columns, matrix_array_base_ex>;
+            
+         // AABB
 
         template <typename Vertex>
         struct basic_aabb
