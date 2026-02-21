@@ -34,6 +34,7 @@
  */
 
 #include <neolib/neolib.hpp>
+#include <neolib/chrono/fast_clock.hpp>
 #include <neolib/ecs/time.hpp>
 
 namespace neolib::ecs
@@ -102,7 +103,7 @@ namespace neolib::ecs
     {
         auto systemTime = to_step_time(iWorldClock, 
             chrono::to_seconds(std::chrono::duration_cast<chrono::flicks>(
-                std::chrono::high_resolution_clock::now().time_since_epoch())));
+                neolib::chrono::fast_clock::now().time_since_epoch())));
         if (iSystemTimeOffset == std::nullopt)
             iSystemTimeOffset = systemTime;
         return systemTime - *iSystemTimeOffset;
