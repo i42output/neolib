@@ -1,7 +1,8 @@
+#include <boost/signals2/signal.hpp>
+
 #include <neolib/task/event.hpp>
 #include <neolib/task/async_thread.hpp>
 #include <neolib/task/timer.hpp>
-#include <boost/signals2/signal.hpp>
 
 namespace test
 {

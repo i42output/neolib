@@ -446,7 +446,7 @@ namespace neolib::ecs
         class proxy_mutex_base : public i_lockable
         {
         public:
-            struct not_linked : std::logic_error { not_linked() : std::logic_error{"neolib::neolib::ecs::scoped_component_data_lock::proxy_mutex::not_linked"} {} };
+            struct not_linked : std::logic_error { not_linked() : std::logic_error{"neolib::ecs::scoped_component_data_lock::proxy_mutex::not_linked"} {} };
         public:
             proxy_mutex_base(i_lockable& aSubject) :
                 iSubject{ &aSubject }
