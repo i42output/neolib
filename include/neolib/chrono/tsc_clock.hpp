@@ -160,16 +160,16 @@ express Statement of Purpose.
 
 namespace neolib::chrono
 {
-    namespace detail 
+    namespace detail
     {
 
         // ------------------------ Architecture detection -----------------------------
 
 #if defined(__i386__) || defined(__x86_64__) || defined(_M_IX86) || defined(_M_X64)
-        #define TSC_AVAILABLE 1
+#define TSC_AVAILABLE 1
         constexpr bool kTscAvailable = true;
 #else
-        #define TSC_AVAILABLE 0
+#define TSC_AVAILABLE 0
         constexpr bool kTscAvailable = false;
 #endif
 
@@ -177,7 +177,7 @@ namespace neolib::chrono
         // Prefer RDTSCP (partially serializing) for end read.
         // Use CPUID before begin read to serialize prior instructions.
 
-        inline std::uint64_t rdtsc_begin_ordered() noexcept 
+        inline std::uint64_t rdtsc_begin_ordered() noexcept
         {
 #if !TSC_AVAILABLE
             return 0;
@@ -192,7 +192,7 @@ namespace neolib::chrono
 #endif
         }
 
-        inline std::uint64_t rdtscp_end() noexcept 
+        inline std::uint64_t rdtscp_end() noexcept
         {
 #if !TSC_AVAILABLE
             return 0;
@@ -205,7 +205,7 @@ namespace neolib::chrono
         // ------------------------ CPUID invariant TSC --------------------------------
         // CPUID.80000007H:EDX[8] = Invariant TSC (when leaf exists)
 
-        inline bool cpu_has_invariant_tsc() noexcept 
+        inline bool cpu_has_invariant_tsc() noexcept
         {
 #if !TSC_AVAILABLE
             return false;
@@ -226,6 +226,7 @@ namespace neolib::chrono
         }
 
         // ------------------------ mul/div with good precision -----------------------
+        // Kept for calibration-time exact math only (not used in now()).
 
         inline std::uint64_t mul_div_u64(std::uint64_t a, std::uint64_t b, std::uint64_t d) noexcept
         {
@@ -241,12 +242,44 @@ namespace neolib::chrono
             // Exact unsigned 128 / 64 division (x64 only). Returns quotient; remainder optional.
             std::uint64_t rem = 0;
             return _udiv128(hi, lo, d, &rem);
-
 #else
             // Portable exact fallback using Boost (works on MSVC x86 too)
             using boost::multiprecision::uint128_t;
             uint128_t prod = uint128_t(a) * uint128_t(b);
             return static_cast<std::uint64_t>(prod / d);
+#endif
+        }
+
+        // ------------------------ Fixed-point ticks->ns scaling ----------------------
+        // dns = (dticks * mul) >> shift
+        // where mul ≈ (ns_per_tick * 2^shift) computed once at calibration.
+
+        inline std::uint64_t scale_ticks_to_ns(std::uint64_t ticks, std::uint64_t mul, unsigned shift) noexcept
+        {
+#if defined(__SIZEOF_INT128__)
+            __uint128_t p = static_cast<__uint128_t>(ticks) * static_cast<__uint128_t>(mul);
+            return static_cast<std::uint64_t>(p >> shift);
+#elif defined(_MSC_VER) && defined(_M_X64)
+            std::uint64_t hi = 0;
+            std::uint64_t lo = _umul128(ticks, mul, &hi);
+
+            if (shift == 0)
+                return lo;
+
+            if (shift < 64)
+            {
+                // (hi:lo) >> shift
+                return (lo >> shift) | (hi << (64 - shift));
+            }
+            else
+            {
+                const unsigned s = shift - 64;
+                return (s >= 64) ? 0ull : (hi >> s);
+            }
+#else
+            using boost::multiprecision::uint128_t;
+            uint128_t p = uint128_t(ticks) * uint128_t(mul);
+            return static_cast<std::uint64_t>(p >> shift);
 #endif
         }
 
@@ -261,7 +294,8 @@ namespace neolib::chrono
 #endif
         };
 
-        inline int cpu_count_online() noexcept {
+        inline int cpu_count_online() noexcept
+        {
 #if defined(_WIN32)
             // Count all active processors across groups.
             WORD groups = GetActiveProcessorGroupCount();
@@ -311,51 +345,6 @@ namespace neolib::chrono
 #endif
         }
 
-#if defined(_WIN32)
-        // Precomputed mapping: dense_index = group_base[group] + processor_number
-        // Use atomics because readers may not synchronize via sReady on every call to now().
-        static constexpr int kMaxProcessorGroups = 64; // Windows supports up to 64 groups.
-
-        static inline std::atomic<int> sGroupCount{ 0 };
-        static inline std::atomic<int> sGroupBase[kMaxProcessorGroups]{};
-
-        inline void precompute_group_bases() noexcept
-        {
-            const WORD groupsW = GetActiveProcessorGroupCount();
-            const int groups = (groupsW <= kMaxProcessorGroups) ? static_cast<int>(groupsW) : kMaxProcessorGroups;
-
-            int base = 0;
-            for (int g = 0; g < groups; ++g)
-            {
-                sGroupBase[g].store(base, std::memory_order_relaxed);
-
-                const DWORD count = GetActiveProcessorCount(static_cast<WORD>(g));
-                base += static_cast<int>(count);
-            }
-
-            sGroupCount.store(groups, std::memory_order_relaxed);
-        }
-#endif
-
-        // Current CPU index (dense [0..cpu_count-1]) for indexing offset arrays.
-        inline int current_cpu_index_dense() noexcept {
-#if defined(_WIN32)
-            PROCESSOR_NUMBER pn{};
-            GetCurrentProcessorNumberEx(&pn);
-
-            const int groups = sGroupCount.load(std::memory_order_relaxed);
-            const int g = static_cast<int>(pn.Group);
-            if (g < 0 || g >= groups)
-                return -1;
-
-            const int base = sGroupBase[g].load(std::memory_order_relaxed);
-            return base + static_cast<int>(pn.Number);
-#else
-            int c = ::sched_getcpu();
-            return (c >= 0) ? c : -1;
-#endif
-        }
-
         // Pin current thread to one CPU; return previous affinity state for restore.
         struct PrevAffinity
         {
@@ -387,7 +376,8 @@ namespace neolib::chrono
 #endif
         }
 
-        inline void restore_affinity(const PrevAffinity& prev) noexcept {
+        inline void restore_affinity(const PrevAffinity& prev) noexcept
+        {
 #if defined(_WIN32)
             if (!prev.valid) return;
             GROUP_AFFINITY ignored{};
@@ -404,7 +394,7 @@ namespace neolib::chrono
     // tsc_clock
     // ============================================================================
 
-    struct tsc_clock 
+    struct tsc_clock
     {
         using rep = std::int64_t;
         using period = std::nano;
@@ -418,7 +408,7 @@ namespace neolib::chrono
 
         static constexpr bool is_steady = true;
 
-        struct options 
+        struct options
         {
             std::chrono::milliseconds calibration_window{ 200 };          // larger => better ratio stability
             int                       validation_rounds{ 64 };            // more rounds => better confidence
@@ -426,20 +416,20 @@ namespace neolib::chrono
             bool                      enable_per_cpu_offsets{ true };     // makes cross-thread comparisons stronger
         };
 
-        static void init(options opt = {}) noexcept 
+        static void init(options opt = {}) noexcept
         {
             (void)calibrate_once(opt);
         }
 
-        static time_point now() noexcept 
+        static time_point now() noexcept
         {
-            if (!sReady.load(std::memory_order_acquire)) 
+            if (!sReady.load(std::memory_order_acquire))
             {
                 options opt{};
                 calibrate_once(opt);
             }
 
-            if (!sUseTsc.load(std::memory_order_relaxed) || !detail::kTscAvailable) 
+            if (!sUseTsc.load(std::memory_order_relaxed) || !detail::kTscAvailable)
             {
                 auto s = steady_clock::now().time_since_epoch();
                 auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(s).count();
@@ -448,22 +438,22 @@ namespace neolib::chrono
 
             const std::uint64_t t = detail::rdtscp_end();
 
-            const std::uint64_t base_tsc = sBase_tsc.load(std::memory_order_relaxed);
-            const std::uint64_t base_ns = sBase_ns.load(std::memory_order_relaxed);
-            const std::uint64_t num = sNsPerTickNum.load(std::memory_order_relaxed);
-            const std::uint64_t den = sNsPerTickDen.load(std::memory_order_relaxed);
+            const std::uint64_t base_tsc = sBase_tsc;
+            const std::uint64_t base_ns = sBase_ns;
+            const std::uint64_t mul = sNsPerTickMul;
+            const unsigned      shift = sNsPerTickShift;
 
             const std::uint64_t dticks = (t >= base_tsc) ? (t - base_tsc) : 0;
-            const std::uint64_t dns = detail::mul_div_u64(dticks, num, den);
+            const std::uint64_t dns = detail::scale_ticks_to_ns(dticks, mul, shift);
             std::uint64_t ns = base_ns + dns;
 
-            if (sPerCpuEnabled.load(std::memory_order_relaxed)) 
+            if (sPerCpuEnabled)
             {
-                const int cpu = detail::current_cpu_index_dense();
-                const std::uint32_t n = sOffsetsCount.load(std::memory_order_relaxed);
-                if (cpu >= 0 && static_cast<std::uint32_t>(cpu) < n) 
+                const int cpu = current_cpu_index_dense();
+                const std::uint32_t n = sOffsetsCount;
+                if (cpu >= 0 && static_cast<std::uint32_t>(cpu) < n)
                 {
-                    const std::int64_t corr = sOffsets_ns[static_cast<std::uint32_t>(cpu)].load(std::memory_order_relaxed);
+                    const std::int64_t corr = sOffsets_ns[static_cast<std::uint32_t>(cpu)];
                     ns = static_cast<std::uint64_t>(static_cast<std::int64_t>(ns) + corr);
                 }
             }
@@ -472,13 +462,50 @@ namespace neolib::chrono
         }
 
     private:
+        // Current CPU index (dense [0..cpu_count-1]) for indexing offset arrays.
+        static int current_cpu_index_dense() noexcept
+        {
+#if defined(_WIN32)
+            const int groups = sGroupCount;
+            const int g = static_cast<int>(sProcessorNumber.Group);
+            if (g < 0 || g >= groups)
+                return -1;
 
-        static bool calibrate_once(const options& opt) noexcept 
+            const int base = sGroupBase[g];
+            return base + static_cast<int>(sProcessorNumber.Number);
+#else
+            int c = ::sched_getcpu();
+            return (c >= 0) ? c : -1;
+#endif
+        }
+
+#if defined(_WIN32)
+        static void precompute_group_bases() noexcept
+        {
+            GetCurrentProcessorNumberEx(&sProcessorNumber);
+
+            const WORD groupsW = GetActiveProcessorGroupCount();
+            const int groups = (groupsW <= kMaxProcessorGroups) ? static_cast<int>(groupsW) : kMaxProcessorGroups;
+
+            int base = 0;
+            for (int g = 0; g < groups; ++g)
+            {
+                sGroupBase[g] = base;
+
+                const DWORD count = GetActiveProcessorCount(static_cast<WORD>(g));
+                base += static_cast<int>(count);
+            }
+
+            sGroupCount = groups;
+        }
+#endif
+
+        static bool calibrate_once(const options& opt) noexcept
         {
             bool expected = false;
-            if (!sCalibrating.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) 
+            if (!sCalibrating.compare_exchange_strong(expected, true, std::memory_order_acq_rel))
             {
-                while (!sReady.load(std::memory_order_acquire)) 
+                while (!sReady.load(std::memory_order_acquire))
                 {
                     cpu_relax();
                 }
@@ -486,17 +513,17 @@ namespace neolib::chrono
             }
 
             sUseTsc.store(false, std::memory_order_relaxed);
-            sPerCpuEnabled.store(false, std::memory_order_relaxed);
-            sOffsetsCount.store(0, std::memory_order_relaxed);
+            sPerCpuEnabled = false;
+            sOffsetsCount = 0;
 
             // Basic arch + feature gating
-            if constexpr (!detail::kTscAvailable) 
+            if constexpr (!detail::kTscAvailable)
             {
                 sReady.store(true, std::memory_order_release);
                 sCalibrating.store(false, std::memory_order_release);
                 return false;
             }
-            if (!detail::cpu_has_invariant_tsc()) 
+            if (!detail::cpu_has_invariant_tsc())
             {
                 sReady.store(true, std::memory_order_release);
                 sCalibrating.store(false, std::memory_order_release);
@@ -504,18 +531,18 @@ namespace neolib::chrono
             }
 
 #if defined(_WIN32)
-            detail::precompute_group_bases();
+            precompute_group_bases();
 #endif
 
             // Warm up
-            for (int i = 0; i < 2000; ++i) 
+            for (int i = 0; i < 2000; ++i)
                 (void)__rdtsc();
 
             // 1) Global calibration vs chrono steady_clock clock
             const auto s0 = steady_clock::now();
             const std::uint64_t c0 = detail::rdtsc_begin_ordered();
 
-            while (steady_clock::now() - s0 < opt.calibration_window) 
+            while (steady_clock::now() - s0 < opt.calibration_window)
             {
                 cpu_relax();
             }
@@ -526,29 +553,57 @@ namespace neolib::chrono
             const auto dt_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(s1 - s0).count();
             const std::uint64_t dc = (c1 >= c0) ? (c1 - c0) : 0;
 
-            if (dt_ns <= 0 || dc == 0) 
+            if (dt_ns <= 0 || dc == 0)
             {
                 sReady.store(true, std::memory_order_release);
                 sCalibrating.store(false, std::memory_order_release);
                 return false;
             }
 
-            // Store rational: ns_per_tick = num/den = dt_ns / dc
-            const std::uint64_t num = static_cast<std::uint64_t>(dt_ns);
-            const std::uint64_t den = dc;
-
             // Anchor epoch mapping at end of calibration window
             const std::uint64_t base_tsc = c1;
-            const std::uint64_t base_ns = static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(s1.time_since_epoch()).count());
+            const std::uint64_t base_ns = static_cast<std::uint64_t>(
+                std::chrono::duration_cast<std::chrono::nanoseconds>(s1.time_since_epoch()).count());
 
-            sBase_tsc.store(base_tsc, std::memory_order_relaxed);
-            sBase_ns.store(base_ns, std::memory_order_relaxed);
-            sNsPerTickNum.store(num, std::memory_order_relaxed);
-            sNsPerTickDen.store(den, std::memory_order_relaxed);
+            sBase_tsc = base_tsc;
+            sBase_ns = base_ns;
+
+            // Fixed-point multiplier (computed once; used in now() without division)
+            // dns = (dticks * mul) >> SHIFT
+            // mul = round((dt_ns * 2^SHIFT) / dc)
+            constexpr unsigned SHIFT = 32;
+
+#if defined(__SIZEOF_INT128__)
+            __uint128_t numer = (static_cast<__uint128_t>(static_cast<std::uint64_t>(dt_ns)) << SHIFT)
+                + (static_cast<__uint128_t>(dc) >> 1); // rounding
+            const std::uint64_t mul = static_cast<std::uint64_t>(numer / dc);
+#elif defined(_MSC_VER) && defined(_M_X64)
+            // Calibration-only 128/64 division is acceptable here.
+            std::uint64_t hi = 0, lo = 0;
+            const std::uint64_t pow2 = (1ull << SHIFT);
+            lo = _umul128(static_cast<std::uint64_t>(dt_ns), pow2, &hi);
+
+            // + dc/2 for rounding
+            const std::uint64_t add = (dc >> 1);
+            const std::uint64_t lo2 = lo + add;
+            hi += (lo2 < lo) ? 1 : 0;
+            lo = lo2;
+
+            std::uint64_t rem = 0;
+            const std::uint64_t mul = _udiv128(hi, lo, dc, &rem);
+#else
+            using boost::multiprecision::uint128_t;
+            uint128_t numer = (uint128_t(static_cast<std::uint64_t>(dt_ns)) << SHIFT)
+                + (uint128_t(dc) >> 1);
+            const std::uint64_t mul = static_cast<std::uint64_t>(numer / dc);
+#endif
+
+            sNsPerTickMul = mul;
+            sNsPerTickShift = SHIFT;
 
             // 2) Cross-thread/cross-core validation + optional per-CPU offsets
             std::vector<detail::CpuHandle> cpus;
-            if (!detail::enumerate_cpus(cpus) || cpus.size() < 1 || cpus.size() > kMaxCpus) 
+            if (!detail::enumerate_cpus(cpus) || cpus.size() < 1 || cpus.size() > kMaxCpus)
             {
                 // Can't enumerate CPUs => still allow TSC mode, but without validation this is risky.
                 // You asked for validation support, so if enumeration fails we fall back.
@@ -559,7 +614,7 @@ namespace neolib::chrono
 
             const int ncpu = static_cast<int>(cpus.size());
             const int rounds = (opt.validation_rounds > 0 ? opt.validation_rounds : 1);
-            
+
             std::barrier sync_point{ ncpu };
 
             struct Sample { std::uint64_t tsc = 0; std::int64_t steady_ns = 0; };
@@ -569,12 +624,12 @@ namespace neolib::chrono
             // Worker per CPU: pin, then barrier-aligned rdtscp
             std::vector<std::thread> threads;
             threads.reserve(static_cast<std::size_t>(ncpu));
-            for (int i = 0; i < ncpu; ++i) 
+            for (int i = 0; i < ncpu; ++i)
             {
-                threads.emplace_back([&, i] 
+                threads.emplace_back([&, i]
                     {
                         detail::PrevAffinity prev{};
-                        if (!detail::pin_this_thread(cpus[static_cast<std::size_t>(i)], prev)) 
+                        if (!detail::pin_this_thread(cpus[static_cast<std::size_t>(i)], prev))
                         {
                             sync_point.arrive_and_drop();
                             ok.store(false, std::memory_order_relaxed);
@@ -616,17 +671,21 @@ namespace neolib::chrono
             for (auto& th : threads)
                 th.join();
 
-            if (!ok.load(std::memory_order_relaxed)) 
+            if (!ok.load(std::memory_order_relaxed))
             {
                 sReady.store(true, std::memory_order_release);
                 sCalibrating.store(false, std::memory_order_release);
                 return false;
             }
 
+            // Capture mul/shift locally for validation to avoid atomic loads in the lambda.
+            const std::uint64_t mul_local = mul;
+            const unsigned      shift_local = SHIFT;
+
             auto tsc_to_ns_i64 = [&](std::uint64_t t) -> std::int64_t
                 {
                     const std::uint64_t dticks = (t >= base_tsc) ? (t - base_tsc) : 0;
-                    const std::uint64_t dns = detail::mul_div_u64(dticks, num, den);
+                    const std::uint64_t dns = detail::scale_ticks_to_ns(dticks, mul_local, shift_local);
                     const std::uint64_t ns = base_ns + dns;
                     return static_cast<std::int64_t>(ns);
                 };
@@ -661,7 +720,7 @@ namespace neolib::chrono
                 }
             }
 
-            if (max_abs_skew > static_cast<std::int64_t>(opt.max_allowed_skew.count())) 
+            if (max_abs_skew > static_cast<std::int64_t>(opt.max_allowed_skew.count()))
             {
                 // Too much inter-core skew => do not use TSC clock.
                 sReady.store(true, std::memory_order_release);
@@ -671,15 +730,15 @@ namespace neolib::chrono
 
             // Optional per-CPU offsets:
             // correction[i] = -(mean skew[i]) so corrected_ns = raw_ns + correction aligns to CPU 0.
-            if (opt.enable_per_cpu_offsets) 
+            if (opt.enable_per_cpu_offsets)
             {
-                for (int i = 0; i < ncpu; ++i) 
+                for (int i = 0; i < ncpu; ++i)
                 {
                     const std::int64_t mean = avg_skew[static_cast<std::size_t>(i)] / count[static_cast<std::size_t>(i)];
-                    sOffsets_ns[static_cast<std::uint32_t>(i)].store(-mean, std::memory_order_relaxed);
+                    sOffsets_ns[static_cast<std::uint32_t>(i)] = -mean;
                 }
-                sOffsetsCount.store(static_cast<std::uint32_t>(ncpu), std::memory_order_relaxed);
-                sPerCpuEnabled.store(true, std::memory_order_relaxed);
+                sOffsetsCount = static_cast<std::uint32_t>(ncpu);
+                sPerCpuEnabled = true;
             }
 
             // Enable TSC mode
@@ -695,16 +754,26 @@ namespace neolib::chrono
         static inline std::atomic<bool>     sCalibrating{ false };
         static inline std::atomic<bool>     sUseTsc{ false };
 
-        static inline std::atomic<std::uint64_t> sBase_tsc{ 0 };
-        static inline std::atomic<std::uint64_t> sBase_ns{ 0 };
+        static inline std::uint64_t sBase_tsc{ 0 };
+        static inline std::uint64_t sBase_ns{ 0 };
 
-        static inline std::atomic<std::uint64_t> sNsPerTickNum{ 0 };
-        static inline std::atomic<std::uint64_t> sNsPerTickDen{ 1 };
+        // Fixed-point scaling parameters (used in now())
+        static inline std::uint64_t sNsPerTickMul{ 0 };
+        static inline unsigned      sNsPerTickShift{ 0 };
 
-        static inline std::atomic<bool>     sPerCpuEnabled{ false };
+        static inline bool     sPerCpuEnabled{ false };
 
         static constexpr std::uint32_t kMaxCpus = 512; // across Windows groups or big Linux boxes
-        static inline std::atomic<std::uint32_t> sOffsetsCount{ 0 };
-        static inline std::atomic<std::int64_t>  sOffsets_ns[kMaxCpus]{};
+        static inline std::uint32_t sOffsetsCount{ 0 };
+        static inline std::int64_t  sOffsets_ns[kMaxCpus]{};
+
+#if defined(_WIN32)
+        // Precomputed mapping: dense_index = group_base[group] + processor_number
+        // Use atomics because readers may not synchronize via sReady on every call to now().
+        static constexpr int kMaxProcessorGroups = 64; // Windows supports up to 64 groups.
+        static inline PROCESSOR_NUMBER sProcessorNumber{};
+        static inline int sGroupCount{ 0 };
+        static inline int sGroupBase[kMaxProcessorGroups]{};
+#endif
     };
 }
