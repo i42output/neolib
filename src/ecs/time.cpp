@@ -111,6 +111,6 @@ namespace neolib::ecs
 
     step_time time::world_time() const
     {
-        return iWorldClock.time;
+        return iWorldClock.time.load();
     }
 }

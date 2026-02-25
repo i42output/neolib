@@ -45,10 +45,64 @@ namespace neolib::ecs
 {
     struct clock
     {
-        i64 time = 0ll;
+        std::atomic<i64> time = 0ll;
         i64 timestep = chrono::to_flicks(0.01).count();
         primitives::scalar timestepGrowth = 1.75;
         i64 maximumTimestep = chrono::to_flicks(0.001).count() * 20;
+
+        clock()
+        {
+        }
+
+        clock(clock const& other) :
+            time{ other.time.load() },
+            timestep{ other.timestep },
+            timestepGrowth{ other.timestepGrowth },
+            maximumTimestep{ other.maximumTimestep }
+        {
+        }
+
+        clock(clock&& other) noexcept :
+            time{ other.time.load() },
+            timestep{ std::move(other.timestep) },
+            timestepGrowth{ std::move(other.timestepGrowth) },
+            maximumTimestep{ std::move(other.maximumTimestep) }
+        {
+        }
+
+        clock& operator=(clock const& other)
+        {
+            if (this != &other)
+            {
+                time = other.time.load();
+                timestep = other.timestep;
+                timestepGrowth = other.timestepGrowth;
+                maximumTimestep = other.maximumTimestep;
+            }
+            return *this;
+        }
+
+        clock& operator=(clock&& other) noexcept
+        {
+            if (this != &other)
+            {
+                time = other.time.load();
+                timestep = std::move(other.timestep);
+                timestepGrowth = std::move(other.timestepGrowth);
+                maximumTimestep = std::move(other.maximumTimestep);
+            }
+            return *this;
+        }
+
+        friend void swap(clock& lhs, clock& rhs) noexcept
+        {
+            using std::swap;
+            auto const temp = rhs.time.exchange(lhs.time.load());
+            lhs.time.exchange(temp);
+            swap(lhs.timestep, rhs.timestep);
+            swap(lhs.timestepGrowth, rhs.timestepGrowth);
+            swap(lhs.maximumTimestep, rhs.maximumTimestep);
+        }
 
         struct meta : i_component_data::meta
         {
@@ -71,6 +125,7 @@ namespace neolib::ecs
                 switch (aFieldIndex)
                 {
                 case 0:
+                    return component_data_field_type::Int64 | component_data_field_type::Atomic;
                 case 1:
                     return component_data_field_type::Int64;
                 case 3:
