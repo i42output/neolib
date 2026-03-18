@@ -56,7 +56,7 @@ namespace neolib
         define_declared_event(TurboModeEntered, turbo_mode_entered)
         define_declared_event(TurboModeLeft, turbo_mode_left)
     public:
-        power();
+        power(power_flags aFlags = power_flags::SetProcessAndThreadPriority);
     public:
         power_mode active_mode() const override;
     public:
@@ -69,7 +69,9 @@ namespace neolib
         void disable_green_mode() override;
     private:
         void set_active_mode(power_mode aMode);
+        void set_process_and_thread_priority();
     private:
+        power_flags iFlags;
         neolib::callback_timer iUpdater;
         power_mode iActiveMode;
         bool iGreenModeEnabled;

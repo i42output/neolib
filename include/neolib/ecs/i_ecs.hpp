@@ -91,7 +91,7 @@ namespace neolib::ecs
         }
     };
 
-    enum class ecs_flags : uint32_t
+    enum class ecs_flags : std::uint32_t
     {
         None                = 0x0000,
         PopulateEntityInfo  = 0x0001,
@@ -104,22 +104,22 @@ namespace neolib::ecs
 
     inline constexpr ecs_flags operator|(ecs_flags aLhs, ecs_flags aRhs)
     {
-        return static_cast<ecs_flags>(static_cast<uint32_t>(aLhs) | static_cast<uint32_t>(aRhs));
+        return static_cast<ecs_flags>(static_cast<std::uint32_t>(aLhs) | static_cast<std::uint32_t>(aRhs));
     }
 
     inline constexpr ecs_flags operator&(ecs_flags aLhs, ecs_flags aRhs)
     {
-        return static_cast<ecs_flags>(static_cast<uint32_t>(aLhs) & static_cast<uint32_t>(aRhs));
+        return static_cast<ecs_flags>(static_cast<std::uint32_t>(aLhs) & static_cast<std::uint32_t>(aRhs));
     }
 
     inline constexpr ecs_flags& operator|=(ecs_flags& aLhs, ecs_flags aRhs)
     {
-        return aLhs = static_cast<ecs_flags>(static_cast<uint32_t>(aLhs) | static_cast<uint32_t>(aRhs));
+        return aLhs = static_cast<ecs_flags>(static_cast<std::uint32_t>(aLhs) | static_cast<std::uint32_t>(aRhs));
     }
 
     inline constexpr ecs_flags& operator&=(ecs_flags& aLhs, ecs_flags aRhs)
     {
-        return aLhs = static_cast<ecs_flags>(static_cast<uint32_t>(aLhs) & static_cast<uint32_t>(aRhs));
+        return aLhs = static_cast<ecs_flags>(static_cast<std::uint32_t>(aLhs) & static_cast<std::uint32_t>(aRhs));
     }
 
     class i_ecs : public i_object

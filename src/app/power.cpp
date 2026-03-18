@@ -34,6 +34,10 @@
  */
 
 #include <neolib/neolib.hpp>
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 #include <neolib/core/service.hpp>
 #include <neolib/task/async_task.hpp>
 #include <neolib/app/power.hpp>
@@ -46,7 +50,8 @@ namespace neolib
         return sPower;
     }
 
-    power::power() :
+    power::power(power_flags aFlags) :
+        iFlags{ aFlags },
         iUpdater{ service<i_async_task>(), [this](neolib::callback_timer& aTimer)
         {
             aTimer.again();
@@ -116,6 +121,7 @@ namespace neolib
         {
             auto const previousMode = iActiveMode;
             iActiveMode = aMode;
+            set_process_and_thread_priority();
             switch (active_mode())
             {
             case power_mode::Green:
@@ -138,6 +144,32 @@ namespace neolib
                 TurboModeLeft.trigger();
                 break;
             }
+        }
+    }
+
+    void power::set_process_and_thread_priority()
+    {
+        if ((iFlags & power_flags::SetProcessAndThreadPriority) != power_flags::SetProcessAndThreadPriority)
+            return;
+        switch (iActiveMode)
+        {
+        case power_mode::Green:
+        case power_mode::Normal:
+#if defined(_WIN32)
+            if (!SetPriorityClass(GetCurrentProcess(), NORMAL_PRIORITY_CLASS))
+                throw std::runtime_error("neolib::power::set_process_and_thread_priority: SetPriorityClass(NORMAL_PRIORITY_CLASS) failed");
+            if (!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL))
+                throw std::runtime_error("neolib::power::set_process_and_thread_priority: SetThreadPriority(THREAD_PRIORITY_NORMAL) failed");
+#endif
+            break;
+        case power_mode::Turbo:
+#if defined(_WIN32)
+            if (!SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS))
+                throw std::runtime_error("neolib::power::set_process_and_thread_priority: SetPriorityClass(HIGH_PRIORITY_CLASS) failed");
+            if (!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST))
+                throw std::runtime_error("neolib::power::set_process_and_thread_priority: SetThreadPriority(THREAD_PRIORITY_HIGHEST) failed");
+#endif
+            break;
         }
     }
 }

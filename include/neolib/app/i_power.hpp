@@ -49,6 +49,31 @@ namespace neolib
         Turbo
     };
 
+    enum class power_flags : std::uint32_t
+    {
+        SetProcessAndThreadPriority = 0x00000001
+    };
+
+    inline constexpr power_flags operator|(power_flags aLhs, power_flags aRhs)
+    {
+        return static_cast<power_flags>(static_cast<std::uint32_t>(aLhs) | static_cast<std::uint32_t>(aRhs));
+    }
+
+    inline constexpr power_flags operator&(power_flags aLhs, power_flags aRhs)
+    {
+        return static_cast<power_flags>(static_cast<std::uint32_t>(aLhs) & static_cast<std::uint32_t>(aRhs));
+    }
+
+    inline constexpr power_flags& operator|=(power_flags& aLhs, power_flags aRhs)
+    {
+        return aLhs = static_cast<power_flags>(static_cast<std::uint32_t>(aLhs) | static_cast<std::uint32_t>(aRhs));
+    }
+
+    inline constexpr power_flags& operator&=(power_flags& aLhs, power_flags aRhs)
+    {
+        return aLhs = static_cast<power_flags>(static_cast<std::uint32_t>(aLhs) & static_cast<std::uint32_t>(aRhs));
+    }
+
     class i_power : public i_service
     {
     public:
