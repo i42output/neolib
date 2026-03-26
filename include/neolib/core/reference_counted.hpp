@@ -619,14 +619,7 @@ namespace neolib
     template <typename Interface>
     inline bool operator<(ref_ptr<Interface> const& lhs, ref_ptr<Interface> const& rhs) noexcept
     {
-        if (lhs == rhs)
-            return false;
-        else if (lhs == nullptr)
-            return false;
-        else if (rhs == nullptr)
-            return true;
-        else
-            return *lhs < *rhs;
+        return lhs.ptr() < rhs.ptr();
     }
 
     template <typename ConcreteType, typename... Args>
