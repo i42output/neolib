@@ -48,7 +48,7 @@ namespace neolib
         template <typename, typename, typename, typename>
         class iterator;
 
-        template <typename T, typename ContainerIterator, typename AbstractIterator = i_const_iterator<abstract_t<T>>>
+        template <typename T, typename ContainerIterator, typename AbstractIterator = i_const_iterator<maybe_abstract_t<T>>>
         class const_iterator : public reference_counted<AbstractIterator>
         {
             using base_type = reference_counted<AbstractIterator>;
@@ -56,7 +56,7 @@ namespace neolib
             using abstract_type = AbstractIterator;
         public:
             using value_type = const T;
-            using abstract_value_type = const abstract_t<T>;
+            using abstract_value_type = const maybe_abstract_t<T>;
             using container_iterator = ContainerIterator;
             using typename base_type::difference_type;
             using typename base_type::pointer;
@@ -96,9 +96,9 @@ namespace neolib
         class random_access_iterator;
 
         template <typename T, typename ContainerIterator>
-        class random_access_const_iterator : public const_iterator<T, ContainerIterator, i_random_access_const_iterator<abstract_t<T>>>
+        class random_access_const_iterator : public const_iterator<T, ContainerIterator, i_random_access_const_iterator<maybe_abstract_t<T>>>
         {
-            using base_type = const_iterator<T, ContainerIterator, i_random_access_const_iterator<abstract_t<T>>>;
+            using base_type = const_iterator<T, ContainerIterator, i_random_access_const_iterator<maybe_abstract_t<T>>>;
         public:
             using typename base_type::abstract_type;
             using typename base_type::value_type;
@@ -140,7 +140,7 @@ namespace neolib
             abstract_iterator* clone() const override { if constexpr (!std::is_abstract_v<random_access_const_iterator>) return new random_access_const_iterator{ *this }; else throw pure_iterator(); }
         };
 
-        template <typename T, typename ContainerIterator, typename ContainerConstIterator, typename AbstractIterator = i_iterator<abstract_t<T>>>
+        template <typename T, typename ContainerIterator, typename ContainerConstIterator, typename AbstractIterator = i_iterator<maybe_abstract_t<T>>>
         class iterator : public reference_counted<AbstractIterator>
         {
             using base_type = reference_counted<AbstractIterator>;
@@ -149,7 +149,7 @@ namespace neolib
         public:
             using abstract_type = AbstractIterator ;
             using value_type = T;
-            using abstract_value_type = abstract_t<T>;
+            using abstract_value_type = maybe_abstract_t<T>;
             using container_iterator = ContainerIterator;
             using container_const_iterator = ContainerConstIterator;
             using typename base_type::difference_type;
@@ -181,9 +181,9 @@ namespace neolib
         };
 
         template <typename T, typename ContainerIterator, typename ContainerConstIterator>
-        class random_access_iterator : public iterator<T, ContainerIterator, ContainerConstIterator, i_random_access_iterator<abstract_t<T>>>
+        class random_access_iterator : public iterator<T, ContainerIterator, ContainerConstIterator, i_random_access_iterator<maybe_abstract_t<T>>>
         {
-            using base_type = iterator<T, ContainerIterator, ContainerConstIterator, i_random_access_iterator<abstract_t<T>>>;
+            using base_type = iterator<T, ContainerIterator, ContainerConstIterator, i_random_access_iterator<maybe_abstract_t<T>>>;
             template <typename, typename>
             friend class random_access_const_iterator;
         public:

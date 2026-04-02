@@ -118,13 +118,13 @@ namespace neolib
     template <typename Interface1, typename Interface2>
     inline bool operator==(const i_ref_ptr<Interface1>& lhs, const Interface2* rhs) noexcept
     {
-        return static_cast<const abstract_t<Interface1>*>(lhs.ptr()) == static_cast<const abstract_t<Interface1>*>(rhs);
+        return static_cast<const maybe_abstract_t<Interface1>*>(lhs.ptr()) == static_cast<const maybe_abstract_t<Interface1>*>(rhs);
     }
 
     template <typename Interface1, typename Interface2>
     inline bool operator==(const Interface2* lhs, const i_ref_ptr<Interface1>& rhs) noexcept
     {
-        return static_cast<const abstract_t<Interface1>*>(lhs) == static_cast<const abstract_t<Interface1>*>(rhs.ptr());
+        return static_cast<const maybe_abstract_t<Interface1>*>(lhs) == static_cast<const maybe_abstract_t<Interface1>*>(rhs.ptr());
     }
 
     template <typename Interface1, typename Interface2>
@@ -142,13 +142,13 @@ namespace neolib
     template <typename Interface1, typename Interface2>
     inline bool operator<(const i_ref_ptr<Interface1>& lhs, const Interface2* rhs) noexcept
     {
-        return static_cast<const abstract_t<Interface1>*>(lhs.ptr()) < static_cast<const abstract_t<Interface1>*>(rhs);
+        return static_cast<const maybe_abstract_t<Interface1>*>(lhs.ptr()) < static_cast<const maybe_abstract_t<Interface1>*>(rhs);
     }
 
     template <typename Interface1, typename Interface2>
     inline bool operator<(const Interface2* lhs, const i_ref_ptr<Interface1>& rhs) noexcept
     {
-        return static_cast<const abstract_t<Interface1>*>(lhs) < static_cast<const abstract_t<Interface1>*>(rhs.ptr());
+        return static_cast<const maybe_abstract_t<Interface1>*>(lhs) < static_cast<const maybe_abstract_t<Interface1>*>(rhs.ptr());
     }
 
     template <typename Interface>

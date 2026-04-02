@@ -44,14 +44,14 @@
 namespace neolib
 {
     template <typename T>
-    class deque : public reference_counted<i_deque<abstract_t<T>>>
+    class deque : public reference_counted<i_deque<maybe_abstract_t<T>>>
     {
-        typedef reference_counted<i_deque<abstract_t<T>>> base_type;
+        typedef reference_counted<i_deque<maybe_abstract_t<T>>> base_type;
         // types
     public:
-        typedef i_deque<abstract_t<T>> abstract_type;
+        typedef i_deque<maybe_abstract_t<T>> abstract_type;
         typedef T value_type;
-        typedef abstract_t<T> abstract_value_type;
+        typedef maybe_abstract_t<T> abstract_value_type;
         typedef std::deque<value_type> std_type;
         using typename abstract_type::size_type;
         using typename abstract_type::const_iterator;

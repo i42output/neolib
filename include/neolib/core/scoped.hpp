@@ -143,12 +143,12 @@ namespace neolib
     class scoped_optional
     {
     public:
-        scoped_optional(i_optional<abstract_t<T>>& aOptional, T aValue) noexcept : iOptional{ aOptional }, iSaved{ aOptional }, iIgnore{ false } { iOptional = aValue; }
+        scoped_optional(i_optional<maybe_abstract_t<T>>& aOptional, T aValue) noexcept : iOptional{ aOptional }, iSaved{ aOptional }, iIgnore{ false } { iOptional = aValue; }
         ~scoped_optional() noexcept { if (!iIgnore) iOptional = iSaved; }
     public:
         void ignore() noexcept { iIgnore = true; }
     private:
-        i_optional<abstract_t<T>>& iOptional;
+        i_optional<maybe_abstract_t<T>>& iOptional;
         optional<T> iSaved;
         bool iIgnore;
     };
@@ -157,12 +157,12 @@ namespace neolib
     class scoped_optional_if
     {
     public:
-        scoped_optional_if(i_optional<abstract_t<T>>& aOptional, T aValue) noexcept : iOptional{ aOptional }, iSaved{ aOptional }, iIgnore{ false } { if (iOptional == std::nullopt) iOptional = aValue; }
+        scoped_optional_if(i_optional<maybe_abstract_t<T>>& aOptional, T aValue) noexcept : iOptional{ aOptional }, iSaved{ aOptional }, iIgnore{ false } { if (iOptional == std::nullopt) iOptional = aValue; }
         ~scoped_optional_if() noexcept { if (!iIgnore) iOptional = iSaved; }
     public:
         void ignore() noexcept { iIgnore = true; }
     private:
-        i_optional<abstract_t<T>>& iOptional;
+        i_optional<maybe_abstract_t<T>>& iOptional;
         optional<T> iSaved;
         bool iIgnore;
     };

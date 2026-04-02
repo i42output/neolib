@@ -51,11 +51,11 @@ namespace neolib
     struct is_optional<optional<T>> { static constexpr bool value = true; };
 
     template<typename T>
-    class optional : public reference_counted<i_optional<abstract_t<T>>>
+    class optional : public reference_counted<i_optional<maybe_abstract_t<T>>>
     {
         // types
     public:
-        typedef i_optional<abstract_t<T>> abstract_type;
+        typedef i_optional<maybe_abstract_t<T>> abstract_type;
         typedef std::optional<T> std_type;
         typedef T value_type;
         typedef value_type* pointer;
@@ -196,7 +196,7 @@ namespace neolib
                 iData = std::nullopt;
             return *this;
         }
-        optional& operator=(const abstract_t<T>& value) final
+        optional& operator=(const maybe_abstract_t<T>& value) final
         {
             iData = T{ value };
             return *this;
@@ -239,7 +239,7 @@ namespace neolib
     }
 
     template <typename T>
-    inline bool operator==(const optional<T>& lhs, const abstract_t<optional<T>>& rhs)
+    inline bool operator==(const optional<T>& lhs, const maybe_abstract_t<optional<T>>& rhs)
     {
         if (lhs.has_value() != rhs.has_value())
             return false;
@@ -249,7 +249,7 @@ namespace neolib
     }
 
     template <typename T>
-    inline bool operator==(const abstract_t<optional<T>>& lhs, const optional<T>& rhs)
+    inline bool operator==(const maybe_abstract_t<optional<T>>& lhs, const optional<T>& rhs)
     {
         if (lhs.has_value() != rhs.has_value())
             return false;
@@ -259,7 +259,7 @@ namespace neolib
     }
 
     template <typename T>
-    inline std::partial_ordering operator<=>(const optional<T>& lhs, const abstract_t<optional<T>>& rhs)
+    inline std::partial_ordering operator<=>(const optional<T>& lhs, const maybe_abstract_t<optional<T>>& rhs)
     {
         if (lhs.has_value() < rhs.has_value())
             return std::partial_ordering::less;
@@ -271,7 +271,7 @@ namespace neolib
     }
 
     template <typename T>
-    inline std::partial_ordering operator<=>(const abstract_t<optional<T>>& lhs, const optional<T>& rhs)
+    inline std::partial_ordering operator<=>(const maybe_abstract_t<optional<T>>& lhs, const optional<T>& rhs)
     {
         if (lhs.has_value() < rhs.has_value())
             return std::partial_ordering::less;
@@ -316,8 +316,8 @@ namespace neolib
             return lhs <=> rhs.value();
     }
 
-    template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_t<T>>, int> = 0>
-    inline std::partial_ordering operator<=>(const optional<T>& lhs, const abstract_t<T>& rhs)
+    template <typename T, std::enable_if_t<!std::is_same_v<T, maybe_abstract_t<T>>, int> = 0>
+    inline std::partial_ordering operator<=>(const optional<T>& lhs, const maybe_abstract_t<T>& rhs)
     {
         if (!lhs.has_value())
             return std::partial_ordering::less;
@@ -325,8 +325,8 @@ namespace neolib
             return lhs.value() <=> rhs;
     }
 
-    template <typename T, std::enable_if_t<!std::is_same_v<T, abstract_t<T>>, int> = 0>
-    inline std::partial_ordering operator<=>(const abstract_t<T>& lhs, const optional<T>& rhs)
+    template <typename T, std::enable_if_t<!std::is_same_v<T, maybe_abstract_t<T>>, int> = 0>
+    inline std::partial_ordering operator<=>(const maybe_abstract_t<T>& lhs, const optional<T>& rhs)
     {
         if (!rhs.has_value())
             return std::partial_ordering::greater;

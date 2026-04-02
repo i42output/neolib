@@ -44,14 +44,14 @@
 namespace neolib
 {
     template <typename T>
-    class vector : public reference_counted<i_vector<abstract_t<T>>>
+    class vector : public reference_counted<i_vector<maybe_abstract_t<T>>>
     {
-        using base_type = reference_counted<i_vector<abstract_t<T>>> ;
+        using base_type = reference_counted<i_vector<maybe_abstract_t<T>>> ;
         // types
     public:
-        using abstract_type = i_vector<abstract_t<T>>;
+        using abstract_type = i_vector<maybe_abstract_t<T>>;
         using value_type = T;
-        using abstract_value_type = abstract_t<T>;
+        using abstract_value_type = maybe_abstract_t<T>;
         using std_type = std::vector<value_type>;
         using typename abstract_type::size_type;
         using typename abstract_type::const_iterator;

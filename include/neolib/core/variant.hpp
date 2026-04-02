@@ -134,11 +134,11 @@ namespace neolib
     using from_abstract_t = typename from_abstract_next<AbstractT, Type...>::result_type;
 
     template <typename... Types>
-    class variant : public reference_counted<i_variant<abstract_t<Types>...>>, public std::variant<std::monostate, Types...>
+    class variant : public reference_counted<i_variant<maybe_abstract_t<Types>...>>, public std::variant<std::monostate, Types...>
     {
         // types
     public:
-        using abstract_type = i_variant<abstract_t<Types>...> ;
+        using abstract_type = i_variant<maybe_abstract_t<Types>...> ;
         using std_type = std::variant<std::monostate, Types...>;
         static constexpr bool is_copy_constructible_v = (std::is_copy_constructible_v<Types> && ...);
         static constexpr bool is_move_constructible_v = (std::is_move_constructible_v<Types> && ...);
@@ -146,7 +146,7 @@ namespace neolib
         static constexpr bool is_move_assignable_v = (std::is_move_assignable_v<Types> && ...);
     public:
         template <typename T>
-        static constexpr bool is_alternative_v = (std::is_same_v<std::decay_t<T>, Types> || ...) || (std::is_same_v<std::decay_t<T>, abstract_t<Types>> || ...);
+        static constexpr bool is_alternative_v = (std::is_same_v<std::decay_t<T>, Types> || ...) || (std::is_same_v<std::decay_t<T>, maybe_abstract_t<Types>> || ...);
         // construction
     public:
         variant() :
@@ -277,7 +277,7 @@ namespace neolib
             static void assign(variant& aVariant, std::size_t aIndex, void const* aPtr) 
             {
                 if (aIndex == 1)
-                    aVariant.template emplace<T>(*static_cast<abstract_t<T> const*>(aPtr));
+                    aVariant.template emplace<T>(*static_cast<maybe_abstract_t<T> const*>(aPtr));
                 else
                     RuntimeTypeDispatchToEmplace<Ts...>::assign(aVariant, aIndex - 1, aPtr);
             }

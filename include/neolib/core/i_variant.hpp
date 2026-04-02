@@ -68,12 +68,12 @@ namespace neolib
         template <typename T>
         std::enable_if_t<!std::is_base_of_v<i_variant, T>, i_variant>& operator=(T const& aValue)
         {
-            return assign(variadic::index_v<abstract_t<T>, Types...> + 1, &aValue);
+            return assign(variadic::index_v<maybe_abstract_t<T>, Types...> + 1, &aValue);
         }
         template <typename T>
         bool holds_alternative() const
         {
-            return index() == variadic::index_v<abstract_t<T>, Types...> + 1;
+            return index() == variadic::index_v<maybe_abstract_t<T>, Types...> + 1;
         }
         template <typename T>
         T const* get_if() const

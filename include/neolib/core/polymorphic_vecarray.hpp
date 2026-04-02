@@ -46,14 +46,14 @@ namespace neolib
     namespace polymorphic
     {
         template<typename T, std::size_t Capacity, std::size_t MaxCapacity = Capacity>
-        class vecarray : public reference_counted<i_vector<abstract_t<T>>>
+        class vecarray : public reference_counted<i_vector<maybe_abstract_t<T>>>
         {
-            using base_type = reference_counted<i_vector<abstract_t<T>>>;
+            using base_type = reference_counted<i_vector<maybe_abstract_t<T>>>;
             // types
         public:
-            using abstract_type = i_vector<abstract_t<T>>;
+            using abstract_type = i_vector<maybe_abstract_t<T>>;
             using value_type = T;
-            using abstract_value_type = abstract_t<T>;
+            using abstract_value_type = maybe_abstract_t<T>;
             using allocator_type = small_buffer_allocator<T, Capacity, MaxCapacity>;
             using std_type = std::vector<value_type, allocator_type>;
             using size_type = typename abstract_type::size_type;

@@ -44,17 +44,17 @@
 namespace neolib
 {
     template <typename Key, typename T, typename Pr = std::less<Key>, typename Alloc = std::allocator<std::pair<const Key, T>>>
-    class map : public reference_counted<i_map<abstract_t<Key>, abstract_t<T>>>
+    class map : public reference_counted<i_map<maybe_abstract_t<Key>, maybe_abstract_t<T>>>
     {
-        typedef reference_counted<i_map<abstract_t<Key>, abstract_t<T>>> base_type;
+        typedef reference_counted<i_map<maybe_abstract_t<Key>, maybe_abstract_t<T>>> base_type;
         // types
     public:
-        typedef i_map<abstract_t<Key>, abstract_t<T>> abstract_type;
+        typedef i_map<maybe_abstract_t<Key>, maybe_abstract_t<T>> abstract_type;
         typedef Key key_type;
         typedef T mapped_type;
         typedef pair<const key_type, mapped_type> value_type;
-        typedef abstract_t<key_type> abstract_key_type;
-        typedef abstract_t<mapped_type> abstract_mapped_type;
+        typedef maybe_abstract_t<key_type> abstract_key_type;
+        typedef maybe_abstract_t<mapped_type> abstract_mapped_type;
         typedef i_pair<const abstract_key_type, abstract_mapped_type> abstract_value_type;
         typedef Pr key_compare;
         typedef Alloc allocator_type;
@@ -203,17 +203,17 @@ namespace neolib
     };
 
     template <typename Key, typename T, typename Pr = std::less<Key>, typename Alloc = std::allocator<std::pair<const Key, T>>>
-    class multimap : public reference_counted<i_multimap<abstract_t<Key>, abstract_t<T>>>
+    class multimap : public reference_counted<i_multimap<maybe_abstract_t<Key>, maybe_abstract_t<T>>>
     {
-        typedef reference_counted<i_multimap<abstract_t<Key>, abstract_t<T>>> base_type;
+        typedef reference_counted<i_multimap<maybe_abstract_t<Key>, maybe_abstract_t<T>>> base_type;
         // types
     public:
-        typedef i_multimap<abstract_t<Key>, abstract_t<T>> abstract_type;
+        typedef i_multimap<maybe_abstract_t<Key>, maybe_abstract_t<T>> abstract_type;
         typedef Key key_type;
         typedef T mapped_type;
         typedef pair<const key_type, mapped_type> value_type;
-        typedef abstract_t<key_type> abstract_key_type;
-        typedef abstract_t<mapped_type> abstract_mapped_type;
+        typedef maybe_abstract_t<key_type> abstract_key_type;
+        typedef maybe_abstract_t<mapped_type> abstract_mapped_type;
         typedef i_pair<const abstract_key_type, abstract_mapped_type> abstract_value_type;
         typedef Pr key_compare;
         typedef Alloc allocator_type;

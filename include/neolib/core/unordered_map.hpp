@@ -45,17 +45,17 @@
 namespace neolib
 {
     template <typename Key, typename T, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>, typename Alloc = std::allocator<std::pair<const Key, T>>>
-    class unordered_map : public reference_counted<i_unordered_map<abstract_t<Key>, abstract_t<T>>>
+    class unordered_map : public reference_counted<i_unordered_map<maybe_abstract_t<Key>, maybe_abstract_t<T>>>
     {
-        using base_type = reference_counted<i_unordered_map<abstract_t<Key>, abstract_t<T>>>;
+        using base_type = reference_counted<i_unordered_map<maybe_abstract_t<Key>, maybe_abstract_t<T>>>;
         // types
     public:
-        using abstract_type = i_unordered_map<abstract_t<Key>, abstract_t<T>>;
+        using abstract_type = i_unordered_map<maybe_abstract_t<Key>, maybe_abstract_t<T>>;
         using key_type = Key;
         using mapped_type = T;
         using value_type = pair<const key_type, mapped_type>;
-        using abstract_key_type = abstract_t<key_type>;
-        using abstract_mapped_type = abstract_t<mapped_type>;
+        using abstract_key_type = maybe_abstract_t<key_type>;
+        using abstract_mapped_type = maybe_abstract_t<mapped_type>;
         using abstract_value_type = i_pair<const abstract_key_type, abstract_mapped_type>;
         using key_hash = Hash;
         using key_equal = KeyEqual;
@@ -207,17 +207,17 @@ namespace neolib
     };
 
     template <typename Key, typename T, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>, typename Alloc = std::allocator<std::pair<const Key, T>>>
-    class unordered_multimap : public reference_counted<i_unordered_multimap<abstract_t<Key>, abstract_t<T>>>
+    class unordered_multimap : public reference_counted<i_unordered_multimap<maybe_abstract_t<Key>, maybe_abstract_t<T>>>
     {
-        using base_type = reference_counted<i_unordered_multimap<abstract_t<Key>, abstract_t<T>>>;
+        using base_type = reference_counted<i_unordered_multimap<maybe_abstract_t<Key>, maybe_abstract_t<T>>>;
         // types
     public:
-        using abstract_type = i_unordered_multimap<abstract_t<Key>, abstract_t<T>>;
+        using abstract_type = i_unordered_multimap<maybe_abstract_t<Key>, maybe_abstract_t<T>>;
         using key_type = Key;
         using mapped_type = T;
         using value_type = pair<const key_type, mapped_type>;
-        using abstract_key_type = abstract_t<key_type>;
-        using abstract_mapped_type = abstract_t<mapped_type>;
+        using abstract_key_type = maybe_abstract_t<key_type>;
+        using abstract_mapped_type = maybe_abstract_t<mapped_type>;
         using abstract_value_type = i_pair<const abstract_key_type, abstract_mapped_type>;
         using key_hash = Hash;
         using key_equal = KeyEqual;
@@ -356,17 +356,17 @@ namespace neolib
     };
 
     template <typename Key, typename T, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>, typename Alloc = std::allocator<std::pair<const Key, T>>>
-    class unordered_flat_map : public reference_counted<i_unordered_map<abstract_t<Key>, abstract_t<T>>>
+    class unordered_flat_map : public reference_counted<i_unordered_map<maybe_abstract_t<Key>, maybe_abstract_t<T>>>
     {
-        using base_type = reference_counted<i_unordered_map<abstract_t<Key>, abstract_t<T>>>;
+        using base_type = reference_counted<i_unordered_map<maybe_abstract_t<Key>, maybe_abstract_t<T>>>;
         // types
     public:
-        using abstract_type = i_unordered_map<abstract_t<Key>, abstract_t<T>>;
+        using abstract_type = i_unordered_map<maybe_abstract_t<Key>, maybe_abstract_t<T>>;
         using key_type = Key;
         using mapped_type = T;
         using value_type = pair<const key_type, mapped_type>;
-        using abstract_key_type = abstract_t<key_type>;
-        using abstract_mapped_type = abstract_t<mapped_type>;
+        using abstract_key_type = maybe_abstract_t<key_type>;
+        using abstract_mapped_type = maybe_abstract_t<mapped_type>;
         using abstract_value_type = i_pair<const abstract_key_type, abstract_mapped_type>;
         using key_hash = Hash;
         using key_equal = KeyEqual;

@@ -179,6 +179,18 @@ namespace neolib
         struct abstract_type<std::chrono::duration<Rep, Period>> : std::true_type { using type = std::chrono::duration<Rep, Period>; };
         template <typename Clock, typename Duration>
         struct abstract_type<std::chrono::time_point<Clock, Duration>> : std::true_type { using type = std::chrono::time_point<Clock, Duration>; };
+
+        template <typename T, bool HasAbstract = abstract_type<T>::value>
+        struct maybe_abstract
+        {
+            using type = T;
+        };
+
+        template <typename T>
+        struct maybe_abstract<T, true>
+        {
+            using type = typename abstract_type<T>::type;
+        };
     }
 
     template <typename T>
@@ -187,34 +199,37 @@ namespace neolib
     template <typename T>
     using abstract_t = typename detail::abstract_type<T>::type;
 
-    template <typename T, typename = std::enable_if_t<detail::abstract_type<T>::value, sfinae>>
-    inline const abstract_t<T>& to_abstract(const T& aArgument)
+    template <typename T>
+    using maybe_abstract_t = typename detail::maybe_abstract<T>::type;
+
+    template <typename T>
+    inline const maybe_abstract_t<T>& to_abstract(const T& aArgument)
     {
-        return static_cast<const abstract_t<T>&>(aArgument);
+        return static_cast<const maybe_abstract_t<T>&>(aArgument);
     }
 
-    template <typename T, typename = std::enable_if_t<detail::abstract_type<T>::value, sfinae>>
-    inline abstract_t<T>& to_abstract(T& aArgument)
+    template <typename T>
+    inline maybe_abstract_t<T>& to_abstract(T& aArgument)
     {
-        return static_cast<abstract_t<T>&>(aArgument);
-    }
-
-    template <typename T1, typename T2>
-    inline const abstract_t<pair<T1, T2>>& to_abstract(const std::pair<T1, pair<T1, T2>>& aArgument)
-    {
-        return static_cast<const abstract_t<pair<T1, T2>>&>(aArgument.second);
+        return static_cast<maybe_abstract_t<T>&>(aArgument);
     }
 
     template <typename T1, typename T2>
-    inline abstract_t<neolib::pair<T1, T2>>& to_abstract(std::pair<T1, pair<T1, T2>>& aArgument)
+    inline const maybe_abstract_t<pair<T1, T2>>& to_abstract(const std::pair<T1, pair<T1, T2>>& aArgument)
     {
-        return static_cast<abstract_t<pair<T1, T2>>&>(aArgument.second);
+        return static_cast<const maybe_abstract_t<pair<T1, T2>>&>(aArgument.second);
+    }
+
+    template <typename T1, typename T2>
+    inline maybe_abstract_t<neolib::pair<T1, T2>>& to_abstract(std::pair<T1, pair<T1, T2>>& aArgument)
+    {
+        return static_cast<maybe_abstract_t<pair<T1, T2>>&>(aArgument.second);
     }
 
     namespace detail
     {
         template <typename T, typename = sfinae>
-        struct abstract_return_type { using type = abstract_t<T>&; };
+        struct abstract_return_type { using type = maybe_abstract_t<T>&; };
         template <typename T>
         struct abstract_return_type<T, std::enable_if_t<std::is_scalar_v<T>, sfinae>> { using type = std::remove_const_t<T>; };
     }

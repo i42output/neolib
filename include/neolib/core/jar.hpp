@@ -188,7 +188,7 @@ namespace neolib
     }
 
     template <typename T, typename Container = vector<T>, typename CookieType = cookie, typename MutexType = null_mutex>
-    class basic_jar : public reference_counted<i_basic_jar<abstract_t<T>, abstract_t<Container>, CookieType>>
+    class basic_jar : public reference_counted<i_basic_jar<maybe_abstract_t<T>, maybe_abstract_t<Container>, CookieType>>
     {
     public:
         using cookie_type = CookieType;
@@ -301,7 +301,7 @@ namespace neolib
         {
             return items().at(aIndex);
         }
-        cookie_type insert(abstract_t<value_type> const& aItem) final
+        cookie_type insert(maybe_abstract_t<value_type> const& aItem) final
         {
             auto cookie = next_cookie();
             try
@@ -330,9 +330,9 @@ namespace neolib
             }
             return cookie;
         }
-        iterator add(cookie_type aCookie, abstract_t<value_type> const& aItem) final
+        iterator add(cookie_type aCookie, maybe_abstract_t<value_type> const& aItem) final
         {
-            return add<const abstract_t<value_type>&>(aCookie, aItem);
+            return add<const maybe_abstract_t<value_type>&>(aCookie, aItem);
         }
         iterator erase(const_iterator aItem) final
         {
@@ -367,7 +367,7 @@ namespace neolib
             reverse_indices()[static_cast<underlying_cookie_type>(aCookie)] = items().size() - 1;
             return *result;
         }
-        iterator remove(abstract_t<value_type> const& aItem) final
+        iterator remove(maybe_abstract_t<value_type> const& aItem) final
         {
             std::scoped_lock<mutex_type> lock{ mutex() };
             return remove(item_cookie(aItem));
@@ -397,7 +397,7 @@ namespace neolib
             return resultIndex < items().size() ? std::next(items().begin(), resultIndex) : items().end();
         }
     public:
-        cookie_type item_cookie(abstract_t<value_type> const& aItem) const final
+        cookie_type item_cookie(maybe_abstract_t<value_type> const& aItem) const final
         {
             if constexpr (!std::is_pointer_v<value_type>)
                 return allocated_cookies()[&static_cast<value_type const&>(aItem) - &items()[0]];

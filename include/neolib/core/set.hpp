@@ -43,14 +43,14 @@
 namespace neolib
 {
     template <typename T, typename Pred = std::less<typename crack_key<T>::key_type>, typename Alloc = std::allocator<T>>
-    class set : public reference_counted<i_set<abstract_t<T>>>
+    class set : public reference_counted<i_set<maybe_abstract_t<T>>>
     {
-        typedef reference_counted<i_set<abstract_t<T>>> base_type;
+        typedef reference_counted<i_set<maybe_abstract_t<T>>> base_type;
         // types
     public:
-        typedef i_set<abstract_t<T>> abstract_type;
-        typedef abstract_t<T> abstract_key_type;
-        typedef abstract_t<T> abstract_value_type;
+        typedef i_set<maybe_abstract_t<T>> abstract_type;
+        typedef maybe_abstract_t<T> abstract_key_type;
+        typedef maybe_abstract_t<T> abstract_value_type;
         typedef T key_type;
         typedef T value_type;
         typedef Pred compare_type;
@@ -131,14 +131,14 @@ namespace neolib
     };
 
     template <typename T, typename Pred = std::less<typename crack_key<T>::key_type>, typename Alloc = std::allocator<T>>
-    class multiset : public reference_counted<i_multiset<abstract_t<T>>>
+    class multiset : public reference_counted<i_multiset<maybe_abstract_t<T>>>
     {
-        typedef reference_counted<i_multiset<abstract_t<T>>> base_type;
+        typedef reference_counted<i_multiset<maybe_abstract_t<T>>> base_type;
         // types
     public:
-        typedef i_multiset<abstract_t<T>> abstract_type;
-        typedef abstract_t<T> abstract_key_type;
-        typedef abstract_t<T> abstract_value_type;
+        typedef i_multiset<maybe_abstract_t<T>> abstract_type;
+        typedef maybe_abstract_t<T> abstract_key_type;
+        typedef maybe_abstract_t<T> abstract_value_type;
         typedef T key_type;
         typedef T value_type;
         typedef Pred compare_type;

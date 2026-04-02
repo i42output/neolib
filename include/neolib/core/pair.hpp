@@ -42,13 +42,13 @@
 namespace neolib
 {
     template <typename T1, typename T2>
-    class pair : public i_pair<abstract_t<T1>, abstract_t<T2>>, public std::pair<T1, T2>
+    class pair : public i_pair<maybe_abstract_t<T1>, maybe_abstract_t<T2>>, public std::pair<T1, T2>
     {
-        using base_type = i_pair<abstract_t<T1>, abstract_t<T2>>;
+        using base_type = i_pair<maybe_abstract_t<T1>, maybe_abstract_t<T2>>;
     public:
         using typename base_type::abstract_type;
-        using first_abstract_type = abstract_t<T1>;
-        using second_abstract_type = abstract_t<T2>;
+        using first_abstract_type = maybe_abstract_t<T1>;
+        using second_abstract_type = maybe_abstract_t<T2>;
         using first_type = T1;
         using second_type = T2;
     private:

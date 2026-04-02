@@ -190,11 +190,11 @@ namespace neolib
     };
 
     template <typename Interface>
-    class ref_ptr : public i_ref_ptr<abstract_t<Interface>>
+    class ref_ptr : public i_ref_ptr<maybe_abstract_t<Interface>>
     {
     public:
         typedef Interface element_type;
-        typedef i_ref_ptr<abstract_t<Interface>> abstract_type;
+        typedef i_ref_ptr<maybe_abstract_t<Interface>> abstract_type;
         typedef typename abstract_type::no_object no_object;
         typedef typename abstract_type::no_managed_object no_managed_object;
         typedef typename abstract_type::interface_not_found interface_not_found;
@@ -374,17 +374,17 @@ namespace neolib
         {
             reset<Interface>(nullptr, nullptr, false, false);
         }
-        void reset(abstract_t<Interface>* aPtr) final
+        void reset(maybe_abstract_t<Interface>* aPtr) final
         {
-            reset<abstract_t<Interface>>(aPtr, aPtr, aPtr != nullptr, true);
+            reset<maybe_abstract_t<Interface>>(aPtr, aPtr, aPtr != nullptr, true);
         }
-        void reset(abstract_t<Interface>* aPtr, abstract_t<Interface>* aManagedPtr) final
+        void reset(maybe_abstract_t<Interface>* aPtr, maybe_abstract_t<Interface>* aManagedPtr) final
         {
-            reset<abstract_t<Interface>>(aPtr, aManagedPtr, aManagedPtr != nullptr, true);
+            reset<maybe_abstract_t<Interface>>(aPtr, aManagedPtr, aManagedPtr != nullptr, true);
         }
-        void reset(abstract_t<Interface>* aPtr, abstract_t<Interface>* aManagedPtr, bool aReferenceCounted, bool aAddRef) final
+        void reset(maybe_abstract_t<Interface>* aPtr, maybe_abstract_t<Interface>* aManagedPtr, bool aReferenceCounted, bool aAddRef) final
         {
-            reset<abstract_t<Interface>>(aPtr, aManagedPtr, aReferenceCounted, aAddRef);
+            reset<maybe_abstract_t<Interface>>(aPtr, aManagedPtr, aReferenceCounted, aAddRef);
         }
         Interface* release() final
         {
@@ -465,11 +465,11 @@ namespace neolib
     };
 
     template <typename Interface>
-    class weak_ref_ptr : public i_weak_ref_ptr<abstract_t<Interface>>
+    class weak_ref_ptr : public i_weak_ref_ptr<maybe_abstract_t<Interface>>
     {
-        typedef i_weak_ref_ptr<abstract_t<Interface>> base_type;
+        typedef i_weak_ref_ptr<maybe_abstract_t<Interface>> base_type;
     public:
-        typedef i_weak_ref_ptr<abstract_t<Interface>> abstract_type;
+        typedef i_weak_ref_ptr<maybe_abstract_t<Interface>> abstract_type;
         typedef typename base_type::no_object no_object;
         typedef typename base_type::interface_not_found interface_not_found;
         typedef typename base_type::bad_release bad_release;
@@ -490,7 +490,7 @@ namespace neolib
         {
             update_control_block(aOther.ptr());
         }
-        weak_ref_ptr(const i_ref_ptr<abstract_t<Interface>>& aOther) noexcept :
+        weak_ref_ptr(const i_ref_ptr<maybe_abstract_t<Interface>>& aOther) noexcept :
             iControlBlock{ nullptr }
         {
             update_control_block(aOther.managed_ptr());
@@ -511,7 +511,7 @@ namespace neolib
             reset(aOther.ptr());
             return *this;
         }
-        weak_ref_ptr& operator=(i_ref_ptr<abstract_t<Interface>> const& aOther)
+        weak_ref_ptr& operator=(i_ref_ptr<maybe_abstract_t<Interface>> const& aOther)
         {
             reset(aOther.managed_ptr());
             return *this;
@@ -539,17 +539,17 @@ namespace neolib
             weak_ref_ptr copy(*this);
             update_control_block(nullptr);
         }
-        void reset(abstract_t<Interface>* aPtr) final
+        void reset(maybe_abstract_t<Interface>* aPtr) final
         {
             weak_ref_ptr copy(*this);
             update_control_block(aPtr);
         }
-        void reset(abstract_t<Interface>*, abstract_t<Interface>* aManagedPtr) final
+        void reset(maybe_abstract_t<Interface>*, maybe_abstract_t<Interface>* aManagedPtr) final
         {
             weak_ref_ptr copy(*this);
             update_control_block(aManagedPtr);
         }
-        void reset(abstract_t<Interface>*, abstract_t<Interface>* aManagedPtr, bool, bool) final
+        void reset(maybe_abstract_t<Interface>*, maybe_abstract_t<Interface>* aManagedPtr, bool, bool) final
         {
             weak_ref_ptr copy(*this);
             update_control_block(aManagedPtr);
@@ -600,7 +600,7 @@ namespace neolib
             return *ptr();
         }
     private:
-        void update_control_block(abstract_t<Interface>* aManagedPtr)
+        void update_control_block(maybe_abstract_t<Interface>* aManagedPtr)
         {
             auto controlBlock = aManagedPtr != nullptr ? &(*aManagedPtr).control_block() : nullptr;
             if (iControlBlock != controlBlock)
@@ -635,9 +635,9 @@ namespace neolib
     }
 
     template <typename ConcreteType, typename... Args>
-    inline ref_ptr<abstract_t<ConcreteType>> make_abstract_ref(Args&&... args)
+    inline ref_ptr<maybe_abstract_t<ConcreteType>> make_abstract_ref(Args&&... args)
     {
-        return ref_ptr<abstract_t<ConcreteType>>{ new ConcreteType{ std::forward<Args>(args)... } };
+        return ref_ptr<maybe_abstract_t<ConcreteType>>{ new ConcreteType{ std::forward<Args>(args)... } };
     }
 
     template <class T, class U>
