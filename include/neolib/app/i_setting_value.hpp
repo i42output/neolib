@@ -144,7 +144,7 @@ namespace neolib
         abstract_return_t<T const> get() const
         {
             if (type() != setting_type::Enum)
-                return *static_cast<abstract_t<T> const*>(data());
+                return *static_cast<maybe_abstract_t<T> const*>(data());
             else 
             {
                 if constexpr (std::is_same_v<T, i_enum>)
@@ -152,14 +152,14 @@ namespace neolib
                 else if constexpr (std::is_scalar_v<T>)
                     return static_cast<i_enum const*>(data())->value<T>();
                 else
-                    return *static_cast<abstract_t<T> const*>(data());
+                    return *static_cast<maybe_abstract_t<T> const*>(data());
             }
         }
         template <typename T>
         void set(T const& aNewValue)
         {
             if (type() != setting_type::Enum)
-                *static_cast<abstract_t<T>*>(data()) = aNewValue;
+                *static_cast<maybe_abstract_t<T>*>(data()) = aNewValue;
             else
             {
                 if constexpr (std::is_same_v<T, i_enum>)
@@ -167,7 +167,7 @@ namespace neolib
                 else if constexpr (std::is_scalar_v<T>)
                     static_cast<i_enum*>(data())->set_value<T>(aNewValue);
                 else
-                    *static_cast<abstract_t<T>*>(data()) = aNewValue;
+                    *static_cast<maybe_abstract_t<T>*>(data()) = aNewValue;
             }
         }
     };

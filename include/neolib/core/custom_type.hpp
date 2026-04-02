@@ -52,7 +52,7 @@ namespace neolib
         struct type_mismatch : std::logic_error { type_mismatch() : std::logic_error("neolib::custom_type::type_mismatch") {} };
     private:
         typedef T value_type;
-        typedef abstract_t<value_type> abstract_value_type;
+        typedef maybe_abstract_t<value_type> abstract_value_type;
         typedef std::optional<value_type> container_type;
     public:
         custom_type(const string& aName) :
@@ -124,7 +124,7 @@ namespace neolib
     }
 
     template <typename T>
-    custom_type<T> make_custom_type(const abstract_t<T>& aValue)
+    custom_type<T> make_custom_type(const maybe_abstract_t<T>& aValue)
     {
         return custom_type<T>{ custom_type_name_v<T>, aValue };
     }

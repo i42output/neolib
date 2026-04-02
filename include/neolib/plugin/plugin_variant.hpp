@@ -64,7 +64,7 @@ namespace neolib
                     [](V& aThis, const void* aData)
                     {
                         typedef std::decay_t<T> type;
-                        typedef abstract_t<type> assign_type;
+                        typedef maybe_abstract_t<type> assign_type;
                         aThis = *static_cast<const assign_type*>(aData);
                     });
                 return funky_gen_assign<V, Types...>(aList);
@@ -86,7 +86,7 @@ namespace neolib
                     [](V& aThis, void* aData)
                     {
                         typedef std::decay_t<T> type;
-                        typedef abstract_t<type> move_assign_type;
+                        typedef maybe_abstract_t<type> move_assign_type;
                         aThis = static_cast<move_assign_type&&>(*static_cast<move_assign_type*>(aData));
                     });
                 return funky_gen_move_assign<V, Types...>(aList);
@@ -96,13 +96,13 @@ namespace neolib
 
     template <typename Id, typename... Types>
     class plugin_variant :
-        public reference_counted<i_plugin_variant<Id, abstract_t<Types>...>>,
+        public reference_counted<i_plugin_variant<Id, maybe_abstract_t<Types>...>>,
         public std::variant<std::monostate, Types...>
     {
-        typedef reference_counted<i_plugin_variant<Id, abstract_t<Types>...>> base_type;
+        typedef reference_counted<i_plugin_variant<Id, maybe_abstract_t<Types>...>> base_type;
         // types
     public:
-        typedef i_plugin_variant<Id, abstract_t<Types>...> abstract_type;
+        typedef i_plugin_variant<Id, maybe_abstract_t<Types>...> abstract_type;
         using typename base_type::id_t;
         using typename base_type::index_type;
         typedef std::variant<std::monostate, Types...> variant_type;
@@ -159,7 +159,7 @@ namespace neolib
             std::visit([this, &that, &result](auto&& v)
             {
                 typedef std::decay_t<decltype(v)> type;
-                typedef abstract_t<type> comparison_type;
+                typedef maybe_abstract_t<type> comparison_type;
                 if constexpr (boost::has_equal_to<comparison_type, comparison_type>::value)
                     result = (*static_cast<const comparison_type*>(data()) == *static_cast<const comparison_type*>(that.data()));
                 else
@@ -177,7 +177,7 @@ namespace neolib
             std::visit([this, &that, &result](auto&& v)
             {
                 typedef std::decay_t<decltype(v)> type;
-                typedef abstract_t<type> comparison_type;
+                typedef maybe_abstract_t<type> comparison_type;
                 if constexpr (boost::has_less<comparison_type, comparison_type>::value)
                     result = (*static_cast<const comparison_type*>(data()) < *static_cast<const comparison_type*>(that.data()));
                 else

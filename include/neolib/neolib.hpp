@@ -163,22 +163,10 @@ namespace neolib
         struct abstract_type : std::false_type { using type = void; };
         template <typename T>
         struct abstract_type<T, typename std::enable_if_t<abstract_class_possible_v<T>, sfinae>> : std::true_type { using type = correct_const_t<T, typename T::abstract_type>; };
-        template <typename T>
-        struct abstract_type<T, typename std::enable_if_t<std::is_arithmetic_v<T>, sfinae>> : std::true_type { using type = correct_const_t<T, T>; };
-        template <typename T>
-        struct abstract_type<T, typename std::enable_if_t<std::is_enum_v<T>, sfinae>> : std::true_type { using type = correct_const_t<T, T>; };
-        template <typename T>
-        struct abstract_type<T, typename std::enable_if_t<std::is_pointer_v<T>, sfinae>> : std::true_type { using type = correct_const_t<T, T>; };
         template <typename T1, typename T2>
         struct abstract_type<std::pair<T1, pair<T1, T2>>> : std::false_type { using type = typename abstract_type<pair<T1, T2>>::type; };
         template <typename T1, typename T2>
         struct abstract_type<const std::pair<T1, pair<T1, T2>>> : std::false_type { using type = typename abstract_type<const pair<T1, T2>>::type; };
-        template <>
-        struct abstract_type<std::monostate> : std::true_type { using type = std::monostate; };
-        template <typename Rep, typename Period>
-        struct abstract_type<std::chrono::duration<Rep, Period>> : std::true_type { using type = std::chrono::duration<Rep, Period>; };
-        template <typename Clock, typename Duration>
-        struct abstract_type<std::chrono::time_point<Clock, Duration>> : std::true_type { using type = std::chrono::time_point<Clock, Duration>; };
 
         template <typename T, bool HasAbstract = abstract_type<T>::value>
         struct maybe_abstract
