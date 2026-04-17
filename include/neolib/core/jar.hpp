@@ -120,13 +120,9 @@ namespace neolib
         {
             return iConsumer == aRhs.iConsumer && iCookie == aRhs.iCookie;
         }
-        bool operator!=(basic_cookie_ref_ptr const& aRhs) const
+        auto operator<=>(basic_cookie_ref_ptr const& aRhs) const
         {
-            return !(*this == aRhs);
-        }
-        bool operator<(basic_cookie_ref_ptr const& aRhs) const
-        {
-            return std::forward_as_tuple(iConsumer, iCookie) < std::forward_as_tuple(aRhs.iConsumer, aRhs.iCookie);
+            return std::forward_as_tuple(iConsumer, iCookie) <=> std::forward_as_tuple(aRhs.iConsumer, aRhs.iCookie);
         }
     public:
         bool valid() const

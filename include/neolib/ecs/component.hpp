@@ -59,16 +59,6 @@ namespace neolib::ecs
     }
 
     template <typename Data>
-    inline bool operator<(const shared<Data>& lhs, const shared<Data>& rhs)
-    {
-        if (!!lhs.ptr != !!rhs.ptr)
-            return !!lhs.ptr < !!rhs.ptr;
-        if (lhs.ptr == nullptr)
-            return false;
-        return *lhs.ptr < *rhs.ptr;
-    }
-
-    template <typename Data>
     inline bool batchable(const shared<Data>& lhs, const shared<Data>& rhs)
     {
         if (!!lhs.ptr != !!rhs.ptr)
@@ -525,6 +515,34 @@ namespace neolib::ecs
         shared(const mapped_type& aData) :
             ptr { &aData }
         {
+        }
+
+        bool operator==(const shared<Data>& rhs) const
+        {
+            auto& lhs = *this;
+            if (!!lhs.ptr != !!rhs.ptr)
+                return false;
+            if (lhs.ptr == nullptr)
+                return true;
+            return *lhs.ptr == *rhs.ptr;
+        }
+
+        bool operator<(const shared<Data>& rhs) const
+        {
+            auto& lhs = *this;
+            if (!!lhs.ptr != !!rhs.ptr)
+                return !!lhs.ptr < !!rhs.ptr;
+            if (lhs.ptr == nullptr)
+                return false;
+            return *lhs.ptr < *rhs.ptr;
+        }
+
+        auto operator<=>(const shared<Data>& rhs) const
+        {
+            auto& lhs = *this;
+            if (lhs == rhs) return std::weak_ordering::equivalent;
+            if (lhs < rhs)  return std::weak_ordering::less;
+            return std::weak_ordering::greater;
         }
     };
 
