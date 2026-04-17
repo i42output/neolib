@@ -62,9 +62,9 @@ namespace neolib::ecs
     inline bool operator<(const shared<Data>& lhs, const shared<Data>& rhs)
     {
         if (!!lhs.ptr != !!rhs.ptr)
-            return lhs.ptr < !!rhs.ptr;
+            return !!lhs.ptr < !!rhs.ptr;
         if (lhs.ptr == nullptr)
-            return true;
+            return false;
         return *lhs.ptr < *rhs.ptr;
     }
 
