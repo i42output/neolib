@@ -59,6 +59,16 @@ namespace neolib::ecs
     }
 
     template <typename Data>
+    inline bool operator<(const shared<Data>& lhs, const shared<Data>& rhs)
+    {
+        if (!!lhs.ptr != !!rhs.ptr)
+            return lhs.ptr < !!rhs.ptr;
+        if (lhs.ptr == nullptr)
+            return true;
+        return *lhs.ptr < *rhs.ptr;
+    }
+
+    template <typename Data>
     inline bool batchable(const shared<Data>& lhs, const shared<Data>& rhs)
     {
         if (!!lhs.ptr != !!rhs.ptr)
