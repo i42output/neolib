@@ -11,8 +11,14 @@ int next_sequence()
     return ++sequence;
 }
 
-struct wibble
+struct i_wibble
 {
+};
+
+struct wibble : i_wibble
+{
+    using abstract_type = i_wibble;
+
     wibble() { std::cout << "wibble::wibble(), thread id: " << std::this_thread::get_id() << std::endl; }
     ~wibble() { std::cout << "wibble::~wibble(), thread id: " << std::this_thread::get_id() << std::endl; }
 };

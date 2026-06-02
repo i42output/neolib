@@ -74,13 +74,13 @@ namespace neolib
             STRING(VariableScope) "::" STRING(VariableName), \
             [](void* aMemory) { using VariableTypeAlias = VariableType; static_cast<VariableType*>(aMemory)->~VariableTypeAlias(); }); \
     auto const& neolib_CapturablePartialResult_##VariableName = neolib_PartialResult_##VariableName; \
-    thread_local auto& VariableName = [&neolib_CapturablePartialResult_##VariableName]() -> VariableType& \
+    thread_local auto& VariableName = [&neolib_CapturablePartialResult_##VariableName]() -> neolib::maybe_abstract_t<VariableType>& \
         { \
             if (neolib_CapturablePartialResult_##VariableName.initializationRequired) \
             { \
                 new (static_cast<VariableType*>(neolib_CapturablePartialResult_##VariableName.memory)) VariableType{ InitialValue }; \
             } \
-            return *static_cast<VariableType*>(neolib_CapturablePartialResult_##VariableName.memory); \
+            return *static_cast<neolib::maybe_abstract_t<VariableType>*>(neolib_CapturablePartialResult_##VariableName.memory); \
         }();
 
     #define shared_thread_local_class_impl(VariableType, ClassType, VariableScope, VariableName, InitialValue) \
@@ -89,13 +89,13 @@ namespace neolib
             (std::string{ typeid(ClassType).name() } + "::" STRING(VariableScope) "::" STRING(VariableName)).c_str(), \
             [](void* aMemory) { using neolib_VariableTypeAlias = VariableType; static_cast<VariableType*>(aMemory)->~neolib_VariableTypeAlias(); }); \
     auto const& neolib_CapturablePartialResult_##VariableName = neolib_PartialResult_##VariableName; \
-    thread_local auto& VariableName = [&neolib_CapturablePartialResult_##VariableName]() -> VariableType& \
+    thread_local auto& VariableName = [&neolib_CapturablePartialResult_##VariableName]() -> neolib::maybe_abstract_t<VariableType>& \
         { \
             if (neolib_CapturablePartialResult_##VariableName.initializationRequired) \
             { \
                 new (static_cast<VariableType*>(neolib_CapturablePartialResult_##VariableName.memory)) VariableType{ InitialValue }; \
             } \
-            return *static_cast<VariableType*>(neolib_CapturablePartialResult_##VariableName.memory); \
+            return *static_cast<neolib::maybe_abstract_t<VariableType>*>(neolib_CapturablePartialResult_##VariableName.memory); \
         }();
 
     #define shared_thread_local(VariableType, VariableScope, VariableName, ...) \
