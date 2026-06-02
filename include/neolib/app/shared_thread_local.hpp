@@ -43,6 +43,6 @@ namespace neolib
     class shared_thread_local : public i_shared_thread_local
     {
     public:
-        result_type allocate_or_get(char const* aFullyQualifiedVariableName, std::size_t aVariableSize, void(*aDeleter)(void*)) final;
+        result_type allocate_or_get(char const* aFullyQualifiedVariableName, std::size_t aVariableSize, bool aVariableSizeMayDiffer, void(*aDeleter)(void*)) final;
     };
 }

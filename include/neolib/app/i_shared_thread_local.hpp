@@ -57,12 +57,12 @@ namespace neolib
             bool initializationRequired;
         };
     public:
-        virtual result_type allocate_or_get(char const* aFullyQualifiedVariableName, std::size_t aVariableSize, void(*aDeleter)(void*)) = 0;
+        virtual result_type allocate_or_get(char const* aFullyQualifiedVariableName, std::size_t aVariableSize, bool aVariableSizeMayDiffer, void(*aDeleter)(void*)) = 0;
     public:
         template <typename T>
         result_type allocate_or_get(char const* aFullyQualifiedVariableName, void(*aDeleter)(void*))
         {
-            return allocate_or_get(aFullyQualifiedVariableName, sizeof(T), aDeleter);
+            return allocate_or_get(aFullyQualifiedVariableName, sizeof(T), !std::is_same_v<T, maybe_abstract_t<T>>, aDeleter);
         }
     public:
         static uuid const& iid() { static uuid const sIid{ 0x975e11be, 0xd285, 0x4704, 0x9eef, { 0x28, 0xfb, 0x6b, 0x5e, 0xe0, 0x76 } }; return sIid; }

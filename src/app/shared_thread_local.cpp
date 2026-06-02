@@ -46,7 +46,7 @@ namespace neolib
         return sService;
     }
 
-    shared_thread_local::result_type shared_thread_local::allocate_or_get(char const* aFullyQualifiedVariableName, std::size_t aVariableSize, void(*aDeleter)(void*))
+    shared_thread_local::result_type shared_thread_local::allocate_or_get(char const* aFullyQualifiedVariableName, std::size_t aVariableSize, bool aVariableSizeMayDiffer, void(*aDeleter)(void*))
     {
         struct data
         {
@@ -96,7 +96,10 @@ namespace neolib
             existing = tLocals.insert(std::make_pair(aFullyQualifiedVariableName, tLocalStack.back().get())).first;
             result.initializationRequired = true;
         }
-        
+
+        if (existing->second->size != aVariableSize && !aVariableSizeMayDiffer)
+            throw std::logic_error("neolib::shared_thread_local::allocate_or_get: bad size");
+
         result.memory = existing->second->memory.get();
 
         return result;
