@@ -1712,12 +1712,25 @@ namespace neolib
                 [epsilon](auto const& lhs, auto const& rhs) { return nearly_equal(lhs, rhs, epsilon); });
         }
 
+        enum class quad_corner : std::size_t
+        {
+            TopLeft     = 0u,
+            TopRight    = 1u,
+            BottomRight = 2u,
+            BottomLeft  = 3u
+        };
+
+        constexpr std::size_t QuadTopLeft = static_cast<std::size_t>(quad_corner::TopLeft);
+        constexpr std::size_t QuadTopRight = static_cast<std::size_t>(quad_corner::TopRight);
+        constexpr std::size_t QuadBottomRight = static_cast<std::size_t>(quad_corner::BottomRight);
+        constexpr std::size_t QuadBottomLeft = static_cast<std::size_t>(quad_corner::BottomLeft);
+
         template <typename T, std::size_t D>
         inline basic_vector<T, D> quad_extents(std::array<basic_vector<T, D>, 4> const& aQuad)
         {
             return basic_vector<T, D>{ 
-                (aQuad[1].distance(aQuad[0]) + aQuad[3].distance(aQuad[2])) / static_cast<T>(2.0),
-                (aQuad[0].distance(aQuad[3]) + aQuad[1].distance(aQuad[2])) / static_cast<T>(2.0)
+                (aQuad[QuadTopRight].distance(aQuad[QuadTopLeft]) + aQuad[QuadBottomLeft].distance(aQuad[QuadBottomRight])) / static_cast<T>(2.0),
+                (aQuad[QuadTopLeft].distance(aQuad[QuadBottomLeft]) + aQuad[QuadTopRight].distance(aQuad[QuadBottomRight])) / static_cast<T>(2.0)
             };
         }
 
