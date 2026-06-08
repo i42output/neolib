@@ -211,6 +211,8 @@ namespace neolib
                 return ~aLhs != ~aRhs;
             }
         }
+
+        using namespace operators;
     }
 }
 
