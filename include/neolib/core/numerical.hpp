@@ -2109,6 +2109,8 @@ namespace neolib
         template <typename VertexIter, typename Vertex = typename std::iterator_traits<VertexIter>::value_type>
         inline basic_aabb_2d<Vertex> to_aabb_2d(VertexIter aBegin, VertexIter aEnd)
         {
+            if (aBegin == aEnd)
+                return basic_aabb_2d<Vertex>{};
             basic_aabb_2d<Vertex> result{ aBegin->xy, aBegin->xy };
             for (auto i = std::next(aBegin); i != aEnd; ++i)
             {
