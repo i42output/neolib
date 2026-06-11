@@ -1872,11 +1872,6 @@ namespace neolib
         template <typename Vertex, typename FirstTransform, typename... RemainingTransforms>
         inline basic_aabb<Vertex> aabb_transform(const basic_aabb<Vertex>& aAabb, const FirstTransform& aFirstTransform, const RemainingTransforms&... aRemainingTransforms)
         {
-            if constexpr (sizeof...(RemainingTransforms) == 0u)
-            {
-                if (aFirstTransform.is_identity())
-                    return aAabb;
-            }
             using coordinate_t = typename Vertex::value_type;
             std::array<Vertex, 8> boxVertices =
             {
@@ -1911,8 +1906,21 @@ namespace neolib
         }
 
         template <typename VertexIter, typename Vertex = typename std::iterator_traits<VertexIter>::value_type>
-        inline basic_aabb<Vertex> to_aabb(VertexIter aBegin, VertexIter aEnd, 
-            const basic_matrix<typename Vertex::value_type, 4u, 4u>& aTransformation = basic_matrix<typename Vertex::value_type, 4u, 4u>::identity())
+        inline basic_aabb<Vertex> to_aabb(VertexIter aBegin, VertexIter aEnd)
+        {
+            if (aBegin == aEnd)
+                return basic_aabb<Vertex>{};
+            basic_aabb<Vertex> result{ aBegin->xyz, aBegin->xyz };
+            for (auto i = std::next(aBegin); i != aEnd; ++i)
+            {
+                result.min = result.min.min(i->xyz);
+                result.max = result.max.max(i->xyz);
+            }
+            return result;
+        }
+
+        template <typename VertexIter, typename Vertex = typename std::iterator_traits<VertexIter>::value_type>
+        inline basic_aabb<Vertex> to_aabb(VertexIter aBegin, VertexIter aEnd, const basic_matrix<typename Vertex::value_type, 4u, 4u>& aTransformation)
         {
             if (aBegin == aEnd)
                 return aabb_transform(basic_aabb<Vertex>{}, aTransformation);
@@ -1926,13 +1934,25 @@ namespace neolib
         }
 
         template <typename T>
-        inline basic_aabb<basic_vector<T, 3u>> to_aabb(const std::vector<basic_vector<T, 3u>>& aVertices, const basic_matrix<T, 4u, 4u>& aTransformation = basic_matrix<T, 4u, 4u>::identity())
+        inline basic_aabb<basic_vector<T, 3u>> to_aabb(const std::vector<basic_vector<T, 3u>>& aVertices)
+        {
+            return to_aabb(aVertices.begin(), aVertices.end());
+        }
+
+        template <typename T>
+        inline basic_aabb<basic_vector<T, 3u>> to_aabb(const std::vector<basic_vector<T, 3u>>& aVertices, const basic_matrix<T, 4u, 4u>& aTransformation)
         {
             return to_aabb(aVertices.begin(), aVertices.end(), aTransformation);
         }
 
         template <typename T, std::size_t Capacity, std::size_t MaxCapacity, typename Alloc>
-        inline basic_aabb<basic_vector<T, 3u>> to_aabb(const small_vector<basic_vector<T, 3u>, Capacity, MaxCapacity, Alloc>& aVertices, const basic_matrix<T, 4u, 4u>& aTransformation = basic_matrix<T, 4u, 4u>::identity())
+        inline basic_aabb<basic_vector<T, 3u>> to_aabb(const small_vector<basic_vector<T, 3u>, Capacity, MaxCapacity, Alloc>& aVertices)
+        {
+            return to_aabb(aVertices.begin(), aVertices.end());
+        }
+
+        template <typename T, std::size_t Capacity, std::size_t MaxCapacity, typename Alloc>
+        inline basic_aabb<basic_vector<T, 3u>> to_aabb(const small_vector<basic_vector<T, 3u>, Capacity, MaxCapacity, Alloc>& aVertices, const basic_matrix<T, 4u, 4u>& aTransformation)
         {
             return to_aabb(aVertices.begin(), aVertices.end(), aTransformation);
         }
@@ -2057,11 +2077,6 @@ namespace neolib
         template <typename Vertex, typename FirstTransform, typename... RemainingTransforms>
         inline basic_aabb_2d<Vertex> aabb_transform(const basic_aabb_2d<Vertex>& aAabb, const FirstTransform& aFirstTransform, const RemainingTransforms&... aRemainingTransforms)
         {
-            if constexpr (sizeof...(RemainingTransforms) == 0u)
-            {
-                if (aFirstTransform.is_identity())
-                    return aAabb;
-            }
             using coordinate_t = typename Vertex::value_type;
             std::array<Vertex, 4> boxVertices =
             {
@@ -2092,8 +2107,19 @@ namespace neolib
         }
 
         template <typename VertexIter, typename Vertex = typename std::iterator_traits<VertexIter>::value_type>
-        inline basic_aabb_2d<Vertex> to_aabb_2d(VertexIter aBegin, VertexIter aEnd,
-            const basic_matrix<typename Vertex::value_type, 3u, 3u>& aTransformation = basic_matrix<typename Vertex::value_type, 3u, 3u>::identity())
+        inline basic_aabb_2d<Vertex> to_aabb_2d(VertexIter aBegin, VertexIter aEnd)
+        {
+            basic_aabb_2d<Vertex> result{ aBegin->xy, aBegin->xy };
+            for (auto i = std::next(aBegin); i != aEnd; ++i)
+            {
+                result.min = result.min.min(i->xy);
+                result.max = result.max.max(i->xy);
+            }
+            return result;
+        }
+
+        template <typename VertexIter, typename Vertex = typename std::iterator_traits<VertexIter>::value_type>
+        inline basic_aabb_2d<Vertex> to_aabb_2d(VertexIter aBegin, VertexIter aEnd, const basic_matrix<typename Vertex::value_type, 3u, 3u>& aTransformation)
         {
             if (aBegin == aEnd)
                 return aabb_transform(basic_aabb_2d<Vertex>{}, aTransformation);
@@ -2107,26 +2133,52 @@ namespace neolib
         }
 
         template <typename T>
-        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const std::vector<basic_vector<T, 2u>>& aVertices, const basic_matrix<T, 3u, 3u>& aTransformation = basic_matrix<T, 3u, 3u>::identity())
+        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const std::vector<basic_vector<T, 2u>>& aVertices)
+        {
+            return to_aabb_2d(aVertices.begin(), aVertices.end());
+        }
+
+        template <typename T>
+        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const std::vector<basic_vector<T, 2u>>& aVertices, const basic_matrix<T, 3u, 3u>& aTransformation)
         {
             return to_aabb_2d(aVertices.begin(), aVertices.end(), aTransformation);
         }
 
         template <typename T>
-        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const std::vector<basic_vector<T, 3u>>& aVertices, const basic_matrix<T, 4u, 4u>& aTransformation = basic_matrix<T, 4u, 4u>::identity())
+        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const std::vector<basic_vector<T, 3u>>& aVertices)
+        {
+            auto const partialResult = to_aabb(aVertices.begin(), aVertices.end());
+            return basic_aabb_2d<basic_vector<T, 2u>>{ partialResult.min.xy, partialResult.max.xy };
+        }
+
+        template <typename T>
+        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const std::vector<basic_vector<T, 3u>>& aVertices, const basic_matrix<T, 4u, 4u>& aTransformation)
         {
             auto const partialResult = to_aabb(aVertices.begin(), aVertices.end(), aTransformation);
             return basic_aabb_2d<basic_vector<T, 2u>>{ partialResult.min.xy, partialResult.max.xy };
         }
 
         template <typename T, std::size_t Capacity, std::size_t MaxCapacity, typename Alloc>
-        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const small_vector<basic_vector<T, 2u>, Capacity, MaxCapacity, Alloc>& aVertices, const basic_matrix<T, 3u, 3u>& aTransformation = basic_matrix<T, 3u, 3u>::identity())
+        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const small_vector<basic_vector<T, 2u>, Capacity, MaxCapacity, Alloc>& aVertices)
+        {
+            return to_aabb_2d(aVertices.begin(), aVertices.end());
+        }
+
+        template <typename T, std::size_t Capacity, std::size_t MaxCapacity, typename Alloc>
+        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const small_vector<basic_vector<T, 2u>, Capacity, MaxCapacity, Alloc>& aVertices, const basic_matrix<T, 3u, 3u>& aTransformation)
         {
             return to_aabb_2d(aVertices.begin(), aVertices.end(), aTransformation);
         }
 
         template <typename T, std::size_t Capacity, std::size_t MaxCapacity, typename Alloc>
-        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const small_vector<basic_vector<T, 3u>, Capacity, MaxCapacity, Alloc>& aVertices, const basic_matrix<T, 4u, 4u>& aTransformation = basic_matrix<T, 4u, 4u>::identity())
+        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const small_vector<basic_vector<T, 3u>, Capacity, MaxCapacity, Alloc>& aVertices)
+        {
+            auto const partialResult = to_aabb(aVertices.begin(), aVertices.end());
+            return basic_aabb_2d<basic_vector<T, 2u>>{ partialResult.min.xy, partialResult.max.xy };
+        }
+
+        template <typename T, std::size_t Capacity, std::size_t MaxCapacity, typename Alloc>
+        inline basic_aabb_2d<basic_vector<T, 2u>> to_aabb_2d(const small_vector<basic_vector<T, 3u>, Capacity, MaxCapacity, Alloc>& aVertices, const basic_matrix<T, 4u, 4u>& aTransformation)
         {
             auto const partialResult = to_aabb(aVertices.begin(), aVertices.end(), aTransformation);
             return basic_aabb_2d<basic_vector<T, 2u>>{ partialResult.min.xy, partialResult.max.xy };
