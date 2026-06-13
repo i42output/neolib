@@ -61,7 +61,7 @@ namespace neolib
         virtual ~i_async_service() = default;
         // operations
     public:
-        virtual bool poll(bool aProcessEvents = true, std::size_t aMaximumPollCount = kDefaultPollCount) = 0;
+        virtual bool poll(bool aProcessEvents = true, std::optional<std::chrono::steady_clock::time_point> const& aDeadline = {}, std::size_t aMaximumPollCount = kDefaultPollCount) = 0;
         virtual void* native_object() = 0;
         // helpers
     public:

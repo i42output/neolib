@@ -51,9 +51,9 @@ namespace neolib::ecs
             iOwner.signal();
     }
 
-    bool thread::do_work(neolib::yield_type aYieldType)
+    bool thread::do_work(neolib::yield_type aYieldType, std::optional<std::chrono::steady_clock::time_point> const& aDeadline)
     {
-        bool didWork = async_task::do_work(aYieldType);
+        bool didWork = async_task::do_work(aYieldType, aDeadline);
         if (iOwner.can_apply())
             didWork = iOwner.apply() || didWork;
         if (iOwner.paused() && !iOwner.waiting())

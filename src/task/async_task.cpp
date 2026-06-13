@@ -59,7 +59,7 @@ namespace neolib
         ~io_context();
         // operations
     public:
-        bool poll(bool aProcessEvents = true, std::size_t aMaximumPollCount = kDefaultPollCount) override;
+        bool poll(bool aProcessEvents = true, std::optional<std::chrono::steady_clock::time_point> const& aDeadline = {}, std::size_t aMaximumPollCount = kDefaultPollCount) override;
         void* native_object() override;
         // attributes
     private:
@@ -83,9 +83,9 @@ namespace neolib
         iNativeIoService.stop();
     }
 
-    bool io_context::poll(bool aProcessEvents, std::size_t aMaximumPollCount)
+    bool io_context::poll(bool aProcessEvents, std::optional<std::chrono::steady_clock::time_point> const& aDeadline, std::size_t aMaximumPollCount)
     {
-        std::size_t iterationsLeft = aMaximumPollCount;
+        auto iterationsLeft = static_cast<std::int32_t>(aMaximumPollCount);
         bool didSome = false;
         iNativeIoService.restart();
         do
@@ -99,7 +99,7 @@ namespace neolib
             if (!didSomeThisIteration)
                 break;
             didSome = true;
-        } while (aMaximumPollCount != 0 && --iterationsLeft > 0);
+        } while ((aMaximumPollCount != 0u && --iterationsLeft > 0) || (aDeadline && std::chrono::steady_clock::now() < *aDeadline));
         return didSome;
     }
 
@@ -114,9 +114,9 @@ namespace neolib
     {
     }
 
-    bool timer_service::poll(bool aProcessEvents, std::size_t aMaximumPollCount)
+    bool timer_service::poll(bool aProcessEvents, std::optional<std::chrono::steady_clock::time_point> const& aDeadline, std::size_t aMaximumPollCount)
     {
-        std::size_t iterationsLeft = aMaximumPollCount;
+        auto iterationsLeft = static_cast<std::int32_t>(aMaximumPollCount);
         bool didSome = false;
         do
         {
@@ -155,7 +155,7 @@ namespace neolib
             if (!didSomeThisIteration)
                 break;
             didSome = true;
-        } while (aMaximumPollCount != 0 && iterationsLeft > 0);
+        } while ((aMaximumPollCount != 0u && --iterationsLeft > 0) || (aDeadline && std::chrono::steady_clock::now() < *aDeadline));
         return didSome;
     }
 
@@ -244,16 +244,16 @@ namespace neolib
         iIoServices[&aModuleServices].reset();
     }
 
-    bool async_task::do_work(yield_type aYieldIfNoWork)
+    bool async_task::do_work(yield_type aYieldIfNoWork, std::optional<std::chrono::steady_clock::time_point> const& aDeadline)
     {
         if (halted())
             return false;
         bool didSome = pump_events();
         didSome = (pump_messages() || didSome);
         if (iTimerService)
-            didSome = (iTimerService->poll() || didSome);
+            didSome = (iTimerService->poll(true, aDeadline) || didSome);
         for (auto& service : iIoServices)
-            didSome = (service.second->poll() || didSome);
+            didSome = (service.second->poll(true, aDeadline) || didSome);
         if (!didSome && aYieldIfNoWork != yield_type::NoYield)
         {
             if (aYieldIfNoWork == yield_type::Yield)
