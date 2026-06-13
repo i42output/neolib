@@ -122,6 +122,7 @@ namespace neolib
         {
             if (iTask.halted())
                 return didSome;
+
             bool didSomeThisIteration = false;
             if (aProcessEvents)
                 didSomeThisIteration = (iTask.pump_messages() || didSomeThisIteration);
@@ -150,10 +151,13 @@ namespace neolib
                         break;
                 }
             }
+
             lock.lock();
             workList.clear();
+
             if (!didSomeThisIteration)
                 break;
+
             didSome = true;
         } while ((aMaximumPollCount != 0u && --iterationsLeft > 0) || (aDeadline && std::chrono::steady_clock::now() < *aDeadline));
         return didSome;
@@ -250,7 +254,7 @@ namespace neolib
             return false;
         bool didSome = pump_events();
         didSome = (pump_messages() || didSome);
-        auto const timerDeadline = aDeadline ? 
+        auto const timerDeadline = aDeadline ?
             std::optional{ std::chrono::steady_clock::now() + ((*aDeadline - std::chrono::steady_clock::now()) / 2) } : std::nullopt;
         if (iTimerService)
             didSome = (iTimerService->poll(true, timerDeadline) || didSome);

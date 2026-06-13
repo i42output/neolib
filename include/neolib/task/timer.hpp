@@ -86,8 +86,9 @@ namespace neolib
         // implementation
     protected:
         void unsubscribe();
-    private:
+    protected:
         i_timer_object& timer_object();
+    private:
         void handler();
         virtual void ready() = 0;
         // attributes
@@ -111,15 +112,16 @@ namespace neolib
     class NEOLIB_EXPORT callback_timer : public timer
     {
     public:
-        callback_timer(i_async_task& aTask, std::function<void(callback_timer&)> aCallback, const duration_type& aDuration_s, bool aInitialWait = true);
-        callback_timer(i_async_task& aTask, const i_lifetime& aContext, std::function<void(callback_timer&)> aCallback, const duration_type& aDuration_s, bool aInitialWait = true);
+        callback_timer(i_async_task& aTask, std::function<void(callback_timer&)> aCallback, const duration_type& aDuration_s, bool aInitialWait = true, std::source_location const& aCallbackInfo = std::source_location::current());
+        callback_timer(i_async_task& aTask, const i_lifetime& aContext, std::function<void(callback_timer&)> aCallback, const duration_type& aDuration_s, bool aInitialWait = true, std::source_location const& aCallbackInfo = std::source_location::current());
         template <typename Context>
-        callback_timer(i_async_task& aTask, const Context& aContext, std::function<void(callback_timer&)> aCallback, const duration_type& aDuration_s, bool aInitialWait = true) :
-            callback_timer{ aTask, dynamic_cast<const i_lifetime&>(aContext), aCallback, aDuration_s, aInitialWait } {}
+        callback_timer(i_async_task& aTask, const Context& aContext, std::function<void(callback_timer&)> aCallback, const duration_type& aDuration_s, bool aInitialWait = true, std::source_location const& aCallbackInfo = std::source_location::current()) :
+            callback_timer{ aTask, dynamic_cast<const i_lifetime&>(aContext), aCallback, aDuration_s, aInitialWait, aCallbackInfo } {}
         ~callback_timer();
     private:
         virtual void ready();
     private:
         std::function<void(callback_timer&)> iCallback;
+        std::source_location iCallbackInfo;
     };
 }

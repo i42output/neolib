@@ -250,15 +250,17 @@ namespace neolib
         }
     }
 
-    callback_timer::callback_timer(i_async_task& aTask, std::function<void(callback_timer&)> aCallback, const duration_type& aDuration_s, bool aInitialWait) :
+    callback_timer::callback_timer(i_async_task& aTask, std::function<void(callback_timer&)> aCallback, const duration_type& aDuration_s, bool aInitialWait, std::source_location const& aCallbackInfo) :
         timer{ aTask, aDuration_s, aInitialWait },
-        iCallback{ aCallback }
+        iCallback{ aCallback },
+        iCallbackInfo{ aCallbackInfo }
     {
     }
 
-    callback_timer::callback_timer(i_async_task& aTask, const i_lifetime& aContext, std::function<void(callback_timer&)> aCallback, const duration_type& aDuration_s, bool aInitialWait) :
+    callback_timer::callback_timer(i_async_task& aTask, const i_lifetime& aContext, std::function<void(callback_timer&)> aCallback, const duration_type& aDuration_s, bool aInitialWait, std::source_location const& aCallbackInfo) :
         timer{ aTask, aContext, aDuration_s, aInitialWait },
-        iCallback{ aCallback }
+        iCallback{ aCallback },
+        iCallbackInfo{ aCallbackInfo }
     {
     }
 
