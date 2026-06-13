@@ -250,8 +250,10 @@ namespace neolib
             return false;
         bool didSome = pump_events();
         didSome = (pump_messages() || didSome);
+        auto const timerDeadline = aDeadline ? 
+            std::optional{ std::chrono::steady_clock::now() + ((*aDeadline - std::chrono::steady_clock::now()) / 2) } : std::nullopt;
         if (iTimerService)
-            didSome = (iTimerService->poll(true, aDeadline) || didSome);
+            didSome = (iTimerService->poll(true, timerDeadline) || didSome);
         for (auto& service : iIoServices)
             didSome = (service.second->poll(true, aDeadline) || didSome);
         if (!didSome && aYieldIfNoWork != yield_type::NoYield)
