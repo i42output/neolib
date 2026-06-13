@@ -146,7 +146,7 @@ namespace neolib
                 if (object.poll())
                 {
                     didSomeThisIteration = true;
-                    if (aMaximumPollCount != 0 && --iterationsLeft == 0)
+                    if ((aMaximumPollCount != 0u && --iterationsLeft <= 0) || (aDeadline && std::chrono::steady_clock::now() >= *aDeadline))
                         break;
                 }
             }
