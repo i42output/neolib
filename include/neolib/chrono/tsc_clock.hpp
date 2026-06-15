@@ -1,5 +1,5 @@
 // tsc_clock.hpp
-// *** AI (ChatGPT 5.2) GENERATED WITH MODIFICATIONS ***
+// *** AI (ChatGPT 5.2, Claude Opus 4.8) GENERATED WITH MODIFICATIONS ***
 /*
 Creative Commons Legal Code
 
@@ -138,18 +138,21 @@ express Statement of Purpose.
 #include <intrin.h>
 #elif defined(__GNUC__) || defined(__clang__)
 #include <x86intrin.h>
+#if defined(__i386__) || defined(__x86_64__)
+#include <cpuid.h> // __cpuid macro lives here, not in <x86intrin.h>
+#endif
 #endif
 
 #if defined(_WIN32)
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <windows.h>
 #else
 #include <pthread.h>
 #include <sched.h>
 #include <unistd.h>
 #endif
-
-#include <boost/fiber/detail/cpu_relax.hpp>
 
 #if !defined(__SIZEOF_INT128__) && !defined(_MSC_VER)
 // nothing
@@ -172,6 +175,26 @@ namespace neolib::chrono
 #define TSC_AVAILABLE 0
         constexpr bool kTscAvailable = false;
 #endif
+
+        // ------------------------ Spin hint -----------------------------------------
+        // Self-contained PAUSE/yield. Deliberately NOT named cpu_relax: Boost.Fiber's
+        // <boost/fiber/detail/cpu_relax.hpp> defines cpu_relax() as a function-like macro,
+        // which would rewrite this definition and every call site if that header is in the TU.
+
+        inline void spin_pause() noexcept
+        {
+#if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
+            _mm_pause();
+#elif defined(_MSC_VER) && (defined(_M_ARM) || defined(_M_ARM64))
+            __yield();
+#elif defined(__i386__) || defined(__x86_64__)
+            __builtin_ia32_pause();
+#elif defined(__aarch64__) || defined(__arm__)
+            __asm__ __volatile__("yield" ::: "memory");
+#else
+            std::this_thread::yield();
+#endif
+        }
 
         // ------------------------ Ordered TSC reads ---------------------------------
         // Prefer RDTSCP (partially serializing) for end read.
@@ -202,6 +225,31 @@ namespace neolib::chrono
 #endif
         }
 
+        // RDTSCP returns the counter AND IA32_TSC_AUX atomically. Reading aux here lets
+        // callers learn which logical CPU produced the timestamp without a separate query,
+        // closing the migration window between "which CPU am I on" and "read the TSC".
+        inline std::uint64_t rdtscp_end_aux(unsigned& aux) noexcept
+        {
+#if !TSC_AVAILABLE
+            aux = 0;
+            return 0;
+#else
+            return __rdtscp(&aux);
+#endif
+        }
+
+        // Cheapest read: plain RDTSC. Unlike RDTSCP it does not wait for prior loads/stores,
+        // so the sample may be taken slightly early relative to surrounding code under OOO
+        // execution -- fine for a timestamp, and it avoids the aux register entirely.
+        inline std::uint64_t rdtsc_now() noexcept
+        {
+#if !TSC_AVAILABLE
+            return 0;
+#else
+            return __rdtsc();
+#endif
+        }
+
         // ------------------------ CPUID invariant TSC --------------------------------
         // CPUID.80000007H:EDX[8] = Invariant TSC (when leaf exists)
 
@@ -222,31 +270,6 @@ namespace neolib::chrono
             if (eax < 0x80000007) return false;
             __cpuid(0x80000007, eax, ebx, ecx, edx);
             return (edx & (1u << 8)) != 0;
-#endif
-        }
-
-        // ------------------------ mul/div with good precision -----------------------
-        // Kept for calibration-time exact math only (not used in now()).
-
-        inline std::uint64_t mul_div_u64(std::uint64_t a, std::uint64_t b, std::uint64_t d) noexcept
-        {
-#if defined(__SIZEOF_INT128__)
-            __uint128_t prod = static_cast<__uint128_t>(a) * static_cast<__uint128_t>(b);
-            return static_cast<std::uint64_t>(prod / d);
-#elif defined(_MSC_VER) && defined(_M_X64)
-            // Exact 128-bit product using MSVC intrinsics
-            // prod = (hi<<64) | lo
-            std::uint64_t hi = 0;
-            std::uint64_t lo = _umul128(a, b, &hi);
-
-            // Exact unsigned 128 / 64 division (x64 only). Returns quotient; remainder optional.
-            std::uint64_t rem = 0;
-            return _udiv128(hi, lo, d, &rem);
-#else
-            // Portable exact fallback using Boost (works on MSVC x86 too)
-            using boost::multiprecision::uint128_t;
-            uint128_t prod = uint128_t(a) * uint128_t(b);
-            return static_cast<std::uint64_t>(prod / d);
 #endif
         }
 
@@ -414,8 +437,15 @@ namespace neolib::chrono
             int                       validation_rounds{ 64 };            // more rounds => better confidence
             std::chrono::nanoseconds  max_allowed_skew{ std::chrono::microseconds(5) }; // if worse, fall back
             bool                      enable_per_cpu_offsets{ true };     // makes cross-thread comparisons stronger
+            std::chrono::nanoseconds  offset_apply_threshold{ std::chrono::nanoseconds(100) }; // don't pay the per-call correction cost unless measured offsets exceed this
         };
 
+        // Calibration is expensive and largely one-off: it spends ~calibration_window
+        // (default 200 ms) measuring the TSC/steady ratio, then runs a multi-threaded
+        // validation pass (~50 ms lead-in + validation_rounds * 200 us, plus spawning
+        // one thread per logical CPU). It is STRONGLY recommended to call init() once
+        // explicitly at start-up; otherwise the very first now() pays this whole cost
+        // lazily (and serialises any other thread that calls now() concurrently).
         static void init(options opt = {}) noexcept
         {
             (void)calibrate_once(opt);
@@ -436,26 +466,36 @@ namespace neolib::chrono
                 return time_point(duration(static_cast<rep>(ns)));
             }
 
-            const std::uint64_t t = detail::rdtscp_end();
-
+            unsigned aux = 0;
             const std::uint64_t base_tsc = sBase_tsc;
             const std::uint64_t base_ns = sBase_ns;
             const std::uint64_t mul = sNsPerTickMul;
             const unsigned      shift = sNsPerTickShift;
 
+            // Fast path: when no per-CPU correction is in effect, a plain RDTSC (cheaper than
+            // RDTSCP, and no per-call CPU query) plus the fixed-point scale is all we need.
+            if (!sPerCpuEnabled)
+            {
+                const std::uint64_t t = detail::rdtsc_now();
+                const std::uint64_t dticks = (t >= base_tsc) ? (t - base_tsc) : 0;
+                const std::uint64_t ns = base_ns + detail::scale_ticks_to_ns(dticks, mul, shift);
+                return time_point(duration(static_cast<rep>(ns)));
+            }
+
+            // Correction path: we need the CPU that produced this timestamp, so use RDTSCP to
+            // read the counter and IA32_TSC_AUX atomically (see current_cpu_index_dense()).
+            const std::uint64_t t = detail::rdtscp_end_aux(aux);
+
             const std::uint64_t dticks = (t >= base_tsc) ? (t - base_tsc) : 0;
             const std::uint64_t dns = detail::scale_ticks_to_ns(dticks, mul, shift);
             std::uint64_t ns = base_ns + dns;
 
-            if (sPerCpuEnabled)
+            const int cpu = current_cpu_index_dense(aux);
+            const std::uint32_t n = sOffsetsCount;
+            if (cpu >= 0 && static_cast<std::uint32_t>(cpu) < n)
             {
-                const int cpu = current_cpu_index_dense();
-                const std::uint32_t n = sOffsetsCount;
-                if (cpu >= 0 && static_cast<std::uint32_t>(cpu) < n)
-                {
-                    const std::int64_t corr = sOffsets_ns[static_cast<std::uint32_t>(cpu)];
-                    ns = static_cast<std::uint64_t>(static_cast<std::int64_t>(ns) + corr);
-                }
+                const std::int64_t corr = sOffsets_ns[static_cast<std::uint32_t>(cpu)];
+                ns = static_cast<std::uint64_t>(static_cast<std::int64_t>(ns) + corr);
             }
 
             return time_point(duration(static_cast<rep>(ns)));
@@ -463,27 +503,48 @@ namespace neolib::chrono
 
     private:
         // Current CPU index (dense [0..cpu_count-1]) for indexing offset arrays.
-        static int current_cpu_index_dense() noexcept
+        //
+        // Linux: the kernel programs IA32_TSC_AUX = (node << 12) | (cpu & 0xfff), so the
+        // dense cpu index falls straight out of the aux value returned by the same RDTSCP
+        // that produced the timestamp -- no extra query and no migration window.
+        //
+        // Windows: the IA32_TSC_AUX encoding is not a documented stable ABI, so decode the
+        // current processor freshly here. This is read on every now() (it must reflect the
+        // calling thread's CPU, not the calibrating thread's), and is a cheap user-mode read.
+        static int current_cpu_index_dense(unsigned aux) noexcept
         {
 #if defined(_WIN32)
+            (void)aux;
+            PROCESSOR_NUMBER pn{};
+            GetCurrentProcessorNumberEx(&pn);
+
             const int groups = sGroupCount;
-            const int g = static_cast<int>(sProcessorNumber.Group);
+            const int g = static_cast<int>(pn.Group);
             if (g < 0 || g >= groups)
                 return -1;
 
-            const int base = sGroupBase[g];
-            return base + static_cast<int>(sProcessorNumber.Number);
+            return sGroupBase[g] + static_cast<int>(pn.Number);
 #else
-            int c = ::sched_getcpu();
-            return (c >= 0) ? c : -1;
+            return static_cast<int>(aux & 0xfffu);
 #endif
+        }
+
+        // Sample a (TSC, steady) anchor with the steady read bracketed between two TSC
+        // reads, taking the TSC midpoint. This keeps the two clock domains near-simultaneous
+        // at the anchor, instead of biasing by one steady-read latency.
+        static void sample_anchor(std::uint64_t& tsc_out, std::uint64_t& ns_out) noexcept
+        {
+            const std::uint64_t a = detail::rdtsc_begin_ordered();
+            const auto s = steady_clock::now();
+            const std::uint64_t b = detail::rdtscp_end();
+            tsc_out = a + (b - a) / 2; // midpoint, overflow-safe
+            ns_out = static_cast<std::uint64_t>(
+                std::chrono::duration_cast<std::chrono::nanoseconds>(s.time_since_epoch()).count());
         }
 
 #if defined(_WIN32)
         static void precompute_group_bases() noexcept
         {
-            GetCurrentProcessorNumberEx(&sProcessorNumber);
-
             const WORD groupsW = GetActiveProcessorGroupCount();
             const int groups = (groupsW <= kMaxProcessorGroups) ? static_cast<int>(groupsW) : kMaxProcessorGroups;
 
@@ -507,7 +568,7 @@ namespace neolib::chrono
             {
                 while (!sReady.load(std::memory_order_acquire))
                 {
-                    cpu_relax();
+                    detail::spin_pause();
                 }
                 return sUseTsc.load(std::memory_order_relaxed);
             }
@@ -538,19 +599,21 @@ namespace neolib::chrono
             for (int i = 0; i < 2000; ++i)
                 (void)__rdtsc();
 
-            // 1) Global calibration vs chrono steady_clock clock
-            const auto s0 = steady_clock::now();
-            const std::uint64_t c0 = detail::rdtsc_begin_ordered();
+            // 1) Global calibration vs chrono steady_clock clock.
+            //    Each anchor is a bracketed (TSC, steady) pair so c0/ns0 and c1/ns1 are
+            //    each near-simultaneous; dt_ns and dc therefore span the same interval.
+            std::uint64_t c0 = 0, ns0 = 0, c1 = 0, ns1 = 0;
+            sample_anchor(c0, ns0);
 
-            while (steady_clock::now() - s0 < opt.calibration_window)
+            const auto window_start = steady_clock::now();
+            while (steady_clock::now() - window_start < opt.calibration_window)
             {
-                cpu_relax();
+                detail::spin_pause();
             }
 
-            const std::uint64_t c1 = detail::rdtscp_end();
-            const auto s1 = steady_clock::now();
+            sample_anchor(c1, ns1);
 
-            const auto dt_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(s1 - s0).count();
+            const std::int64_t dt_ns = static_cast<std::int64_t>(ns1) - static_cast<std::int64_t>(ns0);
             const std::uint64_t dc = (c1 >= c0) ? (c1 - c0) : 0;
 
             if (dt_ns <= 0 || dc == 0)
@@ -562,8 +625,7 @@ namespace neolib::chrono
 
             // Anchor epoch mapping at end of calibration window
             const std::uint64_t base_tsc = c1;
-            const std::uint64_t base_ns = static_cast<std::uint64_t>(
-                std::chrono::duration_cast<std::chrono::nanoseconds>(s1.time_since_epoch()).count());
+            const std::uint64_t base_ns = ns1;
 
             sBase_tsc = base_tsc;
             sBase_ns = base_ns;
@@ -601,155 +663,222 @@ namespace neolib::chrono
             sNsPerTickMul = mul;
             sNsPerTickShift = SHIFT;
 
-            // 2) Cross-thread/cross-core validation + optional per-CPU offsets
-            std::vector<detail::CpuHandle> cpus;
-            if (!detail::enumerate_cpus(cpus) || cpus.size() < 1 || cpus.size() > kMaxCpus)
+            // 2) Cross-thread/cross-core validation + optional per-CPU offsets.
+            //    This section allocates and spawns threads, both of which can throw; the
+            //    whole thing is wrapped so calibrate_once stays noexcept and a failure here
+            //    degrades cleanly to steady_clock rather than terminating the process.
+            try
             {
-                // Can't enumerate CPUs => still allow TSC mode, but without validation this is risky.
-                // You asked for validation support, so if enumeration fails we fall back.
-                sReady.store(true, std::memory_order_release);
-                sCalibrating.store(false, std::memory_order_release);
-                return false;
-            }
+                std::vector<detail::CpuHandle> cpus;
+                if (!detail::enumerate_cpus(cpus) || cpus.empty() || cpus.size() > kMaxCpus)
+                {
+                    // Can't enumerate CPUs => without validation, TSC mode is risky, so fall back.
+                    sReady.store(true, std::memory_order_release);
+                    sCalibrating.store(false, std::memory_order_release);
+                    return false;
+                }
 
-            const int ncpu = static_cast<int>(cpus.size());
-            const int rounds = (opt.validation_rounds > 0 ? opt.validation_rounds : 1);
+                const int ncpu = static_cast<int>(cpus.size());
+                const int rounds = (opt.validation_rounds > 0 ? opt.validation_rounds : 1);
 
-            std::barrier sync_point{ ncpu };
+                std::barrier sync_point{ ncpu };
 
-            struct Sample { std::uint64_t tsc = 0; std::int64_t steady_ns = 0; };
-            std::vector<Sample> samples(static_cast<std::size_t>(ncpu) * static_cast<std::size_t>(rounds));
-            std::atomic<bool> ok{ true };
+                // Launch protocol: workers only touch the barrier once every worker has been
+                // spawned (launch=true). If thread creation fails part-way, we set abort and
+                // the already-spawned workers return WITHOUT entering the barrier -- otherwise a
+                // barrier sized for ncpu would deadlock the join with fewer participants.
+                std::atomic<bool> launch{ false };
+                std::atomic<bool> abort_workers{ false };
 
-            // Worker per CPU: pin, then barrier-aligned rdtscp
-            std::vector<std::thread> threads;
-            threads.reserve(static_cast<std::size_t>(ncpu));
-            for (int i = 0; i < ncpu; ++i)
-            {
-                threads.emplace_back([&, i]
+                struct Sample { std::uint64_t tsc = 0; std::int64_t steady_ns = 0; };
+                std::vector<Sample> samples(static_cast<std::size_t>(ncpu) * static_cast<std::size_t>(rounds));
+                std::atomic<bool> ok{ true };
+
+                std::vector<std::thread> threads;
+                threads.reserve(static_cast<std::size_t>(ncpu));
+
+                auto join_all = [&threads]() noexcept
                     {
-                        detail::PrevAffinity prev{};
-                        if (!detail::pin_this_thread(cpus[static_cast<std::size_t>(i)], prev))
-                        {
-                            sync_point.arrive_and_drop();
-                            ok.store(false, std::memory_order_relaxed);
-                            return;
-                        }
+                        for (auto& th : threads)
+                            if (th.joinable())
+                                th.join();
+                    };
 
-                        // All workers start rounds on the same steady_clock schedule.
-                        // Using a modest lead-in helps everyone reach the first target.
-                        constexpr auto kLeadIn = std::chrono::milliseconds(50);
-                        constexpr auto kPeriod = std::chrono::microseconds(200); // tune: larger => less jitter, slower validation
+                // Worker per CPU: wait for launch, pin, then barrier-aligned rdtscp.
+                try
+                {
+                    for (int i = 0; i < ncpu; ++i)
+                    {
+                        threads.emplace_back([&, i]
+                            {
+                                while (!launch.load(std::memory_order_acquire))
+                                {
+                                    if (abort_workers.load(std::memory_order_acquire))
+                                        return; // spawn failed elsewhere; never touch the barrier
+                                    detail::spin_pause();
+                                }
 
-                        sync_point.arrive_and_wait();
+                                detail::PrevAffinity prev{};
+                                if (!detail::pin_this_thread(cpus[static_cast<std::size_t>(i)], prev))
+                                {
+                                    ok.store(false, std::memory_order_relaxed);
+                                    sync_point.arrive_and_drop();
+                                    return;
+                                }
 
-                        const auto start_tp = steady_clock::now() + kLeadIn;
+                                // All workers start rounds on the same steady_clock schedule.
+                                // A modest lead-in helps everyone reach the first target.
+                                constexpr auto kLeadIn = std::chrono::milliseconds(50);
+                                constexpr auto kPeriod = std::chrono::microseconds(200); // larger => less jitter, slower
 
-                        for (int r = 0; r < rounds; ++r)
-                        {
-                            const auto target = start_tp + kPeriod * r;
+                                sync_point.arrive_and_wait();
 
-                            // Busy-wait until target time (avoid sleep jitter)
-                            while (steady_clock::now() < target)
-                                cpu_relax();
+                                const auto start_tp = steady_clock::now() + kLeadIn;
 
-                            // Take paired sample: TSC and steady_clock time near-simultaneously
-                            const std::uint64_t tsc = detail::rdtscp_end();
-                            const auto st = steady_clock::now();
+                                for (int r = 0; r < rounds; ++r)
+                                {
+                                    const auto target = start_tp + kPeriod * r;
 
-                            const std::int64_t st_ns =
-                                std::chrono::duration_cast<std::chrono::nanoseconds>(st.time_since_epoch()).count();
+                                    // Busy-wait until target time (avoid sleep jitter)
+                                    while (steady_clock::now() < target)
+                                        detail::spin_pause();
 
-                            samples[static_cast<std::size_t>(r) * static_cast<std::size_t>(ncpu) + static_cast<std::size_t>(i)] =
-                                Sample{ tsc, st_ns };
-                        }
+                                    // Take paired sample: TSC and steady_clock time near-simultaneously
+                                    const std::uint64_t tsc = detail::rdtscp_end();
+                                    const auto st = steady_clock::now();
 
-                        detail::restore_affinity(prev);
-                    });
+                                    const std::int64_t st_ns =
+                                        std::chrono::duration_cast<std::chrono::nanoseconds>(st.time_since_epoch()).count();
+
+                                    samples[static_cast<std::size_t>(r) * static_cast<std::size_t>(ncpu) + static_cast<std::size_t>(i)] =
+                                        Sample{ tsc, st_ns };
+                                }
+
+                                detail::restore_affinity(prev);
+                            });
+                    }
+                }
+                catch (...)
+                {
+                    // Could not spawn the full set. Release the spawned workers (they exit
+                    // before the barrier), join them, then propagate to the outer handler.
+                    abort_workers.store(true, std::memory_order_release);
+                    join_all();
+                    throw;
+                }
+
+                // Full set spawned: release everyone into the barrier-aligned measurement.
+                launch.store(true, std::memory_order_release);
+                join_all();
+
+                if (!ok.load(std::memory_order_relaxed))
+                {
+                    sReady.store(true, std::memory_order_release);
+                    sCalibrating.store(false, std::memory_order_release);
+                    return false;
+                }
+
+                // Capture mul/shift locally for validation to avoid atomic loads in the lambda.
+                const std::uint64_t mul_local = mul;
+                const unsigned      shift_local = SHIFT;
+
+                auto tsc_to_ns_i64 = [&](std::uint64_t t) -> std::int64_t
+                    {
+                        const std::uint64_t dticks = (t >= base_tsc) ? (t - base_tsc) : 0;
+                        const std::uint64_t dns = detail::scale_ticks_to_ns(dticks, mul_local, shift_local);
+                        const std::uint64_t ns = base_ns + dns;
+                        return static_cast<std::int64_t>(ns);
+                    };
+
+                // Compute skew stats relative to CPU 0 samples
+                std::int64_t max_abs_skew = 0;
+                std::vector<std::int64_t> avg_skew(static_cast<std::size_t>(ncpu), 0);
+                std::vector<std::int64_t> count(static_cast<std::size_t>(ncpu), 0);
+
+                for (int r = 0; r < rounds; ++r)
+                {
+                    const auto& refS = samples[static_cast<std::size_t>(r) * static_cast<std::size_t>(ncpu) + 0];
+                    const std::int64_t ref_tsc_ns = tsc_to_ns_i64(refS.tsc);
+                    const std::int64_t ref_err = ref_tsc_ns - refS.steady_ns; // TSC vs steady error on CPU0
+
+                    for (int i = 0; i < ncpu; ++i)
+                    {
+                        const auto& S = samples[static_cast<std::size_t>(r) * static_cast<std::size_t>(ncpu) + static_cast<std::size_t>(i)];
+                        const std::int64_t tsc_ns = tsc_to_ns_i64(S.tsc);
+                        const std::int64_t err = tsc_ns - S.steady_ns;         // TSC vs steady error on CPU i
+
+                        // Compare errors => cancels out "what time did this actually happen" (mostly),
+                        // leaving cross-core mapping differences.
+                        const std::int64_t skew = err - ref_err;
+
+                        avg_skew[static_cast<std::size_t>(i)] += skew;
+                        count[static_cast<std::size_t>(i)] += 1;
+
+                        const std::int64_t abs_skew = (skew < 0) ? -skew : skew;
+                        if (abs_skew > max_abs_skew)
+                            max_abs_skew = abs_skew;
+                    }
+                }
+
+                if (max_abs_skew > static_cast<std::int64_t>(opt.max_allowed_skew.count()))
+                {
+                    // Too much inter-core skew => do not use TSC clock.
+                    sReady.store(true, std::memory_order_release);
+                    sCalibrating.store(false, std::memory_order_release);
+                    return false;
+                }
+
+                // Optional per-CPU offsets:
+                // correction[i] = -(mean skew[i]) so corrected_ns = raw_ns + correction aligns to CPU 0.
+                if (opt.enable_per_cpu_offsets)
+                {
+                    std::int64_t max_abs_offset = 0;
+                    for (int i = 0; i < ncpu; ++i)
+                    {
+                        const std::int64_t mean = avg_skew[static_cast<std::size_t>(i)] / count[static_cast<std::size_t>(i)];
+                        sOffsets_ns[static_cast<std::uint32_t>(i)] = -mean;
+
+                        const std::int64_t a = (mean < 0) ? -mean : mean;
+                        if (a > max_abs_offset)
+                            max_abs_offset = a;
+                    }
+
+                    // Only commit to the correction path (RDTSCP + per-call CPU query) if the
+                    // offsets are large enough to be worth it. On a well-synchronised
+                    // invariant-TSC system they are usually noise, so we stay on the cheaper
+                    // RDTSC fast path and skip the lookup entirely.
+                    if (max_abs_offset >= static_cast<std::int64_t>(opt.offset_apply_threshold.count()))
+                    {
+                        sOffsetsCount = static_cast<std::uint32_t>(ncpu);
+                        sPerCpuEnabled = true;
+                    }
+                }
+
+                // Enable TSC mode
+                sUseTsc.store(true, std::memory_order_relaxed);
+
+                sReady.store(true, std::memory_order_release);
+                sCalibrating.store(false, std::memory_order_release);
+                return true;
             }
-
-            for (auto& th : threads)
-                th.join();
-
-            if (!ok.load(std::memory_order_relaxed))
+            catch (...)
             {
+                // Allocation or thread-creation failure during validation: degrade to steady_clock.
+                sUseTsc.store(false, std::memory_order_relaxed);
+                sPerCpuEnabled = false;
+                sOffsetsCount = 0;
                 sReady.store(true, std::memory_order_release);
                 sCalibrating.store(false, std::memory_order_release);
                 return false;
             }
-
-            // Capture mul/shift locally for validation to avoid atomic loads in the lambda.
-            const std::uint64_t mul_local = mul;
-            const unsigned      shift_local = SHIFT;
-
-            auto tsc_to_ns_i64 = [&](std::uint64_t t) -> std::int64_t
-                {
-                    const std::uint64_t dticks = (t >= base_tsc) ? (t - base_tsc) : 0;
-                    const std::uint64_t dns = detail::scale_ticks_to_ns(dticks, mul_local, shift_local);
-                    const std::uint64_t ns = base_ns + dns;
-                    return static_cast<std::int64_t>(ns);
-                };
-
-            // Compute skew stats relative to CPU 0 samples
-            std::int64_t max_abs_skew = 0;
-            std::vector<std::int64_t> avg_skew(static_cast<std::size_t>(ncpu), 0);
-            std::vector<std::int64_t> count(static_cast<std::size_t>(ncpu), 0);
-
-            for (int r = 0; r < rounds; ++r)
-            {
-                const auto& refS = samples[static_cast<std::size_t>(r) * static_cast<std::size_t>(ncpu) + 0];
-                const std::int64_t ref_tsc_ns = tsc_to_ns_i64(refS.tsc);
-                const std::int64_t ref_err = ref_tsc_ns - refS.steady_ns; // TSC vs steady error on CPU0
-
-                for (int i = 0; i < ncpu; ++i)
-                {
-                    const auto& S = samples[static_cast<std::size_t>(r) * static_cast<std::size_t>(ncpu) + static_cast<std::size_t>(i)];
-                    const std::int64_t tsc_ns = tsc_to_ns_i64(S.tsc);
-                    const std::int64_t err = tsc_ns - S.steady_ns;         // TSC vs steady error on CPU i
-
-                    // Compare errors => cancels out "what time did this actually happen" (mostly),
-                    // leaving cross-core mapping differences.
-                    const std::int64_t skew = err - ref_err;
-
-                    avg_skew[static_cast<std::size_t>(i)] += skew;
-                    count[static_cast<std::size_t>(i)] += 1;
-
-                    const std::int64_t abs_skew = (skew < 0) ? -skew : skew;
-                    if (abs_skew > max_abs_skew)
-                        max_abs_skew = abs_skew;
-                }
-            }
-
-            if (max_abs_skew > static_cast<std::int64_t>(opt.max_allowed_skew.count()))
-            {
-                // Too much inter-core skew => do not use TSC clock.
-                sReady.store(true, std::memory_order_release);
-                sCalibrating.store(false, std::memory_order_release);
-                return false;
-            }
-
-            // Optional per-CPU offsets:
-            // correction[i] = -(mean skew[i]) so corrected_ns = raw_ns + correction aligns to CPU 0.
-            if (opt.enable_per_cpu_offsets)
-            {
-                for (int i = 0; i < ncpu; ++i)
-                {
-                    const std::int64_t mean = avg_skew[static_cast<std::size_t>(i)] / count[static_cast<std::size_t>(i)];
-                    sOffsets_ns[static_cast<std::uint32_t>(i)] = -mean;
-                }
-                sOffsetsCount = static_cast<std::uint32_t>(ncpu);
-                sPerCpuEnabled = true;
-            }
-
-            // Enable TSC mode
-            sUseTsc.store(true, std::memory_order_relaxed);
-
-            sReady.store(true, std::memory_order_release);
-            sCalibrating.store(false, std::memory_order_release);
-            return true;
         }
 
-        // Shared state
+        // Shared state.
+        //
+        // Publication is via sReady: calibrate_once writes every scalar below (plain, not
+        // atomic) and then performs a release store to sReady; now() performs an acquire
+        // load of sReady before reading any of them. The acquire/release pair establishes
+        // happens-before, so plain reads in now() observe the calibrated values.
         static inline std::atomic<bool>     sReady{ false };
         static inline std::atomic<bool>     sCalibrating{ false };
         static inline std::atomic<bool>     sUseTsc{ false };
@@ -768,10 +897,10 @@ namespace neolib::chrono
         static inline std::int64_t  sOffsets_ns[kMaxCpus]{};
 
 #if defined(_WIN32)
-        // Precomputed mapping: dense_index = group_base[group] + processor_number
-        // Use atomics because readers may not synchronize via sReady on every call to now().
+        // Precomputed mapping: dense_index = group_base[group] + processor_number.
+        // The processor *number* itself is read freshly per now() via GetCurrentProcessorNumberEx;
+        // only the per-group base offsets are cached here (fixed for process lifetime).
         static constexpr int kMaxProcessorGroups = 64; // Windows supports up to 64 groups.
-        static inline PROCESSOR_NUMBER sProcessorNumber{};
         static inline int sGroupCount{ 0 };
         static inline int sGroupBase[kMaxProcessorGroups]{};
 #endif
