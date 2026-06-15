@@ -31,7 +31,14 @@ int main()
     auto fcEnd = std::chrono::high_resolution_clock::now();
 
     std::cout << n << std::endl;
-    std::cout << "steady_clock: " << std::chrono::duration_cast<std::chrono::microseconds>(scEnd - scStart).count() << std::endl;
-    std::cout << "high_resolution_clock: " << std::chrono::duration_cast<std::chrono::microseconds>(hrcEnd - hrcStart).count() << std::endl;
-    std::cout << "fast_clock: " << std::chrono::duration_cast<std::chrono::microseconds>(fcEnd - fcStart).count() << std::endl;
+    std::cout << "steady_clock(1): " << std::chrono::duration_cast<std::chrono::microseconds>(scEnd - scStart).count() << std::endl;
+    std::cout << "high_resolution_clock(1): " << std::chrono::duration_cast<std::chrono::microseconds>(hrcEnd - hrcStart).count() << std::endl;
+    std::cout << "fast_clock(1): " << std::chrono::duration_cast<std::chrono::microseconds>(fcEnd - fcStart).count() << std::endl;
+
+    auto t0 = std::make_pair(std::chrono::high_resolution_clock::now(), neolib::chrono::fast_clock::now());
+    std::this_thread::sleep_for(std::chrono::milliseconds{ 5000 });
+    auto t1 = std::make_pair(std::chrono::high_resolution_clock::now(), neolib::chrono::fast_clock::now());
+
+    std::cout << "high_resolution_clock(2): " << std::chrono::duration_cast<std::chrono::milliseconds>(t1.first - t0.first) << std::endl;
+    std::cout << "fast_clock(2): " << std::chrono::duration_cast<std::chrono::milliseconds>(t1.second - t0.second) << std::endl;
 }
