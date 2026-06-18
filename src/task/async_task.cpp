@@ -94,8 +94,8 @@ namespace neolib
                 return aMaximumPollCount != 0u && --iterationsLeft <= 0;
             };
 
-        static int monolith = 42;
-        scoped_time_slice_task stst{ &monolith };
+        static time_slice_task monolith = {};
+        scoped_time_slice_task stst{ monolith };
 
         iNativeIoService.restart();
         do
@@ -139,8 +139,8 @@ namespace neolib
                 return aMaximumPollCount != 0u && --iterationsLeft <= 0;
             };
 
-        static int monolith = 42;
-        scoped_time_slice_task stst{ &monolith };
+        static time_slice_task monolith = {};
+        scoped_time_slice_task stst{ monolith };
             
         do
         {
@@ -361,8 +361,8 @@ namespace neolib
     {
         bool didSome = false;
 
-        static int monolith = 42;
-        scoped_time_slice_task stst{ &monolith };
+        static time_slice_task monolith = {};
+        scoped_time_slice_task stst{ monolith };
 
         {
             std::scoped_lock lock{ iMutex };
@@ -381,8 +381,8 @@ namespace neolib
     {
         bool didWork = false;
 
-        static int monolith = 42;
-        scoped_time_slice_task stst{ &monolith };
+        static time_slice_task monolith = {};
+        scoped_time_slice_task stst{ monolith };
 
         while (have_messages())
         {

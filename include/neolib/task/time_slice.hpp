@@ -40,6 +40,8 @@
 
 namespace neolib
 {
+    enum class time_slice_task {};
+
     class i_time_slice : public i_service
     {
     public:
@@ -48,7 +50,7 @@ namespace neolib
         virtual void push(std::chrono::microseconds const& aDuration) = 0;
         virtual void pop() = 0;
     public:
-        virtual void enter(void const* aTask) = 0;
+        virtual void enter(time_slice_task& aTask) = 0;
         virtual void leave() = 0;
     public:
         virtual void split(std::size_t aSlices) = 0;
@@ -75,7 +77,7 @@ namespace neolib
         {
             std::chrono::microseconds duration = {};
             std::optional<std::size_t> splitCount;
-            std::unordered_map<void const*, task> tasks;
+            std::unordered_map<time_slice_task*, task> tasks;
         };
     public:
         bool active() const final
@@ -94,7 +96,7 @@ namespace neolib
             iSlices.pop_back();
         }
     public:
-        void enter(void const* aTask) final
+        void enter(time_slice_task& aTask) final
         {
             if (!active())
                 return;
@@ -103,8 +105,8 @@ namespace neolib
                 current_task().slice += (std::chrono::steady_clock::now() - current_task().entered.value());
                 current_task().entered = std::nullopt;
             }
-            iTasks.push_back(aTask);
-            current_slice().tasks[aTask];
+            iTasks.push_back(&aTask);
+            current_slice().tasks[&aTask];
             current_task().entered = std::chrono::steady_clock::now();
         }
         void leave() final
@@ -149,7 +151,7 @@ namespace neolib
         }
     private:
         std::vector<std::unique_ptr<slice>> iSlices;
-        std::vector<void const*> iTasks;
+        std::vector<time_slice_task*> iTasks;
     };
 
     class scoped_time_slice
@@ -169,7 +171,7 @@ namespace neolib
     class scoped_time_slice_task
     {
     public:
-        explicit scoped_time_slice_task(void const* aTask)
+        explicit scoped_time_slice_task(time_slice_task& aTask)
         {
             service<i_time_slice>().enter(aTask);
         }
