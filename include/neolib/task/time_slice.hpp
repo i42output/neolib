@@ -166,6 +166,10 @@ namespace neolib
         {
             service<i_time_slice>().pop();
         }
+        scoped_time_slice(scoped_time_slice const&) = delete;
+        scoped_time_slice& operator=(scoped_time_slice const&) = delete;
+        scoped_time_slice(scoped_time_slice&&) = delete;
+        scoped_time_slice& operator=(scoped_time_slice&&) = delete;
     };
 
     template <typename UniqueTag = void>
@@ -186,5 +190,9 @@ namespace neolib
         {
             service<i_time_slice>().leave();
         }
+        scoped_time_slice_task(scoped_time_slice_task const&) = delete;
+        scoped_time_slice_task& operator=(scoped_time_slice_task const&) = delete;
+        scoped_time_slice_task(scoped_time_slice_task&&) = delete;
+        scoped_time_slice_task& operator=(scoped_time_slice_task&&) = delete;
     };
 }
