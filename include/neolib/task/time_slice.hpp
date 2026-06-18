@@ -168,15 +168,19 @@ namespace neolib
         }
     };
 
-    template <typename UniqueTag>
+    template <typename UniqueTag = void>
     class scoped_time_slice_task
     {
-        static_assert(std::is_enum_v<UniqueTag> || std::is_class_v<UniqueTag>, "Tag must be an enum or a class");
     public:
         scoped_time_slice_task()
         {
+            static_assert(std::is_enum_v<UniqueTag> || std::is_class_v<UniqueTag>, "Tag must be an enum or a class");
             static time_slice_task sTask = {};
             service<i_time_slice>().enter(sTask);
+        }
+        scoped_time_slice_task(time_slice_task& aTask)
+        {
+            service<i_time_slice>().enter(aTask);
         }
         ~scoped_time_slice_task()
         {
