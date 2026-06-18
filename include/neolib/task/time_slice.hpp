@@ -178,7 +178,7 @@ namespace neolib
             static time_slice_task sTask = {};
             service<i_time_slice>().enter(sTask);
         }
-        scoped_time_slice_task(time_slice_task& aTask)
+        explicit scoped_time_slice_task(time_slice_task& aTask)
         {
             service<i_time_slice>().enter(aTask);
         }
