@@ -171,6 +171,7 @@ namespace neolib
     template <typename UniqueTag>
     class scoped_time_slice_task
     {
+        static_assert(std::is_enum_v<UniqueTag> || std::is_class_v<UniqueTag>, "Tag must be an enum or a class");
     public:
         explicit scoped_time_slice_task()
         {

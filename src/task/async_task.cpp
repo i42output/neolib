@@ -50,7 +50,7 @@
 namespace neolib
 {
     enum class task_io_context {};
-    enum class task_time_serivce {};
+    enum class task_time_service {};
     enum class task_event_pump {};
     enum class task_message_pump {};
 
@@ -143,7 +143,7 @@ namespace neolib
                 return aMaximumPollCount != 0u && --iterationsLeft <= 0;
             };
 
-        scoped_time_slice_task<task_time_serivce> stst;
+        scoped_time_slice_task<task_time_service> stst;
             
         do
         {
