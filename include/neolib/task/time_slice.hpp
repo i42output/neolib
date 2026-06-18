@@ -173,7 +173,7 @@ namespace neolib
     {
         static_assert(std::is_enum_v<UniqueTag> || std::is_class_v<UniqueTag>, "Tag must be an enum or a class");
     public:
-        explicit scoped_time_slice_task()
+        scoped_time_slice_task()
         {
             static time_slice_task sTask = {};
             service<i_time_slice>().enter(sTask);
