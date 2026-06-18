@@ -49,6 +49,11 @@
 
 namespace neolib
 {
+    enum class task_io_context {};
+    enum class task_time_serivce {};
+    enum class task_event_pump {};
+    enum class task_message_pump {};
+
     class NEOLIB_EXPORT io_context : public reference_counted<i_async_service>
     {
         // types
@@ -94,8 +99,7 @@ namespace neolib
                 return aMaximumPollCount != 0u && --iterationsLeft <= 0;
             };
 
-        static time_slice_task monolith = {};
-        scoped_time_slice_task stst{ monolith };
+        scoped_time_slice_task<task_io_context> stst;
 
         iNativeIoService.restart();
         do
@@ -139,8 +143,7 @@ namespace neolib
                 return aMaximumPollCount != 0u && --iterationsLeft <= 0;
             };
 
-        static time_slice_task monolith = {};
-        scoped_time_slice_task stst{ monolith };
+        scoped_time_slice_task<task_time_serivce> stst;
             
         do
         {
@@ -361,8 +364,7 @@ namespace neolib
     {
         bool didSome = false;
 
-        static time_slice_task monolith = {};
-        scoped_time_slice_task stst{ monolith };
+        scoped_time_slice_task<task_event_pump> stst;
 
         {
             std::scoped_lock lock{ iMutex };
@@ -381,8 +383,7 @@ namespace neolib
     {
         bool didWork = false;
 
-        static time_slice_task monolith = {};
-        scoped_time_slice_task stst{ monolith };
+        scoped_time_slice_task<task_message_pump> stst;
 
         while (have_messages())
         {

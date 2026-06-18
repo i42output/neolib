@@ -168,12 +168,14 @@ namespace neolib
         }
     };
 
+    template <typename UniqueTag>
     class scoped_time_slice_task
     {
     public:
-        explicit scoped_time_slice_task(time_slice_task& aTask)
+        explicit scoped_time_slice_task()
         {
-            service<i_time_slice>().enter(aTask);
+            static time_slice_task sTask = {};
+            service<i_time_slice>().enter(sTask);
         }
         ~scoped_time_slice_task()
         {
