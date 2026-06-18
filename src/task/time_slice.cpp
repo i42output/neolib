@@ -1,6 +1,6 @@
-// system.cpp
+// time_slice.cpp
 /*
- *  Copyright (c) 2024 Leigh Johnston.
+ *  Copyright (c) 2026 Leigh Johnston.
  *
  *  All rights reserved.
  *
@@ -33,31 +33,18 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#pragma once
+
 #include <neolib/neolib.hpp>
-#include <neolib/ecs/system.hpp>
+#include <neolib/core/service.hpp>
+#include <neolib/task/time_slice.hpp>
 
-namespace neolib::ecs
+namespace neolib
 {
-    thread::thread(i_system& aOwner) : 
-        async_task{ "neolib::ecs::thread" }, async_thread{ *this, "neolib::ecs::thread" }, iOwner{ aOwner }
+    template<> i_time_slice& services::start_service<i_time_slice>()
     {
-        start();
-    }
-
-    thread::~thread()
-    {
-        set_destroying();
-        if (iOwner.waiting())
-            iOwner.signal();
-    }
-
-    bool thread::do_work(neolib::yield_type aYieldType)
-    {
-        bool didWork = async_task::do_work(aYieldType);
-        if (iOwner.can_apply())
-            didWork = iOwner.apply() || didWork;
-        if (iOwner.paused() && !iOwner.waiting())
-            iOwner.wait();
-        return didWork;
+        static time_slice sTimeSlice;
+        return sTimeSlice;
     }
 }
+

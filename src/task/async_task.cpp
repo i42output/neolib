@@ -38,6 +38,7 @@
 #include <neolib/core/scoped.hpp>
 #include <neolib/app/i_module_services.hpp>
 #include <neolib/task/thread.hpp>
+#include <neolib/task/time_slice.hpp>
 #include <neolib/task/async_task.hpp>
 #include <neolib/task/timer_object.hpp>
 #include <neolib/task/event.hpp>
@@ -59,7 +60,7 @@ namespace neolib
         ~io_context();
         // operations
     public:
-        bool poll(bool aProcessEvents = true, std::optional<std::chrono::steady_clock::time_point> const& aDeadline = {}, std::size_t aMaximumPollCount = kDefaultPollCount) override;
+        bool poll(bool aProcessEvents = true, std::size_t aMaximumPollCount = kDefaultPollCount) override;
         void* native_object() override;
         // attributes
     private:
@@ -83,23 +84,37 @@ namespace neolib
         iNativeIoService.stop();
     }
 
-    bool io_context::poll(bool aProcessEvents, std::optional<std::chrono::steady_clock::time_point> const& aDeadline, std::size_t aMaximumPollCount)
+    bool io_context::poll(bool aProcessEvents, std::size_t aMaximumPollCount)
     {
         auto iterationsLeft = static_cast<std::int32_t>(aMaximumPollCount);
         bool didSome = false;
+
+        auto max_iterations_reached = [&]()
+            {
+                return aMaximumPollCount != 0u && --iterationsLeft <= 0;
+            };
+
+        static int monolith = 42;
+        scoped_time_slice_task stst{ &monolith };
+
         iNativeIoService.restart();
         do
         {
             if (iTask.halted())
                 return didSome;
+
+            if (service<i_time_slice>().expired())
+                return didSome;
+
             bool didSomeThisIteration = false;
             if (aProcessEvents)
                 didSomeThisIteration = (iTask.pump_messages() || didSomeThisIteration);
             didSomeThisIteration = ((aMaximumPollCount == 0 ? iNativeIoService.poll() : iNativeIoService.poll_one()) != 0 || didSomeThisIteration);
             if (!didSomeThisIteration)
                 break;
+
             didSome = true;
-        } while ((aMaximumPollCount != 0u && --iterationsLeft > 0) || (aDeadline && std::chrono::steady_clock::now() < *aDeadline));
+        } while (!max_iterations_reached());
         return didSome;
     }
 
@@ -114,13 +129,25 @@ namespace neolib
     {
     }
 
-    bool timer_service::poll(bool aProcessEvents, std::optional<std::chrono::steady_clock::time_point> const& aDeadline, std::size_t aMaximumPollCount)
+    bool timer_service::poll(bool aProcessEvents, std::size_t aMaximumPollCount)
     {
         auto iterationsLeft = static_cast<std::int32_t>(aMaximumPollCount);
         bool didSome = false;
+        
+        auto max_iterations_reached = [&]()
+            {
+                return aMaximumPollCount != 0u && --iterationsLeft <= 0;
+            };
+
+        static int monolith = 42;
+        scoped_time_slice_task stst{ &monolith };
+            
         do
         {
             if (iTask.halted())
+                return didSome;
+
+            if (service<i_time_slice>().expired())
                 return didSome;
 
             bool didSomeThisIteration = false;
@@ -147,7 +174,7 @@ namespace neolib
                 if (object.poll())
                 {
                     didSomeThisIteration = true;
-                    if ((aMaximumPollCount != 0u && --iterationsLeft <= 0) || (aDeadline && std::chrono::steady_clock::now() >= *aDeadline))
+                    if (max_iterations_reached())
                         break;
                 }
             }
@@ -159,7 +186,7 @@ namespace neolib
                 break;
 
             didSome = true;
-        } while ((aMaximumPollCount != 0u && --iterationsLeft > 0) || (aDeadline && std::chrono::steady_clock::now() < *aDeadline));
+        } while (!max_iterations_reached());
         return didSome;
     }
 
@@ -248,18 +275,23 @@ namespace neolib
         iIoServices[&aModuleServices].reset();
     }
 
-    bool async_task::do_work(yield_type aYieldIfNoWork, std::optional<std::chrono::steady_clock::time_point> const& aDeadline)
+    bool async_task::do_work(yield_type aYieldIfNoWork)
     {
         if (halted())
             return false;
+
+        service<i_time_slice>().split(4u);
+
+        auto t0 = std::chrono::steady_clock::now();
         bool didSome = pump_events();
+        auto t1 = std::chrono::steady_clock::now();
         didSome = (pump_messages() || didSome);
-        auto const timerDeadline = aDeadline ?
-            std::optional{ std::chrono::steady_clock::now() + ((*aDeadline - std::chrono::steady_clock::now()) / 2) } : std::nullopt;
+        auto t2 = std::chrono::steady_clock::now();
         if (iTimerService)
-            didSome = (iTimerService->poll(true, timerDeadline) || didSome);
+            didSome = (iTimerService->poll(true) || didSome);
         for (auto& service : iIoServices)
-            didSome = (service.second->poll(true, aDeadline) || didSome);
+            didSome = (service.second->poll(true) || didSome);
+        auto t3 = std::chrono::steady_clock::now();
         if (!didSome && aYieldIfNoWork != yield_type::NoYield)
         {
             if (aYieldIfNoWork == yield_type::Yield)
@@ -267,6 +299,13 @@ namespace neolib
             else if (aYieldIfNoWork == yield_type::Sleep)
                 this_thread::sleep_for(std::chrono::milliseconds{ 1 });
         }
+        auto t4 = std::chrono::steady_clock::now();
+        std::cout << 
+            std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << ", " << 
+            std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << ", " <<
+            std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << ", " <<
+            std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << ", " <<
+            std::endl;
         return didSome;
     }
 
@@ -321,19 +360,34 @@ namespace neolib
     bool async_task::pump_events()
     {
         bool didSome = false;
+
+        static int monolith = 42;
+        scoped_time_slice_task stst{ &monolith };
+
         {
             std::scoped_lock lock{ iMutex };
             for (auto eventQueue : iEventQueues)
+            {
+                if (service<i_time_slice>().expired())
+                    return didSome;
                 didSome = (eventQueue->pump_events() || didSome);
+            }
         }
+
         return didSome;
     }
 
     bool async_task::pump_messages()
     {
         bool didWork = false;
+
+        static int monolith = 42;
+        scoped_time_slice_task stst{ &monolith };
+
         while (have_messages())
         {
+            if (service<i_time_slice>().expired())
+                return didWork;
             if (halted())
                 return didWork;
             if (have_message_queue())

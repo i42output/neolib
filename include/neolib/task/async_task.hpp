@@ -58,7 +58,7 @@ namespace neolib
         timer_service(async_task& aTask, bool aMultiThreaded = false);
         // operations
     public:
-        bool poll(bool aProcessEvents = true, std::optional<std::chrono::steady_clock::time_point> const& aDeadline = {}, std::size_t aMaximumPollCount = kDefaultPollCount) override;
+        bool poll(bool aProcessEvents = true, std::size_t aMaximumPollCount = kDefaultPollCount) override;
         void* native_object() override;
         i_timer_object& create_timer_object() override;
         void remove_timer_object(i_timer_object& aObject) override;
@@ -130,7 +130,7 @@ namespace neolib
         void set_destroyed() override;
         // task
         void run(yield_type aYieldType = yield_type::NoYield) override;
-        bool do_work(yield_type aYieldType = yield_type::NoYield, std::optional<std::chrono::steady_clock::time_point> const& aDeadline = {}) override;
+        bool do_work(yield_type aYieldType = yield_type::NoYield) override;
         void cancel() noexcept override;
         void idle() override;
         // attributes

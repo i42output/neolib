@@ -36,8 +36,8 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
-#include <neolib/core/mutex.hpp>
 #include <neolib/core/service.hpp>
+#include <neolib/core/mutex.hpp>
 
 namespace neolib
 {

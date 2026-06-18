@@ -59,7 +59,7 @@ namespace neolib
         }
         // implementation
     public:
-        bool do_work(yield_type aYieldType = yield_type::NoYield, std::optional<std::chrono::steady_clock::time_point> const& aDeadline = {}) override
+        bool do_work(yield_type aYieldType = yield_type::NoYield) override
         {
             return false;
         }

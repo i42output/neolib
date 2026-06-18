@@ -59,7 +59,7 @@ namespace neolib::ecs
         thread(i_system& aOwner);
         ~thread();
     public:
-        bool do_work(neolib::yield_type aYieldType = neolib::yield_type::NoYield, std::optional<std::chrono::steady_clock::time_point> const& aDeadline = {}) final;
+        bool do_work(neolib::yield_type aYieldType = neolib::yield_type::NoYield) final;
     private:
         i_system& iOwner;
     };

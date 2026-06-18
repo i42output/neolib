@@ -52,7 +52,7 @@ namespace neolib
         // implementation
     public:
         virtual void run(yield_type aYieldType = yield_type::NoYield) = 0;
-        virtual bool do_work(yield_type aYieldType = yield_type::NoYield, std::optional<std::chrono::steady_clock::time_point> const& aDeadline = {}) = 0;
+        virtual bool do_work(yield_type aYieldType = yield_type::NoYield) = 0;
         virtual void cancel() = 0;
         virtual bool cancelled() const = 0;
     };
