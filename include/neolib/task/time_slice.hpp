@@ -82,42 +82,48 @@ namespace neolib
     public:
         bool active() const final
         {
-            return !iSlices.empty();
+            return !slices().empty();
         }
     public:
         using i_time_slice::push;
         void push(std::chrono::microseconds const& aDuration) final
         {
-            iSlices.push_back(std::make_unique<slice>(aDuration));
+            slices().push_back(std::make_unique<slice>(aDuration));
         }
         void pop() final
         {
             (void)current_slice();
-            iSlices.pop_back();
+            slices().pop_back();
         }
     public:
         void enter(time_slice_task& aTask) final
         {
             if (!active())
                 return;
-            if (!iTasks.empty())
+            auto const now = std::chrono::steady_clock::now();
+            if (!tasks().empty())
             {
-                current_task().slice += (std::chrono::steady_clock::now() - current_task().entered.value());
+                current_task().slice += (now - current_task().entered.value_or(now));
                 current_task().entered = std::nullopt;
             }
-            iTasks.push_back(&aTask);
+            tasks().push_back(&aTask);
             current_slice().tasks[&aTask];
-            current_task().entered = std::chrono::steady_clock::now();
+            current_task().slice += (now - current_task().entered.value_or(now));
+            current_task().entered = now;
         }
         void leave() final
         {
             if (!active())
                 return;
-            current_task().slice += (std::chrono::steady_clock::now() - current_task().entered.value());
+            auto const now = std::chrono::steady_clock::now();
+            current_task().slice += (now - current_task().entered.value_or(now));
             current_task().entered = std::nullopt;
-            iTasks.pop_back();
-            if (!iTasks.empty())
-                current_task().entered = std::chrono::steady_clock::now();
+            tasks().pop_back();
+            if (!tasks().empty())
+            {
+                current_task().slice += (now - current_task().entered.value_or(now));
+                current_task().entered = now;
+            }
         }
     public:
         void split(std::size_t aSlices) final
@@ -139,19 +145,27 @@ namespace neolib
     private:
         slice& current_slice() const
         {
-            if (!iSlices.empty())
-                return *iSlices.back();
+            if (!slices().empty())
+                return *slices().back();
             throw std::logic_error("neolib::time_slice::current_slice");
         }
         task& current_task() const
         {
-            if (!iTasks.empty())
-                return current_slice().tasks.at(iTasks.back());
+            if (!tasks().empty())
+                return current_slice().tasks.at(tasks().back());
             throw std::logic_error("neolib::time_slice::current_task");
         }
     private:
-        std::vector<std::unique_ptr<slice>> iSlices;
-        std::vector<time_slice_task*> iTasks;
+        static std::vector<std::unique_ptr<slice>>& slices()
+        {
+            thread_local std::vector<std::unique_ptr<slice>> tSlices;
+            return tSlices;
+        }
+        static std::vector<time_slice_task*>& tasks()
+        {
+            thread_local std::vector<time_slice_task*> tTasks;
+            return tTasks;
+        }
     };
 
     class scoped_time_slice
