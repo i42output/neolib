@@ -46,5 +46,95 @@ namespace neolib
         static time_slice sTimeSlice;
         return sTimeSlice;
     }
+
+    bool time_slice::active() const
+    {
+        return !slices().empty();
+    }
+
+    void time_slice::push(std::chrono::microseconds const& aDuration)
+    {
+        slices().push_back(std::make_unique<slice>(aDuration));
+    }
+
+    void time_slice::pop()
+    {
+        (void)current_slice();
+        slices().pop_back();
+    }
+
+    void time_slice::enter(time_slice_task& aTask)
+    {
+        if (!active())
+            return;
+        auto const now = std::chrono::steady_clock::now();
+        if (!tasks().empty())
+        {
+            current_task().slice += (now - current_task().entered.value_or(now));
+            current_task().entered = std::nullopt;
+        }
+        tasks().push_back(&aTask);
+        current_slice().tasks[&aTask];
+        current_task().slice += (now - current_task().entered.value_or(now));
+        current_task().entered = now;
+    }
+
+    void time_slice::leave()
+    {
+        if (!active())
+            return;
+        auto const now = std::chrono::steady_clock::now();
+        current_task().slice += (now - current_task().entered.value_or(now));
+        current_task().entered = std::nullopt;
+        tasks().pop_back();
+        if (!tasks().empty())
+        {
+            current_task().slice += (now - current_task().entered.value_or(now));
+            current_task().entered = now;
+        }
+    }
+
+    void time_slice::split(std::size_t aSlices)
+    {
+        if (!active())
+            return;
+        current_slice().splitCount = current_slice().splitCount.value_or(0u) + aSlices;
+    }
+
+    bool time_slice::expired() const
+    {
+        if (!active())
+            return false;
+        auto const now = std::chrono::steady_clock::now();
+        auto const used = current_task().slice + (now - current_task().entered.value_or(now));
+        auto const n = std::max<std::size_t>(1u, current_slice().splitCount.value_or(1u));
+        return used > current_slice().duration / n;
+    }
+
+    time_slice::slice& time_slice::current_slice() const
+    {
+        if (!slices().empty())
+            return *slices().back();
+        throw std::logic_error("neolib::time_slice::current_slice");
+    }
+
+    time_slice::task& time_slice::current_task() const
+    {
+        if (!tasks().empty())
+            return current_slice().tasks.at(tasks().back());
+        throw std::logic_error("neolib::time_slice::current_task");
+    }
+
+    std::vector<std::unique_ptr<time_slice::slice>>& time_slice::slices()
+    {
+        thread_local std::vector<std::unique_ptr<slice>> tSlices;
+        return tSlices;
+    }
+
+    std::vector<time_slice_task*>& time_slice::tasks()
+    {
+        thread_local std::vector<time_slice_task*> tTasks;
+        return tTasks;
+    }
 }
 
