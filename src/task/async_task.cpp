@@ -107,9 +107,6 @@ namespace neolib
             if (iTask.halted())
                 return didSome;
 
-            if (service<i_time_slice>().expired())
-                return didSome;
-
             bool didSomeThisIteration = false;
             if (aProcessEvents)
                 didSomeThisIteration = (iTask.pump_messages() || didSomeThisIteration);
@@ -118,7 +115,7 @@ namespace neolib
                 break;
 
             didSome = true;
-        } while (!max_iterations_reached());
+        } while (!max_iterations_reached() && !service<i_time_slice>().expired());
         return didSome;
     }
 
@@ -150,9 +147,6 @@ namespace neolib
             if (iTask.halted())
                 return didSome;
 
-            if (service<i_time_slice>().expired())
-                return didSome;
-
             bool didSomeThisIteration = false;
             if (aProcessEvents)
                 didSomeThisIteration = (iTask.pump_messages() || didSomeThisIteration);
@@ -177,7 +171,7 @@ namespace neolib
                 if (object.poll())
                 {
                     didSomeThisIteration = true;
-                    if (max_iterations_reached())
+                    if (max_iterations_reached() || service<i_time_slice>().expired())
                         break;
                 }
             }
@@ -189,7 +183,7 @@ namespace neolib
                 break;
 
             didSome = true;
-        } while (!max_iterations_reached());
+        } while (!max_iterations_reached() && !service<i_time_slice>().expired());
         return didSome;
     }
 
@@ -364,9 +358,10 @@ namespace neolib
             std::scoped_lock lock{ iMutex };
             for (auto eventQueue : iEventQueues)
             {
+                didSome = (eventQueue->pump_events() || didSome);
+
                 if (service<i_time_slice>().expired())
                     return didSome;
-                didSome = (eventQueue->pump_events() || didSome);
             }
         }
 
@@ -381,14 +376,15 @@ namespace neolib
 
         while (have_messages())
         {
-            if (service<i_time_slice>().expired())
-                return didWork;
             if (halted())
                 return didWork;
             if (have_message_queue())
                 message_queue().get_message();
             idle();
             didWork = true;
+
+            if (service<i_time_slice>().expired())
+                return didWork;
         }
         idle();
         return didWork;
