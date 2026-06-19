@@ -285,16 +285,16 @@ namespace neolib
 
         service<i_time_slice>().split(4u);
 
-        auto t0 = std::chrono::steady_clock::now();
         bool didSome = pump_events();
-        auto t1 = std::chrono::steady_clock::now();
+
         didSome = (pump_messages() || didSome);
-        auto t2 = std::chrono::steady_clock::now();
+
         if (iTimerService)
             didSome = (iTimerService->poll(true) || didSome);
+
         for (auto& service : iIoServices)
             didSome = (service.second->poll(true) || didSome);
-        auto t3 = std::chrono::steady_clock::now();
+
         if (!didSome && aYieldIfNoWork != yield_type::NoYield)
         {
             if (aYieldIfNoWork == yield_type::Yield)
@@ -302,13 +302,7 @@ namespace neolib
             else if (aYieldIfNoWork == yield_type::Sleep)
                 this_thread::sleep_for(std::chrono::milliseconds{ 1 });
         }
-        auto t4 = std::chrono::steady_clock::now();
-        std::cout << 
-            std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << ", " << 
-            std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << ", " <<
-            std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << ", " <<
-            std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << ", " <<
-            std::endl;
+
         return didSome;
     }
 
