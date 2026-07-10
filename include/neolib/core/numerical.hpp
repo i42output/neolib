@@ -1751,8 +1751,6 @@ namespace neolib
         class matrix_array : public Base
         {
         public:
-            using abstract_type = basic_matrix; // todo: abstract base
-        public:
             using base_type = Base;
             using value_type = T;
             using column_type = std::array<T, Rows>;
