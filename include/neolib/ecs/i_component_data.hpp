@@ -123,22 +123,22 @@ namespace neolib::ecs
 
     inline constexpr component_data_field_type operator|(component_data_field_type aLhs, component_data_field_type aRhs)
     {
-        return static_cast<component_data_field_type>(static_cast<uint32_t>(aLhs) | static_cast<uint32_t>(aRhs));
+        return static_cast<component_data_field_type>(static_cast<std::uint64_t>(aLhs) | static_cast<std::uint64_t>(aRhs));
     }
 
     inline constexpr component_data_field_type operator&(component_data_field_type aLhs, component_data_field_type aRhs)
     {
-        return static_cast<component_data_field_type>(static_cast<uint32_t>(aLhs) & static_cast<uint32_t>(aRhs));
+        return static_cast<component_data_field_type>(static_cast<std::uint64_t>(aLhs) & static_cast<std::uint64_t>(aRhs));
     }
 
     inline constexpr component_data_field_type& operator|=(component_data_field_type& aLhs, component_data_field_type aRhs)
     {
-        return aLhs = static_cast<component_data_field_type>(static_cast<uint32_t>(aLhs) | static_cast<uint32_t>(aRhs));
+        return aLhs = static_cast<component_data_field_type>(static_cast<std::uint64_t>(aLhs) | static_cast<std::uint64_t>(aRhs));
     }
 
     inline constexpr component_data_field_type& operator&=(component_data_field_type& aLhs, component_data_field_type aRhs)
     {
-        return aLhs = static_cast<component_data_field_type>(static_cast<uint32_t>(aLhs) & static_cast<uint32_t>(aRhs));
+        return aLhs = static_cast<component_data_field_type>(static_cast<std::uint64_t>(aLhs) & static_cast<std::uint64_t>(aRhs));
     }
 
     struct i_component_data
