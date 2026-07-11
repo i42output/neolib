@@ -1690,7 +1690,7 @@ namespace neolib
                 start{ aStart }, end{ aEnd } {
             }
 
-            basic_vector3_range(basic_vector<T, 3u> const& aStart) :
+            explicit basic_vector3_range(basic_vector<T, 3u> const& aStart) :
                 start{ aStart }, end{ aStart } {
             }
         };
@@ -1698,78 +1698,113 @@ namespace neolib
         using vec3_range = basic_vector3_range<double>;
         using vec3f_range = basic_vector3_range<float>;
 
+        namespace lerping_detail
+        {
+            template <std::floating_point T>
+            struct affine_transformation_lerp_state
+            {
+                basic_vector3_range<T> translation;
+                basic_vector3_range<T> scaling;
+                quaternion<T> q0;
+                quaternion<T> q1;
+                bool useNlerp;
+                T theta;
+                T sinTheta;
+            };
+
+            template <std::floating_point T>
+            inline affine_transformation_lerp_state<T> affine_transformation_lerp_prepare(
+                basic_vector3_range<T> const& translation, basic_vector3_range<T> const& scaling, basic_vector3_range<T> const& rotation)
+            {
+                T const zero = constants::zero<T>;
+
+                auto const q0 = euler_to_quat(rotation.start);
+                auto q1 = euler_to_quat(rotation.end);
+
+                // Shortest arc
+                T d = q0.w * q1.w + q0.x * q1.x + q0.y * q1.y + q0.z * q1.z;
+                if (d < zero)
+                {
+                    q1 = { -q1.w, -q1.x, -q1.y, -q1.z };
+                    d = -d;
+                }
+
+                // n.b. this threshold does double duty: FP dot of near-identical unit quaternions
+                // can exceed 1 (which would NaN acos), and it bounds sinTheta away from zero on
+                // the slerp path; both invariants depend on the branch below.
+                bool const useNlerp = (d > static_cast<T>(0.9995));
+                T const theta = useNlerp ? zero : std::acos(d);
+                T const sinTheta = useNlerp ? zero : std::sin(theta);
+
+                return { translation, scaling, q0, q1, useNlerp, theta, sinTheta };
+            }
+
+            template <std::floating_point T>
+            inline basic_matrix<T, 4u, 4u> affine_transformation_lerp_evaluate(
+                affine_transformation_lerp_state<T> const& state, T t)
+            {
+                T const zero = constants::zero<T>;
+                T const one = constants::one<T>;
+                T const two = constants::two<T>;
+
+                auto const& q0 = state.q0;
+                auto const& q1 = state.q1;
+
+                quaternion<T> q;
+                if (state.useNlerp)
+                {
+                    q = { q0.w + t * (q1.w - q0.w), q0.x + t * (q1.x - q0.x),
+                            q0.y + t * (q1.y - q0.y), q0.z + t * (q1.z - q0.z) };
+                    T const n = std::sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
+                    q = { q.w / n, q.x / n, q.y / n, q.z / n };
+                }
+                else
+                {
+                    T const w0 = std::sin((one - t) * state.theta) / state.sinTheta;
+                    T const w1 = std::sin(t * state.theta) / state.sinTheta;
+                    q = { w0 * q0.w + w1 * q1.w, w0 * q0.x + w1 * q1.x,
+                            w0 * q0.y + w1 * q1.y, w0 * q0.z + w1 * q1.z };
+                }
+
+                basic_vector<T, 3u> const tr{
+                    state.translation.start.x + (state.translation.end.x - state.translation.start.x) * t,
+                    state.translation.start.y + (state.translation.end.y - state.translation.start.y) * t,
+                    state.translation.start.z + (state.translation.end.z - state.translation.start.z) * t };
+                basic_vector<T, 3u> const sc{
+                    state.scaling.start.x + (state.scaling.end.x - state.scaling.start.x) * t,
+                    state.scaling.start.y + (state.scaling.end.y - state.scaling.start.y) * t,
+                    state.scaling.start.z + (state.scaling.end.z - state.scaling.start.z) * t };
+
+                // M = T * R * S
+                T const xx = q.x * q.x, yy = q.y * q.y, zz = q.z * q.z;
+                T const xy = q.x * q.y, xz = q.x * q.z, yz = q.y * q.z;
+                T const wx = q.w * q.x, wy = q.w * q.y, wz = q.w * q.z;
+
+                return { {
+                    { (one - two * (yy + zz)) * sc.x, two * (xy + wz) * sc.x, two * (xz - wy) * sc.x, zero },
+                    { two * (xy - wz) * sc.y, (one - two * (xx + zz)) * sc.y, two * (yz + wx) * sc.y, zero },
+                    { two * (xz + wy) * sc.z, two * (yz - wx) * sc.z, (one - two * (xx + yy)) * sc.z, zero },
+                    { tr.x, tr.y, tr.z, one }
+                } };
+            }
+        }
+
         template <std::floating_point T>
         inline std::function<basic_matrix<T, 4u, 4u>(T)> affine_transformation_lerp_generator(
             basic_vector3_range<T> const& translation, basic_vector3_range<T> const& scaling, basic_vector3_range<T> const& rotation)
         {
-            T const zero = constants::zero<T>;
-            T const half = constants::half<T>;
-            T const one = constants::one<T>;
-            T const two = constants::two<T>;
-
-            auto const q0 = euler_to_quat(rotation.start);
-            auto q1 = euler_to_quat(rotation.end);
-
-            // Shortest arc
-            T d = q0.w * q1.w + q0.x * q1.x + q0.y * q1.y + q0.z * q1.z;
-            if (d < constants::zero<T>)
-            {
-                q1 = { -q1.w, -q1.x, -q1.y, -q1.z };
-                d = -d;
-            }
-
-            bool const useNlerp = (d > static_cast<T>(0.9995));
-            T const theta = useNlerp ? zero : std::acos(d);
-            T const sinTheta = useNlerp ? zero : std::sin(theta);
-
-            auto generator = [=](T t) -> basic_matrix<T, 4u, 4u>
+            return [state = lerping_detail::affine_transformation_lerp_prepare(translation, scaling, rotation)](T t)
                 {
-                    quaternion<T> q;
-                    if (useNlerp)
-                    {
-                        q = { q0.w + t * (q1.w - q0.w), q0.x + t * (q1.x - q0.x),
-                                q0.y + t * (q1.y - q0.y), q0.z + t * (q1.z - q0.z) };
-                        T const n = std::sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
-                        q = { q.w / n, q.x / n, q.y / n, q.z / n };
-                    }
-                    else
-                    {
-                        T const w0 = std::sin((one - t) * theta) / sinTheta;
-                        T const w1 = std::sin(t * theta) / sinTheta;
-                        q = { w0 * q0.w + w1 * q1.w, w0 * q0.x + w1 * q1.x,
-                                w0 * q0.y + w1 * q1.y, w0 * q0.z + w1 * q1.z };
-                    }
-
-                    basic_vector<T, 3u> const tr{
-                        translation.start.x + (translation.end.x - translation.start.x) * t,
-                        translation.start.y + (translation.end.y - translation.start.y) * t,
-                        translation.start.z + (translation.end.z - translation.start.z) * t };
-                    basic_vector<T, 3u> const sc{
-                        scaling.start.x + (scaling.end.x - scaling.start.x) * t,
-                        scaling.start.y + (scaling.end.y - scaling.start.y) * t,
-                        scaling.start.z + (scaling.end.z - scaling.start.z) * t };
-
-                    // M = T * R * S
-                    T const xx = q.x * q.x, yy = q.y * q.y, zz = q.z * q.z;
-                    T const xy = q.x * q.y, xz = q.x * q.z, yz = q.y * q.z;
-                    T const wx = q.w * q.x, wy = q.w * q.y, wz = q.w * q.z;
-
-                    return { {
-                        { (one - two * (yy + zz)) * sc.x, two * (xy + wz) * sc.x, two * (xz - wy) * sc.x, zero },
-                        { two * (xy - wz) * sc.y, (one - two * (xx + zz)) * sc.y, two * (yz + wx) * sc.y, zero },
-                        { two * (xz + wy) * sc.z, two * (yz - wx) * sc.z, (one - two * (xx + yy)) * sc.z, zero },
-                        { tr.x, tr.y, tr.z, one }
-                    } };
+                    return lerping_detail::affine_transformation_lerp_evaluate(state, t);
                 };
-
-            return generator;
         }
 
         template <std::floating_point T>
         inline basic_matrix<T, 4u, 4u> affine_transformation_lerp(
             basic_vector3_range<T> const& translation, basic_vector3_range<T> const& scaling, basic_vector3_range<T> const& rotation, T t)
         {
-            return affine_transformation_lerp_generator(translation, scaling, rotation)(t);
+            return lerping_detail::affine_transformation_lerp_evaluate(
+                lerping_detail::affine_transformation_lerp_prepare(translation, scaling, rotation), t);
         }
 
         // Function
