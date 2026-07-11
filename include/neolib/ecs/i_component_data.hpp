@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <functional>
 #include <neolib/core/numerical.hpp>
 #include <neolib/ecs/ecs_ids.hpp>
 
@@ -155,5 +156,33 @@ namespace neolib::ecs
             static constexpr bool has_handles = false;
             static constexpr bool has_updater = false;
         };
+    };
+
+    struct i_generator_factory
+    {
+        virtual void make(void* aData) const = 0;
+
+        template <typename ComponentData>
+        void make(ComponentData& aData) const
+        {
+            make(static_cast<void*>(&aData));
+        }
+    };
+
+    template <typename ComponentData>
+    struct generator_factory : i_generator_factory
+    {
+        std::function<void(ComponentData&)> factoryMethod;
+
+        generator_factory(std::function<void(ComponentData&)> aFactoryMethod) :
+            factoryMethod{ std::move(aFactoryMethod) } {
+        }
+
+        using i_generator_factory::make;
+
+        void make(void* aData) const final
+        {
+            factoryMethod(*static_cast<ComponentData*>(aData));
+        }
     };
 }
