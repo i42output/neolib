@@ -43,6 +43,7 @@
 #include <array>
 #include <ranges>
 #include <algorithm>
+#include <functional>
 #include <ostream>
 #include <istream>
 #include <boost/math/constants/constants.hpp>
@@ -73,6 +74,8 @@ namespace neolib
         {
             template <typename T>
             constexpr T zero = static_cast<T>(0.0);
+            template <typename T>
+            constexpr T half = static_cast<T>(0.5);
             template <typename T>
             constexpr T one = static_cast<T>(1.0);
             template <typename T>
@@ -1654,6 +1657,119 @@ namespace neolib
             aMatrix[0][0] *= aScaling.x;
             aMatrix[1][1] *= aScaling.y;
             return aMatrix;
+        }
+
+        template <std::floating_point T>
+        struct quaternion
+        {
+            T w, x, y, z;
+        };
+
+        template <std::floating_point T>
+        inline quaternion<T> euler_to_quat(basic_vector<T, 3u> const& e)
+        {
+            // extrinsic x-y-z (Rz*Ry*Rx, column vectors)
+            T const cx = std::cos(e.x * constants::half<T>), sx = std::sin(e.x * constants::half<T>);
+            T const cy = std::cos(e.y * constants::half<T>), sy = std::sin(e.y * constants::half<T>);
+            T const cz = std::cos(e.z * constants::half<T>), sz = std::sin(e.z * constants::half<T>);
+            return {
+                cz * cy * cx + sz * sy * sx,
+                cz * cy * sx - sz * sy * cx,
+                cz * sy * cx + sz * cy * sx,
+                sz * cy * cx - cz * sy * sx
+            };
+        }
+
+        template <std::floating_point T>
+        struct basic_vector3_range
+        {
+            basic_vector<T, 3u> start;
+            basic_vector<T, 3u> end;
+
+            basic_vector3_range(basic_vector<T, 3u> const& aStart, basic_vector<T, 3u> const& aEnd) :
+                start{ aStart }, end{ aEnd } {
+            }
+
+            basic_vector3_range(basic_vector<T, 3u> const& aStart) :
+                start{ aStart }, end{ aStart } {
+            }
+        };
+
+        using vec3_range = basic_vector3_range<double>;
+        using vec3f_range = basic_vector3_range<float>;
+
+        template <std::floating_point T>
+        inline std::function<basic_matrix<T, 4u, 4u>(T)> affine_transformation_lerp_generator(
+            basic_vector3_range<T> const& translation, basic_vector3_range<T> const& scaling, basic_vector3_range<T> const& rotation)
+        {
+            T const zero = constants::zero<T>;
+            T const half = constants::half<T>;
+            T const one = constants::one<T>;
+            T const two = constants::two<T>;
+
+            auto const q0 = euler_to_quat(rotation.start);
+            auto q1 = euler_to_quat(rotation.end);
+
+            // Shortest arc
+            T d = q0.w * q1.w + q0.x * q1.x + q0.y * q1.y + q0.z * q1.z;
+            if (d < constants::zero<T>)
+            {
+                q1 = { -q1.w, -q1.x, -q1.y, -q1.z };
+                d = -d;
+            }
+
+            bool const useNlerp = (d > static_cast<T>(0.9995));
+            T const theta = useNlerp ? zero : std::acos(d);
+            T const sinTheta = useNlerp ? zero : std::sin(theta);
+
+            auto generator = [=](T t) -> basic_matrix<T, 4u, 4u>
+                {
+                    quaternion<T> q;
+                    if (useNlerp)
+                    {
+                        q = { q0.w + t * (q1.w - q0.w), q0.x + t * (q1.x - q0.x),
+                                q0.y + t * (q1.y - q0.y), q0.z + t * (q1.z - q0.z) };
+                        T const n = std::sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
+                        q = { q.w / n, q.x / n, q.y / n, q.z / n };
+                    }
+                    else
+                    {
+                        T const w0 = std::sin((one - t) * theta) / sinTheta;
+                        T const w1 = std::sin(t * theta) / sinTheta;
+                        q = { w0 * q0.w + w1 * q1.w, w0 * q0.x + w1 * q1.x,
+                                w0 * q0.y + w1 * q1.y, w0 * q0.z + w1 * q1.z };
+                    }
+
+                    basic_vector<T, 3u> const tr{
+                        translation.start.x + (translation.end.x - translation.start.x) * t,
+                        translation.start.y + (translation.end.y - translation.start.y) * t,
+                        translation.start.z + (translation.end.z - translation.start.z) * t };
+                    basic_vector<T, 3u> const sc{
+                        scaling.start.x + (scaling.end.x - scaling.start.x) * t,
+                        scaling.start.y + (scaling.end.y - scaling.start.y) * t,
+                        scaling.start.z + (scaling.end.z - scaling.start.z) * t };
+
+                    // M = T * R * S
+                    T const xx = q.x * q.x, yy = q.y * q.y, zz = q.z * q.z;
+                    T const xy = q.x * q.y, xz = q.x * q.z, yz = q.y * q.z;
+                    T const wx = q.w * q.x, wy = q.w * q.y, wz = q.w * q.z;
+
+                    return { {
+                        { (one - two * (yy + zz)) * sc.x, two * (xy + wz) * sc.x, two * (xz - wy) * sc.x, zero },
+                        { two * (xy - wz) * sc.y, (one - two * (xx + zz)) * sc.y, two * (yz + wx) * sc.y, zero },
+                        { two * (xz + wy) * sc.z, two * (yz - wx) * sc.z, (one - two * (xx + yy)) * sc.z, zero },
+                        { tr.x, tr.y, tr.z, one }
+                    } };
+                };
+
+            return generator;
+        }
+
+        template <std::floating_point T>
+        inline basic_matrix<T, 4u, 4u> affine_transformation_lerp(
+            basic_vector3_range<T> const& translation, basic_vector3_range<T> const& scaling, basic_vector3_range<T> const& rotation, T t)
+        {
+            return affine_transformation_lerp_generator(translation, scaling, rotation)(t);
         }
 
         // Function
