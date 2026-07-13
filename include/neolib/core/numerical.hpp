@@ -55,11 +55,11 @@
 #include <neolib/core/string_utils.hpp>
 
 #if !defined(DISABLE_IDENTITY_MATRIX_OPTIMISATIONS)
-    #define IDENTITY_MATRIX_OPTIMISATIONS
+#define IDENTITY_MATRIX_OPTIMISATIONS
 #endif
 
 namespace neolib
-{ 
+{
     namespace math
     {
         using namespace boost::math::constants;
@@ -93,7 +93,7 @@ namespace neolib
             T x2 = aX2;
             return static_cast<T>((x2 - x1) * aAmount + x1);
         }
-        
+
         template <std::floating_point T>
         inline T to_rad(T aDegrees)
         {
@@ -119,16 +119,16 @@ namespace neolib
         class basic_vector
         {
         public:
-            using abstract_type     = basic_vector; // todo: abstract base; std::array?
+            using abstract_type = basic_vector; // todo: abstract base; std::array?
         public:
-            using type              = Type;
+            using type = Type;
         public:
-            using value_type        = T;
-            using vector_type       = basic_vector<value_type, _Size, Type>;
-            using size_type         = std::uint32_t;
-            using array_type        = std::array<value_type, _Size>;
-            using const_iterator    = typename array_type::const_iterator;
-            using iterator          = typename array_type::iterator;
+            using value_type = T;
+            using vector_type = basic_vector<value_type, _Size, Type>;
+            using size_type = std::uint32_t;
+            using array_type = std::array<value_type, _Size>;
+            using const_iterator = typename array_type::const_iterator;
+            using iterator = typename array_type::iterator;
         public:
             template <std::uint32_t Size2> struct rebind { using type = basic_vector<T, Size2, Type>; };
         public:
@@ -156,7 +156,7 @@ namespace neolib
             template <typename T2>
             basic_vector(const basic_vector<T2, Size, Type>& other) { std::transform(other.begin(), other.end(), v.begin(), [](T2 source) { return static_cast<value_type>(source); }); }
             template <typename T2, std::uint32_t Size2, typename SFINAE = int>
-            basic_vector(const basic_vector<T2, Size2, Type>& other, typename std::enable_if_t<Size2 < Size, SFINAE> = 0) : v{} { std::transform(other.begin(), other.end(), v.begin(), [](T2 source) { return static_cast<value_type>(source); }); }
+            basic_vector(const basic_vector<T2, Size2, Type>& other, typename std::enable_if_t < Size2 < Size, SFINAE> = 0) : v{} { std::transform(other.begin(), other.end(), v.begin(), [](T2 source) { return static_cast<value_type>(source); }); }
             basic_vector& operator=(const basic_vector& other) { v = other.v; return *this; }
             basic_vector& operator=(basic_vector&& other) { v = std::move(other.v); return *this; }
             basic_vector& operator=(std::initializer_list<value_type> values) { if (values.size() > Size) throw std::out_of_range("neolib::basic_vector: initializer list too big"); std::copy(values.begin(), values.end(), v.begin()); std::fill(v.begin() + (values.end() - values.begin()), v.end(), value_type{}); return *this; }
@@ -168,7 +168,7 @@ namespace neolib
             const_iterator end() const { return v.end(); }
             iterator begin() { return v.begin(); }
             iterator end() { return v.end(); }
-            operator const array_type&() const { return v; }
+            operator const array_type& () const { return v; }
         public:
             template <typename T2>
             basic_vector<T2, Size, Type> as() const
@@ -207,9 +207,9 @@ namespace neolib
             template <typename SFINAE = basic_vector>
             std::enable_if_t<Size == 3, SFINAE> cross(const basic_vector& right) const
             {
-                return basic_vector{ 
-                    y * right.z - z * right.y, 
-                    z * right.x - x * right.z, 
+                return basic_vector{
+                    y * right.z - z * right.y,
+                    z * right.x - x * right.z,
                     x * right.y - y * right.x };
             }
             basic_vector hadamard_product(const basic_vector& right) const
@@ -274,16 +274,16 @@ namespace neolib
         class basic_vector<T, 2, Type>
         {
         public:
-            using abstract_type     = basic_vector; // todo: abstract base; std::array?
+            using abstract_type = basic_vector; // todo: abstract base; std::array?
         public:
-            using type              = Type;
+            using type = Type;
         public:
-            using value_type        = T;
-            using vector_type       = basic_vector<value_type, 2, Type>;
-            using size_type         = std::uint32_t;
-            using array_type        = std::array<value_type, 2>;
-            using const_iterator    = typename array_type::const_iterator;
-            using iterator          = typename array_type::iterator;
+            using value_type = T;
+            using vector_type = basic_vector<value_type, 2, Type>;
+            using size_type = std::uint32_t;
+            using array_type = std::array<value_type, 2>;
+            using const_iterator = typename array_type::const_iterator;
+            using iterator = typename array_type::iterator;
         public:
             template <std::uint32_t Size2> struct rebind { using type = basic_vector<T, Size2, Type>; };
         public:
@@ -390,16 +390,16 @@ namespace neolib
         class basic_vector<T, 1, Type>
         {
         public:
-            using abstract_type     = basic_vector; // todo: abstract base; std::array?
+            using abstract_type = basic_vector; // todo: abstract base; std::array?
         public:
-            using type              = Type;
+            using type = Type;
         public:
-            using value_type        = T;
-            using vector_type       = basic_vector<value_type, 1, Type>;
-            using size_type         = std::uint32_t;
-            using array_type        = std::array<value_type, 1>;
-            using const_iterator    = typename array_type::const_iterator;
-            using iterator          = typename array_type::iterator;
+            using value_type = T;
+            using vector_type = basic_vector<value_type, 1, Type>;
+            using size_type = std::uint32_t;
+            using array_type = std::array<value_type, 1>;
+            using const_iterator = typename array_type::const_iterator;
+            using iterator = typename array_type::iterator;
         public:
             template <std::uint32_t Size2> struct rebind { using type = basic_vector<T, Size2, Type>; };
         public:
@@ -558,10 +558,10 @@ namespace neolib
         using optional_vec3_list = optional<vec3_list>;
 
         using vertices_2d = vec2_list;
-        using vertices    = vec3_list;
+        using vertices = vec3_list;
 
         using optional_vertices_2d_t = optional_vec2_list;
-        using optional_vertices_t    = optional_vec3_list;
+        using optional_vertices_t = optional_vec3_list;
 
         using vector1f = basic_vector<float, 1>;
         using vector2f = basic_vector<float, 2>;
@@ -661,17 +661,17 @@ namespace neolib
         using avec3 = std::array<double, 3>;
         using avec4 = std::array<double, 4>;
 
-        using triangle  = std::array<vec3, 3>;
-        using quad      = std::array<vec3, 4>;
+        using triangle = std::array<vec3, 3>;
+        using quad = std::array<vec3, 4>;
 
-        using triangle_2d   = std::array<vec2, 3>;
-        using quad_2d       = std::array<vec2, 4>;
+        using triangle_2d = std::array<vec2, 3>;
+        using quad_2d = std::array<vec2, 4>;
 
         using trianglef = std::array<vec3f, 3>;
-        using quadf     = std::array<vec3f, 4>;
+        using quadf = std::array<vec3f, 4>;
 
-        using trianglef_2d  = std::array<vec2f, 3>;
-        using quadf_2d      = std::array<vec2f, 4>;
+        using trianglef_2d = std::array<vec2f, 3>;
+        using quadf_2d = std::array<vec2f, 4>;
 
         template <typename T, std::uint32_t D, typename Type>
         inline basic_vector<T, D, Type> operator+(const basic_vector<T, D, Type>& left, const basic_vector<T, D, Type>& right)
@@ -876,7 +876,7 @@ namespace neolib
         template <typename T, typename Type>
         inline basic_vector<T, 3, Type> operator*(const T& left, const basic_vector<T, 3, Type>& right)
         {
-            return basic_vector<T, 3, Type>{ left * right[0], left * right[1], left * right[2] };
+            return basic_vector<T, 3, Type>{ left* right[0], left* right[1], left* right[2] };
         }
 
         template <typename T, typename Type>
@@ -923,9 +923,9 @@ namespace neolib
         public:
             using abstract_type = basic_matrix; // todo: abstract base
         public:
-            using value_type    = T;
-            using column_type   = basic_vector<T, Rows, column_vector>;
-            using array_type    = std::array<column_type, Columns>;
+            using value_type = T;
+            using column_type = basic_vector<T, Rows, column_vector>;
+            using array_type = std::array<column_type, Columns>;
         public:
             template <typename T2>
             struct rebind { using type = basic_matrix<T2, Rows, Columns>; };
@@ -942,16 +942,15 @@ namespace neolib
                         (*this)[column][row] = static_cast<value_type>(other[column][row]);
             }
             ~basic_matrix()
+            {}
+            basic_matrix& operator=(const basic_matrix& other)
             {
+                m = other.m;
+                return *this;
             }
-            basic_matrix& operator=(const basic_matrix& other) 
-            { 
-                m = other.m; 
-                return *this; 
-            }
-            basic_matrix& operator=(basic_matrix&& other) 
-            { 
-                m = std::move(other.m); 
+            basic_matrix& operator=(basic_matrix&& other)
+            {
+                m = std::move(other.m);
                 return *this;
             }
         public:
@@ -994,8 +993,8 @@ namespace neolib
                 for (std::uint32_t column = 0; column < Columns; ++column)
                     for (std::uint32_t row = 0; row < Rows; ++row)
                     {
-                         std::modf((*this)[column][row] / aEpsilon + static_cast<value_type>(0.5), &result[column][row]);
-                         result[column][row] *= aEpsilon;
+                        std::modf((*this)[column][row] / aEpsilon + static_cast<value_type>(0.5), &result[column][row]);
+                        result[column][row] *= aEpsilon;
                     }
                 return result;
             }
@@ -1011,12 +1010,12 @@ namespace neolib
             static const std::enable_if_t<Rows == Columns, SFINAE>& identity()
             {
                 auto make_identity = []()
-                {
-                    basic_matrix result;
-                    for (std::uint32_t diag = 0; diag < Rows; ++diag)
-                        result[diag][diag] = static_cast<value_type>(1.0);
-                    return result;
-                };
+                    {
+                        basic_matrix result;
+                        for (std::uint32_t diag = 0; diag < Rows; ++diag)
+                            result[diag][diag] = static_cast<value_type>(1.0);
+                        return result;
+                    };
                 static basic_matrix const sIdentity = make_identity();
                 return sIdentity;
             }
@@ -1278,12 +1277,12 @@ namespace neolib
         template <typename T, std::uint32_t D1, std::uint32_t D2>
         inline basic_matrix<T, D1, D1> operator*(const basic_matrix<T, D1, D2>& left, const basic_matrix<T, D2, D1>& right)
         {
-            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
+#if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
             if (right.is_identity())
                 return left;
-            #endif
+#endif
             basic_matrix<T, D1, D1> result;
             for (std::uint32_t column = 0u; column < D1; ++column)
                 for (std::uint32_t row = 0u; row < D1; ++row)
@@ -1295,12 +1294,12 @@ namespace neolib
         template <typename T>
         inline basic_matrix<T, 4u, 4u> operator*(const basic_matrix<T, 4u, 4u>& left, const basic_matrix<T, 4u, 4u>& right)
         {
-            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
+#if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
             if (right.is_identity())
                 return left;
-            #endif
+#endif
             basic_matrix<T, 4u, 4u> result;
             for (std::uint32_t column = 0u; column < 4u; ++column)
                 for (std::uint32_t row = 0u; row < 4u; ++row)
@@ -1311,10 +1310,10 @@ namespace neolib
         template <typename T, std::uint32_t D>
         inline basic_vector<T, D, column_vector> operator*(const basic_matrix<T, D, D>& left, const basic_vector<T, D, column_vector>& right)
         {
-            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
+#if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
-            #endif
+#endif
             basic_vector<T, D, column_vector> result;
             for (std::uint32_t row = 0; row < D; ++row)
                 for (std::uint32_t index = 0; index < D; ++index)
@@ -1325,10 +1324,10 @@ namespace neolib
         template <typename T, std::uint32_t D, std::size_t VertexCount>
         inline std::array<basic_vector<T, D, column_vector>, VertexCount> operator*(const basic_matrix<T, D, D>& left, const std::array<basic_vector<T, D, column_vector>, VertexCount>& right)
         {
-            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
+#if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
-            #endif
+#endif
             std::array<basic_vector<T, D, column_vector>, VertexCount> result;
             for (std::size_t vector = 0; vector < VertexCount; ++vector)
                 result[vector] = left * right[vector];
@@ -1338,10 +1337,10 @@ namespace neolib
         template <typename T>
         inline basic_vector<T, 4u, column_vector> operator*(const basic_matrix<T, 4u, 4u>& left, const basic_vector<T, 4u, column_vector>& right)
         {
-            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
+#if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
-            #endif
+#endif
             basic_vector<T, 4u, column_vector> result;
             for (std::uint32_t row = 0u; row < 4u; ++row)
                 result[row] = simd_fma_4d(left[0][row], right[0], left[1][row], right[1], left[2][row], right[2], left[3][row], right[3]);
@@ -1351,10 +1350,10 @@ namespace neolib
         template <typename T, std::size_t VertexCount>
         inline std::array<basic_vector<T, 4u, column_vector>, VertexCount> operator*(const basic_matrix<T, 4u, 4u>& left, const std::array<basic_vector<T, 4u, column_vector>, VertexCount>& right)
         {
-            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
+#if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
-            #endif
+#endif
             std::array<basic_vector<T, 4u, column_vector>, VertexCount> result;
             for (std::size_t vector = 0; vector < VertexCount; ++vector)
                 result[vector] = left * right[vector];
@@ -1364,10 +1363,10 @@ namespace neolib
         template <typename T, std::uint32_t D>
         inline basic_vector<T, D, row_vector> operator*(const basic_vector<T, D, row_vector>& left, const basic_matrix<T, D, D>& right)
         {
-            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
+#if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (right.is_identity())
                 return left;
-            #endif
+#endif
             basic_vector<T, D, row_vector> result;
             for (std::uint32_t column = 0; column < D; ++column)
                 for (std::uint32_t index = 0; index < D; ++index)
@@ -1378,10 +1377,10 @@ namespace neolib
         template <typename T, std::uint32_t D, std::size_t VertexCount>
         inline std::array<basic_vector<T, D, row_vector>, VertexCount> operator*(const std::array<basic_vector<T, D, row_vector>, VertexCount>& left, const basic_matrix<T, D, D>& right)
         {
-            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
+#if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (right.is_identity())
                 return left;
-            #endif
+#endif
             std::array<basic_vector<T, D, row_vector>, VertexCount> result;
             for (std::size_t vector = 0; vector < VertexCount; ++vector)
                 result[vector] = left[vector] * right;
@@ -1391,10 +1390,10 @@ namespace neolib
         template <typename T>
         inline basic_vector<T, 4u, row_vector> operator*(const basic_vector<T, 4u, row_vector>& left, const basic_matrix<T, 4u, 4u>& right)
         {
-            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
+#if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (right.is_identity())
                 return left;
-            #endif
+#endif
             basic_vector<T, 4u, row_vector> result;
             for (std::uint32_t column = 0u; column < 4u; ++column)
                 result[column] = simd_fma_4d(left[0], right[column][0], left[1], right[column][1], left[2], right[column][2], left[3], right[column][3]);
@@ -1404,10 +1403,10 @@ namespace neolib
         template <typename T, std::size_t VertexCount>
         inline std::array<basic_vector<T, 4u, row_vector>, VertexCount> operator*(const std::array<basic_vector<T, 4u, row_vector>, VertexCount>& left, const basic_matrix<T, 4u, 4u>& right)
         {
-            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
+#if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (right.is_identity())
                 return left;
-            #endif
+#endif
             std::array<basic_vector<T, 4u, row_vector>, VertexCount> result;
             for (std::size_t vector = 0; vector < VertexCount; ++vector)
                 result[vector] = left[vector] * right;
@@ -1514,10 +1513,10 @@ namespace neolib
         template <typename T>
         inline basic_vector<T, 3u, column_vector> operator*(const basic_matrix<T, 4u, 4u>& left, const basic_vector<T, 3u, column_vector>& right)
         {
-            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
+#if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
-            #endif
+#endif
             basic_vector<T, 3u, column_vector> result;
             for (std::uint32_t row = 0u; row < 3u; ++row)
                 result[row] = static_cast<T>(simd_fma_4d(left[0][row], right[0], left[1][row], right[1], left[2][row], right[2], left[3][row], static_cast<T>(1.0)));
@@ -1527,10 +1526,10 @@ namespace neolib
         template <typename T>
         inline std::vector<basic_vector<T, 3u, column_vector>> operator*(const basic_matrix<T, 4u, 4u>& left, const std::vector<basic_vector<T, 3u, column_vector>>& right)
         {
-            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
+#if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
-            #endif
+#endif
             std::vector<basic_vector<T, 3u, column_vector>> result;
             result.reserve(right.size());
             for (auto const& v : right)
@@ -1541,10 +1540,10 @@ namespace neolib
         template <typename T, std::size_t Capacity, std::size_t MaxCapacity, typename Alloc>
         inline small_vector<basic_vector<T, 3u, column_vector>, Capacity, MaxCapacity, Alloc> operator*(const basic_matrix<T, 4u, 4u>& left, const small_vector<basic_vector<T, 3u, column_vector>, Capacity, MaxCapacity, Alloc>& right)
         {
-            #if defined(IDENTITY_MATRIX_OPTIMISATIONS)
+#if defined(IDENTITY_MATRIX_OPTIMISATIONS)
             if (left.is_identity())
                 return right;
-            #endif
+#endif
             small_vector<basic_vector<T, 3u, column_vector>, Capacity, MaxCapacity, Alloc> result;
             result.reserve(right.size());
             for (auto const& v : right)
@@ -1566,7 +1565,7 @@ namespace neolib
             T const ay = a * axis.y;
             T const az = a * axis.z;
             return basic_matrix<T, 3u, 3u>{
-                { ax * axis.x + c, ax * axis.y + axis.z * s, ax * axis.z - axis.y * s },
+                { ax* axis.x + c, ax* axis.y + axis.z * s, ax* axis.z - axis.y * s },
                 { ay * axis.x - axis.z * s, ay * axis.y + c, ay * axis.z + axis.x * s },
                 { az * axis.x + axis.y * s, az * axis.y - axis.x * s, az * axis.z + c } }.round_to(epsilon);
         }
@@ -1596,7 +1595,7 @@ namespace neolib
             }
             else
             {
-                return basic_matrix<T, 3u, 3u>{ { std::cos(az), std::sin(az), zero },{ -std::sin(az), std::cos(az), zero },{ zero, zero, one } };
+                return basic_matrix<T, 3u, 3u>{ { std::cos(az), std::sin(az), zero }, { -std::sin(az), std::cos(az), zero }, { zero, zero, one } };
             }
         }
 
@@ -1617,7 +1616,7 @@ namespace neolib
             }
             else
             {
-                return basic_matrix<T, 4u, 4u>{ { std::cos(az), std::sin(az), zero, zero },{ -std::sin(az), std::cos(az), zero, zero },{ zero, zero, one, zero },{zero, zero, zero, one} };
+                return basic_matrix<T, 4u, 4u>{ { std::cos(az), std::sin(az), zero, zero }, { -std::sin(az), std::cos(az), zero, zero }, { zero, zero, one, zero }, { zero, zero, zero, one } };
             }
         }
 
@@ -1686,13 +1685,16 @@ namespace neolib
             basic_vector<T, 3u> start;
             basic_vector<T, 3u> end;
 
-            basic_vector3_range(basic_vector<T, 3u> const& aStart, basic_vector<T, 3u> const& aEnd) :
-                start{ aStart }, end{ aEnd } {
-            }
+            basic_vector3_range(
+                basic_vector<T, 3u> const& aStart,
+                basic_vector<T, 3u> const& aEnd) :
+                start{ aStart }, end{ aEnd }
+            {}
 
-            explicit basic_vector3_range(basic_vector<T, 3u> const& aStart) :
-                start{ aStart }, end{ aStart } {
-            }
+            explicit basic_vector3_range(
+                basic_vector<T, 3u> const& aStart) :
+                start{ aStart }, end{ aStart }
+            {}
         };
 
         using vec3_range = basic_vector3_range<double>;
@@ -1705,11 +1707,15 @@ namespace neolib
             {
                 basic_vector3_range<T> translation;
                 basic_vector3_range<T> scaling;
+                // Uniform rotation t: quaternion slerp/nlerp path
                 quaternion<T> q0;
                 quaternion<T> q1;
                 bool useNlerp;
                 T theta;
                 T sinTheta;
+                // Per-axis rotation t: Euler path
+                basic_vector<T, 3u> rotationStart;
+                basic_vector<T, 3u> rotationDelta;  // wrapped to [-pi, pi] per axis
             };
 
             template <std::floating_point T>
@@ -1717,6 +1723,7 @@ namespace neolib
                 basic_vector3_range<T> const& translation, basic_vector3_range<T> const& scaling, basic_vector3_range<T> const& rotation)
             {
                 T const zero = constants::zero<T>;
+                T const twoPi = constants::two<T> *pi<T>();
 
                 auto const q0 = euler_to_quat(rotation.start);
                 auto q1 = euler_to_quat(rotation.end);
@@ -1736,44 +1743,65 @@ namespace neolib
                 T const theta = useNlerp ? zero : std::acos(d);
                 T const sinTheta = useNlerp ? zero : std::sin(theta);
 
-                return { translation, scaling, q0, q1, useNlerp, theta, sinTheta };
+                // Shortest path per angle for the per-axis route; multi-revolution
+                // deltas collapse (as on the quaternion path).
+                basic_vector<T, 3u> const delta{
+                    std::remainder(rotation.end.x - rotation.start.x, twoPi),
+                    std::remainder(rotation.end.y - rotation.start.y, twoPi),
+                    std::remainder(rotation.end.z - rotation.start.z, twoPi) };
+
+                return { translation, scaling, q0, q1, useNlerp, theta, sinTheta, rotation.start, delta };
             }
 
             template <std::floating_point T>
             inline basic_matrix<T, 4u, 4u> affine_transformation_lerp_evaluate(
-                affine_transformation_lerp_state<T> const& state, T t)
+                affine_transformation_lerp_state<T> const& state,
+                basic_vector<T, 3u> const& tTranslation,
+                basic_vector<T, 3u> const& tScaling,
+                basic_vector<T, 3u> const& tRotation)
             {
                 T const zero = constants::zero<T>;
                 T const one = constants::one<T>;
                 T const two = constants::two<T>;
 
-                auto const& q0 = state.q0;
-                auto const& q1 = state.q1;
-
                 quaternion<T> q;
-                if (state.useNlerp)
+                if (tRotation.x == tRotation.y && tRotation.y == tRotation.z)
                 {
-                    q = { q0.w + t * (q1.w - q0.w), q0.x + t * (q1.x - q0.x),
-                            q0.y + t * (q1.y - q0.y), q0.z + t * (q1.z - q0.z) };
-                    T const n = std::sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
-                    q = { q.w / n, q.x / n, q.y / n, q.z / n };
+                    auto const& q0 = state.q0;
+                    auto const& q1 = state.q1;
+                    T const tq = tRotation.x;
+                    if (state.useNlerp)
+                    {
+                        q = { q0.w + tq * (q1.w - q0.w), q0.x + tq * (q1.x - q0.x),
+                                q0.y + tq * (q1.y - q0.y), q0.z + tq * (q1.z - q0.z) };
+                        T const n = std::sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
+                        q = { q.w / n, q.x / n, q.y / n, q.z / n };
+                    }
+                    else
+                    {
+                        T const w0 = std::sin((one - tq) * state.theta) / state.sinTheta;
+                        T const w1 = std::sin(tq * state.theta) / state.sinTheta;
+                        q = { w0 * q0.w + w1 * q1.w, w0 * q0.x + w1 * q1.x,
+                                w0 * q0.y + w1 * q1.y, w0 * q0.z + w1 * q1.z };
+                    }
                 }
                 else
                 {
-                    T const w0 = std::sin((one - t) * state.theta) / state.sinTheta;
-                    T const w1 = std::sin(t * state.theta) / state.sinTheta;
-                    q = { w0 * q0.w + w1 * q1.w, w0 * q0.x + w1 * q1.x,
-                            w0 * q0.y + w1 * q1.y, w0 * q0.z + w1 * q1.z };
+                    basic_vector<T, 3u> const e{
+                        state.rotationStart.x + state.rotationDelta.x * tRotation.x,
+                        state.rotationStart.y + state.rotationDelta.y * tRotation.y,
+                        state.rotationStart.z + state.rotationDelta.z * tRotation.z };
+                    q = euler_to_quat(e);
                 }
 
                 basic_vector<T, 3u> const tr{
-                    state.translation.start.x + (state.translation.end.x - state.translation.start.x) * t,
-                    state.translation.start.y + (state.translation.end.y - state.translation.start.y) * t,
-                    state.translation.start.z + (state.translation.end.z - state.translation.start.z) * t };
+                    state.translation.start.x + (state.translation.end.x - state.translation.start.x) * tTranslation.x,
+                    state.translation.start.y + (state.translation.end.y - state.translation.start.y) * tTranslation.y,
+                    state.translation.start.z + (state.translation.end.z - state.translation.start.z) * tTranslation.z };
                 basic_vector<T, 3u> const sc{
-                    state.scaling.start.x + (state.scaling.end.x - state.scaling.start.x) * t,
-                    state.scaling.start.y + (state.scaling.end.y - state.scaling.start.y) * t,
-                    state.scaling.start.z + (state.scaling.end.z - state.scaling.start.z) * t };
+                    state.scaling.start.x + (state.scaling.end.x - state.scaling.start.x) * tScaling.x,
+                    state.scaling.start.y + (state.scaling.end.y - state.scaling.start.y) * tScaling.y,
+                    state.scaling.start.z + (state.scaling.end.z - state.scaling.start.z) * tScaling.z };
 
                 // M = T * R * S
                 T const xx = q.x * q.x, yy = q.y * q.y, zz = q.z * q.z;
@@ -1787,24 +1815,50 @@ namespace neolib
                     { tr.x, tr.y, tr.z, one }
                 } };
             }
+
+            template <std::floating_point T>
+            struct affine_transformation_lerp_functor
+            {
+                affine_transformation_lerp_state<T> state;
+
+                basic_matrix<T, 4u, 4u> operator()(
+                    basic_vector<T, 3u> const& tTranslation, basic_vector<T, 3u> const& tScaling, basic_vector<T, 3u> const& tRotation) const
+                {
+                    return affine_transformation_lerp_evaluate(state, tTranslation, tScaling, tRotation);
+                }
+
+                basic_matrix<T, 4u, 4u> operator()(T t) const
+                {
+                    basic_vector<T, 3u> const tv{ t, t, t };
+                    return (*this)(tv, tv, tv);
+                }
+            };
         }
 
         template <std::floating_point T>
-        inline std::function<basic_matrix<T, 4u, 4u>(T)> affine_transformation_lerp_generator(
+        inline auto affine_transformation_lerp_generator(
             basic_vector3_range<T> const& translation, basic_vector3_range<T> const& scaling, basic_vector3_range<T> const& rotation)
         {
-            return [state = lerping_detail::affine_transformation_lerp_prepare(translation, scaling, rotation)](T t)
-                {
-                    return lerping_detail::affine_transformation_lerp_evaluate(state, t);
-                };
+            return lerping_detail::affine_transformation_lerp_functor<T>{
+                lerping_detail::affine_transformation_lerp_prepare(translation, scaling, rotation) };
+        }
+
+        template <std::floating_point T>
+        inline basic_matrix<T, 4u, 4u> affine_transformation_lerp(
+            basic_vector3_range<T> const& translation, basic_vector3_range<T> const& scaling, basic_vector3_range<T> const& rotation,
+            basic_vector<T, 3u> const& tTranslation, basic_vector<T, 3u> const& tScaling, basic_vector<T, 3u> const& tRotation)
+        {
+            return lerping_detail::affine_transformation_lerp_evaluate(
+                lerping_detail::affine_transformation_lerp_prepare(translation, scaling, rotation),
+                tTranslation, tScaling, tRotation);
         }
 
         template <std::floating_point T>
         inline basic_matrix<T, 4u, 4u> affine_transformation_lerp(
             basic_vector3_range<T> const& translation, basic_vector3_range<T> const& scaling, basic_vector3_range<T> const& rotation, T t)
         {
-            return lerping_detail::affine_transformation_lerp_evaluate(
-                lerping_detail::affine_transformation_lerp_prepare(translation, scaling, rotation), t);
+            basic_vector<T, 3u> const tv{ t, t, t };
+            return affine_transformation_lerp(translation, scaling, rotation, tv, tv, tv);
         }
 
         // Function
@@ -1865,10 +1919,10 @@ namespace neolib
 
         enum class quad_corner : std::size_t
         {
-            TopLeft     = 0u,
-            TopRight    = 1u,
+            TopLeft = 0u,
+            TopRight = 1u,
             BottomRight = 2u,
-            BottomLeft  = 3u
+            BottomLeft = 3u
         };
 
         constexpr std::size_t QuadTopLeft = static_cast<std::size_t>(quad_corner::TopLeft);
@@ -1879,9 +1933,9 @@ namespace neolib
         template <typename T, std::size_t D>
         inline basic_vector<T, D> quad_extents(std::array<basic_vector<T, D>, 4> const& aQuad)
         {
-            return basic_vector<T, D>{ 
+            return basic_vector<T, D>{
                 (aQuad[QuadTopRight].distance(aQuad[QuadTopLeft]) + aQuad[QuadBottomLeft].distance(aQuad[QuadBottomRight])) / static_cast<T>(2.0),
-                (aQuad[QuadTopLeft].distance(aQuad[QuadBottomLeft]) + aQuad[QuadTopRight].distance(aQuad[QuadBottomRight])) / static_cast<T>(2.0)
+                    (aQuad[QuadTopLeft].distance(aQuad[QuadBottomLeft]) + aQuad[QuadTopRight].distance(aQuad[QuadBottomRight])) / static_cast<T>(2.0)
             };
         }
 
@@ -1912,16 +1966,13 @@ namespace neolib
         public:
             matrix_array() :
                 base_type{ Rows, Columns }, m{}
-            {
-            }
+            {}
             matrix_array(array_type const& m) :
-                base_type{ Rows, Columns }, m { m }
-            {
-            }
+                base_type{ Rows, Columns }, m{ m }
+            {}
             matrix_array(matrix_array const& other) :
                 base_type{ Rows, Columns }, m{ other.m }
-            {
-            }
+            {}
             template <typename T2>
             matrix_array(matrix_array<T2, Rows, Columns, base_type> const& other) :
                 base_type{ Rows, Columns }
@@ -1931,8 +1982,7 @@ namespace neolib
                         (*this)[column][row] = static_cast<value_type>(other[column][row]);
             }
             ~matrix_array()
-            {
-            }
+            {}
             matrix_array& operator=(const matrix_array& other)
             {
                 m = other.m;
@@ -1989,8 +2039,8 @@ namespace neolib
 
         template <typename T, std::uint32_t Rows, std::uint32_t Columns>
         using matrix_array_ex = matrix_array<T, Rows, Columns, matrix_array_base_ex>;
-            
-         // AABB
+
+        // AABB
 
         template <typename Vertex>
         struct basic_aabb
@@ -2179,7 +2229,7 @@ namespace neolib
                 return false;
             return aabb_intersects(*first, *second);
         }
-            
+
         template <typename Vertex>
         inline bool aabb_intersects(const optional<basic_aabb<Vertex>>& first, const basic_aabb<Vertex>& second)
         {
