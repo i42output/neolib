@@ -103,21 +103,50 @@ namespace neolib::ecs
         Aabb                = Aabb3d,
         Aabbf               = Aabb3df,
         String              = 0x0000000000010000,
-        Enum                = 0x00000000000B0000,
-        Uuid                = 0x00000000000C0000,
-        Id                  = 0x00000000000D0000,
-        SmallId             = 0x00000000000E0000,
-        ComponentData       = 0x00000000000F0000,
-        Generator0          = 0x0000000000100000,
-        Generator1          = 0x0000000000200000,
-        Generator2          = 0x0000000000300000,
-        Generator3          = 0x0000000000400000,
-        Generator4          = 0x0000000000500000,
+        Enum                = 0x0000000000020000,
+        Uuid                = 0x0000000000030000,
+        Id                  = 0x0000000000040000,
+        SmallId             = 0x0000000000050000,
+        ComponentData       = 0x0000000000060000,
+        Function0           = 0x0000000000100000,
+        Function1           = 0x0000000000200000,
+        Function2           = 0x0000000000300000,
+        Function3           = 0x0000000000400000,
+        Function4           = 0x0000000000500000,
+        Function1Vec2       = 0x0000000000600000,
+        Function2Vec2       = 0x0000000000700000,
+        Function3Vec2       = 0x0000000000800000,
+        Function4Vec2       = 0x0000000000900000,
+        Function1Vec3       = 0x0000000000A00000,
+        Function2Vec3       = 0x0000000000B00000,
+        Function3Vec3       = 0x0000000000C00000,
+        Function4Vec3       = 0x0000000000D00000,
+        Function1Vec4       = 0x0000000000E00000,
+        Function2Vec4       = 0x0000000000F00000,
+        Function3Vec4       = 0x0000000001000000,
+        Function4Vec4       = 0x0000000001100000,
+        Function1f          = 0x0000000001200000,
+        Function2f          = 0x0000000001300000,
+        Function3f          = 0x0000000001400000,
+        Function4f          = 0x0000000001500000,
+        Function1Vec2f      = 0x0000000001600000,
+        Function2Vec2f      = 0x0000000001700000,
+        Function3Vec2f      = 0x0000000001800000,
+        Function4Vec2f      = 0x0000000001900000,
+        Function1Vec3f      = 0x0000000001A00000,
+        Function2Vec3f      = 0x0000000001B00000,
+        Function3Vec3f      = 0x0000000001C00000,
+        Function4Vec3f      = 0x0000000001D00000,
+        Function1Vec4f      = 0x0000000001E00000,
+        Function2Vec4f      = 0x0000000001F00000,
+        Function3Vec4f      = 0x0000000002000000,
+        Function4Vec4f      = 0x0000000002100000,
+        FunctionFactory     = 0x0000000010000000,
         Optional            = 0x0000010000000000,
         Array               = 0x0000020000000000,
-        Shared              = 0x0000040000000000,
-        Atomic              = 0x0000080000000000,
-        GeneratorFactory    = 0x0000100000000000,
+        Range               = 0x0000040000000000,
+        Shared              = 0x0001000000000000,
+        Atomic              = 0x0100000000000000,
         Cache               = 0x4000000000000000,
         Internal            = 0x8000000000000000
     };
@@ -158,8 +187,9 @@ namespace neolib::ecs
         };
     };
 
-    struct i_generator_factory
+    struct i_function_factory
     {
+        virtual ~i_function_factory() = default;
         virtual void make(void* aData) const = 0;
 
         template <typename ComponentData>
@@ -170,15 +200,15 @@ namespace neolib::ecs
     };
 
     template <typename ComponentData>
-    struct generator_factory : i_generator_factory
+    struct function_factory : i_function_factory
     {
         std::function<void(ComponentData&)> factoryMethod;
 
-        generator_factory(std::function<void(ComponentData&)> aFactoryMethod) :
+        function_factory(std::function<void(ComponentData&)> aFactoryMethod) :
             factoryMethod{ std::move(aFactoryMethod) } {
         }
 
-        using i_generator_factory::make;
+        using i_function_factory::make;
 
         void make(void* aData) const final
         {
