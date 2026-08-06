@@ -192,29 +192,29 @@ namespace neolib::ecs
     struct i_function_factory
     {
         virtual ~i_function_factory() = default;
-        virtual void make(void* aData) const = 0;
+        virtual void make(void const* aData) const = 0;
 
         template <typename ComponentData>
-        void make(ComponentData& aData) const
+        void make(ComponentData const& aData) const
         {
-            make(static_cast<void*>(&aData));
+            make(static_cast<void const*>(&aData));
         }
     };
 
     template <typename ComponentData>
     struct function_factory : i_function_factory
     {
-        std::function<void(ComponentData&)> factoryMethod;
+        std::function<void(ComponentData const&)> factoryMethod;
 
-        function_factory(std::function<void(ComponentData&)> aFactoryMethod) :
+        function_factory(std::function<void(ComponentData const&)> aFactoryMethod) :
             factoryMethod{ std::move(aFactoryMethod) } {
         }
 
         using i_function_factory::make;
 
-        void make(void* aData) const final
+        void make(void const* aData) const final
         {
-            factoryMethod(*static_cast<ComponentData*>(aData));
+            factoryMethod(*static_cast<ComponentData const*>(aData));
         }
     };
 }
