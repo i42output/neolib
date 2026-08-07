@@ -497,11 +497,22 @@ namespace neolib::ecs
         mutable snapshot_ptr iSnapshot;
     };
 
+    namespace detail
+    {
+        template <typename T, bool>
+        struct add_const { using type = T; };
+        template <typename T>
+        struct add_const<T, true> { using type = const T; };
+
+        template <typename T, typename U>
+        using add_const_t = typename add_const<T, std::is_const_v<U>>::type;
+    }
+
     template <typename Data>
     class shared
     {
     public:
-        typedef typename detail::crack_component_data<shared<Data>>::mapped_type mapped_type;
+        using mapped_type = detail::add_const_t<typename detail::crack_component_data<shared<Data>>::mapped_type, Data>;
 
     public:
         shared() :
