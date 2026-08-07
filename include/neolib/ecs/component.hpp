@@ -61,11 +61,11 @@ namespace neolib::ecs
     template <typename Data>
     inline bool batchable(const shared<Data>& lhs, const shared<Data>& rhs)
     {
-        if (!!lhs.ptr != !!rhs.ptr)
+        if (!!lhs.ptr() != !!rhs.ptr())
             return false;
-        if (lhs.ptr == nullptr)
+        if (lhs.ptr() == nullptr)
             return true;
-        return batchable(*lhs.ptr, *rhs.ptr);
+        return batchable(*lhs.ptr(), *rhs.ptr());
     }
 
     namespace detail
