@@ -512,44 +512,46 @@ namespace neolib::ecs
     class shared
     {
     public:
-        using mapped_type = detail::add_const_t<typename detail::crack_component_data<shared<Data>>::mapped_type, Data>;
+        using mapped_type = typename detail::crack_component_data<shared<Data>>::mapped_type;
+    private:
+        using pointer_type = detail::add_const_t<mapped_type, Data>;
 
     public:
         shared() :
             iPtr{ nullptr }
         {
         }
-        shared(mapped_type* aData) :
+        shared(pointer_type* aData) :
             iPtr{ aData }
         {
         }
-        shared(mapped_type& aData) :
+        shared(pointer_type& aData) :
             iPtr { &aData }
         {
         }
 
     public:
-        shared& operator=(mapped_type* aData)
+        shared& operator=(pointer_type* aData)
         {
             iPtr = aData;
             return *this;
         }
-        shared& operator=(mapped_type& aData)
+        shared& operator=(pointer_type& aData)
         {
             iPtr = &aData;
             return *this;
         }
 
     public:
-        mapped_type* ptr() const
+        pointer_type* ptr() const
         {
             return iPtr;
         }
-        mapped_type* operator->() const
+        pointer_type* operator->() const
         {
             return iPtr;
         }
-        mapped_type& operator*() const
+        pointer_type& operator*() const
         {
             return *iPtr;
         }
@@ -586,7 +588,7 @@ namespace neolib::ecs
         }
 
     private:
-        mapped_type* iPtr;
+        pointer_type* iPtr;
     };
 
     template <typename Data>
