@@ -498,45 +498,74 @@ namespace neolib::ecs
     };
 
     template <typename Data>
-    struct shared
+    class shared
     {
+    public:
         typedef typename detail::crack_component_data<shared<Data>>::mapped_type mapped_type;
 
-        const mapped_type* ptr;
-
+    public:
         shared() :
-            ptr{ nullptr }
+            iPtr{ nullptr }
         {
         }
-        shared(const mapped_type* aData) :
-            ptr{ aData }
+        shared(mapped_type* aData) :
+            iPtr{ aData }
         {
         }
-        shared(const mapped_type& aData) :
-            ptr { &aData }
+        shared(mapped_type& aData) :
+            iPtr { &aData }
         {
         }
 
+    public:
+        shared& operator=(mapped_type* aData)
+        {
+            iPtr = aData;
+            return *this;
+        }
+        shared& operator=(mapped_type& aData)
+        {
+            iPtr = &aData;
+            return *this;
+        }
+
+    public:
+        mapped_type* ptr() const
+        {
+            return iPtr;
+        }
+        mapped_type* operator->() const
+        {
+            return iPtr;
+        }
+        mapped_type& operator*() const
+        {
+            return *iPtr;
+        }
+        explicit operator bool() const
+        {
+            return iPtr != nullptr;
+        }
+
+    public:
         bool operator==(const shared<Data>& rhs) const
         {
             auto& lhs = *this;
-            if (!!lhs.ptr != !!rhs.ptr)
+            if (!!lhs.iPtr != !!rhs.iPtr)
                 return false;
-            if (lhs.ptr == nullptr)
+            if (lhs.iPtr == nullptr)
                 return true;
-            return *lhs.ptr == *rhs.ptr;
+            return *lhs.iPtr == *rhs.iPtr;
         }
-
         bool operator<(const shared<Data>& rhs) const
         {
             auto& lhs = *this;
-            if (!!lhs.ptr != !!rhs.ptr)
-                return !!lhs.ptr < !!rhs.ptr;
-            if (lhs.ptr == nullptr)
+            if (!!lhs.iPtr != !!rhs.iPtr)
+                return !!lhs.iPtr < !!rhs.iPtr;
+            if (lhs.iPtr == nullptr)
                 return false;
-            return *lhs.ptr < *rhs.ptr;
+            return *lhs.iPtr < *rhs.iPtr;
         }
-
         auto operator<=>(const shared<Data>& rhs) const
         {
             auto& lhs = *this;
@@ -544,6 +573,9 @@ namespace neolib::ecs
             if (lhs < rhs)  return std::weak_ordering::less;
             return std::weak_ordering::greater;
         }
+
+    private:
+        mapped_type* iPtr;
     };
 
     template <typename Data>
@@ -616,9 +648,9 @@ namespace neolib::ecs
             if ((aComponentData == nullptr && !is_data_optional()) || aComponentDataSize != sizeof(mapped_type))
                 throw invalid_data();
             if (aComponentData != nullptr)
-                return populate(aName, *static_cast<const mapped_type*>(aComponentData)).ptr;
+                return populate(aName, *static_cast<const mapped_type*>(aComponentData)).ptr();
             else
-                return populate(aName, mapped_type{}).ptr; // empty optional
+                return populate(aName, mapped_type{}).ptr(); // empty optional
         }
     };
 }
