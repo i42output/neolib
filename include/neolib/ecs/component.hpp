@@ -50,7 +50,7 @@ namespace neolib::ecs
     class i_ecs;
 
     template <typename Data>
-    struct shared;
+    class shared;
 
     template <typename T>
     inline bool batchable(const std::optional<T>& lhs, const std::optional<T>& rhs)
