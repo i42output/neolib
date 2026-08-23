@@ -1700,6 +1700,17 @@ namespace neolib
         using vec3_range = basic_vector3_range<double>;
         using vec3f_range = basic_vector3_range<float>;
 
+        enum class rotation_lerp : std::uint32_t
+        {
+            // Shortest arc, unless an axis is asked to travel more than a half turn, in which case
+            // the range is taken verbatim (so a full turn is a full turn and not a no-op).
+            Auto,
+            // Always the shortest arc; whole turns collapse and ranges over a half turn reverse.
+            ShortestArc,
+            // Always verbatim; a range that wraps past +/-pi travels the long way round.
+            Absolute
+        };
+
         namespace lerping_detail
         {
             template <std::floating_point T>
@@ -1715,12 +1726,18 @@ namespace neolib
                 T sinTheta;
                 // Per-axis rotation t: Euler path
                 basic_vector<T, 3u> rotationStart;
-                basic_vector<T, 3u> rotationDelta;  // wrapped to [-pi, pi] per axis
+                // Wrapped to [-pi, pi] per axis unless multiTurn
+                basic_vector<T, 3u> rotationDelta;
+                // Set when any axis is asked to travel more than a half turn; such a range cannot
+                // be recovered from the endpoint pair alone (a full turn is endpoint-identical), so
+                // the delta is taken literally and the Euler path is forced.
+                bool multiTurn;
             };
 
             template <std::floating_point T>
             inline affine_transformation_lerp_state<T> affine_transformation_lerp_prepare(
-                basic_vector3_range<T> const& translation, basic_vector3_range<T> const& scaling, basic_vector3_range<T> const& rotation)
+                basic_vector3_range<T> const& translation, basic_vector3_range<T> const& scaling, basic_vector3_range<T> const& rotation,
+                rotation_lerp rotationLerp = rotation_lerp::Auto)
             {
                 T const zero = constants::zero<T>;
                 T const twoPi = constants::two<T> *pi<T>();
@@ -1743,14 +1760,30 @@ namespace neolib
                 T const theta = useNlerp ? zero : std::acos(d);
                 T const sinTheta = useNlerp ? zero : std::sin(theta);
 
-                // Shortest path per angle for the per-axis route; multi-revolution
-                // deltas collapse (as on the quaternion path).
-                basic_vector<T, 3u> const delta{
-                    std::remainder(rotation.end.x - rotation.start.x, twoPi),
-                    std::remainder(rotation.end.y - rotation.start.y, twoPi),
-                    std::remainder(rotation.end.z - rotation.start.z, twoPi) };
+                basic_vector<T, 3u> const rawDelta{
+                    rotation.end.x - rotation.start.x,
+                    rotation.end.y - rotation.start.y,
+                    rotation.end.z - rotation.start.z };
 
-                return { translation, scaling, q0, q1, useNlerp, theta, sinTheta, rotation.start, delta };
+                // Under Auto, a delta of more than a half turn is unambiguous intent to travel the
+                // long way round (and a whole number of turns is otherwise indistinguishable from
+                // standing still), so honour it verbatim; up to a half turn keeps shortest-arc
+                // semantics. n.b. this does mean a wrapping range such as 350 deg -> 10 deg is read
+                // as -340 deg rather than +20 deg; say ShortestArc if that is what you meant.
+                bool const multiTurn =
+                    rotationLerp == rotation_lerp::Absolute ||
+                    (rotationLerp == rotation_lerp::Auto &&
+                        (std::abs(rawDelta.x) > pi<T>() || std::abs(rawDelta.y) > pi<T>() || std::abs(rawDelta.z) > pi<T>()));
+
+                // Shortest path per angle for the per-axis route. n.b. for any axis whose raw delta
+                // is within [-pi, pi] the two agree, so multiTurn only ever affects the axes that
+                // asked for the long way round.
+                basic_vector<T, 3u> const delta = multiTurn ? rawDelta : basic_vector<T, 3u>{
+                    std::remainder(rawDelta.x, twoPi),
+                    std::remainder(rawDelta.y, twoPi),
+                    std::remainder(rawDelta.z, twoPi) };
+
+                return { translation, scaling, q0, q1, useNlerp, theta, sinTheta, rotation.start, delta, multiTurn };
             }
 
             template <std::floating_point T>
@@ -1765,7 +1798,10 @@ namespace neolib
                 T const two = constants::two<T>;
 
                 quaternion<T> q;
-                if (tRotation.x == tRotation.y && tRotation.y == tRotation.z)
+                // n.b. the quaternion path interpolates orientations, which cannot express a
+                // journey longer than a half turn; multiTurn ranges take the Euler path regardless
+                // of whether the eased factors happen to be uniform.
+                if (!state.multiTurn && tRotation.x == tRotation.y && tRotation.y == tRotation.z)
                 {
                     auto const& q0 = state.q0;
                     auto const& q1 = state.q1;
@@ -1837,28 +1873,31 @@ namespace neolib
 
         template <std::floating_point T>
         inline auto affine_transformation_lerp_generator(
-            basic_vector3_range<T> const& translation, basic_vector3_range<T> const& scaling, basic_vector3_range<T> const& rotation)
+            basic_vector3_range<T> const& translation, basic_vector3_range<T> const& scaling, basic_vector3_range<T> const& rotation,
+            rotation_lerp rotationLerp = rotation_lerp::Auto)
         {
             return lerping_detail::affine_transformation_lerp_functor<T>{
-                lerping_detail::affine_transformation_lerp_prepare(translation, scaling, rotation) };
+                lerping_detail::affine_transformation_lerp_prepare(translation, scaling, rotation, rotationLerp) };
         }
 
         template <std::floating_point T>
         inline basic_matrix<T, 4u, 4u> affine_transformation_lerp(
             basic_vector3_range<T> const& translation, basic_vector3_range<T> const& scaling, basic_vector3_range<T> const& rotation,
-            basic_vector<T, 3u> const& tTranslation, basic_vector<T, 3u> const& tScaling, basic_vector<T, 3u> const& tRotation)
+            basic_vector<T, 3u> const& tTranslation, basic_vector<T, 3u> const& tScaling, basic_vector<T, 3u> const& tRotation,
+            rotation_lerp rotationLerp = rotation_lerp::Auto)
         {
             return lerping_detail::affine_transformation_lerp_evaluate(
-                lerping_detail::affine_transformation_lerp_prepare(translation, scaling, rotation),
+                lerping_detail::affine_transformation_lerp_prepare(translation, scaling, rotation, rotationLerp),
                 tTranslation, tScaling, tRotation);
         }
 
         template <std::floating_point T>
         inline basic_matrix<T, 4u, 4u> affine_transformation_lerp(
-            basic_vector3_range<T> const& translation, basic_vector3_range<T> const& scaling, basic_vector3_range<T> const& rotation, T t)
+            basic_vector3_range<T> const& translation, basic_vector3_range<T> const& scaling, basic_vector3_range<T> const& rotation, T t,
+            rotation_lerp rotationLerp = rotation_lerp::Auto)
         {
             basic_vector<T, 3u> const tv{ t, t, t };
-            return affine_transformation_lerp(translation, scaling, rotation, tv, tv, tv);
+            return affine_transformation_lerp(translation, scaling, rotation, tv, tv, tv, rotationLerp);
         }
 
         // Function

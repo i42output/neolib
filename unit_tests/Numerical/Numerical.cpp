@@ -9,8 +9,8 @@
 template class neolib::basic_vector<double, 4u>;
 template class neolib::basic_matrix<double, 4u, 4u>;
 
-template neolib::mat44 neolib::math::affine_transformation_lerp<double>(neolib::vec3_range const&, neolib::vec3_range const&, neolib::vec3_range const&, double);
-template neolib::mat44f neolib::math::affine_transformation_lerp<float>(neolib::vec3f_range const&, neolib::vec3f_range const&, neolib::vec3f_range const&, float);
+template neolib::mat44 neolib::math::affine_transformation_lerp<double>(neolib::vec3_range const&, neolib::vec3_range const&, neolib::vec3_range const&, double, neolib::math::rotation_lerp);
+template neolib::mat44f neolib::math::affine_transformation_lerp<float>(neolib::vec3f_range const&, neolib::vec3f_range const&, neolib::vec3f_range const&, float, neolib::math::rotation_lerp);
 
 namespace
 {
@@ -204,11 +204,68 @@ void TestAffineTransformationLerp()
         vec3_range{ vec3{ 0.0, 0.0, 0.0 }, vec3{ 0.0, 0.0, pi / 2.0 } }, 0.5);
     test_assert(approx_equal(singleAxis, affine_rotation_matrix(vec3{ 0.0, 0.0, pi / 4.0 })));
 
-    // Shortest arc: 0 -> 270 deg goes backwards through -45 deg at t = 0.5
+    // ShortestArc: 0 -> 270 deg goes backwards through -45 deg at t = 0.5
     auto const shortestArc = affine_transformation_lerp(
         vec3_range{ vec3{ 0.0, 0.0, 0.0 } }, vec3_range{ vec3{ 1.0, 1.0, 1.0 } },
-        vec3_range{ vec3{ 0.0, 0.0, 0.0 }, vec3{ 0.0, 0.0, 3.0 * pi / 2.0 } }, 0.5);
+        vec3_range{ vec3{ 0.0, 0.0, 0.0 }, vec3{ 0.0, 0.0, 3.0 * pi / 2.0 } }, 0.5, rotation_lerp::ShortestArc);
     test_assert(approx_equal(shortestArc, affine_rotation_matrix(vec3{ 0.0, 0.0, -pi / 4.0 })));
+
+    // ...and under ShortestArc a whole turn is still a no-op at every t
+    auto const collapsed = affine_transformation_lerp_generator(
+        vec3_range{ vec3{ 0.0, 0.0, 0.0 } }, vec3_range{ vec3{ 1.0, 1.0, 1.0 } },
+        vec3_range{ vec3{ 0.0, 0.0, 0.0 }, vec3{ 0.0, 0.0, 2.0 * pi } }, rotation_lerp::ShortestArc);
+    for (double t = 0.0; t <= 1.0; t += 0.125)
+        test_assert(approx_equal(collapsed(t), mat44::identity()));
+
+    // Auto: a range beyond a half turn is taken verbatim, so 0 -> 270 deg goes forwards
+    // through +135 deg at t = 0.5 rather than backwards
+    auto const longWayRound = affine_transformation_lerp(
+        vec3_range{ vec3{ 0.0, 0.0, 0.0 } }, vec3_range{ vec3{ 1.0, 1.0, 1.0 } },
+        vec3_range{ vec3{ 0.0, 0.0, 0.0 }, vec3{ 0.0, 0.0, 3.0 * pi / 2.0 } }, 0.5);
+    test_assert(approx_equal(longWayRound, affine_rotation_matrix(vec3{ 0.0, 0.0, 3.0 * pi / 4.0 })));
+
+    // Auto: a full turn actually turns; every t lands where it should and both endpoints
+    // come back to identity
+    auto const fullTurn = affine_transformation_lerp_generator(
+        vec3_range{ vec3{ 0.0, 0.0, 0.0 } }, vec3_range{ vec3{ 1.0, 1.0, 1.0 } },
+        vec3_range{ vec3{ 0.0, 0.0, 0.0 }, vec3{ 0.0, 0.0, 2.0 * pi } });
+    for (double t = 0.0; t <= 1.0; t += 0.125)
+        test_assert(approx_equal(fullTurn(t), affine_rotation_matrix(vec3{ 0.0, 0.0, 2.0 * pi * t })));
+    test_assert(approx_equal(fullTurn(0.0), mat44::identity()) && approx_equal(fullTurn(1.0), mat44::identity()));
+
+    // Three quarters through a full turn is three quarters of a turn. Pinned on its own since
+    // it is the case that stood still under the old collapse: the matrix, the sense of the
+    // rotation it applies (+x ends up at -y), and the contrast with shortest-arc at the same t.
+    // n.b. 270 deg and -90 deg are the same matrix, so only the journey tells them apart, which
+    // is why the guard here is against identity rather than against a reversed endpoint.
+    auto const threeQuarterTurn = affine_transformation_lerp(
+        vec3_range{ vec3{ 0.0, 0.0, 0.0 } }, vec3_range{ vec3{ 1.0, 1.0, 1.0 } },
+        vec3_range{ vec3{ 0.0, 0.0, 0.0 }, vec3{ 0.0, 0.0, 2.0 * pi } }, 0.75);
+    test_assert(approx_equal(threeQuarterTurn, affine_rotation_matrix(vec3{ 0.0, 0.0, 3.0 * pi / 2.0 })));
+    test_assert(approx_equal(threeQuarterTurn * vec4{ 1.0, 0.0, 0.0, 1.0 }, vec4{ 0.0, -1.0, 0.0, 1.0 }));
+    test_assert(!approx_equal(threeQuarterTurn, mat44::identity()));
+    test_assert(approx_equal(collapsed(0.75), mat44::identity()) && !approx_equal(threeQuarterTurn, collapsed(0.75)));
+
+    // Auto: multiple turns, and turns in the negative direction
+    auto const twoTurns = affine_transformation_lerp(
+        vec3_range{ vec3{ 0.0, 0.0, 0.0 } }, vec3_range{ vec3{ 1.0, 1.0, 1.0 } },
+        vec3_range{ vec3{ 0.0, 0.0, 0.0 }, vec3{ 0.0, 0.0, 4.0 * pi } }, 0.25);
+    test_assert(approx_equal(twoTurns, affine_rotation_matrix(vec3{ 0.0, 0.0, pi })));
+    auto const reverseTurn = affine_transformation_lerp(
+        vec3_range{ vec3{ 0.0, 0.0, 0.0 } }, vec3_range{ vec3{ 1.0, 1.0, 1.0 } },
+        vec3_range{ vec3{ 0.0, 0.0, 0.0 }, vec3{ 0.0, 0.0, -2.0 * pi } }, 0.25);
+    test_assert(approx_equal(reverseTurn, affine_rotation_matrix(vec3{ 0.0, 0.0, -pi / 2.0 })));
+
+    // A multi-turn range takes the Euler route even when the eased factors are not uniform
+    auto const perAxis = fullTurn(vec3{ 0.0, 0.0, 0.0 }, vec3{ 0.0, 0.0, 0.0 }, vec3{ 0.1, 0.2, 0.75 });
+    test_assert(approx_equal(perAxis, affine_rotation_matrix(vec3{ 0.0, 0.0, 3.0 * pi / 2.0 })));
+
+    // Absolute: a wrapping range travels the long way even though its endpoints are less
+    // than a half turn apart (350 deg -> 10 deg is -340 deg, not +20 deg)
+    auto const wrapping = affine_transformation_lerp(
+        vec3_range{ vec3{ 0.0, 0.0, 0.0 } }, vec3_range{ vec3{ 1.0, 1.0, 1.0 } },
+        vec3_range{ vec3{ 0.0, 0.0, 350.0 * pi / 180.0 }, vec3{ 0.0, 0.0, 10.0 * pi / 180.0 } }, 0.5, rotation_lerp::Absolute);
+    test_assert(approx_equal(wrapping, affine_rotation_matrix(vec3{ 0.0, 0.0, pi })));
 
     // Tiny rotation takes the nlerp branch (d > 0.9995): 0 -> 1 deg at t = 0.5 is ~0.5 deg
     double const oneDegree = pi / 180.0;
