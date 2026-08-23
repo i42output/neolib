@@ -36,6 +36,9 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+
+#include <chrono>
+
 #include <neolib/core/numerical.hpp>
 #include <neolib/ecs/i_ecs.hpp>
 #include <neolib/ecs/3rdparty/facebook/flicks.h>
@@ -52,7 +55,7 @@ namespace neolib::ecs
         }
     }
 
-    using time_interval = primitives::scalar;
+    using time_interval = std::chrono::duration<primitives::scalar>;
     using optional_time_interval = std::optional<time_interval>;
     using step_time_interval = std::int64_t;
     using optional_step_time_interval = std::optional<step_time_interval>;
@@ -61,7 +64,7 @@ namespace neolib::ecs
 
     inline step_time_interval to_step_time(time_interval aTime, step_time_interval aStepInterval)
     {
-        auto fs = chrono::to_flicks(aTime).count();
+        auto fs = chrono::to_flicks(aTime.count()).count();
         return fs - (fs % aStepInterval);
     }
 
@@ -75,6 +78,6 @@ namespace neolib::ecs
 
     inline time_interval from_step_time(step_time_interval aStepTime)
     {
-        return chrono::to_seconds(chrono::flicks{ aStepTime });
+        return time_interval{ chrono::to_seconds(chrono::flicks{ aStepTime }) };
     }
 }

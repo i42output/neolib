@@ -94,7 +94,7 @@ namespace neolib::ecs
         }
 
         if (have_thread() && get_thread().in())
-            wait_for(std::max(1.0, from_step_time(waitDuration)));
+            wait_for(std::max(1.0, from_step_time(waitDuration).count()));
 
         return true;
     }
@@ -102,8 +102,8 @@ namespace neolib::ecs
     step_time time::system_time() const
     {
         auto systemTime = to_step_time(iWorldClock, 
-            chrono::to_seconds(std::chrono::duration_cast<chrono::flicks>(
-                neolib::chrono::fast_clock::now().time_since_epoch())));
+            time_interval{ chrono::to_seconds(std::chrono::duration_cast<chrono::flicks>(
+                neolib::chrono::fast_clock::now().time_since_epoch())) });
         if (iSystemTimeOffset == std::nullopt)
             iSystemTimeOffset = systemTime;
         return systemTime - *iSystemTimeOffset;
