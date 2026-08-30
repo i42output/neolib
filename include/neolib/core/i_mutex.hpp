@@ -49,8 +49,8 @@ namespace neolib
 {
     struct i_lockable
     {
-        virtual void lock() noexcept = 0;
-        virtual void unlock() noexcept = 0;
+        virtual void lock() = 0;
+        virtual void unlock() = 0;
         virtual bool try_lock() noexcept = 0;
     };
 

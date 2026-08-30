@@ -121,8 +121,8 @@ namespace neolib
 
     struct null_mutex : public i_lockable
     {
-        void lock() noexcept final {}
-        void unlock() noexcept final {}
+        void lock() final {}
+        void unlock() final {}
         bool try_lock() noexcept final { return true; }
     };
 
@@ -135,11 +135,11 @@ namespace neolib
         {
         }
     public:
-        void lock() noexcept final
+        void lock() final
         {
             iSubject->lock();
         }
-        void unlock() noexcept final
+        void unlock() final
         {
             iSubject->unlock();
         }
@@ -149,6 +149,54 @@ namespace neolib
         }
     private:
         Subject* iSubject;
+    };
+
+    template <typename... MutexTypes>
+    class multi_mutex : public i_lockable
+    {
+    public:
+        multi_mutex() = default;
+        template <typename MutexType, typename... Args>
+        explicit multi_mutex(std::in_place_type_t<MutexType>, Args&&... aArgs) :
+            iMutex{ std::in_place_type<MutexType>, std::forward<Args>(aArgs)... }
+        {
+        }
+    public:
+        template <typename MutexType, typename... Args>
+        MutexType& emplace(Args&&... aArgs)
+        {
+            return iMutex.template emplace<MutexType>(std::forward<Args>(aArgs)...);
+        }
+    public:
+        template <typename MutexType>
+        bool is() const
+        {
+            return std::holds_alternative<MutexType>(iMutex);
+        }
+    public:
+        void lock() final 
+        {
+            std::visit([](auto& mutex)
+                {
+                    mutex.lock();
+                }, iMutex);
+        }
+        void unlock() final 
+        {
+            std::visit([](auto& mutex)
+                {
+                    mutex.unlock();
+                }, iMutex);
+        }
+        bool try_lock() noexcept final
+        {
+            return std::visit([](auto& mutex) -> bool
+                {
+                    return mutex.try_lock();
+                }, iMutex);
+        }
+    private:
+        std::variant<MutexTypes...> iMutex;
     };
 
     namespace this_thread
@@ -303,7 +351,7 @@ namespace neolib
             assert(!iState.test(std::memory_order_acquire));
         }
     public:
-        void lock() noexcept final
+        void lock() final
         {
             prevent_icf();
             auto const thisThread = this_thread::lightweight::get_id();
@@ -415,7 +463,7 @@ namespace neolib
             iLockingThread.store(thisThread, std::memory_order_relaxed);
             ++iLockCount;
         }
-        void unlock() noexcept final
+        void unlock() final
         {
             prevent_icf();
             if (--iLockCount == 0u)
@@ -487,11 +535,11 @@ namespace neolib
             iActiveMutex.emplace<neolib::recursive_mutex<ProfilerTag, true>>();
         }
     public:
-        void lock() noexcept final
+        void lock() final
         {
             std::visit([](auto& mutex) { mutex.lock(); }, iActiveMutex);
         }
-        void unlock() noexcept final
+        void unlock() final
         {
             std::visit([](auto& mutex) { mutex.unlock(); }, iActiveMutex);
         }
