@@ -193,6 +193,7 @@ namespace neolib
             basic_vector min(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::min(v[index], right.v[index]); return result; }
             basic_vector max(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::max(v[index], right.v[index]); return result; }
             value_type min() const { value_type result = v[0]; for (std::uint32_t index = 1; index < Size; ++index) result = std::min(v[index], result); return result; }
+            value_type max() const { value_type result = v[0]; for (std::uint32_t index = 1; index < Size; ++index) result = std::max(v[index], result); return result; }
             basic_vector ceil() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::ceil(v[index]); return result; }
             basic_vector floor() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::floor(v[index]); return result; }
             basic_vector round() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::round(v[index]); return result; }
@@ -339,6 +340,7 @@ namespace neolib
             basic_vector min(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::min(v[index], right.v[index]); return result; }
             basic_vector max(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::max(v[index], right.v[index]); return result; }
             value_type min() const { value_type result = v[0]; for (std::uint32_t index = 1; index < Size; ++index) result = std::min(v[index], result); return result; }
+            value_type max() const { value_type result = v[0]; for (std::uint32_t index = 1; index < Size; ++index) result = std::max(v[index], result); return result; }
             basic_vector ceil() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::ceil(v[index]); return result; }
             basic_vector floor() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::floor(v[index]); return result; }
             basic_vector round() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::round(v[index]); return result; }
@@ -457,6 +459,7 @@ namespace neolib
             basic_vector min(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::min(v[index], right.v[index]); return result; }
             basic_vector max(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::max(v[index], right.v[index]); return result; }
             value_type min() const { value_type result = v[0]; for (std::uint32_t index = 1; index < Size; ++index) result = std::min(v[index], result); return result; }
+            value_type max() const { value_type result = v[0]; for (std::uint32_t index = 1; index < Size; ++index) result = std::max(v[index], result); return result; }
             basic_vector ceil() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::ceil(v[index]); return result; }
             basic_vector floor() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::floor(v[index]); return result; }
             basic_vector round() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::round(v[index]); return result; }
