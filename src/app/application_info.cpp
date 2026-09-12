@@ -40,17 +40,33 @@
 
 namespace neolib
 {
+    namespace
+    {
+        std::string as_path_component(const std::string& aName)
+        {
+            // an application or company name is free to contain characters a path component cannot
+            static const std::string sReserved = "<>:\"/\\|?*";
+            std::string result;
+            for (auto const character : aName)
+                if (sReserved.find(character) == std::string::npos && static_cast<unsigned char>(character) >= 0x20u)
+                    result += character;
+            return result;
+        }
+    }
+
     std::string settings_folder(const std::string& aApplicationName, const std::string& aCompanyName)
     {
-        if (aApplicationName.empty())
+        auto const applicationName = as_path_component(aApplicationName);
+        auto const companyName = as_path_component(aCompanyName);
+        if (applicationName.empty())
             throw unknown_application_name();
 #ifdef _WIN32
         std::string settingsFolder = user_settings_directory();
-        if (!aCompanyName.empty())
-            settingsFolder += ("/" + aCompanyName);
-        settingsFolder += ("/" + aApplicationName);
+        if (!companyName.empty())
+            settingsFolder += ("/" + companyName);
+        settingsFolder += ("/" + applicationName);
 #else
-        std::string settingsFolder = user_settings_directory() + "/." + aApplicationName;
+        std::string settingsFolder = user_settings_directory() + "/." + applicationName;
 #endif
         create_path(settingsFolder);
         return settingsFolder;
