@@ -195,6 +195,14 @@ namespace neolib
                             packet_stream_pointer keepObjectAlive{ std::move(*i) };
                             iStreamList.erase(i);
                             PacketStreamRemoved.trigger(*acceptingStream);
+                            // we are running inside the stream's own
+                            // ConnectionClosed trigger: destroying it here kills
+                            // the event mid-iteration, so every slot registered
+                            // after this one is silently dropped. Let the
+                            // io_context destroy it once the trigger has unwound.
+                            boost::asio::post(
+                                iIoTask.io_context().template native_object<boost::asio::io_context>(),
+                                [doomed = std::move(keepObjectAlive)]() mutable { doomed.reset(); });
                             break;
                         }
                 }

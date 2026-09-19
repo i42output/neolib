@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <cstdlib>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -262,6 +263,14 @@ namespace
             iTask{ "neolib::io unit test" }
         {
         }
+        ~io_fixture()
+        {
+            // let any outstanding completions run while the io_context is still
+            // alive, rather than leaving them to be destroyed during its shutdown
+            auto const deadline = std::chrono::steady_clock::now() + 2000ms;
+            while (iTask.io_context().poll(false) && std::chrono::steady_clock::now() < deadline)
+                std::this_thread::yield();
+        }
     public:
         neolib::async_task& task()
         {
@@ -329,6 +338,13 @@ namespace
                     ++iTransferFailures;
                     iLastTransferFailure = describe(aError);
                 });
+                // registered after the server's own slot on the same event, so
+                // this only gets called if the server stops destroying the
+                // stream from inside the trigger
+                iSink += aStream.connection_closed([this]()
+                {
+                    ++iStreamConnectionClosed;
+                });
             });
             // NOT aStream.connection_closed: tcp_packet_stream_server::accept_connection
             // subscribes to that event first and destroys the stream from inside
@@ -354,6 +370,7 @@ namespace
         std::uint32_t transfer_failures() const { return iTransferFailures; }
         const std::string& last_transfer_failure() const { return iLastTransferFailure; }
         bool last_close_had_error() const { return iLastCloseHadError; }
+        std::uint32_t stream_connection_closed() const { return iStreamConnectionClosed; }
         const std::string& last_close_error() const { return iLastCloseError; }
         stream_type* last_stream() const { return iLastStream; }
     private:
@@ -366,6 +383,7 @@ namespace
         std::uint32_t iTransferFailures = 0u;
         std::string iLastTransferFailure;
         bool iLastCloseHadError = false;
+        std::uint32_t iStreamConnectionClosed = 0u;
         std::string iLastCloseError;
         stream_type* iLastStream = nullptr;
     };
@@ -415,7 +433,10 @@ namespace
         });
         connect(fix, client, sink, port);
 
-        test_assert(server.connections() == 1u, "server should have accepted one connection");
+        // the client's connect completes before the server's accept handler
+        // necessarily has, so wait for it rather than sampling immediately
+        test_assert(fix.pump([&server]() { return server.connections() >= 1u; }), "server did not accept the connection");
+        test_assert(server.connections() == 1u, "server accepted more than one connection");
 
         client.send_packet(neolib::string_packet{ "NICK tester\r\n" });
         client.send_packet(neolib::string_packet{ "USER a b c :d\r\n" });
@@ -1021,6 +1042,28 @@ namespace
             "TLS hangup recorded an error: " + std::to_string(client.error_code()) + " (" + client.error() + ")");
     }
 
+    // the server's own connection_closed slot is registered before the stream is
+    // handed out, and it is what removes the stream. If it destroys the stream
+    // inline, the event dies mid-iteration and every slot an application added
+    // afterwards is silently skipped.
+    void test_server_stream_connection_closed_is_reachable()
+    {
+        io_fixture fix;
+        auto const port = find_free_port(fix.task());
+        test_server<neolib::string_packet> server{ fix.task(), port };
+
+        neolib::tcp_string_packet_stream client{ fix.task() };
+        neolib::sink sink;
+        connect(fix, client, sink, port);
+        test_assert(fix.pump([&server]() { return server.connections() >= 1u; }), "server did not accept the connection");
+
+        client.close();
+
+        test_assert(fix.pump([&server]() { return server.stream_connection_closed() >= 1u; }),
+            "a slot on the server-side stream's connection_closed was never called");
+        test_assert(server.connections_closed() >= 1u, "packet_stream_removed did not fire");
+    }
+
     void test_repeated_reconnect_cycles()
     {
         io_fixture fix;
@@ -1057,7 +1100,15 @@ namespace
 
 int main()
 {
-    neolib::allocate_service_provider();
+    try
+    {
+        neolib::allocate_service_provider();
+    }
+    catch (const std::exception& e)
+    {
+        std::cout << "failed to start services: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
 
     std::cout << "neolib::io packet tests" << std::endl;
     run_test("string_packet: CRLF lines", test_string_packet_crlf_lines);
@@ -1085,19 +1136,23 @@ int main()
     run_test("close(): clears partial receive packet", test_close_clears_partial_receive_packet);
     run_test("close(): delivers eof to the peer", test_close_delivers_eof_to_peer);
     run_test("close(): peer hangup delivers eof locally", test_peer_close_delivers_eof_locally);
+    run_test("close(): repeated reconnect cycles", test_repeated_reconnect_cycles);
+    run_test("server: stream connection_closed is reachable", test_server_stream_connection_closed_is_reachable);
 
     std::cout << "neolib::io TLS tests" << std::endl;
     run_test("tls: round trip", test_tls_round_trip);
     run_test("tls: rejects untrusted certificate", test_tls_rejects_untrusted_certificate);
     run_test("tls: rejects wrong host name", test_tls_rejects_wrong_host_name);
     run_test("tls: peer hangup is not a transfer failure", test_tls_close_is_not_a_transfer_failure);
-    run_test("close(): repeated reconnect cycles", test_repeated_reconnect_cycles);
 
     if (sFailures != 0u)
     {
         std::cout << sFailures << " test(s) failed" << std::endl;
-        throw std::logic_error("Test failed");
+        // exiting by exception terminates the process, which CTest reports as
+        // "Exception" and which hides everything printed above
+        return EXIT_FAILURE;
     }
 
     std::cout << "all tests passed" << std::endl;
+    return EXIT_SUCCESS;
 }

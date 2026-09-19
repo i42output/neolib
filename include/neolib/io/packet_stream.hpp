@@ -160,7 +160,11 @@ namespace neolib
         void handle_packet_sent(const generic_packet_type& aPacket) override
         {
             orphaned_queue_item sentPacket = remove_packet(static_cast<const packet_type&>(aPacket));
-            PacketSent.trigger(*sentPacket);
+            // remove_packet returns null when the packet is not in the queue,
+            // which happens if the queue was cleared while the write was in
+            // flight; aPacket may not outlive that, so do not fall back to it
+            if (sentPacket != nullptr)
+                PacketSent.trigger(*sentPacket);
         }
         void handle_packet_arrived(const generic_packet_type& aPacket) override
         {
