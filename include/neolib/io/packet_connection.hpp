@@ -257,6 +257,9 @@ namespace neolib
             bool wasConnected = iConnected;
             iConnected = false;
             iReceiveBufferPtr = &buffer()[0];
+            iReceivePacket->clear();
+            iSendQueue.clear();
+            iPacketBeingSent = nullptr;
             if (wasConnected)
                 iOwner.handle_connection_closed();
         }
