@@ -94,11 +94,10 @@ namespace neolib
         using secure_stream_pointer = std::shared_ptr<secure_stream_type>;
         using socket_holder_type = std::variant<std::monostate, socket_pointer, secure_stream_pointer>;
         using secure_stream_context = boost::asio::ssl::context;
-        using secure_stream_context_pointer = std::unique_ptr<secure_stream_context>;
+        using secure_stream_context_pointer = std::shared_ptr<secure_stream_context>;
         using endpoint_type = typename protocol_type::endpoint;
         using resolver_type = typename protocol_type::resolver;
         using receive_buffer = std::array<char, ReceiveBufferSize * sizeof(CharType)>;
-        using secure_context = boost::asio::ssl::context;
         class handler_proxy
         {
         public:
@@ -140,11 +139,20 @@ namespace neolib
                 else
                     iParent.iHandlerProxy.reset();
             }
+            // a pending read on a secure stream is given the ssl::stream's own
+            // internal buffer, so the stream has to outlive its outstanding
+            // operations. Pending handlers hold this proxy, so parking the
+            // socket here keeps it alive exactly that long.
+            void keep_alive(const socket_holder_type& aSocketHolder)
+            {
+                iKeepAlive = aSocketHolder;
+            }
         private:
             destroyed_flag iParentDestroyed;
             our_type& iParent;
             bool iOrphaned = false;
             std::shared_ptr<receive_buffer> iReceiveBuffer;
+            socket_holder_type iKeepAlive;
         };
 
         // exceptions
@@ -222,6 +230,39 @@ namespace neolib
             iError = false;
             return open();
         }
+        // a TLS context with verification on for clients; the caller may adjust
+        // it via secure_context() before open(), e.g. load_verify_file() for a
+        // private CA, use_certificate_chain_file()/use_private_key_file() for a
+        // server, or set_verify_mode(verify_none) to opt out entirely
+        static std::shared_ptr<secure_stream_context> create_secure_context(bool aServer)
+        {
+            auto context = std::make_shared<secure_stream_context>(
+                aServer ? boost::asio::ssl::context::tls_server : boost::asio::ssl::context::tls_client);
+            boost::system::error_code ec;
+            context->set_options(
+                boost::asio::ssl::context::default_workarounds |
+                boost::asio::ssl::context::no_sslv2 |
+                boost::asio::ssl::context::no_sslv3 |
+                boost::asio::ssl::context::no_tlsv1 |
+                boost::asio::ssl::context::no_tlsv1_1 |
+                boost::asio::ssl::context::single_dh_use, ec);
+            if (!aServer)
+            {
+                context->set_default_verify_paths(ec);
+                context->set_verify_mode(boost::asio::ssl::verify_peer, ec);
+            }
+            return context;
+        }
+        secure_stream_context& secure_context()
+        {
+            if (iSecureStreamContext == nullptr)
+                iSecureStreamContext = create_secure_context(false);
+            return *iSecureStreamContext;
+        }
+        void set_secure_context(std::shared_ptr<secure_stream_context> aContext)
+        {
+            iSecureStreamContext = aContext;
+        }
         bool open(bool aAcceptingSocket = false)
         {
             if (opened())
@@ -233,7 +274,7 @@ namespace neolib
             else
             {
                 if (iSecureStreamContext == nullptr)
-                    iSecureStreamContext.reset(new secure_stream_context(boost::asio::ssl::context::sslv23));
+                    iSecureStreamContext = create_secure_context(aAcceptingSocket);
                 iSocketHolder = secure_stream_pointer(new secure_stream_type(iIoTask.io_context().native_object<boost::asio::io_context>(), *iSecureStreamContext));
             }
             if (aAcceptingSocket)
@@ -249,10 +290,30 @@ namespace neolib
         }
         void close()
         {
-            iHandlerProxy->orphan();
+            // hold the proxy locally: orphan() reassigns iHandlerProxy, which
+            // would otherwise destroy the proxy while it is executing
+            auto proxy = iHandlerProxy;
+            proxy->keep_alive(iSocketHolder);
+            proxy->orphan();
             iResolver.cancel();
             if (!std::holds_alternative<std::monostate>(iSocketHolder))
-                socket().close();
+            {
+                // closing a socket with pending overlapped reads is an abortive
+                // close on Windows: the peer gets RST and reports a transfer
+                // failure instead of eof. Send FIN first.
+                boost::system::error_code ec;
+                if (std::holds_alternative<secure_stream_pointer>(iSocketHolder) &&
+                    std::get<secure_stream_pointer>(iSocketHolder) != nullptr)
+                {
+                    // best-effort close_notify: going non-blocking first means
+                    // we do not wait for the peer's reply, so close() stays
+                    // synchronous and safe to call from the destructor
+                    socket().non_blocking(true, ec);
+                    secure_stream().shutdown(ec);
+                }
+                socket().shutdown(socket_type::shutdown_both, ec);
+                socket().close(ec);
+            }
             iSocketHolder = none;
             bool wasConnected = iConnected;
             iConnected = false;
@@ -344,8 +405,19 @@ namespace neolib
             iConnected = true;
             iLocalHostName = socket().local_endpoint().address().to_string();
             iLocalPort = socket().local_endpoint().port();
-            send_any();
-            receive_any();
+            if (!secure())
+            {
+                send_any();
+                receive_any();
+            }
+            else
+            {
+                // an accepted secure connection still has to complete a
+                // handshake before any application data can flow
+                std::get<secure_stream_pointer>(iSocketHolder)->async_handshake(
+                    boost::asio::ssl::stream_base::server,
+                    boost::bind(&handler_proxy::handle_handshake, iHandlerProxy, boost::asio::placeholders::error));
+            }
         }
         
         // implementation
@@ -459,7 +531,17 @@ namespace neolib
                 }
                 else
                 {
-                      std::get<secure_stream_pointer>(iSocketHolder)->async_handshake(
+                      auto& stream = *std::get<secure_stream_pointer>(iSocketHolder);
+                      if (!iRemoteHostName.empty())
+                      {
+                          boost::system::error_code ec;
+                          // SNI is for host names only, not IP literals
+                          boost::asio::ip::make_address(iRemoteHostName, ec);
+                          if (ec)
+                              ::SSL_set_tlsext_host_name(stream.native_handle(), iRemoteHostName.c_str());
+                          stream.set_verify_callback(boost::asio::ssl::host_name_verification(iRemoteHostName), ec);
+                      }
+                      stream.async_handshake(
                           boost::asio::ssl::stream_base::client, 
                           boost::bind(&handler_proxy::handle_handshake, iHandlerProxy, boost::asio::placeholders::error));
                 }
@@ -601,7 +683,15 @@ namespace neolib
             }
             else
             {
-                if (aError.value() != boost::asio::error::eof && opened())
+                // aError.value() alone ignores the category: ssl::error::stream_truncated
+                // is value 1 in asio.ssl.stream, so it never matched the old
+                // eof test and every TLS disconnect was reported as a transfer
+                // failure. Most TLS peers close the transport without sending
+                // close_notify, so treat truncation as end of stream too.
+                bool const endOfStream =
+                    (aError == boost::asio::error::eof) ||
+                    (secure() && aError == boost::asio::ssl::error::stream_truncated);
+                if (!endOfStream && opened())
                 {
                     iError = true;
                     iErrorCode = aError;

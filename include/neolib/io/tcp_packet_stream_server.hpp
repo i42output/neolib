@@ -94,23 +94,30 @@ namespace neolib
 
         // construction
     public:
-        tcp_packet_stream_server(i_async_task& aIoTask, unsigned short aLocalPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4) :
+        // a secure server must have its certificate installed before the
+        // first accept, so the context is supplied here rather than configured
+        // afterwards; see create_secure_context()
+        tcp_packet_stream_server(i_async_task& aIoTask, unsigned short aLocalPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4,
+            std::shared_ptr<boost::asio::ssl::context> aSecureContext = nullptr) :
             iIoTask(aIoTask),
             iHandlerProxy(new handler_proxy(*this)),
             iLocalPort(aLocalPort),
             iSecure(aSecure),
+            iSecureContext(aSecureContext),
             iProtocolFamily(aProtocolFamily & IPv4 ? protocol_type::v4() : protocol_type::v6()),
             iLocalEndpoint(iProtocolFamily, iLocalPort),
             iAcceptor(aIoTask.io_context().native_object<boost::asio::io_context>(), iLocalEndpoint)
         {
             accept_connection();
         }
-        tcp_packet_stream_server(i_async_task& aIoTask, const std::string& aLocalHostName, unsigned short aLocalPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4) :
+        tcp_packet_stream_server(i_async_task& aIoTask, const std::string& aLocalHostName, unsigned short aLocalPort, bool aSecure = false, protocol_family aProtocolFamily = IPv4,
+            std::shared_ptr<boost::asio::ssl::context> aSecureContext = nullptr) :
             iIoTask(aIoTask),
             iHandlerProxy(new handler_proxy(*this)),
             iLocalHostName(aLocalHostName),
             iLocalPort(aLocalPort),
             iSecure(aSecure),
+            iSecureContext(aSecureContext),
             iProtocolFamily(aProtocolFamily & IPv4 ? protocol_type::v4() : protocol_type::v6()),
             iLocalEndpoint(resolve(aIoTask, iLocalHostName, iLocalPort, iProtocolFamily)),
             iAcceptor(aIoTask.io_context().native_object<boost::asio::io_context>(), iLocalEndpoint)
@@ -132,6 +139,14 @@ namespace neolib
         {
             return iLocalPort;
         }
+        // configure before the first connection is accepted, e.g.
+        // use_certificate_chain_file() and use_private_key_file()
+        boost::asio::ssl::context& secure_context()
+        {
+            if (iSecureContext == nullptr)
+                iSecureContext = packet_stream_type::connection_type::create_secure_context(true);
+            return *iSecureContext;
+        }
         packet_stream_pointer take_ownership(packet_stream_type& aStream)
         {
             for (typename stream_list::iterator i = iStreamList.begin(); i != iStreamList.end(); ++i)
@@ -147,11 +162,11 @@ namespace neolib
         // implementation
     private:
         // own
-        static endpoint_type resolve(async_task& aIoTask, const std::string& aHostname, unsigned short aPort, protocol_type aProtocolFamily)
+        static endpoint_type resolve(i_async_task& aIoTask, const std::string& aHostname, unsigned short aPort, protocol_type aProtocolFamily)
         {
-            resolver_type resolver(aIoTask.io_context().native_object());
+            resolver_type resolver(aIoTask.io_context().template native_object<boost::asio::io_context>());
             boost::system::error_code ec;
-            typename resolver_type::iterator result = resolver.resolve(resolver_type::query(aHostname, std::to_string(aPort), ec));
+            typename resolver_type::iterator result = resolver.resolve(aHostname, std::to_string(aPort), ec);
             if (!ec)
             {
                 for (typename resolver_type::iterator i = result; i != resolver_type::iterator(); ++i)
@@ -187,6 +202,11 @@ namespace neolib
                     PacketStreamRemoved.trigger(*acceptingStream);
             });
 
+            if (iSecure)
+            {
+                (void)secure_context();
+                iAcceptingStream->connection().set_secure_context(iSecureContext);
+            }
             iAcceptingStream->connection().open(true);
             iAcceptor.async_accept(iAcceptingStream->connection().socket(), boost::bind(&handler_proxy::operator(), iHandlerProxy, boost::asio::placeholders::error));
         }
@@ -210,6 +230,7 @@ namespace neolib
         std::string iLocalHostName;
         unsigned short iLocalPort;
         bool iSecure;
+        std::shared_ptr<boost::asio::ssl::context> iSecureContext;
         protocol_type iProtocolFamily;
         endpoint_type iLocalEndpoint;
         acceptor_type iAcceptor;

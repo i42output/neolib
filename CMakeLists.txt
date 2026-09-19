@@ -109,5 +109,8 @@ if(NEOLIB_TESTS)
   add_neolib_test_executable(App unit_tests/App/src/App.cpp unit_tests/App/src/Time.cpp)
   add_neolib_test_executable(File unit_tests/File/File.cpp)
   add_neolib_test_executable(Io unit_tests/Io/Io.cpp)
+  # the loopback tests instantiate basic_packet_connection::open(), which
+  # constructs a boost::asio::ssl::context, and OpenSSL is PRIVATE on neolib
+  target_link_libraries(Io PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 
 endif()
