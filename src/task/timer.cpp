@@ -157,6 +157,7 @@ namespace neolib
             return;
         if (!iTaskDestroying && !iTaskDestroyed)
             timer_object().cancel();
+        iWaiting = false;
     }
 
     void timer::reset()
