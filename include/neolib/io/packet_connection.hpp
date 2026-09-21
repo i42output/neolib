@@ -50,6 +50,7 @@
 #include <neolib/task/async_task.hpp>
 #include <neolib/io/resolver.hpp> // protocol_family
 #include <neolib/io/i_packet.hpp>
+#include <neolib/io/openssl.hpp>
 
 namespace neolib
 {
@@ -248,7 +249,7 @@ namespace neolib
                 boost::asio::ssl::context::single_dh_use, ec);
             if (!aServer)
             {
-                context->set_default_verify_paths(ec);
+                openssl::add_system_root_certificates(::SSL_CTX_get_cert_store(context->native_handle()));
                 context->set_verify_mode(boost::asio::ssl::verify_peer, ec);
             }
             return context;

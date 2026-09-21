@@ -912,6 +912,22 @@ namespace
             boost::asio::buffer(sTestCertificate, sizeof(sTestCertificate) - 1));
     }
 
+    // on Windows OpenSSL has no default CA locations, so a context that only
+    // calls set_default_verify_paths() trusts nothing and every public server
+    // fails the handshake. The default client context must carry the system
+    // roots. (Elsewhere the default paths may be a lazily-read hash directory,
+    // so an empty object list there proves nothing.)
+    void test_tls_default_context_has_trust_anchors()
+    {
+        auto context = neolib::tcp_string_packet_stream::connection_type::create_secure_context(false);
+        X509_STORE* const store = ::SSL_CTX_get_cert_store(context->native_handle());
+        test_assert(store != nullptr, "client context has no certificate store");
+#ifdef _WIN32
+        int const count = sk_X509_OBJECT_num(::X509_STORE_get0_objects(store));
+        test_assert(count > 0, "client context trusts no root certificates");
+#endif
+    }
+
     void test_tls_round_trip()
     {
         io_fixture fix;
@@ -1140,6 +1156,7 @@ int main()
     run_test("server: stream connection_closed is reachable", test_server_stream_connection_closed_is_reachable);
 
     std::cout << "neolib::io TLS tests" << std::endl;
+    run_test("tls: default context has trust anchors", test_tls_default_context_has_trust_anchors);
     run_test("tls: round trip", test_tls_round_trip);
     run_test("tls: rejects untrusted certificate", test_tls_rejects_untrusted_certificate);
     run_test("tls: rejects wrong host name", test_tls_rejects_wrong_host_name);

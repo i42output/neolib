@@ -34,8 +34,17 @@
 */
 
 #include <neolib/neolib.hpp>
+#ifdef _WIN32
+// before any OpenSSL header: OpenSSL undefines wincrypt's X509_NAME etc.
+// macros only if wincrypt has already been seen
+#include <windows.h>
+#include <wincrypt.h>
+#pragma comment(lib, "crypt32.lib")
+#endif
 #include <openssl/opensslv.h>
 #include <openssl/rand.h>
+#include <openssl/x509.h>
+#include <openssl/err.h>
 #include <neolib/io/openssl.hpp>
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000
@@ -56,6 +65,34 @@ namespace neolib
     {
         static openssl sInstance;
         return sInstance;
+    }
+
+    void openssl::add_system_root_certificates(void* aX509Store)
+    {
+        auto const store = static_cast<X509_STORE*>(aX509Store);
+#ifdef _WIN32
+        HCERTSTORE const systemStore = ::CertOpenSystemStoreW(0, L"ROOT");
+        if (systemStore != nullptr)
+        {
+            PCCERT_CONTEXT certificate = nullptr;
+            while ((certificate = ::CertEnumCertificatesInStore(systemStore, certificate)) != nullptr)
+            {
+                unsigned char const* encoded = certificate->pbCertEncoded;
+                X509* const x509 = ::d2i_X509(nullptr, &encoded, static_cast<long>(certificate->cbCertEncoded));
+                if (x509 != nullptr)
+                {
+                    ::X509_STORE_add_cert(store, x509); // takes its own reference
+                    ::X509_free(x509);
+                }
+            }
+            ::CertCloseStore(systemStore, 0);
+        }
+#else
+        ::X509_STORE_set_default_paths(store);
+#endif
+        // duplicate or unparseable certificates leave entries on the error
+        // queue that would otherwise be misreported by the next TLS operation
+        ::ERR_clear_error();
     }
 
     bool openssl::generate_key(uint8_t* aKeyBuffer, std::size_t aKeySize)

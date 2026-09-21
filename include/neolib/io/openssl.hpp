@@ -50,6 +50,10 @@ namespace neolib
         static openssl& instance();
     public:
         bool generate_key(uint8_t* aKeyBuffer, std::size_t aKeySize);
+        // adds the platform's trusted root certificates to an X509_STORE*.
+        // OpenSSL has no default CA locations on Windows, so without this
+        // every public server fails certificate verification there.
+        static void add_system_root_certificates(void* aX509Store);
     private:
         bool need_entropy() const;
         void generate_entropy();
