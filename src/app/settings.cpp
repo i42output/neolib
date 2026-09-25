@@ -63,6 +63,21 @@ namespace neolib
         iGroupTitles[string{ category }][aGroupSubkey] = aGroupTitle;
     }
 
+    namespace
+    {
+        // "category.group.subgroup" -> "category.group"
+        std::string subgroup_group(std::string const& aSubgroupKey)
+        {
+            auto const categoryEnd = aSubgroupKey.find('.');
+            return aSubgroupKey.substr(0, categoryEnd == std::string::npos ? categoryEnd : aSubgroupKey.find('.', categoryEnd + 1));
+        }
+    }
+
+    void settings::register_subgroup(i_string const& aSubgroupSubkey, i_string const& aSubgroupTitle)
+    {
+        iSubgroupTitles[string{ subgroup_group(aSubgroupSubkey.to_std_string()) }][aSubgroupSubkey] = aSubgroupTitle;
+    }
+
     void settings::register_setting(i_setting& aSetting)
     {
         if (iSettings.find(aSetting.key()) != iSettings.end())
@@ -122,6 +137,22 @@ namespace neolib
         auto existing = iter->second().find(aGroupSubkey);
         if (existing == iter->second().end())
             throw group_not_found();
+        return existing->second();
+    }
+
+    settings::subgroup_titles const& settings::all_subgroups() const
+    {
+        return iSubgroupTitles;
+    }
+
+    i_string const& settings::subgroup_title(i_string const& aSubgroupSubkey) const
+    {
+        auto iter = iSubgroupTitles.find(string{ subgroup_group(aSubgroupSubkey.to_std_string()) });
+        if (iter == iSubgroupTitles.end())
+            throw subgroup_not_found();
+        auto existing = iter->second().find(aSubgroupSubkey);
+        if (existing == iter->second().end())
+            throw subgroup_not_found();
         return existing->second();
     }
 

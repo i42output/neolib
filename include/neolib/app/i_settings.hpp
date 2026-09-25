@@ -73,15 +73,19 @@ namespace neolib
         struct setting_already_registered : std::logic_error { setting_already_registered() : std::logic_error("i_settings::setting_already_registered") {} };
         struct category_not_found : std::logic_error { category_not_found() : std::logic_error("i_settings::category_not_found") {} };
         struct group_not_found : std::logic_error { group_not_found() : std::logic_error("i_settings::group_not_found") {} };
+        struct subgroup_not_found : std::logic_error { subgroup_not_found() : std::logic_error("i_settings::subgroup_not_found") {} };
         struct setting_not_found : std::logic_error { setting_not_found() : std::logic_error("i_settings::setting_not_found") {} };
     public:
         virtual void register_category(i_string const& aCategorySubkey, i_string const& aCategoryTitle = string{}) = 0;
         virtual void register_group(i_string const& aGroupSubkey, i_string const& aGroupTitle = string{}) = 0;
+        virtual void register_subgroup(i_string const& aSubgroupSubkey, i_string const& aSubgroupTitle = string{}) = 0;
         virtual void register_setting(i_setting& aSetting) = 0;
         virtual i_map<i_string, i_string> const& all_categories() const = 0;
         virtual i_string const& category_title(i_string const& aCategorySubkey) const = 0;
         virtual i_map<i_string, i_map<i_string, i_string>> const& all_groups() const = 0;
         virtual i_string const& group_title(i_string const& aGroupSubkey) const = 0;
+        virtual i_map<i_string, i_map<i_string, i_string>> const& all_subgroups() const = 0; // group key -> (subgroup key -> title)
+        virtual i_string const& subgroup_title(i_string const& aSubgroupSubkey) const = 0;
         virtual i_map<i_string, i_ref_ptr<i_setting>> const& all_settings() const = 0;
         virtual i_vector<i_ref_ptr<i_setting>> const& all_settings_ordered() const = 0;
         virtual i_setting const& setting(i_string const& aKey) const = 0;
@@ -111,6 +115,10 @@ namespace neolib
         void register_group(string const& aGroupSubkey, string const& aGroupTitle = string{})
         {
             register_group(static_cast<i_string const&>(aGroupSubkey), static_cast<i_string const&>(aGroupTitle));
+        }
+        void register_subgroup(string const& aSubgroupSubkey, string const& aSubgroupTitle = string{})
+        {
+            register_subgroup(static_cast<i_string const&>(aSubgroupSubkey), static_cast<i_string const&>(aSubgroupTitle));
         }
         template <typename T>
         i_setting& register_setting(string const& aKey, T const& aDefaultValue, setting_constraints<as_setting_t<T>> const& aSettingConstraints, string const& aFormat = {})

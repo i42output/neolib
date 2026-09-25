@@ -62,6 +62,7 @@ namespace neolib
     private:
         typedef map<string, string> category_titles;
         typedef map<string, map<string, string>> group_titles;
+        typedef map<string, map<string, string>> subgroup_titles;
         typedef map<string, ref_ptr<i_setting>> setting_list;
         typedef vector<ref_ptr<i_setting>> setting_ordered_list;
     public:
@@ -70,14 +71,18 @@ namespace neolib
     public:
         using i_settings::register_category;
         using i_settings::register_group;
+        using i_settings::register_subgroup;
         using i_settings::register_setting;
         void register_category(i_string const& aCategorySubkey, i_string const& aCategoryTitle = string{}) override;
         void register_group(i_string const& aGroupSubkey, i_string const& aGroupTitle = string{}) override;
+        void register_subgroup(i_string const& aSubgroupSubkey, i_string const& aSubgroupTitle = string{}) override;
         void register_setting(i_setting& aSetting) override;
         category_titles const& all_categories() const override;
         i_string const& category_title(i_string const& aCategorySubkey) const override;
         group_titles const& all_groups() const override;
         i_string const& group_title(i_string const& aGroupSubkey) const override;
+        subgroup_titles const& all_subgroups() const override;
+        i_string const& subgroup_title(i_string const& aSubgroupSubkey) const override;
         setting_list const& all_settings() const override;
         setting_ordered_list const& all_settings_ordered() const override;
         i_setting const& setting(i_string const& aKey) const override;
@@ -103,6 +108,7 @@ namespace neolib
         mutable std::unique_ptr<xml> iStore;
         category_titles iCategoryTitles;
         group_titles iGroupTitles;
+        subgroup_titles iSubgroupTitles;
         setting_list iSettings;
         setting_ordered_list iSettingsOrdered;
         std::map<std::pair<i_setting const*, string>, string> iFriendlyText;
