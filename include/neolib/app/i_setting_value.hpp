@@ -36,6 +36,7 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <filesystem>
 #include <neolib/core/string.hpp>
 #include <neolib/core/i_enum.hpp>
 
@@ -108,6 +109,7 @@ define_setting_type(uint64_t)
 define_setting_type(float)
 define_setting_type(double)
 define_setting_type(string)
+define_setting_type(std::filesystem::path)
 
 namespace neolib 
 {

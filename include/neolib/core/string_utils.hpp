@@ -46,6 +46,7 @@
 #include <locale>
 #include <format>
 #include <cctype> 
+#include <filesystem>
 #include <neolib/core/string.hpp>
 #include <neolib/core/string_numeric.hpp>
 #include <neolib/core/string_utf.hpp>
@@ -92,12 +93,29 @@ namespace neolib
         comma_only_whitespace(std::size_t refs = 0) : ctype{ make_table(), false, refs } {}
     };
 
+    // std::filesystem::path <-> UTF-8 (not the narrow string conversions: on Windows they use the ANSI code page)
+    inline std::string path_to_utf8(std::filesystem::path const& aPath)
+    {
+        auto const utf8 = aPath.u8string();
+        return std::string{ utf8.begin(), utf8.end() };
+    }
+
+    inline std::filesystem::path utf8_to_path(std::string const& aUtf8)
+    {
+        return std::filesystem::path{ std::u8string{ aUtf8.begin(), aUtf8.end() } };
+    }
+
     template <typename T>
     inline std::string to_std_string(T const& aValue)
     {
-        std::ostringstream oss;
-        oss << aValue;
-        return oss.str();
+        if constexpr (std::is_same_v<T, std::filesystem::path>)
+            return path_to_utf8(aValue); // (operator<< would quote it)
+        else
+        {
+            std::ostringstream oss;
+            oss << aValue;
+            return oss.str();
+        }
     }
 
     template <typename T>
@@ -105,6 +123,8 @@ namespace neolib
     {
         if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, string>)
             return aValueAsString;
+        else if constexpr (std::is_same_v<T, std::filesystem::path>)
+            return utf8_to_path(aValueAsString);
         else
         {
             T result;
