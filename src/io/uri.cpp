@@ -34,12 +34,78 @@
 */
 
 #include <neolib/neolib.hpp>
+#include <iterator>
 #include <neolib/core/vecarray.hpp>
 #include <neolib/core/string_utils.hpp>
 #include <neolib/io/uri.hpp>
 
 namespace neolib
 {
+    namespace
+    {
+        std::string to_file_url(std::filesystem::path const& aPath)
+        {
+            auto const u8 = std::filesystem::absolute(aPath).generic_u8string();
+            std::string_view path{ reinterpret_cast<char const*>(u8.data()), u8.size() };
+
+            auto const encode = [](std::string_view aSource, std::string& aOut)
+                {
+                    static constexpr char hex[] = "0123456789ABCDEF";
+                    for (unsigned char ch : aSource)
+                    {
+                        bool const unreserved =
+                            (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') ||
+                            ch == '-' || ch == '.' || ch == '_' || ch == '~' || ch == '/';
+                        if (unreserved)
+                            aOut += static_cast<char>(ch);
+                        else
+                        {
+                            aOut += '%';
+                            aOut += hex[ch >> 4];
+                            aOut += hex[ch & 0x0F];
+                        }
+                    }
+                };
+
+            std::string result = "file://";
+            if (path.size() >= 2 && path[1] == ':' &&
+                ((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z')))
+            {
+                // C:/foo -> file:///C:/foo (keep the drive colon literal)
+                result += '/';
+                result.append(path.substr(0, 2));
+                path.remove_prefix(2);
+            }
+            else if (path.size() >= 2 && path[0] == '/' && path[1] == '/')
+            {
+                // UNC //server/share/foo -> file://server/share/foo
+                path.remove_prefix(2);
+            }
+            // POSIX /foo -> file:///foo (leading '/' is part of path)
+            encode(path, result);
+            return result;
+        }
+
+        // RFC 3986: scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." ) ":"
+        // A single-letter scheme is treated as a Windows drive letter, not a scheme.
+        bool has_scheme(std::string const& aUri)
+        {
+            auto const colon = aUri.find(':');
+            if (colon == std::string::npos || colon < 2)
+                return false;
+            auto const alpha = [](char ch) { return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'); };
+            if (!alpha(aUri[0]))
+                return false;
+            for (std::size_t i = 1; i < colon; ++i)
+            {
+                char const ch = aUri[i];
+                if (!alpha(ch) && !(ch >= '0' && ch <= '9') && ch != '+' && ch != '-' && ch != '.')
+                    return false;
+            }
+            return true;
+        }
+    }
+
     uri_authority::uri_authority()
     {
     }
@@ -107,7 +173,15 @@ namespace neolib
 
     uri::uri(const std::string& aUri)
     {
-        parse_authority(parse_path(parse_query(parse_fragment(parse_scheme(escaped(aUri))))));
+        if (aUri.empty() || has_scheme(aUri))
+            parse(aUri);
+        else
+            parse(std::filesystem::path{ aUri });
+    }
+
+    uri::uri(std::filesystem::path const& aPath)
+    {
+        parse(aPath);
     }
 
     std::string uri::to_string() const
@@ -167,6 +241,16 @@ namespace neolib
         iFragment = aFragment;
     }
 
+    void uri::parse(const std::string& aUri)
+    {
+        parse_authority(parse_path(parse_query(parse_fragment(parse_scheme(escaped(aUri))))));
+    }
+
+    void uri::parse(std::filesystem::path const& aPath)
+    {
+        parse_authority(parse_path(parse_query(parse_fragment(parse_scheme(escaped(to_file_url(aPath)))))));
+    }
+
     void uri::parse_authority(const std::string& aRest)
     {
         iAuthority = uri_authority(aRest);
@@ -196,7 +280,7 @@ namespace neolib
         for (auto i = aString.begin(); i != aString.end(); ++i)
             if (*i != '%')
                 escaped += *i;
-            else if (i < aString.end() - 3)
+            else if (std::distance(i, aString.end()) >= 3)
             {
                 escaped += static_cast<char>(string_to_uint32(std::string{ i + 1, i + 3 }, 16));
                 i += 2;

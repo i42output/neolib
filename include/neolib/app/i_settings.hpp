@@ -36,6 +36,8 @@
 #pragma once
 
 #include <neolib/neolib.hpp>
+#include <functional>
+#include <string>
 #include <neolib/core/vector.hpp>
 #include <neolib/core/map.hpp>
 #include <neolib/core/i_reference_counted.hpp>
@@ -50,6 +52,30 @@ namespace neolib
 {
     template <typename T>
     class setting;
+
+    class i_settings;
+
+    class i_setting_array_field : public i_reference_counted
+    {
+    public:
+        typedef i_setting_array_field abstract_type;
+    public:
+        virtual i_string const& name() const = 0;
+        // register this field's setting for element aIndex, under aKey
+        virtual void register_element(i_settings& aSettings, i_string const& aKey, std::uint32_t aIndex) const = 0;
+    };
+
+    template <typename T>
+    class setting_array_field;
+
+    inline std::string setting_array_element_format(std::string const& aFormat, std::uint32_t aIndex)
+    {
+        std::string result = aFormat;
+        for (auto const& [placeholder, value] : { std::pair{ std::string{ "{index}" }, std::to_string(aIndex) }, std::pair{ std::string{ "{number}" }, std::to_string(aIndex + 1u) } })
+            for (auto pos = result.find(placeholder); pos != std::string::npos; pos = result.find(placeholder, pos + value.size()))
+                result.replace(pos, placeholder.size(), value);
+        return result;
+    }
 
     template <typename T>
     struct as_setting
@@ -79,6 +105,8 @@ namespace neolib
         virtual void register_category(i_string const& aCategorySubkey, i_string const& aCategoryTitle = string{}) = 0;
         virtual void register_group(i_string const& aGroupSubkey, i_string const& aGroupTitle = string{}) = 0;
         virtual void register_subgroup(i_string const& aSubgroupSubkey, i_string const& aSubgroupTitle = string{}) = 0;
+        virtual void register_setting_array(i_string const& aArrayKey, std::uint32_t aDefaultSize, i_setting_constraints const& aSizeConstraints, 
+            i_string const& aSizeFormat, i_string const& aElementTitleFormat, i_vector<i_ref_ptr<i_setting_array_field>> const& aFields) = 0;
         virtual void register_setting(i_setting& aSetting) = 0;
         virtual i_map<i_string, i_string> const& all_categories() const = 0;
         virtual i_string const& category_title(i_string const& aCategorySubkey) const = 0;
@@ -86,6 +114,8 @@ namespace neolib
         virtual i_string const& group_title(i_string const& aGroupSubkey) const = 0;
         virtual i_map<i_string, i_map<i_string, i_string>> const& all_subgroups() const = 0; // group key -> (subgroup key -> title)
         virtual i_string const& subgroup_title(i_string const& aSubgroupSubkey) const = 0;
+        virtual bool is_active(i_setting const& aSetting) const = 0;
+        virtual bool setting_array_element(i_setting const& aSetting, i_string& aArrayKey, std::uint32_t& aIndex, std::uint32_t& aField, i_string& aElementTitle) const = 0;
         virtual i_map<i_string, i_ref_ptr<i_setting>> const& all_settings() const = 0;
         virtual i_vector<i_ref_ptr<i_setting>> const& all_settings_ordered() const = 0;
         virtual i_setting const& setting(i_string const& aKey) const = 0;
@@ -131,6 +161,23 @@ namespace neolib
         i_setting& register_setting(string const& aKey, T const& aDefaultValue, string const& aFormat = {})
         {
             return register_setting(aKey, aDefaultValue, {}, aFormat);
+        }
+        template <typename T>
+        static ref_ptr<i_setting_array_field> array_field(string const& aName, std::function<T(std::uint32_t aIndex)> aDefaultValue, string const& aFormat = {})
+        {
+            return make_ref<setting_array_field<T>>(aName, std::move(aDefaultValue), aFormat);
+        }
+        void register_setting_array(string const& aArrayKey, std::uint32_t aDefaultSize, setting_constraints<std::uint32_t> const& aSizeConstraints, 
+            string const& aSizeFormat, string const& aElementTitleFormat, std::initializer_list<ref_ptr<i_setting_array_field>> aFields)
+        {
+            vector<ref_ptr<i_setting_array_field>> fields{ aFields };
+            register_setting_array(static_cast<i_string const&>(aArrayKey), aDefaultSize, static_cast<i_setting_constraints const&>(aSizeConstraints),
+                static_cast<i_string const&>(aSizeFormat), static_cast<i_string const&>(aElementTitleFormat), fields);
+        }
+        void register_setting_array(string const& aArrayKey, std::uint32_t aDefaultSize, 
+            string const& aSizeFormat, string const& aElementTitleFormat, std::initializer_list<ref_ptr<i_setting_array_field>> aFields)
+        {
+            register_setting_array(aArrayKey, aDefaultSize, setting_constraints<std::uint32_t>{}, aSizeFormat, aElementTitleFormat, aFields);
         }
         template <typename T>
         void change_setting(i_setting& aExistingSetting, T const& aValue, bool aApplyNow = true)

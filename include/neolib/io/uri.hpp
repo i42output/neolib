@@ -38,6 +38,9 @@
 #include <neolib/neolib.hpp>
 #include <unordered_set>
 #include <optional>
+#include <filesystem>
+#include <string>
+#include <string_view>
 
 namespace neolib
 {
@@ -72,6 +75,7 @@ namespace neolib
     public:
         uri();
         uri(const std::string& aUri);
+        uri(std::filesystem::path const& aPath);
     public:
         std::string to_string() const;
         const std::string& scheme() const;
@@ -88,6 +92,8 @@ namespace neolib
         static std::string escaped(const std::string& aString);
         static std::string unescaped(const std::string& String);
     private:
+        void parse(const std::string& aUri);
+        void parse(std::filesystem::path const& aPath);
         void parse_authority(const std::string& aRest);
         std::string parse_path(const std::string& aRest);
         std::string parse_query(const std::string& aRest);

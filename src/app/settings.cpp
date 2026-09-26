@@ -156,6 +156,56 @@ namespace neolib
         return existing->second();
     }
 
+    bool settings::is_active(i_setting const& aSetting) const
+    {
+        auto const element = iSettingArrayElements.find(&aSetting);
+        if (element == iSettingArrayElements.end())
+            return true;
+        return element->second.index < setting(string{ element->second.arrayKey + "_count" }).value<std::uint32_t>();
+    }
+
+    bool settings::setting_array_element(i_setting const& aSetting, i_string& aArrayKey, std::uint32_t& aIndex, std::uint32_t& aField, i_string& aElementTitle) const
+    {
+        auto const element = iSettingArrayElements.find(&aSetting);
+        if (element == iSettingArrayElements.end())
+            return false;
+        aArrayKey = string{ element->second.arrayKey };
+        aIndex = element->second.index;
+        aField = element->second.field;
+        aElementTitle = string{ setting_array_element_format(iSettingArrays.at(element->second.arrayKey).elementTitleFormat, element->second.index) };
+        return true;
+    }
+
+    void settings::register_setting_array(i_string const& aArrayKey, std::uint32_t aDefaultSize, i_setting_constraints const& aSizeConstraints, 
+        i_string const& aSizeFormat, i_string const& aElementTitleFormat, i_vector<i_ref_ptr<i_setting_array_field>> const& aFields)
+    {
+        auto const arrayKey = aArrayKey.to_std_string();
+        auto& sizeSetting = register_setting<std::uint32_t>(string{ arrayKey + "_count" }, aDefaultSize, 
+            setting_constraints<std::uint32_t>{ aSizeConstraints }, string{ aSizeFormat });
+        auto& array = iSettingArrays[arrayKey];
+        array.elementTitleFormat = aElementTitleFormat.to_std_string();
+        for (auto const& field : aFields)
+            array.fields.push_back(ref_ptr<i_setting_array_field>{ field });
+        grow_setting_array(arrayKey);
+        // grow on a pending size change too, so the new elements can be edited before the size is applied
+        iSink += sizeSetting.changing([this, arrayKey]() { grow_setting_array(arrayKey); });
+        iSink += sizeSetting.changed([this, arrayKey]() { grow_setting_array(arrayKey); });
+    }
+
+    void settings::grow_setting_array(std::string const& aArrayKey)
+    {
+        auto& array = iSettingArrays.at(aArrayKey);
+        auto const size = setting(string{ aArrayKey + "_count" }).value<std::uint32_t>(true); // pending size, if any
+        for (; array.registeredSize < size; ++array.registeredSize)
+            for (std::uint32_t fieldIndex = 0u; fieldIndex < array.fields.size(); ++fieldIndex)
+            {
+                auto const& field = *array.fields[fieldIndex];
+                auto const key = aArrayKey + std::to_string(array.registeredSize) + "." + field.name().to_std_string();
+                field.register_element(*this, string{ key }, array.registeredSize);
+                iSettingArrayElements[&setting(string{ key })] = { aArrayKey, array.registeredSize, fieldIndex };
+            }
+    }
+
     settings::setting_list const& settings::all_settings() const
     {
         return iSettings;

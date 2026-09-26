@@ -39,6 +39,7 @@
 #include <fstream>
 #include <set>
 #include <memory>
+#include <functional>
 #include <neolib/core/map.hpp>
 #include <neolib/core/vector.hpp>
 #include <neolib/core/reference_counted.hpp>
@@ -83,6 +84,14 @@ namespace neolib
         i_string const& group_title(i_string const& aGroupSubkey) const override;
         subgroup_titles const& all_subgroups() const override;
         i_string const& subgroup_title(i_string const& aSubgroupSubkey) const override;
+        bool is_active(i_setting const& aSetting) const override;
+        bool setting_array_element(i_setting const& aSetting, i_string& aArrayKey, std::uint32_t& aIndex, std::uint32_t& aField, i_string& aElementTitle) const override;
+        using i_settings::register_setting_array;
+        void register_setting_array(i_string const& aArrayKey, std::uint32_t aDefaultSize, i_setting_constraints const& aSizeConstraints, 
+            i_string const& aSizeFormat, i_string const& aElementTitleFormat, i_vector<i_ref_ptr<i_setting_array_field>> const& aFields) override;
+    private:
+        void grow_setting_array(std::string const& aArrayKey);
+    public:
         setting_list const& all_settings() const override;
         setting_ordered_list const& all_settings_ordered() const override;
         i_setting const& setting(i_string const& aKey) const override;
@@ -109,8 +118,46 @@ namespace neolib
         category_titles iCategoryTitles;
         group_titles iGroupTitles;
         subgroup_titles iSubgroupTitles;
+        struct setting_array
+        {
+            std::uint32_t registeredSize = 0u;
+            std::string elementTitleFormat;
+            vector<ref_ptr<i_setting_array_field>> fields;
+        };
+        struct setting_array_element_info
+        {
+            std::string arrayKey;
+            std::uint32_t index;
+            std::uint32_t field;
+        };
+        std::map<std::string, setting_array> iSettingArrays;
+        std::map<i_setting const*, setting_array_element_info> iSettingArrayElements;
+        sink iSink;
         setting_list iSettings;
         setting_ordered_list iSettingsOrdered;
         std::map<std::pair<i_setting const*, string>, string> iFriendlyText;
+    };
+
+    template <typename T>
+    class setting_array_field : public reference_counted<i_setting_array_field>
+    {
+    public:
+        setting_array_field(string const& aName, std::function<T(std::uint32_t aIndex)> aDefaultValue, string const& aFormat) :
+            iName{ aName }, iDefaultValue{ std::move(aDefaultValue) }, iFormat{ aFormat.to_std_string() }
+        {
+        }
+    public:
+        i_string const& name() const override
+        {
+            return iName;
+        }
+        void register_element(i_settings& aSettings, i_string const& aKey, std::uint32_t aIndex) const override
+        {
+            aSettings.register_setting<T>(string{ aKey }, iDefaultValue(aIndex), string{ setting_array_element_format(iFormat, aIndex) });
+        }
+    private:
+        string iName;
+        std::function<T(std::uint32_t aIndex)> iDefaultValue;
+        std::string iFormat;
     };
 }
