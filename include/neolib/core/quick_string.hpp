@@ -108,7 +108,7 @@ namespace neolib
         // a view of a temporary would dangle: pass a string_type (copied) or keep the source alive
         template <typename T>
             requires (!std::is_reference_v<T> && std::is_class_v<T> && 
-                !std::is_same_v<T, string_type> && !std::is_same_v<T, string_view_type> && !std::is_same_v<T, basic_quick_string> &&
+                !std::is_same_v<std::remove_cv_t<T>, string_type> && !std::is_same_v<std::remove_cv_t<T>, string_view_type> && !std::is_same_v<std::remove_cv_t<T>, basic_quick_string> &&
                 std::is_convertible_v<T, string_view_type>)
         basic_quick_string(T&&) = delete;
         basic_quick_string(const CharT* s, size_type n, const Alloc& a = Alloc()) :

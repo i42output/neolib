@@ -88,9 +88,11 @@ namespace neolib
 
         // RFC 3986: scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." ) ":"
         // A single-letter scheme is treated as a Windows drive letter, not a scheme.
-        bool has_scheme(std::string const& aUri)
+        bool has_scheme(std::string const& aUri, bool aAllowMissingScheme = false)
         {
             auto const colon = aUri.find(':');
+            if (colon == 0 && aAllowMissingScheme)
+                return true;
             if (colon == std::string::npos || colon < 2)
                 return false;
             auto const alpha = [](char ch) { return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'); };
@@ -173,7 +175,7 @@ namespace neolib
 
     uri::uri(const std::string& aUri)
     {
-        if (aUri.empty() || has_scheme(aUri))
+        if (aUri.empty() || has_scheme(aUri, true))
             parse(aUri);
         else
             parse(std::filesystem::path{ aUri });
