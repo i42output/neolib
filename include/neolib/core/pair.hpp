@@ -60,7 +60,18 @@ namespace neolib
         template <typename T3, typename T4>
         pair(T3&& aFirst, T4&& aSecond) : std_type{ std::forward<T3>(aFirst), std::forward<T4>(aSecond) } {}
     public:
-        pair& operator=(const pair& aOther) { return assign(aOther); }
+        pair& operator=(const pair& aOther)
+        {
+            // same concrete type: assign directly; routing through the abstract assign() fails when
+            // T1/T2 aren't assignable from their abstract types (e.g. sRGB_color from basic_vector<double, 4>)
+            if constexpr (std::is_copy_assignable_v<std_type>)
+            {
+                std_type::operator=(aOther);
+                return *this;
+            }
+            else
+                return assign(aOther);
+        }
         abstract_type& operator=(const abstract_type& aOther) final { return assign(aOther); }
     public:
         const first_type& first() const final { return std_type::first; }
