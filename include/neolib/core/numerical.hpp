@@ -272,6 +272,148 @@ namespace neolib
         };
 
         template <typename T, typename Type>
+        class basic_vector<T, 4, Type>
+        {
+        public:
+            using abstract_type = basic_vector; // todo: abstract base; std::array?
+        public:
+            using type = Type;
+        public:
+            using value_type = T;
+            using vector_type = basic_vector<value_type, 4, Type>;
+            using size_type = std::uint32_t;
+            using array_type = std::array<value_type, 4>;
+            using const_iterator = typename array_type::const_iterator;
+            using iterator = typename array_type::iterator;
+        public:
+            template <std::uint32_t Size2> struct rebind { using type = basic_vector<T, Size2, Type>; };
+        public:
+            static constexpr std::uint32_t Size = 4;
+        public:
+            basic_vector() : v{} {}
+            explicit basic_vector(value_type x, value_type y, value_type z, value_type w) : v{ {x, y, z, w} } {}
+            template <typename... Arguments>
+            explicit basic_vector(const value_type& value, Arguments&&... aArguments) : v{ {value, std::forward<Arguments>(aArguments)...} } {}
+            template <typename... Arguments>
+            explicit basic_vector(value_type&& value, Arguments&&... aArguments) : v{ {std::move(value), std::forward<Arguments>(aArguments)...} } {}
+            explicit basic_vector(const array_type& v) : v{ v } {}
+            basic_vector(std::initializer_list<value_type> values) { if (values.size() > Size) throw std::out_of_range("neolib::basic_vector: initializer list too big"); std::uninitialized_copy(values.begin(), values.end(), v.begin()); std::uninitialized_fill(v.begin() + (values.end() - values.begin()), v.end(), value_type{}); }
+            template <typename V, typename A, std::uint32_t S, std::uint32_t... Indexes>
+            basic_vector(const swizzle<V, A, S, Indexes...>& aSwizzle) : basic_vector{ ~aSwizzle } {}
+            basic_vector(const basic_vector& other) : v{ other.v } {}
+            basic_vector(basic_vector&& other) : v{ std::move(other.v) } {}
+            template <typename T2>
+            basic_vector(const basic_vector<T2, Size, Type>& other) { std::transform(other.begin(), other.end(), v.begin(), [](T2 source) { return static_cast<value_type>(source); }); }
+            template <typename T2, std::uint32_t Size2, typename SFINAE = int>
+            basic_vector(const basic_vector<T2, Size2, Type>& other, typename std::enable_if_t < Size2 < Size, SFINAE> = 0) : v{} { std::transform(other.begin(), other.end(), v.begin(), [](T2 source) { return static_cast<value_type>(source); }); }
+            basic_vector& operator=(const basic_vector& other) { v = other.v; return *this; }
+            basic_vector& operator=(basic_vector&& other) { v = std::move(other.v); return *this; }
+            basic_vector& operator=(std::initializer_list<value_type> values) { if (values.size() > Size) throw std::out_of_range("neolib::basic_vector: initializer list too big"); std::copy(values.begin(), values.end(), v.begin()); std::fill(v.begin() + (values.end() - values.begin()), v.end(), value_type{}); return *this; }
+        public:
+            static std::uint32_t size() { return Size; }
+            value_type operator[](std::uint32_t aIndex) const { return v[aIndex]; }
+            value_type& operator[](std::uint32_t aIndex) { return v[aIndex]; }
+            const_iterator begin() const { return v.begin(); }
+            const_iterator end() const { return v.end(); }
+            iterator begin() { return v.begin(); }
+            iterator end() { return v.end(); }
+            operator const array_type& () const { return v; }
+        public:
+            template <typename T2>
+            basic_vector<T2, Size, Type> as() const
+            {
+                return basic_vector<T2, Size, Type>{ *this };
+            }
+        public:
+            bool operator==(const basic_vector& right) const { return v == right.v; }
+            bool operator!=(const basic_vector& right) const { return v != right.v; }
+            basic_vector& operator+=(value_type value) { for (auto& e : v) e += value; return *this; }
+            basic_vector& operator-=(value_type value) { for (auto& e : v) e -= value; return *this; }
+            basic_vector& operator*=(value_type value) { for (auto& e : v) e *= value; return *this; }
+            basic_vector& operator/=(value_type value) { for (auto& e : v) e /= value; return *this; }
+            basic_vector& operator+=(const basic_vector& right) { std::ranges::transform(v, right.v, v.begin(), std::plus{}); return *this; }
+            basic_vector& operator-=(const basic_vector& right) { std::ranges::transform(v, right.v, v.begin(), std::minus{}); return *this; }
+            basic_vector& operator*=(const basic_vector& right) { std::ranges::transform(v, right.v, v.begin(), std::multiplies{}); return *this; }
+            basic_vector& operator/=(const basic_vector& right) { std::ranges::transform(v, right.v, v.begin(), std::divides{}); return *this; }
+            basic_vector operator-() const { basic_vector result; std::ranges::transform(v, result.v.begin(), std::negate{});; return result; }
+            basic_vector scale(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = v[index] * right[index]; return result; }
+            value_type magnitude() const { value_type ss = constants::zero<value_type>; for (std::uint32_t index = 0; index < Size; ++index) ss += (v[index] * v[index]); return std::sqrt(ss); }
+            basic_vector normalized() const { basic_vector result; value_type im = constants::one<value_type> / magnitude(); for (std::uint32_t index = 0; index < Size; ++index) result.v[index] = v[index] * im; return result; }
+            basic_vector min(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::min(v[index], right.v[index]); return result; }
+            basic_vector max(const basic_vector& right) const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::max(v[index], right.v[index]); return result; }
+            value_type min() const { value_type result = v[0]; for (std::uint32_t index = 1; index < Size; ++index) result = std::min(v[index], result); return result; }
+            value_type max() const { value_type result = v[0]; for (std::uint32_t index = 1; index < Size; ++index) result = std::max(v[index], result); return result; }
+            basic_vector ceil() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::ceil(v[index]); return result; }
+            basic_vector floor() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::floor(v[index]); return result; }
+            basic_vector round() const { basic_vector result; for (std::uint32_t index = 0; index < Size; ++index) result[index] = std::round(v[index]); return result; }
+            value_type distance(const basic_vector& right) const { value_type total = 0; for (std::uint32_t index = 0; index < Size; ++index) total += ((v[index] - right.v[index]) * (v[index] - right.v[index])); return std::sqrt(total); }
+            value_type dot(const basic_vector& right) const
+            {
+                value_type result = constants::zero<value_type>;
+                for (std::uint32_t index = 0; index < Size; ++index)
+                    result += (v[index] * right[index]);
+                return result;
+            }
+            basic_vector hadamard_product(const basic_vector& right) const
+            {
+                basic_vector result = *this;
+                result *= right;
+                return result;
+            }
+        public:
+            friend void swap(basic_vector& a, basic_vector& b)
+            {
+                using std::swap;
+                swap(a.v, b.v);
+            }
+        public:
+            union
+            {
+                array_type v;
+                struct // todo: alignment, padding?
+                {
+                    value_type x;
+                    value_type y;
+                    value_type z;
+                    value_type w;
+                };
+                swizzle<vector_type, array_type, 2, 0, 0> xx;
+                swizzle<vector_type, array_type, 2, 0, 1> xy;
+                swizzle<vector_type, array_type, 2, 0, 2> xz;
+                swizzle<vector_type, array_type, 2, 1, 0> yx;
+                swizzle<vector_type, array_type, 2, 1, 1> yy;
+                swizzle<vector_type, array_type, 2, 1, 2> yz;
+                swizzle<vector_type, array_type, 2, 2, 0> zx;
+                swizzle<vector_type, array_type, 2, 2, 1> zy;
+                swizzle<vector_type, array_type, 2, 2, 2> zz;
+                swizzle<vector_type, array_type, 3, 0, 0, 0> xxx;
+                swizzle<vector_type, array_type, 3, 0, 0, 1> xxy;
+                swizzle<vector_type, array_type, 3, 0, 0, 2> xxz;
+                swizzle<vector_type, array_type, 3, 0, 1, 0> xyx;
+                swizzle<vector_type, array_type, 3, 0, 1, 1> xyy;
+                swizzle<vector_type, array_type, 3, 0, 1, 2> xyz;
+                swizzle<vector_type, array_type, 3, 1, 0, 0> yxx;
+                swizzle<vector_type, array_type, 3, 1, 0, 1> yxy;
+                swizzle<vector_type, array_type, 3, 1, 0, 2> yxz;
+                swizzle<vector_type, array_type, 3, 1, 1, 0> yyx;
+                swizzle<vector_type, array_type, 3, 1, 1, 1> yyy;
+                swizzle<vector_type, array_type, 3, 1, 1, 2> yyz;
+                swizzle<vector_type, array_type, 3, 1, 2, 0> yzx;
+                swizzle<vector_type, array_type, 3, 1, 2, 1> yzy;
+                swizzle<vector_type, array_type, 3, 1, 2, 2> yzz;
+                swizzle<vector_type, array_type, 3, 2, 0, 0> zxx;
+                swizzle<vector_type, array_type, 3, 2, 0, 1> zxy;
+                swizzle<vector_type, array_type, 3, 2, 0, 2> zxz;
+                swizzle<vector_type, array_type, 3, 2, 1, 0> zyx;
+                swizzle<vector_type, array_type, 3, 2, 1, 1> zyy;
+                swizzle<vector_type, array_type, 3, 2, 1, 2> zyz;
+                swizzle<vector_type, array_type, 3, 2, 2, 0> zzx;
+                swizzle<vector_type, array_type, 3, 2, 2, 1> zzy;
+                swizzle<vector_type, array_type, 3, 2, 2, 2> zzz;
+            };
+        };
+
+        template <typename T, typename Type>
         class basic_vector<T, 2, Type>
         {
         public:
