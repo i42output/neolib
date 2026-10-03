@@ -49,20 +49,71 @@
 
 namespace neolib
 {
-    class NEOLIB_EXPORT http_packet : public string_packet
+    // HTTP data is passed on as it arrives: http does its own line and body parsing so, unlike a string_packet, an
+    // http_packet is not delimited by (and does not strip) CR/LF
+    class NEOLIB_EXPORT http_packet : public i_packet
     {
+        // types
+    public:
+        using contents_type = std::string;
         // construction
     public:
         http_packet(const contents_type& aContents = contents_type()) : 
-            string_packet(aContents) 
+            iContents{ aContents }
         {
         }
-        // implementation
-    private:
-        virtual bool has_delimiters() const
+        // operations
+    public:
+        const_pointer data() const final
+        {
+            if (empty())
+                throw packet_empty();
+            return iContents.data();
+        }
+        pointer data() final
+        {
+            if (empty())
+                throw packet_empty();
+            return iContents.data();
+        }
+        size_type length() const final
+        {
+            return iContents.size();
+        }
+        bool has_max_length() const final
         {
             return false;
         }
+        size_type max_length() const final
+        {
+            return iContents.max_size();
+        }
+        void clear() final
+        {
+            iContents.clear();
+        }
+        // takes everything available: a packet is whatever has been received
+        bool take_some(const_pointer& aFirst, const_pointer aLast) final
+        {
+            if (aFirst == aLast)
+                return false;
+            iContents.append(aFirst, aLast);
+            aFirst = aLast;
+            return true;
+        }
+        clone_pointer clone() const final
+        {
+            return clone_pointer{ new http_packet{ *this } };
+        }
+        void copy_from(const i_packet& aSource) final
+        {
+            iContents.clear();
+            if (!aSource.empty())
+                iContents.assign(aSource.data(), aSource.length());
+        }
+        // attributes
+    private:
+        contents_type iContents;
     };
 
     typedef packet_stream<http_packet, tcp_protocol> http_stream;
