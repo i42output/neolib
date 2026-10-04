@@ -46,7 +46,9 @@
 #endif
 #include <boost/unordered/unordered_flat_map.hpp>
 #include <boost/thread/locks.hpp>
+#include <boost/version.hpp>
 #include <boost/lockfree/detail/freelist.hpp>
+#include <boost/lockfree/detail/prefix.hpp>
 #include <boost/fiber/detail/cpu_relax.hpp>
 #include <neolib/core/optional.hpp>
 #include <neolib/core/i_mutex.hpp>
@@ -54,6 +56,12 @@
 
 namespace neolib
 {
+#if BOOST_VERSION >= 108800
+    constexpr std::size_t cacheline_bytes = boost::lockfree::detail::cacheline_bytes;
+#else
+    constexpr std::size_t cacheline_bytes = BOOST_LOCKFREE_CACHELINE_BYTES;
+#endif
+
     class mutex_profiler : public i_mutex_profiler
     {
         struct params
@@ -214,7 +222,7 @@ namespace neolib
     }
 
     template <typename ProfilerTag = void, bool Spinlock = false, bool Yield = false>
-    class alignas(boost::lockfree::detail::cacheline_bytes) recursive_mutex : public i_lockable
+    class alignas(cacheline_bytes) recursive_mutex : public i_lockable
     {
     private:
         using metrics_list = std::vector<mutex_lock_info>;
@@ -510,7 +518,7 @@ namespace neolib
     };
 
     template <typename ProfilerTag = void>
-    class alignas(boost::lockfree::detail::cacheline_bytes) switchable_mutex : public i_lockable
+    class alignas(cacheline_bytes) switchable_mutex : public i_lockable
     {
     public:
         switchable_mutex()
@@ -520,19 +528,19 @@ namespace neolib
     public:
         void set_single_threaded()
         {
-            iActiveMutex.emplace<neolib::null_mutex>();
+            iActiveMutex.template emplace<neolib::null_mutex>();
         }
         void set_multi_threaded()
         {
-            iActiveMutex.emplace<std::recursive_mutex>();
+            iActiveMutex.template emplace<std::recursive_mutex>();
         }
         void set_multi_threaded_profiled()
         {
-            iActiveMutex.emplace<neolib::recursive_mutex<ProfilerTag>>();
+            iActiveMutex.template emplace<neolib::recursive_mutex<ProfilerTag>>();
         }
         void set_multi_threaded_spinlock()
         {
-            iActiveMutex.emplace<neolib::recursive_mutex<ProfilerTag, true>>();
+            iActiveMutex.template emplace<neolib::recursive_mutex<ProfilerTag, true>>();
         }
     public:
         void lock() final

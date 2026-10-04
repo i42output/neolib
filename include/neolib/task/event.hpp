@@ -87,8 +87,7 @@ namespace neolib
         void enqueue(i_slot<Args...>& aSlot, bool aNoDuplicates, Args... aArgs)
         {
             auto& event = aSlot.event();
-            std::tuple<Args...> args{ aArgs... };
-            auto callback = [&, args]()
+            auto callback = [&aSlot, args = std::tuple<Args...>{ aArgs... }]()
             {
                 std::apply([&](Args... aArgs) { aSlot.call(aArgs...); }, args);
             };
@@ -100,13 +99,13 @@ namespace neolib
                 auto existing = iQueue.single.find(key);
                 if (existing != iQueue.single.end())
                 {
-                    existing->second.callback = callback;
+                    existing->second.callback = std::move(callback);
                     return;
                 }
-                iQueue.single.emplace(key, queue_entry{ &event, event, &aSlot, aSlot, callback });
+                iQueue.single.emplace(key, queue_entry{ &event, event, &aSlot, aSlot, std::move(callback) });
             }
             else
-                iQueue.multiple.emplace_back(&event, event, &aSlot, aSlot, callback);
+                iQueue.multiple.emplace_back(&event, event, &aSlot, aSlot, std::move(callback));
         }
     public:
         void register_with_task(i_async_task& aTask) final;
@@ -179,12 +178,28 @@ namespace neolib
             workList.slots = iSlots;
             lock.unlock();
 
-            for (auto slot : workList.slots)
+            auto const thisThread = std::this_thread::get_id();
+            std::thread::id lastQueueThread;
+            async_event_queue* lastQueue = nullptr;
+            for (auto const& slot : workList.slots)
             {
-                if (slot->call_in_emitter_thread() || slot->call_thread() == std::this_thread::get_id())
+                if (slot->call_in_emitter_thread())
                     slot->call(aArgs...);
                 else
-                    async_trigger(async_event_queue::instance(slot->call_thread()), *slot, trigger_type() == neolib::trigger_type::SynchronousDontQueue, aArgs...);
+                {
+                    auto const callThread = slot->call_thread();
+                    if (callThread == thisThread)
+                        slot->call(aArgs...);
+                    else
+                    {
+                        if (lastQueue == nullptr || callThread != lastQueueThread)
+                        {
+                            lastQueue = &async_event_queue::instance(callThread);
+                            lastQueueThread = callThread;
+                        }
+                        async_trigger(*lastQueue, *slot, trigger_type() == neolib::trigger_type::SynchronousDontQueue, aArgs...);
+                    }
+                }
                 if (destroyed)
                     return trigger_result::Unaccepted;
                 if (workList.accepted)
@@ -202,8 +217,18 @@ namespace neolib
         void async_trigger(Args... aArgs) const final
         {
             std::unique_lock lock{ iMutex };
-            for (auto slot : iSlots)
-                async_trigger(async_event_queue::instance(slot->call_thread()), *slot, trigger_type() == neolib::trigger_type::AsynchronousDontQueue, aArgs...);
+            std::thread::id lastQueueThread;
+            async_event_queue* lastQueue = nullptr;
+            for (auto const& slot : iSlots)
+            {
+                auto const callThread = slot->call_thread();
+                if (lastQueue == nullptr || callThread != lastQueueThread)
+                {
+                    lastQueue = &async_event_queue::instance(callThread);
+                    lastQueueThread = callThread;
+                }
+                async_trigger(*lastQueue, *slot, trigger_type() == neolib::trigger_type::AsynchronousDontQueue, aArgs...);
+            }
         }
         void accept() const final
         {

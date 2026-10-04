@@ -77,17 +77,20 @@ namespace neolib
 
     async_event_queue::async_event_queue()
     {
-        std::scoped_lock lock{ iMutex };
+        std::scoped_lock lock{ instance_map().mutex };
         if (instance_map().find(std::this_thread::get_id()) == instance_map().end())
             instance_map()[std::this_thread::get_id()] = this;
     }
 
     async_event_queue::~async_event_queue()
     {
+        {
+            std::scoped_lock mapLock{ instance_map().mutex };
+            auto existing = instance_map().find(std::this_thread::get_id());
+            if (existing != instance_map().end() && existing->second == this)
+                instance_map().erase(existing);
+        }
         std::scoped_lock lock{ iMutex };
-        auto existing = instance_map().find(std::this_thread::get_id());
-        if (existing != instance_map().end())
-            instance_map().erase(existing);
         if (iTask && !*iTaskDestroyed)
             iTask->unregister_event_queue(*this);
     }
@@ -110,8 +113,9 @@ namespace neolib
             workLists.push_back(std::make_unique<work_list>());
         auto& workList = *workLists[stack - 1];
         workList.swap(iQueue.multiple);
-        for (auto const& se : iQueue.single)
-            workList.push_back(se.second);
+        workList.reserve(workList.size() + iQueue.single.size());
+        for (auto& se : iQueue.single)
+            workList.push_back(std::move(se.second));
         iQueue.single.clear();
         lock.unlock();
         bool didSome = false;

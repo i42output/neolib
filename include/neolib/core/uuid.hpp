@@ -38,6 +38,7 @@
 #include <neolib/neolib.hpp>
 #include <string>
 #include <cstdint>
+#include <cstring>
 #include <array>
 #include <tuple>
 #include <utility>
