@@ -1500,6 +1500,17 @@ namespace neolib
                     currentElement.start = (nextOutputCh = nextInputCh + 1);
                     break;
                 case json_detail::state::EndName:
+                    if constexpr (syntax == json_syntax::Relaxed || syntax == json_syntax::Functional)
+                    {
+                        // relaxed and functional: a name only ends with the quote character it began with (see StringEnd)
+                        if (*nextInputCh != *(currentElement.start - 1))
+                        {
+                            if (currentElement.start != nextOutputCh)
+                                *nextOutputCh++ = *nextInputCh;
+                            nextState = json_detail::state::Name;
+                            break;
+                        }
+                    }
                     if (std::holds_alternative<std::monostate>(currentElement.name))
                     {
                         json_string newName
@@ -1539,11 +1550,16 @@ namespace neolib
                     currentElement.start = (nextOutputCh = nextInputCh);
                     break;
                 case json_detail::state::StringEnd:
-                    if constexpr (syntax == json_syntax::Relaxed)
+                    if constexpr (syntax == json_syntax::Relaxed || syntax == json_syntax::Functional)
                     {
-                        // relaxed: support for three different quote characters
+                        // relaxed and functional: support for three different quote characters; a string only ends with the
+                        // quote character it began with, any other being part of it (copied if the string is being unescaped)
                         if (*nextInputCh != *(currentElement.start - 1))
+                        {
+                            if (currentElement.start != nextOutputCh)
+                                *nextOutputCh++ = *nextInputCh;
                             nextState = json_detail::state::String;
+                        }
                     }
                     break;
                 case json_detail::state::Escaped:
@@ -1555,6 +1571,12 @@ namespace neolib
                         {
                         case '\"':
                             (*nextOutputCh++) = '\"';
+                            break;
+                        case '\'':
+                        case '`':
+                            // relaxed and functional: the other quote characters
+                            if constexpr (syntax == json_syntax::Relaxed || syntax == json_syntax::Functional)
+                                (*nextOutputCh++) = *nextInputCh;
                             break;
                         case '\\':
                             (*nextOutputCh++) = '\\';
