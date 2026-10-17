@@ -47,6 +47,7 @@ set_property(TARGET neolib PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFI
 set_property(TARGET neolib PROPERTY CXX_VISIBILITY_PRESET hidden)
 set_property(TARGET neolib PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})
 set_property(TARGET neolib PROPERTY VERSION ${PROJECT_VERSION})
+set_property(TARGET neolib PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 include(GenerateExportHeader)
 generate_export_header(neolib EXPORT_FILE_NAME include/neolib/neolib_export.hpp)
