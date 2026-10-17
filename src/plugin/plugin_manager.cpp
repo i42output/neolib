@@ -248,11 +248,15 @@ namespace neolib
             entryPoint(iApplication, string(std::filesystem::path(aPluginPath.to_std_string()).parent_path().generic_string()), tNewPlugin);
             if (tNewPlugin == nullptr)
                 return tNewPlugin;
+            // (check for a duplicate before the plugin is added: the duplicate's module is unloaded when pm is destroyed)
+            if (iModules.find(tNewPlugin->id()) != iModules.end())
+            {
+                tNewPlugin = nullptr;
+                throw duplicate_plugin{};
+            }
             iPlugins.push_back(tNewPlugin);
             auto& newPlugin = iPlugins.back();
             tNewPlugin = nullptr;
-            if (iModules.find(newPlugin->id()) != iModules.end())
-                throw duplicate_plugin{};
             iModules[newPlugin->id()] = std::move(pm);
             return newPlugin;
         }
