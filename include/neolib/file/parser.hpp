@@ -642,6 +642,7 @@ namespace neolib
             fixup_cst(iCst);
             simplify_cst(iCst);
             auto const endTime = std::chrono::high_resolution_clock::now();
+            iParseTime = endTime - startTime;
             std::uint32_t linePos = 0u;
             std::uint32_t columnPos = 0u;
 
@@ -677,7 +678,7 @@ namespace neolib
                     (*iDebugOutput) << std::string(columnPos + numberWidth, '-') << "^" << std::endl;
                 if (iError)
                     (*iDebugOutput) << "Error: " << iError.value() << std::endl;
-                else
+                else if (iDebugTiming)
                 {
                     auto const time = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() / 1000.0;
                     (*iDebugOutput) << "Parse time" << (iDebugScan ? " (debug)" : "") << ": " << std::setprecision(3) <<
@@ -763,6 +764,18 @@ namespace neolib
         void set_debug_scan(bool aDebugScan)
         {
             iDebugScan = aDebugScan;
+        }
+
+        // (debug output: the time each parse takes (on by default))
+        void set_debug_timing(bool aDebugTiming)
+        {
+            iDebugTiming = aDebugTiming;
+        }
+
+        // the time the last parse took
+        std::chrono::high_resolution_clock::duration parse_time() const
+        {
+            return iParseTime;
         }
 
     private:
@@ -1508,6 +1521,8 @@ namespace neolib
         bool iDebugScan = false;
         bool iDebugCst = false;
         bool iDebugAst = false;
+        bool iDebugTiming = true;
+        std::chrono::high_resolution_clock::duration iParseTime = {};
     };
 
     template <typename Symbol>
