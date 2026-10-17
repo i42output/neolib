@@ -241,10 +241,12 @@ namespace neolib
 
 // SIMD support
 #ifndef NO_SIMD
-#ifndef USE_AVX_DYNAMIC
+// GCC/Clang only allow AVX/SSE2 intrinsics when the target ISA is enabled (e.g. -mavx);
+// MSVC (x86/x64) allows them unconditionally.
+#if !defined(USE_AVX_DYNAMIC) && (defined(__AVX__) || (defined(_MSC_VER) && !defined(__clang__) && (defined(_M_X64) || defined(_M_IX86))))
 #define USE_AVX
 #endif
-#ifndef USE_EMM_DYNAMIC
+#if !defined(USE_EMM_DYNAMIC) && (defined(__SSE2__) || (defined(_MSC_VER) && !defined(__clang__) && (defined(_M_X64) || defined(_M_IX86))))
 #define USE_EMM
 #endif
 #endif
