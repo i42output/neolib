@@ -38,8 +38,4 @@
 #include <neolib/neolib.hpp>
 #include <neolib/core/static_vector.hpp>
 
-namespace neolib
-{
-    template<typename T, std::size_t Capacity, std::size_t MaxCapacity = -1, typename Alloc = std::allocator<T>>
-    using small_vector = growable_static_vector<T, Capacity, MaxCapacity, Alloc>;
-}
+// (small_vector is defined in static_vector.hpp)

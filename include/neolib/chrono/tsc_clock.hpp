@@ -446,9 +446,14 @@ namespace neolib::chrono
         // one thread per logical CPU). It is STRONGLY recommended to call init() once
         // explicitly at start-up; otherwise the very first now() pays this whole cost
         // lazily (and serialises any other thread that calls now() concurrently).
-        static void init(options opt = {}) noexcept
+        static void init(options opt) noexcept
         {
             (void)calibrate_once(opt);
+        }
+        // (not a default argument: options' default member initializers are not usable until tsc_clock is complete (GCC, Clang))
+        static void init() noexcept
+        {
+            init(options{});
         }
 
         static time_point now() noexcept

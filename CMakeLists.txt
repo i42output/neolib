@@ -38,6 +38,7 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES} ${PLATFORM_S
 
 add_definitions(-DNEOLIB_HOSTED_ENVIRONMENT)
 add_library(neolib ${SOURCE_FILES} ${PLATFORM_SOURCE_FILES} ${HEADER_FILES})
+add_library(neolib::neolib ALIAS neolib)
 target_include_directories(neolib PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
@@ -77,7 +78,7 @@ write_basic_package_version_file(neolibConfigVersion.cmake COMPATIBILITY AnyNewe
 install(TARGETS neolib DESTINATION "${CMAKE_INSTALL_LIBDIR}" EXPORT neolib)
 install(DIRECTORY include/neolib "${CMAKE_CURRENT_BINARY_DIR}/include/neolib" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 install(TARGETS neolib DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-install(EXPORT neolib DESTINATION "${CMAKE_INSTALL_CMAKEDIR}" FILE neolibTargets.cmake NAMESPACE neolib)
+install(EXPORT neolib DESTINATION "${CMAKE_INSTALL_CMAKEDIR}" FILE neolibTargets.cmake NAMESPACE neolib::)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/neolibConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/neolibConfigVersion.cmake" DESTINATION "${CMAKE_INSTALL_CMAKEDIR}")
 install(FILES "LICENSE" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/licenses/${PROJECT_NAME}")

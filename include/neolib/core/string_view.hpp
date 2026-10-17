@@ -57,7 +57,7 @@ namespace neolib
         }
         constexpr string_view(const_pointer aOther) noexcept :
             iFirst{ aOther },
-            iLast{ std::next(aOther, std::strlen(aOther)) }
+            iLast{ std::next(aOther, std::char_traits<char>::length(aOther)) }
         {
         }
         constexpr string_view(const_iterator aFirst, const_iterator aLast) noexcept :
