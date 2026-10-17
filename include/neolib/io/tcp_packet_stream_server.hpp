@@ -166,16 +166,16 @@ namespace neolib
         {
             resolver_type resolver(aIoTask.io_context().template native_object<boost::asio::io_context>());
             boost::system::error_code ec;
-            typename resolver_type::iterator result = resolver.resolve(aHostname, std::to_string(aPort), ec);
+            typename resolver_type::results_type result = resolver.resolve(aHostname, std::to_string(aPort), ec);
             if (!ec)
             {
-                for (typename resolver_type::iterator i = result; i != resolver_type::iterator(); ++i)
+                for (auto i = result.begin(); i != result.end(); ++i)
                 {
                     endpoint_type endpoint = *i;
                     if (endpoint.protocol() == aProtocolFamily)
                         return endpoint;
                 }
-                return *result;
+                return *result.begin();
             }
             throw failed_to_resolve_local_host();
         }
