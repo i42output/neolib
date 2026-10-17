@@ -1068,7 +1068,7 @@ namespace neolib
             template <typename T>
             struct ease_segment
             {
-                easing easing;
+                easing_functions::easing easing;
                 T weight = T{ 1 };
             };
 
