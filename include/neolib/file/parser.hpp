@@ -38,6 +38,7 @@
 #include <neolib/neolib.hpp>
 
 #include <concepts>
+#include <bitset>
 #include <memory>
 #include <vector>
 #include <variant>
@@ -637,9 +638,11 @@ namespace neolib
             for (auto const& rule : iRules)
                 if (std::holds_alternative<symbol>(rule.lhs[0]))
                 {
-                    iSymbolRules.push_back(&rule);
-                    iRuleIndex[std::get<symbol>(rule.lhs[0])].push_back(&rule);
+                    iSymbolRules.push_back(indexed_rule{ &rule });
+                    iRuleIndex[std::get<symbol>(rule.lhs[0])].push_back(indexed_rule{ &rule });
                 }
+            if (!iPreviousStage)
+                compute_first_sets();
 
             if (iPreviousStage)
             {
@@ -994,12 +997,16 @@ namespace neolib
                     {
                         bool anyMatches = false;
                         auto newCursor = iCursor;
-                        static std::vector<rule const*> const sNoRules;
+                        static std::vector<indexed_rule> const sNoRules;
                         auto const symbolRules = aSymbol ? iRuleIndex.find(aSymbol.value()) : iRuleIndex.end();
                         auto const& candidateRules = !aSymbol ? iSymbolRules : symbolRules != iRuleIndex.end() ? symbolRules->second : sNoRules;
-                        for (auto const* candidateRule : candidateRules)
+                        for (auto const& candidateRule : candidateRules)
                         {
-                            auto const& rule = *candidateRule;
+                            // (a rule whose match cannot start with the next character is not tried (no previous stage only))
+                            if (!iCursor && !candidateRule.anyStart &&
+                                (sourceNext == sourceEnd || !candidateRule.first.test(static_cast<unsigned char>(*sourceNext))))
+                                continue;
+                            auto const& rule = *candidateRule.definition;
                             symbol const ruleSymbol = std::get<symbol>(rule.lhs[0]);
                             scoped_stack_entry sse{ *this, rule, aSource };
                             if (!left_recursion(aNode, rule))
@@ -1026,7 +1033,7 @@ namespace neolib
                                         newCursor = iCursor;
                                         result = match;
                                         resultRule = &rule;
-                                        resultChildren = children;
+                                        resultChildren = std::move(children);
                                     }
                                 }
                             }
@@ -1132,8 +1139,7 @@ namespace neolib
                     scopedCursor.ignore();
                     newChild->set_concept(aAtom.c);
                     newChild->value = partialResult.value();
-                    iCache[cacheKey] = cache_result{ aNode.children, apply_partial_result(result, partialResult), iCursor };
-                    return iCache[cacheKey].result;
+                    return (iCache[cacheKey] = cache_result{ aNode.children, apply_partial_result(result, partialResult), iCursor }).result;
                 }
             }
             else if (std::holds_alternative<terminal>(aAtom))
@@ -1146,8 +1152,7 @@ namespace neolib
                     auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
                     newChild->set_concept(aAtom.c);
                     aNode.children.push_back(newChild);
-                    iCache[cacheKey] = cache_result{ aNode.children, apply_partial_result(result, partialResult), iCursor };
-                    return ((sdp ? sdp->ok = true : true), iCache[cacheKey].result);
+                    return ((sdp ? sdp->ok = true : true), (iCache[cacheKey] = cache_result{ aNode.children, apply_partial_result(result, partialResult), iCursor }).result);
                 }
             }
             else if (std::holds_alternative<range>(aAtom))
@@ -1169,8 +1174,7 @@ namespace neolib
                             newChild->set_concept(aAtom.c);
                             aNode.children.push_back(newChild);
                         }
-                        iCache[cacheKey] = cache_result{ aNode.children, apply_partial_result(result, partialResult), iCursor };
-                        return ((sdp ? sdp->ok = true : true), iCache[cacheKey].result);
+                        return ((sdp ? sdp->ok = true : true), (iCache[cacheKey] = cache_result{ aNode.children, apply_partial_result(result, partialResult), iCursor }).result);
                     }
                 }
             }
@@ -1385,6 +1389,127 @@ namespace neolib
             return cache_key{ &aAtom, { aSource.data(), cursorPosition } };
         }
 
+        // (the characters a match of an atom can start with)
+        struct first_set
+        {
+            std::bitset<256> characters;
+            bool any = false; ///< (it can match without consuming a character, or its first character is not known: always tried)
+
+            bool operator==(first_set const&) const = default;
+        };
+
+        static first_set first_of(primitive_atom const& aAtom, boost::unordered_flat_map<symbol, first_set> const& aSymbolFirst)
+        {
+            first_set result;
+            auto add = [&](primitive_atom const& a)
+                {
+                    auto const f = first_of(a, aSymbolFirst);
+                    result.characters |= f.characters;
+                    result.any = result.any || f.any;
+                    return f;
+                };
+            if (std::holds_alternative<symbol>(aAtom))
+            {
+                auto const existing = aSymbolFirst.find(std::get<symbol>(aAtom));
+                if (existing != aSymbolFirst.end())
+                    result = existing->second;
+            }
+            else if (std::holds_alternative<terminal>(aAtom))
+            {
+                auto const& ter = std::get<terminal>(aAtom);
+                if (ter.empty())
+                    result.any = true; // (matches the end of the source)
+                else
+                    result.characters.set(static_cast<unsigned char>(ter[0]));
+            }
+            else if (std::holds_alternative<range>(aAtom))
+            {
+                auto const& ran = std::get<range>(aAtom);
+                auto const min = static_cast<unsigned char>(std::get<terminal>(ran.value[0])[0]);
+                auto const max = static_cast<unsigned char>(std::get<terminal>(ran.value[1])[0]);
+                for (unsigned c = 0u; c < 256u; ++c)
+                    if ((c >= min && c <= max) != ran.negate)
+                        result.characters.set(c); // (exclusions are ignored: a superset)
+            }
+            else if (std::holds_alternative<concatenation>(aAtom))
+            {
+                result.any = true;
+                for (auto const& a : std::get<concatenation>(aAtom).value)
+                {
+                    auto const f = first_of(a, aSymbolFirst);
+                    result.characters |= f.characters;
+                    if (!f.any)
+                    {
+                        result.any = false;
+                        break;
+                    }
+                }
+            }
+            else if (std::holds_alternative<alternation>(aAtom))
+            {
+                for (auto const& a : std::get<alternation>(aAtom).value)
+                    add(a);
+            }
+            else if (std::holds_alternative<optional>(aAtom))
+            {
+                for (auto const& a : std::get<optional>(aAtom).value)
+                    add(a);
+                result.any = true;
+            }
+            else if (std::holds_alternative<repetition>(aAtom))
+            {
+                for (auto const& a : std::get<repetition>(aAtom).value)
+                    add(a);
+                if (!std::get<repetition>(aAtom).atLeastOne)
+                    result.any = true;
+            }
+            else if (std::holds_alternative<discard>(aAtom))
+            {
+                for (auto const& a : std::get<discard>(aAtom).value)
+                    add(a);
+            }
+            else
+                result.any = true; // (not known)
+            return result;
+        }
+
+        void compute_first_sets()
+        {
+            // (each symbol's first set: a fixed point as rules refer to symbols, including (indirectly) their own)
+            boost::unordered_flat_map<symbol, first_set> symbolFirst;
+            for (bool changed = true; changed;)
+            {
+                changed = false;
+                for (auto const& entry : iRuleIndex)
+                {
+                    first_set symbolSet;
+                    for (auto const& ir : entry.second)
+                    {
+                        auto const f = first_of(ir.definition->rhs[0], symbolFirst);
+                        symbolSet.characters |= f.characters;
+                        symbolSet.any = symbolSet.any || f.any;
+                    }
+                    auto& existing = symbolFirst[entry.first];
+                    if (!(existing == symbolSet))
+                    {
+                        existing = symbolSet;
+                        changed = true;
+                    }
+                }
+            }
+            auto apply = [&](indexed_rule& aRule)
+                {
+                    auto const f = first_of(aRule.definition->rhs[0], symbolFirst);
+                    aRule.first = f.characters;
+                    aRule.anyStart = f.any;
+                };
+            for (auto& ir : iSymbolRules)
+                apply(ir);
+            for (auto& entry : iRuleIndex)
+                for (auto& ir : entry.second)
+                    apply(ir);
+        }
+
         static std::optional<parse_result> apply_partial_result(std::optional<parse_result> const& aResult, std::optional<parse_result> const& aPartialResult)
         {
             if (!aResult)
@@ -1497,9 +1622,16 @@ namespace neolib
         }
 
     private:
+        struct indexed_rule
+        {
+            parser::rule const* definition;
+            std::bitset<256> first = {}; ///< (the characters a match of the rule can start with)
+            bool anyStart = true;        ///< (the rule is always tried)
+        };
+    private:
         std::vector<rule> iRules;
-        boost::unordered_flat_map<symbol, std::vector<rule const*>> iRuleIndex;
-        std::vector<rule const*> iSymbolRules;
+        boost::unordered_flat_map<symbol, std::vector<indexed_rule>> iRuleIndex;
+        std::vector<indexed_rule> iSymbolRules;
         std::shared_ptr<parser> iPreviousStage;
         std::optional<typename cst_node::child_list::const_iterator> iCursor;
         std::optional<typename cst_node::child_list::const_iterator> iCursorEnd;
@@ -1520,7 +1652,18 @@ namespace neolib
         };
         // (atom, (source position, cursor position (if there is a previous stage)))
         using cache_key = std::pair<primitive_atom const*, std::pair<char const*, std::size_t>>;
-        boost::unordered_flat_map<cache_key, cache_result, boost::hash<cache_key>> iCache;
+        struct cache_key_hash
+        {
+            // (cheap: boost::unordered_flat_map mixes a hash that is not marked as avalanching)
+            std::size_t operator()(cache_key const& aKey) const noexcept
+            {
+                return static_cast<std::size_t>(
+                    (static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(aKey.first)) * 0x9E3779B97F4A7C15ull) ^
+                    (static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(aKey.second.first)) * 0xC2B2AE3D27D4EB4Full) ^
+                    static_cast<std::uint64_t>(aKey.second.second));
+            }
+        };
+        boost::unordered_flat_map<cache_key, cache_result, cache_key_hash> iCache;
         std::ostream* iDebugOutput = nullptr;
         bool iDebugScan = false;
         bool iDebugCst = false;
