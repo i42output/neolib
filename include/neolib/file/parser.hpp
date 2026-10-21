@@ -539,7 +539,7 @@ namespace neolib
             cst_node(cst_node&& other) :
                 parent{ other.parent },
                 rule{ other.rule },
-                c{ other.c },
+                c{ std::move(other.c) },
                 atom{ other.atom },
                 value{ other.value },
                 children{ std::move(other.children) }
@@ -556,7 +556,7 @@ namespace neolib
             {
                 parent = other.parent;
                 rule = other.rule;
-                c = other.c;
+                c = std::move(other.c);
                 atom = other.atom;
                 value = other.value;
                 children = std::move(other.children);
@@ -652,6 +652,7 @@ namespace neolib
             if (!iIndexed || iIndexedRules != iRules.data() || iIndexedRuleCount != iRules.size())
             {
                 iRuleIndex = {};
+                iSymbolFirst = {};
                 iSymbolRules = {};
                 for (auto const& rule : iRules)
                     if (std::holds_alternative<symbol>(rule.lhs[0]))
@@ -932,9 +933,16 @@ namespace neolib
         {
             if (iStack.empty())
                 return false;
+            // (the same rule at the same place (not the same text elsewhere): the stack's places do not decrease, so the search ends at
+            // an earlier place)
+            auto const& top = iStack.back();
             for (auto r = std::next(iStack.rbegin()); r != iStack.rend(); ++r)
-                if (*r == iStack.back())
+            {
+                if (r->second.data() < top.second.data())
+                    break;
+                if (r->first == top.first && r->second.data() == top.second.data() && r->second.size() == top.second.size())
                     return true;
+            }
             return false;
         }
 
@@ -1157,7 +1165,22 @@ namespace neolib
             if (iError)
                 return {};
 
+            if (!iCursor && std::holds_alternative<symbol>(aAtom))
+            {
+                // (a symbol none of whose rules can start with the next character does not match (as parse_rules would find))
+                auto const sf = iSymbolFirst.find(std::get<symbol>(aAtom));
+                if (sf != iSymbolFirst.end() && !sf->second.any &&
+                    (aSource.empty() || !sf->second.characters.test(static_cast<unsigned char>(aSource[0]))))
+                {
+                    iDeepestParse = std::max(iDeepestParse, std::to_address(aSource.begin()));
+                    return {};
+                }
+            }
+
             auto const cacheKey = make_cache_key(aAtom, aSource);
+            // (a rule's (or a repetition's) parse is remembered; an atom that is quicker to parse again than to remember is not)
+            bool const cacheable = std::holds_alternative<symbol>(aAtom) || std::holds_alternative<repetition>(aAtom);
+            if (cacheable)
             {
                 auto cacheEntry = iCache.find(cacheKey);
                 if (cacheEntry != iCache.end())
@@ -1183,12 +1206,18 @@ namespace neolib
             char const* sourceEnd = std::to_address(aSource.end());
             // (the node's children before the parse: a cache entry holds the nodes that the parse appends)
             auto const base = aNode.children.size();
-            auto const last = base > 0u ? aNode.children.back() : nullptr;
+            cst_node const* const last = base > 0u ? aNode.children.back().get() : nullptr;
             auto const cache_result_of = [&](std::optional<parse_result> const& aResult, std::optional<typename cst_node::child_list::const_iterator> const& aCursor)
             {
-                if (aNode.children.size() >= base && (base == 0u || aNode.children[base - 1u] == last))
+                if (aNode.children.size() >= base && (base == 0u || aNode.children[base - 1u].get() == last))
                     return cache_result{ typename cst_node::child_list{ std::next(aNode.children.begin(), static_cast<std::ptrdiff_t>(base)), aNode.children.end() }, aResult, aCursor, true };
                 return cache_result{ aNode.children, aResult, aCursor, false };
+            };
+            auto const store = [&](std::optional<parse_result> const& aResult, std::optional<typename cst_node::child_list::const_iterator> const& aCursor)
+            {
+                if (cacheable)
+                    iCache[cacheKey] = cache_result_of(aResult, aCursor);
+                return aResult;
             };
 
             iDeepestParse = std::max(iDeepestParse, sourceNext);
@@ -1205,18 +1234,25 @@ namespace neolib
             if (std::holds_alternative<symbol>(aAtom))
             {
                 auto const& sym = std::get<symbol>(aAtom);
+                bool const doIgnore = iIgnore.find(sym) != iIgnore.end();
                 cst_node potentialChild{ &aNode, aNode.rule, &aAtom, aSource };
-                auto const partialResult = parse(sym, potentialChild, aSource);
+                // (an ignored symbol's nodes are not made (it is discarded))
+                std::optional<parse_result> partialResult;
+                {
+                    scoped_object<bool> discarding{ iDiscarding, iDiscarding || doIgnore };
+                    partialResult = parse(sym, potentialChild, aSource);
+                }
                 if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
                 {
-                    auto newChild = std::make_shared<cst_node>(std::move(potentialChild));
-                    bool const doIgnore = iIgnore.find(sym) != iIgnore.end();
-                    if (!doIgnore)
-                        aNode.children.push_back(newChild);
                     scopedCursor.ignore();
-                    newChild->set_concept(aAtom.c);
-                    newChild->value = partialResult.value();
-                    return (iCache[cacheKey] = cache_result_of(apply_partial_result(result, partialResult), iCursor)).result;
+                    if (!doIgnore && !iDiscarding)
+                    {
+                        auto newChild = std::make_shared<cst_node>(std::move(potentialChild));
+                        aNode.children.push_back(newChild);
+                        newChild->set_concept(aAtom.c);
+                        newChild->value = partialResult.value();
+                    }
+                    return store(apply_partial_result(result, partialResult), iCursor);
                 }
             }
             else if (std::holds_alternative<terminal>(aAtom))
@@ -1226,10 +1262,13 @@ namespace neolib
                 {
                     scopedCursor.ignore();
                     auto const partialResult = aSource.substr(0, ter.size());
-                    auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
-                    newChild->set_concept(aAtom.c);
-                    aNode.children.push_back(newChild);
-                    return ((sdp ? sdp->ok = true : true), (iCache[cacheKey] = cache_result_of(apply_partial_result(result, partialResult), iCursor)).result);
+                    if (!iDiscarding)
+                    {
+                        auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
+                        newChild->set_concept(aAtom.c);
+                        aNode.children.push_back(newChild);
+                    }
+                    return ((sdp ? sdp->ok = true : true), store(apply_partial_result(result, partialResult), iCursor));
                 }
             }
             else if (std::holds_alternative<range>(aAtom))
@@ -1245,13 +1284,13 @@ namespace neolib
                     {
                         scopedCursor.ignore();
                         auto const partialResult = aSource.substr(0, 1);
-                        if (aAtom.c)
+                        if (aAtom.c && !iDiscarding)
                         {
                             auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
                             newChild->set_concept(aAtom.c);
                             aNode.children.push_back(newChild);
                         }
-                        return ((sdp ? sdp->ok = true : true), (iCache[cacheKey] = cache_result_of(apply_partial_result(result, partialResult), iCursor)).result);
+                        return ((sdp ? sdp->ok = true : true), store(apply_partial_result(result, partialResult), iCursor));
                     }
                 }
             }
@@ -1305,7 +1344,7 @@ namespace neolib
                 aNode.value = std::string_view{ spanStart, spanEnd };
                 result = aNode.value;
                 result.value().sourceNext = sourceNext;
-                iCache[cacheKey] = cache_result_of(result, iCursor);
+                store(result, iCursor);
                 return ((sdp ? sdp->ok = true : true), result);
             }
             else if (std::holds_alternative<optional>(aAtom))
@@ -1324,7 +1363,7 @@ namespace neolib
                 if (!result)
                     result.emplace(sourceNext, sourceNext);
                 scopedCursor.ignore();
-                iCache[cacheKey] = cache_result_of(result, iCursor);
+                store(result, iCursor);
                 return ((sdp ? sdp->ok = true : true), result);
             }
             else if (std::holds_alternative<repetition>(aAtom))
@@ -1374,7 +1413,7 @@ namespace neolib
                 if (foundAtLeastOne)
                 {
                     scopedCursor.ignore();
-                    if (aAtom.c)
+                    if (aAtom.c && !iDiscarding)
                     {
                         auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, result.value());
                         newChild->set_concept(aAtom.c);
@@ -1383,13 +1422,13 @@ namespace neolib
                         aNode.children.push_back(newChild);
                         std::swap(newChild->children, children);
                     }
-                    iCache[cacheKey] = cache_result_of(result, iCursor);
+                    store(result, iCursor);
                     return ((sdp ? sdp->ok = true : true), result);
                 }
                 else if (!std::get<repetition>(aAtom).atLeastOne)
                 {
                     result.emplace(sourceNext, sourceNext);
-                    iCache[cacheKey] = cache_result_of(result, scopedCursor.saved());
+                    store(result, scopedCursor.saved());
                     return ((sdp ? sdp->ok = true : true), result);
                 }
                 return {};
@@ -1431,7 +1470,7 @@ namespace neolib
                     for (auto& child : children2)
                         child->set_concept(aAtom.c);
                     aNode.children.insert(aNode.children.end(), std::make_move_iterator(children2.begin()), std::make_move_iterator(children2.end()));
-                    iCache[cacheKey] = cache_result_of(result, iCursor);
+                    store(result, iCursor);
                     return ((sdp ? sdp->ok = true : true), result);
                 }
                 return {};
@@ -1452,7 +1491,7 @@ namespace neolib
                         sourceNext = std::to_address(partialResult->sourceNext);
                     }
                 }
-                iCache[cacheKey] = cache_result_of(result, scopedCursor.saved());
+                store(result, scopedCursor.saved());
                 return ((sdp ? sdp->ok = true : true), result);
             }
 
@@ -1463,7 +1502,8 @@ namespace neolib
         {
             std::size_t const cursorPosition = iCursor ?
                 static_cast<std::size_t>(std::distance(iPreviousStage->cst().children.cbegin(), *iCursor)) : 0u;
-            return cache_key{ &aAtom, { aSource.data(), cursorPosition } };
+            // (a parse made while discarding makes no nodes: it is remembered apart from one that makes them)
+            return cache_key{ &aAtom, { aSource.data(), cursorPosition * 2u + (iDiscarding ? 1u : 0u) } };
         }
 
         // (the characters a match of an atom can start with)
@@ -1585,6 +1625,7 @@ namespace neolib
             for (auto& entry : iRuleIndex)
                 for (auto& ir : entry.second)
                     apply(ir);
+            iSymbolFirst = std::move(symbolFirst);
         }
 
         static std::optional<parse_result> apply_partial_result(std::optional<parse_result> const& aResult, std::optional<parse_result> const& aPartialResult)
@@ -1711,6 +1752,7 @@ namespace neolib
         rule const* iIndexedRules = nullptr;
         std::size_t iIndexedRuleCount = 0u;
         boost::unordered_flat_map<symbol, std::vector<indexed_rule>> iRuleIndex;
+        boost::unordered_flat_map<symbol, first_set> iSymbolFirst;  ///< (each symbol's first set (no previous stage only))
         std::vector<indexed_rule> iSymbolRules;
         std::shared_ptr<parser> iPreviousStage;
         std::optional<typename cst_node::child_list::const_iterator> iCursor;
@@ -1745,6 +1787,7 @@ namespace neolib
             }
         };
         boost::unordered_flat_map<cache_key, cache_result, cache_key_hash> iCache;
+        bool iDiscarding = false;   ///< (an ignored symbol is being parsed: no nodes are made)
         std::ostream* iDebugOutput = nullptr;
         bool iDebugScan = false;
         bool iDebugCst = false;
