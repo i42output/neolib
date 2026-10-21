@@ -356,14 +356,15 @@ namespace neolib
 
             std::optional<_concept> c;
             std::optional<std::string> constraint;
+            std::shared_ptr<primitive_atom const> exception;    ///< (EBNF's "factor - exception": a match that the exception matches all of is not a match)
 
             primitive_atom(primitive_atom const& other) :
-                base_type{ other }, c{ other.c }, constraint{ other.constraint }
+                base_type{ other }, c{ other.c }, constraint{ other.constraint }, exception{ other.exception }
             {
             }
 
             primitive_atom(primitive_atom&& other) :
-                base_type{ std::move(other) }, c{ std::move(other.c) }, constraint{ std::move(other.constraint) }
+                base_type{ std::move(other) }, c{ std::move(other.c) }, constraint{ std::move(other.constraint) }, exception{ std::move(other.exception) }
             {
             }
 
@@ -372,6 +373,7 @@ namespace neolib
                 base_type::operator=(other);
                 c = other.c;
                 constraint = other.constraint;
+                exception = other.exception;
                 return *this;
             }
 
@@ -380,6 +382,7 @@ namespace neolib
                 base_type::operator=(std::move(other));
                 c = std::move(other.c);
                 constraint = std::move(other.constraint);
+                exception = std::move(other.exception);
                 return *this;
             }
 
@@ -1090,6 +1093,47 @@ namespace neolib
         }
 
         std::optional<parse_result> parse(symbol aSymbol, primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
+        {
+            if (!aAtom.exception)
+                return parse_primitive(aSymbol, aAtom, aNode, aSource);
+            // (factor - exception: a match of the factor is not a match if the exception matches all of it)
+            auto const children = aNode.children.size();
+            auto const cursor = iCursor;
+            auto const result = parse_primitive(aSymbol, aAtom, aNode, aSource);
+            if (!result || !excepted(aSymbol, *aAtom.exception, static_cast<std::string_view const&>(*result)))
+                return result;
+            if (aNode.children.size() > children)
+                aNode.children.erase(std::next(aNode.children.begin(), static_cast<std::ptrdiff_t>(children)), aNode.children.end());
+            iCursor = cursor;
+            return {};
+        }
+
+        bool excepted(symbol aSymbol, primitive_atom const& aException, std::string_view const& aMatch)
+        {
+            // (an exception of terminals (e.g. reserved words) is compared with the match; any other is parsed (on its own: none of the
+            // parse's state is changed) and must match all of it)
+            if (std::holds_alternative<terminal>(aException))
+                return aMatch == static_cast<std::string_view const&>(std::get<terminal>(aException));
+            if (std::holds_alternative<alternation>(aException))
+            {
+                auto const& alternatives = std::get<alternation>(aException).value;
+                if (std::all_of(alternatives.begin(), alternatives.end(), [](primitive_atom const& a) { return std::holds_alternative<terminal>(a) && !a.exception; }))
+                    return std::any_of(alternatives.begin(), alternatives.end(), [&](primitive_atom const& a) { return aMatch == static_cast<std::string_view const&>(std::get<terminal>(a)); });
+            }
+            decltype(iCache) cache;
+            std::swap(iCache, cache);
+            auto const cursor = iCursor;
+            auto const deepestParse = iDeepestParse;
+            iCursor = std::nullopt;
+            cst_node scratch{ nullptr, nullptr, nullptr, aMatch };
+            auto const result = parse(aSymbol, aException, scratch, aMatch);
+            iCursor = cursor;
+            iDeepestParse = deepestParse;
+            std::swap(iCache, cache);
+            return result && result->size() == aMatch.size();
+        }
+
+        std::optional<parse_result> parse_primitive(symbol aSymbol, primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
         {
             if (iError)
                 return {};
