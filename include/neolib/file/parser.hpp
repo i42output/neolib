@@ -612,12 +612,24 @@ namespace neolib
 
         std::vector<rule>& rules()
         {
+            iIndexed = false;   // (the rules may change: they are indexed again when next parsed)
             return iRules;
         }
 
         void ignore(symbol aIgnore)
         {
             iIgnore.insert(aIgnore);
+        }
+
+        // (the deepest that a parse may go (its atoms within atoms): beyond it the parse fails ("parse too deep") rather than exhaust the
+        // stack; each level takes some stack (around 2KB): a caller whose stack is large can allow more)
+        std::uint32_t max_level() const
+        {
+            return iMaxLevel;
+        }
+        void set_max_level(std::uint32_t aMaxLevel)
+        {
+            iMaxLevel = aMaxLevel;
         }
 
         bool parse(std::string_view const& aSource)
@@ -635,17 +647,24 @@ namespace neolib
             iError = {};
             iCache = {};
 
-            // (the rules indexed by their symbol, in rule order: a symbol is parsed by trying only its own rules)
-            iRuleIndex = {};
-            iSymbolRules = {};
-            for (auto const& rule : iRules)
-                if (std::holds_alternative<symbol>(rule.lhs[0]))
-                {
-                    iSymbolRules.push_back(indexed_rule{ &rule });
-                    iRuleIndex[std::get<symbol>(rule.lhs[0])].push_back(indexed_rule{ &rule });
-                }
-            if (!iPreviousStage)
-                compute_first_sets();
+            // (the rules indexed by their symbol, in rule order: a symbol is parsed by trying only its own rules (indexed once, unless
+            // the rules have changed since))
+            if (!iIndexed || iIndexedRules != iRules.data() || iIndexedRuleCount != iRules.size())
+            {
+                iRuleIndex = {};
+                iSymbolRules = {};
+                for (auto const& rule : iRules)
+                    if (std::holds_alternative<symbol>(rule.lhs[0]))
+                    {
+                        iSymbolRules.push_back(indexed_rule{ &rule });
+                        iRuleIndex[std::get<symbol>(rule.lhs[0])].push_back(indexed_rule{ &rule });
+                    }
+                if (!iPreviousStage)
+                    compute_first_sets();
+                iIndexed = true;
+                iIndexedRules = iRules.data();
+                iIndexedRuleCount = iRules.size();
+            }
 
             if (iPreviousStage)
             {
@@ -1143,8 +1162,13 @@ namespace neolib
                 auto cacheEntry = iCache.find(cacheKey);
                 if (cacheEntry != iCache.end())
                 {
+                    // (the same atom at the same place may be parsed for another node (e.g. an optional tail that two nested rules end
+                    // with): the nodes that its parse appended are appended to this node's children)
                     auto const cachedResult = cacheEntry->second.result;
-                    aNode.children = cacheEntry->second.nodes;
+                    if (cacheEntry->second.appended)
+                        aNode.children.insert(aNode.children.end(), cacheEntry->second.nodes.begin(), cacheEntry->second.nodes.end());
+                    else
+                        aNode.children = cacheEntry->second.nodes;
                     if (iCursor)
                         iCursor = cacheEntry->second.cursor;
                     return cachedResult;
@@ -1157,6 +1181,15 @@ namespace neolib
                 *iCursor != iCursorEnd ? 
                     (***iCursor).value.begin() : aSource.end());
             char const* sourceEnd = std::to_address(aSource.end());
+            // (the node's children before the parse: a cache entry holds the nodes that the parse appends)
+            auto const base = aNode.children.size();
+            auto const last = base > 0u ? aNode.children.back() : nullptr;
+            auto const cache_result_of = [&](std::optional<parse_result> const& aResult, std::optional<typename cst_node::child_list::const_iterator> const& aCursor)
+            {
+                if (aNode.children.size() >= base && (base == 0u || aNode.children[base - 1u] == last))
+                    return cache_result{ typename cst_node::child_list{ std::next(aNode.children.begin(), static_cast<std::ptrdiff_t>(base)), aNode.children.end() }, aResult, aCursor, true };
+                return cache_result{ aNode.children, aResult, aCursor, false };
+            };
 
             iDeepestParse = std::max(iDeepestParse, sourceNext);
 
@@ -1183,7 +1216,7 @@ namespace neolib
                     scopedCursor.ignore();
                     newChild->set_concept(aAtom.c);
                     newChild->value = partialResult.value();
-                    return (iCache[cacheKey] = cache_result{ aNode.children, apply_partial_result(result, partialResult), iCursor }).result;
+                    return (iCache[cacheKey] = cache_result_of(apply_partial_result(result, partialResult), iCursor)).result;
                 }
             }
             else if (std::holds_alternative<terminal>(aAtom))
@@ -1196,7 +1229,7 @@ namespace neolib
                     auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
                     newChild->set_concept(aAtom.c);
                     aNode.children.push_back(newChild);
-                    return ((sdp ? sdp->ok = true : true), (iCache[cacheKey] = cache_result{ aNode.children, apply_partial_result(result, partialResult), iCursor }).result);
+                    return ((sdp ? sdp->ok = true : true), (iCache[cacheKey] = cache_result_of(apply_partial_result(result, partialResult), iCursor)).result);
                 }
             }
             else if (std::holds_alternative<range>(aAtom))
@@ -1218,7 +1251,7 @@ namespace neolib
                             newChild->set_concept(aAtom.c);
                             aNode.children.push_back(newChild);
                         }
-                        return ((sdp ? sdp->ok = true : true), (iCache[cacheKey] = cache_result{ aNode.children, apply_partial_result(result, partialResult), iCursor }).result);
+                        return ((sdp ? sdp->ok = true : true), (iCache[cacheKey] = cache_result_of(apply_partial_result(result, partialResult), iCursor)).result);
                     }
                 }
             }
@@ -1272,7 +1305,7 @@ namespace neolib
                 aNode.value = std::string_view{ spanStart, spanEnd };
                 result = aNode.value;
                 result.value().sourceNext = sourceNext;
-                iCache[cacheKey] = cache_result{ aNode.children, result, iCursor };
+                iCache[cacheKey] = cache_result_of(result, iCursor);
                 return ((sdp ? sdp->ok = true : true), result);
             }
             else if (std::holds_alternative<optional>(aAtom))
@@ -1291,7 +1324,7 @@ namespace neolib
                 if (!result)
                     result.emplace(sourceNext, sourceNext);
                 scopedCursor.ignore();
-                iCache[cacheKey] = cache_result{ aNode.children, result, iCursor };
+                iCache[cacheKey] = cache_result_of(result, iCursor);
                 return ((sdp ? sdp->ok = true : true), result);
             }
             else if (std::holds_alternative<repetition>(aAtom))
@@ -1350,13 +1383,13 @@ namespace neolib
                         aNode.children.push_back(newChild);
                         std::swap(newChild->children, children);
                     }
-                    iCache[cacheKey] = cache_result{ aNode.children, result, iCursor };
+                    iCache[cacheKey] = cache_result_of(result, iCursor);
                     return ((sdp ? sdp->ok = true : true), result);
                 }
                 else if (!std::get<repetition>(aAtom).atLeastOne)
                 {
                     result.emplace(sourceNext, sourceNext);
-                    iCache[cacheKey] = cache_result{ aNode.children, result, scopedCursor.saved() };
+                    iCache[cacheKey] = cache_result_of(result, scopedCursor.saved());
                     return ((sdp ? sdp->ok = true : true), result);
                 }
                 return {};
@@ -1398,7 +1431,7 @@ namespace neolib
                     for (auto& child : children2)
                         child->set_concept(aAtom.c);
                     aNode.children.insert(aNode.children.end(), std::make_move_iterator(children2.begin()), std::make_move_iterator(children2.end()));
-                    iCache[cacheKey] = cache_result{ aNode.children, result, iCursor };
+                    iCache[cacheKey] = cache_result_of(result, iCursor);
                     return ((sdp ? sdp->ok = true : true), result);
                 }
                 return {};
@@ -1419,7 +1452,7 @@ namespace neolib
                         sourceNext = std::to_address(partialResult->sourceNext);
                     }
                 }
-                iCache[cacheKey] = cache_result{ aNode.children, result, scopedCursor.saved() };
+                iCache[cacheKey] = cache_result_of(result, scopedCursor.saved());
                 return ((sdp ? sdp->ok = true : true), result);
             }
 
@@ -1674,6 +1707,9 @@ namespace neolib
         };
     private:
         std::vector<rule> iRules;
+        bool iIndexed = false;                      ///< (iRuleIndex and iSymbolRules index iRules)
+        rule const* iIndexedRules = nullptr;
+        std::size_t iIndexedRuleCount = 0u;
         boost::unordered_flat_map<symbol, std::vector<indexed_rule>> iRuleIndex;
         std::vector<indexed_rule> iSymbolRules;
         std::shared_ptr<parser> iPreviousStage;
@@ -1693,6 +1729,7 @@ namespace neolib
             typename cst_node::child_list nodes;
             std::optional<parse_result> result;
             std::optional<typename cst_node::child_list::const_iterator> cursor; ///< (the cursor after the parse, if there is a previous stage)
+            bool appended = false;  ///< (nodes: the nodes that the parse appended to the node's children (else: its children))
         };
         // (atom, (source position, cursor position (if there is a previous stage)))
         using cache_key = std::pair<primitive_atom const*, std::pair<char const*, std::size_t>>;

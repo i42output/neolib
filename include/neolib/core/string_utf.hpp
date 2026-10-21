@@ -422,9 +422,11 @@ namespace neolib
                     uch = detail::next_utf_bits(static_cast<unicode_char_t>(nch & ~0xF8), 3, i, end);
                 else
                     uch = INVALID_CHAR32;
-                if (i == old || uch == INVALID_CHAR32)
+                // (an invalid sequence leaves i where it was: U+FFFD (the value an invalid sequence decodes to) is itself valid)
+                if (i == old)
                     return false;
             }
+            (void)uch;
         }
         return true;
     }
