@@ -170,14 +170,14 @@ namespace neolib
         iPluginExtension{ aPluginExtension },
         iRemovable{ false }
     {
-        auto first = std::next(arguments().as_vector().as_std_vector().begin());
-        auto last = arguments().as_vector().as_std_vector().end();
-        if (!arguments().as_vector().empty())
-            if (std::find_if(first, last, [](auto const& arg) { return
+        // (the arguments after the program's name (if there are any))
+        auto const& args = arguments().as_vector().as_std_vector();
+        if (!args.empty())
+            if (std::find_if(std::next(args.begin()), args.end(), [](auto const& arg) { return
                 arg == neolib::ci_string("/pocket") ||
                 arg == neolib::ci_string("-pocket") ||
                 arg == neolib::ci_string("/removable") ||
-                arg == neolib::ci_string("-removable"); }) != last)
+                arg == neolib::ci_string("-removable"); }) != args.end())
             {
                 iRemovable = true;
             }
