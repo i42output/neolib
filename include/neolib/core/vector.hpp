@@ -83,7 +83,8 @@ namespace neolib
             iVector(aFirst, aLast) {}
         vector& operator=(vector const& aOther)
         { 
-            assign(aOther); 
+            if (&aOther != this)
+                iVector = aOther.iVector;   // (of the same type: copied as a std::vector is)
             return *this; 
         }
         vector& operator=(vector&& aOther) 
