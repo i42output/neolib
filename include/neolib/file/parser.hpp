@@ -357,14 +357,18 @@ namespace neolib
             std::optional<_concept> c;
             std::optional<std::string> constraint;
             std::shared_ptr<primitive_atom const> exception;    ///< (EBNF's "factor - exception": a match that the exception matches all of is not a match)
+            // (the characters that a match can start with, if it cannot match nothing (set by the parser that owns it: see compute_first_sets))
+            bool firstKnown = false;
+            std::bitset<256> first;
 
             primitive_atom(primitive_atom const& other) :
-                base_type{ other }, c{ other.c }, constraint{ other.constraint }, exception{ other.exception }
+                base_type{ other }, c{ other.c }, constraint{ other.constraint }, exception{ other.exception }, firstKnown{ other.firstKnown }, first{ other.first }
             {
             }
 
             primitive_atom(primitive_atom&& other) :
-                base_type{ std::move(other) }, c{ std::move(other.c) }, constraint{ std::move(other.constraint) }, exception{ std::move(other.exception) }
+                base_type{ std::move(other) }, c{ std::move(other.c) }, constraint{ std::move(other.constraint) }, exception{ std::move(other.exception) },
+                firstKnown{ other.firstKnown }, first{ other.first }
             {
             }
 
@@ -374,6 +378,8 @@ namespace neolib
                 c = other.c;
                 constraint = other.constraint;
                 exception = other.exception;
+                firstKnown = other.firstKnown;
+                first = other.first;
                 return *this;
             }
 
@@ -383,6 +389,8 @@ namespace neolib
                 c = std::move(other.c);
                 constraint = std::move(other.constraint);
                 exception = std::move(other.exception);
+                firstKnown = other.firstKnown;
+                first = other.first;
                 return *this;
             }
 
@@ -652,7 +660,6 @@ namespace neolib
             if (!iIndexed || iIndexedRules != iRules.data() || iIndexedRuleCount != iRules.size())
             {
                 iRuleIndex = {};
-                iSymbolFirst = {};
                 iSymbolRules = {};
                 for (auto const& rule : iRules)
                     if (std::holds_alternative<symbol>(rule.lhs[0]))
@@ -1119,6 +1126,17 @@ namespace neolib
             }
         }
 
+        // (an atom of a tuple: one that cannot start with the next character does not match (not parsed))
+        std::optional<parse_result> parse_atom(symbol aSymbol, primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
+        {
+            if (!iCursor && aAtom.firstKnown && (aSource.empty() || !aAtom.first.test(static_cast<unsigned char>(aSource[0]))))
+            {
+                iDeepestParse = std::max(iDeepestParse, std::to_address(aSource.begin()));
+                return {};
+            }
+            return parse(aSymbol, aAtom, aNode, aSource);
+        }
+
         std::optional<parse_result> parse(symbol aSymbol, primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
         {
             if (!aAtom.exception)
@@ -1165,16 +1183,11 @@ namespace neolib
             if (iError)
                 return {};
 
-            if (!iCursor && std::holds_alternative<symbol>(aAtom))
+            if (!iCursor && aAtom.firstKnown && (aSource.empty() || !aAtom.first.test(static_cast<unsigned char>(aSource[0]))))
             {
-                // (a symbol none of whose rules can start with the next character does not match (as parse_rules would find))
-                auto const sf = iSymbolFirst.find(std::get<symbol>(aAtom));
-                if (sf != iSymbolFirst.end() && !sf->second.any &&
-                    (aSource.empty() || !sf->second.characters.test(static_cast<unsigned char>(aSource[0]))))
-                {
-                    iDeepestParse = std::max(iDeepestParse, std::to_address(aSource.begin()));
-                    return {};
-                }
+                // (an atom that cannot start with the next character (and cannot match nothing) does not match)
+                iDeepestParse = std::max(iDeepestParse, std::to_address(aSource.begin()));
+                return {};
             }
 
             auto const cacheKey = make_cache_key(aAtom, aSource);
@@ -1312,7 +1325,7 @@ namespace neolib
                     typename cst_node::child_list children2;
                     if (doIgnore || doDiscard)
                         std::swap(aNode.children, children2);
-                    auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, lookaheadTo });
+                    auto const partialResult = parse_atom(aSymbol, a, aNode, std::string_view{ sourceNext, lookaheadTo });
                     if (doIgnore || doDiscard)
                         std::swap(aNode.children, children2);
                     if (!partialResult)
@@ -1352,7 +1365,7 @@ namespace neolib
                 auto const& opt = std::get<optional>(aAtom);
                 for (auto const& a : opt.value)
                 {
-                    auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
+                    auto const partialResult = parse_atom(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
                     if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
                     {
                         aNode.set_concept(aAtom.c);
@@ -1380,7 +1393,7 @@ namespace neolib
                     found = false;  
                     for (auto const& a : rep.value)
                     {
-                        auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
+                        auto const partialResult = parse_atom(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
                         if (partialResult)
                         {
                             foundAtLeastOne = true;
@@ -1446,7 +1459,7 @@ namespace neolib
                     typename cst_node::child_list children3;
                     std::swap(aNode.children, children3);
                     iCursor = scopedCursor.saved();
-                    auto const partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
+                    auto const partialResult = parse_atom(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
                     if (partialResult)
                     {
                         if (!bestResult || partialResult.value().size() > bestResult.value().size())
@@ -1482,7 +1495,7 @@ namespace neolib
                 {
                     typename cst_node::child_list children;
                     std::swap(aNode.children, children);
-                    auto partialResult = parse(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });
+                    auto partialResult = parse_atom(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });
                     std::swap(aNode.children, children);
                     if (partialResult)
                     {
@@ -1625,7 +1638,23 @@ namespace neolib
             for (auto& entry : iRuleIndex)
                 for (auto& ir : entry.second)
                     apply(ir);
-            iSymbolFirst = std::move(symbolFirst);
+            // (each atom's: an atom that cannot start with the next character is not parsed (see parse_primitive))
+            std::function<void(primitive_atom&)> mark = [&](primitive_atom& aAtom)
+            {
+                auto const f = first_of(aAtom, symbolFirst);
+                aAtom.firstKnown = !f.any;
+                aAtom.first = f.characters;
+                std::visit([&](auto& aPart)
+                {
+                    if constexpr (requires { aPart.value; } && !std::is_same_v<std::decay_t<decltype(aPart)>, range>)
+                        if constexpr (std::is_same_v<std::decay_t<decltype(aPart.value)>, std::vector<primitive_atom>>)
+                            for (auto& a : aPart.value)
+                                mark(a);
+                }, static_cast<typename primitive_atom::base_type&>(aAtom));
+            };
+            for (auto& r : iRules)
+                for (auto& a : r.rhs)
+                    mark(a);
         }
 
         static std::optional<parse_result> apply_partial_result(std::optional<parse_result> const& aResult, std::optional<parse_result> const& aPartialResult)
@@ -1752,7 +1781,6 @@ namespace neolib
         rule const* iIndexedRules = nullptr;
         std::size_t iIndexedRuleCount = 0u;
         boost::unordered_flat_map<symbol, std::vector<indexed_rule>> iRuleIndex;
-        boost::unordered_flat_map<symbol, first_set> iSymbolFirst;  ///< (each symbol's first set (no previous stage only))
         std::vector<indexed_rule> iSymbolRules;
         std::shared_ptr<parser> iPreviousStage;
         std::optional<typename cst_node::child_list::const_iterator> iCursor;
