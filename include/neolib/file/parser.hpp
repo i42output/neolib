@@ -158,6 +158,18 @@ namespace neolib
                             view_type{ std::get<terminal_string>(*this) }  :
                             view_type{ other } }
             {}
+            // (the view is of this terminal's own character or string (if it has one), not the other's)
+            terminal& operator=(terminal const& other)
+            {
+                value_type::operator=(other);
+                view_type::operator=(
+                    std::holds_alternative<terminal_character>(*this) ?
+                        view_type{ &std::get<terminal_character>(*this), &std::get<terminal_character>(*this) + 1 } :
+                        std::holds_alternative<terminal_string>(*this) ?
+                            view_type{ std::get<terminal_string>(*this) } :
+                            view_type{ other });
+                return *this;
+            }
         };
 
         struct primitive_atom;
