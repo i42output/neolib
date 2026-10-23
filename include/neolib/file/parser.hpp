@@ -40,6 +40,7 @@
 #include <concepts>
 #include <bitset>
 #include <memory>
+#include <limits>
 #include <vector>
 #include <variant>
 #include <optional>
@@ -540,6 +541,7 @@ namespace neolib
             primitive_atom const* atom;
             std::string_view value;
             child_list children;
+            std::size_t version = 0u;   ///< (incremental: the version of the source that value is of (see parser::copy_of))
 
             cst_node() = default;
             cst_node(cst_node const&) = delete;
@@ -562,7 +564,8 @@ namespace neolib
                 c{ std::move(other.c) },
                 atom{ other.atom },
                 value{ other.value },
-                children{ std::move(other.children) }
+                children{ std::move(other.children) },
+                version{ other.version }
             {
                 for (auto& child : children)
                     child->parent = this;
@@ -580,6 +583,7 @@ namespace neolib
                 atom = other.atom;
                 value = other.value;
                 children = std::move(other.children);
+                version = other.version;
 
                 for (auto& child : children)
                     child->parent = this;
@@ -639,6 +643,32 @@ namespace neolib
         void ignore(symbol aIgnore)
         {
             iIgnore.insert(aIgnore);
+            iCache = {}; // (an ignored symbol's parses make no nodes: the parses remembered are not its)
+        }
+
+        // incremental parsing (off by default): each parse is of an edit of the source parsed before (e.g. a script being edited): the 
+        // parses of the source parsed before that the edit does not affect (those that examined none of the text that it changed) are 
+        // reused. The parser keeps its own copy of the source (see text()): the nodes of the trees that it parses are of that text. A 
+        // parser of a stage that has a previous stage reuses the previous stage's parse of the same source (which must be incremental too).
+        bool incremental() const
+        {
+            return iIncremental;
+        }
+        void set_incremental(bool aIncremental)
+        {
+            iIncremental = aIncremental;
+            iCache = {};
+            iText = nullptr;
+            iTokens = {};
+            iVersion = 0u;
+            iShifts.clear();
+            iShiftBase = 0u;
+            iGap = std::numeric_limits<std::size_t>::max();
+        }
+        // (the source that the last parse was of: the parser's own copy of it, if incremental (see set_incremental))
+        std::string_view text() const
+        {
+            return iSource;
         }
 
         // (the deepest that a parse may go (its atoms within atoms): beyond it the parse fails ("parse too deep") rather than exhaust the
@@ -659,18 +689,24 @@ namespace neolib
             
         bool parse(std::optional<symbol> const& aRoot, std::string_view const& aSource)
         {
-            iSource = aSource;
-            iCst = { nullptr, nullptr, nullptr, aSource };
+            // (incremental: the source is the parser's own copy (the parses of the source parsed before that remain are of it))
+            std::string_view const source = iIncremental ? reuse(aSource) : aSource;
+            iSource = source;
+            iCst = { nullptr, nullptr, nullptr, source };
+            iCst.version = iVersion;
             ast() = {};
             iStack = {};
             iDeepestParse = {};
             iError = {};
-            iCache = {};
+            iExamined = 0u;
+            if (!iIncremental)
+                iCache = {};
 
             // (the rules indexed by their symbol, in rule order: a symbol is parsed by trying only its own rules (indexed once, unless
             // the rules have changed since))
             if (!iIndexed || iIndexedRules != iRules.data() || iIndexedRuleCount != iRules.size())
             {
+                iCache = {}; // (the parses remembered are of the rules as they were)
                 iRuleIndex = {};
                 iSymbolRules = {};
                 for (auto const& rule : iRules)
@@ -688,12 +724,15 @@ namespace neolib
 
             if (iPreviousStage)
             {
-                iCursor = iPreviousStage->cst().children.begin();
-                iCursorEnd = iPreviousStage->cst().children.end();
+                iCursor = previous_stage_nodes().cbegin();
+                iCursorEnd = previous_stage_nodes().cend();
             }
 
             auto const startTime = std::chrono::high_resolution_clock::now();
-            auto const result = parse(aRoot, iCst, aSource);
+            auto const result = parse(aRoot, iCst, source);
+            // (incremental: the tree's nodes are the remembered parses' (they are reused): the tree is a copy of them)
+            if (iIncremental)
+                iCst = copy_of(iCst);
             fixup_cst(iCst);
             simplify_cst(iCst);
             auto const endTime = std::chrono::high_resolution_clock::now();
@@ -703,21 +742,21 @@ namespace neolib
 
             auto error_print = [&](std::string const& errorPrefix, char const* pos) -> std::string
                 {
-                    linePos = static_cast<std::uint32_t>(std::count(aSource.data(), pos, '\n') + 1);
+                    linePos = static_cast<std::uint32_t>(std::count(source.data(), pos, '\n') + 1);
                     columnPos = static_cast<std::uint32_t>(std::distance(std::reverse_iterator(pos),
-                        std::find(std::reverse_iterator(pos), std::reverse_iterator(aSource.data()), '\n')) + 1);
+                        std::find(std::reverse_iterator(pos), std::reverse_iterator(source.data()), '\n')) + 1);
                     std::string error = errorPrefix + "(" + std::to_string(linePos) + "," + std::to_string(columnPos) + ") ";
                     error += "'" + to_escaped_string(std::string_view{ pos, std::next(pos) }, 16u, true) + "' was unexpected here.";
                     return error;
                 };
 
-            if (!iError && iDeepestParse < aSource.data() + aSource.size())
+            if (!iError && iDeepestParse < source.data() + source.size())
                 iError = error_print("syntax error: ", iDeepestParse);
 
             if (iDebugOutput)
             {
                 std::vector<std::string> lines;
-                std::istringstream iss{ std::string{ aSource } };
+                std::istringstream iss{ std::string{ source } };
                 std::string line;
                 while (std::getline(iss, line))
                     lines.push_back(line);
@@ -834,6 +873,181 @@ namespace neolib
         }
 
     private:
+        // (incremental: a copy of a tree; the nodes of the parses remembered are of the source as it was when they were made (they 
+        // are not moved when it is edited): the copy's (and theirs, so it is done once) are of the source as it is (see current))
+        cst_node copy_of(cst_node& aNode)
+        {
+            current(aNode);
+            cst_node result{ nullptr, aNode.rule, aNode.atom, aNode.value };
+            result.c = aNode.c;
+            result.version = iVersion;
+            std::vector<std::pair<cst_node const*, cst_node*>> nodes{ { &aNode, &result } };
+            while (!nodes.empty())
+            {
+                auto const [from, to] = nodes.back();
+                nodes.pop_back();
+                to->children.reserve(from->children.size());
+                for (auto const& child : from->children)
+                {
+                    current(*child);
+                    auto copy = std::make_shared<cst_node>(to, child->rule, child->atom, child->value);
+                    copy->c = child->c;
+                    copy->version = iVersion;
+                    nodes.emplace_back(child.get(), copy.get());
+                    to->children.push_back(std::move(copy));
+                }
+            }
+            return result;
+        }
+
+        // (incremental: a node's value of the source as it is: moved by each edit since the version that it is of that it is after 
+        // (see reuse))
+        void current(cst_node& aNode) const
+        {
+            for (; aNode.version < iVersion; ++aNode.version)
+            {
+                auto const& shift = iShifts[aNode.version - iShiftBase];
+                if (aNode.value.data() == nullptr)
+                    continue;
+                auto position = aNode.value.data() - shift.before;
+                if (position >= static_cast<std::ptrdiff_t>(shift.end))
+                    position += shift.delta;
+                aNode.value = std::string_view{ shift.after + position, aNode.value.size() };
+            }
+        }
+
+        // (the nodes of the previous stage that a parse is of (incremental: as they were for the parse: the parses remembered refer to them))
+        typename cst_node::child_list const& previous_stage_nodes() const
+        {
+            return iIncremental ? iTokens : iPreviousStage->cst().children;
+        }
+
+        // incremental: the parser's copy of a source to parse (the source parsed before, edited in place: the text between their common 
+        // prefix and suffix is replaced), and the parses remembered that the edit (that text, and the previous stage's nodes that changed) 
+        // does not affect: those before it are unchanged, those after it move; the others are forgotten
+        std::string_view reuse(std::string_view const& aSource)
+        {
+            auto const previousTokens = std::move(iTokens);
+            iTokens = {};
+            bool known = false; // (the edit since the parses remembered were made)
+            if (iPreviousStage)
+            {
+                if (!iPreviousStage->iIncremental || iPreviousStage->text() != aSource)
+                    throw std::logic_error("neolib::parser: an incremental parser's previous stage must parse the same source incrementally");
+                known = iText && iText == iPreviousStage->iText && iVersion + 1u == iPreviousStage->iVersion;
+                iText = iPreviousStage->iText;
+                iTokens = iPreviousStage->cst().children;
+                iVersion = iPreviousStage->iVersion;
+                iEdit = iPreviousStage->iEdit;
+            }
+            else
+            {
+                known = iText != nullptr;
+                if (!iText)
+                    iText = std::make_shared<std::string>();
+                std::string_view const before = *iText;
+                std::size_t prefix = 0u;
+                while (prefix < before.size() && prefix < aSource.size() && before[prefix] == aSource[prefix])
+                    ++prefix;
+                std::size_t suffix = 0u;
+                while (suffix < before.size() - prefix && suffix < aSource.size() - prefix && 
+                    before[before.size() - 1u - suffix] == aSource[aSource.size() - 1u - suffix])
+                    ++suffix;
+                iEdit = text_edit{ before.data(), nullptr, prefix, before.size() - suffix,
+                    static_cast<std::ptrdiff_t>(aSource.size()) - static_cast<std::ptrdiff_t>(before.size()) };
+                // (room to grow: the text is not reallocated (moving all of it) by every edit that lengthens it)
+                if (aSource.size() > iText->capacity())
+                    iText->reserve(aSource.size() * 2u);
+                iText->replace(prefix, before.size() - suffix - prefix, aSource.substr(prefix, aSource.size() - suffix - prefix));
+                iEdit.after = iText->data();
+                ++iVersion;
+            }
+            if (!known || iShifts.size() >= MaxShifts)
+            {
+                iCache = {};
+                iShifts.clear();
+                iShiftBase = iVersion;
+                iGap = std::numeric_limits<std::size_t>::max();
+                return *iText;
+            }
+            std::size_t damageStart = iEdit.start;
+            std::size_t damageEnd = iEdit.end;
+            std::ptrdiff_t const delta = iEdit.delta;
+            // (the previous stage's nodes that changed: those between its nodes' common prefix and suffix (the same rule at the same place 
+            // with the same text: not within the edit))
+            if (iPreviousStage)
+            {
+                auto const unchanged = [&](cst_node const& aBefore, cst_node const& aAfter, bool aPrefix)
+                {
+                    auto const before = aBefore.value.data() - iEdit.before;
+                    auto const after = aAfter.value.data() - iEdit.after;
+                    auto const length = static_cast<std::ptrdiff_t>(aBefore.value.size());
+                    return aBefore.rule == aAfter.rule && aBefore.value.size() == aAfter.value.size() && (aPrefix ?
+                        before == after && before + length <= static_cast<std::ptrdiff_t>(iEdit.start) :
+                        before + delta == after && before >= static_cast<std::ptrdiff_t>(iEdit.end));
+                };
+                std::size_t tokenPrefix = 0u;
+                while (tokenPrefix < previousTokens.size() && tokenPrefix < iTokens.size() && unchanged(*previousTokens[tokenPrefix], *iTokens[tokenPrefix], true))
+                    ++tokenPrefix;
+                std::size_t tokenSuffix = 0u;
+                while (tokenSuffix < previousTokens.size() - tokenPrefix && tokenSuffix < iTokens.size() - tokenPrefix &&
+                    unchanged(*previousTokens[previousTokens.size() - 1u - tokenSuffix], *iTokens[iTokens.size() - 1u - tokenSuffix], false))
+                    ++tokenSuffix;
+                if (tokenPrefix < previousTokens.size() - tokenSuffix)
+                {
+                    auto const& first = *previousTokens[tokenPrefix];
+                    auto const& last = *previousTokens[previousTokens.size() - 1u - tokenSuffix];
+                    damageStart = std::min(damageStart, static_cast<std::size_t>(first.value.data() - iEdit.before));
+                    damageEnd = std::max(damageEnd, static_cast<std::size_t>(last.value.data() - iEdit.before) + last.value.size());
+                }
+            }
+            // (a remembered parse that examined nothing at or after the damage's start (nor its end) is before it (it is unchanged), one 
+            // that starts at or after its end is after it (it moves: its position relative to the end is unchanged); the others are 
+            // forgotten; one keyed by its position relative to the start that is after it (or vice versa) is keyed again)
+            auto const sizeBefore = static_cast<std::ptrdiff_t>(iText->size()) - delta;
+            auto const tokensBefore = static_cast<std::ptrdiff_t>(iPreviousStage ? previousTokens.size() : 0u);
+            std::vector<std::pair<cache_key, cache_result>> rekeyed;
+            boost::unordered::erase_if(iCache, [&](auto& aEntry)
+            {
+                auto const& key = aEntry.first;
+                bool const relativeToEnd = key.second.first < 0;
+                auto const start = relativeToEnd ? key.second.first + sizeBefore + 1 : key.second.first;
+                auto const examined = static_cast<std::size_t>(std::max(start + aEntry.second.examined, start + 1));
+                bool const isBefore = examined <= damageStart && examined < damageEnd;
+                bool const isAfter = !isBefore && static_cast<std::size_t>(start) >= damageEnd;
+                if (!isBefore && !isAfter)
+                    return true;
+                if (isAfter == relativeToEnd)
+                    return false;
+                auto cursor = (key.second.second >> 1) + (relativeToEnd ? tokensBefore + 1 : 0);
+                auto position = start;
+                if (isAfter)
+                {
+                    position -= sizeBefore + 1;
+                    cursor -= tokensBefore + 1;
+                }
+                rekeyed.emplace_back(cache_key{ key.first, { position, cursor * 2 + (key.second.second & 1) } }, std::move(aEntry.second));
+                return true;
+            });
+            for (auto& [key, entry] : rekeyed)
+                iCache[key] = std::move(entry);
+            iShifts.push_back(text_shift{ iEdit.before, iEdit.after, damageEnd, delta });
+            iGap = static_cast<std::size_t>(static_cast<std::ptrdiff_t>(damageEnd) + delta);
+            return *iText;
+        }
+
+        // incremental: a character of the source (or its end) that a parse examined
+        void examine(char const* aPosition)
+        {
+            if (iIncremental)
+                iExamined = std::max(iExamined, static_cast<std::size_t>(aPosition - iSource.data()) + 1u);
+        }
+        void examine(cst_node const& aPreviousStageNode)
+        {
+            if (iIncremental)
+                examine(aPreviousStageNode.value.data() + (aPreviousStageNode.value.empty() ? 0u : aPreviousStageNode.value.size() - 1u));
+        }
+
         void fixup_cst(cst_node& aNode)
         {
             fixup_cst(&aNode);
@@ -1024,6 +1238,13 @@ namespace neolib
                     char const* sourceEnd = std::to_address(aSource.end());
 
                     iDeepestParse = std::max(iDeepestParse, sourceNext);
+                    if (iIncremental)
+                    {
+                        if (iCursor && *iCursor != iCursorEnd)
+                            examine(***iCursor);
+                        else
+                            examine(sourceNext);
+                    }
 
                     // todo: if more than one rule matches take the deepest parse and/or resolve ambiguity via semantic analyis through IoC.
 
@@ -1121,6 +1342,7 @@ namespace neolib
                 while(!finished)
                 {
                     cst_node potentialChild{ nullptr, nullptr, nullptr, source };
+                    potentialChild.version = iVersion;
                     auto result = parse_rules(aSymbol, potentialChild, source);
                     if (result)
                     {
@@ -1141,7 +1363,7 @@ namespace neolib
         // (an atom of a tuple: one that cannot start with the next character does not match (not parsed))
         std::optional<parse_result> parse_atom(symbol aSymbol, primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
         {
-            if (!iCursor && aAtom.firstKnown && (aSource.empty() || !aAtom.first.test(static_cast<unsigned char>(aSource[0]))))
+            if (!iCursor && aAtom.firstKnown && (examine(aSource.data()), aSource.empty() || !aAtom.first.test(static_cast<unsigned char>(aSource[0]))))
             {
                 iDeepestParse = std::max(iDeepestParse, std::to_address(aSource.begin()));
                 return {};
@@ -1195,7 +1417,10 @@ namespace neolib
             if (iError)
                 return {};
 
-            if (!iCursor && aAtom.firstKnown && (aSource.empty() || !aAtom.first.test(static_cast<unsigned char>(aSource[0]))))
+            // (incremental: the parse's extent (the characters that it examines and its deepest parse) is remembered with it)
+            scoped_extent extent{ *this };
+
+            if (!iCursor && aAtom.firstKnown && (examine(aSource.data()), aSource.empty() || !aAtom.first.test(static_cast<unsigned char>(aSource[0]))))
             {
                 // (an atom that cannot start with the next character (and cannot match nothing) does not match)
                 iDeepestParse = std::max(iDeepestParse, std::to_address(aSource.begin()));
@@ -1212,13 +1437,26 @@ namespace neolib
                 {
                     // (the same atom at the same place may be parsed for another node (e.g. an optional tail that two nested rules end
                     // with): the nodes that its parse appended are appended to this node's children)
-                    auto const cachedResult = cacheEntry->second.result;
-                    if (cacheEntry->second.appended)
-                        aNode.children.insert(aNode.children.end(), cacheEntry->second.nodes.begin(), cacheEntry->second.nodes.end());
+                    auto const& cached = cacheEntry->second;
+                    char const* const at = aSource.data();
+                    std::optional<parse_result> cachedResult;
+                    if (cached.result)
+                    {
+                        cachedResult.emplace(at + cached.result->first, at + cached.result->last);
+                        cachedResult->sourceNext = at + cached.result->next;
+                    }
+                    if (cached.appended)
+                        aNode.children.insert(aNode.children.end(), cached.nodes.begin(), cached.nodes.end());
                     else
-                        aNode.children = cacheEntry->second.nodes;
+                        aNode.children = cached.nodes;
                     if (iCursor)
-                        iCursor = cacheEntry->second.cursor;
+                        iCursor = std::next(*iCursor, cached.cursor.value());
+                    if (iIncremental)
+                    {
+                        iExamined = std::max(iExamined, static_cast<std::size_t>(std::max<std::ptrdiff_t>(at - iSource.data() + cached.examined, 0)));
+                        if (cached.deepest)
+                            iDeepestParse = std::max(iDeepestParse, at + *cached.deepest);
+                    }
                     return cachedResult;
                 }
             }
@@ -1229,14 +1467,24 @@ namespace neolib
                 *iCursor != iCursorEnd ? 
                     (***iCursor).value.begin() : aSource.end());
             char const* sourceEnd = std::to_address(aSource.end());
+            if (iIncremental && iCursor && *iCursor != iCursorEnd)
+                examine(***iCursor);
             // (the node's children before the parse: a cache entry holds the nodes that the parse appends)
             auto const base = aNode.children.size();
             cst_node const* const last = base > 0u ? aNode.children.back().get() : nullptr;
+            auto const cursorBefore = iCursor;
             auto const cache_result_of = [&](std::optional<parse_result> const& aResult, std::optional<typename cst_node::child_list::const_iterator> const& aCursor)
             {
+                char const* const at = aSource.data();
+                std::optional<typename cache_result::match> result;
+                if (aResult)
+                    result = typename cache_result::match{ aResult->data() - at, aResult->data() + aResult->size() - at, aResult->sourceNext - at };
+                std::optional<std::ptrdiff_t> const cursor = aCursor ? std::optional<std::ptrdiff_t>{ std::distance(*cursorBefore, *aCursor) } : std::nullopt;
+                std::ptrdiff_t const examined = static_cast<std::ptrdiff_t>(iExamined) - (at - iSource.data());
+                std::optional<std::ptrdiff_t> const deepest = iDeepestParse ? std::optional<std::ptrdiff_t>{ iDeepestParse - at } : std::nullopt;
                 if (aNode.children.size() >= base && (base == 0u || aNode.children[base - 1u].get() == last))
-                    return cache_result{ typename cst_node::child_list{ std::next(aNode.children.begin(), static_cast<std::ptrdiff_t>(base)), aNode.children.end() }, aResult, aCursor, true };
-                return cache_result{ aNode.children, aResult, aCursor, false };
+                    return cache_result{ typename cst_node::child_list{ std::next(aNode.children.begin(), static_cast<std::ptrdiff_t>(base)), aNode.children.end() }, result, cursor, true, examined, deepest };
+                return cache_result{ aNode.children, result, cursor, false, examined, deepest };
             };
             auto const store = [&](std::optional<parse_result> const& aResult, std::optional<typename cst_node::child_list::const_iterator> const& aCursor)
             {
@@ -1261,6 +1509,7 @@ namespace neolib
                 auto const& sym = std::get<symbol>(aAtom);
                 bool const doIgnore = iIgnore.find(sym) != iIgnore.end();
                 cst_node potentialChild{ &aNode, aNode.rule, &aAtom, aSource };
+                potentialChild.version = iVersion;
                 // (an ignored symbol's nodes are not made (it is discarded))
                 std::optional<parse_result> partialResult;
                 {
@@ -1283,6 +1532,7 @@ namespace neolib
             else if (std::holds_alternative<terminal>(aAtom))
             {
                 auto const& ter = std::get<terminal>(aAtom);
+                examine(ter.empty() ? sourceNext : aSource.data() + std::min(ter.size(), aSource.size()));
                 if ((!ter.empty() && aSource.starts_with(ter)) || (ter.empty() && sourceNext == sourceEnd))
                 {
                     scopedCursor.ignore();
@@ -1290,6 +1540,7 @@ namespace neolib
                     if (!iDiscarding)
                     {
                         auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
+                        newChild->version = iVersion;
                         newChild->set_concept(aAtom.c);
                         aNode.children.push_back(newChild);
                     }
@@ -1298,6 +1549,7 @@ namespace neolib
             }
             else if (std::holds_alternative<range>(aAtom))
             {
+                examine(aSource.data());
                 if (!aSource.empty())
                 {
                     auto const& ran = std::get<range>(aAtom);
@@ -1312,6 +1564,7 @@ namespace neolib
                         if (aAtom.c && !iDiscarding)
                         {
                             auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
+                            newChild->version = iVersion;
                             newChild->set_concept(aAtom.c);
                             aNode.children.push_back(newChild);
                         }
@@ -1441,6 +1694,7 @@ namespace neolib
                     if (aAtom.c && !iDiscarding)
                     {
                         auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, result.value());
+                        newChild->version = iVersion;
                         newChild->set_concept(aAtom.c);
                         typename cst_node::child_list children;
                         std::swap(aNode.children, children);
@@ -1525,10 +1779,15 @@ namespace neolib
 
         auto make_cache_key(primitive_atom const& aAtom, std::string_view const& aSource) const
         {
-            std::size_t const cursorPosition = iCursor ?
-                static_cast<std::size_t>(std::distance(iPreviousStage->cst().children.cbegin(), *iCursor)) : 0u;
+            auto position = aSource.data() - iSource.data();
+            std::ptrdiff_t cursorPosition = iCursor ? std::distance(previous_stage_nodes().cbegin(), *iCursor) : 0;
+            if (static_cast<std::size_t>(position) >= iGap)
+            {
+                position -= static_cast<std::ptrdiff_t>(iSource.size()) + 1;
+                cursorPosition -= static_cast<std::ptrdiff_t>(iCursor ? previous_stage_nodes().size() : 0u) + 1;
+            }
             // (a parse made while discarding makes no nodes: it is remembered apart from one that makes them)
-            return cache_key{ &aAtom, { aSource.data(), cursorPosition * 2u + (iDiscarding ? 1u : 0u) } };
+            return cache_key{ &aAtom, { position, cursorPosition * 2 + (iDiscarding ? 1 : 0) } };
         }
 
         // (the characters a match of an atom can start with)
@@ -1682,6 +1941,32 @@ namespace neolib
         }
 
     private:
+        struct scoped_extent
+        {
+            parser& owner;
+            bool const active;
+            std::size_t const examined;
+            char const* const deepest;
+
+            scoped_extent(parser& aOwner) :
+                owner{ aOwner }, active{ aOwner.iIncremental }, examined{ aOwner.iExamined }, deepest{ aOwner.iDeepestParse }
+            {
+                if (active)
+                {
+                    owner.iExamined = 0u;
+                    owner.iDeepestParse = nullptr;
+                }
+            }
+            ~scoped_extent()
+            {
+                if (active)
+                {
+                    owner.iExamined = std::max(owner.iExamined, examined);
+                    owner.iDeepestParse = std::max(owner.iDeepestParse, deepest);
+                }
+            }
+        };
+
         struct scoped_stack_entry
         {
             parser& owner;
@@ -1806,15 +2091,27 @@ namespace neolib
         std::uint32_t iLevel = 0;
         char const* iDeepestParse;
         std::optional<std::string> iError;
+        // (a parse remembered: where it was is its key's (see make_cache_key); the positions that it has are relative to it (so a parse 
+        // that an edit moves is unchanged))
         struct cache_result
         {
+            struct match
+            {
+                std::ptrdiff_t first;
+                std::ptrdiff_t last;
+                std::ptrdiff_t next;
+            };
             typename cst_node::child_list nodes;
-            std::optional<parse_result> result;
-            std::optional<typename cst_node::child_list::const_iterator> cursor; ///< (the cursor after the parse, if there is a previous stage)
+            std::optional<match> result;
+            std::optional<std::ptrdiff_t> cursor;   ///< (the cursor after the parse (its position in the previous stage's nodes), if there is a previous stage)
             bool appended = false;  ///< (nodes: the nodes that the parse appended to the node's children (else: its children))
+            std::ptrdiff_t examined = 0;            ///< (incremental: the end of the characters that the parse examined (past the source's 
+                                                    ///< end: the end was); relative to its position, as are those below)
+            std::optional<std::ptrdiff_t> deepest;  ///< (incremental: the parse's deepest parse)
         };
-        // (atom, (source position, cursor position (if there is a previous stage)))
-        using cache_key = std::pair<primitive_atom const*, std::pair<char const*, std::size_t>>;
+        // (atom, (source position, cursor position (if there is a previous stage) * 2 + discarding)); incremental: a position at or 
+        // after the gap (see iGap) is relative to the end (of the source, and of the previous stage's nodes): it is negative)
+        using cache_key = std::pair<primitive_atom const*, std::pair<std::ptrdiff_t, std::ptrdiff_t>>;
         struct cache_key_hash
         {
             // (cheap: boost::unordered_flat_map mixes a hash that is not marked as avalanching)
@@ -1822,12 +2119,41 @@ namespace neolib
             {
                 return static_cast<std::size_t>(
                     (static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(aKey.first)) * 0x9E3779B97F4A7C15ull) ^
-                    (static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(aKey.second.first)) * 0xC2B2AE3D27D4EB4Full) ^
+                    (static_cast<std::uint64_t>(aKey.second.first) * 0xC2B2AE3D27D4EB4Full) ^
                     static_cast<std::uint64_t>(aKey.second.second));
             }
         };
         boost::unordered_flat_map<cache_key, cache_result, cache_key_hash> iCache;
         bool iDiscarding = false;   ///< (an ignored symbol is being parsed: no nodes are made)
+        bool iIncremental = false;
+        std::shared_ptr<std::string> iText;                     ///< (incremental: the source (the first stage's, edited in place))
+        // (incremental: the last edit of the source: where it was (before: its text's position before the edit, after: after it), the 
+        // text that it replaced (start, end) and the change in its length)
+        struct text_edit
+        {
+            char const* before = nullptr;
+            char const* after = nullptr;
+            std::size_t start = 0u;
+            std::size_t end = 0u;
+            std::ptrdiff_t delta = 0;
+        } iEdit;
+        std::size_t iVersion = 0u;                              ///< (incremental: the source's version (each parse is of the next))
+        // (incremental: how the nodes of the parses remembered move: by each edit since the version that they are of (see current): 
+        // those at or after the end of the text that it changed (before: the text's position before it, after: after it) move by its 
+        // change in length)
+        struct text_shift
+        {
+            char const* before;
+            char const* after;
+            std::size_t end;
+            std::ptrdiff_t delta;
+        };
+        std::vector<text_shift> iShifts;                        ///< (incremental: the edits since the version iShiftBase)
+        std::size_t iShiftBase = 0u;
+        static constexpr std::size_t MaxShifts = 1024u;         ///< (more: the parses remembered are forgotten (their oldest nodes would be slow to move))
+        std::size_t iGap = std::numeric_limits<std::size_t>::max(); ///< (incremental: the end of the last edit: a parse remembered at or after it is keyed by its position relative to the end)
+        typename cst_node::child_list iTokens;                  ///< (incremental: the previous stage's nodes that the parse is of)
+        std::size_t iExamined = 0u;                             ///< (incremental: the extent of the parse being made (see cache_result))
         std::ostream* iDebugOutput = nullptr;
         bool iDebugScan = false;
         bool iDebugCst = false;
