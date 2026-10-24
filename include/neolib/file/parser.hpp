@@ -39,6 +39,7 @@
 
 #include <concepts>
 #include <bitset>
+#include <deque>
 #include <memory>
 #include <limits>
 #include <vector>
@@ -1067,91 +1068,96 @@ namespace neolib
             simplify_cst(&aNode);
         }
 
-        std::optional<typename cst_node::child_list::iterator> simplify_cst(cst_node* aNode)
+        // (a node that is its parent's rule's repetition (the same symbol or concept, and the same value): its children are its parent's
+        // (in its place))
+        static bool merges_into_parent(cst_node const& aNode)
         {
-            for (auto child = aNode->children.begin(); child != aNode->children.end(); )
-            {
-                auto result = simplify_cst(&**child);
-                if (result)
-                {
-                    if (!aNode->has_concept())
-                        aNode->set_concept((***result).c);
-                    child = aNode->children.erase(result.value());
-                }
-                else
-                    ++child;
-            }
-
-            if (aNode->parent && aNode->parent->rule)
-            {
-                auto existing = std::find_if(aNode->parent->children.begin(), aNode->parent->children.end(), [&](auto const& e)
-                    {
-                        return &*e == aNode;
-                    });
-
-                auto const ourSymbol = std::get<symbol>(aNode->rule->lhs[0]);
-                auto const parentSymbol = std::get<symbol>(aNode->parent->rule->lhs[0]);
-
-                if ((ourSymbol == parentSymbol || (aNode->c.has_value() && aNode->c == aNode->parent->c)) && aNode->value == aNode->parent->value)
-                {
-                    for (auto& child2 : aNode->children)
-                        child2->parent = aNode->parent;
-                    auto pos = aNode->parent->children.insert(std::next(existing),
-                        std::make_move_iterator(aNode->children.begin()), std::make_move_iterator(aNode->children.end()));
-                    return std::prev(pos);
-                }
-            }
-
-            return {};
+            if (!aNode.parent || !aNode.parent->rule)
+                return false;
+            auto const ourSymbol = std::get<symbol>(aNode.rule->lhs[0]);
+            auto const parentSymbol = std::get<symbol>(aNode.parent->rule->lhs[0]);
+            return (ourSymbol == parentSymbol || (aNode.c.has_value() && aNode.c == aNode.parent->c)) && aNode.value == aNode.parent->value;
         }
 
-        std::optional<typename ast_node::child_list::iterator> create_ast(ast_node* aNode)
+        void simplify_cst(cst_node* aNode)
         {
-            for (auto child = aNode->children.begin(); child != aNode->children.end(); )
+            // (the children are rebuilt in one pass (not erased and inserted in place: quadratic for a node with many children); a child that
+            // merges into this node is replaced by its children, which are then simplified (again) as this node's)
+            typename cst_node::child_list result;
+            result.reserve(aNode->children.size());
+            std::deque<std::shared_ptr<cst_node>> pending{ std::make_move_iterator(aNode->children.begin()), std::make_move_iterator(aNode->children.end()) };
+            aNode->children.clear();
+            while (!pending.empty())
             {
-                auto result = create_ast(&**child);
-                if (result)
-                    child = aNode->children.erase(result.value());
-                else
-                    ++child;
-            }
-
-            for (auto child = aNode->children.begin(); child != aNode->children.end(); )
-            {
-                if ((**child).c.value().association == concept_association::Infix)
+                auto child = std::move(pending.front());
+                pending.pop_front();
+                simplify_cst(&*child);
+                if (merges_into_parent(*child))
                 {
-                    (**child).set_concept(without_association((**child).c));
-                    auto lhs = std::prev(child);
-                    auto rhs = std::next(child);
-                    (**lhs).parent = (*child).get();
-                    (**rhs).parent = (*child).get();
-                    (**child).children.push_back(*lhs);
-                    (**child).children.push_back(*rhs);
-                    auto op = aNode->children.erase(lhs);
-                    child = aNode->children.erase(std::next(op));
-                }
-                else
-                    ++child;
-            }
-
-            if (aNode->parent)
-            {
-                auto existing = std::find_if(aNode->parent->children.begin(), aNode->parent->children.end(), [&](auto const& e)
+                    if (!aNode->has_concept())
+                        aNode->set_concept(child->c);
+                    for (auto grandchild = child->children.rbegin(); grandchild != child->children.rend(); ++grandchild)
                     {
-                        return &*e == aNode;
-                    });
-
-                if (!aNode->c.has_value())
-                {
-                    for (auto& child2 : aNode->children)
-                        child2->parent = aNode->parent;
-                    auto pos = aNode->parent->children.insert(std::next(existing),
-                        std::make_move_iterator(aNode->children.begin()), std::make_move_iterator(aNode->children.end()));
-                    return std::prev(pos);
+                        (**grandchild).parent = aNode;
+                        pending.push_front(std::move(*grandchild));
+                    }
                 }
+                else
+                    result.push_back(std::move(child));
+            }
+            aNode->children = std::move(result);
+        }
+
+        void create_ast(ast_node* aNode)
+        {
+            // (the children are rebuilt in one pass (as in simplify_cst): a child with no concept is replaced by its children (then processed
+            // again as this node's))
+            {
+                typename ast_node::child_list result;
+                result.reserve(aNode->children.size());
+                std::deque<std::shared_ptr<ast_node>> pending{ std::make_move_iterator(aNode->children.begin()), std::make_move_iterator(aNode->children.end()) };
+                aNode->children.clear();
+                while (!pending.empty())
+                {
+                    auto child = std::move(pending.front());
+                    pending.pop_front();
+                    create_ast(&*child);
+                    if (!child->c.has_value())
+                    {
+                        for (auto grandchild = child->children.rbegin(); grandchild != child->children.rend(); ++grandchild)
+                        {
+                            (**grandchild).parent = aNode;
+                            pending.push_front(std::move(*grandchild));
+                        }
+                    }
+                    else
+                        result.push_back(std::move(child));
+                }
+                aNode->children = std::move(result);
             }
 
-            return {};
+            // (an infix operator takes the nodes either side of it as its children)
+            {
+                typename ast_node::child_list result;
+                result.reserve(aNode->children.size());
+                for (std::size_t i = 0u; i < aNode->children.size(); ++i)
+                {
+                    auto& child = aNode->children[i];
+                    if (child->c.value().association == concept_association::Infix)
+                    {
+                        child->set_concept(without_association(child->c));
+                        auto lhs = std::move(result.back());
+                        result.pop_back();
+                        auto rhs = std::move(aNode->children[++i]);
+                        lhs->parent = child.get();
+                        rhs->parent = child.get();
+                        child->children.push_back(std::move(lhs));
+                        child->children.push_back(std::move(rhs));
+                    }
+                    result.push_back(std::move(child));
+                }
+                aNode->children = std::move(result);
+            }
         }
 
         std::optional<symbol> parent_symbol(cst_node& aNode) const
