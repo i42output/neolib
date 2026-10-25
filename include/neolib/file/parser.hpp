@@ -1110,24 +1110,23 @@ namespace neolib
 
         void create_ast(ast_node* aNode)
         {
-            // (the children are rebuilt in one pass (as in simplify_cst): a child with no concept is replaced by its children (then processed
-            // again as this node's))
+            // (the children are rebuilt in one pass (as in simplify_cst): a child with no concept is replaced by its children; they are
+            // not processed again: create_ast(child) has processed them (they all have concepts and their infix operators have their
+            // operands), so each node is processed once)
             {
                 typename ast_node::child_list result;
                 result.reserve(aNode->children.size());
-                std::deque<std::shared_ptr<ast_node>> pending{ std::make_move_iterator(aNode->children.begin()), std::make_move_iterator(aNode->children.end()) };
+                auto children = std::move(aNode->children);
                 aNode->children.clear();
-                while (!pending.empty())
+                for (auto& child : children)
                 {
-                    auto child = std::move(pending.front());
-                    pending.pop_front();
                     create_ast(&*child);
                     if (!child->c.has_value())
                     {
-                        for (auto grandchild = child->children.rbegin(); grandchild != child->children.rend(); ++grandchild)
+                        for (auto& grandchild : child->children)
                         {
-                            (**grandchild).parent = aNode;
-                            pending.push_front(std::move(*grandchild));
+                            grandchild->parent = aNode;
+                            result.push_back(std::move(grandchild));
                         }
                     }
                     else
