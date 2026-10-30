@@ -2786,7 +2786,7 @@ namespace neolib
         // (the lexical symbols (see compute_lexical): their rules; their matches remembered (by symbol and position: a slot each))
         struct lexical_symbol
         {
-            symbol symbol;
+            Symbol symbol;
             std::vector<indexed_rule> const* rules;
         };
         std::vector<lexical_symbol> iLexical;
