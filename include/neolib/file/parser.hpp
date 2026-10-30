@@ -47,6 +47,9 @@
 #include <optional>
 #include <string>
 #include <istream>
+#include <array>
+#include <mutex>
+#include <functional>
 
 #include <boost/unordered/unordered_flat_map.hpp>
 #include <boost/unordered/unordered_flat_set.hpp>
@@ -126,6 +129,131 @@ namespace neolib
         None,
         Infix
     };
+
+    namespace parser_detail
+    {
+        // (a parser's nodes' storage: free slots by size are used again; its blocks are freed when its owner (see node_pool_handle) has
+        // released it and nothing that was allocated from it remains (nodes may outlive the parser that made them))
+        class node_pool
+        {
+        public:
+            static constexpr std::size_t Granularity = 16u;
+            static constexpr std::size_t Classes = 32u;     ///< (sizes up to Granularity * Classes; larger: the heap's)
+            static constexpr std::size_t BlockSize = 256u * 1024u;
+        public:
+            static node_pool* create()
+            {
+                return new node_pool{};
+            }
+            void release_owner()
+            {
+                bool unused;
+                {
+                    std::lock_guard<std::mutex> lock{ iMutex };
+                    iOwned = false;
+                    unused = (iLive == 0u);
+                }
+                if (unused)
+                    delete this;
+            }
+            void* allocate(std::size_t aSize)
+            {
+                auto const sizeClass = (aSize + Granularity - 1u) / Granularity;
+                if (sizeClass == 0u || sizeClass > Classes)
+                {
+                    std::lock_guard<std::mutex> lock{ iMutex };
+                    ++iLive;
+                    return ::operator new(aSize);
+                }
+                std::lock_guard<std::mutex> lock{ iMutex };
+                ++iLive;
+                auto& head = iFree[sizeClass - 1u];
+                if (head != nullptr)
+                {
+                    auto* const result = head;
+                    head = *static_cast<void**>(result);
+                    return result;
+                }
+                auto const size = sizeClass * Granularity;
+                if (static_cast<std::size_t>(iEnd - iNext) < size)
+                {
+                    iBlocks.push_back(static_cast<std::byte*>(::operator new(BlockSize)));
+                    iNext = iBlocks.back();
+                    iEnd = iNext + BlockSize;
+                }
+                auto* const result = iNext;
+                iNext += size;
+                return result;
+            }
+            void deallocate(void* aMemory, std::size_t aSize) noexcept
+            {
+                auto const sizeClass = (aSize + Granularity - 1u) / Granularity;
+                bool unused;
+                {
+                    std::lock_guard<std::mutex> lock{ iMutex };
+                    if (sizeClass == 0u || sizeClass > Classes)
+                        ::operator delete(aMemory);
+                    else
+                    {
+                        auto& head = iFree[sizeClass - 1u];
+                        *static_cast<void**>(aMemory) = head;
+                        head = aMemory;
+                    }
+                    unused = (--iLive == 0u && !iOwned);
+                }
+                if (unused)
+                    delete this;
+            }
+        private:
+            node_pool() = default;
+            ~node_pool()
+            {
+                for (auto* block : iBlocks)
+                    ::operator delete(block);
+            }
+        private:
+            std::mutex iMutex;
+            std::vector<std::byte*> iBlocks;
+            std::byte* iNext = nullptr;
+            std::byte* iEnd = nullptr;
+            std::array<void*, Classes> iFree = {};
+            std::size_t iLive = 0u;
+            bool iOwned = true;
+        };
+
+        // (a node_pool's owner: a copy owns a pool of its own)
+        class node_pool_handle
+        {
+        public:
+            node_pool_handle() : iPool{ node_pool::create() } {}
+            node_pool_handle(node_pool_handle const&) : iPool{ node_pool::create() } {}
+            node_pool_handle& operator=(node_pool_handle const&) { return *this; }
+            ~node_pool_handle() { iPool->release_owner(); }
+            node_pool* get() const { return iPool; }
+        private:
+            node_pool* iPool;
+        };
+
+        template <typename T>
+        struct node_pool_allocator
+        {
+            using value_type = T;
+            node_pool* pool;
+            explicit node_pool_allocator(node_pool* aPool) noexcept : pool{ aPool } {}
+            template <typename U>
+            node_pool_allocator(node_pool_allocator<U> const& aOther) noexcept : pool{ aOther.pool } {}
+            T* allocate(std::size_t aCount)
+            {
+                return static_cast<T*>(pool->allocate(aCount * sizeof(T)));
+            }
+            void deallocate(T* aMemory, std::size_t aCount) noexcept
+            {
+                pool->deallocate(aMemory, aCount * sizeof(T));
+            }
+            template <typename U>
+            bool operator==(node_pool_allocator<U> const& aOther) const noexcept { return pool == aOther.pool; }
+        };
+    }
 
     template <typename Symbol>
     class parser
@@ -361,6 +489,14 @@ namespace neolib
             return c.value().without_association();
         }
 
+        // (an alternation's alternatives that a match can start with each character (of those that can start with it: see primitive_atom::first),
+        // in order; 256: at the source's end)
+        struct alternation_dispatch
+        {
+            std::array<std::uint32_t, 258u> offsets = {};   ///< (a character's alternatives: indices[offsets[c] .. offsets[c + 1]))
+            std::vector<std::uint16_t> indices;
+        };
+
         struct primitive_atom : std::variant<symbol, terminal, undefined, alternation, concatenation, repetition, range, optional, discard>, parser_component<parser_component_type::Primitive>
         {
             using symbol_type = symbol;
@@ -374,15 +510,21 @@ namespace neolib
             // (the characters that a match can start with, if it cannot match nothing (set by the parser that owns it: see compute_first_sets))
             bool firstKnown = false;
             std::bitset<256> first;
+            // (a symbol that is lexical (see compute_lexical): its index, else -1; a symbol's parses are remembered by this key (its rules'
+            // address) and position, if it has no concept or constraint, else by the atom's (set by the parser that owns it))
+            std::int32_t lexical = -1;
+            void const* symbolKey = nullptr;
+            std::shared_ptr<alternation_dispatch const> dispatch;   ///< (an alternation's (set by the parser that owns it))
 
             primitive_atom(primitive_atom const& other) :
-                base_type{ other }, c{ other.c }, constraint{ other.constraint }, exception{ other.exception }, firstKnown{ other.firstKnown }, first{ other.first }
+                base_type{ other }, c{ other.c }, constraint{ other.constraint }, exception{ other.exception }, firstKnown{ other.firstKnown }, first{ other.first },
+                lexical{ other.lexical }, symbolKey{ other.symbolKey }, dispatch{ other.dispatch }
             {
             }
 
             primitive_atom(primitive_atom&& other) :
                 base_type{ std::move(other) }, c{ std::move(other.c) }, constraint{ std::move(other.constraint) }, exception{ std::move(other.exception) },
-                firstKnown{ other.firstKnown }, first{ other.first }
+                firstKnown{ other.firstKnown }, first{ other.first }, lexical{ other.lexical }, symbolKey{ other.symbolKey }, dispatch{ std::move(other.dispatch) }
             {
             }
 
@@ -394,6 +536,9 @@ namespace neolib
                 exception = other.exception;
                 firstKnown = other.firstKnown;
                 first = other.first;
+                lexical = other.lexical;
+                symbolKey = other.symbolKey;
+                dispatch = other.dispatch;
                 return *this;
             }
 
@@ -405,6 +550,9 @@ namespace neolib
                 exception = std::move(other.exception);
                 firstKnown = other.firstKnown;
                 first = other.first;
+                lexical = other.lexical;
+                symbolKey = other.symbolKey;
+                dispatch = other.dispatch;
                 return *this;
             }
 
@@ -559,6 +707,19 @@ namespace neolib
             {
             }
 
+            struct steal_t {};
+            // (as the move constructor, but the children's parents are not set: the parser's (see fixup_cst))
+            cst_node(steal_t, cst_node&& other) :
+                parent{ other.parent },
+                rule{ other.rule },
+                c{ std::move(other.c) },
+                atom{ other.atom },
+                value{ other.value },
+                children{ std::move(other.children) },
+                version{ other.version }
+            {
+            }
+
             cst_node(cst_node&& other) :
                 parent{ other.parent },
                 rule{ other.rule },
@@ -699,9 +860,15 @@ namespace neolib
             iStack = {};
             iDeepestParse = {};
             iError = {};
+            iCuts = 0u;
+            iAtomKeyedSymbols = false;
             iExamined = 0u;
             if (!iIncremental)
+            {
                 iCache = {};
+                // (room for the parses remembered (about two for each character): the table is not rehashed as it grows)
+                iCache.reserve(aSource.size() * 2u);
+            }
 
             // (the rules indexed by their symbol, in rule order: a symbol is parsed by trying only its own rules (indexed once, unless
             // the rules have changed since))
@@ -717,7 +884,12 @@ namespace neolib
                         iRuleIndex[std::get<symbol>(rule.lhs[0])].push_back(indexed_rule{ &rule });
                     }
                 if (!iPreviousStage)
+                {
                     compute_first_sets();
+                    compute_lexical();
+                }
+                else
+                    iLexical.clear();
                 iIndexed = true;
                 iIndexedRules = iRules.data();
                 iIndexedRuleCount = iRules.size();
@@ -729,8 +901,16 @@ namespace neolib
                 iCursorEnd = previous_stage_nodes().cend();
             }
 
+            if (!iLexical.empty())
+            {
+                std::size_t size = 256u;
+                while (size < MaxLexicalMemo && size < source.size() * iLexicalStride)
+                    size *= 2u;
+                iLexicalMemo.assign(size, lexical_memo_entry{});
+            }
             auto const startTime = std::chrono::high_resolution_clock::now();
             auto const result = parse(aRoot, iCst, source);
+            iLexicalMemo = {};
             // (incremental: the tree's nodes are the remembered parses' (they are reused): the tree is a copy of them)
             if (iIncremental)
                 iCst = copy_of(iCst);
@@ -891,7 +1071,7 @@ namespace neolib
                 for (auto const& child : from->children)
                 {
                     current(*child);
-                    auto copy = std::make_shared<cst_node>(to, child->rule, child->atom, child->value);
+                    auto copy = make_node(to, child->rule, child->atom, child->value);
                     copy->c = child->c;
                     copy->version = iVersion;
                     nodes.emplace_back(child.get(), copy.get());
@@ -1082,15 +1262,17 @@ namespace neolib
         void simplify_cst(cst_node* aNode)
         {
             // (the children are rebuilt in one pass (not erased and inserted in place: quadratic for a node with many children); a child that
-            // merges into this node is replaced by its children, which are then simplified (again) as this node's)
-            typename cst_node::child_list result;
-            result.reserve(aNode->children.size());
-            std::deque<std::shared_ptr<cst_node>> pending{ std::make_move_iterator(aNode->children.begin()), std::make_move_iterator(aNode->children.end()) };
+            // merges into this node is replaced by its children, which are then simplified (again) as this node's. The children to do are
+            // on a stack (the next on top: the parser's, shared by the nested calls (each above the one that it is within)))
+            auto& pending = iRebuilding;
+            auto const base = pending.size();
+            for (auto child = aNode->children.rbegin(); child != aNode->children.rend(); ++child)
+                pending.push_back(std::move(*child));
             aNode->children.clear();
-            while (!pending.empty())
+            while (pending.size() > base)
             {
-                auto child = std::move(pending.front());
-                pending.pop_front();
+                auto child = std::move(pending.back());
+                pending.pop_back();
                 simplify_cst(&*child);
                 if (merges_into_parent(*child))
                 {
@@ -1099,13 +1281,12 @@ namespace neolib
                     for (auto grandchild = child->children.rbegin(); grandchild != child->children.rend(); ++grandchild)
                     {
                         (**grandchild).parent = aNode;
-                        pending.push_front(std::move(*grandchild));
+                        pending.push_back(std::move(*grandchild));
                     }
                 }
                 else
-                    result.push_back(std::move(child));
+                    aNode->children.push_back(std::move(child));
             }
-            aNode->children = std::move(result);
         }
 
         void create_ast(ast_node* aNode)
@@ -1114,48 +1295,51 @@ namespace neolib
             // not processed again: create_ast(child) has processed them (they all have concepts and their infix operators have their
             // operands), so each node is processed once)
             {
-                typename ast_node::child_list result;
-                result.reserve(aNode->children.size());
-                auto children = std::move(aNode->children);
+                // (the children (on the parser's stack, as in simplify_cst) are rebuilt in place)
+                auto& children = iRebuilding;
+                auto const base = children.size();
+                for (auto& child : aNode->children)
+                    children.push_back(std::move(child));
                 aNode->children.clear();
-                for (auto& child : children)
+                auto const end = children.size();
+                for (auto i = base; i < end; ++i)
                 {
+                    auto child = std::move(children[i]);
                     create_ast(&*child);
                     if (!child->c.has_value())
                     {
                         for (auto& grandchild : child->children)
                         {
                             grandchild->parent = aNode;
-                            result.push_back(std::move(grandchild));
+                            aNode->children.push_back(std::move(grandchild));
                         }
                     }
                     else
-                        result.push_back(std::move(child));
+                        aNode->children.push_back(std::move(child));
                 }
-                aNode->children = std::move(result);
+                children.resize(base);
             }
 
-            // (an infix operator takes the nodes either side of it as its children)
+            // (an infix operator takes the nodes either side of it as its children (in place: the result so far is before the next))
             {
-                typename ast_node::child_list result;
-                result.reserve(aNode->children.size());
-                for (std::size_t i = 0u; i < aNode->children.size(); ++i)
+                auto& children = aNode->children;
+                std::size_t result = 0u;
+                for (std::size_t i = 0u; i < children.size(); ++i)
                 {
-                    auto& child = aNode->children[i];
+                    auto child = std::move(children[i]);
                     if (child->c.value().association == concept_association::Infix)
                     {
                         child->set_concept(without_association(child->c));
-                        auto lhs = std::move(result.back());
-                        result.pop_back();
-                        auto rhs = std::move(aNode->children[++i]);
+                        auto lhs = std::move(children[--result]);
+                        auto rhs = std::move(children[++i]);
                         lhs->parent = child.get();
                         rhs->parent = child.get();
                         child->children.push_back(std::move(lhs));
                         child->children.push_back(std::move(rhs));
                     }
-                    result.push_back(std::move(child));
+                    children[result++] = std::move(child);
                 }
-                aNode->children = std::move(result);
+                children.resize(result);
             }
         }
 
@@ -1284,7 +1468,9 @@ namespace neolib
                             auto const& rule = *candidateRule.definition;
                             symbol const ruleSymbol = std::get<symbol>(rule.lhs[0]);
                             scoped_stack_entry sse{ *this, rule, aSource };
-                            if (!left_recursion(aNode, rule))
+                            if (left_recursion(aNode, rule))
+                                ++iCuts;
+                            else
                             {
                                 aNode.rule = &rule;
                                 auto const& ruleAtom = rule.rhs[0];
@@ -1297,13 +1483,18 @@ namespace neolib
                                 if (match)
                                 {
                                     anyMatches = true;
-                                    auto const resultConcepts = std::count_if(resultChildren.begin(), resultChildren.end(),
-                                        [](auto const& n) { return n->c.has_value(); });
-                                    auto const matchConcepts = std::count_if(children.begin(), children.end(),
-                                        [](auto const& n) { return n->c.has_value(); });
+                                    // (as long as the result's: the one with more concepts)
+                                    auto const more_concepts = [&]()
+                                    {
+                                        auto const resultConcepts = std::count_if(resultChildren.begin(), resultChildren.end(),
+                                            [](auto const& n) { return n->c.has_value(); });
+                                        auto const matchConcepts = std::count_if(children.begin(), children.end(),
+                                            [](auto const& n) { return n->c.has_value(); });
+                                        return matchConcepts > resultConcepts;
+                                    };
                                     if (!result ||
                                         match.value().size() > result.value().size() ||
-                                        (match.value().size() == result.value().size() && matchConcepts > resultConcepts))
+                                        (match.value().size() == result.value().size() && more_concepts()))
                                     {
                                         newCursor = iCursor;
                                         result = match;
@@ -1351,7 +1542,7 @@ namespace neolib
                     auto result = parse_rules(aSymbol, potentialChild, source);
                     if (result)
                     {
-                        auto newNode = std::make_shared<cst_node>(std::move(potentialChild));
+                        auto newNode = make_node(typename cst_node::steal_t{}, std::move(potentialChild));
                         newNode->parent = &aNode;
                         aNode.children.push_back(newNode);
                         source = { result->sourceNext, std::to_address(aSource.end()) };
@@ -1410,7 +1601,9 @@ namespace neolib
             auto const deepestParse = iDeepestParse;
             iCursor = std::nullopt;
             cst_node scratch{ nullptr, nullptr, nullptr, aMatch };
+            ++iExcepting;
             auto const result = parse(aSymbol, aException, scratch, aMatch);
+            --iExcepting;
             iCursor = cursor;
             iDeepestParse = deepestParse;
             std::swap(iCache, cache);
@@ -1432,12 +1625,30 @@ namespace neolib
                 return {};
             }
 
-            auto const cacheKey = make_cache_key(aAtom, aSource);
-            // (a rule's (or a repetition's) parse is remembered; an atom that is quicker to parse again than to remember is not)
+            // (a lexical symbol (see compute_lexical): matched without making nodes (or remembering the parse), as its nodes would not be
+            // kept; a node is made only if the atom has a concept)
+            if (aAtom.lexical >= 0 && !iCursor && !iIncremental && !iDebugScan)
+            {
+                auto const partialResult = lex_symbol(aAtom.lexical, std::to_address(aSource.begin()), std::to_address(aSource.end()));
+                if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
+                    return partialResult;
+                return {};
+            }
+
+            auto cacheKey = make_cache_key(aAtom, aSource);
+            // (a rule's (or a repetition's) parse is remembered; an atom that is quicker to parse again than to remember is not). A symbol's
+            // (that has no concept or constraint) is remembered by the symbol's key (whatever atom it is parsed for: the same parse), unless
+            // a rule was not tried because of left recursion (see left_recursion: the parse depends on the rules being parsed)
             bool const cacheable = std::holds_alternative<symbol>(aAtom) || std::holds_alternative<repetition>(aAtom);
+            bool const symbolKeyed = aAtom.symbolKey != nullptr && !iCursor && !iIncremental;
+            auto const cutsBefore = iCuts;
+            if (symbolKeyed)
+                cacheKey.first = static_cast<primitive_atom const*>(aAtom.symbolKey);
             if (cacheable)
             {
                 auto cacheEntry = iCache.find(cacheKey);
+                if (cacheEntry == iCache.end() && symbolKeyed && iAtomKeyedSymbols)
+                    cacheEntry = iCache.find(cache_key{ &aAtom, cacheKey.second });
                 if (cacheEntry != iCache.end())
                 {
                     // (the same atom at the same place may be parsed for another node (e.g. an optional tail that two nested rules end
@@ -1453,7 +1664,7 @@ namespace neolib
                     if (cached.appended)
                         aNode.children.insert(aNode.children.end(), cached.nodes.begin(), cached.nodes.end());
                     else
-                        aNode.children = cached.nodes;
+                        aNode.children.assign(cached.nodes.begin(), cached.nodes.end());
                     if (iCursor)
                         iCursor = std::next(*iCursor, cached.cursor.value());
                     if (iIncremental)
@@ -1488,13 +1699,21 @@ namespace neolib
                 std::ptrdiff_t const examined = static_cast<std::ptrdiff_t>(iExamined) - (at - iSource.data());
                 std::optional<std::ptrdiff_t> const deepest = iDeepestParse ? std::optional<std::ptrdiff_t>{ iDeepestParse - at } : std::nullopt;
                 if (aNode.children.size() >= base && (base == 0u || aNode.children[base - 1u].get() == last))
-                    return cache_result{ typename cst_node::child_list{ std::next(aNode.children.begin(), static_cast<std::ptrdiff_t>(base)), aNode.children.end() }, result, cursor, true, examined, deepest };
-                return cache_result{ aNode.children, result, cursor, false, examined, deepest };
+                    return cache_result{ cached_nodes{ std::next(aNode.children.begin(), static_cast<std::ptrdiff_t>(base)), aNode.children.end() }, result, cursor, true, examined, deepest };
+                return cache_result{ cached_nodes{ aNode.children.begin(), aNode.children.end() }, result, cursor, false, examined, deepest };
             };
             auto const store = [&](std::optional<parse_result> const& aResult, std::optional<typename cst_node::child_list::const_iterator> const& aCursor)
             {
                 if (cacheable)
-                    iCache[cacheKey] = cache_result_of(aResult, aCursor);
+                {
+                    if (symbolKeyed && iCuts != cutsBefore)
+                    {
+                        iAtomKeyedSymbols = true;
+                        iCache[cache_key{ &aAtom, cacheKey.second }] = cache_result_of(aResult, aCursor);
+                    }
+                    else
+                        iCache[cacheKey] = cache_result_of(aResult, aCursor);
+                }
                 return aResult;
             };
 
@@ -1526,10 +1745,10 @@ namespace neolib
                     scopedCursor.ignore();
                     if (!doIgnore && !iDiscarding)
                     {
-                        auto newChild = std::make_shared<cst_node>(std::move(potentialChild));
-                        aNode.children.push_back(newChild);
+                        auto newChild = make_node(typename cst_node::steal_t{}, std::move(potentialChild));
                         newChild->set_concept(aAtom.c);
                         newChild->value = partialResult.value();
+                        aNode.children.push_back(std::move(newChild));
                     }
                     return store(apply_partial_result(result, partialResult), iCursor);
                 }
@@ -1544,10 +1763,10 @@ namespace neolib
                     auto const partialResult = aSource.substr(0, ter.size());
                     if (!iDiscarding)
                     {
-                        auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
+                        auto newChild = make_node(&aNode, aNode.rule, &aAtom, partialResult);
                         newChild->version = iVersion;
                         newChild->set_concept(aAtom.c);
-                        aNode.children.push_back(newChild);
+                        aNode.children.push_back(std::move(newChild));
                     }
                     return ((sdp ? sdp->ok = true : true), store(apply_partial_result(result, partialResult), iCursor));
                 }
@@ -1568,10 +1787,10 @@ namespace neolib
                         auto const partialResult = aSource.substr(0, 1);
                         if (aAtom.c && !iDiscarding)
                         {
-                            auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, partialResult);
+                            auto newChild = make_node(&aNode, aNode.rule, &aAtom, partialResult);
                             newChild->version = iVersion;
                             newChild->set_concept(aAtom.c);
-                            aNode.children.push_back(newChild);
+                            aNode.children.push_back(std::move(newChild));
                         }
                         return ((sdp ? sdp->ok = true : true), store(apply_partial_result(result, partialResult), iCursor));
                     }
@@ -1698,7 +1917,7 @@ namespace neolib
                     scopedCursor.ignore();
                     if (aAtom.c && !iDiscarding)
                     {
-                        auto newChild = std::make_shared<cst_node>(&aNode, aNode.rule, &aAtom, result.value());
+                        auto newChild = make_node(&aNode, aNode.rule, &aAtom, result.value());
                         newChild->version = iVersion;
                         newChild->set_concept(aAtom.c);
                         typename cst_node::child_list children;
@@ -1725,8 +1944,18 @@ namespace neolib
                 std::swap(aNode.children, children);
                 typename cst_node::child_list children2;
                 auto newCursor = iCursor;
-                for (auto const& a : alt.value)
+                // (the alternatives that can start with the next character (the others do not match: see parse_atom))
+                std::uint16_t const* candidates = nullptr;
+                std::size_t count = alt.value.size();
+                if (auto const* d = aAtom.dispatch.get(); d != nullptr && !iCursor && !iIncremental)
                 {
+                    auto const c = sourceNext == sourceEnd ? 256u : static_cast<unsigned char>(*sourceNext);
+                    candidates = d->indices.data() + d->offsets[c];
+                    count = d->offsets[c + 1u] - d->offsets[c];
+                }
+                for (std::size_t n = 0u; n < count; ++n)
+                {
+                    auto const& a = alt.value[candidates != nullptr ? candidates[n] : n];
                     typename cst_node::child_list children3;
                     std::swap(aNode.children, children3);
                     iCursor = scopedCursor.saved();
@@ -1780,6 +2009,409 @@ namespace neolib
             }
 
             return {};
+        }
+
+        // lexical symbols: a symbol none of whose rules (nor any symbol that they refer to) has a concept (its nodes, and theirs, are
+        // not kept: they have no concepts) and that is not recursive is matched by the functions below, which make no nodes; they match
+        // as parse_rules and parse_primitive do (the same results: the same extents and deepest parse). Its matches (by symbol and 
+        // position: they do not depend on where it is parsed from) are remembered (iLexicalMemo).
+        void compute_lexical()
+        {
+            iLexical.clear();
+            enum class state : std::uint8_t { Unknown, Visiting, Lexical, NotLexical };
+            boost::unordered_flat_map<symbol, state> states;
+            std::function<bool(primitive_atom const&)> atom_lexical;
+            std::function<bool(symbol)> symbol_lexical = [&](symbol aSymbol) -> bool
+            {
+                auto& st = states[aSymbol];
+                if (st == state::Lexical)
+                    return true;
+                if (st != state::Unknown)
+                    return false; // (not lexical, or recursive)
+                st = state::Visiting;
+                bool lexical = true;
+                auto const rules = iRuleIndex.find(aSymbol);
+                if (rules != iRuleIndex.end())
+                    for (auto const& ir : rules->second)
+                    {
+                        auto const& r = *ir.definition;
+                        if (r.lhs.size() != 1u || r.rhs.size() != 1u || r.lhs[0].c || r.lhs[0].constraint || r.lhs[0].exception || !atom_lexical(r.rhs[0]))
+                        {
+                            lexical = false;
+                            break;
+                        }
+                    }
+                states[aSymbol] = lexical ? state::Lexical : state::NotLexical;
+                return lexical;
+            };
+            atom_lexical = [&](primitive_atom const& aAtom) -> bool
+            {
+                if (aAtom.c)
+                    return false;
+                if (aAtom.exception && !atom_lexical(*aAtom.exception))
+                    return false;
+                return std::visit([&](auto const& aPart) -> bool
+                {
+                    using type = std::decay_t<decltype(aPart)>;
+                    if constexpr (std::is_same_v<type, symbol>)
+                        return symbol_lexical(aPart);
+                    else if constexpr (std::is_same_v<type, terminal> || std::is_same_v<type, range> || std::is_same_v<type, undefined>)
+                        return true;
+                    else
+                    {
+                        for (auto const& a : aPart.value)
+                            if (!atom_lexical(a))
+                                return false;
+                        return true;
+                    }
+                }, static_cast<typename primitive_atom::base_type const&>(aAtom));
+            };
+            boost::unordered_flat_map<symbol, std::int32_t> indices;
+            // (aConcept: the atom is within an alternation (of its rule) that has a concept: the nodes that its alternatives make are given
+            // the concept (see parse_primitive), so a symbol's node there is kept)
+            std::function<void(primitive_atom&, bool)> mark = [&](primitive_atom& aAtom, bool aConcept)
+            {
+                aAtom.lexical = -1;
+                aAtom.symbolKey = nullptr;
+                aAtom.dispatch = nullptr;
+                if (auto const* alt = std::get_if<alternation>(&aAtom); alt != nullptr && alt->value.size() >= 3u && alt->value.size() <= 0xFFFFu)
+                {
+                    auto d = std::make_shared<alternation_dispatch>();
+                    for (std::uint32_t c = 0u; c <= 256u; ++c)
+                    {
+                        d->offsets[c] = static_cast<std::uint32_t>(d->indices.size());
+                        for (std::size_t i = 0u; i < alt->value.size(); ++i)
+                        {
+                            auto const& a = alt->value[i];
+                            if (!a.firstKnown || (c < 256u && a.first.test(c)))
+                                d->indices.push_back(static_cast<std::uint16_t>(i));
+                        }
+                    }
+                    d->offsets[257u] = static_cast<std::uint32_t>(d->indices.size());
+                    aAtom.dispatch = std::move(d);
+                }
+                std::visit([&](auto& aPart)
+                {
+                    using type = std::decay_t<decltype(aPart)>;
+                    if constexpr (std::is_same_v<type, symbol>)
+                    {
+                        if (!aAtom.c && !aAtom.constraint)
+                            if (auto const rules = iRuleIndex.find(aPart); rules != iRuleIndex.end())
+                                aAtom.symbolKey = &rules->second;
+                        // (an atom with a concept: its node is kept (the parse makes it))
+                        if (!aAtom.c && !aConcept && symbol_lexical(aPart))
+                        {
+                            auto const [where, inserted] = indices.try_emplace(aPart, static_cast<std::int32_t>(iLexical.size()));
+                            if (inserted)
+                            {
+                                auto const rules = iRuleIndex.find(aPart);
+                                iLexical.push_back(lexical_symbol{ aPart, rules != iRuleIndex.end() ? &rules->second : nullptr });
+                            }
+                            aAtom.lexical = where->second;
+                        }
+                    }
+                    else if constexpr (requires { aPart.value; } && !std::is_same_v<type, range>)
+                    {
+                        if constexpr (std::is_same_v<std::decay_t<decltype(aPart.value)>, std::vector<primitive_atom>>)
+                            for (auto& a : aPart.value)
+                                mark(a, aConcept || (std::is_same_v<type, alternation> && aAtom.c.has_value()));
+                    }
+                }, static_cast<typename primitive_atom::base_type&>(aAtom));
+                if (aAtom.exception)
+                    mark(const_cast<primitive_atom&>(*aAtom.exception), false);
+            };
+            for (auto& r : iRules)
+                for (auto& a : r.rhs)
+                    mark(a, false);
+            iLexicalStride = 1u;
+            while (iLexicalStride < iLexical.size())
+                iLexicalStride *= 2u;
+        }
+
+        // (a lexical symbol's match (as parse_rules': its longest rule's, the first of those as long))
+        std::optional<parse_result> lex_symbol(std::int32_t aLexical, char const* aBegin, char const* aEnd)
+        {
+            if (iError)
+                return {};
+            // (remembered: by symbol and position, if the match may extend to the source's end (not an exception's match))
+            lexical_memo_entry* memo = nullptr;
+            if (iExcepting == 0u && !iLexicalMemo.empty() && aEnd == std::to_address(iSource.end()))
+            {
+                auto const position = static_cast<std::uint64_t>(aBegin - iSource.data());
+                auto const key = (position << 16u) | static_cast<std::uint64_t>(aLexical);
+                // (a small table (it is in the cache): a later parse's slot replaces an earlier's)
+                memo = &iLexicalMemo[static_cast<std::size_t>(((key * 0x9E3779B97F4A7C15ull) >> 32u) & (iLexicalMemo.size() - 1u))];
+                if (memo->key == key)
+                {
+                    if (!memo->matched)
+                        return {};
+                    std::optional<parse_result> cached{ std::in_place, aBegin + memo->first, aBegin + memo->last };
+                    cached->sourceNext = aBegin + memo->next;
+                    return cached;
+                }
+                memo->key = ~std::uint64_t{};
+            }
+            auto const& lexical = iLexical[static_cast<std::size_t>(aLexical)];
+            iDeepestParse = std::max(iDeepestParse, aBegin);
+            std::optional<parse_result> result;
+            if (lexical.rules != nullptr)
+                for (auto const& candidateRule : *lexical.rules)
+                {
+                    if (!candidateRule.anyStart && (aBegin == aEnd || !candidateRule.first.test(static_cast<unsigned char>(*aBegin))))
+                        continue;
+                    auto const match = lex_parse(lexical.symbol, candidateRule.definition->rhs[0], aBegin, aEnd);
+                    if (match && (!result || match.value().size() > result.value().size()))
+                        result = match;
+                }
+            if (memo != nullptr)
+            {
+                auto const position = static_cast<std::uint64_t>(aBegin - iSource.data());
+                memo->key = (position << 16u) | static_cast<std::uint64_t>(aLexical);
+                memo->matched = result.has_value();
+                if (result)
+                {
+                    memo->first = static_cast<std::int32_t>(result->data() - aBegin);
+                    memo->last = static_cast<std::int32_t>(result->data() + result->size() - aBegin);
+                    memo->next = static_cast<std::int32_t>(result->sourceNext - aBegin);
+                }
+            }
+            return result;
+        }
+
+        // (as parse(symbol, atom ...) and parse_atom)
+        std::optional<parse_result> lex_parse(symbol aSymbol, primitive_atom const& aAtom, char const* aBegin, char const* aEnd)
+        {
+            auto const result = lex_primitive(aSymbol, aAtom, aBegin, aEnd);
+            if (!aAtom.exception || !result || !excepted(aSymbol, *aAtom.exception, static_cast<std::string_view const&>(*result)))
+                return result;
+            return {};
+        }
+        std::optional<parse_result> lex_atom(symbol aSymbol, primitive_atom const& aAtom, char const* aBegin, char const* aEnd)
+        {
+            if (aAtom.firstKnown && (aBegin == aEnd || !aAtom.first.test(static_cast<unsigned char>(*aBegin))))
+            {
+                iDeepestParse = std::max(iDeepestParse, aBegin);
+                return {};
+            }
+            return lex_parse(aSymbol, aAtom, aBegin, aEnd);
+        }
+
+        // (as parse_primitive)
+        std::optional<parse_result> lex_primitive(symbol aSymbol, primitive_atom const& aAtom, char const* aBegin, char const* aEnd)
+        {
+            if (iError)
+                return {};
+            if (aAtom.firstKnown && (aBegin == aEnd || !aAtom.first.test(static_cast<unsigned char>(*aBegin))))
+            {
+                iDeepestParse = std::max(iDeepestParse, aBegin);
+                return {};
+            }
+            std::optional<parse_result> result;
+            char const* sourceNext = aBegin;
+            char const* const sourceEnd = aEnd;
+            iDeepestParse = std::max(iDeepestParse, sourceNext);
+            switch (aAtom.index())
+            {
+            case variant_index_v<symbol, typename primitive_atom::base_type>:
+                {
+                    auto const partialResult = lex_symbol(aAtom.lexical, aBegin, aEnd);
+                    if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
+                        return partialResult;
+                    return {};
+                }
+            case variant_index_v<terminal, typename primitive_atom::base_type>:
+                {
+                    auto const& ter = std::get<terminal>(aAtom);
+                    std::string_view const source{ aBegin, aEnd };
+                    if ((!ter.empty() && source.starts_with(ter)) || (ter.empty() && sourceNext == sourceEnd))
+                        return parse_result{ source.substr(0, ter.size()) };
+                    return {};
+                }
+            case variant_index_v<range, typename primitive_atom::base_type>:
+                if (aBegin != aEnd)
+                {
+                    auto const& ran = std::get<range>(aAtom);
+                    auto const min = static_cast<unsigned char>(std::get<terminal>(ran.value[0])[0]);
+                    auto const max = static_cast<unsigned char>(std::get<terminal>(ran.value[1])[0]);
+                    auto const ch = static_cast<unsigned char>(*aBegin);
+                    bool const inRange = (ch >= min && ch <= max);
+                    if (((inRange && !ran.negate) || (!inRange && ran.negate)) && (ran.exclusions.empty() || ran.exclusions.find(ch) == ran.exclusions.end()))
+                        return parse_result{ aBegin, aBegin + 1 };
+                }
+                return {};
+            case variant_index_v<concatenation, typename primitive_atom::base_type>:
+                {
+                    char const* spanStart = nullptr;
+                    char const* spanEnd = nullptr;
+                    for (auto const& a : std::get<concatenation>(aAtom).value)
+                    {
+                        bool const skipped = (std::holds_alternative<symbol>(a) && iIgnore.find(std::get<symbol>(a)) != iIgnore.end()) ||
+                            (std::holds_alternative<discard>(a) && std::get<discard>(a).trim);
+                        auto const partialResult = lex_atom(aSymbol, a, sourceNext, sourceEnd);
+                        if (!partialResult)
+                            return {};
+                        if (skipped)
+                        {
+                            if (spanEnd == nullptr)
+                                spanStart = std::to_address(partialResult->end());
+                        }
+                        else
+                        {
+                            if (spanStart == nullptr)
+                                spanStart = std::to_address(partialResult->begin());
+                            spanEnd = std::to_address(partialResult->end());
+                        }
+                        sourceNext = std::to_address(partialResult->sourceNext);
+                    }
+                    if (aAtom.constraint && std::string_view{ spanStart, spanEnd } != aAtom.constraint.value())
+                        return {};
+                    if (spanEnd == nullptr)
+                        spanEnd = spanStart;
+                    result.emplace(std::string_view{ spanStart, spanEnd });
+                    result.value().sourceNext = sourceNext;
+                    return result;
+                }
+            case variant_index_v<optional, typename primitive_atom::base_type>:
+                {
+                    for (auto const& a : std::get<optional>(aAtom).value)
+                    {
+                        auto const partialResult = lex_atom(aSymbol, a, sourceNext, sourceEnd);
+                        if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
+                        {
+                            result = apply_partial_result(result, partialResult);
+                            sourceNext = std::to_address(partialResult->sourceNext);
+                        }
+                    }
+                    if (!result)
+                        result.emplace(sourceNext, sourceNext);
+                    return result;
+                }
+            case variant_index_v<repetition, typename primitive_atom::base_type>:
+                {
+                    auto const& rep = std::get<repetition>(aAtom);
+                    bool foundAtLeastOne = false;
+                    bool found = false;
+                    char const* previousSpanStart = nullptr;
+                    char const* previousSpanEnd = nullptr;
+                    char const* spanStart = nullptr;
+                    char const* spanEnd = nullptr;
+                    do
+                    {
+                        found = false;
+                        for (auto const& a : rep.value)
+                        {
+                            auto const partialResult = lex_atom(aSymbol, a, sourceNext, sourceEnd);
+                            if (partialResult)
+                            {
+                                foundAtLeastOne = true;
+                                found = true;
+                                if ((std::holds_alternative<discard>(a) && std::get<discard>(a).trim))
+                                {
+                                    if (spanEnd == nullptr)
+                                        spanStart = std::to_address(partialResult->end());
+                                }
+                                else
+                                {
+                                    if (spanStart == nullptr)
+                                        spanStart = std::to_address(partialResult->begin());
+                                    spanEnd = std::to_address(partialResult->end());
+                                }
+                                sourceNext = std::to_address(partialResult->sourceNext);
+                            }
+                        }
+                        if (previousSpanStart == spanStart && previousSpanEnd == spanEnd)
+                            break;
+                        previousSpanStart = spanStart;
+                        previousSpanEnd = spanEnd;
+                    } while (found);
+                    if (spanEnd == nullptr)
+                        spanEnd = spanStart;
+                    if (aAtom.constraint && std::string_view{ spanStart, spanEnd } != aAtom.constraint.value())
+                        return {};
+                    result = std::string_view{ spanStart, spanEnd };
+                    result.value().sourceNext = sourceNext;
+                    if (foundAtLeastOne)
+                        return result;
+                    if (!rep.atLeastOne)
+                    {
+                        result.emplace(sourceNext, sourceNext);
+                        return result;
+                    }
+                    return {};
+                }
+            case variant_index_v<alternation, typename primitive_atom::base_type>:
+                {
+                    auto const& alt = std::get<alternation>(aAtom);
+                    std::optional<parse_result> bestResult;
+                    // (the alternatives that can start with the next character (the others do not match))
+                    std::uint16_t const* candidates = nullptr;
+                    std::size_t count = alt.value.size();
+                    if (auto const* d = aAtom.dispatch.get(); d != nullptr)
+                    {
+                        auto const c = sourceNext == sourceEnd ? 256u : static_cast<unsigned char>(*sourceNext);
+                        candidates = d->indices.data() + d->offsets[c];
+                        count = d->offsets[c + 1u] - d->offsets[c];
+                    }
+                    for (std::size_t n = 0u; n < count; ++n)
+                    {
+                        auto const& a = alt.value[candidates != nullptr ? candidates[n] : n];
+                        auto const partialResult = lex_atom(aSymbol, a, sourceNext, sourceEnd);
+                        if (partialResult)
+                        {
+                            if (!bestResult || partialResult.value().size() > bestResult.value().size())
+                            {
+                                bestResult = partialResult;
+                                result = apply_partial_result(result, partialResult);
+                                if (alt.matchFirst)
+                                    break;
+                            }
+                        }
+                    }
+                    if (aAtom.constraint && result != aAtom.constraint.value())
+                        return {};
+                    if (bestResult)
+                        return result;
+                    return {};
+                }
+            case variant_index_v<discard, typename primitive_atom::base_type>:
+                {
+                    for (auto const& a : std::get<discard>(aAtom).value)
+                    {
+                        auto const partialResult = lex_atom(aSymbol, a, sourceNext, sourceEnd);
+                        if (partialResult)
+                        {
+                            result = apply_partial_result(result, partialResult);
+                            sourceNext = std::to_address(partialResult->sourceNext);
+                        }
+                    }
+                    return result;
+                }
+            default:
+                return {};
+            }
+        }
+
+        template <typename T, typename Variant>
+        struct variant_index;
+        template <typename T, typename... Ts>
+        struct variant_index<T, std::variant<Ts...>>
+        {
+            static constexpr std::size_t value = []()
+            {
+                std::size_t index = 0u;
+                bool found = false;
+                ((found = found || std::is_same_v<T, Ts>, index += found ? 0u : 1u), ...);
+                return index;
+            }();
+        };
+        template <typename T, typename Variant>
+        static constexpr std::size_t variant_index_v = variant_index<T, Variant>::value;
+
+        // (a node (of the parser's storage: see node_pool))
+        template <typename... Args>
+        std::shared_ptr<cst_node> make_node(Args&&... aArguments)
+        {
+            return std::allocate_shared<cst_node>(parser_detail::node_pool_allocator<cst_node>{ iNodes.get() }, std::forward<Args>(aArguments)...);
         }
 
         auto make_cache_key(primitive_atom const& aAtom, std::string_view const& aSource) const
@@ -2090,6 +2722,8 @@ namespace neolib
         boost::unordered_flat_set<symbol> iIgnore;
         std::string_view iSource;
         cst_node iCst = {};
+        parser_detail::node_pool_handle iNodes;     ///< (the storage of the nodes that the parser makes)
+        std::vector<std::shared_ptr<cst_node>> iRebuilding;     ///< (the children being rebuilt (see simplify_cst and create_ast))
         std::shared_ptr<cst_node> iAst = std::make_shared<cst_node>();
         std::vector<std::pair<rule const*, std::string_view>> iStack;
         std::uint32_t iMaxLevel = 1024;
@@ -2098,6 +2732,26 @@ namespace neolib
         std::optional<std::string> iError;
         // (a parse remembered: where it was is its key's (see make_cache_key); the positions that it has are relative to it (so a parse 
         // that an edit moves is unchanged))
+        // (the nodes of a parse remembered: usually one (a symbol's), or none)
+        struct cached_nodes
+        {
+            std::shared_ptr<cst_node> single;
+            std::vector<std::shared_ptr<cst_node>> multiple;   ///< (if more than one)
+
+            cached_nodes() = default;
+            template <typename Iterator>
+            cached_nodes(Iterator aFirst, Iterator aLast)
+            {
+                auto const count = std::distance(aFirst, aLast);
+                if (count == 1)
+                    single = *aFirst;
+                else if (count > 1)
+                    multiple.assign(aFirst, aLast);
+            }
+            std::shared_ptr<cst_node> const* begin() const { return single ? &single : multiple.data(); }
+            std::shared_ptr<cst_node> const* end() const { return single ? &single + 1 : multiple.data() + multiple.size(); }
+            std::size_t size() const { return single ? 1u : multiple.size(); }
+        };
         struct cache_result
         {
             struct match
@@ -2106,7 +2760,7 @@ namespace neolib
                 std::ptrdiff_t last;
                 std::ptrdiff_t next;
             };
-            typename cst_node::child_list nodes;
+            cached_nodes nodes;
             std::optional<match> result;
             std::optional<std::ptrdiff_t> cursor;   ///< (the cursor after the parse (its position in the previous stage's nodes), if there is a previous stage)
             bool appended = false;  ///< (nodes: the nodes that the parse appended to the node's children (else: its children))
@@ -2129,6 +2783,27 @@ namespace neolib
             }
         };
         boost::unordered_flat_map<cache_key, cache_result, cache_key_hash> iCache;
+        // (the lexical symbols (see compute_lexical): their rules; their matches remembered (by symbol and position: a slot each))
+        struct lexical_symbol
+        {
+            symbol symbol;
+            std::vector<indexed_rule> const* rules;
+        };
+        std::vector<lexical_symbol> iLexical;
+        struct lexical_memo_entry
+        {
+            std::uint64_t key = ~std::uint64_t{};
+            std::int32_t first = 0;
+            std::int32_t last = 0;
+            std::int32_t next = 0;
+            bool matched = false;
+        };
+        static constexpr std::size_t MaxLexicalMemo = std::size_t{ 1u } << 12u;
+        std::vector<lexical_memo_entry> iLexicalMemo;
+        std::uint64_t iLexicalStride = 1u;  ///< (a power of two: at least the number of lexical symbols)
+        std::uint32_t iExcepting = 0u;  ///< (an exception is being parsed (see excepted): no lexical matches are remembered)
+        std::size_t iCuts = 0u;         ///< (the rules not tried because of left recursion (see parse_rules))
+        bool iAtomKeyedSymbols = false; ///< (a symbol's parse (that would be remembered by the symbol's key) is remembered by its atom's)
         bool iDiscarding = false;   ///< (an ignored symbol is being parsed: no nodes are made)
         bool iIncremental = false;
         std::shared_ptr<std::string> iText;                     ///< (incremental: the source (the first stage's, edited in place))

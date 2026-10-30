@@ -146,6 +146,26 @@ namespace neolib
             if (aOther.iWrappedIterator != nullptr)
                 iWrappedIterator = aOther.iInPlace ? aOther.iWrappedIterator->clone(iIteratorStorage) : aOther.iWrappedIterator->clone();
         }
+        generic_iterator& operator=(const generic_iterator& aOther)
+        {
+            if (&aOther == this)
+                return *this;
+            if (iWrappedIterator != nullptr)
+            {
+                if (iInPlace)
+                    iWrappedIterator->~i_wrapper();
+                else
+                    delete iWrappedIterator;
+                iWrappedIterator = nullptr;
+                iInPlace = false;
+            }
+            if (aOther.iWrappedIterator != nullptr)
+            {
+                iWrappedIterator = aOther.iInPlace ? aOther.iWrappedIterator->clone(iIteratorStorage) : aOther.iWrappedIterator->clone();
+                iInPlace = aOther.iInPlace;
+            }
+            return *this;
+        }
         virtual ~generic_iterator()
         {
             if (iInPlace)
