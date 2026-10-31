@@ -119,8 +119,6 @@ namespace neolib
         class basic_vector
         {
         public:
-            using abstract_type = basic_vector; // todo: abstract base; std::array?
-        public:
             using type = Type;
         public:
             using value_type = T;
@@ -275,8 +273,6 @@ namespace neolib
         class basic_vector<T, 4, Type>
         {
         public:
-            using abstract_type = basic_vector; // todo: abstract base; std::array?
-        public:
             using type = Type;
         public:
             using value_type = T;
@@ -417,8 +413,6 @@ namespace neolib
         class basic_vector<T, 2, Type>
         {
         public:
-            using abstract_type = basic_vector; // todo: abstract base; std::array?
-        public:
             using type = Type;
         public:
             using value_type = T;
@@ -533,8 +527,6 @@ namespace neolib
         template <typename T, typename Type>
         class basic_vector<T, 1, Type>
         {
-        public:
-            using abstract_type = basic_vector; // todo: abstract base; std::array?
         public:
             using type = Type;
         public:
@@ -1065,8 +1057,6 @@ namespace neolib
         template <typename T, std::uint32_t Rows, std::uint32_t Columns>
         class basic_matrix
         {
-        public:
-            using abstract_type = basic_matrix; // todo: abstract base
         public:
             using value_type = T;
             using column_type = basic_vector<T, Rows, column_vector>;
@@ -2229,8 +2219,6 @@ namespace neolib
         template <typename Vertex>
         struct basic_aabb
         {
-            using abstract_type = basic_aabb;
-
             Vertex min;
             Vertex max;
             basic_aabb() : min{}, max{} {}
@@ -2433,8 +2421,6 @@ namespace neolib
         template <typename Vertex>
         struct basic_aabb_2d
         {
-            using abstract_type = basic_aabb_2d;
-
             Vertex min;
             Vertex max;
             basic_aabb_2d() : min{}, max{} {}
