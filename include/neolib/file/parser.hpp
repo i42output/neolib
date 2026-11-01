@@ -49,6 +49,7 @@
 #include <istream>
 #include <array>
 #include <mutex>
+#include <unordered_set>
 #include <functional>
 
 #include <boost/unordered/unordered_flat_map.hpp>
@@ -140,6 +141,7 @@ namespace neolib
             static constexpr std::size_t Granularity = 16u;
             static constexpr std::size_t Classes = 32u;     ///< (sizes up to Granularity * Classes; larger: the heap's)
             static constexpr std::size_t BlockSize = 256u * 1024u;
+            static constexpr std::size_t KeptBlocks = 4u;   ///< (when it has no nodes: more than these are freed)
         public:
             static node_pool* create()
             {
@@ -200,6 +202,17 @@ namespace neolib
                         head = aMemory;
                     }
                     unused = (--iLive == 0u && !iOwned);
+                    if (iLive == 0u && iOwned && iBlocks.size() > KeptBlocks)
+                    {
+                        // (no nodes, and more blocks than a small parse uses: its blocks are freed (the memory that a large parse took is
+                        // not kept for the next))
+                        for (auto* block : iBlocks)
+                            ::operator delete(block);
+                        iBlocks.clear();
+                        iNext = nullptr;
+                        iEnd = nullptr;
+                        iFree = {};
+                    }
                 }
                 if (unused)
                     delete this;
@@ -489,6 +502,70 @@ namespace neolib
             return c.value().without_association();
         }
 
+        // (a node's concept: one of the concepts that nodes have, each made once (a pointer to it: a node does not have a copy of its
+        // name); as std::optional<_concept> is used: compared by name (and with names), accessed with * and value())
+        class concept_ref
+        {
+        public:
+            concept_ref() = default;
+            concept_ref(std::nullopt_t) {}
+            concept_ref(_concept const& aConcept) : iConcept{ &intern(aConcept) } {}
+            concept_ref(std::optional<_concept> const& aConcept) : iConcept{ aConcept ? &intern(*aConcept) : nullptr } {}
+        public:
+            bool has_value() const { return iConcept != nullptr; }
+            explicit operator bool() const { return iConcept != nullptr; }
+            _concept const& value() const
+            {
+                if (!iConcept)
+                    throw std::bad_optional_access{};
+                return *iConcept;
+            }
+            _concept const& operator*() const { return *iConcept; }
+            _concept const* operator->() const { return iConcept; }
+            operator std::optional<_concept>() const { return iConcept ? std::optional<_concept>{ *iConcept } : std::nullopt; }
+            concept_ref without_association() const
+            {
+                if (!iConcept || iConcept->association == concept_association::None)
+                    return *this;
+                return concept_ref{ iConcept->without_association() };
+            }
+            friend bool operator==(concept_ref const& aLeft, concept_ref const& aRight)
+            {
+                return aLeft.iConcept == aRight.iConcept || (aLeft.iConcept && aRight.iConcept &&
+                    static_cast<std::string const&>(*aLeft.iConcept) == static_cast<std::string const&>(*aRight.iConcept));
+            }
+            friend bool operator==(concept_ref const& aLeft, std::nullopt_t) { return !aLeft.iConcept; }
+            friend bool operator==(concept_ref const& aLeft, std::string_view const& aName)
+            {
+                return aLeft.iConcept && std::string_view{ *aLeft.iConcept } == aName;
+            }
+        private:
+            static _concept const& intern(_concept const& aConcept)
+            {
+                // (a node-based set: its elements stay where they are as it grows (nodes point to them))
+                struct concept_hash
+                {
+                    std::size_t operator()(_concept const& aConcept) const noexcept
+                    {
+                        return std::hash<std::string>{}(aConcept) ^ static_cast<std::size_t>(aConcept.association);
+                    }
+                };
+                struct concept_equal
+                {
+                    bool operator()(_concept const& aLeft, _concept const& aRight) const noexcept
+                    {
+                        return static_cast<std::string const&>(aLeft) == static_cast<std::string const&>(aRight) && aLeft.association == aRight.association;
+                    }
+                };
+                static std::mutex sMutex;
+                static std::unordered_set<_concept, concept_hash, concept_equal> sConcepts;
+                std::lock_guard<std::mutex> lock{ sMutex };
+                return *sConcepts.insert(aConcept).first;
+            }
+        private:
+            _concept const* iConcept = nullptr;
+        };
+
         // (an alternation's alternatives that a match can start with each character (of those that can start with it: see primitive_atom::first),
         // in order; 256: at the source's end)
         struct alternation_dispatch
@@ -572,7 +649,25 @@ namespace neolib
             void set_concept(std::optional<_concept> const& newConcept)
             {
                 c = newConcept;
+                iNodeConcept = {};
+                iNodeConceptMade = false;
             }
+
+            // (its concept as its nodes have it (made once))
+            concept_ref node_concept() const
+            {
+                // (made again if its concept has changed since (c is public))
+                if (!iNodeConceptMade || iNodeConcept.has_value() != c.has_value() ||
+                    (c && (static_cast<std::string const&>(*iNodeConcept) != static_cast<std::string const&>(*c) || iNodeConcept->association != c->association)))
+                {
+                    iNodeConcept = concept_ref{ c };
+                    iNodeConceptMade = true;
+                }
+                return iNodeConcept;
+            }
+        private:
+            mutable concept_ref iNodeConcept;
+            mutable bool iNodeConceptMade = false;
         };
 
         struct atom : std::vector<primitive_atom>, parser_component<parser_component_type::Atom>
@@ -686,7 +781,7 @@ namespace neolib
 
             cst_node* parent;
             parser::rule const* rule;
-            std::optional<_concept> c;
+            concept_ref c;
             primitive_atom const* atom;
             std::string_view value;
             child_list children;
@@ -755,13 +850,18 @@ namespace neolib
 
             bool has_concept() const
             {
-                return c != std::nullopt;
+                return c.has_value();
             }
 
-            void set_concept(std::optional<_concept> const& newConcept)
+            void set_concept(concept_ref const& newConcept)
             {
                 if (newConcept.has_value())
                     c = newConcept;
+            }
+            void set_concept(std::optional<_concept> const& newConcept)
+            {
+                if (newConcept.has_value())
+                    c = concept_ref{ *newConcept };
             }
         };
 
@@ -776,6 +876,8 @@ namespace neolib
         parser(std::shared_ptr<parser> const& aPreviousStage) :
             iRules{}, iPreviousStage{ aPreviousStage }
         {
+            if (aPreviousStage)
+                aPreviousStage->iFeedsNextStage = true;
         }
 
         template <std::size_t RuleCount>
@@ -788,6 +890,8 @@ namespace neolib
         parser(rule const (&aRules)[RuleCount], std::shared_ptr<parser> const& aPreviousStage) :
             iRules(&aRules[0], &aRules[0] + RuleCount), iPreviousStage{ aPreviousStage }
         {
+            if (aPreviousStage)
+                aPreviousStage->iFeedsNextStage = true;
         }
 
     public:
@@ -866,9 +970,11 @@ namespace neolib
             if (!iIncremental)
             {
                 iCache = {};
-                // (room for the parses remembered (about two for each character): the table is not rehashed as it grows)
-                iCache.reserve(aSource.size() * 2u);
+                // (room for the parses remembered: about one for every two characters, but those far behind the parse are forgotten (see
+                // forget_behind): at most a window's)
+                iCache.reserve(std::min<std::size_t>(aSource.size() / 2u, ForgetWindow / 2u) + 1024u);
             }
+            iForgetAt = ForgetWindow + ForgetInterval;
 
             // (the rules indexed by their symbol, in rule order: a symbol is parsed by trying only its own rules (indexed once, unless
             // the rules have changed since))
@@ -911,6 +1017,9 @@ namespace neolib
             auto const startTime = std::chrono::high_resolution_clock::now();
             auto const result = parse(aRoot, iCst, source);
             iLexicalMemo = {};
+            // (the parses remembered: not needed once the parse is made (unless incremental: the next parse reuses them))
+            if (!iIncremental)
+                iCache = {};
             // (incremental: the tree's nodes are the remembered parses' (they are reused): the tree is a copy of them)
             if (iIncremental)
                 iCst = copy_of(iCst);
@@ -1329,7 +1438,7 @@ namespace neolib
                     auto child = std::move(children[i]);
                     if (child->c.value().association == concept_association::Infix)
                     {
-                        child->set_concept(without_association(child->c));
+                        child->set_concept(child->c.without_association());
                         auto lhs = std::move(children[--result]);
                         auto rhs = std::move(children[++i]);
                         lhs->parent = child.get();
@@ -1516,10 +1625,23 @@ namespace neolib
                         aNode.rule = resultRule;
                         aNode.value = result.value();
                         if (!aNode.has_concept())
-                            aNode.set_concept(resultRule->rhs[0].c.has_value() ? resultRule->rhs[0].c : resultRule->lhs[0].c);
+                            aNode.set_concept(resultRule->rhs[0].c.has_value() ? resultRule->rhs[0].node_concept() : resultRule->lhs[0].node_concept());
                         bool const doIgnore = aSymbol && iIgnore.find(aSymbol.value()) != iIgnore.end();
                         if (!doIgnore)
-                            aNode.children.insert(aNode.children.end(), std::make_move_iterator(resultChildren.begin()), std::make_move_iterator(resultChildren.end()));
+                        {
+                            if (flattens())
+                            {
+                                // (its children that create_ast would replace by theirs (see flattens): replaced now)
+                                for (auto& child : resultChildren)
+                                    if (!child->c.has_value() && std::all_of(child->children.begin(), child->children.end(),
+                                        [](auto const& g) { return g->c.has_value() && g->c->association == concept_association::None; }))
+                                        aNode.children.insert(aNode.children.end(), child->children.begin(), child->children.end());
+                                    else
+                                        aNode.children.push_back(std::move(child));
+                            }
+                            else
+                                aNode.children.insert(aNode.children.end(), std::make_move_iterator(resultChildren.begin()), std::make_move_iterator(resultChildren.end()));
+                        }
                         return ((sdp ? sdp->ok = true : true), result);
                     }
 
@@ -1713,6 +1835,8 @@ namespace neolib
                     }
                     else
                         iCache[cacheKey] = cache_result_of(aResult, aCursor);
+                    if (cacheKey.second.first >= 0 && static_cast<std::size_t>(cacheKey.second.first) >= iForgetAt)
+                        forget_behind(static_cast<std::size_t>(cacheKey.second.first));
                 }
                 return aResult;
             };
@@ -1746,7 +1870,7 @@ namespace neolib
                     if (!doIgnore && !iDiscarding)
                     {
                         auto newChild = make_node(typename cst_node::steal_t{}, std::move(potentialChild));
-                        newChild->set_concept(aAtom.c);
+                        newChild->set_concept(aAtom.node_concept());
                         newChild->value = partialResult.value();
                         aNode.children.push_back(std::move(newChild));
                     }
@@ -1765,7 +1889,7 @@ namespace neolib
                     {
                         auto newChild = make_node(&aNode, aNode.rule, &aAtom, partialResult);
                         newChild->version = iVersion;
-                        newChild->set_concept(aAtom.c);
+                        newChild->set_concept(aAtom.node_concept());
                         aNode.children.push_back(std::move(newChild));
                     }
                     return ((sdp ? sdp->ok = true : true), store(apply_partial_result(result, partialResult), iCursor));
@@ -1789,7 +1913,7 @@ namespace neolib
                         {
                             auto newChild = make_node(&aNode, aNode.rule, &aAtom, partialResult);
                             newChild->version = iVersion;
-                            newChild->set_concept(aAtom.c);
+                            newChild->set_concept(aAtom.node_concept());
                             aNode.children.push_back(std::move(newChild));
                         }
                         return ((sdp ? sdp->ok = true : true), store(apply_partial_result(result, partialResult), iCursor));
@@ -1840,7 +1964,7 @@ namespace neolib
                     return {};
                 scopedCursor.ignore();
                 aNode.children.insert(aNode.children.end(), std::make_move_iterator(children.begin()), std::make_move_iterator(children.end()));
-                aNode.set_concept(aAtom.c);
+                aNode.set_concept(aAtom.node_concept());
                 if (spanEnd == nullptr)
                     spanEnd = spanStart;
                 aNode.value = std::string_view{ spanStart, spanEnd };
@@ -1857,7 +1981,7 @@ namespace neolib
                     auto const partialResult = parse_atom(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
                     if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
                     {
-                        aNode.set_concept(aAtom.c);
+                        aNode.set_concept(aAtom.node_concept());
                         result = apply_partial_result(result, partialResult);
                         sourceNext = std::to_address(partialResult->sourceNext);
                     }
@@ -1919,7 +2043,7 @@ namespace neolib
                     {
                         auto newChild = make_node(&aNode, aNode.rule, &aAtom, result.value());
                         newChild->version = iVersion;
-                        newChild->set_concept(aAtom.c);
+                        newChild->set_concept(aAtom.node_concept());
                         typename cst_node::child_list children;
                         std::swap(aNode.children, children);
                         aNode.children.push_back(newChild);
@@ -1981,7 +2105,7 @@ namespace neolib
                     scopedCursor.ignore();
                     iCursor = newCursor;
                     for (auto& child : children2)
-                        child->set_concept(aAtom.c);
+                        child->set_concept(aAtom.node_concept());
                     aNode.children.insert(aNode.children.end(), std::make_move_iterator(children2.begin()), std::make_move_iterator(children2.end()));
                     store(result, iCursor);
                     return ((sdp ? sdp->ok = true : true), result);
@@ -1999,7 +2123,7 @@ namespace neolib
                     std::swap(aNode.children, children);
                     if (partialResult)
                     {
-                        aNode.set_concept(aAtom.c);
+                        aNode.set_concept(aAtom.node_concept());
                         result = apply_partial_result(result, partialResult);
                         sourceNext = std::to_address(partialResult->sourceNext);
                     }
@@ -2414,6 +2538,37 @@ namespace neolib
             return std::allocate_shared<cst_node>(parser_detail::node_pool_allocator<cst_node>{ iNodes.get() }, std::forward<Args>(aArguments)...);
         }
 
+        // (the parses remembered that a parse is unlikely to need again, and that are cheap to make again, are forgotten as the parse
+        // goes on: those that are of short matches (less than ForgetSpan characters) at least ForgetWindow characters behind the furthest
+        // parse remembered (where it starts: checked each ForgetInterval characters). A parse remembered is only a parse not made again
+        // (the parse is the same): the memory that a long source's parse takes is then about its window's, not its length's. Not 
+        // incremental (whose parses remembered are reused by the next parse), nor of a stage that has a previous stage)
+        static constexpr std::size_t ForgetWindow = 1u << 18u;
+        static constexpr std::size_t ForgetInterval = 1u << 16u;
+        static constexpr std::ptrdiff_t ForgetSpan = 1 << 12;
+        void forget_behind(std::size_t aFurthest)
+        {
+            iForgetAt = aFurthest + ForgetInterval;
+            if (iIncremental || iPreviousStage || iExcepting != 0u || aFurthest < ForgetWindow)
+                return;
+            auto const before = static_cast<std::ptrdiff_t>(aFurthest - ForgetWindow);
+            boost::unordered::erase_if(iCache, [&](auto const& aEntry)
+            {
+                auto const& r = aEntry.second;
+                return aEntry.first.second.first >= 0 && aEntry.first.second.first < before && (!r.result || r.result->next < ForgetSpan);
+            });
+        }
+
+        // (the nodes that have no concept are replaced by their children as the parse goes on, rather than by create_ast (the tree is 
+        // smaller while it is parsed): a symbol's node's child is, when its rule is chosen (its own children have been (it was parsed
+        // first): they all have concepts), unless one of its children is an infix operator's (create_ast gives them their operands
+        // within it). Its tree (cst()) is then as create_ast would leave it, but for nodes that have concepts: not if it is incremental
+        // (its parses are reused), or another stage's previous stage (whose tree is the next stage's input))
+        bool flattens() const
+        {
+            return !iIncremental && !iFeedsNextStage && !iDebugScan;
+        }
+
         auto make_cache_key(primitive_atom const& aAtom, std::string_view const& aSource) const
         {
             auto position = aSource.data() - iSource.data();
@@ -2717,6 +2872,7 @@ namespace neolib
         boost::unordered_flat_map<symbol, std::vector<indexed_rule>> iRuleIndex;
         std::vector<indexed_rule> iSymbolRules;
         std::shared_ptr<parser> iPreviousStage;
+        bool iFeedsNextStage = false;   ///< (another parser's previous stage (see flattens))
         std::optional<typename cst_node::child_list::const_iterator> iCursor;
         std::optional<typename cst_node::child_list::const_iterator> iCursorEnd;
         boost::unordered_flat_set<symbol> iIgnore;
@@ -2783,6 +2939,7 @@ namespace neolib
             }
         };
         boost::unordered_flat_map<cache_key, cache_result, cache_key_hash> iCache;
+        std::size_t iForgetAt = 0u;     ///< (the deepest parse at which the parses remembered behind it are next forgotten (see forget_behind))
         // (the lexical symbols (see compute_lexical): their rules; their matches remembered (by symbol and position: a slot each))
         struct lexical_symbol
         {
