@@ -2458,6 +2458,59 @@ namespace neolib
             iLexicalStride = 1u;
             while (iLexicalStride < iLexical.size())
                 iLexicalStride *= 2u;
+            // (each lexical symbol's single bytes (see lexical_symbol::singleBytes): those that a match of one byte is of, but no other match
+            // can start with)
+            for (auto& lexical : iLexical)
+                if (lexical.rules != nullptr)
+                {
+                    std::bitset<256> single;
+                    std::bitset<256> other;
+                    for (auto const& ir : *lexical.rules)
+                        byte_matches(ir.definition->rhs[0], single, other);
+                    lexical.singleBytes = single & ~other;
+                }
+        }
+
+        // (the bytes that an atom can match alone (aSingle: a match of one byte, that byte), and those that its other matches can start with
+        // (aOther))
+        static void byte_matches(primitive_atom const& aAtom, std::bitset<256>& aSingle, std::bitset<256>& aOther)
+        {
+            if (aAtom.exception || aAtom.constraint)
+                aOther.set();
+            else if (std::holds_alternative<terminal>(aAtom))
+            {
+                auto const& ter = std::get<terminal>(aAtom);
+                if (ter.size() == 1u)
+                    aSingle.set(static_cast<unsigned char>(ter[0]));
+                else if (ter.empty())
+                    aOther.set();
+                else
+                    aOther.set(static_cast<unsigned char>(ter[0]));
+            }
+            else if (std::holds_alternative<range>(aAtom))
+            {
+                // (as lex_primitive and parse_primitive match one)
+                auto const& ran = std::get<range>(aAtom);
+                auto const min = static_cast<unsigned char>(std::get<terminal>(ran.value[0])[0]);
+                auto const max = static_cast<unsigned char>(std::get<terminal>(ran.value[1])[0]);
+                for (unsigned c = 0u; c < 256u; ++c)
+                {
+                    bool const inRange = (c >= min && c <= max);
+                    if (((inRange && !ran.negate) || (!inRange && ran.negate)) && ran.exclusions.find(static_cast<unsigned char>(c)) == ran.exclusions.end())
+                        aSingle.set(c);
+                }
+            }
+            else if (std::holds_alternative<alternation>(aAtom))
+            {
+                for (auto const& a : std::get<alternation>(aAtom).value)
+                    byte_matches(a, aSingle, aOther);
+            }
+            else if (std::holds_alternative<concatenation>(aAtom) && std::get<concatenation>(aAtom).value.size() == 1u)
+                byte_matches(std::get<concatenation>(aAtom).value[0], aSingle, aOther);
+            else if (aAtom.firstKnown)
+                aOther |= aAtom.first;
+            else
+                aOther.set();
         }
 
         // (a lexical symbol's match (as parse_rules': its longest rule's, the first of those as long))
@@ -2465,6 +2518,12 @@ namespace neolib
         {
             if (iError)
                 return {};
+            // (a byte that it matches alone (see lexical_symbol::singleBytes): its match)
+            if (aBegin != aEnd && iLexical[static_cast<std::size_t>(aLexical)].singleBytes.test(static_cast<unsigned char>(*aBegin)))
+            {
+                iDeepestParse = std::max(iDeepestParse, aBegin);
+                return parse_result{ aBegin, aBegin + 1 };
+            }
             // (remembered: by symbol and position, if the match may extend to the source's end (not an exception's match))
             lexical_memo_entry* memo = nullptr;
             if (iExcepting == 0u && !iLexicalMemo.empty() && aEnd == std::to_address(iSource.end()))
@@ -2624,9 +2683,25 @@ namespace neolib
                     char const* previousSpanEnd = nullptr;
                     char const* spanStart = nullptr;
                     char const* spanEnd = nullptr;
+                    // (a repetition of a lexical symbol: the bytes that it matches alone (see lexical_symbol::singleBytes) are matched here, one
+                    // after another)
+                    auto const* const single = rep.value.size() == 1u && rep.value[0].lexical >= 0 && !rep.value[0].exception && !rep.value[0].constraint ?
+                        &iLexical[static_cast<std::size_t>(rep.value[0].lexical)].singleBytes : nullptr;
                     do
                     {
                         found = false;
+                        if (single != nullptr && !iError && sourceNext != sourceEnd && single->test(static_cast<unsigned char>(*sourceNext)))
+                        {
+                            if (spanStart == nullptr)
+                                spanStart = sourceNext;
+                            do
+                                ++sourceNext;
+                            while (sourceNext != sourceEnd && single->test(static_cast<unsigned char>(*sourceNext)));
+                            iDeepestParse = std::max(iDeepestParse, sourceNext - 1);
+                            spanEnd = sourceNext;
+                            foundAtLeastOne = true;
+                            found = true;
+                        }
                         for (auto const& a : rep.value)
                         {
                             auto const partialResult = lex_atom(aSymbol, a, sourceNext, sourceEnd);
@@ -3277,6 +3352,7 @@ namespace neolib
         {
             Symbol symbol;
             std::vector<indexed_rule> const* rules;
+            std::bitset<256> singleBytes = {};  ///< (the bytes that it matches alone: all of its rules' matches that start with one are that byte)
         };
         std::vector<lexical_symbol> iLexical;
         struct lexical_memo_entry
