@@ -48,6 +48,7 @@
 #include <string>
 #include <istream>
 #include <array>
+#include <bit>
 #include <mutex>
 #include <unordered_map>
 #include <unordered_set>
@@ -248,24 +249,117 @@ namespace neolib
             node_pool* iPool;
         };
 
-        template <typename T>
-        struct node_pool_allocator
+        // (the thread's free storage of node child lists (see list_allocator): blocks by size (a power of two), kept to be used again (a
+        // parse makes and discards many short lists); freed when the thread ends)
+        struct list_blocks
         {
+            static constexpr std::size_t MinShift = 4u;                 ///< (the smallest block: 16 bytes)
+            static constexpr std::size_t Classes = 11u;                 ///< (blocks up to 16 KB; larger: the heap's)
+            static constexpr std::size_t KeptBytes = 1024u * 1024u;     ///< (the free blocks of a size kept, at most)
+            std::array<void*, Classes> free;
+            std::array<std::size_t, Classes> kept;
+            bool armed;     ///< (its blocks are freed when the thread ends (see list_blocks_reaper))
+            bool closed;    ///< (the thread is ending: none are kept)
+        };
+        inline thread_local list_blocks tListBlocks;
+
+        struct list_blocks_reaper
+        {
+            ~list_blocks_reaper()
+            {
+                auto& blocks = tListBlocks;
+                for (auto& head : blocks.free)
+                    while (head != nullptr)
+                    {
+                        void* const next = *static_cast<void**>(head);
+                        ::operator delete(head);
+                        head = next;
+                    }
+                blocks.kept = {};
+                blocks.closed = true;
+            }
+        };
+
+        inline void arm_list_blocks()
+        {
+            static thread_local list_blocks_reaper sReaper;
+            (void)sReaper;
+            tListBlocks.armed = true;
+        }
+
+        // (a node child list's allocator: the thread's free blocks of the size are used first (see list_blocks). It has no state (all are
+        // equal), so lists swap their storage (the parser sets children aside by swapping lists))
+        template <typename T>
+        struct list_allocator
+        {
+            static_assert(alignof(T) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__);
             using value_type = T;
-            node_pool* pool;
-            explicit node_pool_allocator(node_pool* aPool) noexcept : pool{ aPool } {}
+            using is_always_equal = std::true_type;
+            list_allocator() noexcept = default;
             template <typename U>
-            node_pool_allocator(node_pool_allocator<U> const& aOther) noexcept : pool{ aOther.pool } {}
+            list_allocator(list_allocator<U> const&) noexcept {}
+            static std::size_t size_class(std::size_t aBytes) noexcept
+            {
+                return std::max<std::size_t>(static_cast<std::size_t>(std::bit_width(aBytes - 1u)), list_blocks::MinShift) - list_blocks::MinShift;
+            }
             T* allocate(std::size_t aCount)
             {
-                return static_cast<T*>(pool->allocate(aCount * sizeof(T)));
+                auto const bytes = aCount * sizeof(T);
+                auto const sizeClass = size_class(bytes);
+                if (sizeClass >= list_blocks::Classes)
+                    return static_cast<T*>(::operator new(bytes));
+                auto& blocks = tListBlocks;
+                auto& head = blocks.free[sizeClass];
+                if (head == nullptr)
+                    return static_cast<T*>(::operator new(std::size_t{ 1u } << (sizeClass + list_blocks::MinShift)));
+                void* const result = head;
+                head = *static_cast<void**>(result);
+                blocks.kept[sizeClass] -= std::size_t{ 1u } << (sizeClass + list_blocks::MinShift);
+                return static_cast<T*>(result);
             }
             void deallocate(T* aMemory, std::size_t aCount) noexcept
             {
-                pool->deallocate(aMemory, aCount * sizeof(T));
+                auto const sizeClass = size_class(aCount * sizeof(T));
+                auto& blocks = tListBlocks;
+                auto const size = std::size_t{ 1u } << (std::min(sizeClass, list_blocks::Classes - 1u) + list_blocks::MinShift);
+                if (sizeClass >= list_blocks::Classes || blocks.closed || blocks.kept[sizeClass] + size > list_blocks::KeptBytes)
+                {
+                    ::operator delete(aMemory);
+                    return;
+                }
+                if (!blocks.armed)
+                    arm_list_blocks();
+                *static_cast<void**>(static_cast<void*>(aMemory)) = blocks.free[sizeClass];
+                blocks.free[sizeClass] = aMemory;
+                blocks.kept[sizeClass] += size;
             }
             template <typename U>
-            bool operator==(node_pool_allocator<U> const& aOther) const noexcept { return pool == aOther.pool; }
+            bool operator==(list_allocator<U> const&) const noexcept { return true; }
+        };
+
+        // (a reference to a node: the node's count of them is not atomic (a parse's nodes are used by one thread at a time); the node is
+        // destroyed (T::destroy) when its last reference goes)
+        template <typename T>
+        class node_ptr
+        {
+        public:
+            node_ptr() noexcept = default;
+            node_ptr(std::nullptr_t) noexcept {}
+            explicit node_ptr(T* aNode) noexcept : iNode{ aNode } { if (iNode != nullptr) ++iNode->references; }
+            node_ptr(node_ptr const& aOther) noexcept : iNode{ aOther.iNode } { if (iNode != nullptr) ++iNode->references; }
+            node_ptr(node_ptr&& aOther) noexcept : iNode{ std::exchange(aOther.iNode, nullptr) } {}
+            ~node_ptr() { if (iNode != nullptr && --iNode->references == 0u) T::destroy(iNode); }
+            node_ptr& operator=(node_ptr const& aOther) noexcept { node_ptr{ aOther }.swap(*this); return *this; }
+            node_ptr& operator=(node_ptr&& aOther) noexcept { node_ptr{ std::move(aOther) }.swap(*this); return *this; }
+            void swap(node_ptr& aOther) noexcept { std::swap(iNode, aOther.iNode); }
+            T* get() const noexcept { return iNode; }
+            T& operator*() const noexcept { return *iNode; }
+            T* operator->() const noexcept { return iNode; }
+            explicit operator bool() const noexcept { return iNode != nullptr; }
+            friend bool operator==(node_ptr const& aLeft, node_ptr const& aRight) noexcept { return aLeft.iNode == aRight.iNode; }
+            friend bool operator==(node_ptr const& aLeft, std::nullptr_t) noexcept { return aLeft.iNode == nullptr; }
+        private:
+            T* iNode = nullptr;
         };
     }
 
@@ -782,7 +876,8 @@ namespace neolib
         // and the partial CST currently being built via backtracking.
         struct cst_node
         {
-            using child_list = std::vector<std::shared_ptr<cst_node>>;
+            using ptr = parser_detail::node_ptr<cst_node>;
+            using child_list = std::vector<ptr, parser_detail::list_allocator<ptr>>;
 
             cst_node* parent;
             parser::rule const* rule;
@@ -791,6 +886,8 @@ namespace neolib
             std::string_view value;
             child_list children;
             std::size_t version = 0u;   ///< (incremental: the version of the source that value is of (see parser::copy_of))
+            std::uint32_t references = 0u;              ///< (its node_ptrs (not a copy's or a move's))
+            parser_detail::node_pool* pool = nullptr;   ///< (the storage it is in (see parser::make_node), if not the heap's (see make))
 
             cst_node() = default;
             cst_node(cst_node const&) = delete;
@@ -867,6 +964,32 @@ namespace neolib
             {
                 if (newConcept.has_value())
                     c = concept_ref{ *newConcept };
+            }
+
+            // (a node on the heap (not a parser's: see parser::make_node))
+            template <typename... Args>
+            static ptr make(Args&&... aArguments)
+            {
+                void* const memory = ::operator new(sizeof(cst_node));
+                try
+                {
+                    return ptr{ ::new (memory) cst_node(std::forward<Args>(aArguments)...) };
+                }
+                catch (...)
+                {
+                    ::operator delete(memory);
+                    throw;
+                }
+            }
+            // (its last node_ptr has gone)
+            static void destroy(cst_node* aNode) noexcept
+            {
+                auto* const pool = aNode->pool;
+                aNode->~cst_node();
+                if (pool != nullptr)
+                    pool->deallocate(aNode, sizeof(cst_node));
+                else
+                    ::operator delete(aNode);
             }
         };
 
@@ -2547,9 +2670,22 @@ namespace neolib
 
         // (a node (of the parser's storage: see node_pool))
         template <typename... Args>
-        std::shared_ptr<cst_node> make_node(Args&&... aArguments)
+        typename cst_node::ptr make_node(Args&&... aArguments)
         {
-            return std::allocate_shared<cst_node>(parser_detail::node_pool_allocator<cst_node>{ iNodes.get() }, std::forward<Args>(aArguments)...);
+            auto* const pool = iNodes.get();
+            void* const memory = pool->allocate(sizeof(cst_node));
+            cst_node* node;
+            try
+            {
+                node = ::new (memory) cst_node(std::forward<Args>(aArguments)...);
+            }
+            catch (...)
+            {
+                pool->deallocate(memory, sizeof(cst_node));
+                throw;
+            }
+            node->pool = pool;
+            return typename cst_node::ptr{ node };
         }
 
         // (the parses remembered that a parse is unlikely to need again, and that are cheap to make again, are forgotten as the parse
@@ -2914,7 +3050,7 @@ namespace neolib
         std::string_view iSource;
         cst_node iCst = {};
         parser_detail::node_pool_handle iNodes;     ///< (the storage of the nodes that the parser makes)
-        std::vector<std::shared_ptr<cst_node>> iRebuilding;     ///< (the children being rebuilt (see simplify_cst and create_ast))
+        std::vector<typename cst_node::ptr> iRebuilding;     ///< (the children being rebuilt (see simplify_cst and create_ast))
         std::shared_ptr<cst_node> iAst = std::make_shared<cst_node>();
         std::vector<std::pair<rule const*, std::string_view>> iStack;
         std::uint32_t iMaxLevel = 1024;
@@ -2926,8 +3062,8 @@ namespace neolib
         // (the nodes of a parse remembered: usually one (a symbol's), or none)
         struct cached_nodes
         {
-            std::shared_ptr<cst_node> single;
-            std::vector<std::shared_ptr<cst_node>> multiple;   ///< (if more than one)
+            typename cst_node::ptr single;
+            std::vector<typename cst_node::ptr> multiple;   ///< (if more than one)
 
             cached_nodes() = default;
             template <typename Iterator>
@@ -2939,8 +3075,8 @@ namespace neolib
                 else if (count > 1)
                     multiple.assign(aFirst, aLast);
             }
-            std::shared_ptr<cst_node> const* begin() const { return single ? &single : multiple.data(); }
-            std::shared_ptr<cst_node> const* end() const { return single ? &single + 1 : multiple.data() + multiple.size(); }
+            typename cst_node::ptr const* begin() const { return single ? &single : multiple.data(); }
+            typename cst_node::ptr const* end() const { return single ? &single + 1 : multiple.data() + multiple.size(); }
             std::size_t size() const { return single ? 1u : multiple.size(); }
         };
         struct cache_result
