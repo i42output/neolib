@@ -1048,6 +1048,7 @@ namespace neolib
         {
             iIgnore.insert(aIgnore);
             iCache = {}; // (an ignored symbol's parses make no nodes: the parses remembered are not its)
+            iIndexed = false; // (first sets depend on what is ignored (see starts_at))
         }
 
         // incremental parsing (off by default): each parse is of an edit of the source parsed before (e.g. a script being edited): the 
@@ -1156,7 +1157,8 @@ namespace neolib
                 iLexicalMemo.assign(size, lexical_memo_entry{});
             }
             auto const startTime = std::chrono::high_resolution_clock::now();
-            auto const result = parse(aRoot, iCst, source);
+            // (a plain parse (no previous stage, not incremental, not a debug scan) has none of their state to keep (see Plain))
+            auto const result = !iPreviousStage && !iIncremental && !iDebugScan ? parse<true>(aRoot, iCst, source) : parse<false>(aRoot, iCst, source);
             iLexicalMemo = {};
             // (the parses remembered: not needed once the parse is made (unless incremental: the next parse reuses them))
             if (!iIncremental)
@@ -1638,6 +1640,8 @@ namespace neolib
             return false;
         }
 
+        // (Plain: the parse has no previous stage (no cursor), is not incremental and is not a debug scan: what they need is not done)
+        template <bool Plain>
         std::optional<parse_result> parse(std::optional<symbol> const& aSymbol, cst_node& aNode, std::string_view const& aSource)
         {
             if (iError)
@@ -1667,19 +1671,19 @@ namespace neolib
             }
 
             std::optional<scoped_debug_print> sdp;
-            if (iDebugScan && aSymbol.has_value())
+            if (!Plain && iDebugScan && aSymbol.has_value())
                 sdp.emplace(*this, aSymbol.value(), aSource);
 
             auto parse_rules = [&](std::optional<symbol> const& aSymbol, cst_node& aNode, std::string_view const& aSource) -> std::optional<parse_result>
                 {
-                    char const* sourceNext = std::to_address(!iCursor ? 
+                    char const* sourceNext = std::to_address(Plain || !iCursor ? 
                         aSource.begin() : 
                         *iCursor != iCursorEnd ? 
                             (***iCursor).value.begin() : aSource.end());
                     char const* sourceEnd = std::to_address(aSource.end());
 
                     iDeepestParse = std::max(iDeepestParse, sourceNext);
-                    if (iIncremental)
+                    if (!Plain && iIncremental)
                     {
                         if (iCursor && *iCursor != iCursorEnd)
                             examine(***iCursor);
@@ -1689,13 +1693,13 @@ namespace neolib
 
                     // todo: if more than one rule matches take the deepest parse and/or resolve ambiguity via semantic analyis through IoC.
 
-                    scoped_object scopedCursor{ iCursor, iCursor };
+                    cursor_scope<Plain> scopedCursor{ iCursor, iCursor };
 
                     std::optional<parse_result> result;
                     rule const* resultRule = nullptr;
                     typename cst_node::child_list resultChildren;
 
-                    if (aSymbol && iCursor && iCursor != iCursorEnd && std::get<symbol>((**iCursor)->rule->lhs[0]) == aSymbol.value())
+                    if (!Plain && aSymbol && iCursor && iCursor != iCursorEnd && std::get<symbol>((**iCursor)->rule->lhs[0]) == aSymbol.value())
                     {
                         auto previousStageNode = **iCursor;
                         result = previousStageNode->value;
@@ -1714,7 +1718,7 @@ namespace neolib
                         for (auto const& candidateRule : candidateRules)
                         {
                             // (a rule whose match cannot start with the next character is not tried (no previous stage only))
-                            if (!iCursor && !candidateRule.anyStart &&
+                            if ((Plain || !iCursor) && !candidateRule.anyStart &&
                                 (sourceNext == sourceEnd || !candidateRule.first.test(static_cast<unsigned char>(*sourceNext))))
                                 continue;
                             auto const& rule = *candidateRule.definition;
@@ -1730,7 +1734,7 @@ namespace neolib
                                 std::swap(aNode.children, children);
                                 std::optional<parse_result> match;
                                 iCursor = scopedCursor.saved();
-                                match = parse(ruleSymbol, ruleAtom, aNode, std::string_view{ sourceNext, sourceEnd });
+                                match = parse<Plain>(ruleSymbol, ruleAtom, aNode, std::string_view{ sourceNext, sourceEnd });
                                 std::swap(aNode.children, children);
                                 if (match)
                                 {
@@ -1822,32 +1826,37 @@ namespace neolib
         }
 
         // (an atom of a tuple: one that cannot start with the next character does not match (not parsed))
+        template <bool Plain>
         std::optional<parse_result> parse_atom(symbol aSymbol, primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
         {
             // (an atom that cannot start with the next character (and cannot match nothing) does not match)
-            if (!iCursor && aAtom.firstKnown && (examine(aSource.data()), aSource.empty() || !aAtom.first.test(static_cast<unsigned char>(aSource[0]))))
+            if ((Plain || !iCursor) && aAtom.firstKnown && (examine(aSource.data()), aSource.empty() || !aAtom.first.test(static_cast<unsigned char>(aSource[0]))))
             {
                 iDeepestParse = std::max(iDeepestParse, std::to_address(aSource.begin()));
                 return {};
             }
             if (!aAtom.exception)
-                return parse_primitive(aSymbol, aAtom, aNode, aSource);
-            return parse_excepted(aSymbol, aAtom, aNode, aSource);
+                return std::holds_alternative<symbol>(aAtom) || std::holds_alternative<repetition>(aAtom) ?
+                    parse_primitive<Plain>(aSymbol, aAtom, aNode, aSource) : parse_uncached<Plain>(aSymbol, aAtom, aNode, aSource);
+            return parse_excepted<Plain>(aSymbol, aAtom, aNode, aSource);
         }
 
+        template <bool Plain>
         std::optional<parse_result> parse(symbol aSymbol, primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
         {
-            return parse_atom(aSymbol, aAtom, aNode, aSource);
+            return parse_atom<Plain>(aSymbol, aAtom, aNode, aSource);
         }
 
         // (not inlined: its callers' parses are mostly of atoms without exceptions)
+        template <bool Plain>
         NEOLIB_PARSER_NOINLINE std::optional<parse_result> parse_excepted(symbol aSymbol, primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
         {
             // (factor - exception: a match of the factor is not a match if the exception matches all of it)
             auto const children = aNode.children.size();
             auto const cursor = iCursor;
-            auto const result = parse_primitive(aSymbol, aAtom, aNode, aSource);
-            if (!result || !excepted(aSymbol, *aAtom.exception, static_cast<std::string_view const&>(*result)))
+            auto const result = std::holds_alternative<symbol>(aAtom) || std::holds_alternative<repetition>(aAtom) ?
+                parse_primitive<Plain>(aSymbol, aAtom, aNode, aSource) : parse_uncached<Plain>(aSymbol, aAtom, aNode, aSource);
+            if (!result || !excepted<Plain>(aSymbol, *aAtom.exception, static_cast<std::string_view const&>(*result)))
                 return result;
             if (aNode.children.size() > children)
                 aNode.children.erase(std::next(aNode.children.begin(), static_cast<std::ptrdiff_t>(children)), aNode.children.end());
@@ -1855,6 +1864,7 @@ namespace neolib
             return {};
         }
 
+        template <bool Plain>
         bool excepted(symbol aSymbol, primitive_atom const& aException, std::string_view const& aMatch)
         {
             // (an exception of terminals (e.g. reserved words) is compared with the match; any other is parsed (on its own: none of the
@@ -1874,7 +1884,7 @@ namespace neolib
             iCursor = std::nullopt;
             cst_node scratch{ nullptr, nullptr, nullptr, aMatch };
             ++iExcepting;
-            auto const result = parse(aSymbol, aException, scratch, aMatch);
+            auto const result = parse<Plain>(aSymbol, aException, scratch, aMatch);
             --iExcepting;
             iCursor = cursor;
             iDeepestParse = deepestParse;
@@ -1882,21 +1892,245 @@ namespace neolib
             return result && result->size() == aMatch.size();
         }
 
+        // (an atom whose parses are not remembered (not a symbol or a repetition: see parse_primitive): its parse needs none of the
+        // memoization's state)
+        template <bool Plain>
+        std::optional<parse_result> parse_uncached(symbol aSymbol, primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
+        {
+            if (iError)
+                return {};
+
+            // (incremental: the parse's extent (the characters that it examines and its deepest parse) is remembered with it)
+            std::optional<scoped_extent> extent;
+            if constexpr (!Plain)
+                extent.emplace(*this);
+
+            // (it can start with the next character (see parse_atom): that is examined)
+            if (!Plain && !iCursor && aAtom.firstKnown)
+                examine(aSource.data());
+
+            std::optional<parse_result> result;
+            char const* sourceNext = std::to_address(Plain || !iCursor ?
+                aSource.begin() :
+                *iCursor != iCursorEnd ?
+                    (***iCursor).value.begin() : aSource.end());
+            char const* sourceEnd = std::to_address(aSource.end());
+            if (!Plain && iIncremental && iCursor && *iCursor != iCursorEnd)
+                examine(***iCursor);
+
+            iDeepestParse = std::max(iDeepestParse, sourceNext);
+
+            scoped_counter sc{ iLevel };
+            std::optional<scoped_debug_print> sdp;
+            if (!Plain && iDebugScan)
+                sdp.emplace(*this, aAtom, aSource);
+
+            cursor_scope<Plain> scopedCursor{ iCursor, iCursor };
+
+            if (std::holds_alternative<terminal>(aAtom))
+            {
+                auto const& ter = std::get<terminal>(aAtom);
+                examine(ter.empty() ? sourceNext : aSource.data() + std::min(ter.size(), aSource.size()));
+                if ((!ter.empty() && aSource.starts_with(ter)) || (ter.empty() && sourceNext == sourceEnd))
+                {
+                    scopedCursor.ignore();
+                    auto const partialResult = aSource.substr(0, ter.size());
+                    if (!iDiscarding)
+                    {
+                        auto newChild = make_node(&aNode, aNode.rule, &aAtom, partialResult);
+                        newChild->version = iVersion;
+                        newChild->set_concept(aAtom.node_concept());
+                        aNode.children.push_back(std::move(newChild));
+                    }
+                    return ((sdp ? sdp->ok = true : true), apply_partial_result(result, partialResult));
+                }
+            }
+            else if (std::holds_alternative<range>(aAtom))
+            {
+                examine(aSource.data());
+                if (!aSource.empty())
+                {
+                    auto const& ran = std::get<range>(aAtom);
+                    auto const min = static_cast<unsigned char>(std::get<terminal>(ran.value[0])[0]);
+                    auto const max = static_cast<unsigned char>(std::get<terminal>(ran.value[1])[0]);
+                    bool const inRange = (static_cast<unsigned char>(aSource[0]) >= min && static_cast<unsigned char>(aSource[0]) <= max);
+                    if (((inRange && !ran.negate) || (!inRange && ran.negate)) &&
+                        ran.exclusions.find(static_cast<unsigned char>(aSource[0])) == ran.exclusions.end())
+                    {
+                        scopedCursor.ignore();
+                        auto const partialResult = aSource.substr(0, 1);
+                        if (aAtom.c && !iDiscarding)
+                        {
+                            auto newChild = make_node(&aNode, aNode.rule, &aAtom, partialResult);
+                            newChild->version = iVersion;
+                            newChild->set_concept(aAtom.node_concept());
+                            aNode.children.push_back(std::move(newChild));
+                        }
+                        return ((sdp ? sdp->ok = true : true), apply_partial_result(result, partialResult));
+                    }
+                }
+            }
+            else if (std::holds_alternative<concatenation>(aAtom))
+            {
+                auto const& con = std::get<concatenation>(aAtom);
+                char const* spanStart = nullptr;
+                char const* spanEnd = nullptr;
+                typename cst_node::child_list children;
+                std::swap(aNode.children, children);
+                auto const& s = con.value;
+                for (auto ai = s.begin(); ai != s.end(); ++ai)
+                {
+                    auto& a = *ai;
+                    auto lookaheadTo = sourceEnd;
+                    // todo: optimise lookahead
+                    bool const doIgnore = std::holds_alternative<symbol>(a) && ignored(a);
+                    bool const doDiscard = (std::holds_alternative<discard>(a) && std::get<discard>(a).trim);
+                    typename cst_node::child_list children2;
+                    if (doIgnore || doDiscard)
+                        std::swap(aNode.children, children2);
+                    auto const partialResult = parse_atom<Plain>(aSymbol, a, aNode, std::string_view{ sourceNext, lookaheadTo });
+                    if (doIgnore || doDiscard)
+                        std::swap(aNode.children, children2);
+                    if (!partialResult)
+                    {
+                        std::swap(aNode.children, children);
+                        return {};
+                    }
+                    if (doIgnore || doDiscard)
+                    {
+                        if (spanEnd == nullptr)
+                            spanStart = std::to_address(partialResult->end());
+                    }
+                    else
+                    {
+                        if (spanStart == nullptr)
+                            spanStart = std::to_address(partialResult->begin());
+                        spanEnd = std::to_address(partialResult->end());
+                    }
+                    sourceNext = std::to_address(partialResult->sourceNext);
+                }
+                std::swap(aNode.children, children);
+                if (aAtom.constraint && std::string_view{ spanStart, spanEnd } != aAtom.constraint.value())
+                    return {};
+                scopedCursor.ignore();
+                aNode.children.insert(aNode.children.end(), std::make_move_iterator(children.begin()), std::make_move_iterator(children.end()));
+                aNode.set_concept(aAtom.node_concept());
+                if (spanEnd == nullptr)
+                    spanEnd = spanStart;
+                aNode.value = std::string_view{ spanStart, spanEnd };
+                result = aNode.value;
+                result.value().sourceNext = sourceNext;
+                return ((sdp ? sdp->ok = true : true), result);
+            }
+            else if (std::holds_alternative<optional>(aAtom))
+            {
+                auto const& opt = std::get<optional>(aAtom);
+                for (auto const& a : opt.value)
+                {
+                    auto const partialResult = parse_atom<Plain>(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
+                    if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
+                    {
+                        aNode.set_concept(aAtom.node_concept());
+                        result = apply_partial_result(result, partialResult);
+                        sourceNext = std::to_address(partialResult->sourceNext);
+                    }
+                }
+                if (!result)
+                    result.emplace(sourceNext, sourceNext);
+                scopedCursor.ignore();
+                return ((sdp ? sdp->ok = true : true), result);
+            }
+            else if (std::holds_alternative<alternation>(aAtom))
+            {
+                auto const& alt = std::get<alternation>(aAtom);
+                std::optional<parse_result> bestResult;
+                typename cst_node::child_list children;
+                std::swap(aNode.children, children);
+                typename cst_node::child_list children2;
+                auto newCursor = iCursor;
+                // (the alternatives that can start with the next character (the others do not match: see parse_atom))
+                std::uint16_t const* candidates = nullptr;
+                std::size_t count = alt.value.size();
+                if (auto const* d = aAtom.dispatch.get(); d != nullptr && (Plain || (!iCursor && !iIncremental)))
+                {
+                    auto const c = sourceNext == sourceEnd ? 256u : static_cast<unsigned char>(*sourceNext);
+                    candidates = d->indices.data() + d->offsets[c];
+                    count = d->offsets[c + 1u] - d->offsets[c];
+                }
+                for (std::size_t n = 0u; n < count; ++n)
+                {
+                    auto const& a = alt.value[candidates != nullptr ? candidates[n] : n];
+                    typename cst_node::child_list children3;
+                    std::swap(aNode.children, children3);
+                    iCursor = scopedCursor.saved();
+                    auto const partialResult = parse_atom<Plain>(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
+                    if (partialResult)
+                    {
+                        if (!bestResult || partialResult.value().size() > bestResult.value().size())
+                        {
+                            newCursor = iCursor;
+                            bestResult = partialResult;
+                            std::swap(aNode.children, children2);
+                            result = apply_partial_result(result, partialResult);
+                            if (alt.matchFirst)
+                                break;
+                        }
+                    }
+                }
+                std::swap(aNode.children, children);
+                if (aAtom.constraint && result != aAtom.constraint.value())
+                    return {};
+                if (bestResult)
+                {
+                    scopedCursor.ignore();
+                    iCursor = newCursor;
+                    for (auto& child : children2)
+                        child->set_concept(aAtom.node_concept());
+                    aNode.children.insert(aNode.children.end(), std::make_move_iterator(children2.begin()), std::make_move_iterator(children2.end()));
+                        return ((sdp ? sdp->ok = true : true), result);
+                }
+                return {};
+            }
+            else if (std::holds_alternative<discard>(aAtom))
+            {
+                auto const& dis = std::get<discard>(aAtom);
+                for (auto const& a : dis.value)
+                {
+                    typename cst_node::child_list children;
+                    std::swap(aNode.children, children);
+                    auto partialResult = parse_atom<Plain>(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });
+                    std::swap(aNode.children, children);
+                    if (partialResult)
+                    {
+                        aNode.set_concept(aAtom.node_concept());
+                        result = apply_partial_result(result, partialResult);
+                        sourceNext = std::to_address(partialResult->sourceNext);
+                    }
+                }
+                return ((sdp ? sdp->ok = true : true), result);
+            }
+
+            return {};
+        }
+
+        template <bool Plain>
         std::optional<parse_result> parse_primitive(symbol aSymbol, primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
         {
             if (iError)
                 return {};
 
             // (incremental: the parse's extent (the characters that it examines and its deepest parse) is remembered with it)
-            scoped_extent extent{ *this };
+            std::optional<scoped_extent> extent;
+            if constexpr (!Plain)
+                extent.emplace(*this);
 
             // (it can start with the next character (see parse_atom): that is examined)
-            if (!iCursor && aAtom.firstKnown)
+            if (!Plain && !iCursor && aAtom.firstKnown)
                 examine(aSource.data());
 
             // (a lexical symbol (see compute_lexical): matched without making nodes (or remembering the parse), as its nodes would not be
             // kept; a node is made only if the atom has a concept)
-            if (aAtom.lexical >= 0 && !iCursor && !iIncremental && !iDebugScan)
+            if (aAtom.lexical >= 0 && (Plain || (!iCursor && !iIncremental && !iDebugScan)))
             {
                 auto const partialResult = lex_symbol(aAtom.lexical, std::to_address(aSource.begin()), std::to_address(aSource.end()));
                 if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
@@ -1908,7 +2142,7 @@ namespace neolib
             // (that has no concept or constraint) is remembered by the symbol's key (whatever atom it is parsed for: the same parse), unless
             // a rule was not tried because of left recursion (see left_recursion: the parse depends on the rules being parsed)
             bool const cacheable = std::holds_alternative<symbol>(aAtom) || std::holds_alternative<repetition>(aAtom);
-            bool const symbolKeyed = cacheable && aAtom.symbolKey != nullptr && !iCursor && !iIncremental;
+            bool const symbolKeyed = cacheable && aAtom.symbolKey != nullptr && (Plain || (!iCursor && !iIncremental));
             auto const cutsBefore = iCuts;
             cache_key cacheKey{};
             memo_stats* memo = nullptr;
@@ -1918,7 +2152,7 @@ namespace neolib
                 if (symbolKeyed)
                     cacheKey.first = static_cast<primitive_atom const*>(aAtom.symbolKey);
                 // (the parses of a key that are never found again (after MemoTrial of them, none) are not remembered)
-                if (!iCursor && !iIncremental)
+                if (Plain || (!iCursor && !iIncremental))
                     memo = &memo_of(aAtom, cacheKey.first);
             }
             bool const remembered = cacheable && (memo == nullptr || !memo->off);
@@ -1945,9 +2179,9 @@ namespace neolib
                         aNode.children.insert(aNode.children.end(), cached.nodes.begin(), cached.nodes.end());
                     else
                         aNode.children.assign(cached.nodes.begin(), cached.nodes.end());
-                    if (iCursor)
+                    if (!Plain && iCursor)
                         iCursor = std::next(*iCursor, cached.cursor.value());
-                    if (iIncremental)
+                    if (!Plain && iIncremental)
                     {
                         iExamined = std::max(iExamined, static_cast<std::size_t>(std::max<std::ptrdiff_t>(at - iSource.data() + cached.examined, 0)));
                         if (cached.deepest)
@@ -1958,12 +2192,12 @@ namespace neolib
             }
 
             std::optional<parse_result> result;
-            char const* sourceNext = std::to_address(!iCursor ? 
+            char const* sourceNext = std::to_address(Plain || !iCursor ? 
                 aSource.begin() : 
                 *iCursor != iCursorEnd ? 
                     (***iCursor).value.begin() : aSource.end());
             char const* sourceEnd = std::to_address(aSource.end());
-            if (iIncremental && iCursor && *iCursor != iCursorEnd)
+            if (!Plain && iIncremental && iCursor && *iCursor != iCursorEnd)
                 examine(***iCursor);
             // (the node's children before the parse: a cache entry holds the nodes that the parse appends)
             auto const base = aNode.children.size();
@@ -2007,12 +2241,12 @@ namespace neolib
 
             scoped_counter sc{ iLevel };
             std::optional<scoped_debug_print> sdp;
-            if (!std::holds_alternative<symbol>(aAtom) && iDebugScan)
+            if (!Plain && !std::holds_alternative<symbol>(aAtom) && iDebugScan)
                 sdp.emplace(*this, aAtom, aSource);
 
             // todo: visitor?
 
-            scoped_object scopedCursor{ iCursor, iCursor };
+            cursor_scope<Plain> scopedCursor{ iCursor, iCursor };
 
             if (std::holds_alternative<symbol>(aAtom))
             {
@@ -2024,7 +2258,7 @@ namespace neolib
                 std::optional<parse_result> partialResult;
                 {
                     scoped_object<bool> discarding{ iDiscarding, iDiscarding || doIgnore };
-                    partialResult = parse(sym, potentialChild, aSource);
+                    partialResult = parse<Plain>(sym, potentialChild, aSource);
                 }
                 if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
                 {
@@ -2038,121 +2272,6 @@ namespace neolib
                     }
                     return store(apply_partial_result(result, partialResult), iCursor);
                 }
-            }
-            else if (std::holds_alternative<terminal>(aAtom))
-            {
-                auto const& ter = std::get<terminal>(aAtom);
-                examine(ter.empty() ? sourceNext : aSource.data() + std::min(ter.size(), aSource.size()));
-                if ((!ter.empty() && aSource.starts_with(ter)) || (ter.empty() && sourceNext == sourceEnd))
-                {
-                    scopedCursor.ignore();
-                    auto const partialResult = aSource.substr(0, ter.size());
-                    if (!iDiscarding)
-                    {
-                        auto newChild = make_node(&aNode, aNode.rule, &aAtom, partialResult);
-                        newChild->version = iVersion;
-                        newChild->set_concept(aAtom.node_concept());
-                        aNode.children.push_back(std::move(newChild));
-                    }
-                    return ((sdp ? sdp->ok = true : true), store(apply_partial_result(result, partialResult), iCursor));
-                }
-            }
-            else if (std::holds_alternative<range>(aAtom))
-            {
-                examine(aSource.data());
-                if (!aSource.empty())
-                {
-                    auto const& ran = std::get<range>(aAtom);
-                    auto const min = static_cast<unsigned char>(std::get<terminal>(ran.value[0])[0]);
-                    auto const max = static_cast<unsigned char>(std::get<terminal>(ran.value[1])[0]);
-                    bool const inRange = (static_cast<unsigned char>(aSource[0]) >= min && static_cast<unsigned char>(aSource[0]) <= max);
-                    if (((inRange && !ran.negate) || (!inRange && ran.negate)) &&
-                        ran.exclusions.find(static_cast<unsigned char>(aSource[0])) == ran.exclusions.end())
-                    {
-                        scopedCursor.ignore();
-                        auto const partialResult = aSource.substr(0, 1);
-                        if (aAtom.c && !iDiscarding)
-                        {
-                            auto newChild = make_node(&aNode, aNode.rule, &aAtom, partialResult);
-                            newChild->version = iVersion;
-                            newChild->set_concept(aAtom.node_concept());
-                            aNode.children.push_back(std::move(newChild));
-                        }
-                        return ((sdp ? sdp->ok = true : true), store(apply_partial_result(result, partialResult), iCursor));
-                    }
-                }
-            }
-            else if (std::holds_alternative<concatenation>(aAtom))
-            {
-                auto const& con = std::get<concatenation>(aAtom);
-                char const* spanStart = nullptr;
-                char const* spanEnd = nullptr;
-                typename cst_node::child_list children;
-                std::swap(aNode.children, children);
-                auto const& s = con.value;
-                for (auto ai = s.begin(); ai != s.end(); ++ai)
-                {
-                    auto& a = *ai;
-                    auto lookaheadTo = sourceEnd;
-                    // todo: optimise lookahead
-                    bool const doIgnore = std::holds_alternative<symbol>(a) && ignored(a);
-                    bool const doDiscard = (std::holds_alternative<discard>(a) && std::get<discard>(a).trim);
-                    typename cst_node::child_list children2;
-                    if (doIgnore || doDiscard)
-                        std::swap(aNode.children, children2);
-                    auto const partialResult = parse_atom(aSymbol, a, aNode, std::string_view{ sourceNext, lookaheadTo });
-                    if (doIgnore || doDiscard)
-                        std::swap(aNode.children, children2);
-                    if (!partialResult)
-                    {
-                        std::swap(aNode.children, children);
-                        return {};
-                    }
-                    if (doIgnore || doDiscard)
-                    {
-                        if (spanEnd == nullptr)
-                            spanStart = std::to_address(partialResult->end());
-                    }
-                    else
-                    {
-                        if (spanStart == nullptr)
-                            spanStart = std::to_address(partialResult->begin());
-                        spanEnd = std::to_address(partialResult->end());
-                    }
-                    sourceNext = std::to_address(partialResult->sourceNext);
-                }
-                std::swap(aNode.children, children);
-                if (aAtom.constraint && std::string_view{ spanStart, spanEnd } != aAtom.constraint.value())
-                    return {};
-                scopedCursor.ignore();
-                aNode.children.insert(aNode.children.end(), std::make_move_iterator(children.begin()), std::make_move_iterator(children.end()));
-                aNode.set_concept(aAtom.node_concept());
-                if (spanEnd == nullptr)
-                    spanEnd = spanStart;
-                aNode.value = std::string_view{ spanStart, spanEnd };
-                result = aNode.value;
-                result.value().sourceNext = sourceNext;
-                store(result, iCursor);
-                return ((sdp ? sdp->ok = true : true), result);
-            }
-            else if (std::holds_alternative<optional>(aAtom))
-            {
-                auto const& opt = std::get<optional>(aAtom);
-                for (auto const& a : opt.value)
-                {
-                    auto const partialResult = parse_atom(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
-                    if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
-                    {
-                        aNode.set_concept(aAtom.node_concept());
-                        result = apply_partial_result(result, partialResult);
-                        sourceNext = std::to_address(partialResult->sourceNext);
-                    }
-                }
-                if (!result)
-                    result.emplace(sourceNext, sourceNext);
-                scopedCursor.ignore();
-                store(result, iCursor);
-                return ((sdp ? sdp->ok = true : true), result);
             }
             else if (std::holds_alternative<repetition>(aAtom))
             {
@@ -2168,7 +2287,7 @@ namespace neolib
                     found = false;  
                     for (auto const& a : rep.value)
                     {
-                        auto const partialResult = parse_atom(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
+                        auto const partialResult = parse_atom<Plain>(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
                         if (partialResult)
                         {
                             foundAtLeastOne = true;
@@ -2221,77 +2340,6 @@ namespace neolib
                     return ((sdp ? sdp->ok = true : true), result);
                 }
                 return {};
-            }
-            else if (std::holds_alternative<alternation>(aAtom))
-            {
-                auto const& alt = std::get<alternation>(aAtom);
-                std::optional<parse_result> bestResult;
-                typename cst_node::child_list children;
-                std::swap(aNode.children, children);
-                typename cst_node::child_list children2;
-                auto newCursor = iCursor;
-                // (the alternatives that can start with the next character (the others do not match: see parse_atom))
-                std::uint16_t const* candidates = nullptr;
-                std::size_t count = alt.value.size();
-                if (auto const* d = aAtom.dispatch.get(); d != nullptr && !iCursor && !iIncremental)
-                {
-                    auto const c = sourceNext == sourceEnd ? 256u : static_cast<unsigned char>(*sourceNext);
-                    candidates = d->indices.data() + d->offsets[c];
-                    count = d->offsets[c + 1u] - d->offsets[c];
-                }
-                for (std::size_t n = 0u; n < count; ++n)
-                {
-                    auto const& a = alt.value[candidates != nullptr ? candidates[n] : n];
-                    typename cst_node::child_list children3;
-                    std::swap(aNode.children, children3);
-                    iCursor = scopedCursor.saved();
-                    auto const partialResult = parse_atom(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });;
-                    if (partialResult)
-                    {
-                        if (!bestResult || partialResult.value().size() > bestResult.value().size())
-                        {
-                            newCursor = iCursor;
-                            bestResult = partialResult;
-                            std::swap(aNode.children, children2);
-                            result = apply_partial_result(result, partialResult);
-                            if (alt.matchFirst)
-                                break;
-                        }
-                    }
-                }
-                std::swap(aNode.children, children);
-                if (aAtom.constraint && result != aAtom.constraint.value())
-                    return {};
-                if (bestResult)
-                {
-                    scopedCursor.ignore();
-                    iCursor = newCursor;
-                    for (auto& child : children2)
-                        child->set_concept(aAtom.node_concept());
-                    aNode.children.insert(aNode.children.end(), std::make_move_iterator(children2.begin()), std::make_move_iterator(children2.end()));
-                    store(result, iCursor);
-                    return ((sdp ? sdp->ok = true : true), result);
-                }
-                return {};
-            }
-            else if (std::holds_alternative<discard>(aAtom))
-            {
-                auto const& dis = std::get<discard>(aAtom);
-                for (auto const& a : dis.value)
-                {
-                    typename cst_node::child_list children;
-                    std::swap(aNode.children, children);
-                    auto partialResult = parse_atom(aSymbol, a, aNode, std::string_view{ sourceNext, sourceEnd });
-                    std::swap(aNode.children, children);
-                    if (partialResult)
-                    {
-                        aNode.set_concept(aAtom.node_concept());
-                        result = apply_partial_result(result, partialResult);
-                        sourceNext = std::to_address(partialResult->sourceNext);
-                    }
-                }
-                store(result, scopedCursor.saved());
-                return ((sdp ? sdp->ok = true : true), result);
             }
 
             return {};
@@ -2468,7 +2516,8 @@ namespace neolib
         std::optional<parse_result> lex_parse(symbol aSymbol, primitive_atom const& aAtom, char const* aBegin, char const* aEnd)
         {
             auto const result = lex_primitive(aSymbol, aAtom, aBegin, aEnd);
-            if (!aAtom.exception || !result || !excepted(aSymbol, *aAtom.exception, static_cast<std::string_view const&>(*result)))
+            // (lexing is only when there is no cursor, not incremental and not a debug scan (see parse_primitive): an exception's parse is plain)
+            if (!aAtom.exception || !result || !excepted<true>(aSymbol, *aAtom.exception, static_cast<std::string_view const&>(*result)))
                 return result;
             return {};
         }
@@ -2795,12 +2844,54 @@ namespace neolib
             bool operator==(first_set const&) const = default;
         };
 
-        static first_set first_of(primitive_atom const& aAtom, boost::unordered_flat_map<symbol, first_set> const& aSymbolFirst)
+        // (an atom's match (the text that it matches) starts where its parse does: no ignored symbol or trimmed discard can come first (see
+        // parse_primitive: they are not in a concatenation's or a repetition's match); a symbol's: its rules' (see compute_first_sets))
+        bool starts_at(primitive_atom const& aAtom, boost::unordered_flat_map<symbol, bool> const& aSymbolStartsAt) const
+        {
+            auto const trimmed = [](primitive_atom const& a) { return std::holds_alternative<discard>(a) && std::get<discard>(a).trim; };
+            auto const all = [&](std::vector<primitive_atom> const& aAtoms, bool aTrimmed)
+            {
+                return std::all_of(aAtoms.begin(), aAtoms.end(), [&](primitive_atom const& a) { return !(aTrimmed && trimmed(a)) && starts_at(a, aSymbolStartsAt); });
+            };
+            if (std::holds_alternative<symbol>(aAtom))
+            {
+                auto const existing = aSymbolStartsAt.find(std::get<symbol>(aAtom));
+                return existing == aSymbolStartsAt.end() || existing->second;
+            }
+            if (std::holds_alternative<terminal>(aAtom) || std::holds_alternative<range>(aAtom))
+                return true;
+            if (std::holds_alternative<concatenation>(aAtom))
+            {
+                auto const& atoms = std::get<concatenation>(aAtom).value;
+                return !atoms.empty() && !trimmed(atoms[0]) && !(std::holds_alternative<symbol>(atoms[0]) && iIgnore.find(std::get<symbol>(atoms[0])) != iIgnore.end()) &&
+                    starts_at(atoms[0], aSymbolStartsAt);
+            }
+            if (std::holds_alternative<alternation>(aAtom))
+                return all(std::get<alternation>(aAtom).value, false);
+            if (std::holds_alternative<optional>(aAtom))
+                return all(std::get<optional>(aAtom).value, false);
+            if (std::holds_alternative<repetition>(aAtom))
+                return all(std::get<repetition>(aAtom).value, true);
+            if (std::holds_alternative<discard>(aAtom))
+                return all(std::get<discard>(aAtom).value, false);
+            return false;
+        }
+
+        first_set first_of(primitive_atom const& aAtom, boost::unordered_flat_map<symbol, first_set> const& aSymbolFirst, boost::unordered_flat_map<symbol, bool> const& aSymbolStartsAt) const
         {
             first_set result;
+            // (a symbol, alternation, concatenation or repetition that must match its constraint (see parse_primitive) starts with the
+            // constraint's first character, if its match starts where its parse does)
+            if (aAtom.constraint && !aAtom.constraint->empty() &&
+                (std::holds_alternative<symbol>(aAtom) || std::holds_alternative<alternation>(aAtom) || std::holds_alternative<concatenation>(aAtom) || std::holds_alternative<repetition>(aAtom)) &&
+                starts_at(aAtom, aSymbolStartsAt))
+            {
+                result.characters.set(static_cast<unsigned char>((*aAtom.constraint)[0]));
+                return result;
+            }
             auto add = [&](primitive_atom const& a)
                 {
-                    auto const f = first_of(a, aSymbolFirst);
+                    auto const f = first_of(a, aSymbolFirst, aSymbolStartsAt);
                     result.characters |= f.characters;
                     result.any = result.any || f.any;
                     return f;
@@ -2833,7 +2924,7 @@ namespace neolib
                 result.any = true;
                 for (auto const& a : std::get<concatenation>(aAtom).value)
                 {
-                    auto const f = first_of(a, aSymbolFirst);
+                    auto const f = first_of(a, aSymbolFirst, aSymbolStartsAt);
                     result.characters |= f.characters;
                     if (!f.any)
                     {
@@ -2872,6 +2963,23 @@ namespace neolib
 
         void compute_first_sets()
         {
+            // (whether each symbol's match starts where its parse does (see starts_at): a fixed point, from all that do)
+            boost::unordered_flat_map<symbol, bool> symbolStartsAt;
+            for (bool changed = true; changed;)
+            {
+                changed = false;
+                for (auto const& entry : iRuleIndex)
+                {
+                    bool const startsAt = std::all_of(entry.second.begin(), entry.second.end(),
+                        [&](indexed_rule const& ir) { return starts_at(ir.definition->rhs[0], symbolStartsAt); });
+                    auto const existing = symbolStartsAt.find(entry.first);
+                    if (existing == symbolStartsAt.end() ? !startsAt : existing->second != startsAt)
+                    {
+                        symbolStartsAt[entry.first] = startsAt;
+                        changed = true;
+                    }
+                }
+            }
             // (each symbol's first set: a fixed point as rules refer to symbols, including (indirectly) their own)
             boost::unordered_flat_map<symbol, first_set> symbolFirst;
             for (bool changed = true; changed;)
@@ -2882,7 +2990,7 @@ namespace neolib
                     first_set symbolSet;
                     for (auto const& ir : entry.second)
                     {
-                        auto const f = first_of(ir.definition->rhs[0], symbolFirst);
+                        auto const f = first_of(ir.definition->rhs[0], symbolFirst, symbolStartsAt);
                         symbolSet.characters |= f.characters;
                         symbolSet.any = symbolSet.any || f.any;
                     }
@@ -2896,7 +3004,7 @@ namespace neolib
             }
             auto apply = [&](indexed_rule& aRule)
                 {
-                    auto const f = first_of(aRule.definition->rhs[0], symbolFirst);
+                    auto const f = first_of(aRule.definition->rhs[0], symbolFirst, symbolStartsAt);
                     aRule.first = f.characters;
                     aRule.anyStart = f.any;
                 };
@@ -2908,7 +3016,7 @@ namespace neolib
             // (each atom's: an atom that cannot start with the next character is not parsed (see parse_primitive))
             std::function<void(primitive_atom&)> mark = [&](primitive_atom& aAtom)
             {
-                auto const f = first_of(aAtom, symbolFirst);
+                auto const f = first_of(aAtom, symbolFirst, symbolStartsAt);
                 aAtom.firstKnown = !f.any;
                 aAtom.first = f.characters;
                 std::visit([&](auto& aPart)
@@ -2962,6 +3070,16 @@ namespace neolib
                 }
             }
         };
+
+        // (a parse's cursor's scope (see iCursor: restored unless ignored); a plain parse's (see Plain) has no cursor: nothing to restore)
+        struct no_cursor_scope
+        {
+            no_cursor_scope(std::optional<typename cst_node::child_list::const_iterator>&, std::optional<typename cst_node::child_list::const_iterator> const&) noexcept {}
+            void ignore() noexcept {}
+            std::optional<typename cst_node::child_list::const_iterator> saved() const noexcept { return {}; }
+        };
+        template <bool Plain>
+        using cursor_scope = std::conditional_t<Plain, no_cursor_scope, scoped_object<std::optional<typename cst_node::child_list::const_iterator>>>;
 
         struct scoped_stack_entry
         {
