@@ -3091,7 +3091,7 @@ namespace neolib
         std::shared_ptr<cst_node> iAst = std::make_shared<cst_node>();
         struct stack_entry
         {
-            rule const* rule;
+            parser::rule const* rule;
             std::string_view source;
             std::size_t previous;   ///< (the rule's entry before this (its index + 1), if any, else 0)
         };
