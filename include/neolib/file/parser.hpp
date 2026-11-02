@@ -142,7 +142,8 @@ namespace neolib
     namespace parser_detail
     {
         // (a parser's nodes' storage: free slots by size are used again; its blocks are freed when its owner (see node_pool_handle) has
-        // released it and nothing that was allocated from it remains (nodes may outlive the parser that made them))
+        // released it and nothing that was allocated from it remains (nodes may outlive the parser that made them). Not locked: a parser
+        // and its nodes are used by one thread at a time (as node_ptr's counts are not atomic))
         class node_pool
         {
         public:
@@ -157,26 +158,16 @@ namespace neolib
             }
             void release_owner()
             {
-                bool unused;
-                {
-                    std::lock_guard<std::mutex> lock{ iMutex };
-                    iOwned = false;
-                    unused = (iLive == 0u);
-                }
-                if (unused)
+                iOwned = false;
+                if (iLive == 0u)
                     delete this;
             }
             void* allocate(std::size_t aSize)
             {
                 auto const sizeClass = (aSize + Granularity - 1u) / Granularity;
-                if (sizeClass == 0u || sizeClass > Classes)
-                {
-                    std::lock_guard<std::mutex> lock{ iMutex };
-                    ++iLive;
-                    return ::operator new(aSize);
-                }
-                std::lock_guard<std::mutex> lock{ iMutex };
                 ++iLive;
+                if (sizeClass == 0u || sizeClass > Classes)
+                    return ::operator new(aSize);
                 auto& head = iFree[sizeClass - 1u];
                 if (head != nullptr)
                 {
@@ -198,32 +189,29 @@ namespace neolib
             void deallocate(void* aMemory, std::size_t aSize) noexcept
             {
                 auto const sizeClass = (aSize + Granularity - 1u) / Granularity;
-                bool unused;
+                if (sizeClass == 0u || sizeClass > Classes)
+                    ::operator delete(aMemory);
+                else
                 {
-                    std::lock_guard<std::mutex> lock{ iMutex };
-                    if (sizeClass == 0u || sizeClass > Classes)
-                        ::operator delete(aMemory);
-                    else
-                    {
-                        auto& head = iFree[sizeClass - 1u];
-                        *static_cast<void**>(aMemory) = head;
-                        head = aMemory;
-                    }
-                    unused = (--iLive == 0u && !iOwned);
-                    if (iLive == 0u && iOwned && iBlocks.size() > KeptBlocks)
-                    {
-                        // (no nodes, and more blocks than a small parse uses: its blocks are freed (the memory that a large parse took is
-                        // not kept for the next))
-                        for (auto* block : iBlocks)
-                            ::operator delete(block);
-                        iBlocks.clear();
-                        iNext = nullptr;
-                        iEnd = nullptr;
-                        iFree = {};
-                    }
+                    auto& head = iFree[sizeClass - 1u];
+                    *static_cast<void**>(aMemory) = head;
+                    head = aMemory;
                 }
-                if (unused)
+                if (--iLive != 0u)
+                    return;
+                if (!iOwned)
                     delete this;
+                else if (iBlocks.size() > KeptBlocks)
+                {
+                    // (no nodes, and more blocks than a small parse uses: its blocks are freed (the memory that a large parse took is
+                    // not kept for the next))
+                    for (auto* block : iBlocks)
+                        ::operator delete(block);
+                    iBlocks.clear();
+                    iNext = nullptr;
+                    iEnd = nullptr;
+                    iFree = {};
+                }
             }
         private:
             node_pool() = default;
@@ -233,7 +221,6 @@ namespace neolib
                     ::operator delete(block);
             }
         private:
-            std::mutex iMutex;
             std::vector<std::byte*> iBlocks;
             std::byte* iNext = nullptr;
             std::byte* iEnd = nullptr;
@@ -692,6 +679,7 @@ namespace neolib
             // address) and position, if it has no concept or constraint, else by the atom's (set by the parser that owns it))
             std::int32_t lexical = -1;
             void const* symbolKey = nullptr;
+            void const* symbolRules = nullptr;  ///< (a symbol's rules (see parser::iRuleIndex), if it has any (set by the parser that owns it; not copied))
             std::shared_ptr<alternation_dispatch const> dispatch;   ///< (an alternation's (set by the parser that owns it))
             // (its parses' memoization statistics (see parser::memo_of): the parser's record for its cache key, found once)
             mutable void const* memoParser = nullptr;
@@ -724,6 +712,7 @@ namespace neolib
                 first = other.first;
                 lexical = other.lexical;
                 symbolKey = other.symbolKey;
+                symbolRules = nullptr;
                 dispatch = other.dispatch;
                 return *this;
             }
@@ -738,6 +727,7 @@ namespace neolib
                 first = other.first;
                 lexical = other.lexical;
                 symbolKey = other.symbolKey;
+                symbolRules = nullptr;
                 dispatch = other.dispatch;
                 return *this;
             }
@@ -1641,8 +1631,11 @@ namespace neolib
         }
 
         // (Plain: the parse has no previous stage (no cursor), is not incremental and is not a debug scan: what they need is not done)
+        // (aRules, aIgnored: the symbol's rules and whether it is ignored, if its atom knows them (see primitive_atom::symbolRules), else
+        // found)
         template <bool Plain>
-        std::optional<parse_result> parse(std::optional<symbol> const& aSymbol, cst_node& aNode, std::string_view const& aSource)
+        std::optional<parse_result> parse(std::optional<symbol> const& aSymbol, cst_node& aNode, std::string_view const& aSource, void const* aRules = nullptr,
+            std::optional<bool> aIgnored = {})
         {
             if (iError)
                 return {};
@@ -1713,8 +1706,9 @@ namespace neolib
                         bool anyMatches = false;
                         auto newCursor = iCursor;
                         static std::vector<indexed_rule> const sNoRules;
-                        auto const symbolRules = aSymbol ? iRuleIndex.find(aSymbol.value()) : iRuleIndex.end();
-                        auto const& candidateRules = !aSymbol ? iSymbolRules : symbolRules != iRuleIndex.end() ? symbolRules->second : sNoRules;
+                        auto const symbolRules = aSymbol && aRules == nullptr ? iRuleIndex.find(aSymbol.value()) : iRuleIndex.end();
+                        auto const& candidateRules = !aSymbol ? iSymbolRules : aRules != nullptr ? *static_cast<std::vector<indexed_rule> const*>(aRules) :
+                            symbolRules != iRuleIndex.end() ? symbolRules->second : sNoRules;
                         for (auto const& candidateRule : candidateRules)
                         {
                             // (a rule whose match cannot start with the next character is not tried (no previous stage only))
@@ -1773,7 +1767,7 @@ namespace neolib
                         aNode.value = result.value();
                         if (!aNode.has_concept())
                             aNode.set_concept(resultRule->rhs[0].c.has_value() ? resultRule->rhs[0].node_concept() : resultRule->lhs[0].node_concept());
-                        bool const doIgnore = aSymbol && iIgnore.find(aSymbol.value()) != iIgnore.end();
+                        bool const doIgnore = aSymbol && (aIgnored ? *aIgnored : iIgnore.find(aSymbol.value()) != iIgnore.end());
                         if (!doIgnore)
                         {
                             if (flattens())
@@ -2258,7 +2252,7 @@ namespace neolib
                 std::optional<parse_result> partialResult;
                 {
                     scoped_object<bool> discarding{ iDiscarding, iDiscarding || doIgnore };
-                    partialResult = parse<Plain>(sym, potentialChild, aSource);
+                    partialResult = parse<Plain>(sym, potentialChild, aSource, aAtom.symbolRules, doIgnore);
                 }
                 if (partialResult && (!aAtom.constraint || partialResult == aAtom.constraint.value()))
                 {
@@ -2407,6 +2401,7 @@ namespace neolib
             {
                 aAtom.lexical = -1;
                 aAtom.symbolKey = nullptr;
+                aAtom.symbolRules = nullptr;
                 aAtom.dispatch = nullptr;
                 if (auto const* alt = std::get_if<alternation>(&aAtom); alt != nullptr && alt->value.size() >= 3u && alt->value.size() <= 0xFFFFu)
                 {
@@ -2429,9 +2424,12 @@ namespace neolib
                     using type = std::decay_t<decltype(aPart)>;
                     if constexpr (std::is_same_v<type, symbol>)
                     {
-                        if (!aAtom.c && !aAtom.constraint)
-                            if (auto const rules = iRuleIndex.find(aPart); rules != iRuleIndex.end())
+                        if (auto const rules = iRuleIndex.find(aPart); rules != iRuleIndex.end())
+                        {
+                            aAtom.symbolRules = &rules->second;
+                            if (!aAtom.c && !aAtom.constraint)
                                 aAtom.symbolKey = &rules->second;
+                        }
                         // (an atom with a concept: its node is kept (the parse makes it))
                         if (!aAtom.c && !aConcept && symbol_lexical(aPart))
                         {
