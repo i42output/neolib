@@ -62,6 +62,12 @@
 #include <neolib/core/scoped.hpp>
 #include <neolib/core/string_utils.hpp>
 
+#if defined(_MSC_VER)
+#define NEOLIB_PARSER_NOINLINE __declspec(noinline)
+#else
+#define NEOLIB_PARSER_NOINLINE __attribute__((noinline))
+#endif
+
 namespace neolib
 {
 #define declare_symbols begin_declare_enum
@@ -691,6 +697,10 @@ namespace neolib
             mutable void const* memoParser = nullptr;
             mutable void const* memoKey = nullptr;
             mutable void* memoStats = nullptr;
+            // (a symbol's being ignored (see parser::ignored): found once per parser (and its ignored symbols))
+            mutable void const* ignoreParser = nullptr;
+            mutable std::size_t ignoreCount = 0u;
+            mutable bool ignored = false;
 
             primitive_atom(primitive_atom const& other) :
                 base_type{ other }, c{ other.c }, constraint{ other.constraint }, exception{ other.exception }, firstKnown{ other.firstKnown }, first{ other.first },
@@ -1130,6 +1140,7 @@ namespace neolib
                 iIndexedRules = iRules.data();
                 iIndexedRuleCount = iRules.size();
             }
+            iRuleEntries.assign(iRules.size(), 0u);
 
             if (iPreviousStage)
             {
@@ -1596,12 +1607,14 @@ namespace neolib
                 return false;
             // (the same rule at the same place (not the same text elsewhere): the stack's places do not decrease, so the search ends at
             // an earlier place)
+            // (the rule's entries before (see stack_entry::previous))
             auto const& top = iStack.back();
-            for (auto r = std::next(iStack.rbegin()); r != iStack.rend(); ++r)
+            for (auto e = top.previous; e != 0u; e = iStack[e - 1u].previous)
             {
-                if (r->second.data() < top.second.data())
+                auto const& r = iStack[e - 1u];
+                if (r.source.data() < top.source.data())
                     break;
-                if (r->first == top.first && r->second.data() == top.second.data() && r->second.size() == top.second.size())
+                if (r.source.data() == top.source.data() && r.source.size() == top.source.size())
                     return true;
             }
             return false;
@@ -1811,18 +1824,25 @@ namespace neolib
         // (an atom of a tuple: one that cannot start with the next character does not match (not parsed))
         std::optional<parse_result> parse_atom(symbol aSymbol, primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
         {
+            // (an atom that cannot start with the next character (and cannot match nothing) does not match)
             if (!iCursor && aAtom.firstKnown && (examine(aSource.data()), aSource.empty() || !aAtom.first.test(static_cast<unsigned char>(aSource[0]))))
             {
                 iDeepestParse = std::max(iDeepestParse, std::to_address(aSource.begin()));
                 return {};
             }
-            return parse(aSymbol, aAtom, aNode, aSource);
+            if (!aAtom.exception)
+                return parse_primitive(aSymbol, aAtom, aNode, aSource);
+            return parse_excepted(aSymbol, aAtom, aNode, aSource);
         }
 
         std::optional<parse_result> parse(symbol aSymbol, primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
         {
-            if (!aAtom.exception)
-                return parse_primitive(aSymbol, aAtom, aNode, aSource);
+            return parse_atom(aSymbol, aAtom, aNode, aSource);
+        }
+
+        // (not inlined: its callers' parses are mostly of atoms without exceptions)
+        NEOLIB_PARSER_NOINLINE std::optional<parse_result> parse_excepted(symbol aSymbol, primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
+        {
             // (factor - exception: a match of the factor is not a match if the exception matches all of it)
             auto const children = aNode.children.size();
             auto const cursor = iCursor;
@@ -1870,12 +1890,9 @@ namespace neolib
             // (incremental: the parse's extent (the characters that it examines and its deepest parse) is remembered with it)
             scoped_extent extent{ *this };
 
-            if (!iCursor && aAtom.firstKnown && (examine(aSource.data()), aSource.empty() || !aAtom.first.test(static_cast<unsigned char>(aSource[0]))))
-            {
-                // (an atom that cannot start with the next character (and cannot match nothing) does not match)
-                iDeepestParse = std::max(iDeepestParse, std::to_address(aSource.begin()));
-                return {};
-            }
+            // (it can start with the next character (see parse_atom): that is examined)
+            if (!iCursor && aAtom.firstKnown)
+                examine(aSource.data());
 
             // (a lexical symbol (see compute_lexical): matched without making nodes (or remembering the parse), as its nodes would not be
             // kept; a node is made only if the atom has a concept)
@@ -1887,17 +1904,23 @@ namespace neolib
                 return {};
             }
 
-            auto cacheKey = make_cache_key(aAtom, aSource);
             // (a rule's (or a repetition's) parse is remembered; an atom that is quicker to parse again than to remember is not). A symbol's
             // (that has no concept or constraint) is remembered by the symbol's key (whatever atom it is parsed for: the same parse), unless
             // a rule was not tried because of left recursion (see left_recursion: the parse depends on the rules being parsed)
             bool const cacheable = std::holds_alternative<symbol>(aAtom) || std::holds_alternative<repetition>(aAtom);
-            bool const symbolKeyed = aAtom.symbolKey != nullptr && !iCursor && !iIncremental;
+            bool const symbolKeyed = cacheable && aAtom.symbolKey != nullptr && !iCursor && !iIncremental;
             auto const cutsBefore = iCuts;
-            if (symbolKeyed)
-                cacheKey.first = static_cast<primitive_atom const*>(aAtom.symbolKey);
-            // (the parses of a key that are never found again (after MemoTrial of them, none) are not remembered)
-            memo_stats* const memo = cacheable && !iCursor && !iIncremental ? &memo_of(aAtom, cacheKey.first) : nullptr;
+            cache_key cacheKey{};
+            memo_stats* memo = nullptr;
+            if (cacheable)
+            {
+                cacheKey = make_cache_key(aAtom, aSource);
+                if (symbolKeyed)
+                    cacheKey.first = static_cast<primitive_atom const*>(aAtom.symbolKey);
+                // (the parses of a key that are never found again (after MemoTrial of them, none) are not remembered)
+                if (!iCursor && !iIncremental)
+                    memo = &memo_of(aAtom, cacheKey.first);
+            }
             bool const remembered = cacheable && (memo == nullptr || !memo->off);
             if (remembered)
             {
@@ -1959,22 +1982,24 @@ namespace neolib
                     return cache_result{ cached_nodes{ std::next(aNode.children.begin(), static_cast<std::ptrdiff_t>(base)), aNode.children.end() }, result, cursor, true, examined, deepest };
                 return cache_result{ cached_nodes{ aNode.children.begin(), aNode.children.end() }, result, cursor, false, examined, deepest };
             };
-            auto const store = [&](std::optional<parse_result> const& aResult, std::optional<typename cst_node::child_list::const_iterator> const& aCursor)
+            auto const remember = [&](std::optional<parse_result> const& aResult, std::optional<typename cst_node::child_list::const_iterator> const& aCursor)
+            {
+                if (memo != nullptr && ++memo->inserts >= MemoTrial && memo->hits == 0u)
+                    memo->off = true;
+                if (symbolKeyed && iCuts != cutsBefore)
+                {
+                    iAtomKeyedSymbols = true;
+                    iCache[cache_key{ &aAtom, cacheKey.second }] = cache_result_of(aResult, aCursor);
+                }
+                else
+                    iCache[cacheKey] = cache_result_of(aResult, aCursor);
+                if (cacheKey.second.first >= 0 && static_cast<std::size_t>(cacheKey.second.first) >= iForgetAt)
+                    forget_behind(static_cast<std::size_t>(cacheKey.second.first));
+            };
+            auto const store = [&](std::optional<parse_result> const& aResult, std::optional<typename cst_node::child_list::const_iterator> const& aCursor) -> std::optional<parse_result> const&
             {
                 if (remembered)
-                {
-                    if (memo != nullptr && ++memo->inserts >= MemoTrial && memo->hits == 0u)
-                        memo->off = true;
-                    if (symbolKeyed && iCuts != cutsBefore)
-                    {
-                        iAtomKeyedSymbols = true;
-                        iCache[cache_key{ &aAtom, cacheKey.second }] = cache_result_of(aResult, aCursor);
-                    }
-                    else
-                        iCache[cacheKey] = cache_result_of(aResult, aCursor);
-                    if (cacheKey.second.first >= 0 && static_cast<std::size_t>(cacheKey.second.first) >= iForgetAt)
-                        forget_behind(static_cast<std::size_t>(cacheKey.second.first));
-                }
+                    remember(aResult, aCursor);
                 return aResult;
             };
 
@@ -1992,7 +2017,7 @@ namespace neolib
             if (std::holds_alternative<symbol>(aAtom))
             {
                 auto const& sym = std::get<symbol>(aAtom);
-                bool const doIgnore = iIgnore.find(sym) != iIgnore.end();
+                bool const doIgnore = ignored(aAtom);
                 cst_node potentialChild{ &aNode, aNode.rule, &aAtom, aSource };
                 potentialChild.version = iVersion;
                 // (an ignored symbol's nodes are not made (it is discarded))
@@ -2070,7 +2095,7 @@ namespace neolib
                     auto& a = *ai;
                     auto lookaheadTo = sourceEnd;
                     // todo: optimise lookahead
-                    bool const doIgnore = (std::holds_alternative<symbol>(a) && iIgnore.find(std::get<symbol>(a)) != iIgnore.end());
+                    bool const doIgnore = std::holds_alternative<symbol>(a) && ignored(a);
                     bool const doDiscard = (std::holds_alternative<discard>(a) && std::get<discard>(a).trim);
                     typename cst_node::child_list children2;
                     if (doIgnore || doDiscard)
@@ -2462,11 +2487,7 @@ namespace neolib
         {
             if (iError)
                 return {};
-            if (aAtom.firstKnown && (aBegin == aEnd || !aAtom.first.test(static_cast<unsigned char>(*aBegin))))
-            {
-                iDeepestParse = std::max(iDeepestParse, aBegin);
-                return {};
-            }
+            // (it can start with the next character: see lex_atom and lex_symbol (a rule's first characters are its atom's))
             std::optional<parse_result> result;
             char const* sourceNext = aBegin;
             char const* const sourceEnd = aEnd;
@@ -2506,7 +2527,7 @@ namespace neolib
                     char const* spanEnd = nullptr;
                     for (auto const& a : std::get<concatenation>(aAtom).value)
                     {
-                        bool const skipped = (std::holds_alternative<symbol>(a) && iIgnore.find(std::get<symbol>(a)) != iIgnore.end()) ||
+                        bool const skipped = (std::holds_alternative<symbol>(a) && ignored(a)) ||
                             (std::holds_alternative<discard>(a) && std::get<discard>(a).trim);
                         auto const partialResult = lex_atom(aSymbol, a, sourceNext, sourceEnd);
                         if (!partialResult)
@@ -2729,6 +2750,18 @@ namespace neolib
             bool off = false;
         };
         static constexpr std::uint32_t MemoTrial = 256u;
+        // (a symbol atom's symbol is ignored (see ignore))
+        bool ignored(primitive_atom const& aAtom) const
+        {
+            if (aAtom.ignoreParser != this || aAtom.ignoreCount != iIgnore.size())
+            {
+                aAtom.ignoreParser = this;
+                aAtom.ignoreCount = iIgnore.size();
+                aAtom.ignored = iIgnore.find(std::get<symbol>(aAtom)) != iIgnore.end();
+            }
+            return aAtom.ignored;
+        }
+
         memo_stats& memo_of(primitive_atom const& aAtom, void const* aKey)
         {
             if (aAtom.memoParser == this && aAtom.memoKey == aKey)
@@ -2908,16 +2941,16 @@ namespace neolib
         {
             parser& owner;
             bool const active;
-            std::size_t const examined;
-            char const* const deepest;
+            std::size_t examined = 0u;
+            char const* deepest = nullptr;
 
             scoped_extent(parser& aOwner) :
-                owner{ aOwner }, active{ aOwner.iIncremental }, examined{ aOwner.iExamined }, deepest{ aOwner.iDeepestParse }
+                owner{ aOwner }, active{ aOwner.iIncremental }
             {
                 if (active)
                 {
-                    owner.iExamined = 0u;
-                    owner.iDeepestParse = nullptr;
+                    examined = std::exchange(owner.iExamined, 0u);
+                    deepest = std::exchange(owner.iDeepestParse, nullptr);
                 }
             }
             ~scoped_extent()
@@ -2937,10 +2970,14 @@ namespace neolib
             scoped_stack_entry(parser& owner, rule const& rule, std::string_view const& source) :
                 owner{ owner }
             {
-                owner.iStack.push_back(std::make_pair(&rule, source));
+                auto& latest = owner.iRuleEntries[static_cast<std::size_t>(&rule - owner.iRules.data())];
+                owner.iStack.push_back(stack_entry{ &rule, source, latest });
+                latest = owner.iStack.size();
             }
             ~scoped_stack_entry()
             {
+                auto const& entry = owner.iStack.back();
+                owner.iRuleEntries[static_cast<std::size_t>(entry.rule - owner.iRules.data())] = entry.previous;
                 owner.iStack.pop_back();
             }
         };
@@ -3052,7 +3089,14 @@ namespace neolib
         parser_detail::node_pool_handle iNodes;     ///< (the storage of the nodes that the parser makes)
         std::vector<typename cst_node::ptr> iRebuilding;     ///< (the children being rebuilt (see simplify_cst and create_ast))
         std::shared_ptr<cst_node> iAst = std::make_shared<cst_node>();
-        std::vector<std::pair<rule const*, std::string_view>> iStack;
+        struct stack_entry
+        {
+            rule const* rule;
+            std::string_view source;
+            std::size_t previous;   ///< (the rule's entry before this (its index + 1), if any, else 0)
+        };
+        std::vector<stack_entry> iStack;
+        std::vector<std::size_t> iRuleEntries;  ///< (each rule's (by its index in iRules) latest entry in iStack (its index + 1), if any, else 0)
         std::uint32_t iMaxLevel = 1024;
         std::uint32_t iLevel = 0;
         char const* iDeepestParse;
