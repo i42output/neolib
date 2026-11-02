@@ -49,6 +49,7 @@
 #include <istream>
 #include <array>
 #include <mutex>
+#include <unordered_map>
 #include <unordered_set>
 #include <functional>
 
@@ -592,6 +593,10 @@ namespace neolib
             std::int32_t lexical = -1;
             void const* symbolKey = nullptr;
             std::shared_ptr<alternation_dispatch const> dispatch;   ///< (an alternation's (set by the parser that owns it))
+            // (its parses' memoization statistics (see parser::memo_of): the parser's record for its cache key, found once)
+            mutable void const* memoParser = nullptr;
+            mutable void const* memoKey = nullptr;
+            mutable void* memoStats = nullptr;
 
             primitive_atom(primitive_atom const& other) :
                 base_type{ other }, c{ other.c }, constraint{ other.constraint }, exception{ other.exception }, firstKnown{ other.firstKnown }, first{ other.first },
@@ -975,6 +980,8 @@ namespace neolib
                 iCache.reserve(std::min<std::size_t>(aSource.size() / 2u, ForgetWindow / 2u) + 1024u);
             }
             iForgetAt = ForgetWindow + ForgetInterval;
+            for (auto& stats : iMemoStats)
+                stats.second = {};
 
             // (the rules indexed by their symbol, in rule order: a symbol is parsed by trying only its own rules (indexed once, unless
             // the rules have changed since))
@@ -1766,13 +1773,18 @@ namespace neolib
             auto const cutsBefore = iCuts;
             if (symbolKeyed)
                 cacheKey.first = static_cast<primitive_atom const*>(aAtom.symbolKey);
-            if (cacheable)
+            // (the parses of a key that are never found again (after MemoTrial of them, none) are not remembered)
+            memo_stats* const memo = cacheable && !iCursor && !iIncremental ? &memo_of(aAtom, cacheKey.first) : nullptr;
+            bool const remembered = cacheable && (memo == nullptr || !memo->off);
+            if (remembered)
             {
                 auto cacheEntry = iCache.find(cacheKey);
                 if (cacheEntry == iCache.end() && symbolKeyed && iAtomKeyedSymbols)
                     cacheEntry = iCache.find(cache_key{ &aAtom, cacheKey.second });
                 if (cacheEntry != iCache.end())
                 {
+                    if (memo != nullptr)
+                        ++memo->hits;
                     // (the same atom at the same place may be parsed for another node (e.g. an optional tail that two nested rules end
                     // with): the nodes that its parse appended are appended to this node's children)
                     auto const& cached = cacheEntry->second;
@@ -1826,8 +1838,10 @@ namespace neolib
             };
             auto const store = [&](std::optional<parse_result> const& aResult, std::optional<typename cst_node::child_list::const_iterator> const& aCursor)
             {
-                if (cacheable)
+                if (remembered)
                 {
+                    if (memo != nullptr && ++memo->inserts >= MemoTrial && memo->hits == 0u)
+                        memo->off = true;
                     if (symbolKeyed && iCuts != cutsBefore)
                     {
                         iAtomKeyedSymbols = true;
@@ -2569,6 +2583,27 @@ namespace neolib
             return !iIncremental && !iFeedsNextStage && !iDebugScan;
         }
 
+        // (a cache key's (an atom's, or a symbol's: see make_cache_key) parses remembered and found again, in the parse being made: a
+        // key whose first MemoTrial parses are never found again is not remembered for the rest of the parse (most of the parses
+        // remembered are never found again; remembering them takes much of a parse's time))
+        struct memo_stats
+        {
+            std::uint32_t inserts = 0u;
+            std::uint32_t hits = 0u;
+            bool off = false;
+        };
+        static constexpr std::uint32_t MemoTrial = 256u;
+        memo_stats& memo_of(primitive_atom const& aAtom, void const* aKey)
+        {
+            if (aAtom.memoParser == this && aAtom.memoKey == aKey)
+                return *static_cast<memo_stats*>(aAtom.memoStats);
+            auto& stats = iMemoStats[aKey];
+            aAtom.memoParser = this;
+            aAtom.memoKey = aKey;
+            aAtom.memoStats = &stats;
+            return stats;
+        }
+
         auto make_cache_key(primitive_atom const& aAtom, std::string_view const& aSource) const
         {
             auto position = aSource.data() - iSource.data();
@@ -2939,6 +2974,7 @@ namespace neolib
             }
         };
         boost::unordered_flat_map<cache_key, cache_result, cache_key_hash> iCache;
+        std::unordered_map<void const*, memo_stats> iMemoStats;    ///< (by cache key (node based: atoms refer to their records))
         std::size_t iForgetAt = 0u;     ///< (the deepest parse at which the parses remembered behind it are next forgotten (see forget_behind))
         // (the lexical symbols (see compute_lexical): their rules; their matches remembered (by symbol and position: a slot each))
         struct lexical_symbol
