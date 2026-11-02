@@ -1046,9 +1046,9 @@ namespace neolib
 
         void ignore(symbol aIgnore)
         {
-            iIgnore.insert(aIgnore);
             iCache = {}; // (an ignored symbol's parses make no nodes: the parses remembered are not its)
-            iIndexed = false; // (first sets depend on what is ignored (see starts_at))
+            if (iIgnore.insert(aIgnore).second)
+                iIndexed = false; // (first sets depend on what is ignored (see starts_at))
         }
 
         // incremental parsing (off by default): each parse is of an edit of the source parsed before (e.g. a script being edited): the 
