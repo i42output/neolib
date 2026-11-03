@@ -1770,13 +1770,26 @@ namespace neolib
                         bool const doIgnore = aSymbol && (aIgnored ? *aIgnored : iIgnore.find(aSymbol.value()) != iIgnore.end());
                         if (!doIgnore)
                         {
-                            if (flattens())
+                            // (its children that create_ast would replace by theirs (see flattens): replaced now)
+                            auto const flattened = [](auto const& child)
                             {
-                                // (its children that create_ast would replace by theirs (see flattens): replaced now)
+                                return !child->c.has_value() && std::all_of(child->children.begin(), child->children.end(),
+                                    [](auto const& g) { return g->c.has_value() && g->c->association == concept_association::None; });
+                            };
+                            // (the node has no children of its own (a symbol's): the result's are its, as they are, if none is replaced)
+                            if (aNode.children.empty() && (!flattens() || std::none_of(resultChildren.begin(), resultChildren.end(), flattened)))
+                                aNode.children.swap(resultChildren);
+                            else if (flattens())
+                            {
                                 for (auto& child : resultChildren)
-                                    if (!child->c.has_value() && std::all_of(child->children.begin(), child->children.end(),
-                                        [](auto const& g) { return g->c.has_value() && g->c->association == concept_association::None; }))
-                                        aNode.children.insert(aNode.children.end(), child->children.begin(), child->children.end());
+                                    if (flattened(child))
+                                    {
+                                        // (a child that only the result has: its children are moved from it)
+                                        if (child->references == 1u)
+                                            aNode.children.insert(aNode.children.end(), std::make_move_iterator(child->children.begin()), std::make_move_iterator(child->children.end()));
+                                        else
+                                            aNode.children.insert(aNode.children.end(), child->children.begin(), child->children.end());
+                                    }
                                     else
                                         aNode.children.push_back(std::move(child));
                             }
@@ -2007,7 +2020,10 @@ namespace neolib
                 if (aAtom.constraint && std::string_view{ spanStart, spanEnd } != aAtom.constraint.value())
                     return {};
                 scopedCursor.ignore();
-                aNode.children.insert(aNode.children.end(), std::make_move_iterator(children.begin()), std::make_move_iterator(children.end()));
+                if (aNode.children.empty())
+                    aNode.children.swap(children);
+                else
+                    aNode.children.insert(aNode.children.end(), std::make_move_iterator(children.begin()), std::make_move_iterator(children.end()));
                 aNode.set_concept(aAtom.node_concept());
                 if (spanEnd == nullptr)
                     spanEnd = spanStart;
@@ -2080,7 +2096,10 @@ namespace neolib
                     iCursor = newCursor;
                     for (auto& child : children2)
                         child->set_concept(aAtom.node_concept());
-                    aNode.children.insert(aNode.children.end(), std::make_move_iterator(children2.begin()), std::make_move_iterator(children2.end()));
+                    if (aNode.children.empty())
+                        aNode.children.swap(children2);
+                    else
+                        aNode.children.insert(aNode.children.end(), std::make_move_iterator(children2.begin()), std::make_move_iterator(children2.end()));
                         return ((sdp ? sdp->ok = true : true), result);
                 }
                 return {};
