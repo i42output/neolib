@@ -184,7 +184,7 @@ namespace neolib
             aTokens.push_back(value_type{ b, e });
             b = e;
         }
-        else if (b == e && last && last.value() != e && !aSkipEmptyTokens)
+        else if (b == e && last && last.value() != e && !aSkipEmptyTokens && (aMaxTokens == 0 || tokens < aMaxTokens))
             aTokens.push_back(value_type{ e, e });
         return b;
     }
