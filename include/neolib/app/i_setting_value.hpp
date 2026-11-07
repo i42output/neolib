@@ -77,18 +77,18 @@ namespace neolib
     using setting_type_t = typename get_setting_type<ST>::type;
 
     template <typename T, typename = sfinae> constexpr setting_type setting_type_v = setting_type::Custom;
-    template<> constexpr setting_type setting_type_v<bool> = setting_type::Boolean;
-    template<> constexpr setting_type setting_type_v<int8_t> = setting_type::Int8;
-    template<> constexpr setting_type setting_type_v<int16_t> = setting_type::Int16;
-    template<> constexpr setting_type setting_type_v<int32_t> = setting_type::Int32;
-    template<> constexpr setting_type setting_type_v<int64_t> = setting_type::Int64;
-    template<> constexpr setting_type setting_type_v<uint8_t> = setting_type::Uint8;
-    template<> constexpr setting_type setting_type_v<uint16_t> = setting_type::Uint16;
-    template<> constexpr setting_type setting_type_v<uint32_t> = setting_type::Uint32;
-    template<> constexpr setting_type setting_type_v<uint64_t> = setting_type::Uint64;
-    template<> constexpr setting_type setting_type_v<float> = setting_type::Float32;
-    template<> constexpr setting_type setting_type_v<double> = setting_type::Float64;
-    template<> constexpr setting_type setting_type_v<string> = setting_type::String;
+    template<> inline constexpr setting_type setting_type_v<bool> = setting_type::Boolean;
+    template<> inline constexpr setting_type setting_type_v<int8_t> = setting_type::Int8;
+    template<> inline constexpr setting_type setting_type_v<int16_t> = setting_type::Int16;
+    template<> inline constexpr setting_type setting_type_v<int32_t> = setting_type::Int32;
+    template<> inline constexpr setting_type setting_type_v<int64_t> = setting_type::Int64;
+    template<> inline constexpr setting_type setting_type_v<uint8_t> = setting_type::Uint8;
+    template<> inline constexpr setting_type setting_type_v<uint16_t> = setting_type::Uint16;
+    template<> inline constexpr setting_type setting_type_v<uint32_t> = setting_type::Uint32;
+    template<> inline constexpr setting_type setting_type_v<uint64_t> = setting_type::Uint64;
+    template<> inline constexpr setting_type setting_type_v<float> = setting_type::Float32;
+    template<> inline constexpr setting_type setting_type_v<double> = setting_type::Float64;
+    template<> inline constexpr setting_type setting_type_v<string> = setting_type::String;
     template<typename T> constexpr setting_type setting_type_v<T, std::enable_if_t<std::is_enum_v<T>, sfinae>> = setting_type::Enum;
 
     template <typename T, typename = sfinae> struct setting_type_name {};
