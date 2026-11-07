@@ -47,7 +47,7 @@
 
 namespace neolib
 {
-    template<typename T, std::size_t Capacity, std::size_t MaxCapacity = -1, typename Alloc = std::allocator<T>>
+    template<typename T, std::size_t Capacity, std::size_t MaxCapacity = static_cast<std::size_t>(-1), typename Alloc = std::allocator<T>>
     class growable_static_vector : 
         private small_buffer<T, Capacity>, 
         public std::vector<T, small_buffer_allocator<T, Capacity, MaxCapacity, Alloc>>
@@ -155,7 +155,7 @@ namespace neolib
         }
     };
 
-    template<typename T, std::size_t Capacity, std::size_t MaxCapacity = -1, typename Alloc = std::allocator<T>>
+    template<typename T, std::size_t Capacity, std::size_t MaxCapacity = static_cast<std::size_t>(-1), typename Alloc = std::allocator<T>>
     using small_vector = growable_static_vector<T, Capacity, MaxCapacity, Alloc>;
 
     template<typename T, std::size_t Capacity>

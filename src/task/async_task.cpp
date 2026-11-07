@@ -45,6 +45,8 @@
 
 #ifdef _WIN32
 #include "../win32/task/win32_message_queue.hpp"
+#else
+#include "../posix/task/posix_message_queue.hpp"
 #endif
 
 namespace neolib
@@ -314,6 +316,8 @@ namespace neolib
     {
         #ifdef _WIN32
         iMessageQueue = std::make_unique<win32_message_queue>(*this, aIdleFunction);
+        #else
+        iMessageQueue = std::make_unique<posix_message_queue>(*this, aIdleFunction);
         #endif
         return message_queue();
     }

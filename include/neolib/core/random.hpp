@@ -50,10 +50,10 @@ namespace neolib
         typedef typename generator_type::result_type generator_result_type;
         static const std::size_t state_size = generator_type::state_size;
     private:
-        template <bool IsInteger>
+        template <bool IsInteger, typename Dummy = void> // (dummy parameter: explicit specialization at class scope is not portable; partial specialization is)
         struct distribution_selector;
-        template <>
-        struct distribution_selector<true>
+        template <typename Dummy>
+        struct distribution_selector<true, Dummy>
         {
             typedef generator_result_type interval_value_type;
             typedef std::uniform_int_distribution<interval_value_type> distribution_type;
@@ -62,8 +62,8 @@ namespace neolib
                 return std::make_pair(aLower, aUpper);
             }
         };
-        template <>
-        struct distribution_selector<false>
+        template <typename Dummy>
+        struct distribution_selector<false, Dummy>
         {
             typedef value_type interval_value_type;
             typedef std::uniform_real_distribution<interval_value_type> distribution_type;
@@ -72,7 +72,7 @@ namespace neolib
                 return std::make_pair(aLower, std::nextafter(aUpper, std::numeric_limits<interval_value_type>::max()));
             }
         };
-        typedef typename distribution_selector<std::is_integral<value_type>::value> distribution_selector_type;
+        typedef distribution_selector<std::is_integral<value_type>::value> distribution_selector_type;
     public:
         typedef typename distribution_selector_type::distribution_type distribution_type;
         typedef typename distribution_selector_type::interval_value_type interval_value_type;

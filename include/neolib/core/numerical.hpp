@@ -2104,7 +2104,7 @@ namespace neolib
         constexpr std::size_t QuadBottomRight = static_cast<std::size_t>(quad_corner::BottomRight);
         constexpr std::size_t QuadBottomLeft = static_cast<std::size_t>(quad_corner::BottomLeft);
 
-        template <typename T, std::size_t D>
+        template <typename T, std::uint32_t D>
         inline basic_vector<T, D> quad_extents(std::array<basic_vector<T, D>, 4> const& aQuad)
         {
             return basic_vector<T, D>{

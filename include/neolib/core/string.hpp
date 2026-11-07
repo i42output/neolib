@@ -77,6 +77,7 @@ namespace neolib
         template <typename Iter, typename SFINAE = std::enable_if_t<!std::is_scalar_v<Iter>, sfinae>>
         string(Iter aBegin, Iter aEnd) : iString{ aBegin, aEnd } {}
         ~string() {}
+        string& operator=(const char* aOther) { iString = aOther; return *this; }
         string& operator=(const std::string& aOther) { iString = aOther; return *this; }
         string& operator=(const std::string_view& aOther) { iString = aOther; return *this; }
         string& operator=(const neolib::quick_string& aOther) { iString = aOther; return *this; }
