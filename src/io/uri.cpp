@@ -295,6 +295,8 @@ namespace neolib
         neolib::vecarray<std::pair<std::string::const_iterator, std::string::const_iterator>, 2> bits;
         std::string sep{ "/" };
         neolib::tokens(aRest.begin(), aRest.end(), sep.begin(), sep.end(), bits, 2, false, false);
+        if (bits.empty())
+            return {};
         if (bits.size() == 2)
             iPath = unescaped(std::string{ bits[1].first, aRest.end() });
         return std::string{ bits[0].first, bits[0].second };
@@ -304,6 +306,8 @@ namespace neolib
     {
         neolib::vecarray<std::string, 2> bits;
         neolib::tokens(aRest, std::string{ "?" }, bits, 2, false, false);
+        if (bits.empty())
+            return {};
         if (bits.size() == 2)
             iQuery = unescaped(bits[1]);
         return bits.front();
@@ -313,6 +317,8 @@ namespace neolib
     {
         neolib::vecarray<std::string, 2> bits;
         neolib::tokens(aRest, std::string{ "#" }, bits, 2, false, false);
+        if (bits.empty())
+            return {};
         if (bits.size() == 2)
             iFragment = unescaped(bits[1]);
         return bits.front();
@@ -322,6 +328,10 @@ namespace neolib
     {
         neolib::vecarray<std::string, 2> bits;
         neolib::tokens(aRest, std::string{ "://" }, bits, 2, false, true);
+        // n.b. no tokens if the rest is empty (an empty URI, or here and in the steps after this one, nothing left of one, e.g. "ab://#c"
+        // leaves nothing for the query and path)
+        if (bits.empty())
+            return {};
         if (bits.size() == 2)
             iScheme = unescaped(bits[0]);
         return bits.back();
