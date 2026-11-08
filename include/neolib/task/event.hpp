@@ -140,6 +140,14 @@ namespace neolib
         }
         ~event()
         {
+            // n.b. the slots are released from a list of their own: a slot freed by its release removes itself from this
+            // event (slot::remove), which must not then change the list being destroyed
+            slot_list slots;
+            {
+                std::scoped_lock lock{ iMutex };
+                slots.swap(iSlots);
+                iHasSlots = false;
+            }
         }
     public:
         event& operator=(event const& aOther)
