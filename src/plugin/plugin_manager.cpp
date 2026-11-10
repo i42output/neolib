@@ -47,7 +47,10 @@ namespace neolib
     {
         iPluginFileExtensions.push_back(string{ aApplication.info().plugin_extension() });
         std::set<std::string> folders;
-        folders.insert(std::filesystem::canonical(std::filesystem::path{ aApplication.info().application_folder().to_std_string() }).string());
+        // (the application folder only if the application says what it is: by default it is the current directory, a search of
+        // which (e.g. a home directory or a build tree) can find another copy of a plugin)
+        if (!aApplication.info().application_folder(false).empty())
+            folders.insert(std::filesystem::canonical(std::filesystem::path{ aApplication.info().application_folder(false).to_std_string() }).string());
         folders.insert(std::filesystem::canonical(boost::dll::program_location().parent_path().string()).string());
         for (auto i = folders.begin(); i != folders.end();)
         {
