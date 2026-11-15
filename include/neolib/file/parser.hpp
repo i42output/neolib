@@ -681,6 +681,13 @@ namespace neolib
             void const* symbolKey = nullptr;
             void const* symbolRules = nullptr;  ///< (a symbol's rules (see parser::iRuleIndex), if it has any (set by the parser that owns it; not copied))
             std::shared_ptr<alternation_dispatch const> dispatch;   ///< (an alternation's (set by the parser that owns it))
+            // (a repetition or an optional of one atom, whose match is found to be empty without parsing it (see parser::quick_empty): 1 + 
+            // the number of lexical symbols that the atom (a concatenation) begins with, before an atom whose first characters are known 
+            // (if it is not a concatenation: 1); else 0 (set by the parser that owns it))
+            std::uint8_t quickEmpty = 0u;
+            // (a symbol whose match is its rule's first symbol's when what follows that in the rule matches nothing (see parser::parse_unit): 
+            // its rule; else null (set by the parser that owns it; not copied))
+            void const* unit = nullptr;
             // (its parses' memoization statistics (see parser::memo_of): the parser's record for its cache key, found once)
             mutable void const* memoParser = nullptr;
             mutable void const* memoKey = nullptr;
@@ -692,13 +699,14 @@ namespace neolib
 
             primitive_atom(primitive_atom const& other) :
                 base_type{ other }, c{ other.c }, constraint{ other.constraint }, exception{ other.exception }, firstKnown{ other.firstKnown }, first{ other.first },
-                lexical{ other.lexical }, symbolKey{ other.symbolKey }, dispatch{ other.dispatch }
+                lexical{ other.lexical }, symbolKey{ other.symbolKey }, dispatch{ other.dispatch }, quickEmpty{ other.quickEmpty }
             {
             }
 
             primitive_atom(primitive_atom&& other) :
                 base_type{ std::move(other) }, c{ std::move(other.c) }, constraint{ std::move(other.constraint) }, exception{ std::move(other.exception) },
-                firstKnown{ other.firstKnown }, first{ other.first }, lexical{ other.lexical }, symbolKey{ other.symbolKey }, dispatch{ std::move(other.dispatch) }
+                firstKnown{ other.firstKnown }, first{ other.first }, lexical{ other.lexical }, symbolKey{ other.symbolKey }, dispatch{ std::move(other.dispatch) },
+                quickEmpty{ other.quickEmpty }
             {
             }
 
@@ -714,6 +722,8 @@ namespace neolib
                 symbolKey = other.symbolKey;
                 symbolRules = nullptr;
                 dispatch = other.dispatch;
+                quickEmpty = other.quickEmpty;
+                unit = nullptr;
                 return *this;
             }
 
@@ -729,6 +739,8 @@ namespace neolib
                 symbolKey = other.symbolKey;
                 symbolRules = nullptr;
                 dispatch = other.dispatch;
+                quickEmpty = other.quickEmpty;
+                unit = nullptr;
                 return *this;
             }
 
@@ -1843,9 +1855,118 @@ namespace neolib
                 return {};
             }
             if (!aAtom.exception)
+            {
+                if constexpr (Plain)
+                {
+                    // (a repetition or an optional whose atom does not match here, found without parsing it (see quick_empty): it 
+                    // matches nothing (one that must match at least once does not match))
+                    if (aAtom.quickEmpty != 0u && !iError && quick_empty(aAtom, aSource))
+                    {
+                        if (iError)
+                            return {};
+                        if (auto const* rep = std::get_if<repetition>(&aAtom); rep != nullptr && rep->atLeastOne)
+                            return {};
+                        return parse_result{ aSource.data(), aSource.data() };
+                    }
+                    // (a unit symbol's first symbol, parsed by parse_unit for this parse (the symbol's own): its result and nodes)
+                    if (iUnitBase.atom == &aAtom && iUnitBase.begin == aSource.data() && iUnitBase.end == aSource.data() + aSource.size())
+                    {
+                        auto const result = iUnitBase.result;
+                        aNode.children.insert(aNode.children.end(), std::make_move_iterator(iUnitBase.nodes.begin()), std::make_move_iterator(iUnitBase.nodes.end()));
+                        iUnitBase = {};
+                        return result;
+                    }
+                    if (aAtom.unit != nullptr && !iError)
+                    {
+                        if (auto const decided = parse_unit(aAtom, aNode, aSource))
+                            return *decided;
+                        // (not decided: the symbol's own parse (which begins with the parse that parse_unit kept, unless it is one 
+                        // remembered))
+                        auto const result = parse_primitive<Plain>(aSymbol, aAtom, aNode, aSource);
+                        iUnitBase = {};
+                        return result;
+                    }
+                }
                 return std::holds_alternative<symbol>(aAtom) || std::holds_alternative<repetition>(aAtom) ?
                     parse_primitive<Plain>(aSymbol, aAtom, aNode, aSource) : parse_uncached<Plain>(aSymbol, aAtom, aNode, aSource);
+            }
             return parse_excepted<Plain>(aSymbol, aAtom, aNode, aSource);
+        }
+
+        // (a unit symbol (see primitive_atom::unit) at the source's start: its rule's first symbol is parsed for the node; if what follows
+        // it in the rule matches nothing (see quick_empty), the symbol's match is that symbol's (as the rule's parse gives: from where 
+        // that match starts to where the source continues after it) and its node is that symbol's (the symbol's own node would have only
+        // that node: a node with no concept is replaced by its children when the tree is made), and if the first symbol does not match,
+        // nor does the symbol. Else (no result) the symbol is to be parsed as any other: the first symbol's parse is kept (iUnitBase) for
+        // that parse, which begins with it. The rule is on the rule stack while its first symbol is parsed, as in its own parse (a rule
+        // that is being parsed at the same place is left recursion: the symbol's own parse then))
+        std::optional<std::optional<parse_result>> parse_unit(primitive_atom const& aAtom, cst_node& aNode, std::string_view const& aSource)
+        {
+            auto const& unitRule = *static_cast<rule const*>(aAtom.unit);
+            auto const& atoms = std::get<concatenation>(unitRule.rhs[0]).value;
+            auto const base = aNode.children.size();
+            std::optional<parse_result> first;
+            {
+                scoped_stack_entry sse{ *this, unitRule, aSource };
+                if (left_recursion(aNode, unitRule))
+                    return std::nullopt;
+                first = parse_atom<true>(std::get<symbol>(aAtom), atoms[0], aNode, aSource);
+            }
+            if (!first || iError)
+                return std::optional<parse_result>{};
+            char const* const end = aSource.data() + aSource.size();
+            for (std::size_t i = 1u; i < atoms.size(); ++i)
+                if (!quick_empty(atoms[i], std::string_view{ first->sourceNext, end }))
+                {
+                    iUnitBase.atom = &atoms[0];
+                    iUnitBase.begin = aSource.data();
+                    iUnitBase.end = end;
+                    iUnitBase.result = first;
+                    iUnitBase.nodes.assign(std::make_move_iterator(aNode.children.begin() + static_cast<std::ptrdiff_t>(base)), std::make_move_iterator(aNode.children.end()));
+                    aNode.children.erase(aNode.children.begin() + static_cast<std::ptrdiff_t>(base), aNode.children.end());
+                    return std::nullopt;
+                }
+            if (iError)
+                return std::optional<parse_result>{};
+            return std::optional<parse_result>{ parse_result{ first->data(), first->sourceNext } };
+        }
+
+        // (a repetition's or an optional's atom (see primitive_atom::quickEmpty) does not match at the source's start: it (or the atom that 
+        // follows the lexical symbols that it begins with, which are matched here as its parse matches them) cannot start with the 
+        // character there, or one of those lexical symbols does not match. As the atom's parse finds (see parse_atom, parse_primitive and
+        // parse_uncached: the same deepest parse), without the parse's nodes, lists and remembered results. False: it is to be parsed)
+        bool quick_empty(primitive_atom const& aAtom, std::string_view const& aSource)
+        {
+            auto const& body = std::holds_alternative<repetition>(aAtom) ? std::get<repetition>(aAtom).value[0] : std::get<optional>(aAtom).value[0];
+            char const* next = aSource.data();
+            char const* const end = next + aSource.size();
+            iDeepestParse = std::max(iDeepestParse, next);
+            auto const cannot_start = [&](primitive_atom const& a)
+            {
+                if (a.firstKnown && (next == end || !a.first.test(static_cast<unsigned char>(*next))))
+                {
+                    iDeepestParse = std::max(iDeepestParse, next);
+                    return true;
+                }
+                return false;
+            };
+            if (cannot_start(body))
+                return true;
+            auto const* const con = std::get_if<concatenation>(&body);
+            if (con == nullptr)
+                return false;
+            std::size_t const prefix = aAtom.quickEmpty - 1u;
+            for (std::size_t i = 0u; i < prefix; ++i)
+            {
+                auto const& a = con->value[i];
+                if (cannot_start(a))
+                    return true;
+                auto const match = lex_symbol(a.lexical, next, end);
+                if (!match)
+                    return true;
+                next = match->sourceNext;
+            }
+            return cannot_start(con->value[prefix]);
         }
 
         template <bool Plain>
@@ -2468,12 +2589,97 @@ namespace neolib
                                 mark(a, aConcept || (std::is_same_v<type, alternation> && aAtom.c.has_value()));
                     }
                 }, static_cast<typename primitive_atom::base_type&>(aAtom));
+                // (a repetition or an optional of one atom: see primitive_atom::quickEmpty (its atoms are marked: their lexical symbols 
+                // are known))
+                aAtom.quickEmpty = 0u;
+                if (!aAtom.exception && !aAtom.constraint)
+                {
+                    std::vector<primitive_atom> const* body = nullptr;
+                    if (auto const* rep = std::get_if<repetition>(&aAtom))
+                        body = &rep->value;
+                    else if (auto const* opt = std::get_if<optional>(&aAtom))
+                        body = &opt->value;
+                    if (body != nullptr && body->size() == 1u && !(*body)[0].exception && !(*body)[0].constraint)
+                    {
+                        if (auto const* con = std::get_if<concatenation>(&(*body)[0]))
+                        {
+                            std::size_t prefix = 0u;
+                            while (prefix < con->value.size() && prefix < 0xFEu && std::holds_alternative<symbol>(con->value[prefix]) && 
+                                con->value[prefix].lexical >= 0 && !con->value[prefix].constraint && !con->value[prefix].exception)
+                                ++prefix;
+                            if (prefix < con->value.size() && con->value[prefix].firstKnown)
+                                aAtom.quickEmpty = static_cast<std::uint8_t>(prefix + 1u);
+                        }
+                        else if ((*body)[0].firstKnown)
+                            aAtom.quickEmpty = 1u;
+                    }
+                }
                 if (aAtom.exception)
                     mark(const_cast<primitive_atom&>(*aAtom.exception), false);
             };
             for (auto& r : iRules)
                 for (auto& a : r.rhs)
                     mark(a, false);
+            // (unit symbols (see primitive_atom::unit): a symbol (with no concept, constraint or exception; not lexical, not ignored) of 
+            // one rule (with no concept or constraint), which is a concatenation of a symbol (as plain; none of whose rules has a concept: 
+            // its node has none) and repetitions and optionals whose empty matches are found without parsing them (see quickEmpty))
+            auto const plain_symbol = [&](primitive_atom const& a)
+            {
+                return std::holds_alternative<symbol>(a) && !a.c && !a.constraint && !a.exception && a.lexical < 0 && 
+                    iIgnore.find(std::get<symbol>(a)) == iIgnore.end();
+            };
+            auto const no_concepts = [&](symbol aSymbol)
+            {
+                auto const rules = iRuleIndex.find(aSymbol);
+                if (rules == iRuleIndex.end())
+                    return false;
+                for (auto const& ir : rules->second)
+                    if (ir.definition->lhs.size() != 1u || ir.definition->rhs.size() != 1u || ir.definition->lhs[0].c || ir.definition->rhs[0].c)
+                        return false;
+                return true;
+            };
+            std::function<void(primitive_atom&)> mark_unit = [&](primitive_atom& aAtom)
+            {
+                aAtom.unit = nullptr;
+                std::visit([&](auto& aPart)
+                {
+                    using type = std::decay_t<decltype(aPart)>;
+                    if constexpr (std::is_same_v<type, symbol>)
+                    {
+                        auto const rules = iRuleIndex.find(aPart);
+                        if (!plain_symbol(aAtom) || rules == iRuleIndex.end() || rules->second.size() != 1u)
+                            return;
+                        auto const& r = *rules->second[0].definition;
+                        if (r.lhs.size() != 1u || r.rhs.size() != 1u || r.lhs[0].c || r.lhs[0].constraint || r.lhs[0].exception || 
+                            r.rhs[0].c || r.rhs[0].constraint || r.rhs[0].exception)
+                            return;
+                        auto const* const con = std::get_if<concatenation>(&r.rhs[0]);
+                        if (con == nullptr || con->value.size() < 2u || !plain_symbol(con->value[0]) || std::get<symbol>(con->value[0]) == aPart ||
+                            !no_concepts(std::get<symbol>(con->value[0])))
+                            return;
+                        for (std::size_t i = 1u; i < con->value.size(); ++i)
+                        {
+                            auto const& a = con->value[i];
+                            auto const* const rep = std::get_if<repetition>(&a);
+                            if (a.quickEmpty == 0u || (rep != nullptr && rep->atLeastOne))
+                                return;
+                        }
+                        aAtom.unit = &r;
+                    }
+                    else if constexpr (requires { aPart.value; } && !std::is_same_v<type, range>)
+                    {
+                        if constexpr (std::is_same_v<std::decay_t<decltype(aPart.value)>, std::vector<primitive_atom>>)
+                            for (auto& a : aPart.value)
+                                mark_unit(a);
+                    }
+                }, static_cast<typename primitive_atom::base_type&>(aAtom));
+                if (aAtom.exception)
+                    mark_unit(const_cast<primitive_atom&>(*aAtom.exception));
+            };
+            for (auto& r : iRules)
+                for (auto& a : r.rhs)
+                    mark_unit(a);
+            iUnitBase = {};
             iLexicalStride = 1u;
             while (iLexicalStride < iLexical.size())
                 iLexicalStride *= 2u;
@@ -3386,6 +3592,17 @@ namespace neolib
         std::vector<lexical_memo_entry> iLexicalMemo;
         std::uint64_t iLexicalStride = 1u;  ///< (a power of two: at least the number of lexical symbols)
         std::uint32_t iExcepting = 0u;  ///< (an exception is being parsed (see excepted): no lexical matches are remembered)
+        // (a unit symbol's first symbol's parse (see parse_unit), kept for the symbol's own parse, which begins with it: the atom, where
+        // it was parsed, its result and the nodes that it made)
+        struct unit_base
+        {
+            primitive_atom const* atom = nullptr;
+            char const* begin = nullptr;
+            char const* end = nullptr;
+            std::optional<parse_result> result;
+            typename cst_node::child_list nodes;
+        };
+        unit_base iUnitBase;
         std::size_t iCuts = 0u;         ///< (the rules not tried because of left recursion (see parse_rules))
         bool iAtomKeyedSymbols = false; ///< (a symbol's parse (that would be remembered by the symbol's key) is remembered by its atom's)
         bool iDiscarding = false;   ///< (an ignored symbol is being parsed: no nodes are made)
