@@ -204,32 +204,41 @@ namespace neolib
             {
                 return iDescendentCount;
             }
-            void increment_descendent_count()
+            // (a descendent added to us: it is one of our skipped descendents (aSkipped) if it is in a descendent of ours that skips its 
+            // children, and it is one of our ancestors' if we skip ours)
+            void increment_descendent_count(bool aSkipped = false)
             {
                 ++iDescendentCount;
+                if (aSkipped)
+                    ++iSkippedDescendentCount;
                 if (!is_root())
-                    parent().increment_descendent_count();
+                    parent().increment_descendent_count(aSkipped || iSkipChildren);
             }
-            void decrement_descendent_count()
+            // (descendents removed from us (aCount of them, aSkipped of which were our skipped descendents): all of them were our 
+            // ancestors' skipped descendents if we skip our children)
+            void decrement_descendent_count(std::size_t aCount = 1, std::size_t aSkipped = 0)
             {
-                --iDescendentCount;
+                iDescendentCount -= aCount;
+                iSkippedDescendentCount -= aSkipped;
                 if (!is_root())
-                    parent().decrement_descendent_count();
+                    parent().decrement_descendent_count(aCount, iSkipChildren ? aCount : aSkipped);
             }
             std::size_t skipped_descendent_count() const
             {
                 return iSkippedDescendentCount;
             }
+            // (descendents of ours that a descendent of ours now skips (or no longer skips): they are our ancestors' skipped 
+            // descendents too unless we skip our children, as then they already are (and still are))
             void increment_skipped_descendent_count(std::size_t aCount)
             {
                 iSkippedDescendentCount += aCount;
-                if (!is_root())
+                if (!is_root() && !iSkipChildren)
                     parent().increment_skipped_descendent_count(aCount);
             }
             void decrement_skipped_descendent_count(std::size_t aCount)
             {
                 iSkippedDescendentCount -= aCount;
-                if (!is_root())
+                if (!is_root() && !iSkipChildren)
                     parent().decrement_skipped_descendent_count(aCount);
             }
             void update_parents(node& parent)
@@ -789,8 +798,13 @@ namespace neolib
         {
             auto mutablePos = std::next(begin(), std::distance(cbegin(), pos));
             node& parent = mutablePos.parent_node();
+            // (its descendents are removed with it: those of them that are skipped (all of them if it skips its children) were its 
+            // ancestors' skipped descendents too)
+            auto const& removed = mutablePos.our_node();
+            auto const count = removed.descendent_count() + 1;
+            auto const skipped = removed.children_skipped() ? removed.descendent_count() : removed.skipped_descendent_count();
             auto result = iterator{ parent, parent.children().erase(mutablePos.base()) };
-            parent.decrement_descendent_count();
+            parent.decrement_descendent_count(count, skipped);
             return result;
         }
         void sort()
