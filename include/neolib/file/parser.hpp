@@ -688,6 +688,9 @@ namespace neolib
             // (a symbol whose match is its rule's first symbol's when what follows that in the rule matches nothing (see parser::parse_unit): 
             // its rule; else null (set by the parser that owns it; not copied))
             void const* unit = nullptr;
+            // (a symbol whose match, where the source starts with a given character, is that of the one alternative of its rule that can
+            // start with it (see parser::unit_table): its rule's table; else null (set by the parser that owns it; not copied))
+            void const* unitTable = nullptr;
             // (its parses' memoization statistics (see parser::memo_of): the parser's record for its cache key, found once)
             mutable void const* memoParser = nullptr;
             mutable void const* memoKey = nullptr;
@@ -724,6 +727,7 @@ namespace neolib
                 dispatch = other.dispatch;
                 quickEmpty = other.quickEmpty;
                 unit = nullptr;
+                unitTable = nullptr;
                 return *this;
             }
 
@@ -741,6 +745,7 @@ namespace neolib
                 dispatch = other.dispatch;
                 quickEmpty = other.quickEmpty;
                 unit = nullptr;
+                unitTable = nullptr;
                 return *this;
             }
 
@@ -1886,6 +1891,20 @@ namespace neolib
                         iUnitBase = {};
                         return result;
                     }
+                    if (aAtom.unitTable != nullptr && !iError)
+                    {
+                        // (a symbol whose rule has one alternative that can start with the next character (see unit_table))
+                        auto const& table = *static_cast<unit_table const*>(aAtom.unitTable);
+                        auto const& entry = table.entries[aSource.empty() ? 256u : static_cast<unsigned char>(aSource.front())];
+                        if (entry.first != nullptr)
+                        {
+                            if (auto const decided = parse_unit(aAtom, *table.definition, *entry.first, entry.tails, entry.tailCount, aNode, aSource))
+                                return *decided;
+                            auto const result = parse_primitive<Plain>(aSymbol, aAtom, aNode, aSource);
+                            iUnitBase = {};
+                            return result;
+                        }
+                    }
                 }
                 return std::holds_alternative<symbol>(aAtom) || std::holds_alternative<repetition>(aAtom) ?
                     parse_primitive<Plain>(aSymbol, aAtom, aNode, aSource) : parse_uncached<Plain>(aSymbol, aAtom, aNode, aSource);
@@ -1904,21 +1923,31 @@ namespace neolib
         {
             auto const& unitRule = *static_cast<rule const*>(aAtom.unit);
             auto const& atoms = std::get<concatenation>(unitRule.rhs[0]).value;
+            return parse_unit(aAtom, unitRule, atoms[0], atoms.data() + 1u, atoms.size() - 1u, aNode, aSource);
+        }
+
+        // (aFirst: the rule's symbol that is parsed for the node (the first of its concatenation, or of the one alternative of the rule
+        // that can match here (see unit_table): the symbol's own parse comes to it first, at the source's start); aTails: what follows
+        // it)
+        std::optional<std::optional<parse_result>> parse_unit(primitive_atom const& aAtom, rule const& aRule, primitive_atom const& aFirst,
+            primitive_atom const* aTails, std::size_t aTailCount, cst_node& aNode, std::string_view const& aSource)
+        {
+            auto const& unitRule = aRule;
             auto const base = aNode.children.size();
             std::optional<parse_result> first;
             {
                 scoped_stack_entry sse{ *this, unitRule, aSource };
                 if (left_recursion(aNode, unitRule))
                     return std::nullopt;
-                first = parse_atom<true>(std::get<symbol>(aAtom), atoms[0], aNode, aSource);
+                first = parse_atom<true>(std::get<symbol>(aAtom), aFirst, aNode, aSource);
             }
             if (!first || iError)
                 return std::optional<parse_result>{};
             char const* const end = aSource.data() + aSource.size();
-            for (std::size_t i = 1u; i < atoms.size(); ++i)
-                if (!quick_empty(atoms[i], std::string_view{ first->sourceNext, end }))
+            for (std::size_t i = 0u; i < aTailCount; ++i)
+                if (!quick_empty(aTails[i], std::string_view{ first->sourceNext, end }))
                 {
-                    iUnitBase.atom = &atoms[0];
+                    iUnitBase.atom = &aFirst;
                     iUnitBase.begin = aSource.data();
                     iUnitBase.end = end;
                     iUnitBase.result = first;
@@ -2638,9 +2667,101 @@ namespace neolib
                         return false;
                 return true;
             };
+            // (a unit symbol by its first character (see primitive_atom::unitTable): a symbol as above whose one rule is an alternation
+            // (perhaps of alternations), or a concatenation of one and such repetitions and optionals: where one alternative alone can
+            // start with the source's next character, and it is such a symbol (or, if the rule is the alternation, a concatenation of
+            // one and such repetitions and optionals), the symbol's match is that symbol's when what follows it matches nothing (the
+            // other alternatives do not match: they would be tried and fail))
+            iUnitTables.clear();
+            boost::unordered_flat_map<rule const*, unit_table const*> unitTables;
+            auto const unit_table_of = [&](rule const& r, symbol aSymbol) -> unit_table const*
+            {
+                if (auto const existing = unitTables.find(&r); existing != unitTables.end())
+                    return existing->second;
+                auto& result = unitTables[&r];
+                result = nullptr;
+                auto const tails = [&](std::vector<primitive_atom> const& aAtoms)
+                {
+                    for (std::size_t i = 1u; i < aAtoms.size(); ++i)
+                    {
+                        auto const* const rep = std::get_if<repetition>(&aAtoms[i]);
+                        if (aAtoms[i].quickEmpty == 0u || (rep != nullptr && rep->atLeastOne))
+                            return false;
+                    }
+                    return true;
+                };
+                auto const leaf = [&](primitive_atom const& a)
+                {
+                    return plain_symbol(a) && std::get<symbol>(a) != aSymbol && no_concepts(std::get<symbol>(a));
+                };
+                auto const* head = &r.rhs[0];
+                primitive_atom const* ownTails = nullptr;
+                std::size_t ownTailCount = 0u;
+                if (auto const* const con = std::get_if<concatenation>(head); con != nullptr)
+                {
+                    if (con->value.size() < 2u || !tails(con->value))
+                        return result;
+                    ownTails = con->value.data() + 1u;
+                    ownTailCount = con->value.size() - 1u;
+                    head = &con->value[0];
+                    if (head->c || head->constraint || head->exception)
+                        return result;
+                }
+                unit_table table;
+                table.definition = &r;
+                bool any = false;
+                for (std::uint32_t c = 0u; c <= 256u; ++c)
+                {
+                    // (the alternatives that can start with the character: 2: more than one, or one that is not a unit's)
+                    unit_entry entry;
+                    std::function<int(primitive_atom const&)> viable = [&](primitive_atom const& a) -> int
+                    {
+                        if (a.firstKnown && (c == 256u || !a.first.test(c)))
+                            return 0;
+                        if (auto const* const alt = std::get_if<alternation>(&a); alt != nullptr)
+                        {
+                            if (a.c || a.constraint || a.exception)
+                                return 2;
+                            int count = 0;
+                            for (auto const& alternative : alt->value)
+                                if ((count += viable(alternative)) > 1)
+                                    return 2;
+                            return count;
+                        }
+                        if (leaf(a))
+                        {
+                            entry.first = &a;
+                            entry.tails = ownTails;
+                            entry.tailCount = ownTailCount;
+                            return 1;
+                        }
+                        if (auto const* const con = std::get_if<concatenation>(&a); con != nullptr && ownTailCount == 0u && !a.c && !a.constraint && !a.exception &&
+                            con->value.size() >= 2u && leaf(con->value[0]) && tails(con->value))
+                        {
+                            entry.first = &con->value[0];
+                            entry.tails = con->value.data() + 1u;
+                            entry.tailCount = con->value.size() - 1u;
+                            return 1;
+                        }
+                        return 2;
+                    };
+                    if (viable(*head) == 1)
+                    {
+                        table.entries[c] = entry;
+                        any = true;
+                    }
+                }
+                if (any)
+                {
+                    iUnitTables.push_back(table);
+                    result = &iUnitTables.back();
+                }
+                return result;
+            };
             std::function<void(primitive_atom&)> mark_unit = [&](primitive_atom& aAtom)
             {
                 aAtom.unit = nullptr;
+                aAtom.unitTable = nullptr;
                 std::visit([&](auto& aPart)
                 {
                     using type = std::decay_t<decltype(aPart)>;
@@ -2656,7 +2777,10 @@ namespace neolib
                         auto const* const con = std::get_if<concatenation>(&r.rhs[0]);
                         if (con == nullptr || con->value.size() < 2u || !plain_symbol(con->value[0]) || std::get<symbol>(con->value[0]) == aPart ||
                             !no_concepts(std::get<symbol>(con->value[0])))
+                        {
+                            aAtom.unitTable = unit_table_of(r, aPart);
                             return;
+                        }
                         for (std::size_t i = 1u; i < con->value.size(); ++i)
                         {
                             auto const& a = con->value[i];
@@ -3603,6 +3727,20 @@ namespace neolib
             typename cst_node::child_list nodes;
         };
         unit_base iUnitBase;
+        // (a rule's unit symbols by the source's next character (see primitive_atom::unitTable; 256: the source's end): the symbol that
+        // is parsed and what follows it in the rule)
+        struct unit_entry
+        {
+            primitive_atom const* first = nullptr;
+            primitive_atom const* tails = nullptr;
+            std::size_t tailCount = 0u;
+        };
+        struct unit_table
+        {
+            rule const* definition = nullptr;
+            std::array<unit_entry, 257u> entries = {};
+        };
+        std::deque<unit_table> iUnitTables;
         std::size_t iCuts = 0u;         ///< (the rules not tried because of left recursion (see parse_rules))
         bool iAtomKeyedSymbols = false; ///< (a symbol's parse (that would be remembered by the symbol's key) is remembered by its atom's)
         bool iDiscarding = false;   ///< (an ignored symbol is being parsed: no nodes are made)
